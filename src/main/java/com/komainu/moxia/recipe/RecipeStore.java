@@ -1,0 +1,237 @@
+package com.komainu.moxia.recipe;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.komainu.moxia.gradient.GradientAxis;
+import com.komainu.moxia.shape.PathShape;
+import net.fabricmc.loader.api.FabricLoader;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+public final class RecipeStore {
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Path ROOT = FabricLoader.getInstance().getConfigDir()
+            .resolve("komaedit")
+            .resolve("recipes");
+
+    private RecipeStore() {
+    }
+
+    public static void save(UUID playerId, ProceduralRecipe recipe) {
+        Path target = recipePath(playerId, recipe.name());
+        try {
+            Files.createDirectories(target.getParent());
+            Path temporary = target.resolveSibling(target.getFileName() + ".tmp");
+            Files.writeString(temporary, GSON.toJson(toJson(recipe)), StandardCharsets.UTF_8);
+            try {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException exception) {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("No se pudo guardar la receta: " + exception.getMessage(), exception);
+        }
+    }
+
+    public static List<ProceduralRecipe> list(UUID playerId) {
+        Path directory = playerDirectory(playerId);
+        if (!Files.isDirectory(directory)) {
+            return List.of();
+        }
+        try (var files = Files.list(directory)) {
+            return files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .sorted()
+                    .limit(64)
+                    .map(RecipeStore::read)
+                    .toList();
+        } catch (IOException exception) {
+            throw new IllegalStateException("No se pudieron listar las recetas: " + exception.getMessage(), exception);
+        }
+    }
+
+    public static ProceduralRecipe load(UUID playerId, String name) {
+        Path path = recipePath(playerId, name);
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalArgumentException("No existe la receta " + name);
+        }
+        return read(path);
+    }
+
+    public static boolean delete(UUID playerId, String name) {
+        try {
+            return Files.deleteIfExists(recipePath(playerId, name));
+        } catch (IOException exception) {
+            throw new IllegalStateException("No se pudo eliminar la receta: " + exception.getMessage(), exception);
+        }
+    }
+
+    public static void clear(UUID playerId) {
+        Path directory = playerDirectory(playerId);
+        if (!Files.isDirectory(directory)) {
+            return;
+        }
+        try {
+            List<Path> storedFiles;
+            try (var files = Files.list(directory)) {
+                storedFiles = files.toList();
+            }
+            for (Path file : storedFiles) {
+                Files.deleteIfExists(file);
+            }
+            Files.deleteIfExists(directory);
+        } catch (IOException exception) {
+            throw new IllegalStateException("No se pudieron limpiar las recetas de la sesión", exception);
+        }
+    }
+
+    private static ProceduralRecipe read(Path path) {
+        try {
+            JsonObject root = JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8)).getAsJsonObject();
+            int version = root.get("version").getAsInt();
+            if (version < 1 || version > ProceduralRecipe.FORMAT_VERSION) {
+                throw new IllegalArgumentException("Versión de receta no compatible: " + path.getFileName());
+            }
+            return fromJson(root, version);
+        } catch (IOException | RuntimeException exception) {
+            throw new IllegalStateException("No se pudo leer " + path.getFileName() + ": " + exception.getMessage(), exception);
+        }
+    }
+
+    static ProceduralRecipe fromJson(JsonObject root, int version) {
+        try {
+            Map<String, Double> options = new LinkedHashMap<>();
+            if (root.has("options")) {
+                root.getAsJsonObject("options").entrySet()
+                        .forEach(entry -> options.put(entry.getKey(), entry.getValue().getAsDouble()));
+            }
+            RecipeExtensions extensions = version >= 2 && root.has("extensions")
+                    ? extensionsFromJson(root.getAsJsonObject("extensions"))
+                    : RecipeExtensions.DEFAULT;
+            PathShape shape = PathShape.byId(root.get("shape").getAsString());
+            String accentPattern = version >= 3 && root.has("accentPattern")
+                    ? root.get("accentPattern").getAsString()
+                    : defaultAccentPattern(shape);
+            return new ProceduralRecipe(
+                    root.get("name").getAsString(),
+                    shape,
+                    root.get("pattern").getAsString(),
+                    accentPattern,
+                    root.get("radius").getAsInt(),
+                    root.get("spacing").getAsInt(),
+                    root.get("thickness").getAsInt(),
+                    root.get("roll").getAsInt(),
+                    root.get("height").getAsInt(),
+                    root.get("palette").getAsString(),
+                    GradientAxis.byId(root.get("axis").getAsString()),
+                    root.get("dither").getAsInt(),
+                    root.get("reverse").getAsBoolean(),
+                    options,
+                    extensions
+            );
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException("La receta guardada no es válida: " + exception.getMessage(), exception);
+        }
+    }
+
+    static JsonObject toJson(ProceduralRecipe recipe) {
+        JsonObject root = new JsonObject();
+        root.addProperty("version", ProceduralRecipe.FORMAT_VERSION);
+        root.addProperty("name", recipe.name());
+        root.addProperty("shape", recipe.shape().id());
+        root.addProperty("pattern", recipe.pattern());
+        root.addProperty("accentPattern", recipe.accentPattern());
+        root.addProperty("radius", recipe.radius());
+        root.addProperty("spacing", recipe.spacing());
+        root.addProperty("thickness", recipe.thickness());
+        root.addProperty("roll", recipe.rollDegrees());
+        root.addProperty("height", recipe.height());
+        root.addProperty("palette", recipe.paletteId());
+        root.addProperty("axis", recipe.gradientAxis().id());
+        root.addProperty("dither", recipe.dither());
+        root.addProperty("reverse", recipe.reverse());
+        JsonObject options = new JsonObject();
+        recipe.options().entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> options.addProperty(entry.getKey(), entry.getValue()));
+        root.add("options", options);
+        root.add("extensions", extensionsToJson(recipe.extensions()));
+        return root;
+    }
+
+    private static JsonObject extensionsToJson(RecipeExtensions extensions) {
+        JsonObject root = new JsonObject();
+        root.addProperty("startScale", extensions.startScalePercent());
+        root.addProperty("endScale", extensions.endScalePercent());
+        root.addProperty("startSpacing", extensions.startSpacingPercent());
+        root.addProperty("endSpacing", extensions.endSpacingPercent());
+        root.addProperty("twist", extensions.twistDegrees());
+        root.addProperty("easing", extensions.easing().id());
+        root.addProperty("rhythmEnabled", extensions.rhythmEnabled());
+        root.addProperty("accentShape", extensions.accentShape().id());
+        root.addProperty("rhythmInterval", extensions.rhythmInterval());
+        root.addProperty("surfaceMode", extensions.surfaceMode().id());
+        root.addProperty("conformRadius", extensions.conformRadius());
+        root.addProperty("surfaceOffset", extensions.surfaceOffset());
+        root.addProperty("materialMetric", extensions.materialMetric().id());
+        root.addProperty("socketsEnabled", extensions.socketsEnabled());
+        root.addProperty("socketPlacement", extensions.socketPlacement().id());
+        root.addProperty("socketInterval", extensions.socketInterval());
+        root.addProperty("closeMicroGaps", extensions.closeMicroGaps());
+        root.addProperty("removeIsolated", extensions.removeIsolated());
+        return root;
+    }
+
+    private static RecipeExtensions extensionsFromJson(JsonObject root) {
+        return new RecipeExtensions(
+                root.get("startScale").getAsInt(),
+                root.get("endScale").getAsInt(),
+                root.get("startSpacing").getAsInt(),
+                root.get("endSpacing").getAsInt(),
+                root.get("twist").getAsInt(),
+                CurveEasing.byId(root.get("easing").getAsString()),
+                root.get("rhythmEnabled").getAsBoolean(),
+                PathShape.byId(root.get("accentShape").getAsString()),
+                root.get("rhythmInterval").getAsInt(),
+                SurfaceMode.byId(root.get("surfaceMode").getAsString()),
+                root.get("conformRadius").getAsInt(),
+                root.get("surfaceOffset").getAsInt(),
+                MaterialMetric.byId(root.get("materialMetric").getAsString()),
+                root.get("socketsEnabled").getAsBoolean(),
+                SocketPlacement.byId(root.get("socketPlacement").getAsString()),
+                root.get("socketInterval").getAsInt(),
+                root.get("closeMicroGaps").getAsBoolean(),
+                root.get("removeIsolated").getAsBoolean()
+        );
+    }
+
+    private static String defaultAccentPattern(PathShape shape) {
+        return switch (shape) {
+            case EPIC_TREE -> "azalea_leaves";
+            case GIANT_BOULDER, FALLEN_LOG, ANCIENT_ROOTS -> "moss_block";
+            default -> "oak_leaves";
+        };
+    }
+
+    private static Path recipePath(UUID playerId, String name) {
+        if (!ProceduralRecipe.VALID_NAME.matcher(name).matches()) {
+            throw new IllegalArgumentException("El nombre debe usar 1–32 letras, números, _ o -");
+        }
+        return playerDirectory(playerId).resolve(name + ".json");
+    }
+
+    private static Path playerDirectory(UUID playerId) {
+        return ROOT.resolve(playerId.toString());
+    }
+}

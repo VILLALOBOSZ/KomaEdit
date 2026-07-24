@@ -1,0 +1,201 @@
+package com.komainu.moxia.editor;
+
+import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.path.PathHologramSync;
+import com.komainu.moxia.path.PathManager;
+import com.komainu.moxia.worldedit.WorldEditService;
+import com.sk89q.worldedit.IncompleteRegionException;
+import com.sk89q.worldedit.function.pattern.Pattern;
+import com.sk89q.worldedit.regions.Region;
+import net.minecraft.block.BlockState;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Set;
+
+public final class EditorActionService {
+    private static final int MAGIC_LIMIT = 20_000;
+    private static final int MAGIC_RANGE = 96;
+
+    private EditorActionService() {
+    }
+
+    public static void handle(ServerPlayerEntity player, EditorActionPayload payload) {
+        try {
+            if (!player.hasPermissionLevel(2) && !WorldEditService.hasUsePermission(player)) {
+                throw new IllegalArgumentException("No tienes permiso para usar el editor");
+            }
+            validatePosition(player.getServerWorld(), payload.position());
+            switch (payload.action()) {
+                case EditorActionPayload.PATH_ADD -> {
+                    PathManager.add(player.getUuid(), payload.position());
+                    PathHologramSync.sync(player);
+                }
+                case EditorActionPayload.PATH_MOVE -> {
+                    PathManager.move(player.getUuid(), payload.index(), payload.position());
+                    PathHologramSync.sync(player);
+                }
+                case EditorActionPayload.PATH_REMOVE -> {
+                    PathManager.remove(player.getUuid(), payload.index());
+                    PathHologramSync.sync(player);
+                }
+                case EditorActionPayload.BOX_PRIMARY -> WorldEditService.setCuboidPoint(
+                        player, true, payload.position(), payload.index() < 0
+                );
+                case EditorActionPayload.BOX_SECONDARY -> WorldEditService.setCuboidPoint(
+                        player, false, payload.position(), false
+                );
+                case EditorActionPayload.MAGIC_BLOCK -> {
+                    WorldEditService.setCuboid(player, payload.position(), payload.position());
+                    message(player, "Bloque seleccionado: " + coordinates(payload.position()));
+                }
+                case EditorActionPayload.MAGIC_AREA -> selectConnectedArea(player, payload.position());
+                case EditorActionPayload.PAINT -> FastPaintService.dab(
+                        player, payload.position(), payload.radius(), payload.pattern()
+                );
+                case EditorActionPayload.PAINT_BEGIN -> FastPaintService.begin(
+                        player, payload.radius(), payload.pattern()
+                );
+                case EditorActionPayload.PAINT_END -> FastPaintService.end(player);
+                case EditorActionPayload.UNDO -> message(player,
+                        WorldEditService.undo(player) ? "Operación deshecha" : "No hay operaciones para deshacer");
+                case EditorActionPayload.REDO -> message(player,
+                        WorldEditService.redo(player) ? "Operación rehecha" : "No hay operaciones para rehacer");
+                case EditorActionPayload.PAINT_SELECTION -> paintSelection(player, payload.pattern());
+                case EditorActionPayload.SELECTION_REPLACE -> replaceSelection(player, payload.pattern());
+                case EditorActionPayload.SELECTION_DELETE -> deleteSelection(player);
+                case EditorActionPayload.CLIPBOARD_COPY -> copySelection(player);
+                case EditorActionPayload.CLIPBOARD_CUT -> cutSelection(player);
+                case EditorActionPayload.CLIPBOARD_PASTE -> {
+                    int queued = BatchEditService.submitClipboard(
+                            player,
+                            WorldEditService.clipboard(player),
+                            payload.position(),
+                            "Pegado de portapapeles"
+                    );
+                    message(player, "Pegado en cola: " + queued + " posiciones");
+                }
+                default -> throw new IllegalArgumentException("Acción de editor desconocida");
+            }
+        } catch (Exception exception) {
+            message(player, "Error: " + readable(exception));
+        }
+    }
+
+    private static void selectConnectedArea(ServerPlayerEntity player, BlockPos origin) {
+        ServerWorld world = player.getServerWorld();
+        BlockState target = world.getBlockState(origin);
+        if (target.isAir()) {
+            throw new IllegalArgumentException("La selección mágica necesita un bloque sólido");
+        }
+
+        ArrayDeque<BlockPos> pending = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+        pending.add(origin.toImmutable());
+        visited.add(origin.asLong());
+        BlockPos minimum = origin;
+        BlockPos maximum = origin;
+
+        while (!pending.isEmpty() && visited.size() < MAGIC_LIMIT) {
+            BlockPos current = pending.removeFirst();
+            minimum = new BlockPos(
+                    Math.min(minimum.getX(), current.getX()),
+                    Math.min(minimum.getY(), current.getY()),
+                    Math.min(minimum.getZ(), current.getZ())
+            );
+            maximum = new BlockPos(
+                    Math.max(maximum.getX(), current.getX()),
+                    Math.max(maximum.getY(), current.getY()),
+                    Math.max(maximum.getZ(), current.getZ())
+            );
+            for (Direction direction : Direction.values()) {
+                BlockPos next = current.offset(direction);
+                if (Math.abs(next.getX() - origin.getX()) > MAGIC_RANGE
+                        || Math.abs(next.getY() - origin.getY()) > MAGIC_RANGE
+                        || Math.abs(next.getZ() - origin.getZ()) > MAGIC_RANGE
+                        || !world.isInBuildLimit(next)
+                        || !world.isChunkLoaded(next)
+                        || !world.getBlockState(next).equals(target)
+                        || !visited.add(next.asLong())) {
+                    continue;
+                }
+                pending.addLast(next.toImmutable());
+            }
+        }
+
+        WorldEditService.setCuboid(player, minimum, maximum);
+        message(player, "Área mágica: " + visited.size() + " bloques conectados");
+    }
+
+    private static void paintSelection(ServerPlayerEntity player, String patternInput)
+            throws IncompleteRegionException {
+        WorldEditService.PlayerContext context = WorldEditService.context(player);
+        Region selection = context.session().getSelection(context.world()).clone();
+        Pattern pattern = WorldEditService.parsePatternUnchecked(context, patternInput);
+        int queued = BatchEditService.submitRegion(
+                player,
+                selection,
+                block -> {
+                    BlockPos position = new BlockPos(block.x(), block.y(), block.z());
+                    BlockState existing = player.getServerWorld().getBlockState(position);
+                    if (existing.isAir() || !existing.getFluidState().isEmpty()) {
+                        return null;
+                    }
+                    return pattern;
+                },
+                "Pintura sólida de selección"
+        );
+        message(player, "Pintura sólida en cola: " + queued + " posiciones · Ctrl+Z al finalizar");
+    }
+
+    private static void replaceSelection(ServerPlayerEntity player, String patternInput)
+            throws IncompleteRegionException {
+        WorldEditService.PlayerContext context = WorldEditService.context(player);
+        Region selection = context.session().getSelection(context.world()).clone();
+        Pattern pattern = WorldEditService.parsePatternUnchecked(context, patternInput);
+        int queued = BatchEditService.submitRegion(player, selection, position -> pattern, "Reemplazo de selección");
+        message(player, "Reemplazo en cola: " + queued + " posiciones");
+    }
+
+    private static void deleteSelection(ServerPlayerEntity player) throws IncompleteRegionException {
+        WorldEditService.PlayerContext context = WorldEditService.context(player);
+        Region selection = context.session().getSelection(context.world()).clone();
+        Pattern air = WorldEditService.parsePatternUnchecked(context, "air");
+        int queued = BatchEditService.submitRegion(player, selection, position -> air, "Borrado de selección");
+        message(player, "Borrado en cola: " + queued + " posiciones");
+    }
+
+    private static void copySelection(ServerPlayerEntity player) throws Exception {
+        long copied = WorldEditService.copySelection(player);
+        message(player, "Copiado: " + copied + " bloques · Ctrl+V para posicionar");
+    }
+
+    private static void cutSelection(ServerPlayerEntity player) throws Exception {
+        copySelection(player);
+        deleteSelection(player);
+    }
+
+    private static void validatePosition(ServerWorld world, BlockPos position) {
+        if (!world.isInBuildLimit(position)) {
+            throw new IllegalArgumentException("El punto está fuera de los límites del mundo");
+        }
+    }
+
+    private static String coordinates(BlockPos position) {
+        return position.getX() + ", " + position.getY() + ", " + position.getZ();
+    }
+
+    private static void message(ServerPlayerEntity player, String message) {
+        player.sendMessage(Text.literal("KomaEdit · " + message), true);
+    }
+
+    private static String readable(Exception exception) {
+        String message = exception.getMessage();
+        return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
+    }
+}

@@ -1,0 +1,16 @@
+.gradle/
+build/
+backups/
+run/
+out/
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+logs/
+crash-reports/
+*.log
+hs_err_pid*
+replay_pid*
+.DS_Store

@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.komainu.moxia.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "GameRendererAccessor",
+    "GameRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

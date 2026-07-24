@@ -1,0 +1,1839 @@
+package com.komainu.moxia.command;
+
+import com.komainu.moxia.brush.BrushManager;
+import com.komainu.moxia.brush.BrushSettings;
+import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.gradient.GradientAxis;
+import com.komainu.moxia.gradient.GradientPalette;
+import com.komainu.moxia.gradient.GradientService;
+import com.komainu.moxia.path.PathManager;
+import com.komainu.moxia.path.PathHologramSync;
+import com.komainu.moxia.path.PathSnapshot;
+import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.persistence.SculptPresetStore;
+import com.komainu.moxia.recipe.ProceduralRecipe;
+import com.komainu.moxia.recipe.RecipeBuildService;
+import com.komainu.moxia.recipe.RecipeExtensions;
+import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.shape.SampledPath;
+import com.komainu.moxia.shape.ShapeGenerator;
+import com.komainu.moxia.shape.ShapeExpression;
+import com.komainu.moxia.shape.ShapeOptions;
+import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.sculpt.BrushFalloff;
+import com.komainu.moxia.sculpt.BrushMask;
+import com.komainu.moxia.sculpt.SculptBrushType;
+import com.komainu.moxia.sculpt.SculptManager;
+import com.komainu.moxia.sculpt.SculptPreviewManager;
+import com.komainu.moxia.sculpt.SculptProfile;
+import com.komainu.moxia.sculpt.SculptSettings;
+import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.ui.QuickBuildPayload;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.sk89q.worldedit.IncompleteRegionException;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.extension.input.InputParseException;
+import com.sk89q.worldedit.math.BlockVector3;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.item.BlockItem;
+import net.minecraft.registry.Registries;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static net.minecraft.server.command.CommandManager.argument;
+import static net.minecraft.server.command.CommandManager.literal;
+
+public final class MoxiaCommands {
+    private static final SuggestionProvider<ServerCommandSource> SHAPE_SUGGESTIONS = (context, builder) -> {
+        Arrays.stream(PathShape.values()).filter(shape -> !shape.isAsset()).map(PathShape::id).forEach(builder::suggest);
+        return builder.buildFuture();
+    };
+    private static final SuggestionProvider<ServerCommandSource> FIGURE_SUGGESTIONS = (context, builder) -> {
+        Arrays.stream(PathShape.values()).filter(PathShape::isFigure).map(PathShape::id).forEach(builder::suggest);
+        return builder.buildFuture();
+    };
+    private static final SuggestionProvider<ServerCommandSource> PALETTE_SUGGESTIONS = (context, builder) -> {
+        Arrays.stream(GradientPalette.values()).map(GradientPalette::id).forEach(builder::suggest);
+        return builder.buildFuture();
+    };
+    private static final SuggestionProvider<ServerCommandSource> SCULPT_SUGGESTIONS = (context, builder) -> {
+        Arrays.stream(SculptBrushType.values()).map(SculptBrushType::id).forEach(builder::suggest);
+        return builder.buildFuture();
+    };
+    private static final SuggestionProvider<ServerCommandSource> FALLOFF_SUGGESTIONS = (context, builder) -> {
+        Arrays.stream(BrushFalloff.values()).map(BrushFalloff::id).forEach(builder::suggest);
+        return builder.buildFuture();
+    };
+    private MoxiaCommands() {
+    }
+
+    public static void register() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> register(dispatcher));
+    }
+
+    private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+        var root = dispatcher.register(literal("komaedit")
+                .requires(MoxiaCommands::canUse)
+                .then(literal("menu").executes(MoxiaCommands::openHudMenu))
+                .then(literal("quick").executes(MoxiaCommands::openHudMenu))
+                .then(literal("gui").executes(MoxiaCommands::guiHint))
+                .then(literal("shapes").executes(MoxiaCommands::openHudMenu))
+                .then(generationCommand("build", true))
+                .then(pathCommand())
+                .then(bridgeCommand())
+                .then(pillarCommand())
+                .then(pillarArchesCommand())
+                .then(toriiCommand())
+                .then(assetCommand())
+                .then(cloudCommand("cloud"))
+                .then(cloudCommand("nube"))
+                .then(mandalaCommand())
+                .then(noodlesCommand())
+                .then(jobCommand())
+                .then(gradientCommand())
+                .then(literal("help").executes(MoxiaCommands::help))
+                .executes(MoxiaCommands::openHudMenu));
+        dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
+        dispatcher.register(literal("moxia").requires(MoxiaCommands::canUse).redirect(root));
+        dispatcher.register(literal("mx").requires(MoxiaCommands::canUse).redirect(root));
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> bridgeCommand() {
+        return literal("bridge").then(bridgeArguments());
+    }
+
+    private static RequiredArgumentBuilder<ServerCommandSource, Integer> bridgeArguments() {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> height = argument(
+                "bridge_height", IntegerArgumentType.integer(3, 64)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> width = argument(
+                "bridge_width", IntegerArgumentType.integer(3, 64)
+        ).executes(context -> generateBridge(
+                context,
+                "stone",
+                IntegerArgumentType.getInteger(context, "bridge_height"),
+                IntegerArgumentType.getInteger(context, "bridge_width")
+        ));
+        width.then(argument("bridge_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateBridge(
+                        context,
+                        StringArgumentType.getString(context, "bridge_pattern"),
+                        IntegerArgumentType.getInteger(context, "bridge_height"),
+                        IntegerArgumentType.getInteger(context, "bridge_width")
+                )));
+        height.then(width);
+        return height;
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> pillarCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                "pillar_radius", IntegerArgumentType.integer(3, 64)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> detail = argument(
+                "pillar_detail", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateFixed(
+                context,
+                true,
+                PathShape.PILLAR,
+                "stone",
+                IntegerArgumentType.getInteger(context, "pillar_radius"),
+                IntegerArgumentType.getInteger(context, "pillar_detail"),
+                2,
+                0
+        ));
+        detail.then(argument("pillar_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateFixed(
+                        context,
+                        true,
+                        PathShape.PILLAR,
+                        StringArgumentType.getString(context, "pillar_pattern"),
+                        IntegerArgumentType.getInteger(context, "pillar_radius"),
+                        IntegerArgumentType.getInteger(context, "pillar_detail"),
+                        2,
+                        0
+                )));
+        radius.then(detail);
+        return literal("pillar").then(radius);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> pillarArchesCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> height = argument(
+                "pillar_arches_height", IntegerArgumentType.integer(8, 128)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                "pillar_arches_radius", IntegerArgumentType.integer(3, 64)
+        ).executes(context -> generatePillarArches(
+                context,
+                "stone",
+                IntegerArgumentType.getInteger(context, "pillar_arches_height"),
+                IntegerArgumentType.getInteger(context, "pillar_arches_radius")
+        ));
+        radius.then(argument("pillar_arches_pattern", StringArgumentType.greedyString())
+                .executes(context -> generatePillarArches(
+                        context,
+                        StringArgumentType.getString(context, "pillar_arches_pattern"),
+                        IntegerArgumentType.getInteger(context, "pillar_arches_height"),
+                        IntegerArgumentType.getInteger(context, "pillar_arches_radius")
+                )));
+        height.then(radius);
+        return literal("pillararches").then(height);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> toriiCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> height = argument(
+                "torii_height", IntegerArgumentType.integer(16, 256)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                "torii_radius", IntegerArgumentType.integer(3, 48)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> detail = argument(
+                "torii_detail", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateTorii(
+                context,
+                "red_concrete",
+                IntegerArgumentType.getInteger(context, "torii_height"),
+                IntegerArgumentType.getInteger(context, "torii_radius"),
+                IntegerArgumentType.getInteger(context, "torii_detail")
+        ));
+        detail.then(argument("torii_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateTorii(
+                        context,
+                        StringArgumentType.getString(context, "torii_pattern"),
+                        IntegerArgumentType.getInteger(context, "torii_height"),
+                        IntegerArgumentType.getInteger(context, "torii_radius"),
+                        IntegerArgumentType.getInteger(context, "torii_detail")
+                )));
+        radius.then(detail);
+        height.then(radius);
+        return literal("torii").then(height);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> assetCommand() {
+        return literal("asset")
+                .then(assetVariantCommand(
+                        "tree",
+                        PathShape.EPIC_TREE,
+                        "dark_oak_wood",
+                        "azalea_leaves",
+                        16,
+                        160,
+                        6,
+                        48
+                ))
+                .then(assetVariantCommand(
+                        "boulder",
+                        PathShape.GIANT_BOULDER,
+                        "stone",
+                        "moss_block",
+                        5,
+                        110,
+                        4,
+                        52
+                ))
+                .then(assetVariantCommand(
+                        "log",
+                        PathShape.FALLEN_LOG,
+                        "stripped_dark_oak_wood",
+                        "moss_block",
+                        10,
+                        180,
+                        2,
+                        24
+                ))
+                .then(assetVariantCommand(
+                        "roots",
+                        PathShape.ANCIENT_ROOTS,
+                        "mangrove_roots",
+                        "moss_block",
+                        10,
+                        120,
+                        5,
+                        44
+                ));
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> assetVariantCommand(
+            String commandName,
+            PathShape shape,
+            String defaultPrimary,
+            String defaultAccent,
+            int minimumHeight,
+            int maximumHeight,
+            int minimumRadius,
+            int maximumRadius
+    ) {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> height = argument(
+                commandName + "_height",
+                IntegerArgumentType.integer(minimumHeight, maximumHeight)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                commandName + "_radius",
+                IntegerArgumentType.integer(minimumRadius, maximumRadius)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> detail = argument(
+                commandName + "_detail",
+                IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateAsset(
+                context,
+                shape,
+                defaultPrimary,
+                defaultAccent,
+                IntegerArgumentType.getInteger(context, commandName + "_height"),
+                IntegerArgumentType.getInteger(context, commandName + "_radius"),
+                IntegerArgumentType.getInteger(context, commandName + "_detail")
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, String> primary = argument(
+                commandName + "_primary",
+                StringArgumentType.string()
+        ).executes(context -> generateAsset(
+                context,
+                shape,
+                StringArgumentType.getString(context, commandName + "_primary"),
+                defaultAccent,
+                IntegerArgumentType.getInteger(context, commandName + "_height"),
+                IntegerArgumentType.getInteger(context, commandName + "_radius"),
+                IntegerArgumentType.getInteger(context, commandName + "_detail")
+        ));
+        primary.then(argument(commandName + "_accent", StringArgumentType.greedyString())
+                .executes(context -> generateAsset(
+                        context,
+                        shape,
+                        StringArgumentType.getString(context, commandName + "_primary"),
+                        StringArgumentType.getString(context, commandName + "_accent"),
+                        IntegerArgumentType.getInteger(context, commandName + "_height"),
+                        IntegerArgumentType.getInteger(context, commandName + "_radius"),
+                        IntegerArgumentType.getInteger(context, commandName + "_detail")
+                )));
+        detail.then(primary);
+        radius.then(detail);
+        height.then(radius);
+        return literal(commandName).then(height);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> cloudCommand(String commandName) {
+        String naturalCloud = "70%white_wool,20%calcite,10%light_gray_wool";
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                "cloud_radius", IntegerArgumentType.integer(4, 64)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> organicity = argument(
+                "cloud_organicity", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateCloud(
+                context,
+                naturalCloud,
+                IntegerArgumentType.getInteger(context, "cloud_radius"),
+                IntegerArgumentType.getInteger(context, "cloud_organicity"),
+                12
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> gap = argument(
+                "cloud_gap", IntegerArgumentType.integer(3, 128)
+        ).executes(context -> generateCloud(
+                context,
+                naturalCloud,
+                IntegerArgumentType.getInteger(context, "cloud_radius"),
+                IntegerArgumentType.getInteger(context, "cloud_organicity"),
+                IntegerArgumentType.getInteger(context, "cloud_gap")
+        ));
+        gap.then(argument("cloud_gap_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateCloud(
+                        context,
+                        StringArgumentType.getString(context, "cloud_gap_pattern"),
+                        IntegerArgumentType.getInteger(context, "cloud_radius"),
+                        IntegerArgumentType.getInteger(context, "cloud_organicity"),
+                        IntegerArgumentType.getInteger(context, "cloud_gap")
+                )));
+        organicity.then(gap);
+        organicity.then(argument("cloud_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateCloud(
+                        context,
+                        StringArgumentType.getString(context, "cloud_pattern"),
+                        IntegerArgumentType.getInteger(context, "cloud_radius"),
+                        IntegerArgumentType.getInteger(context, "cloud_organicity"),
+                        12
+                )));
+        radius.then(organicity);
+        return literal(commandName).then(radius);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> mandalaCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                "mandala_radius", IntegerArgumentType.integer(6, 96)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> symmetry = argument(
+                "mandala_symmetry", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateFixed(
+                context,
+                true,
+                PathShape.MANDALA,
+                "quartz_block",
+                IntegerArgumentType.getInteger(context, "mandala_radius"),
+                IntegerArgumentType.getInteger(context, "mandala_symmetry"),
+                2,
+                0
+        ));
+        symmetry.then(argument("mandala_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateFixed(
+                        context,
+                        true,
+                        PathShape.MANDALA,
+                        StringArgumentType.getString(context, "mandala_pattern"),
+                        IntegerArgumentType.getInteger(context, "mandala_radius"),
+                        IntegerArgumentType.getInteger(context, "mandala_symmetry"),
+                        2,
+                        0
+                )));
+        radius.then(symmetry);
+        return literal("mandala").then(radius);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> noodlesCommand() {
+        return literal("noodles").then(noodlesArguments());
+    }
+
+    private static RequiredArgumentBuilder<ServerCommandSource, Integer> noodlesArguments() {
+        String texture = "20%blackstone,20%warped_wart_block,20%cyan_terracotta,20%prismarine_bricks,10%sea_lantern,10%verdant_froglight";
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                "noodles_radius", IntegerArgumentType.integer(2, 64)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> flow = argument(
+                "noodles_spacing", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateFixed(
+                context,
+                true,
+                PathShape.NOODLES,
+                texture,
+                IntegerArgumentType.getInteger(context, "noodles_radius"),
+                IntegerArgumentType.getInteger(context, "noodles_spacing"),
+                2,
+                0
+        ));
+        flow.then(argument("noodles_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateFixed(
+                        context,
+                        true,
+                        PathShape.NOODLES,
+                        StringArgumentType.getString(context, "noodles_pattern"),
+                        IntegerArgumentType.getInteger(context, "noodles_radius"),
+                        IntegerArgumentType.getInteger(context, "noodles_spacing"),
+                        2,
+                        0
+                )));
+        radius.then(flow);
+        return radius;
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> generationCommand(String name, boolean buildNow) {
+        RequiredArgumentBuilder<ServerCommandSource, String> shape = argument("shape", StringArgumentType.word())
+                .suggests(SHAPE_SUGGESTIONS)
+                .executes(context -> generate(context, buildNow, "stone", null, null, null, null));
+        RequiredArgumentBuilder<ServerCommandSource, String> pattern = argument("pattern", StringArgumentType.string())
+                .executes(context -> generate(
+                        context, buildNow, StringArgumentType.getString(context, "pattern"), null, null, null, null
+                ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> scale = argument(
+                "scale", IntegerArgumentType.integer(1, 128)
+        ).executes(context -> generate(
+                context,
+                buildNow,
+                StringArgumentType.getString(context, "pattern"),
+                IntegerArgumentType.getInteger(context, "scale"),
+                null,
+                null,
+                null
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> spacing = argument(
+                "spacing", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generate(
+                context,
+                buildNow,
+                StringArgumentType.getString(context, "pattern"),
+                IntegerArgumentType.getInteger(context, "scale"),
+                IntegerArgumentType.getInteger(context, "spacing"),
+                null,
+                null
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> thickness = argument(
+                "thickness", IntegerArgumentType.integer(1, 4)
+        ).executes(context -> generate(
+                context,
+                buildNow,
+                StringArgumentType.getString(context, "pattern"),
+                IntegerArgumentType.getInteger(context, "scale"),
+                IntegerArgumentType.getInteger(context, "spacing"),
+                IntegerArgumentType.getInteger(context, "thickness"),
+                null
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> roll = argument(
+                "roll", IntegerArgumentType.integer(-180, 180)
+        ).executes(context -> generate(
+                context,
+                buildNow,
+                StringArgumentType.getString(context, "pattern"),
+                IntegerArgumentType.getInteger(context, "scale"),
+                IntegerArgumentType.getInteger(context, "spacing"),
+                IntegerArgumentType.getInteger(context, "thickness"),
+                IntegerArgumentType.getInteger(context, "roll")
+        ));
+        thickness.then(roll);
+        spacing.then(thickness);
+        scale.then(spacing);
+        pattern.then(scale);
+        shape.then(pattern);
+        return literal(name).then(shape);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> pathCommand() {
+        return literal("path")
+                .then(literal("add").executes(MoxiaCommands::addTargetPoint))
+                .then(literal("point")
+                        .then(argument("point_x", IntegerArgumentType.integer(-30_000_000, 30_000_000))
+                                .then(argument("point_y", IntegerArgumentType.integer(-2048, 2048))
+                                        .then(argument("point_z", IntegerArgumentType.integer(-30_000_000, 30_000_000))
+                                                .executes(MoxiaCommands::addExactPoint)))))
+                .then(literal("here").executes(MoxiaCommands::addHerePoint))
+                .then(literal("selection").executes(MoxiaCommands::useSelectionPath))
+                .then(literal("circle")
+                        .then(argument("path_radius", IntegerArgumentType.integer(2, 128))
+                                .executes(context -> createCirclePath(
+                                        context,
+                                        IntegerArgumentType.getInteger(context, "path_radius"),
+                                        16
+                                ))
+                                .then(argument("points", IntegerArgumentType.integer(8, 32))
+                                        .executes(context -> createCirclePath(
+                                                context,
+                                                IntegerArgumentType.getInteger(context, "path_radius"),
+                                                IntegerArgumentType.getInteger(context, "points")
+                                        )))))
+                .then(literal("undo").executes(MoxiaCommands::undoPathPoint))
+                .then(literal("clear").executes(MoxiaCommands::clearPath))
+                .then(literal("close").executes(MoxiaCommands::toggleClosedPath))
+                .then(literal("mode")
+                        .then(literal("toggle").executes(MoxiaCommands::togglePathCapture))
+                        .then(literal("on").executes(context -> setPathCapture(context, true)))
+                        .then(literal("off").executes(context -> setPathCapture(context, false))))
+                .then(literal("status").executes(MoxiaCommands::pathStatus))
+                .executes(MoxiaCommands::pathStatus);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> brushCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, String> figure = argument("brush_figure", StringArgumentType.word())
+                .suggests(FIGURE_SUGGESTIONS)
+                .executes(context -> configureBrush(context, "hand", null, null, null));
+        RequiredArgumentBuilder<ServerCommandSource, String> pattern = argument("brush_pattern", StringArgumentType.string())
+                .executes(context -> configureBrush(
+                        context, StringArgumentType.getString(context, "brush_pattern"), null, null, null
+                ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> scale = argument(
+                "brush_scale", IntegerArgumentType.integer(1, 128)
+        ).executes(context -> configureBrush(
+                context,
+                StringArgumentType.getString(context, "brush_pattern"),
+                IntegerArgumentType.getInteger(context, "brush_scale"),
+                null,
+                null
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> thickness = argument(
+                "brush_thickness", IntegerArgumentType.integer(1, 4)
+        ).executes(context -> configureBrush(
+                context,
+                StringArgumentType.getString(context, "brush_pattern"),
+                IntegerArgumentType.getInteger(context, "brush_scale"),
+                IntegerArgumentType.getInteger(context, "brush_thickness"),
+                null
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> roll = argument(
+                "brush_roll", IntegerArgumentType.integer(-180, 180)
+        ).executes(context -> configureBrush(
+                context,
+                StringArgumentType.getString(context, "brush_pattern"),
+                IntegerArgumentType.getInteger(context, "brush_scale"),
+                IntegerArgumentType.getInteger(context, "brush_thickness"),
+                IntegerArgumentType.getInteger(context, "brush_roll")
+        ));
+        thickness.then(roll);
+        scale.then(thickness);
+        pattern.then(scale);
+        figure.then(pattern);
+        return literal("brush")
+                .then(literal("set").then(figure))
+                .then(literal("stamp").executes(MoxiaCommands::stampBrush))
+                .then(literal("off").executes(MoxiaCommands::disableBrush))
+                .executes(MoxiaCommands::brushStatus);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> sculptCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, String> type = argument(
+                "sculpt_type", StringArgumentType.word()
+        ).suggests(SCULPT_SUGGESTIONS);
+        RequiredArgumentBuilder<ServerCommandSource, String> pattern = argument(
+                "sculpt_pattern", StringArgumentType.string()
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                "sculpt_radius", IntegerArgumentType.integer(1, 32)
+        ).executes(context -> configureSculpt(context, null, null, null, null));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> height = argument(
+                "sculpt_height", IntegerArgumentType.integer(1, 64)
+        ).executes(context -> configureSculpt(
+                context,
+                IntegerArgumentType.getInteger(context, "sculpt_height"),
+                null,
+                null,
+                null
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> intensity = argument(
+                "sculpt_intensity", IntegerArgumentType.integer(1, 16)
+        ).executes(context -> configureSculpt(
+                context,
+                IntegerArgumentType.getInteger(context, "sculpt_height"),
+                IntegerArgumentType.getInteger(context, "sculpt_intensity"),
+                null,
+                null
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, String> falloff = argument(
+                "sculpt_falloff", StringArgumentType.word()
+        ).suggests(FALLOFF_SUGGESTIONS).executes(context -> configureSculpt(
+                context,
+                IntegerArgumentType.getInteger(context, "sculpt_height"),
+                IntegerArgumentType.getInteger(context, "sculpt_intensity"),
+                StringArgumentType.getString(context, "sculpt_falloff"),
+                null
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Boolean> hollow = argument(
+                "sculpt_hollow", BoolArgumentType.bool()
+        ).executes(context -> configureSculpt(
+                context,
+                IntegerArgumentType.getInteger(context, "sculpt_height"),
+                IntegerArgumentType.getInteger(context, "sculpt_intensity"),
+                StringArgumentType.getString(context, "sculpt_falloff"),
+                BoolArgumentType.getBool(context, "sculpt_hollow")
+        ));
+        falloff.then(hollow);
+        intensity.then(falloff);
+        height.then(intensity);
+        radius.then(height);
+        pattern.then(radius);
+        type.then(pattern);
+
+        RequiredArgumentBuilder<ServerCommandSource, Integer> noise = argument(
+                "sculpt_noise", IntegerArgumentType.integer(0, 100)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> randomness = argument(
+                "sculpt_randomness", IntegerArgumentType.integer(0, 100)
+        ).executes(MoxiaCommands::tuneSculpt);
+        noise.then(randomness);
+
+        return literal("sculpt")
+                .then(literal("set").then(type))
+                .then(literal("preview").executes(MoxiaCommands::previewSculpt))
+                .then(literal("apply").executes(MoxiaCommands::applySculpt))
+                .then(literal("show").executes(MoxiaCommands::showSculpt))
+                .then(literal("cancel").executes(MoxiaCommands::cancelSculpt))
+                .then(literal("tune").then(noise))
+                .then(sculptMaskCommand())
+                .then(sculptPresetCommand())
+                .then(literal("off").executes(MoxiaCommands::disableSculpt))
+                .then(literal("status").executes(MoxiaCommands::sculptStatus))
+                .executes(MoxiaCommands::sculptStatus);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> sculptMaskCommand() {
+        return literal("mask")
+                .then(literal("ignore_air")
+                        .then(argument("mask_ignore_air", BoolArgumentType.bool())
+                                .executes(context -> updateMaskBoolean(context, true))))
+                .then(literal("ignore_liquids")
+                        .then(argument("mask_ignore_liquids", BoolArgumentType.bool())
+                                .executes(context -> updateMaskBoolean(context, false))))
+                .then(literal("whitelist")
+                        .then(argument("mask_whitelist", StringArgumentType.greedyString())
+                                .executes(context -> updateMaskList(context, MaskList.WHITELIST))))
+                .then(literal("blacklist")
+                        .then(argument("mask_blacklist", StringArgumentType.greedyString())
+                                .executes(context -> updateMaskList(context, MaskList.BLACKLIST))))
+                .then(literal("replace_only")
+                        .then(argument("mask_replace", StringArgumentType.greedyString())
+                                .executes(context -> updateMaskList(context, MaskList.REPLACE_ONLY))))
+                .then(literal("clear").executes(MoxiaCommands::clearSculptMask))
+                .executes(MoxiaCommands::sculptStatus);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> jobCommand() {
+        return literal("job")
+                .then(literal("status").executes(MoxiaCommands::jobStatus))
+                .then(literal("cancel").executes(MoxiaCommands::cancelJob))
+                .executes(MoxiaCommands::jobStatus);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> sculptPresetCommand() {
+        return literal("preset")
+                .then(literal("save")
+                        .then(argument("preset_save_name", StringArgumentType.word())
+                                .executes(MoxiaCommands::saveSculptPreset)))
+                .then(literal("load")
+                        .then(argument("preset_load_name", StringArgumentType.word())
+                                .executes(MoxiaCommands::loadSculptPreset)))
+                .then(literal("delete")
+                        .then(argument("preset_delete_name", StringArgumentType.word())
+                                .executes(MoxiaCommands::deleteSculptPreset)))
+                .then(literal("list").executes(MoxiaCommands::listSculptPresets))
+                .executes(MoxiaCommands::listSculptPresets);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> gradientCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, String> preset = argument("gradient_palette", StringArgumentType.word())
+                .suggests(PALETTE_SUGGESTIONS);
+        RequiredArgumentBuilder<ServerCommandSource, String> presetAxis = argument("gradient_axis", StringArgumentType.word())
+                .suggests((context, builder) -> {
+                    builder.suggest("x");
+                    builder.suggest("y");
+                    builder.suggest("z");
+                    builder.suggest("diagonal");
+                    builder.suggest("radial");
+                    return builder.buildFuture();
+                })
+                .executes(context -> applyPresetGradient(context, 82, false));
+        RequiredArgumentBuilder<ServerCommandSource, Integer> presetDither = argument(
+                "gradient_dither", IntegerArgumentType.integer(0, 100)
+        ).executes(context -> applyPresetGradient(
+                context, IntegerArgumentType.getInteger(context, "gradient_dither"), false
+        ));
+        RequiredArgumentBuilder<ServerCommandSource, Boolean> presetReverse = argument(
+                "gradient_reverse", BoolArgumentType.bool()
+        ).executes(context -> applyPresetGradient(
+                context,
+                IntegerArgumentType.getInteger(context, "gradient_dither"),
+                BoolArgumentType.getBool(context, "gradient_reverse")
+        ));
+        presetDither.then(presetReverse);
+        presetAxis.then(presetDither);
+        preset.then(presetAxis);
+
+        RequiredArgumentBuilder<ServerCommandSource, String> customAxis = argument("custom_axis", StringArgumentType.word())
+                .suggests((context, builder) -> {
+                    builder.suggest("x");
+                    builder.suggest("y");
+                    builder.suggest("z");
+                    builder.suggest("diagonal");
+                    builder.suggest("radial");
+                    return builder.buildFuture();
+                });
+        RequiredArgumentBuilder<ServerCommandSource, Integer> customDither = argument(
+                "custom_dither", IntegerArgumentType.integer(0, 100)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Boolean> customReverse = argument(
+                "custom_reverse", BoolArgumentType.bool()
+        );
+        RequiredArgumentBuilder<ServerCommandSource, String> customPalette = argument(
+                "custom_palette", StringArgumentType.greedyString()
+        ).executes(MoxiaCommands::applyCustomGradient);
+        customReverse.then(customPalette);
+        customDither.then(customReverse);
+        customAxis.then(customDither);
+
+        return literal("gradient")
+                .then(literal("preset").then(preset))
+                .then(literal("custom").then(customAxis));
+    }
+
+    private static int configureBrush(
+            CommandContext<ServerCommandSource> context,
+            String pattern,
+            Integer scale,
+            Integer thickness,
+            Integer roll
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            PathShape shape = PathShape.byId(StringArgumentType.getString(context, "brush_figure"));
+            if (!shape.isFigure()) {
+                return fail(context.getSource(), "El brush usa rombos, cuadrados, círculos, triángulos o hexágonos");
+            }
+            ShapeParameters parameters = shape.defaults();
+            if (scale != null) {
+                parameters = parameters.withRadius(scale);
+            }
+            if (thickness != null) {
+                parameters = parameters.withThickness(thickness);
+            }
+            if (roll != null) {
+                parameters = parameters.withRollDegrees(roll);
+            }
+            String resolvedPattern = resolveBrushPattern(player, pattern);
+            WorldEditService.validatePattern(player, resolvedPattern);
+            SculptManager.deactivate(player);
+            BrushManager.activate(player, new BrushSettings(parameters, resolvedPattern));
+            if (!player.getInventory().contains(new ItemStack(Items.BRUSH))) {
+                player.getInventory().offerOrDrop(new ItemStack(Items.BRUSH));
+            }
+            ShapeParameters active = parameters;
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            "Brush activo: " + active.shape().displayName()
+                                    + " · escala " + active.radius()
+                                    + " · grosor " + active.thickness()
+                                    + " · giro " + active.rollDegrees() + "°"
+                    ).formatted(Formatting.GREEN)),
+                    false
+            );
+            context.getSource().sendFeedback(
+                    () -> Text.literal("Usa el cepillo sobre una cara; cada clic coloca una figura completa. ")
+                            .formatted(Formatting.GRAY)
+                            .append(commandButton("[ESTAMPAR AHORA]", "/komaedit brush stamp", Formatting.AQUA)),
+                    false
+            );
+            return 1;
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static String resolveBrushPattern(ServerPlayerEntity player, String pattern) {
+        if (!pattern.equalsIgnoreCase("hand")) {
+            return pattern;
+        }
+        if (player.getMainHandStack().getItem() instanceof BlockItem blockItem) {
+            return Registries.BLOCK.getId(blockItem.getBlock()).toString();
+        }
+        if (player.getOffHandStack().getItem() instanceof BlockItem blockItem) {
+            return Registries.BLOCK.getId(blockItem.getBlock()).toString();
+        }
+        Optional<BrushSettings> previous = BrushManager.settings(player.getUuid());
+        if (previous.isPresent() && !previous.get().pattern().equalsIgnoreCase("hand")) {
+            return previous.get().pattern();
+        }
+        Optional<SculptProfile> sculpt = SculptManager.profile(player.getUuid());
+        if (sculpt.isPresent() && !sculpt.get().pattern().equalsIgnoreCase("hand")) {
+            return sculpt.get().pattern();
+        }
+        throw new IllegalArgumentException("Para usar hand, sostén un bloque en la mano principal o secundaria");
+    }
+
+    private static int stampBrush(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            int changed = BrushManager.stampTarget(player);
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            "Figura estampada: " + changed + " bloques · usa //undo"
+                    ).formatted(Formatting.GREEN)),
+                    false
+            );
+            return changed;
+        } catch (InputParseException | MaxChangedBlocksException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int disableBrush(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        if (!BrushManager.deactivate(player.getUuid())) {
+            return fail(context.getSource(), "No había un brush de KomaEdit activo");
+        }
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal("Brush desactivado").formatted(Formatting.YELLOW)),
+                false
+        );
+        return 1;
+    }
+
+    private static int brushStatus(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Optional<BrushSettings> settings = BrushManager.settings(player.getUuid());
+        if (settings.isEmpty()) {
+            return fail(context.getSource(), "Brush inactivo; usa /komaedit brush set diamonds hand 5 1 0");
+        }
+        BrushSettings active = settings.get();
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Brush: " + active.parameters().shape().displayName()
+                                + " · escala " + active.parameters().radius()
+                                + " · patrón " + active.pattern()
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return 1;
+    }
+
+    private static int configureSculpt(
+            CommandContext<ServerCommandSource> context,
+            Integer height,
+            Integer intensity,
+            String falloff,
+            Boolean hollow
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            SculptBrushType type = SculptBrushType.byId(
+                    StringArgumentType.getString(context, "sculpt_type")
+            );
+            String pattern = resolveBrushPattern(
+                    player,
+                    StringArgumentType.getString(context, "sculpt_pattern")
+            );
+            WorldEditService.validatePattern(player, pattern);
+            int radius = IntegerArgumentType.getInteger(context, "sculpt_radius");
+            SculptSettings defaults = SculptSettings.defaults(type);
+            SculptSettings settings = defaults.withGeometry(
+                    radius,
+                    height == null ? Math.min(64, radius * 2) : height,
+                    intensity == null ? defaults.intensity() : intensity,
+                    falloff == null ? defaults.falloff() : BrushFalloff.byId(falloff),
+                    hollow != null && hollow
+            );
+            BrushManager.deactivate(player.getUuid());
+            SculptManager.activate(player, new SculptProfile(settings, pattern));
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            "Brocha " + type.displayName() + " activa · radio " + radius
+                                    + " · patrón " + pattern
+                    ).formatted(Formatting.GREEN)),
+                    false
+            );
+            context.getSource().sendFeedback(
+                    () -> Text.literal("El cepillo solo crea previews; confirma con ")
+                            .formatted(Formatting.GRAY)
+                            .append(commandButton("[APLICAR]", "/komaedit sculpt apply", Formatting.GREEN)),
+                    false
+            );
+            return 1;
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int previewSculpt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            SculptManager.previewTarget(player);
+            return 1;
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int applySculpt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            int scheduled = SculptManager.apply(player);
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            "Edición en cola: " + scheduled + " bloques; el mundo seguirá respondiendo"
+                    ).formatted(Formatting.GREEN)),
+                    false
+            );
+            return scheduled;
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int showSculpt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        var preview = SculptPreviewManager.get(player.getUuid());
+        if (preview.isEmpty()) {
+            return fail(context.getSource(), "No hay una previsualización de brocha activa");
+        }
+        try {
+            SculptPreviewManager.show(player, preview.get());
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            "Preview: " + preview.get().plan().size() + " bloques"
+                    ).formatted(Formatting.AQUA)),
+                    false
+            );
+            return preview.get().plan().size();
+        } catch (IllegalArgumentException exception) {
+            return fail(context.getSource(), exception.getMessage());
+        }
+    }
+
+    private static int cancelSculpt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        if (!SculptManager.cancelPreview(player)) {
+            return fail(context.getSource(), "No había un cálculo o preview de brocha activo");
+        }
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal("Cálculo y preview cancelados").formatted(Formatting.YELLOW)),
+                false
+        );
+        return 1;
+    }
+
+    private static int disableSculpt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        if (!SculptManager.deactivate(player)) {
+            return fail(context.getSource(), "No había una brocha de terreno activa");
+        }
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal("Brocha de terreno desactivada").formatted(Formatting.YELLOW)),
+                false
+        );
+        return 1;
+    }
+
+    private static int tuneSculpt(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Optional<SculptProfile> current = SculptManager.profile(player.getUuid());
+        if (current.isEmpty()) {
+            return fail(context.getSource(), "Activa primero una brocha con /komaedit sculpt set");
+        }
+        int noise = IntegerArgumentType.getInteger(context, "sculpt_noise");
+        int randomness = IntegerArgumentType.getInteger(context, "sculpt_randomness");
+        SculptSettings settings = current.get().settings().withTuning(noise, randomness);
+        SculptManager.activate(player, current.get().withSettings(settings));
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Ajustes: ruido " + noise + "% · aleatoriedad " + randomness + "%"
+                ).formatted(Formatting.GREEN)),
+                false
+        );
+        return 1;
+    }
+
+    private static int updateMaskBoolean(
+            CommandContext<ServerCommandSource> context,
+            boolean air
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Optional<SculptProfile> current = SculptManager.profile(player.getUuid());
+        if (current.isEmpty()) {
+            return fail(context.getSource(), "Activa primero una brocha de terreno");
+        }
+        BrushMask mask = current.get().settings().mask();
+        if (air) {
+            mask = mask.withIgnoreAir(BoolArgumentType.getBool(context, "mask_ignore_air"));
+        } else {
+            mask = mask.withIgnoreLiquids(BoolArgumentType.getBool(context, "mask_ignore_liquids"));
+        }
+        SculptSettings settings = current.get().settings().withMask(mask);
+        SculptManager.activate(player, current.get().withSettings(settings));
+        BrushMask updated = mask;
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Máscara: aire " + (updated.ignoreAir() ? "ignorado" : "permitido")
+                                + " · líquidos " + (updated.ignoreLiquids() ? "ignorados" : "permitidos")
+                ).formatted(Formatting.GREEN)),
+                false
+        );
+        return 1;
+    }
+
+    private static int updateMaskList(
+            CommandContext<ServerCommandSource> context,
+            MaskList list
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Optional<SculptProfile> current = SculptManager.profile(player.getUuid());
+        if (current.isEmpty()) {
+            return fail(context.getSource(), "Activa primero una brocha de terreno");
+        }
+        String argumentName = switch (list) {
+            case WHITELIST -> "mask_whitelist";
+            case BLACKLIST -> "mask_blacklist";
+            case REPLACE_ONLY -> "mask_replace";
+        };
+        Set<String> blocks = parseBlockList(StringArgumentType.getString(context, argumentName));
+        BrushMask mask = current.get().settings().mask();
+        mask = switch (list) {
+            case WHITELIST -> mask.withWhitelist(blocks);
+            case BLACKLIST -> mask.withBlacklist(blocks);
+            case REPLACE_ONLY -> mask.withReplaceOnly(blocks);
+        };
+        SculptSettings settings = current.get().settings().withMask(mask);
+        SculptManager.activate(player, current.get().withSettings(settings));
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Máscara " + list.displayName + ": " + blocks.size() + " bloques"
+                ).formatted(Formatting.GREEN)),
+                false
+        );
+        return blocks.size();
+    }
+
+    private static int clearSculptMask(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Optional<SculptProfile> current = SculptManager.profile(player.getUuid());
+        if (current.isEmpty()) {
+            return fail(context.getSource(), "Activa primero una brocha de terreno");
+        }
+        SculptSettings settings = current.get().settings().withMask(BrushMask.DEFAULT);
+        SculptManager.activate(player, current.get().withSettings(settings));
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal("Máscaras restablecidas").formatted(Formatting.YELLOW)),
+                false
+        );
+        return 1;
+    }
+
+    private static int saveSculptPreset(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Optional<SculptProfile> current = SculptManager.profile(player.getUuid());
+        if (current.isEmpty()) {
+            return fail(context.getSource(), "Activa primero una brocha de terreno");
+        }
+        String name = StringArgumentType.getString(context, "preset_save_name");
+        try {
+            SculptPresetStore.save(player.getUuid(), name, current.get());
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal("Preset guardado: " + name).formatted(Formatting.GREEN)),
+                    false
+            );
+            return 1;
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int loadSculptPreset(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        String name = StringArgumentType.getString(context, "preset_load_name");
+        try {
+            SculptProfile profile = SculptPresetStore.load(player.getUuid(), name);
+            WorldEditService.validatePattern(player, profile.pattern());
+            BrushManager.deactivate(player.getUuid());
+            SculptManager.activate(player, profile);
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            "Preset cargado: " + name + " · " + profile.settings().type().displayName()
+                    ).formatted(Formatting.GREEN)),
+                    false
+            );
+            return 1;
+        } catch (InputParseException | IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int deleteSculptPreset(CommandContext<ServerCommandSource> context) {
+        String name = StringArgumentType.getString(context, "preset_delete_name");
+        try {
+            UUID playerId = context.getSource().getPlayer().getUuid();
+            if (!SculptPresetStore.delete(playerId, name)) {
+                return fail(context.getSource(), "No existe el preset " + name);
+            }
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal("Preset eliminado: " + name).formatted(Formatting.YELLOW)),
+                    false
+            );
+            return 1;
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int listSculptPresets(CommandContext<ServerCommandSource> context) {
+        try {
+            UUID playerId = context.getSource().getPlayer().getUuid();
+            List<String> presets = SculptPresetStore.list(playerId);
+            if (presets.isEmpty()) {
+                return fail(context.getSource(), "No hay presets guardados");
+            }
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal("Presets: " + String.join(", ", presets))
+                            .formatted(Formatting.AQUA)),
+                    false
+            );
+            return presets.size();
+        } catch (IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int sculptStatus(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Optional<SculptProfile> current = SculptManager.profile(player.getUuid());
+        if (current.isEmpty()) {
+            return fail(context.getSource(), "Brocha inactiva; usa /komaedit sculpt set sphere hand 8");
+        }
+        SculptProfile profile = current.get();
+        int previewSize = SculptPreviewManager.get(player.getUuid())
+                .map(preview -> preview.plan().size())
+                .orElse(0);
+        String calculation = SculptManager.isCalculating(player.getUuid()) ? " · calculando" : "";
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        profile.settings().type().displayName()
+                                + " · radio " + profile.settings().radius()
+                                + " · altura " + profile.settings().height()
+                                + " · intensidad " + profile.settings().intensity()
+                                + " · preview " + previewSize + calculation
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return 1;
+    }
+
+    private static int jobStatus(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        UUID playerId = context.getSource().getPlayerOrThrow().getUuid();
+        Optional<BatchEditService.JobStatus> status = BatchEditService.status(playerId);
+        if (status.isEmpty()) {
+            return fail(context.getSource(), "No hay una edición por lotes activa");
+        }
+        BatchEditService.JobStatus job = status.get();
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        job.description() + " · " + job.percentage() + "% · "
+                                + job.processed() + "/" + job.total()
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return job.percentage();
+    }
+
+    private static int cancelJob(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        UUID playerId = context.getSource().getPlayerOrThrow().getUuid();
+        if (!BatchEditService.cancel(playerId, true)) {
+            return fail(context.getSource(), "No hay una edición por lotes activa");
+        }
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Edición detenida; los cambios parciales están disponibles en //undo"
+                ).formatted(Formatting.YELLOW)),
+                false
+        );
+        return 1;
+    }
+
+    private static Set<String> parseBlockList(String input) {
+        Set<String> blocks = Arrays.stream(input.split("[,;\\s]+"))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (blocks.isEmpty()) {
+            throw new IllegalArgumentException("Indica al menos un bloque");
+        }
+        return blocks;
+    }
+
+    private static int applyPresetGradient(
+            CommandContext<ServerCommandSource> context,
+            int dither,
+            boolean reverse
+    ) throws CommandSyntaxException {
+        try {
+            GradientPalette palette = GradientPalette.byId(StringArgumentType.getString(context, "gradient_palette"));
+            return applyGradient(
+                    context,
+                    GradientAxis.byId(StringArgumentType.getString(context, "gradient_axis")),
+                    palette.patterns(),
+                    palette.displayName(),
+                    dither,
+                    reverse
+            );
+        } catch (IllegalArgumentException exception) {
+            return fail(context.getSource(), exception.getMessage());
+        }
+    }
+
+    private static int applyCustomGradient(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        try {
+            return applyGradient(
+                    context,
+                    GradientAxis.byId(StringArgumentType.getString(context, "custom_axis")),
+                    StringArgumentType.getString(context, "custom_palette"),
+                    "Personalizado",
+                    IntegerArgumentType.getInteger(context, "custom_dither"),
+                    BoolArgumentType.getBool(context, "custom_reverse")
+            );
+        } catch (IllegalArgumentException exception) {
+            return fail(context.getSource(), exception.getMessage());
+        }
+    }
+
+    private static int applyGradient(
+            CommandContext<ServerCommandSource> context,
+            GradientAxis axis,
+            String palette,
+            String paletteName,
+            int dither,
+            boolean reverse
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            int changed = GradientService.apply(player, axis, palette, dither, reverse);
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            "Degradado " + paletteName + " en cola: " + changed + " bloques · eje "
+                                    + axis.id() + " · mezcla " + dither + "% · /komaedit job status"
+                    ).formatted(Formatting.GREEN)),
+                    false
+            );
+            return changed;
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Completa la selección de WorldEdit con //pos1 y //pos2");
+        } catch (InputParseException | IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static boolean canUse(ServerCommandSource source) {
+        if (!(source.getEntity() instanceof ServerPlayerEntity player)) {
+            return false;
+        }
+        try {
+            return source.hasPermissionLevel(2) || WorldEditService.hasUsePermission(player);
+        } catch (RuntimeException exception) {
+            return source.hasPermissionLevel(2);
+        }
+    }
+
+    private static int generate(
+            CommandContext<ServerCommandSource> context,
+            boolean buildNow,
+            String pattern,
+            Integer scale,
+            Integer spacing,
+            Integer thickness,
+            Integer roll
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            ShapeExpression expression = ShapeExpression.parse(StringArgumentType.getString(context, "shape"));
+            PathShape shape = expression.shape();
+            if (shape.isAsset()) {
+                throw new IllegalArgumentException("Usa /komaedit asset para assets con dos materiales");
+            }
+            ShapeParameters parameters = shape.defaults().withOptions(expression.options());
+            if (scale != null) {
+                parameters = parameters.withRadius(scale);
+            }
+            if (spacing != null) {
+                parameters = parameters.withSpacing(spacing);
+            }
+            if (thickness != null) {
+                parameters = parameters.withThickness(thickness);
+            }
+            if (roll != null) {
+                parameters = parameters.withRollDegrees(roll);
+            }
+            return enqueueShape(context, player, buildNow, pattern, parameters);
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Define //pos1 y //pos2, o añade puntos con /komaedit path add");
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int generateFixed(
+            CommandContext<ServerCommandSource> context,
+            boolean buildNow,
+            PathShape shape,
+            String pattern,
+            int radius,
+            int spacing,
+            int thickness,
+            int roll
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            ShapeParameters parameters = shape.defaults()
+                    .withRadius(radius)
+                    .withSpacing(spacing)
+                    .withThickness(thickness)
+                    .withRollDegrees(roll);
+            return enqueueShape(context, player, buildNow, pattern, parameters);
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int generateBridge(
+            CommandContext<ServerCommandSource> context,
+            String pattern,
+            int height,
+            int width
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            ShapeParameters parameters = PathShape.ARCH_BRIDGE.defaults()
+                    .withRadius(width)
+                    .withOptions(new ShapeOptions(Map.of("height", (double) height)));
+            return enqueueShape(context, player, true, pattern, parameters);
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int generatePillarArches(
+            CommandContext<ServerCommandSource> context,
+            String pattern,
+            int height,
+            int radius
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            ShapeParameters parameters = PathShape.PILLAR_ARCHES.defaults()
+                    .withRadius(radius)
+                    .withOptions(new ShapeOptions(Map.of("height", (double) height)));
+            return enqueueShape(context, player, true, pattern, parameters);
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca las bases de los dos pilares con P1 y P2");
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int generateCloud(
+            CommandContext<ServerCommandSource> context,
+            String pattern,
+            int radius,
+            int organicity,
+            int gap
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            ShapeParameters parameters = PathShape.CLOUDS.defaults()
+                    .withRadius(radius)
+                    .withSpacing(organicity)
+                    .withOptions(new ShapeOptions(Map.of("gap", (double) gap)));
+            return enqueueShape(context, player, true, pattern, parameters);
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca la ruta de los bancos nubosos con al menos dos puntos P");
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int generateTorii(
+            CommandContext<ServerCommandSource> context,
+            String pattern,
+            int height,
+            int radius,
+            int detail
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            ShapeParameters parameters = PathShape.TORII.defaults()
+                    .withRadius(radius)
+                    .withSpacing(detail)
+                    .withOptions(new ShapeOptions(Map.of("height", (double) height)));
+            return enqueueShape(context, player, true, pattern, parameters);
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca con P las bases de los dos pilares del torii");
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int generateAsset(
+            CommandContext<ServerCommandSource> context,
+            PathShape shape,
+            String primaryPattern,
+            String accentPattern,
+            int height,
+            int radius,
+            int detail
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            ShapeParameters defaults = shape.defaults();
+            ProceduralRecipe recipe = new ProceduralRecipe(
+                    "asset_" + shape.id(),
+                    shape,
+                    primaryPattern,
+                    accentPattern,
+                    radius,
+                    detail,
+                    defaults.thickness(),
+                    defaults.rollDegrees(),
+                    height,
+                    "",
+                    GradientAxis.Y,
+                    35,
+                    false,
+                    defaults.options().values(),
+                    RecipeExtensions.DEFAULT
+            );
+            RecipeBuildService.submit(player, recipe);
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            shape.displayName() + " en P1 · " + primaryPattern + " + " + accentPattern
+                    ).formatted(Formatting.AQUA)),
+                    false
+            );
+            return 1;
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca P1 con la tecla P antes de generar el asset");
+        } catch (InputParseException | IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    private static int enqueueShape(
+            CommandContext<ServerCommandSource> context,
+            ServerPlayerEntity player,
+            boolean buildNow,
+            String pattern,
+            ShapeParameters requestedParameters
+    ) throws IncompleteRegionException, InputParseException {
+        WorldEditService.validatePattern(player, pattern);
+        PathSnapshot pathSnapshot = WorldEditService.resolvePath(player);
+        UUID playerId = player.getUuid();
+        var server = player.getServer();
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal("Calculando geometría 3D fuera del hilo del servidor…")
+                        .formatted(Formatting.GRAY)),
+                false
+        );
+        AsyncEngine.submit(
+                playerId,
+                () -> {
+                    boolean legacyScalePath = requestedParameters.shape() == PathShape.SCALES
+                            || requestedParameters.shape() == PathShape.SPIKED_SCALES;
+                    SampledPath sampledPath = legacyScalePath
+                            ? SampledPath.create(pathSnapshot.points(), pathSnapshot.closed())
+                            : SampledPath.createSmooth(pathSnapshot.points(), pathSnapshot.closed());
+                    return PackedBlockPlan.pattern(ShapeGenerator.generate(sampledPath, requestedParameters));
+                },
+                plan -> server.execute(() -> {
+                    ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
+                    if (current == null) {
+                        return;
+                    }
+                    try {
+                        int changed = BatchEditService.submit(
+                                current,
+                                plan,
+                                pattern,
+                                requestedParameters.shape().displayName()
+                        );
+                        current.getCommandSource().sendFeedback(
+                                () -> prefix().append(Text.literal(
+                                        requestedParameters.shape().displayName() + " en cola: " + changed
+                                                + " bloques · espaciado " + requestedParameters.spacing()
+                                                + " · /komaedit job status"
+                                ).formatted(Formatting.GREEN)),
+                                false
+                        );
+                    } catch (IllegalArgumentException | IllegalStateException exception) {
+                        fail(current.getCommandSource(), message(exception));
+                    }
+                }),
+                throwable -> server.execute(() -> {
+                    ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
+                    if (current != null) {
+                        fail(current.getCommandSource(), throwableMessage(throwable));
+                    }
+                })
+        );
+        return 1;
+    }
+
+    private static int addTargetPoint(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            BlockVector3 point = PathManager.addTarget(player);
+            return pointAdded(context.getSource(), player, point);
+        } catch (IllegalArgumentException exception) {
+            return fail(context.getSource(), exception.getMessage());
+        }
+    }
+
+    private static int addExactPoint(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        BlockVector3 point = PathManager.add(player.getUuid(), BlockVector3.at(
+                IntegerArgumentType.getInteger(context, "point_x"),
+                IntegerArgumentType.getInteger(context, "point_y"),
+                IntegerArgumentType.getInteger(context, "point_z")
+        ));
+        return pointAdded(context.getSource(), player, point);
+    }
+
+    private static int addHerePoint(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            BlockVector3 point = PathManager.addHere(player);
+            return pointAdded(context.getSource(), player, point);
+        } catch (IllegalArgumentException exception) {
+            return fail(context.getSource(), exception.getMessage());
+        }
+    }
+
+    private static int useSelectionPath(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            PathSnapshot selection = WorldEditService.selectionPath(player);
+            PathManager.replace(player.getUuid(), selection.points());
+            PathHologramSync.sync(player);
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(
+                            "Trayectoria importada: " + selection.points().size() + " puntos de WorldEdit"
+                    ).formatted(Formatting.AQUA)),
+                    false
+            );
+            return selection.points().size();
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "La selección de WorldEdit está incompleta");
+        } catch (IllegalArgumentException exception) {
+            return fail(context.getSource(), exception.getMessage());
+        }
+    }
+
+    private static int undoPathPoint(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        if (!PathManager.removeLast(player.getUuid())) {
+            return fail(context.getSource(), "La trayectoria no tiene puntos");
+        }
+        PathHologramSync.sync(player);
+        return pathStatus(context);
+    }
+
+    private static int clearPath(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        PathManager.clear(player.getUuid());
+        PathHologramSync.sync(player);
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal("Trayectoria eliminada").formatted(Formatting.YELLOW)),
+                false
+        );
+        return 1;
+    }
+
+    private static int toggleClosedPath(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        boolean closed = PathManager.toggleClosed(player.getUuid());
+        PathHologramSync.sync(player);
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Trayectoria " + (closed ? "cerrada" : "abierta")
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return closed ? 1 : 0;
+    }
+
+    private static int createCirclePath(
+            CommandContext<ServerCommandSource> context,
+            int radius,
+            int requestedPoints
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        var center = player.getBlockPos();
+        LinkedHashSet<BlockVector3> uniquePoints = new LinkedHashSet<>();
+        for (int pointIndex = 0; pointIndex < requestedPoints; pointIndex++) {
+            double angle = Math.PI * 2.0 * pointIndex / requestedPoints;
+            uniquePoints.add(BlockVector3.at(
+                    center.getX() + (int) Math.round(Math.cos(angle) * radius),
+                    center.getY(),
+                    center.getZ() + (int) Math.round(Math.sin(angle) * radius)
+            ));
+        }
+        List<BlockVector3> points = new ArrayList<>(uniquePoints);
+        if (points.size() < 3) {
+            return fail(context.getSource(), "El círculo necesita al menos tres puntos distintos");
+        }
+        PathManager.replace(player.getUuid(), points, true);
+        PathHologramSync.sync(player);
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Círculo creado: radio " + radius + " · " + points.size() + " puntos"
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return points.size();
+    }
+
+    private static int pathStatus(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        PathSnapshot path = PathManager.saved(player.getUuid());
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        path.points().size() + " puntos · " + (path.closed() ? "cerrada" : "abierta")
+                                + (PathManager.isCaptureMode(player.getUuid()) ? " · captura activa" : "")
+                                + (path.points().size() < 2 ? " · se usará la selección de WorldEdit" : "")
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return path.points().size();
+    }
+
+    private static int pointAdded(ServerCommandSource source, ServerPlayerEntity player, BlockVector3 point) {
+        PathSnapshot path = PathManager.saved(player.getUuid());
+        PathHologramSync.sync(player);
+        source.sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Punto " + path.points().size() + ": " + point.x() + ", " + point.y() + ", " + point.z()
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return path.points().size();
+    }
+
+    private static int togglePathCapture(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        boolean active = PathManager.toggleCaptureMode(player.getUuid());
+        return pathCaptureChanged(context.getSource(), player, active);
+    }
+
+    private static int setPathCapture(
+            CommandContext<ServerCommandSource> context,
+            boolean active
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        PathManager.setCaptureMode(player.getUuid(), active);
+        return pathCaptureChanged(context.getSource(), player, active);
+    }
+
+    private static int pathCaptureChanged(
+            ServerCommandSource source,
+            ServerPlayerEntity player,
+            boolean active
+    ) {
+        PathHologramSync.sync(player);
+        source.sendFeedback(
+                () -> prefix().append(Text.literal(active
+                        ? "Captura de trayectoria activa · clic derecho para añadir puntos"
+                        : "Captura desactivada · los puntos se conservaron"
+                ).formatted(active ? Formatting.AQUA : Formatting.YELLOW)),
+                false
+        );
+        return active ? 1 : 0;
+    }
+
+    private static int openHudMenu(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        if (!ServerPlayNetworking.canSend(player, QuickBuildPayload.ID)) {
+            return fail(context.getSource(), "El cliente no tiene disponible la paleta QuickBuild");
+        }
+        ServerPlayNetworking.send(player, QuickBuildPayload.INSTANCE);
+        return 1;
+    }
+
+    private static int guiHint(CommandContext<ServerCommandSource> context) {
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "K abre la paleta visual: elige bloque y forma con clic; arrastra con clic derecho para girar."
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return 1;
+    }
+
+    private static int help(CommandContext<ServerCommandSource> context) {
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                                "/komaedit build <figura> [patrón] [escala] [espaciado 2–8] [grosor] [giro]"
+                        )
+                        .formatted(Formatting.AQUA)),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal("Ejemplo: /komaedit build tiles stone 60 5 2 0")
+                        .formatted(Formatting.GRAY),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, oscillate, "
+                                + "ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, pillar, "
+                                + "pillararches, torii y archbridge."
+                )
+                        .formatted(Formatting.AQUA),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Assets en P1: /komaedit asset tree|boulder|log|roots "
+                                + "<altura/largo> <tamaño> <detalle 2–8> [principal] [acento]."
+                ).formatted(Formatting.GREEN),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Puente: /komaedit bridge <altura> <ancho> [material] · "
+                                + "Pilar: /komaedit pillar <ancho> <detalle 2–8> [material] · "
+                                + "Arcos: /komaedit pillararches <altura> <ancho> [material] · "
+                                + "Torii: /komaedit torii <altura> <grosor> <detalle 2–8> [material] · "
+                                + "Mandala: /komaedit mandala <tamaño> <simetría 2–8> [material] · "
+                                + "Nube: /komaedit cloud <tamaño> <organicidad 2–8> [separación] [material] · "
+                                + "Noodles: /komaedit noodles <radio> <espaciado 2–8> [patrón]."
+                ).formatted(Formatting.GRAY),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal("Jobs: /komaedit job status|cancel · historial: //undo y //redo.")
+                        .formatted(Formatting.GRAY),
+                false
+        );
+        return 1;
+    }
+
+    private static MutableText commandButton(String label, String command, Formatting color) {
+        return Text.literal(label).styled(style -> style
+                .withColor(color)
+                .withBold(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command)));
+    }
+
+    private static MutableText prefix() {
+        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+    }
+
+    private static int fail(ServerCommandSource source, String message) {
+        source.sendError(prefix().append(Text.literal(
+                message == null || message.isBlank() ? "Operación inválida" : message
+        ).formatted(Formatting.RED)));
+        return 0;
+    }
+
+    private static String message(Exception exception) {
+        String message = exception.getMessage();
+        return message == null || message.isBlank()
+                ? exception.getClass().getSimpleName().toLowerCase(Locale.ROOT)
+                : message;
+    }
+
+    private static String throwableMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && (current.getMessage() == null || current.getMessage().isBlank())) {
+            current = current.getCause();
+        }
+        String message = current.getMessage();
+        return message == null || message.isBlank()
+                ? current.getClass().getSimpleName().toLowerCase(Locale.ROOT)
+                : message;
+    }
+
+    private enum MaskList {
+        WHITELIST("lista blanca"),
+        BLACKLIST("lista negra"),
+        REPLACE_ONLY("reemplazo exclusivo");
+
+        private final String displayName;
+
+        MaskList(String displayName) {
+            this.displayName = displayName;
+        }
+    }
+}

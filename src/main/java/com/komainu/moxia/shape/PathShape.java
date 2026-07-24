@@ -1,0 +1,152 @@
+package com.komainu.moxia.shape;
+
+import java.util.Arrays;
+import java.util.Locale;
+
+public enum PathShape {
+    CHAINLINK("chainlink", "Cadena", "Eslabones 3D alternados y entrelazados", 4, 5, 1,
+            "chain", "cadena", "ch"),
+    SCALES("scales", "Escamas", "Escamas 3D curvas, sólidas y solapadas", 12, 8, 2,
+            "scale", "escamas", "escama", "dragon", "dragon_scales", "sc"),
+    SPIKED_SCALES("spiked_scales", "Escamas espinadas", "Rombos separados con una espina elevada y núcleo sólido", 12, 5, 2,
+            "spines", "spikes", "espinas", "scales_gap", "scalegap", "gapped_scales", "gappedscales", "escamas_gap", "rombo_scales"),
+    BEADS("beads", "Cuentas", "Volúmenes redondeados espaciados sobre la trayectoria", 3, 5, 1,
+            "beats", "cuentas", "be"),
+    COIL("coil", "Espiral", "Hélice continua tipo resorte, cable o raíz", 7, 5, 2,
+            "espiral", "resorte", "spring", "helix"),
+    CROWNS("crowns", "Coronas", "Bucles florales dentados que alternan su rotación", 9, 5, 2,
+            "crown", "corona", "coronas", "flores", "flowers", "petals"),
+    HONEYCOMB("honeycomb", "Panal", "Celdas hexagonales tridimensionales conectadas", 5, 5, 1,
+            "panal", "honey", "ho"),
+    OSCILLATE("oscillate", "Oscilar", "Cinta volumétrica que ondula y gira", 4, 5, 1,
+            "oscilar", "onda", "os"),
+    RIB_LOOPS("ribloops", "Costillas", "Arcos abiertos repetidos con una espina longitudinal", 9, 5, 2,
+            "ribs", "costillas", "costillar_loop", "arcos"),
+    RINGS("rings", "Anillos", "Toros 3D configurables alrededor del recorrido", 5, 5, 1,
+            "anillos", "ring", "ri"),
+    TILES("tiles", "Cuadros 3D", "Placas cuadradas inclinadas que envuelven el recorrido", 12, 5, 2,
+            "tile", "cuadros", "cuadros3d", "square_tiles", "placas"),
+    HEX_ARMOR("hexarmor", "Armadura hex", "Paneles hexagonales elevados sobre una piel tubular", 12, 5, 2,
+            "hex_armour", "hexagonal", "hextexture", "hex_textura"),
+    VORONOI("voronoi", "Celdas Voronoi", "Malla orgánica de celdas irregulares con profundidad", 11, 5, 2,
+            "voronoialized", "voronoialize", "cells", "celulas"),
+    KNOTS("knots", "Nudos", "Nudos toroidales alternados para superficies biomecánicas", 7, 5, 2,
+            "knot", "nudos", "biomech"),
+    NOODLES("noodles", "Noodles", "Manojo de tubos orgánicos cruzados y texturizados", 9, 5, 2,
+            "noodle", "fideos", "tentacles", "tentaculos"),
+    MANDALA("mandala", "Mandala radial", "Rosetón 3D orientable con pétalos, anillos, filigrana y relieve concéntrico", 24, 6, 2,
+            "mandalas", "rosette", "roseton", "radial", "sacred_geometry"),
+    CLOUDS("clouds", "Nube orgánica", "Volumen nuboso natural con masas, lóbulos, coronas y estelas erosionadas", 18, 6, 2,
+            "cloud", "nube", "nubes", "organic_cloud", "epic_cloud"),
+    PILLAR("pillar", "Pilar monumental", "Columna épica entre P1 y P2 con base, fuste, nervaduras y capitel", 10, 6, 2,
+            "pilar", "column", "columna", "epic_pillar", "monumental_pillar"),
+    PILLAR_ARCHES("pillararches", "Pilares arqueados", "Dos pilares monumentales levantados desde P1 y P2 y unidos mediante un arco ornamentado", 9, 6, 2,
+            "pillar_arches", "arched_pillars", "arcade", "pilares", "arcos_pilares"),
+    TORII("torii", "Torii monumental", "Portal japonés gigante con pilares inclinados, vigas curvas, ménsulas y placa central", 9, 6, 2,
+            "japanese_gate", "japanesegate", "arco_japones", "portal_japones", "torii_gate"),
+    ARCH_BRIDGE("archbridge", "Puente arqueado", "Puente transitable con arco, pretiles y nervaduras", 9, 5, 2,
+            "bridge", "puente", "puente_arqueado", "archedbridge"),
+    EPIC_TREE("epic_tree", "Árbol épico", "Árbol monumental inteligente con raíces, tronco curvo, ramas jerárquicas y copa orgánica", 18, 6, 2,
+            "tree", "arbol", "arbol_epico", "epictree", "giant_tree"),
+    GIANT_BOULDER("giant_boulder", "Roca monumental", "Megalito erosionado con estratos, grietas, musgo y piedras satélite", 16, 5, 2,
+            "boulder", "rock", "roca", "piedra", "megalith"),
+    FALLEN_LOG("fallen_log", "Tronco ancestral", "Tronco caído gigante, curvo, erosionado, hueco y cubierto de crecimiento natural", 7, 5, 2,
+            "log", "tronco", "fallenlog", "ancient_log", "deadwood"),
+    ANCIENT_ROOTS("ancient_roots", "Raíces antiguas", "Conjunto monumental de raíces retorcidas, arcos naturales, tocones y vegetación", 16, 6, 2,
+            "roots", "raices", "root_cluster", "natural_shrine", "wild_roots");
+
+    private final String id;
+    private final String displayName;
+    private final String description;
+    private final int defaultRadius;
+    private final int defaultSpacing;
+    private final int defaultThickness;
+    private final String[] aliases;
+
+    PathShape(
+            String id,
+            String displayName,
+            String description,
+            int defaultRadius,
+            int defaultSpacing,
+            int defaultThickness,
+            String... aliases
+    ) {
+        this.id = id;
+        this.displayName = displayName;
+        this.description = description;
+        this.defaultRadius = defaultRadius;
+        this.defaultSpacing = defaultSpacing;
+        this.defaultThickness = defaultThickness;
+        this.aliases = aliases;
+    }
+
+    public String id() {
+        return id;
+    }
+
+    public String displayName() {
+        return displayName;
+    }
+
+    public String description() {
+        return description;
+    }
+
+    public ShapeParameters defaults() {
+        return new ShapeParameters(this, defaultRadius, defaultSpacing, defaultThickness, 0);
+    }
+
+    public boolean usesHeight() {
+        return this == ARCH_BRIDGE || this == PILLAR_ARCHES || this == TORII || isAsset();
+    }
+
+    public boolean usesSecondaryMeasure() {
+        return usesHeight() || this == CLOUDS;
+    }
+
+    public int defaultHeight() {
+        if (this == PILLAR_ARCHES) {
+            return 48;
+        }
+        if (this == CLOUDS) {
+            return 12;
+        }
+        if (this == TORII) {
+            return 96;
+        }
+        if (this == EPIC_TREE) {
+            return 54;
+        }
+        if (this == GIANT_BOULDER) {
+            return 26;
+        }
+        if (this == FALLEN_LOG) {
+            return 44;
+        }
+        if (this == ANCIENT_ROOTS) {
+            return 34;
+        }
+        return 18;
+    }
+
+    public boolean isFigure() {
+        return false;
+    }
+
+    public boolean isAsset() {
+        return this == EPIC_TREE
+                || this == GIANT_BOULDER
+                || this == FALLEN_LOG
+                || this == ANCIENT_ROOTS;
+    }
+
+    public static PathShape byId(String input) {
+        String normalized = input.toLowerCase(Locale.ROOT);
+        return Arrays.stream(values())
+                .filter(shape -> shape.id.equals(normalized)
+                        || Arrays.asList(shape.aliases).contains(normalized))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Forma 3D desconocida: " + input));
+    }
+}

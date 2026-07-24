@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "komaedit",
+  "version": "${version}",
+  "name": "KomaEdit",
+  "description": "Procedural detail studio for reusable 3D path recipes, integrated gradients and optimized WorldEdit builds.",
+  "authors": [
+    "Komainu"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.komainu.moxia.KomaEditMod"
+    ],
+    "client": [
+      "com.komainu.moxia.client.KomaEditClient"
+    ]
+  },
+  "mixins": [
+    "komaedit.client.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.2",
+    "fabric-api": ">=0.116.6+1.21.1",
+    "worldedit": ">=7.3.8",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  }
+}
