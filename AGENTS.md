@@ -29,6 +29,15 @@ Nunca comenzar trabajo desde una copia desactualizada ni resolver divergencias m
 - Si cambia un comando, también deben actualizarse sus ejemplos.
 - Los cambios importantes deben registrarse adicionalmente en `CHANGELOG.md`.
 
+## Versionado y publicaciones
+
+- `mod_version` representa la línea de desarrollo utilizada por `staging`.
+- Los builds de `staging` añaden automáticamente el SHA corto al `fabric.mod.json` y al nombre del JAR.
+- Cada merge a `staging` publica una prerelease llamada `komaedit-staging-<versión>-<sha>`.
+- `release_version` es exclusivo de `main` y nunca incluye nombres de canal, sufijos alpha ni SHA.
+- Antes de publicar un commit nuevo en `main`, incrementar `release_version` (`1.0.0`, `1.0.1`, etc.).
+- No reutilizar una versión estable para un commit diferente.
+
 ## Validación
 
 - Ejecutar `./gradlew build` antes de publicar una rama.

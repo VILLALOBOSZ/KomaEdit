@@ -122,6 +122,25 @@ KomaEdit admite bloques individuales, patrones de WorldEdit y paletas de degrada
 - Los generadores poseen límites de seguridad y cancelación cooperativa.
 - El árbol épico utiliza almacenamiento voxel compacto y validación lineal de materiales.
 
+## Versiones descargables
+
+Todas las compilaciones de integración quedan visibles en GitHub Releases además de los artefactos temporales de GitHub Actions.
+
+### Canal staging
+
+- La versión interna del mod incluye la versión de desarrollo y el SHA corto: `komaedit-4.7.0-alpha.1.c0d75e5.jar`.
+- La prerelease se muestra con el formato `komaedit-staging-4.7.0-c0d75e5`.
+- Cada merge genera una prerelease independiente apuntando al commit exacto compilado.
+- Estas versiones son de prueba y no sustituyen una publicación estable.
+
+### Canal main
+
+- Utiliza únicamente `release_version`.
+- El nombre estable sigue el formato `komaedit-1.0.0`.
+- No incluye `staging`, sufijos alpha ni SHA.
+- Antes de publicar otro commit en `main` se incrementa la versión, por ejemplo de `1.0.0` a `1.0.1`.
+- GitHub Actions rechaza una publicación si intenta reutilizar una versión estable asociada a otro commit.
+
 ## Política de actualización
 
 Cada nueva función debe documentar:
