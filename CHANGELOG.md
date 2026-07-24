@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Separa el versionado de desarrollo (`mod_version`) del versionado estable (`release_version`).
+- Añade automáticamente el SHA corto a la versión interna y al JAR de cada build de desarrollo.
+- Publica cada merge a `staging` como prerelease `komaedit-staging-<versión>-<sha>` en GitHub Releases.
+- Publica `main` únicamente como `komaedit-<release_version>`, sin nombres de canal, alpha ni SHA.
+- Impide reutilizar una versión estable de `main` para un commit diferente.
+
 ## 4.7.0-alpha.1
 
 - Añade la categoría lateral responsive **Assets** al Procedural Studio.
