@@ -1,5 +1,12 @@
 # KomaEdit 4.7 Procedural Studio
 
+## Documentación del mod
+
+- [Catálogo funcional completo](docs/MOD_DOCUMENTATION.md)
+- [Arquitectura](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Flujo de contribución](CONTRIBUTING.md)
+
 KomaEdit es un complemento Fabric + WorldEdit para crear **detalle procedural reutilizable** sobre trayectorias 3D. No intenta sustituir las herramientas de selección masiva de WorldEdit ni el modelado general de Axiom: se concentra en convertir un recorrido en una pieza estilizada, repetible y editable mediante recetas.
 
 > `4.7.0-alpha.1` estrena **Assets naturales**: árboles inteligentes, megalitos, troncos ancestrales y raíces monumentales generados desde un solo P1.
