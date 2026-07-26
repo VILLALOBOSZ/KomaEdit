@@ -2,7 +2,6 @@ package com.komainu.moxia.recipe;
 
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.shape.PathShape;
-import com.komainu.moxia.shape.NaturalAssetGenerator;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
 import com.komainu.moxia.shape.ShapeParameters;
@@ -16,10 +15,6 @@ public final class RecipeGeometryEngine {
 
     public static GeometryDiagnostics.Result generate(PathSnapshot pathSnapshot, ProceduralRecipe recipe) {
         RecipeExtensions extensions = recipe.extensions();
-        if (recipe.shape().isAsset()) {
-            var geometry = NaturalAssetGenerator.generate(pathSnapshot, recipe.shapeParameters());
-            return GeometryDiagnostics.process(geometry.blocks(), geometry.accentBlocks(), extensions);
-        }
         Set<BlockVector3> generated = extensions.needsContinuousModifier()
                 ? ContinuousModifierEngine.generate(pathSnapshot, recipe)
                 : generateExact(pathSnapshot, recipe.shapeParameters());

@@ -4,7 +4,6 @@ import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeGeometryEngine;
-import com.komainu.moxia.shape.NaturalAssetEnvironment;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -40,7 +39,6 @@ public final class ProceduralPreviewRenderer {
     private static final long DEBOUNCE_NANOS = 180_000_000L;
     private static final long MIN_RETRY_NANOS = 350_000_000L;
     private static final long MAX_RETRY_NANOS = 4_000_000_000L;
-    private static final long ENVIRONMENT_REFRESH_NANOS = 1_500_000_000L;
     private static final double RENDER_DISTANCE = 4_096.0;
     private static final double RENDER_DISTANCE_SQUARED = RENDER_DISTANCE * RENDER_DISTANCE;
     private static final int MAX_UPLOADS_PER_FRAME = 2;
@@ -59,9 +57,6 @@ public final class ProceduralPreviewRenderer {
     private static PreviewKey failedKey;
     private static int failureCount;
     private static long retryNotBefore;
-    private static int environmentSourceHash;
-    private static long environmentRefreshAt;
-    private static ProceduralRecipe environmentRecipe;
     private static RenderState state = RenderState.empty();
     private static String status = "Holograma esperando puntos";
 
@@ -69,7 +64,7 @@ public final class ProceduralPreviewRenderer {
     }
 
     public static void request(ProceduralRecipe recipe, List<BlockPos> points, boolean closed) {
-        int minimum = recipe.shape().isAsset() ? 1 : closed ? 3 : 2;
+        int minimum = closed ? 3 : 2;
         if (points.size() < minimum) {
             if (requestedKey != null || !state.sections().isEmpty()) {
                 clearPreview("Holograma esperando " + minimum + " puntos");
@@ -80,8 +75,7 @@ public final class ProceduralPreviewRenderer {
                 .map(point -> BlockVector3.at(point.getX(), point.getY(), point.getZ()))
                 .toList();
         PathSnapshot path = new PathSnapshot(controls, closed, "preview-client");
-        ProceduralRecipe resolvedRecipe = resolveEnvironment(recipe, path, points);
-        PreviewKey key = PreviewKey.create(resolvedRecipe, points, closed);
+        PreviewKey key = PreviewKey.create(recipe, points, closed);
         if (key.equals(requestedKey)) {
             return;
         }
@@ -90,10 +84,10 @@ public final class ProceduralPreviewRenderer {
         pending = new PreviewRequest(
                 generation,
                 key,
-                resolvedRecipe,
+                recipe,
                 path,
-                resolvedRecipe.extensions().surfaceMode() != com.komainu.moxia.recipe.SurfaceMode.NONE
-                        || resolvedRecipe.extensions().socketsEnabled()
+                recipe.extensions().surfaceMode() != com.komainu.moxia.recipe.SurfaceMode.NONE
+                        || recipe.extensions().socketsEnabled()
         );
         long now = System.nanoTime();
         long retryAt = key.equals(failedKey) ? retryNotBefore : 0L;
@@ -102,31 +96,6 @@ public final class ProceduralPreviewRenderer {
             running.cancel(true);
         }
         status = "Holograma actualizando…";
-    }
-
-    private static ProceduralRecipe resolveEnvironment(
-            ProceduralRecipe recipe,
-            PathSnapshot path,
-            List<BlockPos> points
-    ) {
-        if (recipe.shape() != com.komainu.moxia.shape.PathShape.EPIC_TREE) {
-            return recipe;
-        }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.world == null) {
-            return recipe;
-        }
-        int sourceHash = Objects.hash(
-                recipe.shape(), recipe.radius(), recipe.spacing(), recipe.thickness(),
-                recipe.rollDegrees(), recipe.height(), points
-        );
-        long now = System.nanoTime();
-        if (environmentRecipe == null || environmentSourceHash != sourceHash || now >= environmentRefreshAt) {
-            environmentRecipe = NaturalAssetEnvironment.adapt(client.world, path, recipe);
-            environmentSourceHash = sourceHash;
-            environmentRefreshAt = now + ENVIRONMENT_REFRESH_NANOS;
-        }
-        return environmentRecipe;
     }
 
     public static void tick(MinecraftClient client) {
@@ -337,9 +306,6 @@ public final class ProceduralPreviewRenderer {
         failedKey = null;
         failureCount = 0;
         retryNotBefore = 0L;
-        environmentSourceHash = 0;
-        environmentRefreshAt = 0L;
-        environmentRecipe = null;
         state.close();
         state = RenderState.empty();
         status = nextStatus;

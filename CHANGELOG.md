@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Elimina la categoría, generadores, comandos, materiales secundarios y hologramas de Assets naturales.
+- Mueve Pilar monumental y Pilares arqueados exclusivamente a la categoría Estructuras, sin duplicarlos en Figuras.
+- Conserva sin cambios las figuras procedurales existentes y su geometría.
 - Separa el versionado de desarrollo (`mod_version`) del versionado estable (`release_version`).
 - Añade automáticamente el SHA corto a la versión interna y al JAR de cada build de desarrollo.
 - Publica cada merge a `staging` como prerelease `komaedit-staging-<versión>-<sha>` en GitHub Releases.

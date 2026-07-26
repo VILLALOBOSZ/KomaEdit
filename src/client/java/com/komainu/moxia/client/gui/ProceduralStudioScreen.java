@@ -58,21 +58,14 @@ public final class ProceduralStudioScreen extends Screen {
     private static final int RAIL_WIDTH = 54;
     private static final List<PathShape> STRUCTURE_SHAPES = List.of(
             PathShape.PILLAR,
+            PathShape.PILLAR_ARCHES,
             PathShape.ARCH_BRIDGE,
             PathShape.TORII
     );
-    private static final List<PathShape> ASSET_SHAPES = List.of(
-            PathShape.EPIC_TREE,
-            PathShape.GIANT_BOULDER,
-            PathShape.FALLEN_LOG,
-            PathShape.ANCIENT_ROOTS
-    );
     private static final List<PathShape> FIGURE_SHAPES = Arrays.stream(PathShape.values())
-            .filter(shape -> !STRUCTURE_SHAPES.contains(shape) && !ASSET_SHAPES.contains(shape))
+            .filter(shape -> !STRUCTURE_SHAPES.contains(shape))
             .toList();
-    private static final PathShape[] MODIFIER_SHAPES = Arrays.stream(PathShape.values())
-            .filter(shape -> !shape.isAsset())
-            .toArray(PathShape[]::new);
+    private static final PathShape[] MODIFIER_SHAPES = PathShape.values();
 
     private static final List<BlockChoice> ALL_BLOCKS = Registries.BLOCK.getIds().stream()
             .sorted(Comparator.comparing(Identifier::toString))
@@ -91,9 +84,7 @@ public final class ProceduralStudioScreen extends Screen {
     private static volatile ProceduralRecipe previewDraft = rememberedDraft;
 
     private ProceduralRecipe draft = rememberedDraft;
-    private Stage stage = ASSET_SHAPES.contains(draft.shape())
-            ? Stage.ASSETS
-            : STRUCTURE_SHAPES.contains(draft.shape()) ? Stage.STRUCTURES : Stage.FIGURE;
+    private Stage stage = STRUCTURE_SHAPES.contains(draft.shape()) ? Stage.STRUCTURES : Stage.FIGURE;
     private int inspectorWidth;
     private int contentScroll;
     private int blockScroll;
@@ -106,7 +97,6 @@ public final class ProceduralStudioScreen extends Screen {
     private BlockPos axisDragOrigin;
     private double axisDragStart;
     private boolean blockCatalog;
-    private MaterialSlot blockCatalogSlot = MaterialSlot.PRIMARY;
     private boolean editingName;
     private String nameInput = draft.name();
     private String blockSearch = "";
@@ -232,7 +222,6 @@ public final class ProceduralStudioScreen extends Screen {
             case PATH -> drawPathStage(context, mouseX, mouseY, left, top);
             case FIGURE -> drawFigureStage(context, mouseX, mouseY, left, top);
             case STRUCTURES -> drawStructuresStage(context, mouseX, mouseY, left, top);
-            case ASSETS -> drawAssetsStage(context, mouseX, mouseY, left, top);
             case MODIFIERS -> drawModifiersStage(context, mouseX, mouseY, left, top);
             case MATERIAL -> drawMaterialStage(context, mouseX, mouseY, left, top);
             case INSTANCES -> drawInstancesStage(context, mouseX, mouseY, left, top);
@@ -285,10 +274,6 @@ public final class ProceduralStudioScreen extends Screen {
         drawShapeStage(context, mouseX, mouseY, left, top, STRUCTURE_SHAPES, "ESTRUCTURAS");
     }
 
-    private void drawAssetsStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
-        drawShapeStage(context, mouseX, mouseY, left, top, ASSET_SHAPES, "ASSETS NATURALES");
-    }
-
     private void drawShapeStage(
             DrawContext context,
             int mouseX,
@@ -314,40 +299,24 @@ public final class ProceduralStudioScreen extends Screen {
         boolean torii = draft.shape() == PathShape.TORII;
         boolean monumental = draft.shape() == PathShape.PILLAR || draft.shape() == PathShape.PILLAR_ARCHES;
         boolean mandala = draft.shape() == PathShape.MANDALA;
-        boolean asset = draft.shape().isAsset();
-        String radiusLabel = asset ? assetRadiusLabel()
-                : draft.shape() == PathShape.CLOUDS || mandala ? "Tamaño"
+        String radiusLabel = draft.shape() == PathShape.CLOUDS || mandala ? "Tamaño"
                 : torii ? "Grosor" : monumental ? "Ancho" : "Escala";
-        String spacingLabel = asset ? assetSpacingLabel()
-                : mandala ? "Simetría"
+        String spacingLabel = mandala ? "Simetría"
                 : draft.shape() == PathShape.CLOUDS ? "Organicidad"
                 : torii || monumental ? "Detalle" : "Espaciado";
-        String thicknessLabel = asset ? assetThicknessLabel()
-                : mandala ? "Relieve"
+        String thicknessLabel = mandala ? "Relieve"
                 : draft.shape() == PathShape.CLOUDS ? "Densidad"
                 : torii || monumental ? "Relieve" : "Grosor";
-        String rollLabel = asset ? "Orientación" : torii ? "Curvatura" : "Giro";
+        String rollLabel = torii ? "Curvatura" : "Giro";
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 18, inner, radiusLabel, draft.radius(), Control.RADIUS);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 48, inner, spacingLabel, draft.spacing(), Control.SPACING);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 78, inner, thicknessLabel, draft.thickness(), Control.THICKNESS);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 108, inner,
                 rollLabel, draft.rollDegrees(), Control.ROLL);
         if (draft.shape().usesSecondaryMeasure()) {
-            String secondaryLabel = asset ? assetHeightLabel()
-                    : draft.shape() == PathShape.CLOUDS ? "Separación" : "Altura";
+            String secondaryLabel = draft.shape() == PathShape.CLOUDS ? "Separación" : "Altura";
             drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 138, inner,
                     secondaryLabel, draft.height(), Control.HEIGHT);
-        }
-        if (asset) {
-            drawSectionLabel(context, "MATERIALES DEL ASSET", left + 16, controlsTop + 181);
-            drawAssetBlockChoice(context, mouseX, mouseY, left + 16, controlsTop + 199, inner, 42,
-                    draft.pattern(), assetPrimaryLabel());
-            drawAssetBlockChoice(context, mouseX, mouseY, left + 16, controlsTop + 248, inner, 42,
-                    draft.accentPattern(), assetAccentLabel());
-            drawTrimmed(context, draft.shape() == PathShape.EPIC_TREE
-                            ? "El árbol detecta obstáculos y orienta su crecimiento al espacio libre."
-                            : "Las dos zonas se generan por geometría, nunca mediante mezcla aleatoria.",
-                    left + 18, controlsTop + 300, inner - 4, MUTED);
         }
     }
 
@@ -433,20 +402,6 @@ public final class ProceduralStudioScreen extends Screen {
 
     private void drawMaterialStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
         int inner = inspectorWidth - 32;
-        if (draft.shape().isAsset()) {
-            drawSectionLabel(context, "MATERIALES POR ZONA", left + 16, top);
-            drawAssetBlockChoice(context, mouseX, mouseY, left + 16, top + 18, inner, 42,
-                    draft.pattern(), assetPrimaryLabel());
-            drawAssetBlockChoice(context, mouseX, mouseY, left + 16, top + 67, inner, 42,
-                    draft.accentPattern(), assetAccentLabel());
-            drawCard(context, mouseX, mouseY, left + 16, top + 126, inner, 62, false);
-            drawTrimmed(context, "Asignación geométrica profesional", left + 27, top + 139, inner - 22, ACCENT);
-            drawTrimmed(context, "Tronco, roca o raíz usan el material principal.",
-                    left + 27, top + 155, inner - 22, TEXT);
-            drawTrimmed(context, "Copa, musgo y crecimiento usan el acento.",
-                    left + 27, top + 170, inner - 22, MUTED);
-            return;
-        }
         drawSectionLabel(context, "MODO DE MATERIAL", left + 16, top);
         int half = (inner - 7) / 2;
         drawSmallButton(context, mouseX, mouseY, left + 16, top + 18, half, 27,
@@ -581,87 +536,18 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private void drawBlockChoice(DrawContext context, int mouseX, int mouseY, int x, int y, int cardWidth, int cardHeight) {
-        drawAssetBlockChoice(context, mouseX, mouseY, x, y, cardWidth, cardHeight,
-                draft.pattern(), "Bloque base");
-    }
-
-    private void drawAssetBlockChoice(
-            DrawContext context,
-            int mouseX,
-            int mouseY,
-            int x,
-            int y,
-            int cardWidth,
-            int cardHeight,
-            String pattern,
-            String label
-    ) {
         drawCard(context, mouseX, mouseY, x, y, cardWidth, cardHeight, true);
-        ItemStack stack = stack(pattern);
+        ItemStack stack = stack(draft.pattern());
         context.drawItem(stack, x + 10, y + 13);
-        drawTrimmed(context, label + " · " + compactId(pattern), x + 34, y + 10, cardWidth - 82, TEXT);
+        drawTrimmed(context, "Bloque base · " + compactId(draft.pattern()), x + 34, y + 10, cardWidth - 82, TEXT);
         drawTrimmed(context, "Clic para cambiar bloque", x + 34, y + 25, cardWidth - 82, MUTED);
         context.drawText(textRenderer, "▦", x + cardWidth - 26, y + 17, ACCENT, false);
     }
 
-    private void openBlockCatalog(MaterialSlot slot) {
-        blockCatalogSlot = slot;
+    private void openBlockCatalog() {
         blockCatalog = true;
         blockSearch = "";
         blockScroll = 0;
-    }
-
-    private String assetRadiusLabel() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> "Copa";
-            case GIANT_BOULDER -> "Ancho";
-            case FALLEN_LOG -> "Grosor";
-            case ANCIENT_ROOTS -> "Extensión";
-            default -> "Escala";
-        };
-    }
-
-    private String assetSpacingLabel() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> "Ramificación";
-            case GIANT_BOULDER -> "Erosión";
-            case FALLEN_LOG -> "Desgaste";
-            case ANCIENT_ROOTS -> "Densidad";
-            default -> "Detalle";
-        };
-    }
-
-    private String assetThicknessLabel() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> "Nudos";
-            case GIANT_BOULDER -> "Estratos";
-            case FALLEN_LOG, ANCIENT_ROOTS -> "Relieve";
-            default -> "Grosor";
-        };
-    }
-
-    private String assetHeightLabel() {
-        return draft.shape() == PathShape.FALLEN_LOG ? "Largo" : "Altura";
-    }
-
-    private String assetPrimaryLabel() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> "Tronco y ramas";
-            case GIANT_BOULDER -> "Piedra principal";
-            case FALLEN_LOG -> "Madera y corteza";
-            case ANCIENT_ROOTS -> "Raíz principal";
-            default -> "Material principal";
-        };
-    }
-
-    private String assetAccentLabel() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> "Hojas y lianas";
-            case GIANT_BOULDER -> "Musgo y estratos";
-            case FALLEN_LOG -> "Musgo y crecimiento";
-            case ANCIENT_ROOTS -> "Musgo y vegetación";
-            default -> "Material de acento";
-        };
     }
 
     private void drawBlockCatalog(DrawContext context, int mouseX, int mouseY) {
@@ -672,8 +558,7 @@ public final class ProceduralStudioScreen extends Screen {
         int top = (height - modalHeight) / 2;
         context.fill(left, top, left + modalWidth, top + modalHeight, 0xFA0C0D12);
         context.fill(left, top, left + 4, top + modalHeight, ACCENT);
-        String target = blockCatalogSlot == MaterialSlot.ACCENT ? assetAccentLabel() : assetPrimaryLabel();
-        context.drawText(textRenderer, "BIBLIOTECA · " + target.toUpperCase(Locale.ROOT),
+        context.drawText(textRenderer, "BIBLIOTECA · BLOQUE BASE",
                 left + 18, top + 16, ACCENT, false);
         context.fill(left + 18, top + 36, left + modalWidth - 82, top + 62, CARD);
         drawTrimmed(context, "Buscar: " + blockSearch + "_", left + 28, top + 45, modalWidth - 128, TEXT);
@@ -690,10 +575,7 @@ public final class ProceduralStudioScreen extends Screen {
             int y = top + 76 + local / columns * 36;
             BlockChoice choice = blocks.get(index);
             boolean hovered = inside(mouseX, mouseY, x, y, 31, 31);
-            String selectedPattern = blockCatalogSlot == MaterialSlot.ACCENT
-                    ? draft.accentPattern()
-                    : draft.pattern();
-            boolean selected = choice.pattern().equals(selectedPattern);
+            boolean selected = choice.pattern().equals(draft.pattern());
             context.fill(x, y, x + 31, y + 31, selected ? CARD_SELECTED : hovered ? CARD_HOVER : CARD);
             context.drawItem(choice.stack(), x + 7, y + 7);
             if (hovered) {
@@ -837,13 +719,6 @@ public final class ProceduralStudioScreen extends Screen {
                 context.fill(centerX - 10, centerY + 8, centerX - 2, centerY + 11, color);
                 context.fill(centerX + 3, centerY + 8, centerX + 11, centerY + 11, color);
             }
-            case ASSETS -> {
-                context.fill(centerX - 2, centerY - 2, centerX + 2, centerY + 11, color);
-                context.fill(centerX - 9, centerY - 7, centerX + 9, centerY + 1, color);
-                context.fill(centerX - 6, centerY - 11, centerX + 6, centerY - 4, color);
-                context.fill(centerX - 11, centerY - 3, centerX - 5, centerY + 4, color);
-                context.fill(centerX + 5, centerY - 3, centerX + 11, centerY + 4, color);
-            }
             case MODIFIERS -> {
                 context.fill(centerX - 10, centerY - 7, centerX + 10, centerY - 6, color);
                 context.fill(centerX - 10, centerY, centerX + 10, centerY + 1, color);
@@ -939,7 +814,6 @@ public final class ProceduralStudioScreen extends Screen {
             case PATH -> pathStageClicked(mouseX, mouseY, left, top);
             case FIGURE -> shapeStageClicked(mouseX, mouseY, left, top, FIGURE_SHAPES);
             case STRUCTURES -> shapeStageClicked(mouseX, mouseY, left, top, STRUCTURE_SHAPES);
-            case ASSETS -> shapeStageClicked(mouseX, mouseY, left, top, ASSET_SHAPES);
             case MODIFIERS -> modifiersStageClicked(mouseX, mouseY, left, top);
             case MATERIAL -> materialStageClicked(mouseX, mouseY, left, top);
             case INSTANCES -> instancesStageClicked(mouseX, mouseY, left, top);
@@ -997,16 +871,6 @@ public final class ProceduralStudioScreen extends Screen {
         if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 108, inner, Control.ROLL)) return true;
         if (draft.shape().usesSecondaryMeasure()) {
             if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 138, inner, Control.HEIGHT)) {
-                return true;
-            }
-        }
-        if (draft.shape().isAsset()) {
-            if (inside(mouseX, mouseY, left + 16, controlsTop + 199, inner, 42)) {
-                openBlockCatalog(MaterialSlot.PRIMARY);
-                return true;
-            }
-            if (inside(mouseX, mouseY, left + 16, controlsTop + 248, inner, 42)) {
-                openBlockCatalog(MaterialSlot.ACCENT);
                 return true;
             }
         }
@@ -1118,14 +982,6 @@ public final class ProceduralStudioScreen extends Screen {
 
     private boolean materialStageClicked(double mouseX, double mouseY, int left, int top) {
         int inner = inspectorWidth - 32;
-        if (draft.shape().isAsset()) {
-            if (inside(mouseX, mouseY, left + 16, top + 18, inner, 42)) {
-                openBlockCatalog(MaterialSlot.PRIMARY);
-            } else if (inside(mouseX, mouseY, left + 16, top + 67, inner, 42)) {
-                openBlockCatalog(MaterialSlot.ACCENT);
-            }
-            return true;
-        }
         int half = (inner - 7) / 2;
         if (inside(mouseX, mouseY, left + 16, top + 18, half, 27)) {
             draft = copyMaterial("");
@@ -1138,7 +994,7 @@ public final class ProceduralStudioScreen extends Screen {
         }
         if (!draft.usesGradient()) {
             if (inside(mouseX, mouseY, left + 16, top + 85, inner, 42)) {
-                openBlockCatalog(MaterialSlot.PRIMARY);
+                openBlockCatalog();
             }
             return true;
         }
@@ -1268,8 +1124,6 @@ public final class ProceduralStudioScreen extends Screen {
                 contentScroll = 0;
                 if (stage == Stage.STRUCTURES && !STRUCTURE_SHAPES.contains(draft.shape())) {
                     draft = draft.withShapeDefaults(STRUCTURE_SHAPES.getFirst());
-                } else if (stage == Stage.ASSETS && !ASSET_SHAPES.contains(draft.shape())) {
-                    draft = draft.withShapeDefaults(ASSET_SHAPES.getFirst());
                 } else if (stage == Stage.FIGURE && !FIGURE_SHAPES.contains(draft.shape())) {
                     draft = draft.withShapeDefaults(FIGURE_SHAPES.getFirst());
                 }
@@ -1325,17 +1179,11 @@ public final class ProceduralStudioScreen extends Screen {
             int y = top + 76 + local / columns * 36;
             if (inside(mouseX, mouseY, x, y, 31, 31)) {
                 BlockChoice choice = blocks.get(index);
-                if (blockCatalogSlot == MaterialSlot.ACCENT) {
-                    draft = draft.withPatterns(draft.pattern(), choice.pattern());
-                } else {
-                    draft = draft.withPatterns(choice.pattern(), draft.accentPattern())
-                            .copy(draft.name(), draft.shape(), choice.pattern(), draft.radius(), draft.spacing(),
-                                    draft.thickness(), draft.rollDegrees(), draft.height(), "", draft.gradientAxis(),
-                                    draft.dither(), draft.reverse());
-                }
+                draft = draft.copy(draft.name(), draft.shape(), choice.pattern(), draft.radius(), draft.spacing(),
+                        draft.thickness(), draft.rollDegrees(), draft.height(), "", draft.gradientAxis(),
+                        draft.dither(), draft.reverse());
                 blockCatalog = false;
-                status = (blockCatalogSlot == MaterialSlot.ACCENT ? assetAccentLabel() : assetPrimaryLabel())
-                        + " seleccionado · " + compactId(choice.pattern());
+                status = "Bloque base seleccionado · " + compactId(choice.pattern());
                 return true;
             }
         }
@@ -1661,17 +1509,13 @@ public final class ProceduralStudioScreen extends Screen {
         int dither = draft.dither();
         RecipeExtensions extensions = draft.extensions();
         switch (control) {
-            case RADIUS -> radius = draft.shape().isAsset()
-                    ? Math.clamp(radius + direction, assetMinimumRadius(), assetMaximumRadius())
-                    : Math.clamp(radius + direction, 1, 128);
+            case RADIUS -> radius = Math.clamp(radius + direction, 1, 128);
             case SPACING -> spacing = Math.clamp(spacing + direction, 2, 8);
             case THICKNESS -> thickness = Math.clamp(thickness + direction, 1, 4);
             case ROLL -> roll = Math.clamp(roll + direction * 5, -180, 180);
             case HEIGHT -> {
-                int step = draft.shape() == PathShape.TORII ? 4 : draft.shape().isAsset() ? 2 : 1;
-                height = draft.shape().isAsset()
-                        ? Math.clamp(height + direction * step, assetMinimumHeight(), assetMaximumHeight())
-                        : Math.clamp(height + direction * step, 3, 256);
+                int step = draft.shape() == PathShape.TORII ? 4 : 1;
+                height = Math.clamp(height + direction * step, 3, 256);
             }
             case DITHER -> dither = Math.clamp(dither + direction * 5, 0, 100);
             case START_SCALE -> extensions = extensions.withCurve(
@@ -1712,45 +1556,6 @@ public final class ProceduralStudioScreen extends Screen {
                 draft.paletteId(), draft.gradientAxis(), dither, draft.reverse()).withExtensions(extensions);
     }
 
-    private int assetMinimumRadius() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> 6;
-            case GIANT_BOULDER -> 4;
-            case FALLEN_LOG -> 2;
-            case ANCIENT_ROOTS -> 5;
-            default -> 1;
-        };
-    }
-
-    private int assetMaximumRadius() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> 48;
-            case GIANT_BOULDER -> 52;
-            case FALLEN_LOG -> 24;
-            case ANCIENT_ROOTS -> 44;
-            default -> 128;
-        };
-    }
-
-    private int assetMinimumHeight() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> 16;
-            case GIANT_BOULDER -> 5;
-            case FALLEN_LOG, ANCIENT_ROOTS -> 10;
-            default -> 3;
-        };
-    }
-
-    private int assetMaximumHeight() {
-        return switch (draft.shape()) {
-            case EPIC_TREE -> 160;
-            case GIANT_BOULDER -> 110;
-            case FALLEN_LOG -> 180;
-            case ANCIENT_ROOTS -> 120;
-            default -> 256;
-        };
-    }
-
     private ProceduralRecipe copyMaterial(String palette) {
         return draft.copy(draft.name(), draft.shape(), draft.pattern(), draft.radius(), draft.spacing(),
                 draft.thickness(), draft.rollDegrees(), draft.height(), palette, draft.gradientAxis(),
@@ -1775,7 +1580,7 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private int requiredPoints() {
-        return draft.shape().isAsset() ? 1 : PathHologramRenderer.closed() ? 3 : 2;
+        return PathHologramRenderer.closed() ? 3 : 2;
     }
 
     private void commitName() {
@@ -1792,7 +1597,6 @@ public final class ProceduralStudioScreen extends Screen {
             case PATH -> 315;
             case FIGURE -> figureContentHeight();
             case STRUCTURES -> structuresContentHeight();
-            case ASSETS -> assetsContentHeight();
             case MODIFIERS -> 723;
             case MATERIAL -> materialContentHeight();
             case INSTANCES -> 70 + ClientInstanceCatalog.instances().size() * 55;
@@ -1809,23 +1613,13 @@ public final class ProceduralStudioScreen extends Screen {
         return shapeContentHeight(STRUCTURE_SHAPES.size());
     }
 
-    private int assetsContentHeight() {
-        return shapeContentHeight(ASSET_SHAPES.size());
-    }
-
     private int shapeContentHeight(int shapeCount) {
         int rows = (shapeCount + 1) / 2;
         int controlsTop = 17 + rows * 27 + 31;
-        if (draft.shape().isAsset()) {
-            return controlsTop + 335;
-        }
         return controlsTop + (draft.shape().usesSecondaryMeasure() ? 180 : 150);
     }
 
     private int materialContentHeight() {
-        if (draft.shape().isAsset()) {
-            return 215;
-        }
         if (!draft.usesGradient()) {
             return 190;
         }
@@ -1906,9 +1700,6 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private static String materialSummary(ProceduralRecipe recipe) {
-        if (recipe.shape().isAsset()) {
-            return compactId(recipe.pattern()) + " + " + compactId(recipe.accentPattern());
-        }
         return recipe.usesGradient() ? recipe.palette().displayName() : compactId(recipe.pattern());
     }
 
@@ -1960,7 +1751,6 @@ public final class ProceduralStudioScreen extends Screen {
         PATH("Trayectoria", "Diseña el recorrido en el mundo"),
         FIGURE("Figura", "Escoge una gramática 3D"),
         STRUCTURES("Estructuras", "Pilares, puentes y portales monumentales"),
-        ASSETS("Assets", "Árboles, rocas, troncos y decoración natural"),
         MODIFIERS("Deformar", "Opcional · no edita la trayectoria del brush"),
         MATERIAL("Estilo", "Material sólido o degradado integrado"),
         INSTANCES("Instancias", "Actualiza construcciones sin rehacerlas"),
@@ -1993,8 +1783,4 @@ public final class ProceduralStudioScreen extends Screen {
         SOCKET_INTERVAL
     }
 
-    private enum MaterialSlot {
-        PRIMARY,
-        ACCENT
-    }
 }

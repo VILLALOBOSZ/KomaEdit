@@ -9,13 +9,11 @@
 
 KomaEdit es un complemento Fabric + WorldEdit para crear **detalle procedural reutilizable** sobre trayectorias 3D. No intenta sustituir las herramientas de selección masiva de WorldEdit ni el modelado general de Axiom: se concentra en convertir un recorrido en una pieza estilizada, repetible y editable mediante recetas.
 
-> `4.7.0-alpha.1` estrena **Assets naturales**: árboles inteligentes, megalitos, troncos ancestrales y raíces monumentales generados desde un solo P1.
-
 ## Flujo de trabajo
 
 1. Pulsa `K` para abrir **Procedural Studio**.
 2. En **Trayectoria**, añade puntos con clic sobre el mundo o con la tecla `P`.
-3. En **Figura**, selecciona una gramática 3D; usa **Estructuras** para arquitectura monumental o **Assets** para naturaleza procedural desde P1.
+3. En **Figura**, selecciona una gramática 3D; usa **Estructuras** para arquitectura monumental orientada por puntos.
 4. En **Modificadores**, añade taper, torsión, fusión procedural, conformado, sockets Kitbash y reparación geométrica.
 5. En **Material**, elige un bloque del registro completo o un degradado guiado por la forma.
 6. Pulsa **Construir receta**. La geometría se calcula fuera del hilo principal y se coloca por lotes; la trayectoria permanece disponible para probar otras configuraciones.
@@ -28,8 +26,7 @@ Las recetas e instancias son temporales durante la sesión del mundo. Se limpian
 
 - Interfaz flotante: mantiene visible el mundo y no aplica blur ni pausa el juego.
 - Inspector derecho redimensionable y contenido con desplazamiento para resoluciones pequeñas.
-- Categoría lateral **Estructuras** separada, con Pilar, Puente arqueado y Torii.
-- Categoría lateral **Assets** con Árbol épico, Roca monumental, Tronco ancestral y Raíces antiguas.
+- Categoría lateral **Estructuras** separada, con Pilar, Pilares arqueados, Puente arqueado y Torii.
 - Navegación con `WASD`; clic derecho y arrastre para mover la cámara.
 - Trayectoria con raycast de hasta 4096 bloques cargados.
 - Nodos colocables y arrastrables desde el Studio.
@@ -88,60 +85,8 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `noodles`
 - `mandala`
 - `clouds`
-- `archbridge`
-- `pillar`
-- `pillararches`
-- `torii`
 
 `scales` y `spiked_scales` continúan usando su muestreo geométrico heredado para preservar exactamente su apariencia. Las demás figuras conservan el spline suavizado actual.
-
-## Assets naturales
-
-Los assets no son árboles vanilla ampliados ni combinaciones simples de esferas. Cada generador utiliza una gramática espacial propia, ruido determinista y zonas de material explícitas. Coloca **un solo P1** con `P`, abre `K`, entra en **Assets**, ajusta el diseño y construye.
-
-### Árbol épico
-
-- Genera raíces radiales con contrafuertes, tronco curvo y ahusado, ramas Bézier jerárquicas, ramificaciones secundarias, copa erosionada por lóbulos y lianas opcionales.
-- **Crecimiento inteligente:** cliente y servidor analizan 16 sectores alrededor de P1. Si detectan muros, construcciones o masas sólidas, el tronco, las ramas y la copa se inclinan hacia el sector con más espacio libre.
-- La lectura ambiental es dispersa y se almacena temporalmente; no recorre volúmenes completos ni carga chunks lejanos.
-- Controles: **Copa**, **Ramificación**, **Nudos**, **Orientación** y **Altura**.
-- Materiales independientes: **Tronco y ramas** y **Hojas y lianas**.
-
-### Roca monumental
-
-- Crea un megalito sólido mediante un superelipsoide erosionado, ruido de escala amplia, grietas superficiales, estratos y piedras satélite.
-- Controles: **Ancho**, **Erosión**, **Estratos**, **Orientación** y **Altura**.
-- Materiales independientes: **Piedra principal** y **Musgo y estratos**.
-
-### Tronco ancestral
-
-- Genera un tronco caído largo y curvo con taper, extremos erosionados y huecos, raíces expuestas, ramas rotas y crecimientos superficiales.
-- P2 es opcional: si existe, define la dirección; con solo P1 se usa **Orientación**.
-- Controles: **Grosor**, **Desgaste**, **Relieve**, **Orientación** y **Largo**.
-- Materiales independientes: **Madera y corteza** y **Musgo y crecimiento**.
-
-### Raíces antiguas
-
-- Produce un tocón retorcido con raíces radiales, arcos naturales elevados, musgo, vegetación y elementos colgantes.
-- Controles: **Extensión**, **Densidad**, **Relieve**, **Orientación** y **Altura**.
-- Materiales independientes: **Raíz principal** y **Musgo y vegetación**.
-
-El selector utiliza el registro completo de bloques, por lo que ambos materiales pueden ser hojas, slabs, escaleras, bloques de mods u otros estados aceptados por WorldEdit. El holograma usa la misma geometría y la adaptación ambiental se actualiza mediante una caché ligera.
-
-### Comandos rápidos de assets
-
-```text
-/komaedit asset tree <altura> <copa> <detalle 2–8> [tronco] [hojas]
-/komaedit asset boulder <altura> <ancho> <detalle 2–8> [piedra] [musgo]
-/komaedit asset log <largo> <grosor> <detalle 2–8> [madera] [crecimiento]
-/komaedit asset roots <altura> <extensión> <detalle 2–8> [raíz] [vegetación]
-```
-
-Ejemplo:
-
-```text
-/komaedit asset tree 72 24 7 dark_oak_wood azalea_leaves
-```
 
 ## Mandalas tridimensionales
 
@@ -161,7 +106,8 @@ Ejemplo:
 
 ## Arquitectura monumental
 
-- **Pilar monumental:** marca la base y la parte superior con `P`; el recorrido define el eje, altura e inclinación. Ajusta **Ancho**, **Detalle**, **Relieve** y **Giro** desde la sección Figura.
+- **Categoría exclusiva:** Pilar monumental y Pilares arqueados aparecen únicamente en **Estructuras**, nunca en la cuadrícula de Figuras.
+- **Pilar monumental:** marca la base y la parte superior con `P`; el recorrido define el eje, altura e inclinación. Ajusta **Ancho**, **Detalle**, **Relieve** y **Giro** desde Estructuras.
 - **Pilares arqueados:** marca dos bases con `P`; KomaEdit levanta un pilar monumental en cada punto y los conecta mediante un arco profundo con dovelas, clave central, vigas y refuerzos.
 - **Altura ajustable:** `Pilares arqueados` muestra un control de altura propio; la separación entre P1 y P2 determina la luz del arco.
 - **Geometría sólida:** bases escalonadas, fuste con éntasis, nervaduras, bandas, contrafuertes y capiteles se generan como una sola pieza construible.

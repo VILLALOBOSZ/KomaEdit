@@ -135,7 +135,7 @@ public record ProceduralRecipe(
     }
 
     public boolean usesGradient() {
-        return !shape.isAsset() && !paletteId.isEmpty();
+        return !paletteId.isEmpty();
     }
 
     public GradientPalette palette() {
@@ -223,44 +223,22 @@ public record ProceduralRecipe(
 
     public ProceduralRecipe withShapeDefaults(PathShape nextShape) {
         ShapeParameters defaults = nextShape.defaults();
-        String nextPattern = nextShape.isAsset() ? defaultPrimaryPattern(nextShape) : pattern;
-        String nextAccentPattern = nextShape.isAsset() ? defaultAccentPattern(nextShape) : accentPattern;
         return new ProceduralRecipe(
                 name,
                 nextShape,
-                nextPattern,
-                nextAccentPattern,
+                pattern,
+                accentPattern,
                 defaults.radius(),
                 defaults.spacing(),
                 defaults.thickness(),
                 defaults.rollDegrees(),
                 nextShape.defaultHeight(),
-                nextShape.isAsset() ? "" : paletteId,
+                paletteId,
                 gradientAxis,
                 dither,
                 reverse,
                 defaults.options().values(),
                 RecipeExtensions.DEFAULT
-        );
-    }
-
-    public ProceduralRecipe withPatterns(String nextPattern, String nextAccentPattern) {
-        return new ProceduralRecipe(
-                name,
-                shape,
-                nextPattern,
-                nextAccentPattern,
-                radius,
-                spacing,
-                thickness,
-                rollDegrees,
-                height,
-                paletteId,
-                gradientAxis,
-                dither,
-                reverse,
-                options,
-                extensions
         );
     }
 
@@ -284,23 +262,7 @@ public record ProceduralRecipe(
         );
     }
 
-    private static String defaultPrimaryPattern(PathShape shape) {
-        return switch (shape) {
-            case EPIC_TREE -> "dark_oak_wood";
-            case GIANT_BOULDER -> "stone";
-            case FALLEN_LOG -> "stripped_dark_oak_wood";
-            case ANCIENT_ROOTS -> "mangrove_roots";
-            default -> "stone";
-        };
-    }
-
     private static String defaultAccentPattern(PathShape shape) {
-        return switch (shape) {
-            case EPIC_TREE -> "azalea_leaves";
-            case GIANT_BOULDER -> "moss_block";
-            case FALLEN_LOG -> "moss_block";
-            case ANCIENT_ROOTS -> "moss_block";
-            default -> "oak_leaves";
-        };
+        return "oak_leaves";
     }
 }
