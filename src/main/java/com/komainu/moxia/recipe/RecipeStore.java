@@ -217,11 +217,7 @@ public final class RecipeStore {
     }
 
     private static String defaultAccentPattern(PathShape shape) {
-        return switch (shape) {
-            case EPIC_TREE -> "azalea_leaves";
-            case GIANT_BOULDER, FALLEN_LOG, ANCIENT_ROOTS -> "moss_block";
-            default -> "oak_leaves";
-        };
+        return "oak_leaves";
     }
 
     private static Path recipePath(UUID playerId, String name) {

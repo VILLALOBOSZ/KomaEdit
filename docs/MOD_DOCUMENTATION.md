@@ -4,7 +4,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 ## Procedural Studio
 
-Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, assets, modificadores, materiales, recetas e instancias.
+Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, recetas e instancias.
 
 - Los paneles son desplazables y se adaptan a resoluciones pequeñas.
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
@@ -61,51 +61,16 @@ Los modificadores transforman de manera continua la figura seleccionada:
 
 ## Estructuras
 
-La categoría Estructuras contiene generadores arquitectónicos orientados por puntos:
+La categoría Estructuras contiene generadores arquitectónicos orientados por puntos. Sus herramientas no aparecen duplicadas en la cuadrícula de Figuras:
 
 - Pilares monumentales configurables.
+- Pares de pilares monumentales conectados mediante arcos.
 - Puentes arqueados entre apoyos.
 - Torii japoneses gigantes que respetan diferencias verticales del terreno sin ondular sus vigas.
 
-## Assets naturales
-
-Los assets se originan en `P1` y utilizan dos materiales configurables.
-
-### Árbol épico
-
-Genera raíces de soporte, tronco curvado y decreciente, ramas Bézier, ramificación secundaria, copa irregular y vegetación colgante. Analiza el espacio circundante en 16 direcciones y orienta el crecimiento hacia la zona con menos obstáculos.
-
-```text
-/komaedit asset tree 70 24 7 dark_oak_wood azalea_leaves
-```
-
-### Roca monumental
-
-Genera un megalito erosionado con silueta asimétrica, estratos, grietas, material secundario superficial y rocas satélite.
-
-```text
-/komaedit asset boulder 32 24 6 deepslate moss_block
-```
-
-### Tronco ancestral
-
-Genera un tronco caído largo y curvado, con extremos rotos, desgaste, raíces expuestas, ramas residuales y crecimiento superficial. Un segundo punto puede definir su dirección.
-
-```text
-/komaedit asset log 80 10 7 stripped_spruce_wood moss_block
-```
-
-### Raíces antiguas
-
-Genera un tocón retorcido con raíces radiales, arcos naturales elevados y vegetación secundaria.
-
-```text
-/komaedit asset roots 48 22 7 mangrove_roots moss_block
-```
-
 ## Materiales y degradados
 
-KomaEdit admite bloques individuales, patrones de WorldEdit y paletas de degradado. La distribución puede seguir el eje, exposición, cavidades, bordes, curvatura o propiedades específicas de la figura. Los assets naturales utilizan un material principal y otro de detalle.
+KomaEdit admite bloques individuales, patrones de WorldEdit y paletas de degradado. La distribución puede seguir el eje, exposición, cavidades, bordes, curvatura o propiedades específicas de la figura.
 
 ## Recetas, instancias y paquetes
 

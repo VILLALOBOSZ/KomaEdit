@@ -38,8 +38,6 @@ public final class ShapeGenerator {
             case PILLAR_ARCHES -> pillarArches(canvas, path, parameters);
             case TORII -> torii(canvas, path, parameters);
             case ARCH_BRIDGE -> archBridge(canvas, path, parameters);
-            case EPIC_TREE, GIANT_BOULDER, FALLEN_LOG, ANCIENT_ROOTS ->
-                    throw new IllegalArgumentException("Los assets naturales se generan desde P1");
         }
         return canvas.blocks();
     }

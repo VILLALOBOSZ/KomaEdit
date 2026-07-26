@@ -72,7 +72,7 @@ import static net.minecraft.server.command.CommandManager.literal;
 
 public final class MoxiaCommands {
     private static final SuggestionProvider<ServerCommandSource> SHAPE_SUGGESTIONS = (context, builder) -> {
-        Arrays.stream(PathShape.values()).filter(shape -> !shape.isAsset()).map(PathShape::id).forEach(builder::suggest);
+        Arrays.stream(PathShape.values()).map(PathShape::id).forEach(builder::suggest);
         return builder.buildFuture();
     };
     private static final SuggestionProvider<ServerCommandSource> FIGURE_SUGGESTIONS = (context, builder) -> {
@@ -111,7 +111,6 @@ public final class MoxiaCommands {
                 .then(pillarCommand())
                 .then(pillarArchesCommand())
                 .then(toriiCommand())
-                .then(assetCommand())
                 .then(cloudCommand("cloud"))
                 .then(cloudCommand("nube"))
                 .then(mandalaCommand())
@@ -233,108 +232,6 @@ public final class MoxiaCommands {
         radius.then(detail);
         height.then(radius);
         return literal("torii").then(height);
-    }
-
-    private static LiteralArgumentBuilder<ServerCommandSource> assetCommand() {
-        return literal("asset")
-                .then(assetVariantCommand(
-                        "tree",
-                        PathShape.EPIC_TREE,
-                        "dark_oak_wood",
-                        "azalea_leaves",
-                        16,
-                        160,
-                        6,
-                        48
-                ))
-                .then(assetVariantCommand(
-                        "boulder",
-                        PathShape.GIANT_BOULDER,
-                        "stone",
-                        "moss_block",
-                        5,
-                        110,
-                        4,
-                        52
-                ))
-                .then(assetVariantCommand(
-                        "log",
-                        PathShape.FALLEN_LOG,
-                        "stripped_dark_oak_wood",
-                        "moss_block",
-                        10,
-                        180,
-                        2,
-                        24
-                ))
-                .then(assetVariantCommand(
-                        "roots",
-                        PathShape.ANCIENT_ROOTS,
-                        "mangrove_roots",
-                        "moss_block",
-                        10,
-                        120,
-                        5,
-                        44
-                ));
-    }
-
-    private static LiteralArgumentBuilder<ServerCommandSource> assetVariantCommand(
-            String commandName,
-            PathShape shape,
-            String defaultPrimary,
-            String defaultAccent,
-            int minimumHeight,
-            int maximumHeight,
-            int minimumRadius,
-            int maximumRadius
-    ) {
-        RequiredArgumentBuilder<ServerCommandSource, Integer> height = argument(
-                commandName + "_height",
-                IntegerArgumentType.integer(minimumHeight, maximumHeight)
-        );
-        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
-                commandName + "_radius",
-                IntegerArgumentType.integer(minimumRadius, maximumRadius)
-        );
-        RequiredArgumentBuilder<ServerCommandSource, Integer> detail = argument(
-                commandName + "_detail",
-                IntegerArgumentType.integer(2, 8)
-        ).executes(context -> generateAsset(
-                context,
-                shape,
-                defaultPrimary,
-                defaultAccent,
-                IntegerArgumentType.getInteger(context, commandName + "_height"),
-                IntegerArgumentType.getInteger(context, commandName + "_radius"),
-                IntegerArgumentType.getInteger(context, commandName + "_detail")
-        ));
-        RequiredArgumentBuilder<ServerCommandSource, String> primary = argument(
-                commandName + "_primary",
-                StringArgumentType.string()
-        ).executes(context -> generateAsset(
-                context,
-                shape,
-                StringArgumentType.getString(context, commandName + "_primary"),
-                defaultAccent,
-                IntegerArgumentType.getInteger(context, commandName + "_height"),
-                IntegerArgumentType.getInteger(context, commandName + "_radius"),
-                IntegerArgumentType.getInteger(context, commandName + "_detail")
-        ));
-        primary.then(argument(commandName + "_accent", StringArgumentType.greedyString())
-                .executes(context -> generateAsset(
-                        context,
-                        shape,
-                        StringArgumentType.getString(context, commandName + "_primary"),
-                        StringArgumentType.getString(context, commandName + "_accent"),
-                        IntegerArgumentType.getInteger(context, commandName + "_height"),
-                        IntegerArgumentType.getInteger(context, commandName + "_radius"),
-                        IntegerArgumentType.getInteger(context, commandName + "_detail")
-                )));
-        detail.then(primary);
-        radius.then(detail);
-        height.then(radius);
-        return literal(commandName).then(height);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> cloudCommand(String commandName) {
@@ -1317,9 +1214,6 @@ public final class MoxiaCommands {
         try {
             ShapeExpression expression = ShapeExpression.parse(StringArgumentType.getString(context, "shape"));
             PathShape shape = expression.shape();
-            if (shape.isAsset()) {
-                throw new IllegalArgumentException("Usa /komaedit asset para assets con dos materiales");
-            }
             ShapeParameters parameters = shape.defaults().withOptions(expression.options());
             if (scale != null) {
                 parameters = parameters.withRadius(scale);
@@ -1442,50 +1336,6 @@ public final class MoxiaCommands {
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Marca con P las bases de los dos pilares del torii");
         } catch (InputParseException | IllegalArgumentException exception) {
-            return fail(context.getSource(), message(exception));
-        }
-    }
-
-    private static int generateAsset(
-            CommandContext<ServerCommandSource> context,
-            PathShape shape,
-            String primaryPattern,
-            String accentPattern,
-            int height,
-            int radius,
-            int detail
-    ) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        try {
-            ShapeParameters defaults = shape.defaults();
-            ProceduralRecipe recipe = new ProceduralRecipe(
-                    "asset_" + shape.id(),
-                    shape,
-                    primaryPattern,
-                    accentPattern,
-                    radius,
-                    detail,
-                    defaults.thickness(),
-                    defaults.rollDegrees(),
-                    height,
-                    "",
-                    GradientAxis.Y,
-                    35,
-                    false,
-                    defaults.options().values(),
-                    RecipeExtensions.DEFAULT
-            );
-            RecipeBuildService.submit(player, recipe);
-            context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal(
-                            shape.displayName() + " en P1 · " + primaryPattern + " + " + accentPattern
-                    ).formatted(Formatting.AQUA)),
-                    false
-            );
-            return 1;
-        } catch (IncompleteRegionException exception) {
-            return fail(context.getSource(), "Marca P1 con la tecla P antes de generar el asset");
-        } catch (InputParseException | IllegalArgumentException | IllegalStateException exception) {
             return fail(context.getSource(), message(exception));
         }
     }
@@ -1760,13 +1610,6 @@ public final class MoxiaCommands {
                                 + "pillararches, torii y archbridge."
                 )
                         .formatted(Formatting.AQUA),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal(
-                        "Assets en P1: /komaedit asset tree|boulder|log|roots "
-                                + "<altura/largo> <tamaño> <detalle 2–8> [principal] [acento]."
-                ).formatted(Formatting.GREEN),
                 false
         );
         context.getSource().sendFeedback(

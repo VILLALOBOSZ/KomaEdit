@@ -45,15 +45,7 @@ public enum PathShape {
     TORII("torii", "Torii monumental", "Portal japonés gigante con pilares inclinados, vigas curvas, ménsulas y placa central", 9, 6, 2,
             "japanese_gate", "japanesegate", "arco_japones", "portal_japones", "torii_gate"),
     ARCH_BRIDGE("archbridge", "Puente arqueado", "Puente transitable con arco, pretiles y nervaduras", 9, 5, 2,
-            "bridge", "puente", "puente_arqueado", "archedbridge"),
-    EPIC_TREE("epic_tree", "Árbol épico", "Árbol monumental inteligente con raíces, tronco curvo, ramas jerárquicas y copa orgánica", 18, 6, 2,
-            "tree", "arbol", "arbol_epico", "epictree", "giant_tree"),
-    GIANT_BOULDER("giant_boulder", "Roca monumental", "Megalito erosionado con estratos, grietas, musgo y piedras satélite", 16, 5, 2,
-            "boulder", "rock", "roca", "piedra", "megalith"),
-    FALLEN_LOG("fallen_log", "Tronco ancestral", "Tronco caído gigante, curvo, erosionado, hueco y cubierto de crecimiento natural", 7, 5, 2,
-            "log", "tronco", "fallenlog", "ancient_log", "deadwood"),
-    ANCIENT_ROOTS("ancient_roots", "Raíces antiguas", "Conjunto monumental de raíces retorcidas, arcos naturales, tocones y vegetación", 16, 6, 2,
-            "roots", "raices", "root_cluster", "natural_shrine", "wild_roots");
+            "bridge", "puente", "puente_arqueado", "archedbridge");
 
     private final String id;
     private final String displayName;
@@ -98,7 +90,7 @@ public enum PathShape {
     }
 
     public boolean usesHeight() {
-        return this == ARCH_BRIDGE || this == PILLAR_ARCHES || this == TORII || isAsset();
+        return this == ARCH_BRIDGE || this == PILLAR_ARCHES || this == TORII;
     }
 
     public boolean usesSecondaryMeasure() {
@@ -115,30 +107,11 @@ public enum PathShape {
         if (this == TORII) {
             return 96;
         }
-        if (this == EPIC_TREE) {
-            return 54;
-        }
-        if (this == GIANT_BOULDER) {
-            return 26;
-        }
-        if (this == FALLEN_LOG) {
-            return 44;
-        }
-        if (this == ANCIENT_ROOTS) {
-            return 34;
-        }
         return 18;
     }
 
     public boolean isFigure() {
         return false;
-    }
-
-    public boolean isAsset() {
-        return this == EPIC_TREE
-                || this == GIANT_BOULDER
-                || this == FALLEN_LOG
-                || this == ANCIENT_ROOTS;
     }
 
     public static PathShape byId(String input) {
