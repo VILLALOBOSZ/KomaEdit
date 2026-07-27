@@ -177,9 +177,31 @@ public final class GradientService {
             case CAVITY -> 1.0 - missing / 6.0;
             case EDGES -> 1.0 - Math.abs(missing - 3.0) / 3.0;
             case CURVATURE -> field.directionalVariation(block);
+            case AMBIENT -> ambientValue(field, block, axisValue, missing);
             case ORGANIC -> Math.clamp(axisValue * 0.62 + organicNoise(block) * 0.38, 0.0, 1.0);
             case FIGURE, MOTIF, RELIEF, ALTERNATE -> axisValue;
         };
+    }
+
+    private static double ambientValue(
+            GeometryField field,
+            BlockVector3 block,
+            double axisValue,
+            int missing
+    ) {
+        double exposure = Math.clamp(missing / 3.0, 0.0, 1.0);
+        double curvature = field.directionalVariation(block);
+        double edge = 1.0 - Math.abs(missing - 3.0) / 3.0;
+        double materialVariation = organicNoise(block);
+        return Math.clamp(
+                exposure * 0.54
+                        + curvature * 0.18
+                        + edge * 0.10
+                        + materialVariation * 0.14
+                        + axisValue * 0.04,
+                0.0,
+                1.0
+        );
     }
 
     private static int paletteIndex(BlockVector3 block, double normalized, int paletteSize, double dither) {

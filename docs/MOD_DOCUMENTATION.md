@@ -26,6 +26,7 @@ Las figuras convierten una trayectoria tridimensional en superficies o volúmene
 
 - Chainlink
 - Scales
+- Escamas alternativa 2
 - Spiked Scales
 - Beads
 - Coil
@@ -46,6 +47,47 @@ Las figuras convierten una trayectoria tridimensional en superficies o volúmene
 - Telarañas adaptativas
 
 Cada figura conserva su gramática propia y puede combinar radio, espaciado, grosor, giro y materiales sin reutilizar estado residual de una figura anterior.
+
+## Escamas alternativa 2
+
+### Objetivo y acceso
+
+**Escamas alternativa 2** crea una piel radial inspirada en tejidos tensados y placas colocadas a mano. Es una figura nueva e independiente: no reemplaza ni altera `scales`. Se selecciona desde **Figuras** en Procedural Studio o mediante:
+
+```text
+/komaedit scales2 <curvatura> <separación 2–8> [patrón]
+```
+
+El comando general también está disponible:
+
+```text
+/komaedit build scales_v2 <patrón> <curvatura> <separación 2–8> <grosor 1–4> <relieve -180–180>
+```
+
+### Parámetros y comportamiento
+
+- Requiere al menos dos puntos distintos; con tres o más, los puntos se ordenan alrededor del centro y funcionan como anclajes exteriores.
+- **Curvatura:** de `3` a `64`; aumenta la concavidad de cada borde frontal sin desplazar los anclajes.
+- **Separación capas:** de `2` a `8`; `2` produce capas densas y `8` placas más largas y separadas.
+- **Grosor:** de `1` a `4`; controla la profundidad sólida y el borde frontal.
+- **Relieve 3D:** de `-180` a `180`; su magnitud eleva las coronas y su signo cambia el lado del plano en el que sobresalen.
+- Las placas cubren completamente cada franja, se solapan hacia la capa anterior y elevan su centro y borde frontal para conservar una silueta legible.
+- Con exactamente dos puntos, la alternativa utiliza internamente una geometría aislada compatible con la trayectoria clásica.
+- El holograma y el Build ejecutan el mismo generador de vóxeles.
+
+### Materiales
+
+- Acepta cualquier bloque o patrón WorldEdit.
+- El comando rápido usa `deepslate_tiles` y un relieve inicial de `24`.
+- Puede combinarse con cualquier paleta profesional y con **Pintura ambiental** para separar cavidades, cuerpos y bordes expuestos.
+
+### Rendimiento y limitaciones
+
+- El número máximo de capas es `64`.
+- La resolución se adapta al tamaño real de cada sector y escribe directamente en el conjunto voxelizado, evitando duplicados.
+- La generación se calcula fuera del hilo principal y respeta el límite general de `1 500 000` bloques.
+- Anclajes muy alejados o polígonos extremadamente irregulares aumentan el área que debe cubrirse; reduzca la densidad o el tamaño si se alcanza el límite.
+- Los puntos no coplanares producen una piel tensada tridimensional.
 
 ## Telarañas adaptativas
 
@@ -114,6 +156,15 @@ La categoría Estructuras contiene generadores arquitectónicos orientados por p
 ## Materiales y degradados
 
 KomaEdit admite bloques individuales, patrones de WorldEdit y paletas de degradado. La distribución puede seguir el eje, exposición, cavidades, bordes, curvatura o propiedades específicas de la figura.
+
+### Pintura ambiental
+
+- **Objetivo:** distribuir la paleta como una pintura integrada al volumen, oscureciendo cavidades y concentrando contraste en superficies abiertas, crestas y cambios de dirección.
+- **Acceso:** abra **Material → Degradado → Distribución geométrica → Pintura ambiental**.
+- **Parámetros:** la paleta define los materiales; **Mezcla orgánica** controla el tramado entre escalones; **Dirección** aporta únicamente una variación global ligera; **Invertir dirección** invierte el resultado completo.
+- **Comportamiento:** combina exposición local, curvatura, bordes, ruido coherente y una contribución direccional mínima. Funciona con todas las figuras y estructuras.
+- **Rendimiento:** analiza únicamente los seis vecinos dentro del plan ya generado; no consulta chunks ni estados del mundo por bloque.
+- **Limitaciones:** el resultado depende del orden de la paleta. Coloque primero los bloques destinados a cavidades y al final los materiales de luz o acento.
 
 ## Recetas, instancias y paquetes
 

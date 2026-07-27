@@ -8,6 +8,8 @@ public enum PathShape {
             "chain", "cadena", "ch"),
     SCALES("scales", "Escamas", "Escamas 3D curvas, sólidas y solapadas", 12, 8, 2,
             "scale", "escamas", "escama", "dragon", "dragon_scales", "sc"),
+    SCALES_V2("scales_v2", "Escamas alternativa 2", "Piel radial de placas curvas y superpuestas entre tres o más anclajes", 18, 4, 2,
+            "scales2", "scale2", "escamas2", "escamas_v2", "radial_scales", "ambient_scales"),
     SPIKED_SCALES("spiked_scales", "Escamas espinadas", "Rombos separados con una espina elevada y núcleo sólido", 12, 5, 2,
             "spines", "spikes", "espinas", "scales_gap", "scalegap", "gapped_scales", "gappedscales", "escamas_gap", "rombo_scales"),
     BEADS("beads", "Cuentas", "Volúmenes redondeados espaciados sobre la trayectoria", 3, 5, 1,

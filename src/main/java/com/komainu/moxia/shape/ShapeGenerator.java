@@ -19,6 +19,7 @@ public final class ShapeGenerator {
         switch (parameters.shape()) {
             case CHAINLINK -> chainlink(canvas, path, parameters);
             case SCALES -> scales(canvas, path, parameters);
+            case SCALES_V2 -> alternativeScales(canvas, path, parameters);
             case SPIKED_SCALES -> spikedScales(canvas, path, parameters);
             case BEADS -> beads(canvas, path, parameters);
             case COIL -> coil(canvas, path, parameters);
@@ -749,6 +750,166 @@ public final class ShapeGenerator {
                     end.position(), end.normal(), end.binormal(), baseRadius, parameters.thickness()
             );
         }
+    }
+
+    private static void alternativeScales(
+            VoxelCanvas canvas,
+            SampledPath path,
+            ShapeParameters parameters
+    ) {
+        List<Vec3> anchors = uniqueWebAnchors(path.controlPoints());
+        if (anchors.size() < 3) {
+            scales(canvas, path, parameters);
+            return;
+        }
+        anchors = sortedWebAnchors(anchors, parameters);
+        Vec3 center = average(anchors);
+        Vec3 normal = webNormal(anchors, center);
+        double averageRadius = anchors.stream()
+                .mapToDouble(anchor -> anchor.distance(center))
+                .average()
+                .orElse(1.0);
+        double layerGap = scaledSpacing(parameters, 3.5, 10.5);
+        double hubFraction = Math.clamp(
+                layerGap / Math.max(averageRadius, layerGap) * 0.68,
+                0.035,
+                0.16
+        );
+        int layers = Math.clamp(
+                (int) Math.ceil(averageRadius * (1.0 - hubFraction) / layerGap),
+                2,
+                64
+        );
+        double reliefStrength = Math.max(1.0, parameters.thickness() * 0.85)
+                + Math.abs(parameters.rollDegrees()) / 180.0 * Math.min(12.0, averageRadius * 0.10);
+        Vec3 reliefAxis = normal.multiply(parameters.rollDegrees() < 0 ? -1.0 : 1.0);
+
+        canvas.brush(center, Math.min(6, parameters.thickness() + 1));
+        for (int layer = 1; layer <= layers; layer++) {
+            checkInterrupted();
+            double innerProgress = hubFraction
+                    + (1.0 - hubFraction) * (layer - 1.0) / layers;
+            double outerProgress = hubFraction
+                    + (1.0 - hubFraction) * layer / layers;
+            double overlap = Math.min(
+                    (outerProgress - innerProgress) * 0.24,
+                    innerProgress * 0.18
+            );
+            double plateInnerProgress = Math.max(hubFraction * 0.48, innerProgress - overlap);
+            for (int sector = 0; sector < anchors.size(); sector++) {
+                Vec3 firstAnchor = anchors.get(sector);
+                Vec3 secondAnchor = anchors.get((sector + 1) % anchors.size());
+                stampRadialScale(
+                        canvas,
+                        center,
+                        reliefAxis,
+                        firstAnchor,
+                        secondAnchor,
+                        plateInnerProgress,
+                        outerProgress,
+                        parameters.radius(),
+                        reliefStrength,
+                        parameters.thickness(),
+                        layer
+                );
+            }
+        }
+    }
+
+    private static void stampRadialScale(
+            VoxelCanvas canvas,
+            Vec3 center,
+            Vec3 reliefAxis,
+            Vec3 firstAnchor,
+            Vec3 secondAnchor,
+            double innerProgress,
+            double outerProgress,
+            double curvatureControl,
+            double reliefStrength,
+            int thickness,
+            int layer
+    ) {
+        Vec3 innerStart = center.lerp(firstAnchor, innerProgress);
+        Vec3 innerEnd = center.lerp(secondAnchor, innerProgress);
+        Vec3 outerStart = center.lerp(firstAnchor, outerProgress);
+        Vec3 outerEnd = center.lerp(secondAnchor, outerProgress);
+        Vec3 innerControl = radialScaleControl(
+                center,
+                innerStart,
+                innerEnd,
+                curvatureControl,
+                0.58
+        );
+        Vec3 outerControl = radialScaleControl(
+                center,
+                outerStart,
+                outerEnd,
+                curvatureControl,
+                1.0
+        );
+        double maximumWidth = Math.max(innerStart.distance(innerEnd), outerStart.distance(outerEnd));
+        double maximumLength = Math.max(innerStart.distance(outerStart), innerEnd.distance(outerEnd));
+        int widthSteps = Math.max(5, (int) Math.ceil(maximumWidth * 0.72));
+        int lengthSteps = Math.max(3, (int) Math.ceil(maximumLength * 0.88));
+        double layerVariation = 0.92 + hash01(layer, 71, 29) * 0.16;
+
+        Vec3[] front = new Vec3[widthSteps + 1];
+        for (int widthStep = 0; widthStep <= widthSteps; widthStep++) {
+            double width = widthStep / (double) widthSteps;
+            Vec3 inner = quadraticPoint(innerStart, innerControl, innerEnd, width);
+            Vec3 outer = quadraticPoint(outerStart, outerControl, outerEnd, width);
+            double lateralCrown = Math.pow(Math.sin(Math.PI * width), 0.62);
+            for (int lengthStep = 0; lengthStep <= lengthSteps; lengthStep++) {
+                double progression = lengthStep / (double) lengthSteps;
+                double raisedBody = smoothStep(progression) * 0.52;
+                double frontLip = Math.pow(progression, 5.0) * 0.48;
+                double surfaceRelief = reliefStrength
+                        * lateralCrown
+                        * (raisedBody + frontLip)
+                        * layerVariation;
+                Vec3 surface = inner.lerp(outer, progression)
+                        .add(reliefAxis.multiply(surfaceRelief));
+                int depthSteps = Math.max(1, thickness);
+                for (int depthStep = 0; depthStep < depthSteps; depthStep++) {
+                    canvas.add(surface.subtract(reliefAxis.multiply(depthStep)));
+                }
+                if (lengthStep == lengthSteps) {
+                    front[widthStep] = surface;
+                }
+            }
+        }
+
+        int rimThickness = Math.min(5, thickness + 1);
+        for (int index = 1; index < front.length; index++) {
+            canvas.line(front[index - 1], front[index], rimThickness);
+        }
+        canvas.line(innerStart, front[0], thickness);
+        canvas.line(innerEnd, front[front.length - 1], thickness);
+    }
+
+    private static Vec3 radialScaleControl(
+            Vec3 center,
+            Vec3 start,
+            Vec3 end,
+            double curvatureControl,
+            double multiplier
+    ) {
+        Vec3 middle = start.lerp(end, 0.5);
+        Vec3 inward = center.subtract(middle).normalized();
+        double curvature = Math.clamp(curvatureControl / 56.0, 0.10, 0.42);
+        double radialDistance = middle.distance(center);
+        double bow = Math.min(
+                start.distance(end) * curvature * multiplier,
+                radialDistance * 0.52
+        );
+        return middle.add(inward.multiply(bow));
+    }
+
+    private static Vec3 quadraticPoint(Vec3 start, Vec3 control, Vec3 end, double progress) {
+        double inverse = 1.0 - progress;
+        return start.multiply(inverse * inverse)
+                .add(control.multiply(2.0 * inverse * progress))
+                .add(end.multiply(progress * progress));
     }
 
     private static void spikedScales(VoxelCanvas canvas, SampledPath path, ShapeParameters parameters) {
