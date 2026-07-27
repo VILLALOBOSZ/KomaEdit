@@ -54,18 +54,19 @@ Cada figura conserva su gramática propia y puede combinar radio, espaciado, gro
 La figura **Telaraña** genera tejidos tensados directamente desde los puntos de la trayectoria. Se selecciona desde **Figuras** en Procedural Studio o mediante:
 
 ```text
-/komaedit web <apertura> <separación 2–8> [patrón]
+/komaedit web <elasticidad> <separación 2–8> [patrón]
 ```
 
 También está disponible con el comando general:
 
 ```text
-/komaedit build web <patrón> <apertura> <separación 2–8> <grosor 1–4> <espiral -180–180>
+/komaedit build web <patrón> <elasticidad> <separación 2–8> <grosor 1–4> <giro -180–180>
 ```
 
 ### Comportamiento
 
-- Con exactamente dos puntos, P1 y P2 definen el diámetro principal y el generador completa una telaraña elíptica automática.
+- Con exactamente dos puntos, P1 y P2 se conectan mediante una sola línea orgánica. El filamento presenta comba, ondulación lateral, pulsos de grosor, hebras que se separan y vuelven a adherirse, y pequeñas gotas colgantes.
+- El modo de dos puntos nunca cierra una elipse ni genera anillos alrededor del eje.
 - Con tres o más puntos únicos, cada punto actúa como anclaje exterior y crea un radio propio.
 - Los anclajes se ordenan alrededor de su centro geométrico antes de conectar los anillos, evitando cruces producidos por un orden irregular de captura.
 - Los radios interiores pueden retorcerse suavemente; los anclajes finales siempre permanecen en las coordenadas marcadas.
@@ -73,17 +74,17 @@ También está disponible con el comando general:
 
 ### Parámetros y materiales
 
-- **Apertura:** controla el semieje secundario en el modo de dos puntos y la profundidad orgánica de la malla con múltiples anclajes.
-- **Separación hilos:** `2` produce anillos próximos y `8` anillos más separados.
+- **Elasticidad:** controla la comba y separación de las hebras pegajosas con dos puntos, y la profundidad orgánica con múltiples anclajes.
+- **Separación hilos:** `2` produce gotas, bucles o anillos próximos y `8` los distribuye a mayor distancia.
 - **Grosor:** controla el diámetro de radios, anillos y núcleo.
-- **Giro / espiral:** entre `-180` y `180` grados; orienta el plano en la variante de dos puntos y gira progresivamente el tejido interior sin desplazar los puntos exteriores.
+- **Giro / espiral:** entre `-180` y `180` grados; rota las hebras pegajosas alrededor de la línea P1–P2 o gira progresivamente el tejido radial sin desplazar los puntos exteriores.
 - El patrón predeterminado es `white_wool`; se acepta cualquier bloque, patrón WorldEdit o degradado disponible en el Studio.
 
 ### Rendimiento y limitaciones
 
 - La cantidad de anillos se calcula a partir del radio medio y se limita a 64 para mantener un coste predecible.
 - Los puntos repetidos a menos de un cuarto de bloque se consolidan en un único anclaje.
-- Si tres o más puntos son prácticamente colineales, el generador utiliza los dos extremos como diámetro y crea la variante elíptica.
+- Si tres o más puntos son prácticamente colineales, el generador utiliza los dos extremos para desplegar automáticamente una malla radial en un plano estable.
 - Una distribución muy irregular o no coplanar produce una telaraña tridimensional tensada, no una circunferencia plana.
 
 ## Modificadores

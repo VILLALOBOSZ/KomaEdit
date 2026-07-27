@@ -300,7 +300,7 @@ public final class ProceduralStudioScreen extends Screen {
         boolean monumental = draft.shape() == PathShape.PILLAR || draft.shape() == PathShape.PILLAR_ARCHES;
         boolean mandala = draft.shape() == PathShape.MANDALA;
         boolean web = draft.shape() == PathShape.WEB;
-        String radiusLabel = web ? "Apertura"
+        String radiusLabel = web ? "Elasticidad"
                 : draft.shape() == PathShape.CLOUDS || mandala ? "Tamaño"
                 : torii ? "Grosor" : monumental ? "Ancho" : "Escala";
         String spacingLabel = web ? "Separación hilos"

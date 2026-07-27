@@ -91,11 +91,11 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 
 ## Telarañas adaptativas
 
-- **Dos puntos:** P1 y P2 forman el diámetro principal; KomaEdit completa automáticamente una telaraña elíptica con radios y anillos.
+- **Dos puntos:** P1 y P2 se conectan mediante un único filamento pegajoso con comba, grosor irregular, hebras elásticas laterales y pequeñas gotas.
 - **Tres o más puntos:** cada punto se convierte en un anclaje exterior. Los anclajes se ordenan alrededor del centro para evitar cruces y la cantidad de radios coincide con la cantidad de puntos.
-- **Controles:** **Apertura** define el ancho secundario cuando solo existen dos puntos, **Separación hilos** controla la distancia entre anillos, **Grosor** ajusta los filamentos y **Giro / espiral** orienta el plano de dos puntos y retuerce el tejido interior sin mover los anclajes.
+- **Controles:** **Elasticidad** controla cuánto se separan y descuelgan las hebras, **Separación hilos** ajusta la frecuencia de gotas, bucles o anillos, **Grosor** modifica el filamento principal y **Giro / espiral** orienta el efecto sin mover los anclajes.
 - **Holograma exacto:** la previsualización utiliza la misma geometría que el Build.
-- **Comando rápido:** `/komaedit web <apertura> <separación 2–8> [patrón]`.
+- **Comando rápido:** `/komaedit web <elasticidad> <separación 2–8> [patrón]`.
 
 Ejemplo:
 
