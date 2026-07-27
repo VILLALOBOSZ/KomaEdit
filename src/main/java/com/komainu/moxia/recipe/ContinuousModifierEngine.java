@@ -56,7 +56,8 @@ final class ContinuousModifierEngine {
     }
 
     private static SampledPath createPath(PathSnapshot snapshot, PathShape shape) {
-        return shape == PathShape.SCALES || shape == PathShape.SPIKED_SCALES
+        return shape == PathShape.SCALES || shape == PathShape.SCALES_V2
+                || shape == PathShape.SPIKED_SCALES
                 ? SampledPath.create(snapshot.points(), snapshot.closed())
                 : SampledPath.createSmooth(snapshot.points(), snapshot.closed());
     }

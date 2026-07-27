@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Añade **Escamas alternativa 2** (`scales_v2`), una piel radial sólida de placas cóncavas, superpuestas y ancladas a tres o más puntos, sin modificar las escamas clásicas.
+- Añade `/komaedit scales2 <curvatura> <separación> [patrón]` y controles específicos de curvatura, capas, grosor y relieve.
+- Añade **Pintura ambiental** para distribuir cualquier paleta según exposición, cavidades, bordes, curvatura y variación orgánica sin consultar el mundo.
 - Añade la figura procedural **Telaraña**, con nudos gruesos en P1 y P2 unidos por un puente fino, ahusado y ligeramente curvado.
 - Convierte tres o más puntos en anclajes radiales ordenados, con radios rectos y vueltas cóncavas adaptadas a su distribución.
 - Añade controles de apertura, separación, grosor y espiral, holograma exacto, degradados y `/komaedit web`.
