@@ -65,19 +65,21 @@ También está disponible con el comando general:
 
 ### Comportamiento
 
-- Con exactamente dos puntos, P1 y P2 se conectan mediante una sola línea orgánica. El filamento presenta comba, ondulación lateral, pulsos de grosor, hebras que se separan y vuelven a adherirse, y pequeñas gotas colgantes.
+- Con exactamente dos puntos, P1 y P2 forman dos nudos gruesos conectados por una hebra fina. El grosor se reduce progresivamente desde ambos extremos y recupera volumen al acercarse al otro anclaje.
+- El puente central conserva una comba y una ondulación ligera para evitar una línea completamente rígida.
 - El modo de dos puntos nunca cierra una elipse ni genera anillos alrededor del eje.
-- Con tres o más puntos únicos, cada punto actúa como anclaje exterior y crea un radio propio.
+- Con tres o más puntos únicos, cada punto actúa como anclaje exterior y crea un radio recto desde el centro.
+- Entre radios consecutivos se generan curvas cuadráticas hundidas hacia el centro, reproduciendo las vueltas cóncavas de una telaraña clásica.
 - Los anclajes se ordenan alrededor de su centro geométrico antes de conectar los anillos, evitando cruces producidos por un orden irregular de captura.
 - Los radios interiores pueden retorcerse suavemente; los anclajes finales siempre permanecen en las coordenadas marcadas.
 - El holograma y la construcción usan el mismo generador de vóxeles.
 
 ### Parámetros y materiales
 
-- **Elasticidad:** controla la comba y separación de las hebras pegajosas con dos puntos, y la profundidad orgánica con múltiples anclajes.
-- **Separación hilos:** `2` produce gotas, bucles o anillos próximos y `8` los distribuye a mayor distancia.
-- **Grosor:** controla el diámetro de radios, anillos y núcleo.
-- **Giro / espiral:** entre `-180` y `180` grados; rota las hebras pegajosas alrededor de la línea P1–P2 o gira progresivamente el tejido radial sin desplazar los puntos exteriores.
+- **Elasticidad:** controla la comba del puente fino con dos puntos y la profundidad de los arcos cóncavos con múltiples anclajes.
+- **Separación hilos:** `2` produce vueltas próximas y `8` las distribuye a mayor distancia.
+- **Grosor:** controla el diámetro del puente central, radios y vueltas; los nudos de P1 y P2 se engrosan automáticamente según la elasticidad.
+- **Relieve 3D:** entre `-180` y `180` grados; orienta la comba del puente o levanta progresivamente los arcos fuera del plano sin desplazar los puntos exteriores.
 - El patrón predeterminado es `white_wool`; se acepta cualquier bloque, patrón WorldEdit o degradado disponible en el Studio.
 
 ### Rendimiento y limitaciones

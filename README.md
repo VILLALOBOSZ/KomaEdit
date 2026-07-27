@@ -91,9 +91,9 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 
 ## Telarañas adaptativas
 
-- **Dos puntos:** P1 y P2 se conectan mediante un único filamento pegajoso con comba, grosor irregular, hebras elásticas laterales y pequeñas gotas.
-- **Tres o más puntos:** cada punto se convierte en un anclaje exterior. Los anclajes se ordenan alrededor del centro para evitar cruces y la cantidad de radios coincide con la cantidad de puntos.
-- **Controles:** **Elasticidad** controla cuánto se separan y descuelgan las hebras, **Separación hilos** ajusta la frecuencia de gotas, bucles o anillos, **Grosor** modifica el filamento principal y **Giro / espiral** orienta el efecto sin mover los anclajes.
+- **Dos puntos:** P1 y P2 forman nudos gruesos unidos por un puente fino. El grosor disminuye progresivamente hacia el centro y la hebra presenta una comba suave.
+- **Tres o más puntos:** cada punto se convierte en un anclaje exterior. Desde el centro salen radios rectos y entre cada par de radios se dibujan arcos cóncavos como una telaraña clásica triangular, cuadrada o circular.
+- **Controles:** **Elasticidad** controla la comba del puente o la curvatura de los arcos, **Separación hilos** ajusta la distancia entre vueltas, **Grosor** modifica los filamentos y **Relieve 3D** levanta los arcos fuera del plano sin mover los anclajes.
 - **Holograma exacto:** la previsualización utiliza la misma geometría que el Build.
 - **Comando rápido:** `/komaedit web <elasticidad> <separación 2–8> [patrón]`.
 
