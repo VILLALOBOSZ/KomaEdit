@@ -114,6 +114,7 @@ public final class MoxiaCommands {
                 .then(cloudCommand("cloud"))
                 .then(cloudCommand("nube"))
                 .then(mandalaCommand())
+                .then(webCommand())
                 .then(noodlesCommand())
                 .then(jobCommand())
                 .then(gradientCommand())
@@ -307,6 +308,37 @@ public final class MoxiaCommands {
                 )));
         radius.then(symmetry);
         return literal("mandala").then(radius);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> webCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> aperture = argument(
+                "web_aperture", IntegerArgumentType.integer(3, 64)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> spacing = argument(
+                "web_spacing", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateFixed(
+                context,
+                true,
+                PathShape.WEB,
+                "white_wool",
+                IntegerArgumentType.getInteger(context, "web_aperture"),
+                IntegerArgumentType.getInteger(context, "web_spacing"),
+                1,
+                0
+        ));
+        spacing.then(argument("web_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateFixed(
+                        context,
+                        true,
+                        PathShape.WEB,
+                        StringArgumentType.getString(context, "web_pattern"),
+                        IntegerArgumentType.getInteger(context, "web_aperture"),
+                        IntegerArgumentType.getInteger(context, "web_spacing"),
+                        1,
+                        0
+                )));
+        aperture.then(spacing);
+        return literal("web").then(aperture);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> noodlesCommand() {
@@ -1606,7 +1638,7 @@ public final class MoxiaCommands {
         context.getSource().sendFeedback(
                 () -> Text.literal(
                         "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, oscillate, "
-                                + "ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, pillar, "
+                                + "ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
                                 + "pillararches, torii y archbridge."
                 )
                         .formatted(Formatting.AQUA),
@@ -1619,6 +1651,7 @@ public final class MoxiaCommands {
                                 + "Arcos: /komaedit pillararches <altura> <ancho> [material] · "
                                 + "Torii: /komaedit torii <altura> <grosor> <detalle 2–8> [material] · "
                                 + "Mandala: /komaedit mandala <tamaño> <simetría 2–8> [material] · "
+                                + "Telaraña: /komaedit web <apertura> <separación 2–8> [material] · "
                                 + "Nube: /komaedit cloud <tamaño> <organicidad 2–8> [separación] [material] · "
                                 + "Noodles: /komaedit noodles <radio> <espaciado 2–8> [patrón]."
                 ).formatted(Formatting.GRAY),

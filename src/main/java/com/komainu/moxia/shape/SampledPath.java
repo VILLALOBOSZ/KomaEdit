@@ -8,11 +8,13 @@ import java.util.List;
 public final class SampledPath {
     public static final double MAX_LENGTH = 4_096.0;
     private final List<Frame> frames;
+    private final List<Vec3> controlPoints;
     private final double length;
     private final boolean closed;
 
-    private SampledPath(List<Frame> frames, double length, boolean closed) {
+    private SampledPath(List<Frame> frames, List<Vec3> controlPoints, double length, boolean closed) {
         this.frames = frames;
+        this.controlPoints = controlPoints;
         this.length = length;
         this.closed = closed;
     }
@@ -30,7 +32,7 @@ public final class SampledPath {
         if (positions.size() < 2) {
             throw new IllegalArgumentException("Los puntos de la trayectoria no pueden coincidir");
         }
-        return createFrames(positions, closed);
+        return createFrames(positions, controls, closed);
     }
 
     public static SampledPath createSmooth(List<BlockVector3> blockPoints, boolean closed) {
@@ -46,7 +48,7 @@ public final class SampledPath {
         if (positions.size() < 2) {
             throw new IllegalArgumentException("Los puntos de la trayectoria no pueden coincidir");
         }
-        return createFrames(positions, closed);
+        return createFrames(positions, controls, closed);
     }
 
     public double length() {
@@ -55,6 +57,10 @@ public final class SampledPath {
 
     public boolean closed() {
         return closed;
+    }
+
+    public List<Vec3> controlPoints() {
+        return controlPoints;
     }
 
     public Frame at(double requestedDistance) {
@@ -219,7 +225,7 @@ public final class SampledPath {
                 .multiply(0.5);
     }
 
-    private static SampledPath createFrames(List<Vec3> positions, boolean closed) {
+    private static SampledPath createFrames(List<Vec3> positions, List<Vec3> controls, boolean closed) {
         List<Frame> frames = new ArrayList<>(positions.size());
         double distance = 0.0;
         Vec3 previousNormal = null;
@@ -251,7 +257,7 @@ public final class SampledPath {
         if (distance > MAX_LENGTH) {
             throw new IllegalArgumentException("La trayectoria supera el límite de 4096 bloques de longitud");
         }
-        return new SampledPath(List.copyOf(frames), distance, closed);
+        return new SampledPath(List.copyOf(frames), List.copyOf(controls), distance, closed);
     }
 
     private static Vec3 initialNormal(Vec3 tangent) {

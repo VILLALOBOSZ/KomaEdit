@@ -299,15 +299,18 @@ public final class ProceduralStudioScreen extends Screen {
         boolean torii = draft.shape() == PathShape.TORII;
         boolean monumental = draft.shape() == PathShape.PILLAR || draft.shape() == PathShape.PILLAR_ARCHES;
         boolean mandala = draft.shape() == PathShape.MANDALA;
-        String radiusLabel = draft.shape() == PathShape.CLOUDS || mandala ? "Tamaño"
+        boolean web = draft.shape() == PathShape.WEB;
+        String radiusLabel = web ? "Apertura"
+                : draft.shape() == PathShape.CLOUDS || mandala ? "Tamaño"
                 : torii ? "Grosor" : monumental ? "Ancho" : "Escala";
-        String spacingLabel = mandala ? "Simetría"
+        String spacingLabel = web ? "Separación hilos"
+                : mandala ? "Simetría"
                 : draft.shape() == PathShape.CLOUDS ? "Organicidad"
                 : torii || monumental ? "Detalle" : "Espaciado";
         String thicknessLabel = mandala ? "Relieve"
                 : draft.shape() == PathShape.CLOUDS ? "Densidad"
                 : torii || monumental ? "Relieve" : "Grosor";
-        String rollLabel = torii ? "Curvatura" : "Giro";
+        String rollLabel = web ? "Giro / espiral" : torii ? "Curvatura" : "Giro";
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 18, inner, radiusLabel, draft.radius(), Control.RADIUS);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 48, inner, spacingLabel, draft.spacing(), Control.SPACING);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 78, inner, thicknessLabel, draft.thickness(), Control.THICKNESS);

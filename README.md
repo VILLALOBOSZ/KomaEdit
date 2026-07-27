@@ -66,7 +66,7 @@ La sección **Deformar** es opcional y no edita los puntos ni suaviza las curvas
 
 Los modificadores ahora deforman una única geometría continua. Ya no dividen el path en figuras independientes, por lo que cadenas, anillos y otras formas no reinician su patrón en cada tramo. Al escoger otra figura se reinician automáticamente todos los modificadores y opciones específicas de la anterior. El botón **Restablecer modificadores** permite volver manualmente a `100%`, sin torsión, sin ritmo, sin conformado y sin Kitbash.
 
-## Figuras conservadas
+## Figuras disponibles
 
 - `chainlink`
 - `scales`
@@ -85,8 +85,23 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `noodles`
 - `mandala`
 - `clouds`
+- `web`
 
 `scales` y `spiked_scales` continúan usando su muestreo geométrico heredado para preservar exactamente su apariencia. Las demás figuras conservan el spline suavizado actual.
+
+## Telarañas adaptativas
+
+- **Dos puntos:** P1 y P2 forman el diámetro principal; KomaEdit completa automáticamente una telaraña elíptica con radios y anillos.
+- **Tres o más puntos:** cada punto se convierte en un anclaje exterior. Los anclajes se ordenan alrededor del centro para evitar cruces y la cantidad de radios coincide con la cantidad de puntos.
+- **Controles:** **Apertura** define el ancho secundario cuando solo existen dos puntos, **Separación hilos** controla la distancia entre anillos, **Grosor** ajusta los filamentos y **Giro / espiral** orienta el plano de dos puntos y retuerce el tejido interior sin mover los anclajes.
+- **Holograma exacto:** la previsualización utiliza la misma geometría que el Build.
+- **Comando rápido:** `/komaedit web <apertura> <separación 2–8> [patrón]`.
+
+Ejemplo:
+
+```text
+/komaedit web 12 4 white_wool
+```
 
 ## Mandalas tridimensionales
 
