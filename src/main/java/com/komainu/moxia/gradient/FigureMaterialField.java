@@ -222,6 +222,7 @@ final class FigureMaterialField {
             case HONEYCOMB -> motifWave * 0.42 + angularWave * 0.42 + relief * 0.16;
             case MANDALA -> motifWave * 0.34 + angularWave * 0.38 + relief * 0.28;
             case CLOUDS -> relief * 0.48 + angularWave * 0.30 + smooth(motif) * 0.22;
+            case WEB -> motifWave * 0.52 + angularWave * 0.32 + relief * 0.16;
             case PILLAR -> axis * 0.46 + relief * 0.34 + motifWave * 0.20;
             case PILLAR_ARCHES -> axis * 0.38 + relief * 0.42 + motifWave * 0.20;
             case TORII -> axis * 0.44 + angularWave * 0.32 + relief * 0.24;
@@ -262,6 +263,7 @@ final class FigureMaterialField {
             case NOODLES -> radius * interpolate(0.85, 2.20, spacing);
             case MANDALA -> radius * interpolate(0.16, 0.30, spacing);
             case CLOUDS -> radius * interpolate(0.42, 0.82, spacing);
+            case WEB -> radius * interpolate(0.35, 0.90, spacing);
             case PILLAR -> radius * interpolate(0.55, 1.20, spacing);
             case PILLAR_ARCHES -> radius * interpolate(0.65, 1.35, spacing);
             case TORII -> radius * interpolate(0.70, 1.45, spacing);

@@ -43,8 +43,48 @@ Las figuras convierten una trayectoria tridimensional en superficies o volúmene
 - Braids
 - Mandalas tridimensionales
 - Nubes orgánicas
+- Telarañas adaptativas
 
 Cada figura conserva su gramática propia y puede combinar radio, espaciado, grosor, giro y materiales sin reutilizar estado residual de una figura anterior.
+
+## Telarañas adaptativas
+
+### Objetivo y acceso
+
+La figura **Telaraña** genera tejidos tensados directamente desde los puntos de la trayectoria. Se selecciona desde **Figuras** en Procedural Studio o mediante:
+
+```text
+/komaedit web <apertura> <separación 2–8> [patrón]
+```
+
+También está disponible con el comando general:
+
+```text
+/komaedit build web <patrón> <apertura> <separación 2–8> <grosor 1–4> <espiral -180–180>
+```
+
+### Comportamiento
+
+- Con exactamente dos puntos, P1 y P2 definen el diámetro principal y el generador completa una telaraña elíptica automática.
+- Con tres o más puntos únicos, cada punto actúa como anclaje exterior y crea un radio propio.
+- Los anclajes se ordenan alrededor de su centro geométrico antes de conectar los anillos, evitando cruces producidos por un orden irregular de captura.
+- Los radios interiores pueden retorcerse suavemente; los anclajes finales siempre permanecen en las coordenadas marcadas.
+- El holograma y la construcción usan el mismo generador de vóxeles.
+
+### Parámetros y materiales
+
+- **Apertura:** controla el semieje secundario en el modo de dos puntos y la profundidad orgánica de la malla con múltiples anclajes.
+- **Separación hilos:** `2` produce anillos próximos y `8` anillos más separados.
+- **Grosor:** controla el diámetro de radios, anillos y núcleo.
+- **Giro / espiral:** entre `-180` y `180` grados; orienta el plano en la variante de dos puntos y gira progresivamente el tejido interior sin desplazar los puntos exteriores.
+- El patrón predeterminado es `white_wool`; se acepta cualquier bloque, patrón WorldEdit o degradado disponible en el Studio.
+
+### Rendimiento y limitaciones
+
+- La cantidad de anillos se calcula a partir del radio medio y se limita a 64 para mantener un coste predecible.
+- Los puntos repetidos a menos de un cuarto de bloque se consolidan en un único anclaje.
+- Si tres o más puntos son prácticamente colineales, el generador utiliza los dos extremos como diámetro y crea la variante elíptica.
+- Una distribución muy irregular o no coplanar produce una telaraña tridimensional tensada, no una circunferencia plana.
 
 ## Modificadores
 

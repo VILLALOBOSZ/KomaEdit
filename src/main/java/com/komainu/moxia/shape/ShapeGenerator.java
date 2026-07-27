@@ -34,6 +34,7 @@ public final class ShapeGenerator {
             case NOODLES -> noodles(canvas, path, parameters);
             case MANDALA -> mandala(canvas, path, parameters);
             case CLOUDS -> organicCloud(canvas, path, parameters);
+            case WEB -> web(canvas, path, parameters);
             case PILLAR -> monumentalPillar(canvas, path, parameters);
             case PILLAR_ARCHES -> pillarArches(canvas, path, parameters);
             case TORII -> torii(canvas, path, parameters);
@@ -149,6 +150,198 @@ public final class ShapeGenerator {
                 }
             }
             station++;
+        }
+    }
+
+    private static void web(VoxelCanvas canvas, SampledPath path, ShapeParameters parameters) {
+        List<Vec3> anchors = uniqueWebAnchors(path.controlPoints());
+        if (anchors.size() == 2) {
+            orbWeb(canvas, automaticWebAnchors(anchors.get(0), anchors.get(1), parameters), parameters);
+            return;
+        }
+        orbWeb(canvas, sortedWebAnchors(anchors, parameters), parameters);
+    }
+
+    private static List<Vec3> uniqueWebAnchors(List<Vec3> controls) {
+        List<Vec3> unique = new ArrayList<>(controls.size());
+        for (Vec3 control : controls) {
+            boolean duplicate = unique.stream().anyMatch(existing -> existing.distance(control) < 0.25);
+            if (!duplicate) {
+                unique.add(control);
+            }
+        }
+        if (unique.size() < 2) {
+            throw new IllegalArgumentException("La telaraña necesita al menos dos anclajes diferentes");
+        }
+        return unique;
+    }
+
+    private static List<Vec3> automaticWebAnchors(
+            Vec3 first,
+            Vec3 second,
+            ShapeParameters parameters
+    ) {
+        Vec3 center = first.lerp(second, 0.5);
+        Vec3 majorAxis = second.subtract(first).normalized();
+        Vec3 reference = Math.abs(majorAxis.y()) < 0.92 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+        Vec3 verticalAxis = reference.subtract(majorAxis.multiply(reference.dot(majorAxis))).normalized();
+        Vec3 depthAxis = majorAxis.cross(verticalAxis).normalized();
+        double roll = Math.toRadians(parameters.rollDegrees());
+        Vec3 minorAxis = verticalAxis.multiply(Math.cos(roll))
+                .add(depthAxis.multiply(Math.sin(roll)))
+                .normalized();
+        double majorRadius = first.distance(second) * 0.5;
+        double minorRadius = Math.min(majorRadius * 0.92, Math.max(3.0, parameters.radius()));
+        int spokes = Math.clamp(14 - parameters.spacing(), 6, 12);
+        if ((spokes & 1) != 0) {
+            spokes++;
+        }
+        List<Vec3> anchors = new ArrayList<>(spokes);
+        for (int spoke = 0; spoke < spokes; spoke++) {
+            double angle = Math.PI * 2.0 * spoke / spokes;
+            anchors.add(center
+                    .add(majorAxis.multiply(Math.cos(angle) * majorRadius))
+                    .add(minorAxis.multiply(Math.sin(angle) * minorRadius)));
+        }
+        return anchors;
+    }
+
+    private static List<Vec3> sortedWebAnchors(
+            List<Vec3> anchors,
+            ShapeParameters parameters
+    ) {
+        Vec3 center = average(anchors);
+        Vec3 primaryAxis = anchors.stream()
+                .map(anchor -> anchor.subtract(center))
+                .max((first, second) -> Double.compare(first.length(), second.length()))
+                .orElseThrow()
+                .normalized();
+        Vec3 planeNormal = anchors.stream()
+                .map(anchor -> primaryAxis.cross(anchor.subtract(center)))
+                .max((first, second) -> Double.compare(first.length(), second.length()))
+                .orElseThrow();
+        if (planeNormal.length() < 1.0E-4) {
+            Vec3 first = anchors.getFirst();
+            Vec3 second = anchors.stream()
+                    .max((left, right) -> Double.compare(left.distance(first), right.distance(first)))
+                    .orElseThrow();
+            return automaticWebAnchors(first, second, parameters);
+        }
+        planeNormal = planeNormal.normalized();
+        Vec3 secondaryAxis = planeNormal.cross(primaryAxis).normalized();
+        Vec3 resolvedPrimary = primaryAxis;
+        Vec3 resolvedSecondary = secondaryAxis;
+        return anchors.stream()
+                .sorted((first, second) -> Double.compare(
+                        webAngle(first, center, resolvedPrimary, resolvedSecondary),
+                        webAngle(second, center, resolvedPrimary, resolvedSecondary)
+                ))
+                .toList();
+    }
+
+    private static double webAngle(Vec3 point, Vec3 center, Vec3 primaryAxis, Vec3 secondaryAxis) {
+        Vec3 offset = point.subtract(center);
+        return Math.atan2(offset.dot(secondaryAxis), offset.dot(primaryAxis));
+    }
+
+    private static void orbWeb(
+            VoxelCanvas canvas,
+            List<Vec3> anchors,
+            ShapeParameters parameters
+    ) {
+        Vec3 center = average(anchors);
+        Vec3 normal = webNormal(anchors, center);
+        double averageRadius = anchors.stream()
+                .mapToDouble(anchor -> anchor.distance(center))
+                .average()
+                .orElse(1.0);
+        double ringGap = scaledSpacing(parameters, 2.5, 8.0);
+        double hubFraction = Math.clamp(ringGap / Math.max(averageRadius, ringGap) * 0.55, 0.06, 0.18);
+        int ringCount = Math.clamp(
+                (int) Math.ceil(averageRadius * (1.0 - hubFraction) / ringGap),
+                2,
+                64
+        );
+        int thickness = parameters.thickness();
+        double twist = parameters.rollDegrees() / 360.0 * anchors.size() * 0.45;
+        double sag = Math.min(averageRadius * 0.10, parameters.radius() * 0.18);
+
+        List<List<Vec3>> rings = new ArrayList<>(ringCount);
+        for (int ring = 1; ring <= ringCount; ring++) {
+            double progress = hubFraction + (1.0 - hubFraction) * ring / ringCount;
+            List<Vec3> points = new ArrayList<>(anchors.size());
+            for (int spoke = 0; spoke < anchors.size(); spoke++) {
+                points.add(webPoint(anchors, center, normal, spoke, progress, twist, sag));
+            }
+            rings.add(points);
+            connectClosed(canvas, points, thickness);
+        }
+
+        for (int spoke = 0; spoke < anchors.size(); spoke++) {
+            Vec3 previous = center;
+            int radialSteps = Math.max(8, ringCount * 3);
+            for (int step = 1; step <= radialSteps; step++) {
+                double progress = step / (double) radialSteps;
+                Vec3 point = webPoint(anchors, center, normal, spoke, progress, twist, sag);
+                canvas.line(previous, point, thickness);
+                previous = point;
+            }
+        }
+
+        int hubThickness = Math.min(4, thickness + 1);
+        for (Vec3 point : rings.getFirst()) {
+            canvas.line(center, point, hubThickness);
+        }
+    }
+
+    private static Vec3 webPoint(
+            List<Vec3> anchors,
+            Vec3 center,
+            Vec3 normal,
+            int spoke,
+            double progress,
+            double twist,
+            double sag
+    ) {
+        double shifted = spoke + twist * (1.0 - progress);
+        int firstIndex = Math.floorMod((int) Math.floor(shifted), anchors.size());
+        int secondIndex = (firstIndex + 1) % anchors.size();
+        double fraction = shifted - Math.floor(shifted);
+        Vec3 boundary = anchors.get(firstIndex).lerp(anchors.get(secondIndex), fraction);
+        double depth = Math.sin(Math.PI * progress) * sag;
+        return center.lerp(boundary, progress).add(normal.multiply(depth));
+    }
+
+    private static Vec3 webNormal(List<Vec3> anchors, Vec3 center) {
+        Vec3 strongest = new Vec3(0, 0, 0);
+        for (int first = 0; first < anchors.size(); first++) {
+            Vec3 firstOffset = anchors.get(first).subtract(center);
+            for (int second = first + 1; second < anchors.size(); second++) {
+                Vec3 candidate = firstOffset.cross(anchors.get(second).subtract(center));
+                if (candidate.length() > strongest.length()) {
+                    strongest = candidate;
+                }
+            }
+        }
+        if (strongest.length() >= 1.0E-4) {
+            return strongest.normalized();
+        }
+        Vec3 axis = anchors.getLast().subtract(anchors.getFirst()).normalized();
+        Vec3 reference = Math.abs(axis.y()) < 0.92 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+        return axis.cross(reference).normalized();
+    }
+
+    private static Vec3 average(List<Vec3> points) {
+        Vec3 sum = new Vec3(0, 0, 0);
+        for (Vec3 point : points) {
+            sum = sum.add(point);
+        }
+        return sum.multiply(1.0 / points.size());
+    }
+
+    private static void connectClosed(VoxelCanvas canvas, List<Vec3> points, int thickness) {
+        for (int index = 0; index < points.size(); index++) {
+            canvas.line(points.get(index), points.get((index + 1) % points.size()), thickness);
         }
     }
 

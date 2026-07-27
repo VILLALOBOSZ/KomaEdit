@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Añade la figura procedural **Telaraña**, con variante elíptica automática entre P1 y P2.
+- Convierte tres o más puntos en anclajes radiales ordenados, con radios y anillos concéntricos adaptados a su distribución.
+- Añade controles de apertura, separación, grosor y espiral, holograma exacto, degradados y `/komaedit web`.
 - Elimina la categoría, generadores, comandos, materiales secundarios y hologramas de Assets naturales.
 - Mueve Pilar monumental y Pilares arqueados exclusivamente a la categoría Estructuras, sin duplicarlos en Figuras.
 - Conserva sin cambios las figuras procedurales existentes y su geometría.
