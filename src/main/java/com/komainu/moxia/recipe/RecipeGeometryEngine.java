@@ -23,7 +23,6 @@ public final class RecipeGeometryEngine {
 
     private static Set<BlockVector3> generateExact(PathSnapshot pathSnapshot, ShapeParameters parameters) {
         boolean preserveScaleGeometry = parameters.shape() == PathShape.SCALES
-                || parameters.shape() == PathShape.SCALES_V2
                 || parameters.shape() == PathShape.SPIKED_SCALES;
         SampledPath sampledPath = preserveScaleGeometry
                 ? SampledPath.create(pathSnapshot.points(), pathSnapshot.closed())

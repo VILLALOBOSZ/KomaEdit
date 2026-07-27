@@ -70,7 +70,6 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 
 - `chainlink`
 - `scales`
-- `scales_v2`
 - `spiked_scales`
 - `beads`
 - `coil`
@@ -88,22 +87,7 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `clouds`
 - `web`
 
-`scales` y `spiked_scales` continúan usando su muestreo geométrico heredado para preservar exactamente su apariencia. `scales_v2` es una figura independiente y no modifica esos algoritmos.
-
-## Escamas alternativa 2
-
-- **Tres o más puntos:** cada punto actúa como anclaje exterior. El generador ordena los anclajes y cubre el área con capas de placas sólidas cuyos frentes se arquean hacia el centro.
-- **Lectura artesanal:** cada placa incorpora corona central, borde frontal elevado, solape longitudinal y una variación mínima de relieve para evitar una repetición mecánica.
-- **Sin huecos:** las placas cubren toda la franja entre dos capas; el solape oculta uniones al observar la estructura desde ángulos bajos.
-- **Controles:** **Curvatura** define la profundidad de los frentes, **Separación capas** controla la densidad, **Grosor** da cuerpo y **Relieve 3D** eleva la superficie.
-- **Compatibilidad:** con solo dos puntos usa una copia aislada del trazado de escamas clásico, sin cambiar la figura `scales`.
-- **Comando rápido:** `/komaedit scales2 <curvatura> <separación 2–8> [patrón]`.
-
-Ejemplo:
-
-```text
-/komaedit scales2 24 4 deepslate_tiles
-```
+`scales` y `spiked_scales` continúan usando su muestreo geométrico heredado para preservar exactamente su apariencia. Las demás figuras conservan el spline suavizado actual.
 
 ## Telarañas adaptativas
 
@@ -179,7 +163,6 @@ Una receta puede usar:
 - Ejes `X`, `Y`, `Z`, diagonal o radial.
 - Mezcla orgánica configurable e inversión de dirección.
 - Métricas globales por eje, exposición, cavidad, bordes, curvatura y ruido orgánico.
-- **Pintura ambiental:** oscurece cavidades y distribuye acentos sobre zonas expuestas, crestas y cambios de dirección mediante el plan voxelizado, sin leer chunks.
 - **Patrón figura:** distribución especializada según la geometría elegida.
 - En **Scales**, **Patrón figura** mantiene oscuro el cuerpo de cada pieza y concentra el contraste en sus laterales y labio frontal; no genera bandas alrededor del path.
 - **Frente/reverso:** reinicia toda la paleta entre la raíz y el frente de cada motivo.
