@@ -38,7 +38,7 @@ public enum PathShape {
             "mandalas", "rosette", "roseton", "radial", "sacred_geometry"),
     CLOUDS("clouds", "Nube orgánica", "Volumen nuboso natural con masas, lóbulos, coronas y estelas erosionadas", 18, 6, 2,
             "cloud", "nube", "nubes", "organic_cloud", "epic_cloud"),
-    WEB("web", "Telaraña", "Malla tensada entre anclajes con radios, anillos concéntricos y torsión ajustable", 8, 4, 1,
+    WEB("web", "Telaraña", "Filamento pegajoso entre dos puntos o malla radial tensada entre múltiples anclajes", 8, 4, 1,
             "spiderweb", "cobweb", "telarana", "telaraña", "red_aracnida"),
     PILLAR("pillar", "Pilar monumental", "Columna épica entre P1 y P2 con base, fuste, nervaduras y capitel", 10, 6, 2,
             "pilar", "column", "columna", "epic_pillar", "monumental_pillar"),

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Añade la figura procedural **Telaraña**, con variante elíptica automática entre P1 y P2.
+- Añade la figura procedural **Telaraña**, con un filamento pegajoso lineal entre P1 y P2, hebras elásticas, pulsos de grosor y gotas.
 - Convierte tres o más puntos en anclajes radiales ordenados, con radios y anillos concéntricos adaptados a su distribución.
 - Añade controles de apertura, separación, grosor y espiral, holograma exacto, degradados y `/komaedit web`.
 - Elimina la categoría, generadores, comandos, materiales secundarios y hologramas de Assets naturales.

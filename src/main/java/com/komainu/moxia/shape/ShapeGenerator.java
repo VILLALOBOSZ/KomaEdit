@@ -156,7 +156,7 @@ public final class ShapeGenerator {
     private static void web(VoxelCanvas canvas, SampledPath path, ShapeParameters parameters) {
         List<Vec3> anchors = uniqueWebAnchors(path.controlPoints());
         if (anchors.size() == 2) {
-            orbWeb(canvas, automaticWebAnchors(anchors.get(0), anchors.get(1), parameters), parameters);
+            stickyWebStrand(canvas, anchors.get(0), anchors.get(1), parameters);
             return;
         }
         orbWeb(canvas, sortedWebAnchors(anchors, parameters), parameters);
@@ -174,6 +174,112 @@ public final class ShapeGenerator {
             throw new IllegalArgumentException("La telaraña necesita al menos dos anclajes diferentes");
         }
         return unique;
+    }
+
+    private static void stickyWebStrand(
+            VoxelCanvas canvas,
+            Vec3 first,
+            Vec3 second,
+            ShapeParameters parameters
+    ) {
+        Vec3 axis = second.subtract(first).normalized();
+        double length = first.distance(second);
+        Vec3 gravity = new Vec3(0, -1, 0);
+        Vec3 downward = gravity.subtract(axis.multiply(gravity.dot(axis))).normalized();
+        if (downward.length() < 1.0E-4) {
+            downward = new Vec3(1, 0, 0);
+        }
+        Vec3 lateral = axis.cross(downward).normalized();
+        double roll = Math.toRadians(parameters.rollDegrees());
+        Vec3 strandDown = downward.multiply(Math.cos(roll))
+                .add(lateral.multiply(Math.sin(roll)))
+                .normalized();
+        Vec3 strandSide = lateral.multiply(Math.cos(roll))
+                .subtract(downward.multiply(Math.sin(roll)))
+                .normalized();
+        double spread = Math.min(length * 0.14, Math.max(1.25, parameters.radius() * 0.32));
+        double interval = scaledSpacing(parameters, 4.0, 11.0);
+        int samples = Math.max(4, (int) Math.ceil(length * 2.2));
+        Vec3 previous = first;
+        for (int sample = 1; sample <= samples; sample++) {
+            double progress = sample / (double) samples;
+            Vec3 point = stickyStrandPoint(
+                    first,
+                    second,
+                    strandDown,
+                    strandSide,
+                    length,
+                    spread,
+                    interval,
+                    progress
+            );
+            double distance = length * progress;
+            double pulse = 0.5 + Math.cos(Math.PI * 2.0 * distance / interval) * 0.5;
+            int localThickness = Math.clamp(
+                    parameters.thickness() + (pulse > 0.82 ? 1 : 0),
+                    1,
+                    4
+            );
+            canvas.line(previous, point, localThickness);
+            previous = point;
+        }
+
+        int cells = Math.max(1, (int) Math.ceil(length / interval));
+        for (int cell = 0; cell < cells; cell++) {
+            double startProgress = cell / (double) cells;
+            double endProgress = (cell + 1.0) / cells;
+            double middleProgress = (startProgress + endProgress) * 0.5;
+            Vec3 start = stickyStrandPoint(
+                    first, second, strandDown, strandSide, length, spread, interval, startProgress
+            );
+            Vec3 end = stickyStrandPoint(
+                    first, second, strandDown, strandSide, length, spread, interval, endProgress
+            );
+            Vec3 middle = stickyStrandPoint(
+                    first, second, strandDown, strandSide, length, spread, interval, middleProgress
+            );
+            double sideSign = (cell & 1) == 0 ? 1.0 : -1.0;
+            double sideAmount = spread * (0.48 + hash01(cell, 11, 881) * 0.42);
+            double dropAmount = spread * (0.18 + hash01(cell, 13, 883) * 0.28);
+            Vec3 loopApex = middle
+                    .add(strandSide.multiply(sideSign * sideAmount))
+                    .add(strandDown.multiply(dropAmount));
+            canvas.line(start, loopApex, 1);
+            canvas.line(loopApex, end, 1);
+
+            if ((cell & 1) == 0) {
+                double dropProgress = startProgress * 0.42 + endProgress * 0.58;
+                Vec3 dropOrigin = stickyStrandPoint(
+                        first, second, strandDown, strandSide, length, spread, interval, dropProgress
+                );
+                double dropLength = Math.min(6.0, spread * (0.70 + hash01(cell, 17, 887) * 0.75));
+                Vec3 dropTip = dropOrigin
+                        .add(strandDown.multiply(dropLength))
+                        .add(strandSide.multiply(sideSign * spread * 0.12));
+                canvas.line(dropOrigin, dropTip, 1);
+                canvas.brush(dropTip, Math.min(4, parameters.thickness() + 2));
+            }
+        }
+    }
+
+    private static Vec3 stickyStrandPoint(
+            Vec3 first,
+            Vec3 second,
+            Vec3 downward,
+            Vec3 lateral,
+            double length,
+            double spread,
+            double interval,
+            double progress
+    ) {
+        double envelope = Math.sin(Math.PI * progress);
+        double distance = length * progress;
+        double slowWave = 0.78 + Math.sin(Math.PI * 2.0 * distance / (interval * 2.4)) * 0.22;
+        double sideWave = Math.sin(Math.PI * 2.0 * distance / interval) * spread * 0.13 * envelope;
+        double sag = spread * 0.52 * envelope * slowWave;
+        return first.lerp(second, progress)
+                .add(downward.multiply(sag))
+                .add(lateral.multiply(sideWave));
     }
 
     private static List<Vec3> automaticWebAnchors(

@@ -311,8 +311,8 @@ public final class MoxiaCommands {
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> webCommand() {
-        RequiredArgumentBuilder<ServerCommandSource, Integer> aperture = argument(
-                "web_aperture", IntegerArgumentType.integer(3, 64)
+        RequiredArgumentBuilder<ServerCommandSource, Integer> elasticity = argument(
+                "web_elasticity", IntegerArgumentType.integer(3, 64)
         );
         RequiredArgumentBuilder<ServerCommandSource, Integer> spacing = argument(
                 "web_spacing", IntegerArgumentType.integer(2, 8)
@@ -321,7 +321,7 @@ public final class MoxiaCommands {
                 true,
                 PathShape.WEB,
                 "white_wool",
-                IntegerArgumentType.getInteger(context, "web_aperture"),
+                IntegerArgumentType.getInteger(context, "web_elasticity"),
                 IntegerArgumentType.getInteger(context, "web_spacing"),
                 1,
                 0
@@ -332,13 +332,13 @@ public final class MoxiaCommands {
                         true,
                         PathShape.WEB,
                         StringArgumentType.getString(context, "web_pattern"),
-                        IntegerArgumentType.getInteger(context, "web_aperture"),
+                        IntegerArgumentType.getInteger(context, "web_elasticity"),
                         IntegerArgumentType.getInteger(context, "web_spacing"),
                         1,
                         0
                 )));
-        aperture.then(spacing);
-        return literal("web").then(aperture);
+        elasticity.then(spacing);
+        return literal("web").then(elasticity);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> noodlesCommand() {
@@ -1651,7 +1651,7 @@ public final class MoxiaCommands {
                                 + "Arcos: /komaedit pillararches <altura> <ancho> [material] · "
                                 + "Torii: /komaedit torii <altura> <grosor> <detalle 2–8> [material] · "
                                 + "Mandala: /komaedit mandala <tamaño> <simetría 2–8> [material] · "
-                                + "Telaraña: /komaedit web <apertura> <separación 2–8> [material] · "
+                                + "Telaraña: /komaedit web <elasticidad> <separación 2–8> [material] · "
                                 + "Nube: /komaedit cloud <tamaño> <organicidad 2–8> [separación] [material] · "
                                 + "Noodles: /komaedit noodles <radio> <espaciado 2–8> [patrón]."
                 ).formatted(Formatting.GRAY),
