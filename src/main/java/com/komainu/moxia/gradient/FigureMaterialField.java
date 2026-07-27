@@ -25,8 +25,7 @@ final class FigureMaterialField {
 
     FigureMaterialField(ProceduralRecipe recipe, PathSnapshot snapshot) {
         this.recipe = recipe;
-        path = recipe.shape() == PathShape.SCALES || recipe.shape() == PathShape.SCALES_V2
-                || recipe.shape() == PathShape.SPIKED_SCALES
+        path = recipe.shape() == PathShape.SCALES || recipe.shape() == PathShape.SPIKED_SCALES
                 ? SampledPath.create(snapshot.points(), snapshot.closed())
                 : SampledPath.createSmooth(snapshot.points(), snapshot.closed());
         double maximumScale = Math.max(
@@ -193,8 +192,7 @@ final class FigureMaterialField {
 
     private double relief(double radial, double scale) {
         double radius = Math.max(1.0, recipe.radius() * scale);
-        if (recipe.shape() == PathShape.SCALES || recipe.shape() == PathShape.SCALES_V2
-                || recipe.shape() == PathShape.SPIKED_SCALES) {
+        if (recipe.shape() == PathShape.SCALES || recipe.shape() == PathShape.SPIKED_SCALES) {
             double inner = radius * 0.66;
             return Math.clamp((radial - inner) / Math.max(1.0, radius - inner), 0.0, 1.0);
         }
@@ -216,7 +214,7 @@ final class FigureMaterialField {
         double angularWave = 0.5 - Math.cos(angle * Math.PI * 2.0) * 0.5;
         double motifWave = 1.0 - Math.abs(motif * 2.0 - 1.0);
         return Math.clamp(switch (shape) {
-            case SCALES, SCALES_V2, SPIKED_SCALES -> smooth(motif) * 0.72 + relief * 0.28;
+            case SCALES, SPIKED_SCALES -> smooth(motif) * 0.72 + relief * 0.28;
             case TILES, HEX_ARMOR, VORONOI -> motifWave * 0.50 + angularWave * 0.30 + relief * 0.20;
             case CHAINLINK, RINGS, KNOTS -> angularWave * 0.52 + motifWave * 0.30 + relief * 0.18;
             case BEADS, CROWNS, RIB_LOOPS -> relief * 0.56 + angularWave * 0.29 + motifWave * 0.15;
@@ -243,7 +241,6 @@ final class FigureMaterialField {
                 double tileLength = Math.clamp(tileWidth * 1.05, 5.0, radius * 1.45);
                 yield tileLength * 0.62;
             }
-            case SCALES_V2 -> radius * interpolate(0.42, 1.18, spacing);
             case SPIKED_SCALES -> {
                 int columns = surfaceColumns(radius, 6, 30);
                 double tileWidth = radius * (Math.PI * 2.0 / columns) * 0.66;

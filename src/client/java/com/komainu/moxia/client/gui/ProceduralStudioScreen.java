@@ -300,20 +300,17 @@ public final class ProceduralStudioScreen extends Screen {
         boolean monumental = draft.shape() == PathShape.PILLAR || draft.shape() == PathShape.PILLAR_ARCHES;
         boolean mandala = draft.shape() == PathShape.MANDALA;
         boolean web = draft.shape() == PathShape.WEB;
-        boolean radialScales = draft.shape() == PathShape.SCALES_V2;
-        String radiusLabel = radialScales ? "Curvatura"
-                : web ? "Elasticidad"
+        String radiusLabel = web ? "Elasticidad"
                 : draft.shape() == PathShape.CLOUDS || mandala ? "Tamaño"
                 : torii ? "Grosor" : monumental ? "Ancho" : "Escala";
-        String spacingLabel = radialScales ? "Separación capas"
-                : web ? "Separación hilos"
+        String spacingLabel = web ? "Separación hilos"
                 : mandala ? "Simetría"
                 : draft.shape() == PathShape.CLOUDS ? "Organicidad"
                 : torii || monumental ? "Detalle" : "Espaciado";
         String thicknessLabel = mandala ? "Relieve"
                 : draft.shape() == PathShape.CLOUDS ? "Densidad"
                 : torii || monumental ? "Relieve" : "Grosor";
-        String rollLabel = web || radialScales ? "Relieve 3D" : torii ? "Curvatura" : "Giro";
+        String rollLabel = web ? "Relieve 3D" : torii ? "Curvatura" : "Giro";
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 18, inner, radiusLabel, draft.radius(), Control.RADIUS);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 48, inner, spacingLabel, draft.spacing(), Control.SPACING);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 78, inner, thicknessLabel, draft.thickness(), Control.THICKNESS);
@@ -1715,7 +1712,6 @@ public final class ProceduralStudioScreen extends Screen {
             case MOTIF -> "Reinicia el degradado entre la raíz y el frente de cada motivo.";
             case RELIEF -> "Separa núcleo, profundidad y zonas elevadas.";
             case ALTERNATE -> "Alterna dos rangos de la paleta entre filas consecutivas.";
-            case AMBIENT -> "Oscurece cavidades y concentra luz, color y contraste en superficies expuestas.";
             default -> "Distribuye la paleta usando " + metric.displayName().toLowerCase(Locale.ROOT) + ".";
         };
     }

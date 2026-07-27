@@ -115,7 +115,6 @@ public final class MoxiaCommands {
                 .then(cloudCommand("nube"))
                 .then(mandalaCommand())
                 .then(webCommand())
-                .then(scalesV2Command())
                 .then(noodlesCommand())
                 .then(jobCommand())
                 .then(gradientCommand())
@@ -340,37 +339,6 @@ public final class MoxiaCommands {
                 )));
         elasticity.then(spacing);
         return literal("web").then(elasticity);
-    }
-
-    private static LiteralArgumentBuilder<ServerCommandSource> scalesV2Command() {
-        RequiredArgumentBuilder<ServerCommandSource, Integer> curvature = argument(
-                "scales_v2_curvature", IntegerArgumentType.integer(3, 64)
-        );
-        RequiredArgumentBuilder<ServerCommandSource, Integer> spacing = argument(
-                "scales_v2_spacing", IntegerArgumentType.integer(2, 8)
-        ).executes(context -> generateFixed(
-                context,
-                true,
-                PathShape.SCALES_V2,
-                "deepslate_tiles",
-                IntegerArgumentType.getInteger(context, "scales_v2_curvature"),
-                IntegerArgumentType.getInteger(context, "scales_v2_spacing"),
-                2,
-                24
-        ));
-        spacing.then(argument("scales_v2_pattern", StringArgumentType.greedyString())
-                .executes(context -> generateFixed(
-                        context,
-                        true,
-                        PathShape.SCALES_V2,
-                        StringArgumentType.getString(context, "scales_v2_pattern"),
-                        IntegerArgumentType.getInteger(context, "scales_v2_curvature"),
-                        IntegerArgumentType.getInteger(context, "scales_v2_spacing"),
-                        2,
-                        24
-                )));
-        curvature.then(spacing);
-        return literal("scales2").then(curvature);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> noodlesCommand() {
@@ -1424,7 +1392,6 @@ public final class MoxiaCommands {
                 playerId,
                 () -> {
                     boolean legacyScalePath = requestedParameters.shape() == PathShape.SCALES
-                            || requestedParameters.shape() == PathShape.SCALES_V2
                             || requestedParameters.shape() == PathShape.SPIKED_SCALES;
                     SampledPath sampledPath = legacyScalePath
                             ? SampledPath.create(pathSnapshot.points(), pathSnapshot.closed())

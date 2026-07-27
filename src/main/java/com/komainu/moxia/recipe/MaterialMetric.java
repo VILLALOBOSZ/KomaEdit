@@ -8,7 +8,6 @@ public enum MaterialMetric {
     CAVITY("cavity", "Cavidades"),
     EDGES("edges", "Bordes"),
     CURVATURE("curvature", "Curvatura"),
-    AMBIENT("ambient", "Ambiental"),
     ORGANIC("organic", "Orgánico"),
     FIGURE("figure", "Patrón figura"),
     MOTIF("motif", "Frente / reverso"),
@@ -36,8 +35,7 @@ public enum MaterialMetric {
     }
 
     public boolean usesGeometryContext() {
-        return this == EXPOSURE || this == CAVITY || this == EDGES
-                || this == CURVATURE || this == AMBIENT;
+        return this == EXPOSURE || this == CAVITY || this == EDGES || this == CURVATURE;
     }
 
     public static MaterialMetric byId(String input) {
