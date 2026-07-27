@@ -197,89 +197,43 @@ public final class ShapeGenerator {
         Vec3 strandSide = lateral.multiply(Math.cos(roll))
                 .subtract(downward.multiply(Math.sin(roll)))
                 .normalized();
-        double spread = Math.min(length * 0.14, Math.max(1.25, parameters.radius() * 0.32));
-        double interval = scaledSpacing(parameters, 4.0, 11.0);
+        double sag = Math.min(length * 0.16, Math.max(0.75, parameters.radius() * 0.28));
+        double wave = Math.min(length * 0.025, Math.max(0.15, parameters.radius() * 0.06));
+        int bridgeThickness = parameters.thickness();
+        int nodeThickness = Math.clamp(
+                bridgeThickness + (int) Math.ceil(parameters.radius() / 4.0),
+                bridgeThickness + 1,
+                8
+        );
         int samples = Math.max(4, (int) Math.ceil(length * 2.2));
         Vec3 previous = first;
         for (int sample = 1; sample <= samples; sample++) {
             double progress = sample / (double) samples;
-            Vec3 point = stickyStrandPoint(
-                    first,
-                    second,
-                    strandDown,
-                    strandSide,
-                    length,
-                    spread,
-                    interval,
-                    progress
-            );
-            double distance = length * progress;
-            double pulse = 0.5 + Math.cos(Math.PI * 2.0 * distance / interval) * 0.5;
-            int localThickness = Math.clamp(
-                    parameters.thickness() + (pulse > 0.82 ? 1 : 0),
-                    1,
-                    4
+            Vec3 point = stickyBridgePoint(first, second, strandDown, strandSide, sag, wave, progress);
+            double edgeStrength = Math.pow(Math.abs(progress * 2.0 - 1.0), 3.2);
+            int localThickness = bridgeThickness + (int) Math.round(
+                    (nodeThickness - bridgeThickness) * edgeStrength
             );
             canvas.line(previous, point, localThickness);
             previous = point;
         }
-
-        int cells = Math.max(1, (int) Math.ceil(length / interval));
-        for (int cell = 0; cell < cells; cell++) {
-            double startProgress = cell / (double) cells;
-            double endProgress = (cell + 1.0) / cells;
-            double middleProgress = (startProgress + endProgress) * 0.5;
-            Vec3 start = stickyStrandPoint(
-                    first, second, strandDown, strandSide, length, spread, interval, startProgress
-            );
-            Vec3 end = stickyStrandPoint(
-                    first, second, strandDown, strandSide, length, spread, interval, endProgress
-            );
-            Vec3 middle = stickyStrandPoint(
-                    first, second, strandDown, strandSide, length, spread, interval, middleProgress
-            );
-            double sideSign = (cell & 1) == 0 ? 1.0 : -1.0;
-            double sideAmount = spread * (0.48 + hash01(cell, 11, 881) * 0.42);
-            double dropAmount = spread * (0.18 + hash01(cell, 13, 883) * 0.28);
-            Vec3 loopApex = middle
-                    .add(strandSide.multiply(sideSign * sideAmount))
-                    .add(strandDown.multiply(dropAmount));
-            canvas.line(start, loopApex, 1);
-            canvas.line(loopApex, end, 1);
-
-            if ((cell & 1) == 0) {
-                double dropProgress = startProgress * 0.42 + endProgress * 0.58;
-                Vec3 dropOrigin = stickyStrandPoint(
-                        first, second, strandDown, strandSide, length, spread, interval, dropProgress
-                );
-                double dropLength = Math.min(6.0, spread * (0.70 + hash01(cell, 17, 887) * 0.75));
-                Vec3 dropTip = dropOrigin
-                        .add(strandDown.multiply(dropLength))
-                        .add(strandSide.multiply(sideSign * spread * 0.12));
-                canvas.line(dropOrigin, dropTip, 1);
-                canvas.brush(dropTip, Math.min(4, parameters.thickness() + 2));
-            }
-        }
+        canvas.brush(first, nodeThickness);
+        canvas.brush(second, nodeThickness);
     }
 
-    private static Vec3 stickyStrandPoint(
+    private static Vec3 stickyBridgePoint(
             Vec3 first,
             Vec3 second,
             Vec3 downward,
             Vec3 lateral,
-            double length,
-            double spread,
-            double interval,
+            double sag,
+            double wave,
             double progress
     ) {
         double envelope = Math.sin(Math.PI * progress);
-        double distance = length * progress;
-        double slowWave = 0.78 + Math.sin(Math.PI * 2.0 * distance / (interval * 2.4)) * 0.22;
-        double sideWave = Math.sin(Math.PI * 2.0 * distance / interval) * spread * 0.13 * envelope;
-        double sag = spread * 0.52 * envelope * slowWave;
         return first.lerp(second, progress)
-                .add(downward.multiply(sag))
-                .add(lateral.multiply(sideWave));
+                .add(downward.multiply(sag * envelope))
+                .add(lateral.multiply(Math.sin(Math.PI * 2.0 * progress) * wave * envelope));
     }
 
     private static List<Vec3> automaticWebAnchors(
@@ -361,7 +315,7 @@ public final class ShapeGenerator {
                 .mapToDouble(anchor -> anchor.distance(center))
                 .average()
                 .orElse(1.0);
-        double ringGap = scaledSpacing(parameters, 2.5, 8.0);
+        double ringGap = scaledSpacing(parameters, 4.0, 12.0);
         double hubFraction = Math.clamp(ringGap / Math.max(averageRadius, ringGap) * 0.55, 0.06, 0.18);
         int ringCount = Math.clamp(
                 (int) Math.ceil(averageRadius * (1.0 - hubFraction) / ringGap),
@@ -369,53 +323,64 @@ public final class ShapeGenerator {
                 64
         );
         int thickness = parameters.thickness();
-        double twist = parameters.rollDegrees() / 360.0 * anchors.size() * 0.45;
-        double sag = Math.min(averageRadius * 0.10, parameters.radius() * 0.18);
+        double curvature = Math.clamp(parameters.radius() / 56.0, 0.10, 0.36);
+        double roll = Math.toRadians(parameters.rollDegrees());
 
-        List<List<Vec3>> rings = new ArrayList<>(ringCount);
+        canvas.brush(center, Math.min(5, thickness + 1));
+        for (Vec3 anchor : anchors) {
+            canvas.line(center, anchor, thickness);
+            canvas.brush(anchor, Math.min(6, thickness + 1));
+        }
         for (int ring = 1; ring <= ringCount; ring++) {
             double progress = hubFraction + (1.0 - hubFraction) * ring / ringCount;
-            List<Vec3> points = new ArrayList<>(anchors.size());
             for (int spoke = 0; spoke < anchors.size(); spoke++) {
-                points.add(webPoint(anchors, center, normal, spoke, progress, twist, sag));
+                Vec3 start = center.lerp(anchors.get(spoke), progress);
+                Vec3 end = center.lerp(anchors.get((spoke + 1) % anchors.size()), progress);
+                curvedWebThread(
+                        canvas,
+                        start,
+                        end,
+                        center,
+                        normal,
+                        curvature,
+                        roll * progress,
+                        thickness
+                );
             }
-            rings.add(points);
-            connectClosed(canvas, points, thickness);
-        }
-
-        for (int spoke = 0; spoke < anchors.size(); spoke++) {
-            Vec3 previous = center;
-            int radialSteps = Math.max(8, ringCount * 3);
-            for (int step = 1; step <= radialSteps; step++) {
-                double progress = step / (double) radialSteps;
-                Vec3 point = webPoint(anchors, center, normal, spoke, progress, twist, sag);
-                canvas.line(previous, point, thickness);
-                previous = point;
-            }
-        }
-
-        int hubThickness = Math.min(4, thickness + 1);
-        for (Vec3 point : rings.getFirst()) {
-            canvas.line(center, point, hubThickness);
         }
     }
 
-    private static Vec3 webPoint(
-            List<Vec3> anchors,
+    private static void curvedWebThread(
+            VoxelCanvas canvas,
+            Vec3 start,
+            Vec3 end,
             Vec3 center,
             Vec3 normal,
-            int spoke,
-            double progress,
-            double twist,
-            double sag
+            double curvature,
+            double roll,
+            int thickness
     ) {
-        double shifted = spoke + twist * (1.0 - progress);
-        int firstIndex = Math.floorMod((int) Math.floor(shifted), anchors.size());
-        int secondIndex = (firstIndex + 1) % anchors.size();
-        double fraction = shifted - Math.floor(shifted);
-        Vec3 boundary = anchors.get(firstIndex).lerp(anchors.get(secondIndex), fraction);
-        double depth = Math.sin(Math.PI * progress) * sag;
-        return center.lerp(boundary, progress).add(normal.multiply(depth));
+        Vec3 chordMiddle = start.lerp(end, 0.5);
+        Vec3 inward = center.subtract(chordMiddle).normalized();
+        double radialDistance = (start.distance(center) + end.distance(center)) * 0.5;
+        double bow = Math.min(start.distance(end) * curvature, radialDistance * 0.56);
+        Vec3 arcDirection = inward.multiply(Math.cos(roll))
+                .add(normal.multiply(Math.sin(roll)))
+                .normalized();
+        Vec3 control = chordMiddle.add(arcDirection.multiply(bow));
+        int steps = Math.max(4, (int) Math.ceil(
+                (start.distance(control) + control.distance(end)) * 1.35
+        ));
+        Vec3 previous = start;
+        for (int step = 1; step <= steps; step++) {
+            double progress = step / (double) steps;
+            double inverse = 1.0 - progress;
+            Vec3 point = start.multiply(inverse * inverse)
+                    .add(control.multiply(2.0 * inverse * progress))
+                    .add(end.multiply(progress * progress));
+            canvas.line(previous, point, thickness);
+            previous = point;
+        }
     }
 
     private static Vec3 webNormal(List<Vec3> anchors, Vec3 center) {
@@ -443,12 +408,6 @@ public final class ShapeGenerator {
             sum = sum.add(point);
         }
         return sum.multiply(1.0 / points.size());
-    }
-
-    private static void connectClosed(VoxelCanvas canvas, List<Vec3> points, int thickness) {
-        for (int index = 0; index < points.size(); index++) {
-            canvas.line(points.get(index), points.get((index + 1) % points.size()), thickness);
-        }
     }
 
     private static void coil(VoxelCanvas canvas, SampledPath path, ShapeParameters parameters) {

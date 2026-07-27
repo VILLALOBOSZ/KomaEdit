@@ -310,7 +310,7 @@ public final class ProceduralStudioScreen extends Screen {
         String thicknessLabel = mandala ? "Relieve"
                 : draft.shape() == PathShape.CLOUDS ? "Densidad"
                 : torii || monumental ? "Relieve" : "Grosor";
-        String rollLabel = web ? "Giro / espiral" : torii ? "Curvatura" : "Giro";
+        String rollLabel = web ? "Relieve 3D" : torii ? "Curvatura" : "Giro";
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 18, inner, radiusLabel, draft.radius(), Control.RADIUS);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 48, inner, spacingLabel, draft.spacing(), Control.SPACING);
         drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 78, inner, thicknessLabel, draft.thickness(), Control.THICKNESS);
