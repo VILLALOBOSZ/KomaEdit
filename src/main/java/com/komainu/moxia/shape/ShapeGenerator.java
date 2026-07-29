@@ -22,6 +22,7 @@ public final class ShapeGenerator {
             case SPIKED_SCALES -> spikedScales(canvas, path, parameters);
             case BEADS -> beads(canvas, path, parameters);
             case COIL -> coil(canvas, path, parameters);
+            case LIGHTNING -> lightning(canvas, path, parameters);
             case CROWNS -> crowns(canvas, path, parameters);
             case HONEYCOMB -> honeycomb(canvas, path, parameters);
             case OSCILLATE -> oscillate(canvas, path, parameters);
@@ -160,6 +161,298 @@ public final class ShapeGenerator {
             return;
         }
         orbWeb(canvas, sortedWebAnchors(anchors, parameters), parameters);
+    }
+
+    private static void lightning(
+            VoxelCanvas canvas,
+            SampledPath path,
+            ShapeParameters parameters
+    ) {
+        List<Vec3> anchors = lightningAnchors(path.controlPoints(), path.closed());
+        int segmentCount = path.closed() ? anchors.size() : anchors.size() - 1;
+        Vec3 ringCenter = path.closed() ? average(anchors) : null;
+        Vec3 ringNormal = path.closed() ? upwardNormal(webNormal(anchors, ringCenter)) : null;
+        int figureSeed = lightningSeed(anchors, path.closed());
+        int coreThickness = parameters.thickness();
+
+        for (int segment = 0; segment < segmentCount; segment++) {
+            checkInterrupted();
+            Vec3 start = anchors.get(segment);
+            Vec3 end = anchors.get((segment + 1) % anchors.size());
+            int segmentSeed = figureSeed ^ lightningSeed(start, end, segment);
+            List<Vec3> core = lightningPolyline(
+                    start,
+                    end,
+                    parameters.radius(),
+                    parameters.rollDegrees(),
+                    segmentSeed
+            );
+            drawLightningPolyline(canvas, core, coreThickness);
+            lightningBranches(
+                    canvas,
+                    core,
+                    start,
+                    end,
+                    ringCenter,
+                    ringNormal,
+                    parameters,
+                    segmentSeed
+            );
+            canvas.brush(start, Math.min(6, coreThickness + 1));
+            canvas.brush(end, Math.min(6, coreThickness + 1));
+        }
+    }
+
+    private static List<Vec3> lightningAnchors(List<Vec3> controls, boolean closed) {
+        List<Vec3> anchors = new ArrayList<>(controls.size());
+        for (Vec3 control : controls) {
+            if (anchors.isEmpty() || anchors.getLast().distance(control) >= 0.25) {
+                anchors.add(control);
+            }
+        }
+        if (closed && anchors.size() > 1 && anchors.getFirst().distance(anchors.getLast()) < 0.25) {
+            anchors.removeLast();
+        }
+        int minimum = closed ? 3 : 2;
+        if (anchors.size() < minimum) {
+            throw new IllegalArgumentException(
+                    "Los rayos necesitan al menos " + minimum + " puntos diferentes"
+            );
+        }
+        return anchors;
+    }
+
+    private static List<Vec3> lightningPolyline(
+            Vec3 start,
+            Vec3 end,
+            double amplitude,
+            int chaosDegrees,
+            int seed
+    ) {
+        Vec3 axis = end.subtract(start).normalized();
+        double length = start.distance(end);
+        Vec3 firstAxis = lightningPerpendicular(axis);
+        Vec3 secondAxis = axis.cross(firstAxis).normalized();
+        double vertexGap = Math.clamp(amplitude * 0.58, 2.0, 7.0);
+        int vertices = Math.clamp((int) Math.ceil(length / vertexGap), 2, 512);
+        double depthMix = 0.20 + Math.abs(chaosDegrees) / 180.0 * 0.80;
+        double depthSign = chaosDegrees < 0 ? -1.0 : 1.0;
+        List<Vec3> points = new ArrayList<>(vertices + 1);
+        for (int vertex = 0; vertex <= vertices; vertex++) {
+            double progress = vertex / (double) vertices;
+            if (vertex == 0) {
+                points.add(start);
+                continue;
+            }
+            if (vertex == vertices) {
+                points.add(end);
+                continue;
+            }
+            double envelope = Math.pow(Math.sin(Math.PI * progress), 0.58);
+            double firstJitter = signedHash(seed, vertex, 1_103);
+            double secondJitter = signedHash(seed, vertex, 1_117);
+            double pulse = 0.72 + hash01(seed, vertex, 1_121) * 0.28;
+            points.add(start.lerp(end, progress)
+                    .add(firstAxis.multiply(amplitude * envelope * firstJitter * pulse))
+                    .add(secondAxis.multiply(
+                            amplitude * envelope * secondJitter * depthMix * depthSign
+                    )));
+        }
+        return points;
+    }
+
+    private static void drawLightningPolyline(
+            VoxelCanvas canvas,
+            List<Vec3> points,
+            int thickness
+    ) {
+        for (int index = 1; index < points.size(); index++) {
+            canvas.line(points.get(index - 1), points.get(index), thickness);
+        }
+    }
+
+    private static void lightningBranches(
+            VoxelCanvas canvas,
+            List<Vec3> core,
+            Vec3 start,
+            Vec3 end,
+            Vec3 ringCenter,
+            Vec3 ringNormal,
+            ShapeParameters parameters,
+            int seed
+    ) {
+        double density = (parameters.spacing() - 2.0) / 6.0;
+        double segmentLength = start.distance(end);
+        double branchGap = interpolate(30.0, 7.0, density);
+        int branchCount = Math.clamp(
+                (int) Math.round(segmentLength / branchGap) + (parameters.spacing() >= 7 ? 1 : 0),
+                1,
+                128
+        );
+        Vec3 segmentAxis = end.subtract(start).normalized();
+        Vec3 firstAxis = lightningPerpendicular(segmentAxis);
+        Vec3 secondAxis = segmentAxis.cross(firstAxis).normalized();
+        int branchThickness = Math.max(1, parameters.thickness() - 1);
+
+        for (int branch = 0; branch < branchCount; branch++) {
+            double slot = (branch + 0.24 + hash01(seed, branch, 1_201) * 0.52) / branchCount;
+            double progress = Math.clamp(slot, 0.10, 0.90);
+            Vec3 origin = pointAlongPolyline(core, progress);
+            Vec3 direction = lightningBranchDirection(
+                    origin,
+                    segmentAxis,
+                    firstAxis,
+                    secondAxis,
+                    ringCenter,
+                    ringNormal,
+                    seed,
+                    branch
+            );
+            double branchLength = Math.min(
+                    segmentLength * 0.38,
+                    parameters.radius() * interpolate(1.15, 2.95, density)
+                            * interpolate(0.72, 1.28, hash01(seed, branch, 1_223))
+                            + 1.5
+            );
+            Vec3 branchEnd = origin.add(direction.multiply(branchLength));
+            List<Vec3> branchBolt = lightningPolyline(
+                    origin,
+                    branchEnd,
+                    Math.max(0.75, parameters.radius() * 0.32),
+                    parameters.rollDegrees(),
+                    seed ^ branch * 1_229 ^ 0x45D9F3B
+            );
+            drawLightningPolyline(canvas, branchBolt, branchThickness);
+            if (parameters.spacing() >= 6
+                    && hash01(seed, branch, 1_237) < interpolate(0.28, 0.72, density)) {
+                lightningFork(
+                        canvas,
+                        branchBolt,
+                        direction,
+                        firstAxis,
+                        secondAxis,
+                        parameters,
+                        seed,
+                        branch,
+                        branchLength
+                );
+            }
+        }
+    }
+
+    private static Vec3 lightningBranchDirection(
+            Vec3 origin,
+            Vec3 segmentAxis,
+            Vec3 firstAxis,
+            Vec3 secondAxis,
+            Vec3 ringCenter,
+            Vec3 ringNormal,
+            int seed,
+            int branch
+    ) {
+        double lateralAngle = hash01(seed, branch, 1_303) * Math.PI * 2.0;
+        Vec3 randomSide = firstAxis.multiply(Math.cos(lateralAngle))
+                .add(secondAxis.multiply(Math.sin(lateralAngle)))
+                .normalized();
+        if (ringCenter == null || ringNormal == null) {
+            return randomSide
+                    .add(segmentAxis.multiply(signedHash(seed, branch, 1_307) * 0.24))
+                    .normalized();
+        }
+        Vec3 outward = origin.subtract(ringCenter);
+        outward = outward.subtract(ringNormal.multiply(outward.dot(ringNormal))).normalized();
+        if (outward.length() < 1.0E-4) {
+            outward = randomSide;
+        }
+        Vec3 tangent = ringNormal.cross(outward).normalized();
+        return outward.multiply(interpolate(0.72, 1.08, hash01(seed, branch, 1_309)))
+                .add(ringNormal.multiply(interpolate(0.22, 0.82, hash01(seed, branch, 1_313))))
+                .add(tangent.multiply(signedHash(seed, branch, 1_321) * 0.28))
+                .normalized();
+    }
+
+    private static void lightningFork(
+            VoxelCanvas canvas,
+            List<Vec3> parent,
+            Vec3 parentDirection,
+            Vec3 firstAxis,
+            Vec3 secondAxis,
+            ShapeParameters parameters,
+            int seed,
+            int branch,
+            double parentLength
+    ) {
+        double progress = interpolate(0.48, 0.76, hash01(seed, branch, 1_401));
+        Vec3 origin = pointAlongPolyline(parent, progress);
+        double angle = hash01(seed, branch, 1_409) * Math.PI * 2.0;
+        Vec3 side = firstAxis.multiply(Math.cos(angle))
+                .add(secondAxis.multiply(Math.sin(angle)))
+                .normalized();
+        Vec3 direction = parentDirection.multiply(0.44).add(side.multiply(0.90)).normalized();
+        double length = parentLength * interpolate(0.28, 0.52, hash01(seed, branch, 1_419));
+        List<Vec3> fork = lightningPolyline(
+                origin,
+                origin.add(direction.multiply(length)),
+                Math.max(0.55, parameters.radius() * 0.20),
+                parameters.rollDegrees(),
+                seed ^ branch * 1_421 ^ 0x27D4EB2D
+        );
+        drawLightningPolyline(canvas, fork, 1);
+    }
+
+    private static Vec3 pointAlongPolyline(List<Vec3> points, double progress) {
+        double scaled = Math.clamp(progress, 0.0, 1.0) * (points.size() - 1);
+        int index = Math.min(points.size() - 2, (int) Math.floor(scaled));
+        return points.get(index).lerp(points.get(index + 1), scaled - index);
+    }
+
+    private static Vec3 lightningPerpendicular(Vec3 axis) {
+        Vec3 reference = Math.abs(axis.y()) < 0.88 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+        Vec3 perpendicular = axis.cross(reference).normalized();
+        if (perpendicular.length() < 1.0E-4) {
+            return new Vec3(0, 0, 1);
+        }
+        return perpendicular;
+    }
+
+    private static Vec3 upwardNormal(Vec3 normal) {
+        if (normal.y() < -1.0E-6) {
+            return normal.multiply(-1.0);
+        }
+        return normal;
+    }
+
+    private static int lightningSeed(List<Vec3> anchors, boolean closed) {
+        int seed = closed ? 0x5F356495 : 0x2C1B3C6D;
+        for (int index = 0; index < anchors.size(); index++) {
+            Vec3 anchor = anchors.get(index);
+            seed ^= lightningSeed(anchor, anchor, index);
+            seed = Integer.rotateLeft(seed * 0x45D9F3B, 11);
+        }
+        return seed;
+    }
+
+    private static int lightningSeed(Vec3 start, Vec3 end, int segment) {
+        int startX = (int) Math.floor(start.x());
+        int startY = (int) Math.floor(start.y());
+        int startZ = (int) Math.floor(start.z());
+        int endX = (int) Math.floor(end.x());
+        int endY = (int) Math.floor(end.y());
+        int endZ = (int) Math.floor(end.z());
+        int seed = startX * 73_856_093
+                ^ startY * 19_349_663
+                ^ startZ * 83_492_791
+                ^ endX * 1_369_723
+                ^ endY * 4_294_967
+                ^ endZ * 15_485_867
+                ^ segment * 1_048_583;
+        seed ^= seed >>> 16;
+        seed *= 0x45D9F3B;
+        return seed ^ seed >>> 16;
+    }
+
+    private static double signedHash(int first, int second, int salt) {
+        return hash01(first, second, salt) * 2.0 - 1.0;
     }
 
     private static List<Vec3> uniqueWebAnchors(List<Vec3> controls) {
