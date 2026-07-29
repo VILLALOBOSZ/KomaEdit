@@ -29,6 +29,7 @@ Las figuras convierten una trayectoria tridimensional en superficies o volúmene
 - Spiked Scales
 - Beads
 - Coil
+- Rayos ramificados
 - Crowns
 - Honeycomb
 - Oscillate
@@ -46,6 +47,65 @@ Las figuras convierten una trayectoria tridimensional en superficies o volúmene
 - Telarañas adaptativas
 
 Cada figura conserva su gramática propia y puede combinar radio, espaciado, grosor, giro y materiales sin reutilizar estado residual de una figura anterior.
+
+## Rayos ramificados
+
+### Objetivo y acceso
+
+La figura **Rayos** crea descargas tridimensionales quebradas entre los puntos asignados. Puede seleccionarse desde **Figuras** en Procedural Studio o ejecutarse mediante:
+
+```text
+/komaedit lightning <amplitud 2–32> <ramificación 2–8> [patrón]
+/komaedit rayos <amplitud 2–32> <ramificación 2–8> [patrón]
+```
+
+El comando general también está disponible:
+
+```text
+/komaedit build lightning <patrón> <amplitud> <ramificación 2–8> <grosor 1–4> <caos -180–180>
+```
+
+### Comportamiento
+
+- Cada par de puntos consecutivos se conecta con un núcleo quebrado y continuo.
+- El desplazamiento se obtiene de una semilla formada por las coordenadas y el orden de los puntos. No utiliza aleatoriedad temporal: holograma, Build y actualizaciones producen el mismo resultado.
+- Puntos adicionales crean nuevos tramos con una distribución propia, pero todos los anclajes permanecen exactamente en su posición.
+- Las ramas nacen sobre el núcleo y se alejan lateralmente. Con ramificación alta algunas ramas producen una segunda bifurcación.
+- Una trayectoria cerrada conecta el último punto con el primero y convierte las ramas en una corona exterior. El centro no se rellena.
+- El modo circular orienta parte de las ramas fuera del plano para obtener lenguas similares a electricidad o fuego.
+
+### Parámetros
+
+- **Amplitud:** `2–32`; controla cuánto se separan los quiebres del segmento recto.
+- **Ramificación:** `2–8`; controla densidad de ramas y posibilidad de bifurcaciones secundarias.
+- **Grosor núcleo:** `1–4`; modifica el diámetro del rayo principal. Las ramas conservan un grosor menor.
+- **Caos 3D:** `-180–180`; su magnitud aumenta la profundidad tridimensional y su signo invierte el lado principal del desplazamiento.
+
+### Círculo hueco automático
+
+```text
+/komaedit lightningcircle <radio 4–128> <ramificación 2–8> [patrón]
+/komaedit circulorayos <radio 4–128> <ramificación 2–8> [patrón]
+```
+
+- El círculo se centra en la posición actual del jugador y utiliza hasta `32` anclajes.
+- El radio del comando define el tamaño del aro; la amplitud eléctrica se calcula proporcionalmente y se limita a un rango seguro.
+- El recorrido queda guardado como trayectoria cerrada para poder editar sus puntos, cambiar materiales o reconstruirlo desde el Studio.
+
+### Materiales
+
+- El patrón predeterminado es `45%light_blue_concrete,25%white_concrete,20%sea_lantern,10%verdant_froglight`.
+- Acepta cualquier bloque, patrón WorldEdit o degradado del Studio.
+- Para fuego puede utilizarse `40%magma_block,30%orange_concrete,20%shroomlight,10%yellow_concrete`.
+- **Patrón figura** concentra los extremos de la paleta en ramas, zonas expuestas y descargas alejadas del núcleo.
+
+### Rendimiento y limitaciones
+
+- La cantidad de vértices depende de la longitud y la amplitud; cada segmento se limita a `512` vértices.
+- Cada tramo admite hasta `128` ramas antes del límite global de geometría.
+- El generador respeta los límites generales de `32` puntos, `4096` bloques de trayectoria y `1 500 000` bloques generados.
+- Toda la geometría se calcula fuera del hilo principal, admite cancelación y se deduplica mientras se crea.
+- El aro automático es horizontal. Para un portal vertical, marque manualmente los puntos en un plano vertical y cierre la trayectoria.
 
 ## Telarañas adaptativas
 

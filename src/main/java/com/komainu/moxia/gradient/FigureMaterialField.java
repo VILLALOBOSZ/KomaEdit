@@ -217,6 +217,7 @@ final class FigureMaterialField {
             case SCALES, SPIKED_SCALES -> smooth(motif) * 0.72 + relief * 0.28;
             case TILES, HEX_ARMOR, VORONOI -> motifWave * 0.50 + angularWave * 0.30 + relief * 0.20;
             case CHAINLINK, RINGS, KNOTS -> angularWave * 0.52 + motifWave * 0.30 + relief * 0.18;
+            case LIGHTNING -> motifWave * 0.24 + angularWave * 0.26 + relief * 0.50;
             case BEADS, CROWNS, RIB_LOOPS -> relief * 0.56 + angularWave * 0.29 + motifWave * 0.15;
             case COIL, OSCILLATE, NOODLES -> angularWave * 0.50 + smooth(motif) * 0.35 + relief * 0.15;
             case HONEYCOMB -> motifWave * 0.42 + angularWave * 0.42 + relief * 0.16;
@@ -249,6 +250,7 @@ final class FigureMaterialField {
             }
             case BEADS -> radius * interpolate(1.55, 4.60, spacing) + gap * radius;
             case COIL -> radius * interpolate(0.90, 3.40, spacing);
+            case LIGHTNING -> radius * interpolate(0.46, 1.08, spacing);
             case CROWNS -> radius * interpolate(0.80, 2.30, spacing);
             case HONEYCOMB -> radius * interpolate(0.45, 1.50, spacing);
             case OSCILLATE -> radius * interpolate(1.10, 4.50, spacing);

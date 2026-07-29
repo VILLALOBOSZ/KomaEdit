@@ -73,6 +73,7 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `spiked_scales`
 - `beads`
 - `coil`
+- `lightning`
 - `crowns`
 - `honeycomb`
 - `oscillate`
@@ -101,6 +102,25 @@ Ejemplo:
 
 ```text
 /komaedit web 12 4 white_wool
+```
+
+## Rayos ramificados
+
+- **Trayectoria por puntos:** cada par de puntos consecutivos queda unido por un núcleo quebrado. Todos los anclajes se conservan exactamente.
+- **Aleatoriedad estable:** las desviaciones y bifurcaciones se calculan a partir de las coordenadas marcadas; mover un punto cambia el rayo, pero el mismo recorrido siempre produce el mismo holograma y Build.
+- **Ramificación configurable:** valores `2–8`; los valores altos reducen la distancia entre ramas y permiten bifurcaciones secundarias.
+- **Corona hueca:** al cerrar la trayectoria, las descargas se orientan hacia fuera y fuera del plano, formando un aro de electricidad o fuego sin colocar bloques en el centro.
+- **Controles:** **Amplitud**, **Ramificación**, **Grosor núcleo** y **Caos 3D**.
+- **Material predeterminado:** mezcla de concreto celeste y blanco, linterna marina y verdant froglight. Puede sustituirse por magma, shroomlight y bloques naranjas para un aro de fuego.
+- **Comandos rápidos:** `/komaedit lightning <amplitud> <ramificación 2–8> [patrón]` y `/komaedit rayos`.
+- **Círculo automático:** `/komaedit lightningcircle <radio> <ramificación 2–8> [patrón]` o `/komaedit circulorayos`.
+
+Ejemplos:
+
+```text
+/komaedit lightning 8 6
+/komaedit lightningcircle 40 7
+/komaedit circulorayos 48 8 40%magma_block,30%orange_concrete,20%shroomlight,10%yellow_concrete
 ```
 
 ## Mandalas tridimensionales

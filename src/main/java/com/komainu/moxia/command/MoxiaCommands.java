@@ -71,6 +71,8 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public final class MoxiaCommands {
+    private static final String LIGHTNING_PATTERN =
+            "45%light_blue_concrete,25%white_concrete,20%sea_lantern,10%verdant_froglight";
     private static final SuggestionProvider<ServerCommandSource> SHAPE_SUGGESTIONS = (context, builder) -> {
         Arrays.stream(PathShape.values()).map(PathShape::id).forEach(builder::suggest);
         return builder.buildFuture();
@@ -115,6 +117,10 @@ public final class MoxiaCommands {
                 .then(cloudCommand("nube"))
                 .then(mandalaCommand())
                 .then(webCommand())
+                .then(lightningCommand("lightning"))
+                .then(lightningCommand("rayos"))
+                .then(lightningCircleCommand("lightningcircle"))
+                .then(lightningCircleCommand("circulorayos"))
                 .then(noodlesCommand())
                 .then(jobCommand())
                 .then(gradientCommand())
@@ -339,6 +345,60 @@ public final class MoxiaCommands {
                 )));
         elasticity.then(spacing);
         return literal("web").then(elasticity);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> lightningCommand(String commandName) {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> amplitude = argument(
+                commandName + "_amplitude", IntegerArgumentType.integer(2, 32)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> branching = argument(
+                commandName + "_branching", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateFixed(
+                context,
+                true,
+                PathShape.LIGHTNING,
+                LIGHTNING_PATTERN,
+                IntegerArgumentType.getInteger(context, commandName + "_amplitude"),
+                IntegerArgumentType.getInteger(context, commandName + "_branching"),
+                1,
+                45
+        ));
+        branching.then(argument(commandName + "_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateFixed(
+                        context,
+                        true,
+                        PathShape.LIGHTNING,
+                        StringArgumentType.getString(context, commandName + "_pattern"),
+                        IntegerArgumentType.getInteger(context, commandName + "_amplitude"),
+                        IntegerArgumentType.getInteger(context, commandName + "_branching"),
+                        1,
+                        45
+                )));
+        amplitude.then(branching);
+        return literal(commandName).then(amplitude);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> lightningCircleCommand(String commandName) {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                commandName + "_radius", IntegerArgumentType.integer(4, 128)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> branching = argument(
+                commandName + "_branching", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateLightningCircle(
+                context,
+                LIGHTNING_PATTERN,
+                IntegerArgumentType.getInteger(context, commandName + "_radius"),
+                IntegerArgumentType.getInteger(context, commandName + "_branching")
+        ));
+        branching.then(argument(commandName + "_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateLightningCircle(
+                        context,
+                        StringArgumentType.getString(context, commandName + "_pattern"),
+                        IntegerArgumentType.getInteger(context, commandName + "_radius"),
+                        IntegerArgumentType.getInteger(context, commandName + "_branching")
+                )));
+        radius.then(branching);
+        return literal(commandName).then(radius);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> noodlesCommand() {
@@ -1351,6 +1411,46 @@ public final class MoxiaCommands {
         }
     }
 
+    private static int generateLightningCircle(
+            CommandContext<ServerCommandSource> context,
+            String pattern,
+            int circleRadius,
+            int branching
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        var center = player.getBlockPos();
+        int requestedPoints = Math.clamp(
+                (int) Math.ceil(Math.PI * 2.0 * circleRadius / 7.0),
+                12,
+                PathManager.MAX_POINTS
+        );
+        LinkedHashSet<BlockVector3> uniquePoints = new LinkedHashSet<>();
+        for (int pointIndex = 0; pointIndex < requestedPoints; pointIndex++) {
+            double angle = Math.PI * 2.0 * pointIndex / requestedPoints;
+            uniquePoints.add(BlockVector3.at(
+                    center.getX() + (int) Math.round(Math.cos(angle) * circleRadius),
+                    center.getY(),
+                    center.getZ() + (int) Math.round(Math.sin(angle) * circleRadius)
+            ));
+        }
+        if (uniquePoints.size() < 3) {
+            return fail(context.getSource(), "El círculo de rayos necesita al menos tres puntos distintos");
+        }
+        PathManager.replace(player.getUuid(), new ArrayList<>(uniquePoints), true);
+        PathHologramSync.sync(player);
+        int amplitude = Math.clamp((int) Math.round(circleRadius * 0.10), 3, 16);
+        return generateFixed(
+                context,
+                true,
+                PathShape.LIGHTNING,
+                pattern,
+                amplitude,
+                branching,
+                1,
+                45
+        );
+    }
+
     private static int generateTorii(
             CommandContext<ServerCommandSource> context,
             String pattern,
@@ -1638,7 +1738,7 @@ public final class MoxiaCommands {
         context.getSource().sendFeedback(
                 () -> Text.literal(
                         "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, oscillate, "
-                                + "ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
+                                + "lightning, ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
                                 + "pillararches, torii y archbridge."
                 )
                         .formatted(Formatting.AQUA),
@@ -1652,6 +1752,8 @@ public final class MoxiaCommands {
                                 + "Torii: /komaedit torii <altura> <grosor> <detalle 2–8> [material] · "
                                 + "Mandala: /komaedit mandala <tamaño> <simetría 2–8> [material] · "
                                 + "Telaraña: /komaedit web <elasticidad> <separación 2–8> [material] · "
+                                + "Rayos: /komaedit lightning <amplitud> <ramificación 2–8> [material] · "
+                                + "Aro: /komaedit lightningcircle <radio> <ramificación 2–8> [material] · "
                                 + "Nube: /komaedit cloud <tamaño> <organicidad 2–8> [separación] [material] · "
                                 + "Noodles: /komaedit noodles <radio> <espaciado 2–8> [patrón]."
                 ).formatted(Formatting.GRAY),

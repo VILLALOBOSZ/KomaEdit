@@ -14,6 +14,8 @@ public enum PathShape {
             "beats", "cuentas", "be"),
     COIL("coil", "Espiral", "Hélice continua tipo resorte, cable o raíz", 7, 5, 2,
             "espiral", "resorte", "spring", "helix"),
+    LIGHTNING("lightning", "Rayos", "Descarga 3D quebrada con ramificaciones deterministas; cerrada forma una corona hueca", 7, 5, 1,
+            "rayos", "rayo", "bolt", "electric", "electricidad", "energy_ring"),
     CROWNS("crowns", "Coronas", "Bucles florales dentados que alternan su rotación", 9, 5, 2,
             "crown", "corona", "coronas", "flores", "flowers", "petals"),
     HONEYCOMB("honeycomb", "Panal", "Celdas hexagonales tridimensionales conectadas", 5, 5, 1,
