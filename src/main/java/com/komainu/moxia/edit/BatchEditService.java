@@ -1,6 +1,8 @@
 package com.komainu.moxia.edit;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.persistence.OperationLedger;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -48,6 +50,7 @@ public final class BatchEditService {
             String description,
             JobListener listener
     ) {
+        OperationPolicy.validate(player, plan.size(), JOBS.size());
         if (plan.size() == 0) {
             throw new IllegalArgumentException("La operación no contiene bloques");
         }
@@ -84,6 +87,7 @@ public final class BatchEditService {
             String description
     ) {
         long volume = region.getVolume();
+        OperationPolicy.validate(player, volume, JOBS.size());
         if (volume <= 0) {
             throw new IllegalArgumentException("La selección no contiene bloques");
         }
@@ -127,6 +131,7 @@ public final class BatchEditService {
             String description,
             JobListener listener
     ) {
+        OperationPolicy.validate(player, plan.size(), JOBS.size());
         if (plan.size() == 0) {
             throw new IllegalArgumentException("La operación no contiene bloques");
         }
@@ -212,6 +217,7 @@ public final class BatchEditService {
     }
 
     private static void requireCapture(PackedBlockPlan plan, ServerPlayerEntity player) {
+        OperationPolicy.validate(player, plan.size(), JOBS.size());
         if (plan.size() == 0 || plan.captureSize() == 0) {
             throw new IllegalArgumentException("El plan de instancia no contiene bloques capturables");
         }
@@ -227,6 +233,7 @@ public final class BatchEditService {
             String description
     ) {
         long volume = clipboard.getRegion().getVolume();
+        OperationPolicy.validate(player, volume, JOBS.size());
         if (volume <= 0) {
             throw new IllegalArgumentException("El portapapeles está vacío");
         }
@@ -262,7 +269,9 @@ public final class BatchEditService {
         if (job == null) {
             return Optional.empty();
         }
-        return Optional.of(new JobStatus(job.description, job.processed, job.total, job.editSession.size()));
+        return Optional.of(new JobStatus(
+                job.id, job.description, job.processed, job.total, job.editSession.size()
+        ));
     }
 
     public static boolean cancel(UUID playerId, boolean notify) {
@@ -360,6 +369,8 @@ public final class BatchEditService {
             if (!job.hasNext()) {
                 JOBS.remove(job.playerId);
                 finish(job, player, false);
+            } else {
+                job.persistProgress();
             }
         } catch (MaxChangedBlocksException exception) {
             JOBS.remove(job.playerId);
@@ -392,6 +403,16 @@ public final class BatchEditService {
                 ), false);
             }
         }
+        OperationLedger.finish(
+                job.playerId,
+                job.id,
+                job.description,
+                job.processed,
+                job.total,
+                job.editSession.size(),
+                job.protectedBlocks,
+                cancelled
+        );
         if (job.listener != null) {
             try {
                 job.listener.finished(cancelled, job.editSession.size());
@@ -437,13 +458,15 @@ public final class BatchEditService {
         void finished(boolean cancelled, int changedBlocks, int[] capturedStateIds, int protectedBlocks);
     }
 
-    public record JobStatus(String description, long processed, long total, int changed) {
+    public record JobStatus(String id, String description, long processed, long total, int changed) {
         public int percentage() {
             return total == 0 ? 100 : (int) Math.min(100L, processed * 100L / total);
         }
     }
 
     private static final class Job {
+        private static final long JOURNAL_INTERVAL_NANOS = 1_000_000_000L;
+        private final String id;
         private final UUID playerId;
         private final PackedBlockPlan plan;
         private final Pattern defaultPattern;
@@ -460,6 +483,8 @@ public final class BatchEditService {
         private final int[] capturedStateIds;
         private long processed;
         private int protectedBlocks;
+        private long lastJournalAt;
+        private long lastJournalProcessed;
 
         private Job(
                 UUID playerId,
@@ -476,6 +501,7 @@ public final class BatchEditService {
                 JobListener listener,
                 CapturedJobListener capturedListener
         ) {
+            this.id = OperationLedger.start(playerId, description, total);
             this.playerId = playerId;
             this.plan = plan;
             this.defaultPattern = defaultPattern;
@@ -493,6 +519,16 @@ public final class BatchEditService {
                     ? new int[0]
                     : new int[plan.captureSize()];
             Arrays.fill(this.capturedStateIds, PackedBlockPlan.NO_EXPECTED_STATE);
+        }
+
+        private void persistProgress() {
+            long now = System.nanoTime();
+            if (processed == lastJournalProcessed || now - lastJournalAt < JOURNAL_INTERVAL_NANOS) {
+                return;
+            }
+            lastJournalAt = now;
+            lastJournalProcessed = processed;
+            OperationLedger.progress(playerId, id, description, processed, total, editSession.size());
         }
 
         private boolean hasNext() {

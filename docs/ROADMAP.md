@@ -1,67 +1,64 @@
 # Roadmap
 
-El objetivo completo es un editor profesional de mundos. KomaEdit 2.0 entrega el núcleo de rendimiento y brochas, pero el resto se incorporará por fases verificables.
+KomaEdit se enfoca en ser el complemento procedural no destructivo de WorldEdit y Axiom. Las figuras actuales se consideran una biblioteca estable; las siguientes fases profundizan edición, materiales y colaboración sin convertir el mod en otro editor genérico.
 
-## Fase 2.1 — Preview renderizado
+## 4.8 — Base de producto
 
-- Buffer de instancias por chunk en cliente.
-- Cajas translúcidas y contornos OpenGL.
-- Colores por operación: añadir, eliminar, reemplazar y conflicto.
-- Invalidación incremental al mover el objetivo.
-- Protocolo de red comprimido para planes de preview.
+- Proyectos persistentes por mundo y jugador.
+- Migración no destructiva, escrituras atómicas y checksums.
+- Instancias reabribles con su trayectoria editable.
+- Backups, bitácora de jobs, permisos y cuotas configurables.
+- Internacionalización progresiva y pruebas automáticas.
 
-El preview actual usa partículas muestreadas y no envía millones de posiciones al cliente.
+## 4.9 — Diagnóstico antes de construir
 
-## Fase 2.2 — Selecciones y transformaciones
+- Estimación exacta de bloques, chunks y memoria antes de Build.
+- Mapa de conflictos con bloques modificados manualmente.
+- Presupuesto configurable de holograma y construcción por jugador.
+- Panel de salud del proyecto con acciones de reparación seguras.
 
-- Selección cubo, esfera, cilindro y polígono.
-- Lazo proyectado y selección inteligente por conectividad.
-- Gizmos para mover, rotar, escalar y reflejar.
-- Preview transformado sin modificar el clipboard original.
+## 5.0 — Materiales semánticos
 
-## Fase 2.3 — Clipboard y schematics
+- Zonas nombradas por figura: núcleo, cuerpo, borde, punta, cavidad y reverso.
+- Una paleta independiente por zona con transición controlada.
+- Vista aislada de cada zona en el holograma.
+- Presets con miniatura y compatibilidad declarada por figura.
 
-- Copiar, cortar, pegar y múltiples clipboards.
-- Historial persistente con presupuesto de disco/memoria.
-- Lectura y escritura Sponge Schematic con NBT y entidades.
-- Biblioteca, miniaturas y búsqueda.
+## 5.1 — Variantes deterministas
 
-## Fase 2.4 — Terraform procedural
+- Semilla editable por receta.
+- Galería rápida de variantes del mismo recorrido.
+- Bloqueo parcial de zonas aprobadas mientras se regenera el resto.
+- Comparación A/B antes de actualizar una instancia.
 
-- Generadores de montañas, acantilados, colinas, valles y mesetas.
-- Ríos, lagos, islas y cuevas con restricciones topológicas.
-- OpenSimplex 2 y composición visual de nodos de ruido.
-- Filtros blur, sharpen, warp, cellular, ridged y máscaras de pendiente/bioma.
+## 5.2 — Restricciones de trayectoria
 
-## Fase 2.5 — Decoración
+- Anclajes fijos, tangentes, simetría y continuidad de curvatura.
+- Conformado parcial a suelo, techo o superficies seleccionadas.
+- Medidas arquitectónicas entre nodos y reglas de pendiente.
+- Resolución automática de quiebres sin mover anclajes aprobados.
 
-- Reglas de distribución por Poisson disk y densidad.
-- Vegetación, rocas, troncos, hongos, corales y plantas.
-- Rotación/estado de bloque aleatorio y validación de soporte.
-- Presets por bioma y altura.
+## 5.3 — Paquetes profesionales
 
-## Fase 2.6 — Plataforma extensible
+- Manifiesto versionado con autor, licencia, dependencias y compatibilidad.
+- Miniaturas generadas localmente y búsqueda por etiquetas.
+- Migraciones de formato y validación antes de importar.
+- Firma opcional para catálogos privados de equipos.
 
-- API pública y registro de `BrushOperation`.
-- Scripts con sandbox y presupuesto de ejecución.
-- Macros, parámetros y repetición determinista.
-- Plugins externos y compatibilidad opcional con otros mods.
-- Compartir presets con versión y migraciones.
+## 5.4 — Colaboración de servidor
 
-## Fase 2.7 — Multijugador
-
-- Permisos granulares por herramienta y volumen.
-- Cuotas concurrentes y prioridad del scheduler.
-- Preview compartido y aprobación por roles.
-- Persistencia de jobs y recuperación después de reinicio.
+- Hologramas compartidos y aprobación por roles.
+- Bloqueo optimista de instancias durante edición.
+- Auditoría de quién construyó, actualizó o retiró una instancia.
+- Cuotas por grupo y prioridad del scheduler.
 
 ## Criterios de aceptación
 
-Cada fase debe incluir:
+Cada fase requiere:
 
-- Perfil de memoria y tiempo con volúmenes representativos.
-- Ningún acceso a mundo desde workers.
+- Ningún acceso al mundo desde workers.
 - Cancelación sin corrupción y undo coherente.
-- Compatibilidad en servidor dedicado e integrado.
-- Documentación del formato persistente/protocolo.
-- Pruebas unitarias para algoritmos puros y pruebas de integración cuando el harness de Minecraft lo permita.
+- Perfil de memoria, ticks y tiempo con volúmenes representativos.
+- Compatibilidad probada en servidor integrado y dedicado.
+- Migración documentada para cualquier cambio de formato.
+- Pruebas unitarias de algoritmos puros y pruebas de integración cuando el harness lo permita.

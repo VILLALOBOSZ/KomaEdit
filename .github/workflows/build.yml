@@ -88,6 +88,15 @@ jobs:
       - name: Build
         run: ./gradlew --no-daemon -Pmod_version=${{ steps.version.outputs.build_version }} build
 
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report-${{ steps.version.outputs.short_sha }}
+          path: build/reports/tests/test
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Upload compiled mod
         uses: actions/upload-artifact@v7
         with:

@@ -10,6 +10,7 @@ Procedural Studio se abre con `K` y permite construir mientras el mundo continú
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
 - La cámara puede desplazarse mientras el Studio permanece abierto.
 - `Ctrl+Z`, `Ctrl+Y` y `Ctrl+Shift+Z` utilizan el historial de WorldEdit.
+- La navegación principal, estados de trayectoria y acciones esenciales están disponibles en español e inglés mediante el idioma seleccionado en Minecraft.
 
 ## Trayectorias y hologramas
 
@@ -177,10 +178,61 @@ KomaEdit admite bloques individuales, patrones de WorldEdit y paletas de degrada
 
 ## Recetas, instancias y paquetes
 
-- Las recetas guardan parámetros reutilizables durante la sesión.
-- Las instancias permiten actualizar o retirar una construcción sin borrar bloques modificados manualmente.
+- Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
+- Las instancias conservan receta, trayectoria, estados colocados y checksum; permiten actualizar o retirar una construcción sin borrar bloques modificados manualmente.
+- Seleccionar una instancia vuelve a cargar sus puntos en el editor antes de actualizarla.
 - Los paquetes exportables conservan configuraciones compartibles en `config/komaedit/packages/`.
-- Las recetas temporales se limpian al salir del mundo para evitar contaminación entre sesiones.
+- Los datos se aíslan por mundo y UUID de jugador para evitar contaminación entre proyectos.
+
+## Proyecto persistente y recuperación
+
+### Objetivo y acceso
+
+El proyecto persistente evita perder recetas e instancias al desconectarse y permite auditar operaciones interrumpidas. Se administra con:
+
+```text
+/komaedit project status
+/komaedit project backup
+```
+
+### Almacenamiento y migración
+
+- Ruta: `<mundo>/komaedit/players/<uuid>/` con namespaces `recipes`, `instances` y `jobs`.
+- La primera entrada copia de forma no destructiva las recetas e instancias heredadas de `config/komaedit/`; un marcador impide repetir la migración.
+- Cada reemplazo conserva el archivo anterior como `.bak` y utiliza un `.tmp` recuperable si el proceso se interrumpe.
+- La geometría comprimida de una instancia incluye SHA-256 en sus metadatos. Una discrepancia detiene la carga en vez de aplicar datos dañados.
+- `project backup` crea un ZIP en `<mundo>/komaedit/backups/` y conserva las copias más recientes según `backupRetention`.
+
+### Comportamiento y limitaciones
+
+- Los jobs activos escriben progreso como máximo una vez por segundo para no convertir el disco en un cuello de botella.
+- Tras un cierre inesperado, los jobs `RUNNING` pasan a `INTERRUPTED`; no se reanudan automáticamente porque el mundo pudo cambiar mientras el servidor estaba apagado.
+- Las operaciones ya confirmadas siguen usando el historial de WorldEdit para `//undo`; la bitácora persistente es de diagnóstico, no una sustitución del historial.
+- Los backups son manuales y por jugador. Los administradores deben incluir la carpeta `komaedit` del mundo en su estrategia normal de respaldo.
+
+## Permisos, cuotas y configuración
+
+### Permisos
+
+Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta permisos a través del actor de WorldEdit:
+
+- Base: `komaedit.use`.
+- Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>`.
+- Contenido: `komaedit.recipe`, `komaedit.instance`.
+- Edición: `komaedit.select`, `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
+- Administración de proyecto: `komaedit.project.backup`.
+- Excepción de volumen: `komaedit.limit.unrestricted`.
+
+### Configuración
+
+`config/komaedit/config.json` se crea automáticamente con:
+
+- `maxBlocksPerOperation`: `1500000` de forma predeterminada; rango válido `10000–10000000`.
+- `maxConcurrentJobs`: `4` de forma predeterminada; rango válido `1–64`.
+- `backupRetention`: `5` de forma predeterminada; rango válido `1–50`.
+- `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
+
+Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios requieren reiniciar el servidor.
 
 ## Rendimiento
 
@@ -188,7 +240,8 @@ KomaEdit admite bloques individuales, patrones de WorldEdit y paletas de degrada
 - La colocación se agrupa por chunks y lotes.
 - Los hologramas utilizan secciones persistentes, descarte por cámara y caras expuestas.
 - Los generadores poseen límites de seguridad y cancelación cooperativa.
-- El árbol épico utiliza almacenamiento voxel compacto y validación lineal de materiales.
+- El límite de volumen y la cuota global de jobs se aplican antes de abrir una sesión de edición.
+- Cada job persistente registra avance con frecuencia limitada y su finalización o cancelación.
 
 ## Versiones descargables
 
@@ -196,8 +249,8 @@ Todas las compilaciones de integración quedan visibles en GitHub Releases adem�
 
 ### Canal staging
 
-- La versión interna del mod incluye la versión de desarrollo y el SHA corto: `komaedit-4.7.0-alpha.1.c0d75e5.jar`.
-- La prerelease se muestra con el formato `komaedit-staging-4.7.0-c0d75e5`.
+- La versión interna del mod incluye la versión de desarrollo y el SHA corto: `komaedit-4.8.0-alpha.1.c0d75e5.jar`.
+- La prerelease se muestra con el formato `komaedit-staging-4.8.0-c0d75e5`.
 - Cada merge genera una prerelease independiente apuntando al commit exacto compilado.
 - Estas versiones son de prueba y no sustituyen una publicación estable.
 

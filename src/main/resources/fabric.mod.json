@@ -3,11 +3,15 @@
   "id": "komaedit",
   "version": "${version}",
   "name": "KomaEdit",
-  "description": "Procedural detail studio for reusable 3D path recipes, integrated gradients and optimized WorldEdit builds.",
+  "description": "Non-destructive procedural construction studio with editable 3D path recipes, persistent projects and optimized WorldEdit builds.",
   "authors": [
     "Komainu"
   ],
-  "contact": {},
+  "contact": {
+    "homepage": "https://github.com/VILLALOBOSZ/KomaEdit",
+    "sources": "https://github.com/VILLALOBOSZ/KomaEdit",
+    "issues": "https://github.com/VILLALOBOSZ/KomaEdit/issues"
+  },
   "license": "MIT",
   "environment": "*",
   "entrypoints": {

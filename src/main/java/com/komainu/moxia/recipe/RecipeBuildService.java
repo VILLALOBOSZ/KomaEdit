@@ -4,6 +4,7 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.gradient.GradientService;
 import com.komainu.moxia.path.PathSnapshot;
+import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
@@ -49,8 +50,9 @@ public final class RecipeBuildService {
                 ? ProceduralInstanceStore.load(playerId, requestedInstanceId)
                 : null;
         String instanceId = update ? previous.id() : UUID.randomUUID().toString();
+        PathSnapshot activePath = PathManager.saved(playerId);
         PathSnapshot storedPath = update
-                ? previous.path()
+                ? activePath.points().size() >= 2 ? activePath : previous.path()
                 : WorldEditService.resolvePath(player);
         PathSnapshot buildPath = SurfaceConformService.project(player, storedPath, recipe.extensions());
         KitbashSocketService.Template socketTemplate = KitbashSocketService.capture(player, recipe.extensions());
