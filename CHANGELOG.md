@@ -12,6 +12,7 @@
 - Añade límites configurables por operación y para jobs concurrentes en `config/komaedit/config.json`.
 - Internacionaliza en español e inglés la navegación, estados y acciones principales de Procedural Studio.
 - Añade pruebas JUnit para almacenamiento atómico, recuperación, posiciones empaquetadas y curvas de interpolación.
+- Permite recuperar manualmente la publicación de una prerelease de `staging` cuando GitHub no emite el evento automático, sin habilitar publicaciones manuales de `main`.
 - Añade la figura procedural **Rayos**, con núcleos quebrados deterministas, anclajes exactos y ramificación configurable de `2` a `8`.
 - Añade bifurcaciones secundarias en densidades altas y una corona exterior especial para trayectorias cerradas, manteniendo el centro completamente hueco.
 - Añade `/komaedit lightning`, `/komaedit rayos`, `/komaedit lightningcircle` y `/komaedit circulorayos`, con materiales eléctricos predeterminados y compatibilidad con patrones de fuego.
