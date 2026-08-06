@@ -2,6 +2,7 @@ package com.komainu.moxia;
 
 import com.komainu.moxia.brush.BrushManager;
 import com.komainu.moxia.command.MoxiaCommands;
+import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.editor.EditorActionPayload;
 import com.komainu.moxia.editor.EditorActionService;
@@ -10,12 +11,13 @@ import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramPayload;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.persistence.ProjectStorage;
+import com.komainu.moxia.persistence.OperationLedger;
+import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.recipe.RecipeActionService;
 import com.komainu.moxia.recipe.RecipeCatalogPayload;
 import com.komainu.moxia.recipe.InstanceCatalogPayload;
-import com.komainu.moxia.recipe.ProceduralInstanceStore;
-import com.komainu.moxia.recipe.RecipeStore;
 import com.komainu.moxia.ui.QuickBuildPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -30,14 +32,13 @@ import net.minecraft.util.Hand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
-
 public final class KomaEditMod implements ModInitializer {
     public static final String MOD_ID = "komaedit";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     @Override
     public void onInitialize() {
+        KomaEditConfig.load();
         PayloadTypeRegistry.playS2C().register(PathHologramPayload.ID, PathHologramPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(QuickBuildPayload.ID, QuickBuildPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RecipeCatalogPayload.ID, RecipeCatalogPayload.CODEC);
@@ -57,6 +58,7 @@ public final class KomaEditMod implements ModInitializer {
             }
             if (hand == Hand.MAIN_HAND && PathManager.isCaptureMode(player.getUuid())) {
                 try {
+                    KomaPermissions.require(serverPlayer, KomaPermissions.PATH);
                     var placement = hitResult.getBlockPos().offset(hitResult.getSide());
                     var point = PathManager.add(player.getUuid(), placement);
                     PathHologramSync.sync(serverPlayer);
@@ -76,6 +78,7 @@ public final class KomaEditMod implements ModInitializer {
                 return ActionResult.PASS;
             }
             try {
+                KomaPermissions.require(serverPlayer, KomaPermissions.BUILD);
                 int changed = BrushManager.stamp(serverPlayer, hitResult);
                 serverPlayer.sendMessage(net.minecraft.text.Text.literal(
                         "KomaEdit · Figura estampada: " + changed + " bloques · //undo"
@@ -88,15 +91,32 @@ public final class KomaEditMod implements ModInitializer {
                 return ActionResult.FAIL;
             }
         });
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                clearProceduralSession(handler.player.getUuid())
-        );
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            try {
+                ProjectStorage.bind(handler.player.getUuid(), server);
+                int interrupted = OperationLedger.markInterrupted(handler.player.getUuid());
+                if (interrupted > 0) {
+                    handler.player.sendMessage(net.minecraft.text.Text.literal(
+                            "KomaEdit · " + interrupted
+                                    + " trabajo(s) anterior(es) quedaron interrumpidos; revisa /komaedit project status"
+                    ), false);
+                }
+                RecipeActionService.sync(handler.player);
+            } catch (RuntimeException exception) {
+                ProjectStorage.unbind(handler.player.getUuid());
+                LOGGER.error("Could not open KomaEdit project for {}", handler.player.getUuid(), exception);
+                handler.player.sendMessage(net.minecraft.text.Text.literal(
+                        "KomaEdit · El proyecto no pudo abrirse; KomaEdit queda desactivado en este mundo. "
+                                + "Revisa latest.log"
+                ), false);
+            }
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             BatchEditService.cancel(handler.player.getUuid(), false);
             FastPaintService.remove(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
             BrushManager.remove(handler.player.getUuid());
-            clearProceduralSession(handler.player.getUuid());
+            ProjectStorage.unbind(handler.player.getUuid());
         });
         ServerTickEvents.END_SERVER_TICK.register(BatchEditService::tick);
         ServerTickEvents.END_SERVER_TICK.register(FastPaintService::tick);
@@ -107,16 +127,8 @@ public final class KomaEditMod implements ModInitializer {
             AsyncEngine.shutdown();
             PathManager.clearAll();
             BrushManager.clearAll();
+            ProjectStorage.clearBindings();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");
-    }
-
-    private static void clearProceduralSession(UUID playerId) {
-        try {
-            RecipeStore.clear(playerId);
-            ProceduralInstanceStore.clear(playerId);
-        } catch (IllegalStateException exception) {
-            LOGGER.warn("Could not clear procedural session data for {}", playerId, exception);
-        }
     }
 }

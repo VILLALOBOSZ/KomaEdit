@@ -16,10 +16,12 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `sculpt` | Brochas de volumen/altura, máscaras, perfiles y previews |
 | `noise` | Perlin, fBM, ridged y Worley deterministas |
 | `edit` | Plan compacto y aplicación WorldEdit por lotes |
-| `performance` | Pool acotado, cancelación y aislamiento de cálculos |
-| `preview` | Preview de las figuras de trayectoria |
+| `performance` | Pool acotado, cancelación, cuotas y aislamiento de cálculos |
+| `preview` | Estado de preview y generación de hologramas de trayectoria |
 | `gradient` | Paletas y selección streaming por eje |
-| `persistence` | Presets versionados y escritura atómica |
+| `persistence` | Proyecto por mundo, migraciones, journal, backups y escritura atómica |
+| `permission` | Permisos granulares y excepciones de cuota |
+| `config` | Límites del servidor y política de compatibilidad |
 | `worldedit` | Adaptación de jugador, sesión, selección y patrones |
 | `command` | API Brigadier y validación de entrada |
 | `client.gui` | Pantalla no bloqueante y controles del editor |
@@ -29,7 +31,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 1. `SculptManager` resuelve el objetivo y captura un `WorldSnapshot` en el servidor.
 2. `AsyncEngine` ejecuta `SculptPlanner` en un worker cancelable.
 3. `SculptPlanner` genera un `PackedBlockPlan`.
-4. `SculptPreviewManager` conserva el plan y muestrea partículas.
+4. El cliente conserva un holograma seccionado de caras expuestas; no usa partículas por bloque.
 5. La confirmación transfiere el plan a `BatchEditService`.
 6. `BatchEditService` mantiene un `EditSession` y aplica slices con presupuesto temporal.
 7. Al terminar o cancelar, la sesión se cierra y se registra una vez en el historial WorldEdit.
@@ -58,6 +60,18 @@ Un plan de patrón necesita 8 bytes por posición, sin contar el array, frente a
 Una `EditSession` permanece abierta durante los slices. Al finalizar se cierra y se entrega a `LocalSession.remember`. Esto conserva una sola operación lógica en `//undo` aunque haya requerido cientos de ticks.
 
 Si se desconecta el jugador, se detiene el servidor o se cancela el job, los cambios parciales también se registran para poder deshacerlos.
+
+## Proyecto persistente
+
+`ProjectStorage` enlaza cada UUID con `<mundo>/komaedit/players/<uuid>` al entrar. Ningún store utiliza una ruta global una vez enlazado el proyecto.
+
+- `AtomicStorage` escribe primero en `.tmp`, conserva el archivo anterior como `.bak` y recupera residuos al abrir el mundo.
+- `RecipeStore` conserva configuraciones JSON versionadas.
+- `ProceduralInstanceStore` separa metadata JSON y geometría GZIP; el SHA-256 enlaza ambos archivos y permite recuperar el par anterior si un cierre ocurre entre reemplazos.
+- `OperationLedger` registra el progreso con frecuencia limitada y convierte trabajos sin cierre en `INTERRUPTED`.
+- `ProjectStorage.backup` crea ZIPs fuera del árbol del jugador para evitar que un backup se incluya a sí mismo.
+
+La bitácora no intenta reanudar automáticamente una edición. Después de un reinicio, el estado del mundo puede haber cambiado; una reanudación ciega violaría la protección de ediciones manuales.
 
 ## Extensiones previstas
 

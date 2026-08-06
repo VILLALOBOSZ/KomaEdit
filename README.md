@@ -1,4 +1,4 @@
-# KomaEdit 4.7 Procedural Studio
+# KomaEdit 4.8 Procedural Studio
 
 ## Documentación del mod
 
@@ -20,7 +20,7 @@ KomaEdit es un complemento Fabric + WorldEdit para crear **detalle procedural re
 7. Abre **Instancias** para actualizar o retirar la pieza sin destruir bloques modificados manualmente.
 8. Asigna un nombre y pulsa **Guardar** para reutilizar o exportar la configuración.
 
-Las recetas e instancias son temporales durante la sesión del mundo. Se limpian al entrar y al desconectarse para que cada mundo comience sin configuraciones heredadas. Solo los paquetes exportados en `config/komaedit/packages/` permanecen para poder compartirlos o importarlos después.
+Las recetas, instancias y bitácoras de operación se guardan dentro de cada mundo, separadas por UUID de jugador. KomaEdit migra una sola vez los datos antiguos de `config/komaedit/` y conserva copias de seguridad atómicas para reducir el riesgo de corrupción tras un cierre inesperado.
 
 ## Procedural Studio
 
@@ -193,7 +193,28 @@ En `scales`, las métricas locales usan el mismo paso de fila que la figura orig
 
 ## Instancias editables
 
-Cada construcción avanzada crea un identificador de instancia válido durante la sesión actual. Al actualizarla, KomaEdit reutiliza su trayectoria guardada, calcula la nueva geometría fuera del hilo principal y aplica únicamente el resultado por lotes. Al retirarla, solo elimina bloques que todavía coinciden con el estado colocado por KomaEdit; cualquier edición manual se conserva y se informa al jugador.
+Cada construcción avanzada crea un identificador persistente dentro del mundo actual. Al seleccionar una instancia, KomaEdit recupera también su trayectoria para poder mover los nodos y reconstruirla. Al actualizarla, calcula la nueva geometría fuera del hilo principal y aplica únicamente el resultado por lotes. Al retirarla, solo elimina bloques que todavía coinciden con el estado colocado por KomaEdit; cualquier edición manual se conserva y se informa al jugador.
+
+## Proyectos persistentes y recuperación
+
+- Datos por mundo: `<carpeta-del-mundo>/komaedit/players/<uuid>/`.
+- Escrituras atómicas con archivos temporales y respaldo `.bak` antes de reemplazar datos existentes.
+- Verificación SHA-256 de la geometría binaria de cada instancia.
+- Migración no destructiva de recetas e instancias antiguas desde `config/komaedit/`.
+- Bitácora de jobs con progreso periódico; un job que quedó activo durante un cierre se marca como `INTERRUPTED` al volver a entrar.
+- `/komaedit project status` muestra recetas, instancias, jobs, interrupciones y espacio utilizado.
+- `/komaedit project backup` crea un ZIP del proyecto del jugador; la retención predeterminada es de cinco copias.
+
+## Permisos y cuotas
+
+Los operadores conservan acceso total. En servidores con un proveedor de permisos compatible con WorldEdit, un jugador normal necesita `komaedit.use` y el nodo específico de la herramienta:
+
+- `komaedit.path`, `komaedit.build` o `komaedit.build.<figura>`.
+- `komaedit.instance`, `komaedit.recipe`, `komaedit.select` y `komaedit.paint`.
+- `komaedit.clipboard`, `komaedit.history` y `komaedit.project.backup`.
+- `komaedit.limit.unrestricted` omite el límite de bloques de una operación, pero no el scheduler global.
+
+`config/komaedit/config.json` permite ajustar `maxBlocksPerOperation`, `maxConcurrentJobs`, `backupRetention` y el modo de compatibilidad `rootPermissionGrantsAll`.
 
 ## Paquetes compartibles
 
@@ -214,7 +235,7 @@ Cada construcción avanzada crea un identificador de instancia válido durante l
 - Subida gradual de VBOs, frustum culling, límite de distancia y caché hasta el siguiente cambio geométrico.
 - Cancelación inmediata de previews obsoletos para no competir con la construcción.
 
-Usa `/komaedit job status`, `/komaedit job cancel`, `//undo` y `//redo` para administrar trabajos.
+Usa `/komaedit job status`, `/komaedit job cancel`, `/komaedit project status`, `//undo` y `//redo` para administrar trabajos.
 
 ## Compatibilidad
 
@@ -223,3 +244,5 @@ Usa `/komaedit job status`, `/komaedit job cancel`, `//undo` y `//redo` para adm
 - Fabric API `0.116.6+1.21.1` o posterior
 - WorldEdit `7.3.8` o posterior
 - Java `21`
+
+KomaEdit no es un producto oficial de Minecraft y no está aprobado ni asociado con Mojang o Microsoft.

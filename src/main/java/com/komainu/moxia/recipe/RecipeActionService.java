@@ -1,6 +1,8 @@
 package com.komainu.moxia.recipe;
 
-import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.path.PathHologramSync;
+import com.komainu.moxia.path.PathManager;
+import com.komainu.moxia.permission.KomaPermissions;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -14,9 +16,10 @@ public final class RecipeActionService {
 
     public static void handle(ServerPlayerEntity player, RecipeActionPayload payload) {
         try {
-            if (!canUse(player)) {
+            if (!KomaPermissions.canAccess(player)) {
                 throw new IllegalArgumentException("No tienes permiso para usar KomaEdit");
             }
+            requireAction(player, payload);
             switch (payload.action()) {
                 case RecipeActionPayload.BUILD -> {
                     RecipeBuildService.submit(player, payload.recipe());
@@ -44,6 +47,18 @@ public final class RecipeActionService {
                         player,
                         payload.instanceId()
                 );
+                case RecipeActionPayload.LOAD_INSTANCE -> {
+                    ProceduralInstance instance = ProceduralInstanceStore.load(
+                            player.getUuid(), payload.instanceId()
+                    );
+                    PathManager.replace(
+                            player.getUuid(), instance.path().points(), instance.path().closed()
+                    );
+                    PathHologramSync.sync(player);
+                    player.sendMessage(message(
+                            "Instancia cargada: " + instance.recipe().name() + " · mueve sus nodos y actualiza"
+                    ), false);
+                }
                 case RecipeActionPayload.EXPORT_PACKAGE -> {
                     var path = RecipePackageService.exportPackage(player.getUuid(), payload.recipe().name());
                     player.sendMessage(message("Paquete exportado: " + path.getFileName()), false);
@@ -76,11 +91,20 @@ public final class RecipeActionService {
         }
     }
 
-    private static boolean canUse(ServerPlayerEntity player) {
-        try {
-            return player.getCommandSource().hasPermissionLevel(2) || WorldEditService.hasUsePermission(player);
-        } catch (RuntimeException exception) {
-            return player.getCommandSource().hasPermissionLevel(2);
+    private static void requireAction(ServerPlayerEntity player, RecipeActionPayload payload) {
+        switch (payload.action()) {
+            case RecipeActionPayload.BUILD -> KomaPermissions.requireBuild(player, payload.recipe().shape().id());
+            case RecipeActionPayload.UPDATE_INSTANCE -> {
+                KomaPermissions.require(player, KomaPermissions.INSTANCE);
+                KomaPermissions.requireBuild(player, payload.recipe().shape().id());
+            }
+            case RecipeActionPayload.DELETE_INSTANCE, RecipeActionPayload.LOAD_INSTANCE ->
+                    KomaPermissions.require(player, KomaPermissions.INSTANCE);
+            case RecipeActionPayload.SAVE, RecipeActionPayload.DELETE,
+                 RecipeActionPayload.EXPORT_PACKAGE, RecipeActionPayload.IMPORT_PACKAGE ->
+                    KomaPermissions.require(player, KomaPermissions.RECIPE);
+            default -> {
+            }
         }
     }
 

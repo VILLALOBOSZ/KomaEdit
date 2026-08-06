@@ -11,7 +11,9 @@ import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.persistence.SculptPresetStore;
+import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.recipe.RecipeExtensions;
@@ -108,7 +110,7 @@ public final class MoxiaCommands {
                 .then(literal("gui").executes(MoxiaCommands::guiHint))
                 .then(literal("shapes").executes(MoxiaCommands::openHudMenu))
                 .then(generationCommand("build", true))
-                .then(pathCommand())
+                .then(pathCommand().requires(source -> can(source, KomaPermissions.PATH)))
                 .then(bridgeCommand())
                 .then(pillarCommand())
                 .then(pillarArchesCommand())
@@ -123,7 +125,8 @@ public final class MoxiaCommands {
                 .then(lightningCircleCommand("circulorayos"))
                 .then(noodlesCommand())
                 .then(jobCommand())
-                .then(gradientCommand())
+                .then(projectCommand())
+                .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(literal("help").executes(MoxiaCommands::help))
                 .executes(MoxiaCommands::openHudMenu));
         dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
@@ -680,6 +683,15 @@ public final class MoxiaCommands {
                 .executes(MoxiaCommands::jobStatus);
     }
 
+    private static LiteralArgumentBuilder<ServerCommandSource> projectCommand() {
+        return literal("project")
+                .then(literal("status").executes(MoxiaCommands::projectStatus))
+                .then(literal("backup")
+                        .requires(source -> can(source, KomaPermissions.PROJECT_BACKUP))
+                        .executes(MoxiaCommands::backupProject))
+                .executes(MoxiaCommands::projectStatus);
+    }
+
     private static LiteralArgumentBuilder<ServerCommandSource> sculptPresetCommand() {
         return literal("preset")
                 .then(literal("save")
@@ -1210,6 +1222,42 @@ public final class MoxiaCommands {
         return 1;
     }
 
+    private static int projectStatus(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        UUID playerId = context.getSource().getPlayerOrThrow().getUuid();
+        ProjectStorage.ProjectStatus status = ProjectStorage.status(playerId);
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Proyecto persistente · " + status.recipes() + " recetas · "
+                                + status.instances() + " instancias · " + status.jobs() + " jobs · "
+                                + status.interruptedJobs() + " interrumpidos · " + readableBytes(status.bytes())
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return (int) Math.min(Integer.MAX_VALUE, status.instances());
+    }
+
+    private static int backupProject(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        UUID playerId = context.getSource().getPlayerOrThrow().getUuid();
+        var backup = ProjectStorage.backup(playerId);
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Backup creado: " + backup.getFileName()
+                ).formatted(Formatting.GREEN)),
+                false
+        );
+        return 1;
+    }
+
+    private static String readableBytes(long bytes) {
+        if (bytes < 1_024L) {
+            return bytes + " B";
+        }
+        if (bytes < 1_048_576L) {
+            return String.format(Locale.ROOT, "%.1f KiB", bytes / 1_024.0);
+        }
+        return String.format(Locale.ROOT, "%.1f MiB", bytes / 1_048_576.0);
+    }
+
     private static Set<String> parseBlockList(String input) {
         Set<String> blocks = Arrays.stream(input.split("[,;\\s]+"))
                 .map(String::trim)
@@ -1286,11 +1334,12 @@ public final class MoxiaCommands {
         if (!(source.getEntity() instanceof ServerPlayerEntity player)) {
             return false;
         }
-        try {
-            return source.hasPermissionLevel(2) || WorldEditService.hasUsePermission(player);
-        } catch (RuntimeException exception) {
-            return source.hasPermissionLevel(2);
-        }
+        return KomaPermissions.canAccess(player);
+    }
+
+    private static boolean can(ServerCommandSource source, String permission) {
+        return source.getEntity() instanceof ServerPlayerEntity player
+                && KomaPermissions.can(player, permission);
     }
 
     private static int generate(
@@ -1479,6 +1528,7 @@ public final class MoxiaCommands {
             String pattern,
             ShapeParameters requestedParameters
     ) throws IncompleteRegionException, InputParseException {
+        KomaPermissions.requireBuild(player, requestedParameters.shape().id());
         WorldEditService.validatePattern(player, pattern);
         PathSnapshot pathSnapshot = WorldEditService.resolvePath(player);
         UUID playerId = player.getUuid();

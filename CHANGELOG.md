@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Persiste recetas, instancias y bitácoras dentro de cada mundo, separadas por UUID, en lugar de eliminarlas al desconectarse.
+- Migra de forma no destructiva los datos heredados de `config/komaedit/` al primer acceso al mundo.
+- Añade escrituras atómicas, recuperación de temporales, respaldos `.bak` y checksum SHA-256 para la geometría de instancias.
+- Añade `/komaedit project status` y `/komaedit project backup`, con retención configurable de backups ZIP.
+- Permite reabrir una instancia desde el Studio recuperando también su trayectoria editable.
+- Registra el progreso de jobs de larga duración y marca operaciones interrumpidas después de un cierre inesperado.
+- Añade permisos granulares para trayectoria, figuras, recetas, instancias, selección, pintura, clipboard, historial y backups.
+- Añade límites configurables por operación y para jobs concurrentes en `config/komaedit/config.json`.
+- Internacionaliza en español e inglés la navegación, estados y acciones principales de Procedural Studio.
+- Añade pruebas JUnit para almacenamiento atómico, recuperación, posiciones empaquetadas y curvas de interpolación.
 - Añade la figura procedural **Rayos**, con núcleos quebrados deterministas, anclajes exactos y ramificación configurable de `2` a `8`.
 - Añade bifurcaciones secundarias en densidades altas y una corona exterior especial para trayectorias cerradas, manteniendo el centro completamente hueco.
 - Añade `/komaedit lightning`, `/komaedit rayos`, `/komaedit lightningcircle` y `/komaedit circulorayos`, con materiales eléctricos predeterminados y compatibilidad con patrones de fuego.

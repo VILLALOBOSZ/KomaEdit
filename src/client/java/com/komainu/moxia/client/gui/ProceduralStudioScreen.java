@@ -100,13 +100,13 @@ public final class ProceduralStudioScreen extends Screen {
     private boolean editingName;
     private String nameInput = draft.name();
     private String blockSearch = "";
-    private String status = "Studio listo · crea una trayectoria y construye una receta";
+    private String status = tr("gui.komaedit.status.ready");
     private String selectedInstanceId = "";
     private BlockPos hoverPlacement;
     private BlockPos lastDraggedPosition;
 
     public ProceduralStudioScreen() {
-        super(Text.literal("KomaEdit Procedural Studio"));
+        super(Text.translatable("gui.komaedit.title"));
     }
 
     public static void resetSession() {
@@ -168,12 +168,12 @@ public final class ProceduralStudioScreen extends Screen {
         context.fill(12, 10, right, 42, PANEL);
         context.fill(12, 10, 16, 42, ACCENT);
         drawTrimmed(context, "KOMAEDIT", 24, 17, 95, TEXT);
-        drawTrimmed(context, "PROCEDURAL STUDIO", 102, 17, Math.max(90, right - 260), MUTED);
-        String nodes = PathHologramRenderer.points().size() + " nodos";
+        drawTrimmed(context, tr("gui.komaedit.subtitle"), 102, 17, Math.max(90, right - 260), MUTED);
+        String nodes = tr("gui.komaedit.nodes", PathHologramRenderer.points().size());
         int nodeWidth = textRenderer.getWidth(nodes) + 18;
         drawPill(context, mouseX, mouseY, Math.max(160, right - nodeWidth - 66), 16, nodeWidth, 20,
                 nodes, pathReady());
-        drawPill(context, mouseX, mouseY, right - 52, 16, 42, 20, "K ×", false);
+        drawPill(context, mouseX, mouseY, right - 52, 16, 42, 20, tr("gui.komaedit.close"), false);
     }
 
     private void drawStageRail(DrawContext context, int mouseX, int mouseY) {
@@ -195,10 +195,11 @@ public final class ProceduralStudioScreen extends Screen {
             }
             drawStageIcon(context, value, 39, y + buttonSize / 2, selected ? ACCENT : TEXT);
             if (hovered) {
-                int width = textRenderer.getWidth(value.title) + 16;
+                String title = tr(value.titleKey);
+                int width = textRenderer.getWidth(title) + 16;
                 int tooltipY = y + Math.max(4, (buttonSize - 21) / 2);
                 context.fill(66, tooltipY, 66 + width, tooltipY + 21, PANEL);
-                context.drawText(textRenderer, value.title, 74, tooltipY + 7, TEXT, false);
+                context.drawText(textRenderer, title, 74, tooltipY + 7, TEXT, false);
             }
         }
     }
@@ -211,8 +212,8 @@ public final class ProceduralStudioScreen extends Screen {
             context.fill(left - 2, 0, left + 2, height, ACCENT);
         }
 
-        context.drawText(textRenderer, stage.title.toUpperCase(Locale.ROOT), left + 18, 17, ACCENT, false);
-        drawTrimmed(context, stage.subtitle, left + 18, 31, inspectorWidth - 36, MUTED);
+        context.drawText(textRenderer, tr(stage.titleKey).toUpperCase(Locale.ROOT), left + 18, 17, ACCENT, false);
+        drawTrimmed(context, tr(stage.subtitleKey), left + 18, 31, inspectorWidth - 36, MUTED);
         context.fill(left + 14, 49, width - 14, 50, 0xFF343640);
 
         int clipBottom = height - 105;
@@ -230,39 +231,46 @@ public final class ProceduralStudioScreen extends Screen {
         context.disableScissor();
 
         context.fill(left, height - 100, width, height, PANEL_SOFT);
-        context.drawText(textRenderer, "RECETA", left + 16, height - 90, MUTED, false);
+        context.drawText(textRenderer, tr("gui.komaedit.recipe"), left + 16, height - 90, MUTED, false);
         drawNameField(context, mouseX, mouseY, left + 16, height - 77, inspectorWidth - 108, 24);
-        drawSmallButton(context, mouseX, mouseY, width - 82, height - 77, 66, 24, "GUARDAR", false);
+        drawSmallButton(context, mouseX, mouseY, width - 82, height - 77, 66, 24,
+                tr("gui.komaedit.save"), false);
         boolean ready = pathReady();
         drawSmallButton(context, mouseX, mouseY, left + 16, height - 44, inspectorWidth - 32, 29,
-                ready ? "CONSTRUIR RECETA" : "AÑADE PUNTOS", ready);
+                ready ? tr("gui.komaedit.build_recipe") : tr("gui.komaedit.add_points"), ready);
     }
 
     private void drawPathStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
         int inner = inspectorWidth - 32;
-        drawSectionLabel(context, "TRAYECTORIA ACTIVA", left + 16, top);
+        drawSectionLabel(context, tr("gui.komaedit.path.active"), left + 16, top);
         int nodes = PathHologramRenderer.points().size();
         int minimum = requiredPoints();
         drawCard(context, mouseX, mouseY, left + 16, top + 17, inner, 65, false);
         context.drawText(textRenderer, nodes + " / 32", left + 30, top + 32,
                 nodes >= minimum ? SUCCESS : WARNING, false);
-        drawTrimmed(context, nodes >= minimum ? "Lista para construir" : "Añade al menos " + minimum + " puntos",
+        drawTrimmed(context, nodes >= minimum
+                        ? tr("gui.komaedit.path.ready")
+                        : tr("gui.komaedit.path.minimum", minimum),
                 left + 30, top + 48, inner - 28, TEXT);
-        drawTrimmed(context, "Clic en el mundo: punto · arrastra un nodo: mover",
+        drawTrimmed(context, tr("gui.komaedit.path.hint"),
                 left + 30, top + 63, inner - 28, MUTED);
 
-        drawSectionLabel(context, "ACCIONES", left + 16, top + 100);
+        drawSectionLabel(context, tr("gui.komaedit.actions"), left + 16, top + 100);
         int half = (inner - 7) / 2;
-        drawSmallButton(context, mouseX, mouseY, left + 16, top + 118, half, 30, "+ AQUÍ", false);
-        drawSmallButton(context, mouseX, mouseY, left + 23 + half, top + 118, half, 30, "DESHACER PUNTO", false);
-        drawSmallButton(context, mouseX, mouseY, left + 16, top + 155, half, 30, "ABRIR / CERRAR", false);
-        drawSmallButton(context, mouseX, mouseY, left + 23 + half, top + 155, half, 30, "LIMPIAR", true);
+        drawSmallButton(context, mouseX, mouseY, left + 16, top + 118, half, 30,
+                tr("gui.komaedit.path.add_here"), false);
+        drawSmallButton(context, mouseX, mouseY, left + 23 + half, top + 118, half, 30,
+                tr("gui.komaedit.path.undo_point"), false);
+        drawSmallButton(context, mouseX, mouseY, left + 16, top + 155, half, 30,
+                tr("gui.komaedit.path.toggle_closed"), false);
+        drawSmallButton(context, mouseX, mouseY, left + 23 + half, top + 155, half, 30,
+                tr("gui.komaedit.clear"), true);
 
-        drawSectionLabel(context, "NAVEGACIÓN", left + 16, top + 211);
+        drawSectionLabel(context, tr("gui.komaedit.navigation"), left + 16, top + 211);
         drawCard(context, mouseX, mouseY, left + 16, top + 228, inner, 58, false);
-        drawTrimmed(context, "WASD para moverte · clic derecho y arrastre para mirar",
+        drawTrimmed(context, tr("gui.komaedit.navigation.hint"),
                 left + 28, top + 242, inner - 24, TEXT);
-        drawTrimmed(context, "Alcance de edición: 4096 bloques cargados",
+        drawTrimmed(context, tr("gui.komaedit.navigation.reach", 4096),
                 left + 28, top + 259, inner - 24, MUTED);
     }
 
@@ -1079,6 +1087,9 @@ public final class ProceduralStudioScreen extends Screen {
                 selectedInstanceId = instance.id();
                 draft = instance.recipe();
                 nameInput = draft.name();
+                ClientPlayNetworking.send(new RecipeActionPayload(
+                        RecipeActionPayload.LOAD_INSTANCE, draft, selectedInstanceId
+                ));
                 status = "Instancia seleccionada · cambia parámetros y pulsa Actualizar";
                 return true;
             }
@@ -1135,7 +1146,7 @@ public final class ProceduralStudioScreen extends Screen {
                 } else if (stage == Stage.FIGURE && !FIGURE_SHAPES.contains(draft.shape())) {
                     draft = draft.withShapeDefaults(FIGURE_SHAPES.getFirst());
                 }
-                status = stage.subtitle;
+                status = tr(stage.subtitleKey);
                 return true;
             }
         }
@@ -1746,6 +1757,10 @@ public final class ProceduralStudioScreen extends Screen {
         return values[0];
     }
 
+    private static String tr(String key, Object... arguments) {
+        return Text.translatable(key, arguments).getString();
+    }
+
     private record BlockChoice(String pattern, ItemStack stack) {
     }
 
@@ -1756,20 +1771,20 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private enum Stage {
-        PATH("Trayectoria", "Diseña el recorrido en el mundo"),
-        FIGURE("Figura", "Escoge una gramática 3D"),
-        STRUCTURES("Estructuras", "Pilares, puentes y portales monumentales"),
-        MODIFIERS("Deformar", "Opcional · no edita la trayectoria del brush"),
-        MATERIAL("Estilo", "Material sólido o degradado integrado"),
-        INSTANCES("Instancias", "Actualiza construcciones sin rehacerlas"),
-        RECIPES("Recetas", "Guarda, carga y reutiliza sistemas");
+        PATH("gui.komaedit.stage.path", "gui.komaedit.stage.path.subtitle"),
+        FIGURE("gui.komaedit.stage.figure", "gui.komaedit.stage.figure.subtitle"),
+        STRUCTURES("gui.komaedit.stage.structures", "gui.komaedit.stage.structures.subtitle"),
+        MODIFIERS("gui.komaedit.stage.modifiers", "gui.komaedit.stage.modifiers.subtitle"),
+        MATERIAL("gui.komaedit.stage.material", "gui.komaedit.stage.material.subtitle"),
+        INSTANCES("gui.komaedit.stage.instances", "gui.komaedit.stage.instances.subtitle"),
+        RECIPES("gui.komaedit.stage.recipes", "gui.komaedit.stage.recipes.subtitle");
 
-        private final String title;
-        private final String subtitle;
+        private final String titleKey;
+        private final String subtitleKey;
 
-        Stage(String title, String subtitle) {
-            this.title = title;
-            this.subtitle = subtitle;
+        Stage(String titleKey, String subtitleKey) {
+            this.titleKey = titleKey;
+            this.subtitleKey = subtitleKey;
         }
     }
 

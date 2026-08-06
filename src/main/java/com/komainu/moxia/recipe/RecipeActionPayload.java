@@ -15,6 +15,7 @@ public record RecipeActionPayload(int action, ProceduralRecipe recipe, String in
     public static final int DELETE_INSTANCE = 5;
     public static final int EXPORT_PACKAGE = 6;
     public static final int IMPORT_PACKAGE = 7;
+    public static final int LOAD_INSTANCE = 8;
 
     public static final Id<RecipeActionPayload> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "recipe_action"));
     public static final PacketCodec<RegistryByteBuf, RecipeActionPayload> CODEC = PacketCodec.ofStatic(
