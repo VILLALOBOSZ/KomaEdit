@@ -44,3 +44,5 @@ Toda función nueva o modificación visible para el jugador debe quedar document
 ## Publicaciones
 
 `main` solo se actualizará cuando se decida preparar una publicación estable. Ese proceso queda fuera del flujo normal de desarrollo y requerirá aprobación explícita.
+
+Si GitHub no emite el evento `push` después de una fusión automatizada, un mantenedor puede ejecutar manualmente **Build KomaEdit** seleccionando la rama `staging`. La ejecución manual puede publicar únicamente una prerelease de `staging`; nunca puede publicar `main`. El tag conserva el SHA del commit exacto y el workflow reutiliza o reemplaza solamente el asset de ese mismo tag.
