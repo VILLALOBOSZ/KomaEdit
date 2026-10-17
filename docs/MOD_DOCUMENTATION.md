@@ -12,6 +12,78 @@ Procedural Studio se abre con `K` y permite construir mientras el mundo continú
 - `Ctrl+Z`, `Ctrl+Y` y `Ctrl+Shift+Z` utilizan el historial de WorldEdit.
 - La navegación principal, estados de trayectoria y acciones esenciales están disponibles en español e inglés mediante el idioma seleccionado en Minecraft.
 
+### Encontrar figuras
+
+La etapa **Figuras** empieza con un buscador, filtros por familia y las figuras recientes.
+
+- **Buscador** (`Ctrl+F` o `/` desde cualquier etapa): sin mayúsculas ni tildes, busca por nombre, id, alias del comando y descripción (`roca` encuentra Tubo erosionado; `chain`, Cadena). Cada palabra tiene que aparecer; el nombre pesa más que la descripción. `Intro` elige la primera, `Esc` borra la búsqueda y la cierra. La búsqueda recorre todas las familias.
+- **Familias:** Todas, ★ Favoritas, Tubo (Perfil 2D, Trenza, Tubo erosionado, Expresión), Eslabones (Cadena, Cuentas, Anillos, Nudos, Espiral, Noodles), Pieles (Escamas, Escamas espinadas, Cuadros 3D, Armadura hex, Celdas Voronoi, Panal, Red) y Orgánicas (el resto). Una figura nueva sin familia asignada aparece en Orgánicas.
+- **Favoritas:** la ★ a la derecha de cada botón la marca o la desmarca.
+- **Recientes:** las cuatro últimas figuras elegidas, encima de la lista.
+- Favoritas y recientes son de cada jugador y se guardan en su equipo en `config/komaedit/studio.json` (no viajan con recetas ni paquetes). Un archivo roto se ignora y se empieza de cero.
+- Al pasar el ratón por una figura aparece su descripción completa; la de la figura elegida se ve debajo de la lista en hasta tres líneas.
+
+### Ajustar rápido
+
+Todos los controles numéricos (Proporciones, Modificadores y Mezcla orgánica) y las filas de ciclo (‹ ›) comparten estos gestos:
+
+- **Rueda** sobre los botones o el valor: sube o baja un paso. Sobre la etiqueta o fuera de los controles, la rueda desplaza el panel como siempre, para no cambiar valores sin querer.
+- **Mayús** con `−` `+`, la rueda o el arrastre: paso grande (×5, o el propio del control: 45° el giro, 90° la torsión, 25 % las escalas).
+- **Arrastrar** el número en horizontal lo cambia como un deslizador (un paso cada 6 píxeles). **Un clic** sin mover abre el campo para escribirlo: `Intro` o pulsar fuera lo aplica (ajustado al rango), `Esc` lo cancela.
+- **Clic derecho** restablece el valor de serie: el de la figura para radio, espaciado, grosor, giro y altura; el de los modificadores para el resto; en las filas de tubo quita la opción para que valga la de serie.
+- Una barra fina bajo cada control muestra dónde está el valor dentro de su rango.
+- **Ayuda contextual:** al pasar el ratón por la etiqueta de un control se ve qué hace, su rango, el paso, el paso grande y el valor de serie. Los botones de la barra superior y de presets también la tienen.
+
+### Presets y variantes
+
+Debajo de la descripción de la figura (Figuras y Estructuras):
+
+- **Compacto** (radio ×0,6, un paso menos de espaciado, altura ×0,7), **De serie**, **Amplio** (radio ×1,5, un paso más de espaciado, altura ×1,4) y **Robusto** (radio ×1,2 y un punto más de grosor). Parten siempre de las proporciones de serie de la figura y no tocan opciones, material ni modificadores.
+- **⚄ Azar** (`R`): variante con semilla alrededor de las proporciones de serie (radio de ×0,6 a ×1,6, espaciado ±2, grosor ±1, giro ±45° y altura de ×0,7 a ×1,5). La semilla aparece en la barra de estado (`Variante #4821`); la misma figura y semilla dan siempre la misma variante.
+- Presets y variantes solo proponen valores dentro de los rangos del Studio y no cambian ningún generador.
+
+### Deshacer ajustes
+
+El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
+
+- `Z` deshace y `Y` o `Mayús+Z` rehacen (también los botones ↶ ↷ de la barra superior). `Ctrl+Z` / `Ctrl+Y` siguen deshaciendo en el mundo.
+- Guarda hasta 100 pasos. Los cambios seguidos del mismo control en menos de 0,8 s (arrastrar, la rueda o varios clics rápidos) cuentan como uno.
+- Entran todos los cambios de la receta: figura, proporciones, opciones de tubo, modificadores, material, presets, variantes y cargar una receta o instancia. El nombre de la receta no entra.
+- Sobrevive a cerrar y abrir el Studio y se borra al salir del mundo.
+
+### Antes de construir
+
+- El pie del panel y la barra inferior muestran **≈ N bloques**, el recuento del último holograma (con `…` mientras se recalcula).
+- A partir de **250 000 bloques** el recuento sale en amarillo y Construir pide una segunda pulsación en 5 s; si el recuento cambia entre medias, vuelve a pedirla. Por encima de **1 500 000** (el `maxBlocksPerOperation` de serie) sale en rojo: el servidor puede rechazarlo si no tienes `komaedit.limit.unrestricted` o si su configuración es más baja.
+- `H` o el botón **H** de la barra superior ocultan el holograma; se sigue calculando, así que el recuento sigue valiendo.
+
+### Atajos de teclado
+
+`F1` o `?` abren la chuleta dentro del Studio. Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
+
+| Tecla | Acción |
+| --- | --- |
+| `1` – `7` | Ir a una etapa, en el orden de la barra lateral |
+| `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
+| `Ctrl+F` o `/` | Buscar figura |
+| `B` | Construir (las obras grandes piden confirmar) |
+| `H` | Mostrar u ocultar el holograma |
+| `Z` / `Y` (`Mayús+Z`) | Deshacer / rehacer ajustes del Studio |
+| `Ctrl+Z` / `Ctrl+Y` (`Ctrl+Mayús+Z`) | Deshacer / rehacer en el mundo (WorldEdit) |
+| `R` | Variante al azar con semilla |
+| `Ctrl+S` | Guardar la receta |
+| `Ctrl+Supr` | Limpiar la trayectoria |
+| `RePág` / `AvPág` | Desplazar el panel |
+| `F1` / `?` | Chuleta de atajos |
+| `K` / `Esc` | Cerrar el Studio (`Esc` cierra antes la chuleta o el campo abierto) |
+
+### Pantallas pequeñas
+
+- La barra lateral encoge sus botones (hasta 24 píxeles) para no salirse en pantallas bajas o con escala de GUI grande.
+- Con menos de 330 píxeles de alto (escala de GUI), el pie pierde la etiqueta «RECETA» y la chuleta se muestra en dos columnas.
+- La barra superior omite primero el subtítulo, luego el título y por último el contador de nodos si no cabe.
+- Lo que queda desplazado bajo la cabecera o el pie del panel ya no responde a clics.
+
 ## Trayectorias y hologramas
 
 Las trayectorias se crean con puntos colocados mediante `P` o desde Procedural Studio. Los nodos pueden moverse con el gizmo XYZ y la geometría se recalcula sin modificar el mundo.

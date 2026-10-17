@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Studio más cómodo y rápido.** Buscador de figuras sin tildes por nombre, id, alias y descripción (`Ctrl+F` o `/`), familias (Tubo, Eslabones, Pieles, Orgánicas), favoritas con ★ y las cuatro recientes; favoritas y recientes se guardan por jugador en `config/komaedit/studio.json`.
+- Los controles numéricos aceptan rueda (sobre botones y valor), `Mayús` para pasos grandes, arrastre horizontal como deslizador, escribir el valor con un clic y clic derecho para volver al de serie, con una barra que enseña el valor dentro de su rango. Las filas ‹ › también responden a la rueda y al clic derecho.
+- Ayuda al pasar el ratón: qué hace cada control, su rango, paso y valor de serie; descripción completa de cada figura.
+- Deshacer y rehacer de ajustes dentro del Studio (`Z`, `Y`, botones ↶ ↷), con 100 pasos y los cambios seguidos del mismo control fundidos en uno; `Ctrl+Z` sigue deshaciendo en el mundo.
+- Presets por figura (Compacto, De serie, Amplio, Robusto) y variante al azar con semilla (`R`).
+- Recuento estimado de bloques antes de Construir y confirmación con segunda pulsación por encima de 250 000 bloques; aviso en rojo por encima del límite de serie del servidor.
+- Atajos de teclado (`1`–`7`, `Tab`, `B`, `H`, `Ctrl+S`, `Ctrl+Supr`, `RePág`/`AvPág`) con chuleta en `F1` o `?`, y botón para ocultar el holograma.
+- Corrige que escribir una `k` en el nombre de la receta o en el buscador de bloques cerrara el Studio, y que el personaje se moviera al escribir el nombre.
+- La barra lateral, la barra superior y el pie se adaptan a pantallas bajas y escalas de GUI grandes, y las filas desplazadas bajo la cabecera o el pie ya no responden a clics.
+
 - Añade la figura **Expresión** (`expression`): una fórmula del jugador en espacio de tubo (`x`, `y` de -1 a 1 en la sección, `z` a lo largo en radios, más `t`, `r`, `a` y `n`) decide qué bloques se colocan (salida > 0) y, con **Patrón figura**, su material (valor en `(0, 1]`).
 - Añade un compilador de fórmulas propio, sin bucles ni estado compartido: operadores `+ - * / % ^`, comparaciones, `&& || !`, ternario, 26 funciones (con `noise` determinista), definiciones `nombre = valor;`, nombres sensibles a mayúsculas, límites de 256 caracteres, 16 definiciones, 40 niveles y 400 operaciones, y errores en español con la posición. Evalúa 6–12 veces más rápido que el motor de WorldEdit 7.3.8 con las mismas fórmulas.
 - Acota el alcance de la fórmula por análisis (`r <= 1 && …`) para no recorrer las esquinas de la sección: `r <= 1` cuesta lo mismo que el perfil círculo.
