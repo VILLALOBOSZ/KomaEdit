@@ -1,5 +1,7 @@
 package com.komainu.moxia.edit;
 
+import com.komainu.moxia.shape.smooth.SmoothPiece;
+import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockState;
 
@@ -19,6 +21,8 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
     private final BlockState[] overrides;
     private final int[] expectedStateIds;
     private final int[] captureIndices;
+    /** Losa o escalera que sustituye al bloque del patrón; {@code null} si todo el plan son bloques enteros. */
+    private final byte[] pieces;
     private final int captureSize;
     private final BlockBounds bounds;
 
@@ -27,6 +31,7 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
             BlockState[] overrides,
             int[] expectedStateIds,
             int[] captureIndices,
+            byte[] pieces,
             int captureSize,
             BlockBounds bounds
     ) {
@@ -34,6 +39,7 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
         this.overrides = overrides;
         this.expectedStateIds = expectedStateIds;
         this.captureIndices = captureIndices;
+        this.pieces = pieces;
         this.captureSize = captureSize;
         this.bounds = bounds;
     }
@@ -42,6 +48,19 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
         Builder builder = builder(blocks.size());
         for (BlockVector3 block : blocks) {
             builder.addPattern(block.x(), block.y(), block.z());
+        }
+        return builder.build();
+    }
+
+    /** Plan de patrón con la pieza de cada posición (las ausentes en {@code pieces} son bloques enteros). */
+    public static PackedBlockPlan pattern(Collection<BlockVector3> blocks, SmoothPieces pieces) {
+        if (pieces.isEmpty()) {
+            return pattern(blocks);
+        }
+        Builder builder = builder(blocks.size());
+        for (BlockVector3 block : blocks) {
+            builder.addPattern(block.x(), block.y(), block.z());
+            builder.setPiece(builder.size() - 1, pieces.at(block.x(), block.y(), block.z()));
         }
         return builder.build();
     }
@@ -73,6 +92,29 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
 
     public int expectedStateId(int index) {
         return expectedStateIds == null ? NO_EXPECTED_STATE : expectedStateIds[index];
+    }
+
+    /** Pieza de la posición: {@link SmoothPiece#FULL} salvo que el plan sustituya el bloque por una pieza. */
+    public byte piece(int index) {
+        return pieces == null ? SmoothPiece.FULL : pieces[index];
+    }
+
+    public boolean hasPieces() {
+        return pieces != null;
+    }
+
+    /** Posiciones que llevan losa o escalera en vez del bloque entero. */
+    public int pieceCount() {
+        if (pieces == null) {
+            return 0;
+        }
+        int count = 0;
+        for (byte piece : pieces) {
+            if (piece != SmoothPiece.FULL) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public int captureIndex(int index) {
@@ -134,6 +176,7 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
         private BlockState[] overrides;
         private int[] expectedStateIds;
         private int[] captureIndices;
+        private byte[] pieces;
         private int size;
         private boolean hasOverrides;
         private boolean hasExpectedStates;
@@ -240,6 +283,29 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
             size++;
         }
 
+        /**
+         * Sustituye el bloque del patrón de una entrada ya añadida por una losa o escalera del mismo material.
+         * Solo tiene sentido en entradas sin bloque fijo.
+         */
+        public void setPiece(int index, byte piece) {
+            if (index < 0 || index >= size) {
+                throw new IndexOutOfBoundsException(index);
+            }
+            if (!SmoothPiece.isValid(piece)) {
+                throw new IllegalArgumentException("Pieza no válida: " + piece);
+            }
+            if (piece != SmoothPiece.FULL && overrides[index] != null) {
+                throw new IllegalArgumentException("Una pieza necesita una entrada de patrón, no un bloque fijo");
+            }
+            if (pieces == null) {
+                if (piece == SmoothPiece.FULL) {
+                    return;
+                }
+                pieces = new byte[positions.length];
+            }
+            pieces[index] = piece;
+        }
+
         public int size() {
             return size;
         }
@@ -249,6 +315,7 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
             BlockState[] finalOverrides = hasOverrides ? Arrays.copyOf(overrides, size) : null;
             int[] finalExpectedStates = hasExpectedStates ? Arrays.copyOf(expectedStateIds, size) : null;
             int[] finalCaptureIndices = hasCaptures ? Arrays.copyOf(captureIndices, size) : null;
+            byte[] finalPieces = pieces == null ? null : Arrays.copyOf(pieces, size);
             BlockBounds finalBounds = size == 0 ? null : new BlockBounds(
                     minimumX, minimumY, minimumZ, maximumX, maximumY, maximumZ
             );
@@ -257,6 +324,7 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
                     finalOverrides,
                     finalExpectedStates,
                     finalCaptureIndices,
+                    finalPieces,
                     captureSize,
                     finalBounds
             );
@@ -284,6 +352,9 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
             int previousLength = expectedStateIds.length;
             expectedStateIds = Arrays.copyOf(expectedStateIds, next);
             captureIndices = Arrays.copyOf(captureIndices, next);
+            if (pieces != null) {
+                pieces = Arrays.copyOf(pieces, next);
+            }
             Arrays.fill(expectedStateIds, previousLength, next, NO_EXPECTED_STATE);
             Arrays.fill(captureIndices, previousLength, next, NO_CAPTURE);
         }

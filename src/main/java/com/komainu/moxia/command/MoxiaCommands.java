@@ -3,7 +3,6 @@ package com.komainu.moxia.command;
 import com.komainu.moxia.brush.BrushManager;
 import com.komainu.moxia.brush.BrushSettings;
 import com.komainu.moxia.edit.BatchEditService;
-import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.gradient.GradientAxis;
 import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.gradient.GradientService;
@@ -98,7 +97,8 @@ public final class MoxiaCommands {
         int lastSpace = remaining.lastIndexOf(' ');
         var tail = builder.createOffset(builder.getStart() + lastSpace + 1);
         for (String flag : new String[]{"-e round", "-e spike", "-e soft", "-e cube", "-n horizontal",
-                "-n upright", "-t 90", "-r 0,180", "-p 0:0:0", "-q high", "-hollow 1", "-s 2"}) {
+                "-n upright", "-t 90", "-r 0,180", "-p 0:0:0", "-q high", "-hollow 1", "-s 2", "-w stairs",
+                "-w slabs", "-c 0.5"}) {
             tail.suggest(flag);
         }
         return tail.buildFuture();
@@ -1700,7 +1700,7 @@ public final class MoxiaCommands {
                     SampledPath sampledPath = legacyScalePath
                             ? SampledPath.create(pathSnapshot.points(), pathSnapshot.closed())
                             : SampledPath.createSmooth(pathSnapshot.points(), pathSnapshot.closed());
-                    return PackedBlockPlan.pattern(ShapeGenerator.generate(sampledPath, requestedParameters));
+                    return ShapeGenerator.generatePlan(sampledPath, requestedParameters);
                 },
                 plan -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
@@ -1714,10 +1714,13 @@ public final class MoxiaCommands {
                                 pattern,
                                 requestedParameters.shape().displayName()
                         );
+                        int pieces = plan.pieceCount();
                         current.getCommandSource().sendFeedback(
                                 () -> prefix().append(Text.literal(
                                         requestedParameters.shape().displayName() + " en cola: " + changed
-                                                + " bloques · espaciado " + requestedParameters.spacing()
+                                                + " bloques" + (pieces == 0
+                                                ? " · espaciado " + requestedParameters.spacing()
+                                                : " · " + pieces + " losas/escaleras")
                                                 + " · /komaedit job status"
                                 ).formatted(Formatting.GREEN)),
                                 false
@@ -1967,8 +1970,9 @@ public final class MoxiaCommands {
                 () -> Text.literal(
                         "Tubos sin huecos: /komaedit sweep <perfil> <radios> [patrón] [-e round|spike|soft|cube] "
                                 + "[-n horizontal|upright] [-t torsión] [-r giro,giroFinal] [-p tensión:sesgo:continuidad] "
-                                + "[-hollow pared] · /komaedit braid <radios> · /komaedit noisetube <radios>. "
-                                + "Radios con fotogramas: \"2,0.3:12,2\" o 2_12_2. "
+                                + "[-hollow pared] [-w slabs|stairs] [-c cobertura 0–1] · /komaedit braid <radios> · "
+                                + "/komaedit noisetube <radios>. Radios con fotogramas: \"2,0.3:12,2\" o 2_12_2. "
+                                + "-w cambia la superficie por losas o escaleras del mismo material. "
                                 + "Doblar el portapapeles: /komaedit bend [repeat|stretch] [-n upright|horizontal] "
                                 + "[-g hueco] [-a x|z|-x|-z] [-y desplazamiento]."
                 ).formatted(Formatting.GRAY),

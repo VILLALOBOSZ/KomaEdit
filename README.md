@@ -185,11 +185,13 @@ Ejemplos:
 - **Curva y marcos:** Kochanek–Bartels (tensión, sesgo, continuidad) y marcos de mínima rotación; normales `consistent`, `horizontal` o `upright`.
 - **Extremos:** plano, suave, punta, cúpula o cubo.
 - **Modificadores exactos:** escala, espaciado y torsión se aplican al evaluar cada bloque.
-- **Comandos rápidos:** `/komaedit sweep <perfil> <radios> [patrón] [-e …] [-n …] [-t …] [-r …] [-p …] [-hollow …]`, `/komaedit braid <radios>` y `/komaedit noisetube <radios>`.
+- **Losas y escaleras:** con `-w slabs|stairs` (fila **Piezas** del Studio) la superficie que la figura solo ocupa en parte se termina con losas o escaleras orientadas del mismo material; `-c` (Cobertura, 0–1) decide cuántas.
+- **Comandos rápidos:** `/komaedit sweep <perfil> <radios> [patrón] [-e …] [-n …] [-t …] [-r …] [-p …] [-hollow …] [-w …] [-c …]`, `/komaedit braid <radios>` y `/komaedit noisetube <radios>`.
 
 ```text
 /komaedit sweep star5 "2,0.3:12,2" polished_andesite -e spike -t 30
 /komaedit sweep polygon6 10 deepslate_tiles -hollow 2 -n horizontal
+/komaedit sweep circle 9 stone_bricks -w stairs -c 0.6
 ```
 
 ## Materiales integrados
