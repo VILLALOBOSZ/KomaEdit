@@ -25,6 +25,15 @@ import com.komainu.moxia.shape.tube.TubeFigures;
 import com.komainu.moxia.shape.tube.TubeFormula;
 import com.komainu.moxia.shape.tube.TubeFormulaPreset;
 import com.komainu.moxia.shape.tube.TubeSettings;
+import com.komainu.moxia.studio.BuildEstimate;
+import com.komainu.moxia.studio.NumericRange;
+import com.komainu.moxia.studio.ParameterHistory;
+import com.komainu.moxia.studio.ShapeCategory;
+import com.komainu.moxia.studio.ShapeSearch;
+import com.komainu.moxia.studio.ShapeVariants;
+import com.komainu.moxia.studio.StudioPreferences;
+import com.komainu.moxia.studio.StudioShortcuts;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
@@ -34,6 +43,7 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
@@ -44,12 +54,16 @@ import net.minecraft.world.RaycastContext;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.SplittableRandom;
 
 public final class ProceduralStudioScreen extends Screen {
     private static final int PANEL = 0xEE0C0D12;
@@ -63,6 +77,8 @@ public final class ProceduralStudioScreen extends Screen {
     private static final int MUTED = 0xFFA8A4AE;
     private static final int SUCCESS = 0xFF67DFA3;
     private static final int WARNING = 0xFFF4C86A;
+    private static final int DANGER = 0xFFFF6B6B;
+    private static final int FAVORITE = 0xFFF2C14B;
     private static final double REACH = 4_096.0;
     private static final int RAIL_WIDTH = 54;
     private static final List<PathShape> STRUCTURE_SHAPES = List.of(
@@ -91,8 +107,27 @@ public final class ProceduralStudioScreen extends Screen {
     private static int rememberedInspectorWidth = 340;
     private static ProceduralRecipe rememberedDraft = ProceduralRecipe.defaults();
     private static volatile ProceduralRecipe previewDraft = rememberedDraft;
+    private static final Path PREFERENCES_FILE = FabricLoader.getInstance().getConfigDir()
+            .resolve("komaedit").resolve("studio.json");
+    private static StudioPreferences preferences;
+    /** Deshacer de ajustes del Studio; sobrevive a cerrar y abrir, no a salir del mundo. */
+    private static final ParameterHistory<ProceduralRecipe> HISTORY = new ParameterHistory<>(100);
+    private static final SplittableRandom SEEDS = new SplittableRandom();
+    private static ShapeCategory rememberedCategory = ShapeCategory.ALL;
 
     private ProceduralRecipe draft = rememberedDraft;
+    private static final String[] WEATHER_STYLES = {"templado", "desierto", "nevado", "hundido"};
+    private static final String[] WEATHER_HINTS = {
+            "Musgo abajo y al norte, hierba, enredaderas y telarañas.",
+            "Arena contra los muros, madera blanqueada, terracota.",
+            "Nieve en lo que mira al cielo y más grietas por la helada.",
+            "La selección se llena de agua: algas, kelp y pepinos de mar."
+    };
+    private int weatherIntensity = 50;
+    private int weatherCollapse = 50;
+    private int weatherVegetation = 50;
+    private int weatherStyle;
+    private boolean weatherWater;
     private Stage stage = STRUCTURE_SHAPES.contains(draft.shape()) ? Stage.STRUCTURES : Stage.FIGURE;
     private int inspectorWidth;
     private int contentScroll;
@@ -120,6 +155,21 @@ public final class ProceduralStudioScreen extends Screen {
     private String selectedInstanceId = "";
     private BlockPos hoverPlacement;
     private BlockPos lastDraggedPosition;
+    /** Controles dibujados en el último fotograma: rueda, clic derecho, arrastre y ayudas. */
+    private final List<Hotspot> hotspots = new ArrayList<>();
+    private final BuildEstimate buildEstimate = new BuildEstimate();
+    private ShapeCategory category = rememberedCategory;
+    private boolean editingSearch;
+    private String shapeSearch = "";
+    private Control editingControl;
+    private String numberInput = "";
+    private Control dragControl;
+    private double dragStartX;
+    private int dragStartValue;
+    private boolean dragMoved;
+    private boolean cheatSheet;
+    private boolean restoring;
+    private List<OrderedText> tooltip = List.of();
 
     public ProceduralStudioScreen() {
         super(Text.translatable("gui.komaedit.title"));
@@ -128,6 +178,22 @@ public final class ProceduralStudioScreen extends Screen {
     public static void resetSession() {
         rememberedDraft = ProceduralRecipe.defaults();
         previewDraft = rememberedDraft;
+        HISTORY.clear();
+    }
+
+    private static StudioPreferences preferences() {
+        if (preferences == null) {
+            preferences = StudioPreferences.load(PREFERENCES_FILE);
+        }
+        return preferences;
+    }
+
+    private static void savePreferences() {
+        try {
+            preferences().save(PREFERENCES_FILE);
+        } catch (IOException ignored) {
+            // Favoritas y recientes son una comodidad: si no se pueden guardar, siguen en memoria.
+        }
     }
 
     public static ProceduralRecipe previewRecipe() {
@@ -148,8 +214,8 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public void tick() {
-        if (editingFormula) {
-            // Mientras se escribe la fórmula, W, A, S, D y el espacio son letras, no movimiento.
+        if (typing()) {
+            // Mientras se escribe en un campo, W, A, S, D y el espacio son letras, no movimiento.
             releaseMovementKeys();
         } else {
             updateMovementKeys();
@@ -165,6 +231,7 @@ public final class ProceduralStudioScreen extends Screen {
     public void removed() {
         rememberedInspectorWidth = inspectorWidth;
         rememberedDraft = draft;
+        rememberedCategory = category;
         previewDraft = draft;
         releaseMovementKeys();
         EditorOverlayRenderer.clear();
@@ -174,6 +241,8 @@ public final class ProceduralStudioScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         contentScroll = Math.clamp(contentScroll, 0, maximumContentScroll());
+        hotspots.clear();
+        tooltip = List.of();
         updateHover(mouseX, mouseY);
         drawTopBar(context, mouseX, mouseY);
         drawStageRail(context, mouseX, mouseY);
@@ -181,20 +250,96 @@ public final class ProceduralStudioScreen extends Screen {
         drawBuildBar(context, mouseX, mouseY);
         if (blockCatalog) {
             drawBlockCatalog(context, mouseX, mouseY);
+        } else if (cheatSheet) {
+            drawCheatSheet(context);
+        } else {
+            hotspotTooltip(mouseX, mouseY);
+            if (!tooltip.isEmpty()) {
+                context.drawOrderedTooltip(textRenderer, tooltip, mouseX, mouseY);
+            }
         }
+    }
+
+    private boolean typing() {
+        return editingFormula || editingName || editingSearch || editingControl != null || blockCatalog;
     }
 
     private void drawTopBar(DrawContext context, int mouseX, int mouseY) {
         int right = inspectorLeft() - 10;
         context.fill(12, 10, right, 42, PANEL);
         context.fill(12, 10, 16, 42, ACCENT);
-        drawTrimmed(context, "KOMAEDIT", 24, 17, 95, TEXT);
-        drawTrimmed(context, tr("gui.komaedit.subtitle"), 102, 17, Math.max(90, right - 260), MUTED);
-        String nodes = tr("gui.komaedit.nodes", PathHologramRenderer.points().size());
-        int nodeWidth = textRenderer.getWidth(nodes) + 18;
-        drawPill(context, mouseX, mouseY, Math.max(160, right - nodeWidth - 66), 16, nodeWidth, 20,
-                nodes, pathReady());
-        drawPill(context, mouseX, mouseY, right - 52, 16, 42, 20, tr("gui.komaedit.close"), false);
+        List<TopPill> pills = topPills();
+        int leftmost = pills.isEmpty() ? right : pills.getLast().x();
+        int titleWidth = textRenderer.getWidth("KOMAEDIT");
+        if (24 + titleWidth + 6 <= leftmost) {
+            context.drawText(textRenderer, "KOMAEDIT", 24, 17, TEXT, false);
+            int subtitleWidth = leftmost - 34 - titleWidth - 8;
+            if (subtitleWidth >= 40) {
+                drawTrimmed(context, tr("gui.komaedit.subtitle"), 34 + titleWidth, 17, subtitleWidth, MUTED);
+            }
+        }
+        for (TopPill pill : pills) {
+            boolean enabled = switch (pill.action()) {
+                case UNDO -> HISTORY.canUndo();
+                case REDO -> HISTORY.canRedo();
+                default -> true;
+            };
+            boolean active = switch (pill.action()) {
+                case NODES -> pathReady();
+                case HOLOGRAM -> !ProceduralPreviewRenderer.hidden();
+                case HELP -> cheatSheet;
+                default -> false;
+            };
+            drawPill(context, mouseX, mouseY, pill.x(), 16, pill.width(), 20, pill.label(), active,
+                    enabled ? (active ? SUCCESS : TEXT) : 0xFF5C5A63);
+            hotspots.add(Hotspot.tip(pill.x(), 16, pill.width(), 20, tr(pill.action().helpKey)));
+        }
+    }
+
+    /** Botones de la barra superior, de derecha a izquierda; los que no caben se omiten (nodos primero). */
+    private List<TopPill> topPills() {
+        int right = inspectorLeft() - 10;
+        List<TopPill> pills = new ArrayList<>();
+        int x = right - 10;
+        for (TopAction action : TopAction.values()) {
+            String label = switch (action) {
+                case CLOSE -> tr("gui.komaedit.close");
+                case HELP -> "?";
+                case HOLOGRAM -> ProceduralPreviewRenderer.hidden() ? "H ○" : "H ◉";
+                case REDO -> "↷";
+                case UNDO -> "↶";
+                case NODES -> tr("gui.komaedit.nodes", PathHologramRenderer.points().size());
+            };
+            int pillWidth = Math.max(20, textRenderer.getWidth(label) + 14);
+            if (x - pillWidth < 18) {
+                break;
+            }
+            x -= pillWidth;
+            pills.add(new TopPill(action, x, pillWidth, label));
+            x -= 5;
+        }
+        return pills;
+    }
+
+    private boolean topBarClicked(double mouseX, double mouseY) {
+        for (TopPill pill : topPills()) {
+            if (!inside(mouseX, mouseY, pill.x(), 16, pill.width(), 20)) {
+                continue;
+            }
+            switch (pill.action()) {
+                case CLOSE -> close();
+                case HELP -> cheatSheet = !cheatSheet;
+                case HOLOGRAM -> toggleHologram();
+                case UNDO -> undoParameters();
+                case REDO -> redoParameters();
+                case NODES -> {
+                    stage = Stage.PATH;
+                    contentScroll = 0;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     private void drawStageRail(DrawContext context, int mouseX, int mouseY) {
@@ -216,7 +361,7 @@ public final class ProceduralStudioScreen extends Screen {
             }
             drawStageIcon(context, value, 39, y + buttonSize / 2, selected ? ACCENT : TEXT);
             if (hovered) {
-                String title = tr(value.titleKey);
+                String title = (index + 1) + " · " + tr(value.titleKey);
                 int width = textRenderer.getWidth(title) + 16;
                 int tooltipY = y + Math.max(4, (buttonSize - 21) / 2);
                 context.fill(66, tooltipY, 66 + width, tooltipY + 21, PANEL);
@@ -237,8 +382,8 @@ public final class ProceduralStudioScreen extends Screen {
         drawTrimmed(context, tr(stage.subtitleKey), left + 18, 31, inspectorWidth - 36, MUTED);
         context.fill(left + 14, 49, width - 14, 50, 0xFF343640);
 
-        int clipBottom = height - 105;
-        context.enableScissor(left + 8, 52, width - 8, clipBottom);
+        int clipBottom = inspectorClipBottom();
+        context.enableScissor(left + 8, inspectorClipTop(), width - 8, clipBottom);
         int top = 61 - contentScroll;
         switch (stage) {
             case PATH -> drawPathStage(context, mouseX, mouseY, left, top);
@@ -246,19 +391,77 @@ public final class ProceduralStudioScreen extends Screen {
             case STRUCTURES -> drawStructuresStage(context, mouseX, mouseY, left, top);
             case MODIFIERS -> drawModifiersStage(context, mouseX, mouseY, left, top);
             case MATERIAL -> drawMaterialStage(context, mouseX, mouseY, left, top);
+            case WEATHER -> drawWeatherStage(context, mouseX, mouseY, left, top);
             case INSTANCES -> drawInstancesStage(context, mouseX, mouseY, left, top);
             case RECIPES -> drawRecipesStage(context, mouseX, mouseY, left, top);
         }
         context.disableScissor();
 
-        context.fill(left, height - 100, width, height, PANEL_SOFT);
-        context.drawText(textRenderer, tr("gui.komaedit.recipe"), left + 16, height - 90, MUTED, false);
-        drawNameField(context, mouseX, mouseY, left + 16, height - 77, inspectorWidth - 108, 24);
-        drawSmallButton(context, mouseX, mouseY, width - 82, height - 77, 66, 24,
+        int footerTop = height - footerHeight();
+        context.fill(left, footerTop, width, height, PANEL_SOFT);
+        if (!compactFooter()) {
+            context.drawText(textRenderer, tr("gui.komaedit.recipe"), left + 16, footerTop + 10, MUTED, false);
+            String estimate = estimateLabel();
+            if (!estimate.isEmpty()) {
+                int estimateWidth = textRenderer.getWidth(estimate);
+                context.drawText(textRenderer, estimate, width - 16 - estimateWidth, footerTop + 10,
+                        estimateColor(), false);
+            }
+        }
+        drawNameField(context, mouseX, mouseY, left + 16, nameFieldY(), inspectorWidth - 108, 24);
+        drawSmallButton(context, mouseX, mouseY, width - 82, nameFieldY(), 66, 24,
                 tr("gui.komaedit.save"), false);
-        boolean ready = pathReady();
         drawSmallButton(context, mouseX, mouseY, left + 16, height - 44, inspectorWidth - 32, 29,
-                ready ? tr("gui.komaedit.build_recipe") : tr("gui.komaedit.add_points"), ready);
+                buildLabel(tr("gui.komaedit.build_recipe")), pathReady());
+    }
+
+    /** En pantallas bajas el pie pierde la etiqueta «RECETA» para dejar sitio a los controles. */
+    private boolean compactFooter() {
+        return height < 330;
+    }
+
+    private int footerHeight() {
+        return compactFooter() ? 78 : 100;
+    }
+
+    private int nameFieldY() {
+        return height - footerHeight() + (compactFooter() ? 8 : 23);
+    }
+
+    private int inspectorClipTop() {
+        return 52;
+    }
+
+    private int inspectorClipBottom() {
+        return height - footerHeight() - 5;
+    }
+
+    /** «≈ 12,3 k bloques» del último holograma; vacío si aún no hay. */
+    private String estimateLabel() {
+        int blocks = ProceduralPreviewRenderer.blockCount();
+        if (blocks < 0 || !pathReady()) {
+            return "";
+        }
+        String count = tr("gui.komaedit.estimate", BuildEstimate.compact(blocks));
+        return ProceduralPreviewRenderer.settled() ? count : count + " …";
+    }
+
+    private int estimateColor() {
+        return switch (BuildEstimate.level(ProceduralPreviewRenderer.blockCount())) {
+            case LARGE -> WARNING;
+            case OVER_DEFAULT_LIMIT -> DANGER;
+            default -> MUTED;
+        };
+    }
+
+    private String buildLabel(String ready) {
+        if (!pathReady()) {
+            return tr("gui.komaedit.add_points");
+        }
+        if (buildEstimate.armed(System.currentTimeMillis())) {
+            return tr("gui.komaedit.build_confirm");
+        }
+        return ready;
     }
 
     private void drawPathStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
@@ -313,17 +516,44 @@ public final class ProceduralStudioScreen extends Screen {
             String title
     ) {
         int inner = inspectorWidth - 32;
+        ShapeLayout layout = shapeLayout(left, top, shapes);
         drawSectionLabel(context, title, left + 16, top);
-        int buttonWidth = (inner - 7) / 2;
-        for (int index = 0; index < shapes.size(); index++) {
-            int x = left + 16 + index % 2 * (buttonWidth + 7);
-            int y = top + 17 + index / 2 * 27;
-            drawShapeButton(context, mouseX, mouseY, x, y, buttonWidth, 22, shapes.get(index));
+        if (layout.searchY() >= 0) {
+            drawSearchField(context, mouseX, mouseY, left + 16, layout.searchY(), inner, layout.shown().size());
+            for (Chip chip : layout.categories()) {
+                ShapeCategory value = (ShapeCategory) chip.value();
+                drawChip(context, mouseX, mouseY, chip, value == category && shapeSearch.isBlank(),
+                        value == ShapeCategory.FAVORITES ? FAVORITE : TEXT);
+            }
+            if (layout.recentsY() >= 0) {
+                context.drawText(textRenderer, tr("gui.komaedit.recents"), left + 16, layout.recentsY() + 4, MUTED, false);
+                for (Chip chip : layout.recents()) {
+                    drawChip(context, mouseX, mouseY, chip, chip.value() == draft.shape(), TEXT);
+                }
+            }
         }
-        int controlsTop = top + 17 + ((shapes.size() + 1) / 2) * 27 + 8;
-        drawTrimmed(context, draft.shape().description(), left + 18, controlsTop,
-                inner - 4, MUTED);
-        controlsTop += 23;
+        for (int index = 0; index < layout.shown().size(); index++) {
+            int x = left + 16 + index % 2 * (layout.buttonWidth() + 7);
+            int y = layout.gridY() + index / 2 * 27;
+            drawShapeButton(context, mouseX, mouseY, x, y, layout.buttonWidth(), 22, layout.shown().get(index));
+        }
+        if (layout.shown().isEmpty()) {
+            drawCard(context, mouseX, mouseY, left + 16, layout.gridY(), inner, 22, false);
+            drawTrimmed(context, tr("gui.komaedit.search.empty"), left + 26, layout.gridY() + 7, inner - 20, MUTED);
+        }
+        for (int line = 0; line < layout.description().size(); line++) {
+            context.drawText(textRenderer, layout.description().get(line), left + 18,
+                    layout.descriptionY() + line * 10, MUTED, false);
+        }
+        drawSectionLabel(context, tr("gui.komaedit.presets"), left + 16, layout.presetsY());
+        for (Chip chip : layout.presets()) {
+            drawSmallButton(context, mouseX, mouseY, chip.x(), chip.y(), chip.width(), chip.height(), chip.label(), false);
+            hotspots.add(Hotspot.tip(chip.x(), chip.y(), chip.width(), chip.height(),
+                    chip.value() instanceof ShapeVariants.Preset preset
+                            ? tr(preset.translationKey() + ".help")
+                            : tr("gui.komaedit.preset.random.help")));
+        }
+        int controlsTop = layout.controlsTop();
         drawSectionLabel(context, "PROPORCIONES", left + 16, controlsTop);
         boolean torii = draft.shape() == PathShape.TORII;
         boolean monumental = draft.shape() == PathShape.PILLAR || draft.shape() == PathShape.PILLAR_ARCHES;
@@ -377,31 +607,34 @@ public final class ProceduralStudioScreen extends Screen {
     private void drawTubeRows(DrawContext context, int mouseX, int mouseY, int x, int y, int inner) {
         int row = 0;
         if (TubeFigures.hasExactEngine(draft.shape())) {
-            drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Motor", tubeEngine().displayName());
+            drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Motor", tubeEngine().displayName(),
+                    TubeEngine.OPTION);
             if (tubeEngine() != TubeEngine.EXACT) {
                 return;
             }
         }
         if (draft.shape() == PathShape.EXPRESSION) {
             drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Fórmula",
-                    draft.formula().isEmpty() ? formulaPreset().displayName() : "Propia");
+                    draft.formula().isEmpty() ? formulaPreset().displayName() : "Propia", "preset");
             drawFormulaField(context, mouseX, mouseY, x, y + row++ * 31, inner);
         }
         if (draft.shape() == PathShape.SWEEP) {
-            drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Perfil", tubeProfile().displayName());
+            drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Perfil", tubeProfile().displayName(),
+                    "profile");
         }
         if (usesHollowRow()) {
             drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Relleno",
-                    tubeOption("hollow", 0.0) >= 0.5 ? "Hueco" : "Macizo");
+                    tubeOption("hollow", 0.0) >= 0.5 ? "Hueco" : "Macizo", "hollow");
         }
         drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Extremos",
-                TubeSettings.EndMode.byIndex((int) tubeOption("end", 0.0)).displayName());
+                TubeSettings.EndMode.byIndex((int) tubeOption("end", 0.0)).displayName(), "end");
         drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Normales",
-                TubeSettings.NormalMode.byIndex((int) tubeOption("normal", 0.0)).displayName());
-        drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Piezas", smoothMode().shortName());
+                TubeSettings.NormalMode.byIndex((int) tubeOption("normal", 0.0)).displayName(), "normal");
+        drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Piezas", smoothMode().shortName(),
+                "smooth");
         if (smoothMode() != SmoothMode.NONE) {
             drawCycleRow(context, mouseX, mouseY, x, y + row * 31, inner, "Cobertura",
-                    Math.round(coverage() * 100.0) + "%");
+                    Math.round(coverage() * 100.0) + "%", "coverage");
         }
     }
 
@@ -638,7 +871,7 @@ public final class ProceduralStudioScreen extends Screen {
         drawSmallButton(context, mouseX, mouseY, left + 16, top + 229, inner, 27,
                 extensions.rhythmEnabled() ? "FUSIÓN ACTIVADA" : "ACTIVAR FUSIÓN", extensions.rhythmEnabled());
         drawCycleRow(context, mouseX, mouseY, left + 16, top + 263, inner,
-                "Figura secundaria", extensions.accentShape().displayName());
+                "Figura secundaria", extensions.accentShape().displayName(), "accent");
         drawStepper(context, mouseX, mouseY, left + 16, top + 294, inner,
                 "Cada N tramos", extensions.rhythmInterval(), Control.RHYTHM_INTERVAL);
 
@@ -659,7 +892,7 @@ public final class ProceduralStudioScreen extends Screen {
                 extensions.socketsEnabled() ? "CLIPBOARD KITBASH ACTIVADO" : "USAR CLIPBOARD DE WORLDEDIT",
                 extensions.socketsEnabled());
         drawCycleRow(context, mouseX, mouseY, left + 16, top + 516, inner,
-                "Colocar", extensions.socketPlacement().displayName());
+                "Colocar", extensions.socketPlacement().displayName(), "socket_placement");
         drawStepper(context, mouseX, mouseY, left + 16, top + 547, inner,
                 "Intervalo", extensions.socketInterval(), Control.SOCKET_INTERVAL);
 
@@ -679,13 +912,17 @@ public final class ProceduralStudioScreen extends Screen {
             int y,
             int rowWidth,
             String label,
-            String value
+            String value,
+            String option
     ) {
         context.fill(x, y, x + rowWidth, y + 25, CARD);
-        drawTrimmed(context, label, x + 9, y + 8, Math.max(40, rowWidth / 3), MUTED);
+        drawTrimmed(context, label, x + 9, y + 8, Math.min(rowWidth - 124, Math.max(40, rowWidth / 3)), MUTED);
         drawSmallButton(context, mouseX, mouseY, x + rowWidth - 116, y + 3, 22, 19, "‹", false);
-        drawTrimmed(context, value, x + rowWidth - 89, y + 8, 60, TEXT);
+        String fitted = textRenderer.trimToWidth(value, 64);
+        context.drawText(textRenderer, fitted, x + rowWidth - 60 - textRenderer.getWidth(fitted) / 2, y + 8,
+                TEXT, false);
         drawSmallButton(context, mouseX, mouseY, x + rowWidth - 25, y + 3, 22, 19, "›", false);
+        registerRow(Hotspot.Kind.CYCLE, x, y, rowWidth, null, option);
     }
 
     private void drawMaterialStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
@@ -769,6 +1006,64 @@ public final class ProceduralStudioScreen extends Screen {
         }
     }
 
+    /** Envejecer la selección de WorldEdit: clima, intensidad, derrumbe, vida y charcos; lanza el comando. */
+    private void drawWeatherStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
+        int inner = inspectorWidth - 32;
+        int half = (inner - 7) / 2;
+        drawSectionLabel(context, "CLIMA", left + 16, top);
+        for (int index = 0; index < WEATHER_STYLES.length; index++) {
+            int x = left + 16 + index % 2 * (half + 7);
+            int y = top + 17 + index / 2 * 27;
+            String label = WEATHER_STYLES[index].substring(0, 1).toUpperCase(Locale.ROOT)
+                    + WEATHER_STYLES[index].substring(1);
+            drawSmallButton(context, mouseX, mouseY, x, y, half, 22, label, weatherStyle == index);
+        }
+        drawTrimmed(context, WEATHER_HINTS[weatherStyle], left + 18, top + 73, inner - 4, MUTED);
+        drawSectionLabel(context, "DESGASTE", left + 16, top + 92);
+        drawStepper(context, mouseX, mouseY, left + 16, top + 110, inner, "Intensidad", weatherIntensity,
+                Control.WEATHER_INTENSITY);
+        drawStepper(context, mouseX, mouseY, left + 16, top + 140, inner, "Derrumbe", weatherCollapse,
+                Control.WEATHER_COLLAPSE);
+        drawStepper(context, mouseX, mouseY, left + 16, top + 170, inner, "Vida", weatherVegetation,
+                Control.WEATHER_VEGETATION);
+        drawSmallButton(context, mouseX, mouseY, left + 16, top + 200, inner, 25,
+                weatherWater ? "Agua estancada: sí" : "Agua estancada: no", weatherWater);
+        drawCard(context, mouseX, mouseY, left + 16, top + 234, inner, 44, false);
+        drawTrimmed(context, "Selecciona la obra con //pos1 y //pos2.", left + 28, top + 243, inner - 24, TEXT);
+        drawTrimmed(context, "Se deshace con //undo; la semilla sale en el chat.", left + 28, top + 259,
+                inner - 24, MUTED);
+        drawSmallButton(context, mouseX, mouseY, left + 16, top + 286, inner, 29, "Envejecer selección", true);
+    }
+
+    private boolean weatherStageClicked(double mouseX, double mouseY, int left, int top) {
+        int inner = inspectorWidth - 32;
+        int half = (inner - 7) / 2;
+        for (int index = 0; index < WEATHER_STYLES.length; index++) {
+            int x = left + 16 + index % 2 * (half + 7);
+            int y = top + 17 + index / 2 * 27;
+            if (inside(mouseX, mouseY, x, y, half, 22)) {
+                weatherStyle = index;
+                return true;
+            }
+        }
+        if (stepperClicked(mouseX, mouseY, left + 16, top + 110, inner, Control.WEATHER_INTENSITY)
+                || stepperClicked(mouseX, mouseY, left + 16, top + 140, inner, Control.WEATHER_COLLAPSE)
+                || stepperClicked(mouseX, mouseY, left + 16, top + 170, inner, Control.WEATHER_VEGETATION)) {
+            return true;
+        }
+        if (inside(mouseX, mouseY, left + 16, top + 200, inner, 25)) {
+            weatherWater = !weatherWater;
+            return true;
+        }
+        if (inside(mouseX, mouseY, left + 16, top + 286, inner, 29)) {
+            sendCommand("komaedit weather " + weatherIntensity + " " + WEATHER_STYLES[weatherStyle]
+                    + " -d " + weatherCollapse + " -v " + weatherVegetation + (weatherWater ? " -agua" : ""));
+            status = "Envejeciendo la selección…";
+            return true;
+        }
+        return true;
+    }
+
     private void drawRecipesStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
         int inner = inspectorWidth - 32;
         drawSectionLabel(context, "RECETAS GUARDADAS", left + 16, top);
@@ -805,15 +1100,35 @@ public final class ProceduralStudioScreen extends Screen {
         int left = 78 + (available - barWidth) / 2;
         int top = height - 56;
         context.fill(left, top, left + barWidth, top + 42, PANEL);
+        String estimate = estimateLabel();
+        int estimateWidth = estimate.isEmpty() ? 0 : textRenderer.getWidth(estimate) + 8;
         drawTrimmed(context, draft.shape().displayName() + " · " + materialSummary(draft),
-                left + 14, top + 9, barWidth - 156, TEXT);
-        String detail = pathReady()
-                ? ProceduralPreviewRenderer.status()
-                : status;
-        drawTrimmed(context, detail, left + 14, top + 24, barWidth - 156, MUTED);
+                left + 14, top + 9, barWidth - 156 - estimateWidth, TEXT);
+        if (!estimate.isEmpty()) {
+            context.drawText(textRenderer, estimate, left + barWidth - 142 - estimateWidth + 8, top + 9,
+                    estimateColor(), false);
+        }
+        String detail = buildBarDetail();
+        drawTrimmed(context, detail, left + 14, top + 24, barWidth - 156,
+                buildEstimate.armed(System.currentTimeMillis()) ? WARNING : MUTED);
         boolean ready = pathReady();
         drawSmallButton(context, mouseX, mouseY, left + barWidth - 132, top + 7, 121, 28,
-                ready ? "CONSTRUIR" : "FALTAN PUNTOS", ready);
+                buildLabel(tr("gui.komaedit.build")), ready);
+        hotspots.add(Hotspot.tip(left + barWidth - 132, top + 7, 121, 28, tr("gui.komaedit.help.build")));
+    }
+
+    /** Lo último que pasó: el aviso de obra grande, el estado del holograma o el último mensaje. */
+    private String buildBarDetail() {
+        if (buildEstimate.armed(System.currentTimeMillis())) {
+            return tr("gui.komaedit.build_large", BuildEstimate.compact(ProceduralPreviewRenderer.blockCount()));
+        }
+        if (!pathReady()) {
+            return status;
+        }
+        if (ProceduralPreviewRenderer.hidden()) {
+            return tr("gui.komaedit.hologram.hidden");
+        }
+        return ProceduralPreviewRenderer.status();
     }
 
     private void drawNameField(DrawContext context, int mouseX, int mouseY, int x, int y, int fieldWidth, int fieldHeight) {
@@ -893,7 +1208,17 @@ public final class ProceduralStudioScreen extends Screen {
         if (selected) {
             context.fill(x, y, x + 3, y + buttonHeight, ACCENT);
         }
-        drawTrimmed(context, shape.displayName(), x + 8, y + 7, buttonWidth - 14, selected ? ACCENT : TEXT);
+        drawTrimmed(context, shape.displayName(), x + 8, y + 7, buttonWidth - 24, selected ? ACCENT : TEXT);
+        boolean favorite = preferences().isFavorite(shape.id());
+        if (favorite || hovered) {
+            boolean starHovered = hovered && mouseX >= x + buttonWidth - 15;
+            context.drawText(textRenderer, favorite ? "★" : "☆", x + buttonWidth - 12, y + 7,
+                    favorite || starHovered ? FAVORITE : MUTED, false);
+        }
+        if (y + buttonHeight > inspectorClipTop() && y < inspectorClipBottom()) {
+            hotspots.add(Hotspot.tip(x, y, buttonWidth, buttonHeight,
+                    shape.displayName() + "\n" + shape.description() + "\n" + tr("gui.komaedit.help.favorite_star")));
+        }
     }
 
     private void drawStepper(
@@ -908,11 +1233,29 @@ public final class ProceduralStudioScreen extends Screen {
             Control control
     ) {
         context.fill(x, y, x + rowWidth, y + 25, CARD);
+        NumericRange range = range(control);
+        // La barra inferior enseña dónde está el valor dentro de su rango, como un deslizador.
+        context.fill(x, y + 23, x + rowWidth, y + 25, 0xFF2C2E37);
+        context.fill(x, y + 23, x + (int) Math.round(rowWidth * range.fraction(value)), y + 25, ACCENT_DARK);
         drawTrimmed(context, label, x + 9, y + 8, rowWidth - 105, TEXT);
         int minusX = x + rowWidth - 86;
         drawSmallButton(context, mouseX, mouseY, minusX, y + 3, 22, 19, "−", false);
-        context.drawCenteredTextWithShadow(textRenderer, Integer.toString(value), x + rowWidth - 49, y + 8, ACCENT);
+        int valueX = x + rowWidth - 63;
+        boolean editing = editingControl == control;
+        if (editing || dragControl == control || inside(mouseX, mouseY, valueX, y + 3, 37, 19)) {
+            context.fill(valueX, y + 3, valueX + 37, y + 22, editing ? CARD_SELECTED : CARD_HOVER);
+        }
+        String shown = editing ? textRenderer.trimToWidth(numberInput + "_", 35, true) : Integer.toString(value);
+        context.drawCenteredTextWithShadow(textRenderer, shown, valueX + 19, y + 8, editing ? TEXT : ACCENT);
         drawSmallButton(context, mouseX, mouseY, x + rowWidth - 25, y + 3, 22, 19, "+", false);
+        registerRow(Hotspot.Kind.STEPPER, x, y, rowWidth, control, null);
+    }
+
+    /** Solo cuenta lo que se ve dentro del panel; lo desplazado fuera no responde a la rueda. */
+    private void registerRow(Hotspot.Kind kind, int x, int y, int rowWidth, Control control, String option) {
+        if (y + 25 > inspectorClipTop() && y < inspectorClipBottom()) {
+            hotspots.add(new Hotspot(kind, x, y, rowWidth, 25, control, option, ""));
+        }
     }
 
     private void drawAxisRow(DrawContext context, int mouseX, int mouseY, int x, int y, int rowWidth) {
@@ -969,11 +1312,12 @@ public final class ProceduralStudioScreen extends Screen {
             int pillWidth,
             int pillHeight,
             String label,
-            boolean active
+            boolean active,
+            int color
     ) {
         boolean hovered = inside(mouseX, mouseY, x, y, pillWidth, pillHeight);
         context.fill(x, y, x + pillWidth, y + pillHeight, active ? ACCENT_DARK : hovered ? CARD_HOVER : CARD);
-        context.drawCenteredTextWithShadow(textRenderer, label, x + pillWidth / 2, y + 6, active ? SUCCESS : TEXT);
+        context.drawCenteredTextWithShadow(textRenderer, label, x + pillWidth / 2, y + 6, color);
     }
 
     private void drawSectionLabel(DrawContext context, String label, int x, int y) {
@@ -1024,6 +1368,14 @@ public final class ProceduralStudioScreen extends Screen {
                 context.drawBorder(centerX - 10, centerY - 8, 14, 14, color);
                 context.drawBorder(centerX - 3, centerY - 1, 14, 14, color);
             }
+            case WEATHER -> {
+                context.fill(centerX - 9, centerY + 6, centerX + 10, centerY + 9, color);
+                context.fill(centerX - 7, centerY - 3, centerX - 2, centerY + 6, color);
+                context.fill(centerX - 7, centerY - 8, centerX - 4, centerY - 3, color);
+                context.fill(centerX + 1, centerY + 2, centerX + 5, centerY + 6, color);
+                context.fill(centerX + 5, centerY + 4, centerX + 9, centerY + 6, color);
+                context.fill(centerX + 2, centerY - 1, centerX + 4, centerY + 1, color);
+            }
             case RECIPES -> {
                 context.drawBorder(centerX - 9, centerY - 10, 18, 20, color);
                 context.fill(centerX - 5, centerY - 5, centerX + 6, centerY - 4, color);
@@ -1035,6 +1387,25 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        ProceduralRecipe before = draft;
+        Hotspot hotspot = hotspotAt(mouseX, mouseY);
+        boolean handled = handleMouseClicked(mouseX, mouseY, button, hotspot);
+        track(before, group(hotspot));
+        return handled;
+    }
+
+    private boolean handleMouseClicked(double mouseX, double mouseY, int button, Hotspot hotspot) {
+        if (cheatSheet) {
+            cheatSheet = false;
+            return true;
+        }
+        if (editingControl != null) {
+            if (hotspot != null && hotspot.control() == editingControl && overValueZone(hotspot, mouseX)) {
+                return true;
+            }
+            commitNumber();
+        }
+        editingSearch = false;
         if (editingFormula) {
             if (inside(mouseX, mouseY, formulaFieldX, formulaFieldY, formulaFieldWidth, 25)) {
                 return true;
@@ -1049,11 +1420,33 @@ public final class ProceduralStudioScreen extends Screen {
             resizingInspector = true;
             return true;
         }
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && hotspot != null && hotspot.kind() != Hotspot.Kind.TIP
+                && mouseX >= inspectorLeft()) {
+            if (hotspot.control() != null) {
+                setValue(hotspot.control(), defaultValue(hotspot.control()));
+            } else if (hotspot.option() != null) {
+                resetOption(hotspot.option());
+            }
+            status = tr("gui.komaedit.reset_done");
+            return true;
+        }
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && mouseX < inspectorLeft()) {
             cameraDragging = true;
             return true;
         }
         if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            return true;
+        }
+        if (hotspot != null && hotspot.kind() == Hotspot.Kind.STEPPER
+                && inside(mouseX, mouseY, hotspot.x() + hotspot.width() - 63, hotspot.y() + 3, 37, 19)) {
+            // Arrastrar en horizontal cambia el valor; un clic sin mover abre el campo para escribirlo.
+            dragControl = hotspot.control();
+            dragStartX = mouseX;
+            dragStartValue = value(dragControl);
+            dragMoved = false;
+            return true;
+        }
+        if (topBarClicked(mouseX, mouseY)) {
             return true;
         }
         if (inside(mouseX, mouseY, inspectorLeft(), 0, inspectorWidth, height)) {
@@ -1089,14 +1482,12 @@ public final class ProceduralStudioScreen extends Screen {
 
     private boolean inspectorClicked(double mouseX, double mouseY) {
         int left = inspectorLeft();
-        if (inside(mouseX, mouseY, left + 16, height - 77, inspectorWidth - 108, 24)) {
+        if (inside(mouseX, mouseY, left + 16, nameFieldY(), inspectorWidth - 108, 24)) {
             editingName = true;
             return true;
         }
-        if (inside(mouseX, mouseY, width - 82, height - 77, 66, 24)) {
-            commitName();
-            ClientPlayNetworking.send(new RecipeActionPayload(RecipeActionPayload.SAVE, draft));
-            status = "Receta guardada · " + draft.name();
+        if (inside(mouseX, mouseY, width - 82, nameFieldY(), 66, 24)) {
+            saveRecipe();
             return true;
         }
         if (inside(mouseX, mouseY, left + 16, height - 44, inspectorWidth - 32, 29)) {
@@ -1104,6 +1495,10 @@ public final class ProceduralStudioScreen extends Screen {
             return true;
         }
         editingName = false;
+        if (mouseY < inspectorClipTop() || mouseY >= inspectorClipBottom()) {
+            // Lo desplazado bajo la cabecera o el pie no se ve: no debe responder.
+            return true;
+        }
         int top = 61 - contentScroll;
         return switch (stage) {
             case PATH -> pathStageClicked(mouseX, mouseY, left, top);
@@ -1111,6 +1506,7 @@ public final class ProceduralStudioScreen extends Screen {
             case STRUCTURES -> shapeStageClicked(mouseX, mouseY, left, top, STRUCTURE_SHAPES);
             case MODIFIERS -> modifiersStageClicked(mouseX, mouseY, left, top);
             case MATERIAL -> materialStageClicked(mouseX, mouseY, left, top);
+            case WEATHER -> weatherStageClicked(mouseX, mouseY, left, top);
             case INSTANCES -> instancesStageClicked(mouseX, mouseY, left, top);
             case RECIPES -> recipesStageClicked(mouseX, mouseY, left, top);
         };
@@ -1146,20 +1542,60 @@ public final class ProceduralStudioScreen extends Screen {
             List<PathShape> shapes
     ) {
         int inner = inspectorWidth - 32;
-        int buttonWidth = (inner - 7) / 2;
-        for (int index = 0; index < shapes.size(); index++) {
-            int x = left + 16 + index % 2 * (buttonWidth + 7);
-            int y = top + 17 + index / 2 * 27;
-            if (inside(mouseX, mouseY, x, y, buttonWidth, 22)) {
-                PathShape shape = shapes.get(index);
-                if (draft.shape() != shape) {
-                    draft = draft.withShapeDefaults(shape);
-                    status = "Figura nueva · parámetros y modificadores reiniciados";
+        ShapeLayout layout = shapeLayout(left, top, shapes);
+        if (layout.searchY() >= 0) {
+            if (inside(mouseX, mouseY, left + 16, layout.searchY(), inner, 20)) {
+                if (!shapeSearch.isEmpty() && mouseX >= left + 16 + inner - 18) {
+                    shapeSearch = "";
+                    editingSearch = false;
+                } else {
+                    editingSearch = true;
+                    status = tr("gui.komaedit.search.typing");
+                }
+                return true;
+            }
+            for (Chip chip : layout.categories()) {
+                if (inside(mouseX, mouseY, chip.x(), chip.y(), chip.width(), chip.height())) {
+                    category = (ShapeCategory) chip.value();
+                    shapeSearch = "";
+                    return true;
+                }
+            }
+            for (Chip chip : layout.recents()) {
+                if (inside(mouseX, mouseY, chip.x(), chip.y(), chip.width(), chip.height())) {
+                    selectShape((PathShape) chip.value());
+                    return true;
+                }
+            }
+        }
+        for (int index = 0; index < layout.shown().size(); index++) {
+            int x = left + 16 + index % 2 * (layout.buttonWidth() + 7);
+            int y = layout.gridY() + index / 2 * 27;
+            if (inside(mouseX, mouseY, x, y, layout.buttonWidth(), 22)) {
+                PathShape shape = layout.shown().get(index);
+                if (mouseX >= x + layout.buttonWidth() - 15) {
+                    boolean favorite = preferences().toggleFavorite(shape.id());
+                    savePreferences();
+                    status = tr(favorite ? "gui.komaedit.favorite.added" : "gui.komaedit.favorite.removed",
+                            shape.displayName());
+                } else {
+                    selectShape(shape);
                 }
                 return true;
             }
         }
-        int controlsTop = top + 17 + ((shapes.size() + 1) / 2) * 27 + 31;
+        for (Chip chip : layout.presets()) {
+            if (inside(mouseX, mouseY, chip.x(), chip.y(), chip.width(), chip.height())) {
+                if (chip.value() instanceof ShapeVariants.Preset preset) {
+                    applyProportions(ShapeVariants.preset(draft.shape(), preset));
+                    status = tr("gui.komaedit.preset.applied", tr(preset.translationKey()));
+                } else {
+                    randomVariant();
+                }
+                return true;
+            }
+        }
+        int controlsTop = layout.controlsTop();
         if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 18, inner, Control.RADIUS)) return true;
         if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 48, inner, Control.SPACING)) {
             if (draft.options().containsKey("sides")) {
@@ -1430,23 +1866,29 @@ public final class ProceduralStudioScreen extends Screen {
         for (int index = 0; index < Stage.values().length; index++) {
             int y = top + 8 + index * stride;
             if (inside(mouseX, mouseY, buttonX, y, buttonSize, buttonSize)) {
-                stage = Stage.values()[index];
-                contentScroll = 0;
-                if (stage == Stage.STRUCTURES && !STRUCTURE_SHAPES.contains(draft.shape())) {
-                    draft = draft.withShapeDefaults(STRUCTURE_SHAPES.getFirst());
-                } else if (stage == Stage.FIGURE && !FIGURE_SHAPES.contains(draft.shape())) {
-                    draft = draft.withShapeDefaults(FIGURE_SHAPES.getFirst());
-                }
-                status = tr(stage.subtitleKey);
+                selectStage(Stage.values()[index]);
                 return true;
             }
         }
         return false;
     }
 
+    private void selectStage(Stage next) {
+        stage = next;
+        contentScroll = 0;
+        editingSearch = false;
+        if (stage == Stage.STRUCTURES && !STRUCTURE_SHAPES.contains(draft.shape())) {
+            draft = draft.withShapeDefaults(STRUCTURE_SHAPES.getFirst());
+        } else if (stage == Stage.FIGURE && !FIGURE_SHAPES.contains(draft.shape())) {
+            draft = draft.withShapeDefaults(FIGURE_SHAPES.getFirst());
+        }
+        status = tr(stage.subtitleKey);
+    }
+
+    /** En pantallas bajas los botones encogen para que la barra lateral no se salga. */
     private int stageStride() {
-        int available = Math.max(272, height - 68);
-        return Math.clamp(available / Stage.values().length, 34, 54);
+        int available = Math.max(Stage.values().length * 24, height - 68);
+        return Math.clamp(available / Stage.values().length, 24, 54);
     }
 
     private boolean buildButtonClicked(double mouseX, double mouseY) {
@@ -1502,6 +1944,18 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (dragControl != null && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            double distance = mouseX - dragStartX;
+            if (Math.abs(distance) >= 3) {
+                dragMoved = true;
+            }
+            if (dragMoved) {
+                ProceduralRecipe before = draft;
+                setValue(dragControl, range(dragControl).dragged(dragStartValue, distance, hasShiftDown()));
+                track(before, dragControl.name());
+            }
+            return true;
+        }
         if (resizingInspector) {
             inspectorWidth = Math.clamp(width - (int) Math.round(mouseX), minimumInspectorWidth(), maximumInspectorWidth());
             return true;
@@ -1536,6 +1990,14 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && dragControl != null) {
+            if (!dragMoved) {
+                editingControl = dragControl;
+                numberInput = Integer.toString(value(dragControl));
+                status = tr("gui.komaedit.number.typing");
+            }
+            dragControl = null;
+        }
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             resizingInspector = false;
             draggingPoint = false;
@@ -1562,8 +2024,27 @@ public final class ProceduralStudioScreen extends Screen {
             blockScroll = Math.clamp(blockScroll - (int) Math.signum(verticalAmount), 0, Math.max(0, rows - rowsVisible));
             return true;
         }
+        if (cheatSheet) {
+            return true;
+        }
         if (mouseX >= inspectorLeft()) {
-            contentScroll = Math.clamp(contentScroll - (int) Math.signum(verticalAmount) * 18, 0, maximumContentScroll());
+            Hotspot hotspot = hotspotAt(mouseX, mouseY);
+            if (hotspot != null && hotspot.kind() != Hotspot.Kind.TIP && overValueZone(hotspot, mouseX)
+                    && verticalAmount != 0.0 && editingControl == null) {
+                ProceduralRecipe before = draft;
+                int direction = verticalAmount > 0.0 ? 1 : -1;
+                if (hotspot.kind() == Hotspot.Kind.STEPPER) {
+                    adjust(hotspot.control(), direction);
+                } else {
+                    // Igual que pulsar la flecha de ese lado: cada fila decide qué significa avanzar.
+                    int arrowX = hotspot.x() + hotspot.width() - (direction < 0 ? 112 : 21);
+                    inspectorClicked(arrowX, hotspot.y() + 8);
+                }
+                track(before, group(hotspot));
+                return true;
+            }
+            contentScroll = Math.clamp(contentScroll - (int) Math.signum(verticalAmount) * 18, 0,
+                    maximumContentScroll());
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
@@ -1571,10 +2052,51 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        ProceduralRecipe before = draft;
+        boolean handled = handleKeyPressed(keyCode, scanCode, modifiers);
+        track(before, null);
+        return handled;
+    }
+
+    private boolean handleKeyPressed(int keyCode, int scanCode, int modifiers) {
         boolean control = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+        // Con un campo abierto las letras se escriben: ningún atajo (ni K) se dispara.
         if (editingFormula) {
             return formulaKeyPressed(keyCode, control);
+        }
+        if (editingControl != null) {
+            return numberKeyPressed(keyCode);
+        }
+        if (editingSearch) {
+            return searchKeyPressed(keyCode);
+        }
+        if (blockCatalog) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                blockCatalog = false;
+            } else if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !blockSearch.isEmpty()) {
+                blockSearch = blockSearch.substring(0, blockSearch.length() - 1);
+                blockScroll = 0;
+            }
+            return true;
+        }
+        if (editingName) {
+            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+                commitName();
+                editingName = false;
+            } else if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !nameInput.isEmpty()) {
+                nameInput = nameInput.substring(0, nameInput.length() - 1);
+            } else if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                nameInput = draft.name();
+                editingName = false;
+            }
+            return true;
+        }
+        if (cheatSheet) {
+            cheatSheet = false;
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_F1) {
+                return true;
+            }
         }
         if (control && keyCode == GLFW.GLFW_KEY_Z) {
             sendEditor(shift ? EditorActionPayload.REDO : EditorActionPayload.UNDO, -1, BlockPos.ORIGIN);
@@ -1590,32 +2112,8 @@ public final class ProceduralStudioScreen extends Screen {
             close();
             return true;
         }
-        if (blockCatalog) {
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-                blockCatalog = false;
-                return true;
-            }
-            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !blockSearch.isEmpty()) {
-                blockSearch = blockSearch.substring(0, blockSearch.length() - 1);
-                blockScroll = 0;
-                return true;
-            }
-        }
-        if (editingName) {
-            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-                commitName();
-                editingName = false;
-                return true;
-            }
-            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !nameInput.isEmpty()) {
-                nameInput = nameInput.substring(0, nameInput.length() - 1);
-                return true;
-            }
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-                nameInput = draft.name();
-                editingName = false;
-                return true;
-            }
+        if (shortcutPressed(keyCode, control, shift)) {
+            return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
@@ -1656,15 +2154,41 @@ public final class ProceduralStudioScreen extends Screen {
             }
             return true;
         }
+        if (editingControl != null) {
+            if ((Character.isDigit(chr) || (chr == '-' && numberInput.isEmpty())) && numberInput.length() < 6) {
+                numberInput += chr;
+            }
+            return true;
+        }
+        if (editingSearch) {
+            if (chr >= 32 && chr != 127 && shapeSearch.length() < 32) {
+                shapeSearch += chr;
+                category = ShapeCategory.ALL;
+                contentScroll = 0;
+            }
+            return true;
+        }
         if (blockCatalog && blockSearch.length() < 64
                 && (Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == '-')) {
             blockSearch += Character.toLowerCase(chr);
             blockScroll = 0;
             return true;
         }
-        if (editingName && nameInput.length() < 32
-                && (Character.isLetterOrDigit(chr) || chr == '_' || chr == '-')) {
-            nameInput += chr;
+        if (editingName) {
+            if (nameInput.length() < 32 && (Character.isLetterOrDigit(chr) || chr == '_' || chr == '-')) {
+                nameInput += chr;
+            }
+            return true;
+        }
+        if (blockCatalog) {
+            return true;
+        }
+        if (chr == '?') {
+            cheatSheet = !cheatSheet;
+            return true;
+        }
+        if (chr == '/') {
+            focusSearch();
             return true;
         }
         return super.charTyped(chr, modifiers);
@@ -1848,6 +2372,84 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private void adjust(Control control, int direction) {
+        setValue(control, range(control).stepped(value(control), direction, hasShiftDown()));
+    }
+
+    /** Rango del control; la altura del torii va de 4 en 4 como antes. */
+    private NumericRange range(Control control) {
+        if (control == Control.HEIGHT && draft.shape() == PathShape.TORII) {
+            return new NumericRange(3, 256, 4, 20);
+        }
+        return control.range;
+    }
+
+    private int value(Control control) {
+        RecipeExtensions extensions = draft.extensions();
+        return switch (control) {
+            case RADIUS -> draft.radius();
+            case SPACING -> draft.spacing();
+            case THICKNESS -> draft.thickness();
+            case ROLL -> draft.rollDegrees();
+            case HEIGHT -> draft.height();
+            case DITHER -> draft.dither();
+            case START_SCALE -> extensions.startScalePercent();
+            case END_SCALE -> extensions.endScalePercent();
+            case START_SPACING -> extensions.startSpacingPercent();
+            case END_SPACING -> extensions.endSpacingPercent();
+            case TWIST -> extensions.twistDegrees();
+            case RHYTHM_INTERVAL -> extensions.rhythmInterval();
+            case CONFORM_RADIUS -> extensions.conformRadius();
+            case SURFACE_OFFSET -> extensions.surfaceOffset();
+            case SOCKET_INTERVAL -> extensions.socketInterval();
+            case WEATHER_INTENSITY -> weatherIntensity;
+            case WEATHER_COLLAPSE -> weatherCollapse;
+            case WEATHER_VEGETATION -> weatherVegetation;
+        };
+    }
+
+    /** El valor con el que se restablece con clic derecho: el de serie de la figura o de los modificadores. */
+    private int defaultValue(Control control) {
+        ShapeVariants.Proportions shape = ShapeVariants.defaults(draft.shape());
+        RecipeExtensions extensions = RecipeExtensions.DEFAULT;
+        return switch (control) {
+            case RADIUS -> shape.radius();
+            case SPACING -> shape.spacing();
+            case THICKNESS -> shape.thickness();
+            case ROLL -> shape.rollDegrees();
+            case HEIGHT -> shape.height();
+            case DITHER -> ProceduralRecipe.defaults().dither();
+            case START_SCALE -> extensions.startScalePercent();
+            case END_SCALE -> extensions.endScalePercent();
+            case START_SPACING -> extensions.startSpacingPercent();
+            case END_SPACING -> extensions.endSpacingPercent();
+            case TWIST -> extensions.twistDegrees();
+            case RHYTHM_INTERVAL -> extensions.rhythmInterval();
+            case CONFORM_RADIUS -> extensions.conformRadius();
+            case SURFACE_OFFSET -> extensions.surfaceOffset();
+            case SOCKET_INTERVAL -> extensions.socketInterval();
+            case WEATHER_INTENSITY, WEATHER_COLLAPSE, WEATHER_VEGETATION -> 50;
+        };
+    }
+
+    private void setValue(Control control, int requested) {
+        int next = range(control).clamp(requested);
+        // Envejecer no es parte de la receta: sus valores viven en la pantalla y no entran en el historial.
+        switch (control) {
+            case WEATHER_INTENSITY -> {
+                weatherIntensity = next;
+                return;
+            }
+            case WEATHER_COLLAPSE -> {
+                weatherCollapse = next;
+                return;
+            }
+            case WEATHER_VEGETATION -> {
+                weatherVegetation = next;
+                return;
+            }
+            default -> {
+            }
+        }
         int radius = draft.radius();
         int spacing = draft.spacing();
         int thickness = draft.thickness();
@@ -1856,51 +2458,463 @@ public final class ProceduralStudioScreen extends Screen {
         int dither = draft.dither();
         RecipeExtensions extensions = draft.extensions();
         switch (control) {
-            case RADIUS -> radius = Math.clamp(radius + direction, 1, 128);
-            case SPACING -> spacing = Math.clamp(spacing + direction, 2, 8);
-            case THICKNESS -> thickness = Math.clamp(thickness + direction, 1, 4);
-            case ROLL -> roll = Math.clamp(roll + direction * 5, -180, 180);
-            case HEIGHT -> {
-                int step = draft.shape() == PathShape.TORII ? 4 : 1;
-                height = Math.clamp(height + direction * step, 3, 256);
+            case RADIUS -> radius = next;
+            case SPACING -> {
+                spacing = next;
+                if (draft.options().containsKey("sides")) {
+                    // El paso del Studio manda sobre los lados fijados por comando.
+                    Map<String, Double> options = new LinkedHashMap<>(draft.options());
+                    options.remove("sides");
+                    draft = draft.withOptions(options);
+                }
             }
-            case DITHER -> dither = Math.clamp(dither + direction * 5, 0, 100);
-            case START_SCALE -> extensions = extensions.withCurve(
-                    Math.clamp(extensions.startScalePercent() + direction * 5, 25, 300),
-                    extensions.endScalePercent(), extensions.startSpacingPercent(), extensions.endSpacingPercent(),
-                    extensions.twistDegrees(), extensions.easing());
-            case END_SCALE -> extensions = extensions.withCurve(
-                    extensions.startScalePercent(),
-                    Math.clamp(extensions.endScalePercent() + direction * 5, 25, 300),
+            case THICKNESS -> thickness = next;
+            case ROLL -> roll = next;
+            case HEIGHT -> height = next;
+            case DITHER -> dither = next;
+            case START_SCALE -> extensions = extensions.withCurve(next, extensions.endScalePercent(),
                     extensions.startSpacingPercent(), extensions.endSpacingPercent(), extensions.twistDegrees(),
                     extensions.easing());
-            case START_SPACING -> extensions = extensions.withCurve(
-                    extensions.startScalePercent(), extensions.endScalePercent(),
-                    Math.clamp(extensions.startSpacingPercent() + direction * 5, 50, 200),
-                    extensions.endSpacingPercent(), extensions.twistDegrees(), extensions.easing());
-            case END_SPACING -> extensions = extensions.withCurve(
-                    extensions.startScalePercent(), extensions.endScalePercent(), extensions.startSpacingPercent(),
-                    Math.clamp(extensions.endSpacingPercent() + direction * 5, 50, 200),
-                    extensions.twistDegrees(), extensions.easing());
-            case TWIST -> extensions = extensions.withCurve(
-                    extensions.startScalePercent(), extensions.endScalePercent(), extensions.startSpacingPercent(),
-                    extensions.endSpacingPercent(),
-                    Math.clamp(extensions.twistDegrees() + direction * 15, -1440, 1440), extensions.easing());
+            case END_SCALE -> extensions = extensions.withCurve(extensions.startScalePercent(), next,
+                    extensions.startSpacingPercent(), extensions.endSpacingPercent(), extensions.twistDegrees(),
+                    extensions.easing());
+            case START_SPACING -> extensions = extensions.withCurve(extensions.startScalePercent(),
+                    extensions.endScalePercent(), next, extensions.endSpacingPercent(), extensions.twistDegrees(),
+                    extensions.easing());
+            case END_SPACING -> extensions = extensions.withCurve(extensions.startScalePercent(),
+                    extensions.endScalePercent(), extensions.startSpacingPercent(), next, extensions.twistDegrees(),
+                    extensions.easing());
+            case TWIST -> extensions = extensions.withCurve(extensions.startScalePercent(),
+                    extensions.endScalePercent(), extensions.startSpacingPercent(), extensions.endSpacingPercent(),
+                    next, extensions.easing());
             case RHYTHM_INTERVAL -> extensions = extensions.withRhythm(
-                    extensions.rhythmEnabled(), extensions.accentShape(),
-                    Math.clamp(extensions.rhythmInterval() + direction, 2, 32));
+                    extensions.rhythmEnabled(), extensions.accentShape(), next);
             case CONFORM_RADIUS -> extensions = extensions.withSurface(
-                    extensions.surfaceMode(), Math.clamp(extensions.conformRadius() + direction, 2, 32),
-                    extensions.surfaceOffset());
+                    extensions.surfaceMode(), next, extensions.surfaceOffset());
             case SURFACE_OFFSET -> extensions = extensions.withSurface(
-                    extensions.surfaceMode(), extensions.conformRadius(),
-                    Math.clamp(extensions.surfaceOffset() + direction, -8, 8));
+                    extensions.surfaceMode(), extensions.conformRadius(), next);
             case SOCKET_INTERVAL -> extensions = extensions.withSockets(
-                    extensions.socketsEnabled(), extensions.socketPlacement(),
-                    Math.clamp(extensions.socketInterval() + direction, 2, 64));
+                    extensions.socketsEnabled(), extensions.socketPlacement(), next);
+            case WEATHER_INTENSITY, WEATHER_COLLAPSE, WEATHER_VEGETATION -> {
+            }
         }
         draft = draft.copy(draft.name(), draft.shape(), draft.pattern(), radius, spacing, thickness, roll, height,
                 draft.paletteId(), draft.gradientAxis(), dither, draft.reverse()).withExtensions(extensions);
+    }
+
+    /** Clic derecho en una fila de ciclo: quita la opción para que valga la de serie. */
+    private void resetOption(String option) {
+        RecipeExtensions extensions = draft.extensions();
+        switch (option) {
+            case "accent" -> draft = draft.withExtensions(extensions.withRhythm(
+                    extensions.rhythmEnabled(), RecipeExtensions.DEFAULT.accentShape(), extensions.rhythmInterval()));
+            case "socket_placement" -> draft = draft.withExtensions(extensions.withSockets(
+                    extensions.socketsEnabled(), RecipeExtensions.DEFAULT.socketPlacement(),
+                    extensions.socketInterval()));
+            default -> {
+                Map<String, Double> next = new LinkedHashMap<>(draft.options());
+                next.remove(option);
+                draft = draft.withOptions(next);
+                if (option.equals("preset")) {
+                    draft = draft.withFormula("");
+                    formulaError = null;
+                }
+            }
+        }
+    }
+
+    private void applyProportions(ShapeVariants.Proportions proportions) {
+        draft = draft.copy(draft.name(), draft.shape(), draft.pattern(), proportions.radius(), proportions.spacing(),
+                proportions.thickness(), proportions.rollDegrees(), proportions.height(), draft.paletteId(),
+                draft.gradientAxis(), draft.dither(), draft.reverse());
+    }
+
+    /** Variante con semilla nueva; la semilla queda en el estado para poder contarla. */
+    private void randomVariant() {
+        int seed = ShapeVariants.randomSeed(SEEDS);
+        applyProportions(ShapeVariants.variant(draft.shape(), seed));
+        status = tr("gui.komaedit.variant.applied", seed);
+    }
+
+    private void selectShape(PathShape shape) {
+        if (draft.shape() != shape) {
+            draft = draft.withShapeDefaults(shape);
+            status = "Figura nueva · parámetros y modificadores reiniciados";
+        }
+        preferences().pushRecent(shape.id());
+        savePreferences();
+    }
+
+    private void toggleHologram() {
+        boolean hide = !ProceduralPreviewRenderer.hidden();
+        ProceduralPreviewRenderer.setHidden(hide);
+        status = tr(hide ? "gui.komaedit.hologram.hidden" : "gui.komaedit.hologram.shown");
+    }
+
+    private void saveRecipe() {
+        commitName();
+        ClientPlayNetworking.send(new RecipeActionPayload(RecipeActionPayload.SAVE, draft));
+        status = "Receta guardada · " + draft.name();
+    }
+
+    private void undoParameters() {
+        restoreParameters(HISTORY.undo(draft), "gui.komaedit.history.undone", "gui.komaedit.history.nothing_undo");
+    }
+
+    private void redoParameters() {
+        restoreParameters(HISTORY.redo(draft), "gui.komaedit.history.redone", "gui.komaedit.history.nothing_redo");
+    }
+
+    /** Vuelve a un estado del historial sin cambiar el nombre que se está usando. */
+    private void restoreParameters(ProceduralRecipe recipe, String doneKey, String emptyKey) {
+        if (recipe == null) {
+            status = tr(emptyKey);
+            return;
+        }
+        draft = recipe.withName(draft.name());
+        restoring = true;
+        editingControl = null;
+        formulaError = null;
+        if (STRUCTURE_SHAPES.contains(draft.shape()) && stage == Stage.FIGURE) {
+            stage = Stage.STRUCTURES;
+        } else if (FIGURE_SHAPES.contains(draft.shape()) && stage == Stage.STRUCTURES) {
+            stage = Stage.FIGURE;
+        }
+        status = tr(doneKey);
+    }
+
+    /**
+     * Anota en el historial lo que cambió una acción. El nombre no cuenta: se fija al guardar o construir.
+     * {@code group} funde los cambios seguidos del mismo control.
+     */
+    private void track(ProceduralRecipe before, String group) {
+        if (restoring) {
+            restoring = false;
+            return;
+        }
+        if (!before.withName("_").equals(draft.withName("_"))) {
+            HISTORY.record(before, group, System.currentTimeMillis());
+        }
+    }
+
+    private Hotspot hotspotAt(double mouseX, double mouseY) {
+        for (int index = hotspots.size() - 1; index >= 0; index--) {
+            Hotspot hotspot = hotspots.get(index);
+            if (inside(mouseX, mouseY, hotspot.x(), hotspot.y(), hotspot.width(), hotspot.height())) {
+                return hotspot;
+            }
+        }
+        return null;
+    }
+
+    private static String group(Hotspot hotspot) {
+        if (hotspot == null || hotspot.kind() == Hotspot.Kind.TIP) {
+            return null;
+        }
+        return hotspot.control() != null ? hotspot.control().name() : "option:" + hotspot.option();
+    }
+
+    /** Zona de manejo de la fila (botones y valor): la rueda solo cambia valores ahí; fuera, desplaza el panel. */
+    private static boolean overValueZone(Hotspot hotspot, double mouseX) {
+        int zone = hotspot.kind() == Hotspot.Kind.STEPPER ? 88 : 118;
+        return mouseX >= hotspot.x() + hotspot.width() - zone;
+    }
+
+    private void hotspotTooltip(int mouseX, int mouseY) {
+        if (dragControl != null || typing()) {
+            return;
+        }
+        Hotspot hotspot = hotspotAt(mouseX, mouseY);
+        if (hotspot == null) {
+            return;
+        }
+        String text = switch (hotspot.kind()) {
+            case TIP -> hotspot.text();
+            case STEPPER -> {
+                if (overValueZone(hotspot, mouseX)) {
+                    yield "";
+                }
+                NumericRange range = range(hotspot.control());
+                yield tr(hotspot.control().helpKey) + "\n" + tr("gui.komaedit.help.range", range.min(), range.max(),
+                        range.step(), range.bigStep(), defaultValue(hotspot.control()));
+            }
+            case CYCLE -> overValueZone(hotspot, mouseX) || hotspot.option() == null
+                    ? ""
+                    : tr("gui.komaedit.help.option." + hotspot.option()) + "\n" + tr("gui.komaedit.help.cycle");
+        };
+        if (text.isEmpty()) {
+            return;
+        }
+        List<OrderedText> lines = new ArrayList<>();
+        for (String paragraph : text.split("\n")) {
+            lines.addAll(textRenderer.wrapLines(Text.literal(paragraph), 230));
+        }
+        tooltip = lines;
+    }
+
+    /** Valor escrito a mano: Intro o pulsar fuera lo aplica; lo que no es un número se descarta. */
+    private void commitNumber() {
+        if (editingControl == null) {
+            return;
+        }
+        Control control = editingControl;
+        editingControl = null;
+        range(control).parse(numberInput).ifPresentOrElse(
+                value -> setValue(control, value),
+                () -> status = tr("gui.komaedit.number.invalid"));
+    }
+
+    private boolean numberKeyPressed(int keyCode) {
+        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+            commitNumber();
+        } else if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            editingControl = null;
+        } else if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !numberInput.isEmpty()) {
+            numberInput = numberInput.substring(0, numberInput.length() - 1);
+        }
+        return true;
+    }
+
+    private boolean searchKeyPressed(int keyCode) {
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (shapeSearch.isEmpty()) {
+                editingSearch = false;
+            } else {
+                shapeSearch = "";
+            }
+        } else if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+            List<PathShape> shown = visibleShapes(FIGURE_SHAPES);
+            editingSearch = false;
+            if (!shown.isEmpty()) {
+                selectShape(shown.getFirst());
+            }
+        } else if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !shapeSearch.isEmpty()) {
+            shapeSearch = hasControlDown() ? "" : shapeSearch.substring(0, shapeSearch.length() - 1);
+            contentScroll = 0;
+        }
+        return true;
+    }
+
+    private void focusSearch() {
+        if (stage != Stage.FIGURE) {
+            selectStage(Stage.FIGURE);
+        }
+        contentScroll = 0;
+        editingSearch = true;
+        status = tr("gui.komaedit.search.typing");
+    }
+
+    /** Atajos con el Studio sin campo de texto abierto; devuelve si la tecla era un atajo. */
+    private boolean shortcutPressed(int keyCode, boolean control, boolean shift) {
+        if (control) {
+            switch (keyCode) {
+                case GLFW.GLFW_KEY_F -> focusSearch();
+                case GLFW.GLFW_KEY_S -> saveRecipe();
+                case GLFW.GLFW_KEY_DELETE -> {
+                    sendCommand("komaedit path clear");
+                    status = tr("gui.komaedit.path.cleared");
+                }
+                default -> {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (!shift && keyCode >= GLFW.GLFW_KEY_1 && keyCode < GLFW.GLFW_KEY_1 + Stage.values().length) {
+            selectStage(Stage.values()[keyCode - GLFW.GLFW_KEY_1]);
+            return true;
+        }
+        switch (keyCode) {
+            case GLFW.GLFW_KEY_TAB -> selectStage(Stage.values()[Math.floorMod(
+                    stage.ordinal() + (shift ? -1 : 1), Stage.values().length)]);
+            case GLFW.GLFW_KEY_B -> performBuild();
+            case GLFW.GLFW_KEY_H -> toggleHologram();
+            case GLFW.GLFW_KEY_Z -> {
+                if (shift) {
+                    redoParameters();
+                } else {
+                    undoParameters();
+                }
+            }
+            case GLFW.GLFW_KEY_Y -> redoParameters();
+            case GLFW.GLFW_KEY_R -> randomVariant();
+            case GLFW.GLFW_KEY_F1 -> cheatSheet = !cheatSheet;
+            case GLFW.GLFW_KEY_PAGE_UP -> contentScroll = Math.max(0, contentScroll - pageScroll());
+            case GLFW.GLFW_KEY_PAGE_DOWN -> contentScroll = Math.min(maximumContentScroll(),
+                    contentScroll + pageScroll());
+            default -> {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private int pageScroll() {
+        return Math.max(40, inspectorClipBottom() - inspectorClipTop() - 40);
+    }
+
+    private ShapeLayout shapeLayout(int left, int top, List<PathShape> shapes) {
+        int inner = inspectorWidth - 32;
+        int x = left + 16;
+        int y = top + 17;
+        int searchY = -1;
+        int recentsY = -1;
+        List<Chip> categories = List.of();
+        List<Chip> recents = List.of();
+        List<PathShape> shown = shapes;
+        if (shapes == FIGURE_SHAPES) {
+            searchY = y;
+            y += 25;
+            List<Chip> categoryChips = new ArrayList<>();
+            for (ShapeCategory value : ShapeCategory.values()) {
+                String label = (value == ShapeCategory.FAVORITES ? "★ " : "") + tr(value.translationKey());
+                categoryChips.add(new Chip(0, 0, textRenderer.getWidth(label) + 12, 16, label, value));
+            }
+            categories = flow(categoryChips, x, y, inner, x);
+            y = bottom(categories, y) + 6;
+            shown = visibleShapes(shapes);
+            if (shapeSearch.isBlank() && category == ShapeCategory.ALL) {
+                List<Chip> recentChips = new ArrayList<>();
+                for (String id : preferences().recents()) {
+                    PathShape shape = shapeById(id);
+                    if (shape != null && shapes.contains(shape) && recentChips.size() < 4) {
+                        recentChips.add(new Chip(0, 0, Math.min(inner / 2,
+                                textRenderer.getWidth(shape.displayName()) + 12), 16, shape.displayName(), shape));
+                    }
+                }
+                if (!recentChips.isEmpty()) {
+                    recentsY = y;
+                    int labelWidth = textRenderer.getWidth(tr("gui.komaedit.recents")) + 6;
+                    recents = flow(recentChips, x + labelWidth, y, inner - labelWidth, x + labelWidth);
+                    y = bottom(recents, y) + 6;
+                }
+            }
+        }
+        int buttonWidth = (inner - 7) / 2;
+        int gridY = y;
+        y = gridY + Math.max(1, (shown.size() + 1) / 2) * 27 + 4;
+        List<OrderedText> description = textRenderer.wrapLines(Text.literal(draft.shape().description()), inner - 4);
+        if (description.size() > 3) {
+            description = description.subList(0, 3);
+        }
+        int descriptionY = y;
+        y += description.size() * 10 + 8;
+        int presetsY = y;
+        List<Chip> presets = new ArrayList<>();
+        ShapeVariants.Preset[] values = ShapeVariants.Preset.values();
+        int count = values.length + 1;
+        int presetWidth = (inner - 4 * (count - 1)) / count;
+        for (int index = 0; index < count; index++) {
+            boolean random = index == values.length;
+            String label = random ? "⚄ " + tr("gui.komaedit.preset.random") : tr(values[index].translationKey());
+            presets.add(new Chip(x + index * (presetWidth + 4), presetsY + 17, presetWidth, 20, label,
+                    random ? null : values[index]));
+        }
+        int controlsTop = presetsY + 17 + 20 + 12;
+        return new ShapeLayout(searchY, categories, recentsY, recents, shown, gridY, buttonWidth,
+                descriptionY, description, presetsY, presets, controlsTop);
+    }
+
+    /** Coloca botones de ancho variable en líneas, saltando de línea cuando no caben. */
+    private static List<Chip> flow(List<Chip> chips, int startX, int y, int maxWidth, int lineStartX) {
+        List<Chip> placed = new ArrayList<>();
+        int x = startX;
+        int right = startX + maxWidth;
+        for (Chip chip : chips) {
+            int chipWidth = Math.min(chip.width(), right - lineStartX);
+            if (x > lineStartX && x + chipWidth > right) {
+                x = lineStartX;
+                y += chip.height() + 4;
+            }
+            placed.add(new Chip(x, y, chipWidth, chip.height(), chip.label(), chip.value()));
+            x += chipWidth + 4;
+        }
+        return placed;
+    }
+
+    private static int bottom(List<Chip> chips, int fallback) {
+        int bottom = fallback;
+        for (Chip chip : chips) {
+            bottom = Math.max(bottom, chip.y() + chip.height());
+        }
+        return bottom;
+    }
+
+    private List<PathShape> visibleShapes(List<PathShape> shapes) {
+        if (!shapeSearch.isBlank()) {
+            return ShapeSearch.search(shapes, shapeSearch);
+        }
+        StudioPreferences current = preferences();
+        return shapes.stream().filter(shape -> category.contains(shape, current)).toList();
+    }
+
+    private static PathShape shapeById(String id) {
+        try {
+            return PathShape.byId(id);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private void drawChip(DrawContext context, int mouseX, int mouseY, Chip chip, boolean selected, int color) {
+        boolean hovered = inside(mouseX, mouseY, chip.x(), chip.y(), chip.width(), chip.height());
+        context.fill(chip.x(), chip.y(), chip.x() + chip.width(), chip.y() + chip.height(),
+                selected ? ACCENT_DARK : hovered ? CARD_HOVER : CARD);
+        String fitted = textRenderer.trimToWidth(chip.label(), Math.max(1, chip.width() - 8));
+        context.drawText(textRenderer, fitted, chip.x() + (chip.width() - textRenderer.getWidth(fitted)) / 2,
+                chip.y() + 4, selected ? 0xFFFFFFFF : color, false);
+    }
+
+    private void drawSearchField(DrawContext context, int mouseX, int mouseY, int x, int y, int fieldWidth, int results) {
+        boolean hovered = inside(mouseX, mouseY, x, y, fieldWidth, 20);
+        context.fill(x, y, x + fieldWidth, y + 20, editingSearch ? CARD_SELECTED : hovered ? CARD_HOVER : CARD);
+        context.drawText(textRenderer, "⌕", x + 6, y + 6, editingSearch ? ACCENT : MUTED, false);
+        int textWidth = fieldWidth - 44;
+        if (editingSearch || !shapeSearch.isEmpty()) {
+            String shown = textRenderer.trimToWidth(shapeSearch + (editingSearch ? "_" : ""), textWidth, true);
+            context.drawText(textRenderer, shown, x + 18, y + 6, TEXT, false);
+        } else {
+            drawTrimmed(context, tr("gui.komaedit.search.placeholder"), x + 18, y + 6, textWidth, MUTED);
+        }
+        if (!shapeSearch.isEmpty()) {
+            String count = Integer.toString(results);
+            context.drawText(textRenderer, count, x + fieldWidth - 20 - textRenderer.getWidth(count), y + 6,
+                    MUTED, false);
+            context.drawText(textRenderer, "×", x + fieldWidth - 12, y + 6, TEXT, false);
+        }
+    }
+
+    private void drawCheatSheet(DrawContext context) {
+        context.fill(0, 0, width, height, 0xA8000000);
+        List<StudioShortcuts.Shortcut> shortcuts = StudioShortcuts.ALL;
+        int columns = height < 330 ? 2 : 1;
+        int rows = (shortcuts.size() + columns - 1) / columns;
+        int keyWidth = 0;
+        for (StudioShortcuts.Shortcut shortcut : shortcuts) {
+            keyWidth = Math.max(keyWidth, textRenderer.getWidth(tr(shortcut.keysKey())));
+        }
+        int columnWidth = Math.min(330, (width - 40) / columns);
+        int modalWidth = columnWidth * columns + 24;
+        int modalHeight = Math.min(height - 16, 46 + rows * 12);
+        int left = (width - modalWidth) / 2;
+        int top = (height - modalHeight) / 2;
+        context.fill(left, top, left + modalWidth, top + modalHeight, 0xFA0C0D12);
+        context.fill(left, top, left + 4, top + modalHeight, ACCENT);
+        context.drawText(textRenderer, tr("gui.komaedit.shortcuts.title"), left + 16, top + 10, ACCENT, false);
+        drawTrimmed(context, tr("gui.komaedit.shortcuts.close"), left + 16, top + modalHeight - 14,
+                modalWidth - 32, MUTED);
+        int keyColumn = Math.min(keyWidth, columnWidth / 2);
+        for (int index = 0; index < shortcuts.size(); index++) {
+            StudioShortcuts.Shortcut shortcut = shortcuts.get(index);
+            int x = left + 16 + index / rows * columnWidth;
+            int y = top + 26 + index % rows * 12;
+            if (y > top + modalHeight - 26) {
+                continue;
+            }
+            drawTrimmed(context, tr(shortcut.keysKey()), x, y, keyColumn, TEXT);
+            drawTrimmed(context, tr(shortcut.translationKey()), x + keyColumn + 8, y,
+                    columnWidth - keyColumn - 16, MUTED);
+        }
     }
 
     private ProceduralRecipe copyMaterial(String palette) {
@@ -1914,6 +2928,11 @@ public final class ProceduralStudioScreen extends Screen {
             stage = Stage.PATH;
             contentScroll = 0;
             status = "Necesitas al menos " + requiredPoints() + " puntos";
+            return;
+        }
+        int blocks = ProceduralPreviewRenderer.blockCount();
+        if (!buildEstimate.confirm(blocks, System.currentTimeMillis())) {
+            status = tr("gui.komaedit.build_large", BuildEstimate.compact(blocks));
             return;
         }
         commitName();
@@ -1939,13 +2958,14 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private int maximumContentScroll() {
-        int viewport = Math.max(80, height - 166);
+        int viewport = Math.max(80, inspectorClipBottom() - 61);
         int content = switch (stage) {
             case PATH -> 315;
             case FIGURE -> figureContentHeight();
             case STRUCTURES -> structuresContentHeight();
             case MODIFIERS -> 723;
             case MATERIAL -> materialContentHeight();
+            case WEATHER -> 330;
             case INSTANCES -> 70 + ClientInstanceCatalog.instances().size() * 55;
             case RECIPES -> 84 + ClientRecipeCatalog.recipes().size() * 49;
         };
@@ -1953,16 +2973,15 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private int figureContentHeight() {
-        return shapeContentHeight(FIGURE_SHAPES.size());
+        return shapeContentHeight(FIGURE_SHAPES);
     }
 
     private int structuresContentHeight() {
-        return shapeContentHeight(STRUCTURE_SHAPES.size());
+        return shapeContentHeight(STRUCTURE_SHAPES);
     }
 
-    private int shapeContentHeight(int shapeCount) {
-        int rows = (shapeCount + 1) / 2;
-        int controlsTop = 17 + rows * 27 + 31;
+    private int shapeContentHeight(List<PathShape> shapes) {
+        int controlsTop = shapeLayout(0, 0, shapes).controlsTop();
         return controlsTop + (draft.shape().usesSecondaryMeasure() ? 180 : 150) + tubeRowCount() * 31;
     }
 
@@ -2104,6 +3123,7 @@ public final class ProceduralStudioScreen extends Screen {
         STRUCTURES("gui.komaedit.stage.structures", "gui.komaedit.stage.structures.subtitle"),
         MODIFIERS("gui.komaedit.stage.modifiers", "gui.komaedit.stage.modifiers.subtitle"),
         MATERIAL("gui.komaedit.stage.material", "gui.komaedit.stage.material.subtitle"),
+        WEATHER("gui.komaedit.stage.weather", "gui.komaedit.stage.weather.subtitle"),
         INSTANCES("gui.komaedit.stage.instances", "gui.komaedit.stage.instances.subtitle"),
         RECIPES("gui.komaedit.stage.recipes", "gui.komaedit.stage.recipes.subtitle");
 
@@ -2117,21 +3137,83 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private enum Control {
-        RADIUS,
-        SPACING,
-        THICKNESS,
-        ROLL,
-        HEIGHT,
-        DITHER,
-        START_SCALE,
-        END_SCALE,
-        START_SPACING,
-        END_SPACING,
-        TWIST,
-        RHYTHM_INTERVAL,
-        CONFORM_RADIUS,
-        SURFACE_OFFSET,
-        SOCKET_INTERVAL
+        RADIUS(ShapeVariants.RADIUS),
+        SPACING(ShapeVariants.SPACING),
+        THICKNESS(ShapeVariants.THICKNESS),
+        ROLL(ShapeVariants.ROLL),
+        HEIGHT(ShapeVariants.HEIGHT),
+        DITHER(new NumericRange(0, 100, 5, 25)),
+        START_SCALE(new NumericRange(25, 300, 5, 25)),
+        END_SCALE(new NumericRange(25, 300, 5, 25)),
+        START_SPACING(new NumericRange(50, 200, 5, 25)),
+        END_SPACING(new NumericRange(50, 200, 5, 25)),
+        TWIST(new NumericRange(-1440, 1440, 15, 90)),
+        RHYTHM_INTERVAL(NumericRange.of(2, 32, 1)),
+        CONFORM_RADIUS(NumericRange.of(2, 32, 1)),
+        SURFACE_OFFSET(new NumericRange(-8, 8, 1, 4)),
+        SOCKET_INTERVAL(new NumericRange(2, 64, 1, 8)),
+        WEATHER_INTENSITY(new NumericRange(0, 100, 5, 25)),
+        WEATHER_COLLAPSE(new NumericRange(0, 100, 5, 25)),
+        WEATHER_VEGETATION(new NumericRange(0, 100, 5, 25));
+
+        private final NumericRange range;
+        private final String helpKey;
+
+        Control(NumericRange range) {
+            this.range = range;
+            this.helpKey = "gui.komaedit.help." + name().toLowerCase(Locale.ROOT);
+        }
+    }
+
+    /** Zona de la interfaz dibujada en el último fotograma que responde a rueda, clic derecho o ayuda. */
+    private record Hotspot(Kind kind, int x, int y, int width, int height, Control control, String option, String text) {
+        private enum Kind {
+            STEPPER,
+            CYCLE,
+            TIP
+        }
+
+        private static Hotspot tip(int x, int y, int width, int height, String text) {
+            return new Hotspot(Kind.TIP, x, y, width, height, null, null, text);
+        }
+    }
+
+    private record Chip(int x, int y, int width, int height, String label, Object value) {
+    }
+
+    private record ShapeLayout(
+            int searchY,
+            List<Chip> categories,
+            int recentsY,
+            List<Chip> recents,
+            List<PathShape> shown,
+            int gridY,
+            int buttonWidth,
+            int descriptionY,
+            List<OrderedText> description,
+            int presetsY,
+            List<Chip> presets,
+            int controlsTop
+    ) {
+    }
+
+    private record TopPill(TopAction action, int x, int width, String label) {
+    }
+
+    /** Botones de la barra superior en orden de derecha a izquierda. */
+    private enum TopAction {
+        CLOSE("gui.komaedit.help.top.close"),
+        HELP("gui.komaedit.help.top.help"),
+        HOLOGRAM("gui.komaedit.help.top.hologram"),
+        REDO("gui.komaedit.help.top.redo"),
+        UNDO("gui.komaedit.help.top.undo"),
+        NODES("gui.komaedit.help.top.nodes");
+
+        private final String helpKey;
+
+        TopAction(String helpKey) {
+            this.helpKey = helpKey;
+        }
     }
 
 }

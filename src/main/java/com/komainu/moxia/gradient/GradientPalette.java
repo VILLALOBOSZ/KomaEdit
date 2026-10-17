@@ -135,6 +135,11 @@ public enum GradientPalette {
         return id;
     }
 
+    /** Otros nombres que acepta {@link #byId(String)}. */
+    public java.util.List<String> aliases() {
+        return java.util.List.of(aliases);
+    }
+
     public String displayName() {
         return displayName;
     }

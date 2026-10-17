@@ -39,7 +39,7 @@ import static net.minecraft.server.command.CommandManager.literal;
 /**
  * {@code /komaedit sel}: órdenes de selección de ezEdits ({@code //selload}, {@code //next}, {@code //selhere},
  * {@code //ezselinvert}, {@code //delpos2}, {@code //encapsulate}, {@code //encapsulatenear} y {@code //ezsel}) sobre la
- * selección de WorldEdit. La catenaria ({@code //selcatenary}) es de las órdenes de trayectoria.
+ * selección de WorldEdit. La catenaria ({@code //selcatenary}) es {@code /komaedit path catenary}.
  */
 public final class SelectionCommands {
     /** Bloques como mucho que revisa {@code encapsulate}. */
