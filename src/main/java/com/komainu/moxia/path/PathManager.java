@@ -10,8 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.UnaryOperator;
 
 public final class PathManager {
     public static final int MAX_POINTS = 32;
@@ -45,6 +47,7 @@ public final class PathManager {
         if (!path.points.isEmpty() && path.points.getLast().equals(point)) {
             return point;
         }
+        path.history.record(path.state());
         path.points.add(point);
         return point;
     }
@@ -58,9 +61,48 @@ public final class PathManager {
             throw new IllegalArgumentException("La selección tiene más de " + MAX_POINTS + " puntos");
         }
         MutablePath path = PATHS.computeIfAbsent(playerId, ignored -> new MutablePath());
-        path.points.clear();
-        path.points.addAll(points);
-        path.closed = closed;
+        path.change(new PathHistory.State(points, closed));
+    }
+
+    /**
+     * Aplica una edición sobre los puntos actuales y la anota en el historial si cambia algo.
+     * Devuelve el estado resultante.
+     */
+    public static PathHistory.State update(UUID playerId, UnaryOperator<PathHistory.State> edit) {
+        MutablePath path = PATHS.computeIfAbsent(playerId, ignored -> new MutablePath());
+        PathHistory.State next = edit.apply(path.state());
+        if (next.points().size() > MAX_POINTS) {
+            throw new IllegalArgumentException("La trayectoria admite un máximo de " + MAX_POINTS
+                    + " puntos (saldrían " + next.points().size() + ")");
+        }
+        path.change(next);
+        return next;
+    }
+
+    public static Optional<PathHistory.State> undo(UUID playerId) {
+        MutablePath path = PATHS.get(playerId);
+        if (path == null) {
+            return Optional.empty();
+        }
+        Optional<PathHistory.State> previous = path.history.undo(path.state());
+        previous.ifPresent(path::restore);
+        return previous;
+    }
+
+    public static Optional<PathHistory.State> redo(UUID playerId) {
+        MutablePath path = PATHS.get(playerId);
+        if (path == null) {
+            return Optional.empty();
+        }
+        Optional<PathHistory.State> next = path.history.redo(path.state());
+        next.ifPresent(path::restore);
+        return next;
+    }
+
+    /** Pasos disponibles para deshacer y rehacer, en ese orden. */
+    public static int[] historySteps(UUID playerId) {
+        MutablePath path = PATHS.get(playerId);
+        return path == null ? new int[]{0, 0} : new int[]{path.history.undoSteps(), path.history.redoSteps()};
     }
 
     public static boolean removeLast(UUID playerId) {
@@ -68,6 +110,7 @@ public final class PathManager {
         if (path == null || path.points.isEmpty()) {
             return false;
         }
+        path.history.record(path.state());
         path.points.removeLast();
         return true;
     }
@@ -81,6 +124,10 @@ public final class PathManager {
         if (path == null || index < 0 || index >= path.points.size()) {
             throw new IllegalArgumentException("El punto seleccionado ya no existe");
         }
+        if (path.points.get(index).equals(point)) {
+            return point;
+        }
+        path.history.recordMove(path.state(), index, System.nanoTime());
         path.points.set(index, point);
         return point;
     }
@@ -90,17 +137,26 @@ public final class PathManager {
         if (path == null || index < 0 || index >= path.points.size()) {
             return false;
         }
+        path.history.record(path.state());
         path.points.remove(index);
         return true;
     }
 
+    /** Vacía la trayectoria; se puede deshacer. */
     public static void clear(UUID playerId) {
-        PATHS.remove(playerId);
+        MutablePath path = PATHS.get(playerId);
+        if (path != null) {
+            path.change(new PathHistory.State(List.of(), false));
+        }
     }
 
     public static boolean toggleClosed(UUID playerId) {
+        return setClosed(playerId, !saved(playerId).closed());
+    }
+
+    public static boolean setClosed(UUID playerId, boolean closed) {
         MutablePath path = PATHS.computeIfAbsent(playerId, ignored -> new MutablePath());
-        path.closed = !path.closed;
+        path.change(new PathHistory.State(path.points, closed));
         return path.closed;
     }
 
@@ -145,6 +201,26 @@ public final class PathManager {
 
     private static final class MutablePath {
         private final List<BlockVector3> points = new ArrayList<>();
+        private final PathHistory history = new PathHistory();
         private boolean closed;
+
+        private PathHistory.State state() {
+            return new PathHistory.State(points, closed);
+        }
+
+        private void change(PathHistory.State next) {
+            PathHistory.State current = state();
+            if (current.equals(next)) {
+                return;
+            }
+            history.record(current);
+            restore(next);
+        }
+
+        private void restore(PathHistory.State state) {
+            points.clear();
+            points.addAll(state.points());
+            closed = state.closed();
+        }
     }
 }
