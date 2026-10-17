@@ -94,20 +94,29 @@ public final class KomaEditMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             try {
                 ProjectStorage.bind(handler.player.getUuid(), server);
-                int interrupted = OperationLedger.markInterrupted(handler.player.getUuid());
-                if (interrupted > 0) {
-                    handler.player.sendMessage(net.minecraft.text.Text.literal(
-                            "KomaEdit · " + interrupted
-                                    + " trabajo(s) anterior(es) quedaron interrumpidos; revisa /komaedit project status"
-                    ), false);
-                }
-                RecipeActionService.sync(handler.player);
             } catch (RuntimeException exception) {
                 ProjectStorage.unbind(handler.player.getUuid());
                 LOGGER.error("Could not open KomaEdit project for {}", handler.player.getUuid(), exception);
                 handler.player.sendMessage(net.minecraft.text.Text.literal(
                         "KomaEdit · El proyecto no pudo abrirse; KomaEdit queda desactivado en este mundo. "
                                 + "Revisa latest.log"
+                ), false);
+                return;
+            }
+            int interrupted = OperationLedger.markInterrupted(handler.player.getUuid());
+            if (interrupted > 0) {
+                handler.player.sendMessage(net.minecraft.text.Text.literal(
+                        "KomaEdit · " + interrupted
+                                + " trabajo(s) anterior(es) quedaron interrumpidos; revisa /komaedit project status"
+                ), false);
+            }
+            try {
+                // El proyecto ya está abierto: un catálogo que no se pueda enviar no debe desactivar KomaEdit.
+                RecipeActionService.sync(handler.player);
+            } catch (RuntimeException exception) {
+                LOGGER.warn("Could not sync KomaEdit catalogs for {}", handler.player.getUuid(), exception);
+                handler.player.sendMessage(net.minecraft.text.Text.literal(
+                        "KomaEdit · No se pudieron cargar las recetas o instancias guardadas; revisa latest.log"
                 ), false);
             }
         });

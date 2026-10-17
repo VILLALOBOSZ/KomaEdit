@@ -9,6 +9,7 @@ import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.persistence.AtomicStorage;
 import com.komainu.moxia.persistence.ProjectStorage;
+import com.komainu.moxia.persistence.TolerantListing;
 import com.sk89q.worldedit.math.BlockVector3;
 
 import java.io.BufferedInputStream;
@@ -156,12 +157,12 @@ public final class ProceduralInstanceStore {
             return List.of();
         }
         try (var files = Files.list(directory)) {
-            return files
+            List<Path> paths = files
                     .filter(path -> path.getFileName().toString().endsWith(".json"))
                     .sorted(Comparator.comparingLong(ProceduralInstanceStore::modified).reversed())
                     .limit(128)
-                    .map(path -> summary(playerId, path))
                     .toList();
+            return TolerantListing.readAll(paths, path -> summary(playerId, path), "la instancia");
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudieron listar las instancias: " + exception.getMessage(), exception);
         }
