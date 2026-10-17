@@ -55,6 +55,7 @@ public final class KomaEditMod implements ModInitializer {
                 context.server().execute(() -> RecipeActionService.handle(context.player(), payload))
         );
         MoxiaCommands.register();
+        com.komainu.moxia.worldedit.EzExtensions.register();
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (world.isClient() || !(player instanceof ServerPlayerEntity serverPlayer)) {
                 return ActionResult.PASS;
@@ -128,6 +129,7 @@ public final class KomaEditMod implements ModInitializer {
             FastPaintService.remove(handler.player.getUuid());
             IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
+            com.komainu.moxia.edit.PendingBuilds.remove(handler.player.getUuid());
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
             RegionOperationService.cancel(handler.player.getUuid());
@@ -143,6 +145,7 @@ public final class KomaEditMod implements ModInitializer {
             SnapshotCaptureService.clearAll();
             AsyncEngine.shutdown();
             PathManager.clearAll();
+            com.komainu.moxia.edit.PendingBuilds.clearAll();
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
             RegionOperationService.clearAll();

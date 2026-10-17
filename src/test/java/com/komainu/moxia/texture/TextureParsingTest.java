@@ -143,9 +143,15 @@ class TextureParsingTest {
 
     @Test
     void noisePresetsAndIntervals() {
-        assertEquals("Perlin(fT:R,fO:4,f:0.05,Freq:0.12)", TextureSpec.noise("@@ridged(Freq:0.12)").toString());
+        assertEquals("Si(fT:R,fO:5,F:0.03,Freq:0.12)", TextureSpec.noise("@@ridged(Freq:0.12)").toString());
         assertEquals("perlin", TextureSpec.noise("@@perlin").toString());
         assertEquals("Ce(f:0.2)", TextureSpec.noise("Ce(f:0.2)").toString());
+        assertEquals("Si(fT:F,fO:3,F:0.02,wT:S,wA:40)", TextureSpec.noise("marble").toString(),
+                "los ruidos de serie valen por su nombre");
+        java.util.function.Function<String, String> saved = name -> name.equals("mio") ? "Ce(f:0.3)" : null;
+        assertEquals("Ce(f:0.3)", TextureSpec.noise("#mio", saved).toString());
+        assertEquals("Ce(f:0.3,cR:cell)", TextureSpec.noise("@mio(cR:cell)", saved).toString());
+        assertThrows(IllegalArgumentException.class, () -> TextureSpec.noise("#otro", saved));
         assertArrayEquals(new double[]{0, 90}, TextureSpec.interval("0,90"));
         assertArrayEquals(new double[]{10, 120}, TextureSpec.interval("10..120"));
         assertThrows(IllegalArgumentException.class, () -> TextureSpec.interval("90,10"));

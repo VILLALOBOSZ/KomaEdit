@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Lee las texturas de {@code /komaedit texture advanced}: {@code Tipo(Parámetro:valor,...)} con la notación de
@@ -19,25 +20,18 @@ public final class TextureSpec {
     private static final int MAX_LENGTH = 1_024;
     private static final int MAX_DEPTH = 8;
     private static final int MAX_NODES = 32;
-    /**
-     * Ruidos de serie para {@code @@nombre}: cualquier tipo de {@link NoiseSpec} sirve por su nombre y estos nombres
-     * de ezEdits llevan sus ajustes.
-     */
-    private static final Map<String, String> NOISE_PRESETS = Map.ofEntries(
-            Map.entry("ridged", "Perlin(fT:R,fO:4,f:0.05)"),
-            Map.entry("fbm", "Perlin(fT:F,fO:4,f:0.05)"),
-            Map.entry("billow", "Perlin(fT:P,fO:3,f:0.05)"),
-            Map.entry("cells", "Ce(cR:cell,f:0.05)"),
-            Map.entry("smoothcells", "Ce(cR:distance,f:0.05)"),
-            Map.entry("edges", "Ce(cR:edge,f:0.05)"),
-            Map.entry("swirl", "Si(wT:S,wA:30,f:0.04)"),
-            Map.entry("grain", "Gb(gF:4,f:0.08)")
-    );
 
     private TextureSpec() {
     }
 
     public static TextureField parse(String input, long seed) {
+        return parse(input, seed, null);
+    }
+
+    /**
+     * @param savedNoises busca los ruidos guardados del jugador por nombre ({@code null} si no hay almacén)
+     */
+    public static TextureField parse(String input, long seed, Function<String, String> savedNoises) {
         if (input == null || input.isBlank()) {
             throw new IllegalArgumentException("Falta la textura, por ejemplo Ambient(Radius:2)");
         }
@@ -45,37 +39,41 @@ public final class TextureSpec {
         if (text.length() > MAX_LENGTH) {
             throw new IllegalArgumentException("La textura admite como mucho " + MAX_LENGTH + " caracteres");
         }
-        return new Parser(seed).texture(text, 0);
+        return new Parser(seed, savedNoises).texture(text, 0);
     }
 
     /**
-     * Un ruido escrito por el jugador: {@code Perlin(f:0.04)}, o uno de serie con {@code @@nombre} y, si se quiere,
-     * parámetros que sustituyen a los suyos ({@code @@ridged(Freq:0.12)}).
+     * Un ruido escrito por el jugador: {@code Perlin(f:0.04)}, el nombre de uno de serie o guardado ({@code marble},
+     * {@code #mio}) o, como en ezEdits, {@code @@nombre} con parámetros que sustituyen a los suyos
+     * ({@code @@ridged(Freq:0.12)}).
      */
-    public static NoiseSpec noise(String input) {
+    public static NoiseSpec noise(String input, Function<String, String> savedNoises) {
         String text = input.strip();
         if (!text.startsWith("@")) {
-            return NoiseSpec.parse(text);
+            return NoiseSpec.parse(text, savedNoises);
         }
         String body = text.startsWith("@@") ? text.substring(2) : text.substring(1);
         int open = body.indexOf('(');
-        String name = (open < 0 ? body : body.substring(0, open)).trim().toLowerCase(Locale.ROOT);
-        String overrides = open < 0 ? "" : body.substring(open + 1, body.lastIndexOf(')')).trim();
-        String preset = NOISE_PRESETS.getOrDefault(name, name);
+        String name = (open < 0 ? body : body.substring(0, open)).trim();
+        if (open >= 0 && !body.endsWith(")")) {
+            throw new IllegalArgumentException("Falta el paréntesis de cierre en " + text);
+        }
+        String overrides = open < 0 ? "" : body.substring(open + 1, body.length() - 1).trim();
+        String base = NoiseSpec.parse(name, savedNoises).toString();
         if (overrides.isEmpty()) {
-            return NoiseSpec.parse(preset);
+            return NoiseSpec.parse(base);
         }
-        int presetOpen = preset.indexOf('(');
-        if (presetOpen < 0) {
-            return NoiseSpec.parse(preset + "(" + overrides + ")");
+        int baseOpen = base.indexOf('(');
+        if (baseOpen < 0) {
+            return NoiseSpec.parse(base + "(" + overrides + ")");
         }
-        String presetBody = preset.substring(presetOpen + 1, preset.length() - 1);
-        return NoiseSpec.parse(preset.substring(0, presetOpen) + "(" + presetBody + "," + overrides + ")");
+        String baseBody = base.substring(baseOpen + 1, base.length() - 1).trim();
+        return NoiseSpec.parse(base.substring(0, baseOpen) + "(" + (baseBody.isEmpty() ? "" : baseBody + ",")
+                + overrides + ")");
     }
 
-    /** Nombres de los ruidos de serie (para la ayuda y la documentación). */
-    public static Set<String> noisePresets() {
-        return NOISE_PRESETS.keySet();
+    public static NoiseSpec noise(String input) {
+        return noise(input, null);
     }
 
     /** {@code 0,90}, {@code 0;90}, {@code 0:90} o {@code 0..90} → {@code [0, 90]} en grados. */
@@ -154,10 +152,12 @@ public final class TextureSpec {
 
     private static final class Parser {
         private final long seed;
+        private final Function<String, String> savedNoises;
         private int nodes;
 
-        Parser(long seed) {
+        Parser(long seed, Function<String, String> savedNoises) {
             this.seed = seed;
+            this.savedNoises = savedNoises;
         }
 
         TextureField texture(String text, int depth) {
@@ -187,7 +187,7 @@ public final class TextureSpec {
                     }
                 }
             }
-            Arguments arguments = new Arguments(name, values);
+            Arguments arguments = new Arguments(name, values, savedNoises);
             TextureField field = switch (name) {
                 case "ambient", "ambiente" -> new TextureFields.Ambient(
                         arguments.integer(3, "radius", "r"),
@@ -290,11 +290,13 @@ public final class TextureSpec {
     private static final class Arguments {
         private final String type;
         private final Map<String, String> values;
+        private final Function<String, String> savedNoises;
         private final Set<String> used = new java.util.HashSet<>();
 
-        Arguments(String type, Map<String, String> values) {
+        Arguments(String type, Map<String, String> values, Function<String, String> savedNoises) {
             this.type = type;
             this.values = values;
+            this.savedNoises = savedNoises;
         }
 
         private String raw(String... names) {
@@ -339,7 +341,7 @@ public final class TextureSpec {
 
         NoiseSpec noise(String fallback, String... names) {
             String value = raw(names);
-            return TextureSpec.noise(value == null ? fallback : value);
+            return TextureSpec.noise(value == null ? fallback : value, savedNoises);
         }
 
         double[] direction(double[] fallback, String... names) {

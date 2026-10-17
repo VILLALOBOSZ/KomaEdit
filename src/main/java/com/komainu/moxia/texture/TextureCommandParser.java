@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Traduce {@code /komaedit texture <modo> …} con los mismos argumentos y banderas que {@code //eztexture} de
@@ -20,6 +21,14 @@ public final class TextureCommandParser {
      * @param fallbackSeed semilla para los modos con {@code -s -1} o sin semilla
      */
     public static Request parse(String modeToken, String rest, long fallbackSeed) {
+        return parse(modeToken, rest, fallbackSeed, null);
+    }
+
+    /**
+     * @param savedNoises ruidos guardados del jugador por nombre ({@code null} si no hay almacén)
+     */
+    public static Request parse(String modeToken, String rest, long fallbackSeed,
+                                Function<String, String> savedNoises) {
         Mode mode = Mode.byId(modeToken);
         Tokens tokens = Tokens.read(rest == null ? "" : rest, mode);
         boolean shaped = tokens.flag("-w");
@@ -43,7 +52,7 @@ public final class TextureCommandParser {
                 String mask = tokens.required("la máscara (por ejemplo #existing)");
                 String palette = tokens.required("la paleta (por ejemplo ##Grayscale)");
                 long seed = seed(tokens, fallbackSeed);
-                TextureField field = field(mode, tokens, seed);
+                TextureField field = field(mode, tokens, seed, savedNoises);
                 yield new Request(mode, mask, palette, field, shaped, dither, 0.0, false, 0, seed);
             }
         };
@@ -59,7 +68,7 @@ public final class TextureCommandParser {
         return seed == -1 ? fallbackSeed : seed;
     }
 
-    private static TextureField field(Mode mode, Tokens tokens, long seed) {
+    private static TextureField field(Mode mode, Tokens tokens, long seed, Function<String, String> savedNoises) {
         return switch (mode) {
             case AMBIENT -> new TextureFields.Ambient(
                     (int) Math.round(tokens.optionalNumber(3, "el radio")),
@@ -91,11 +100,11 @@ public final class TextureCommandParser {
                 String noise = tokens.optional("Perlin(Freq:0.03)");
                 double momentum = tokens.flag("-m") ? tokens.number("-m", 0.5) : 0.0;
                 double[] gravity = tokens.flag("-g") ? scaled(Vectors.direction(tokens.text("-g", "down")), 0.6) : null;
-                yield new TextureFields.Flow(exposure, iterations, velocity, scalar, TextureSpec.noise(noise),
+                yield new TextureFields.Flow(exposure, iterations, velocity, scalar, TextureSpec.noise(noise, savedNoises),
                         momentum, gravity, tokens.flag("-f"), seed);
             }
             case NOISE -> new TextureFields.Noise(
-                    TextureSpec.noise(tokens.optional("Perlin(Freq:0.05)")),
+                    TextureSpec.noise(tokens.optional("Perlin(Freq:0.05)"), savedNoises),
                     Math.clamp(tokens.number("-z", 1.0), 0.01, 1_000.0),
                     seed);
             case POINT_LIGHT -> {
@@ -113,7 +122,8 @@ public final class TextureCommandParser {
                 yield TextureFields.Light.sun(Vectors.direction(tokens.text("-l", "down")), radius,
                         interval[0], interval[1], tokens.number("-o", 0.0), tokens.number("-r", 1.0));
             }
-            case ADVANCED -> TextureSpec.parse(tokens.required("la textura, por ejemplo Ambient(Radius:2)"), seed);
+            case ADVANCED -> TextureSpec.parse(tokens.required("la textura, por ejemplo Ambient(Radius:2)"), seed,
+                    savedNoises);
             case BLEND, SHIFT -> throw new IllegalStateException();
         };
     }

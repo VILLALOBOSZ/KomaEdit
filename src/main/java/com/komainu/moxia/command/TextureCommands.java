@@ -2,7 +2,8 @@ package com.komainu.moxia.command;
 
 import com.komainu.moxia.glass.GlassGradientRequest;
 import com.komainu.moxia.glass.GlassGradientService;
-import com.komainu.moxia.gradient.PaletteSpec;
+import com.komainu.moxia.gradient.SavedPalettes;
+import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.region.MossOperation;
 import com.komainu.moxia.region.RegionMasks;
@@ -103,7 +104,8 @@ public final class TextureCommands {
         try {
             long fallbackSeed = SEEDS.nextLong(1L, 1_000_000_000L);
             TextureCommandParser.Request request = TextureCommandParser.parse(
-                    StringArgumentType.getString(context, "texture_mode"), rest, fallbackSeed);
+                    StringArgumentType.getString(context, "texture_mode"), rest, fallbackSeed,
+                    SavedNoises.resolver(player.getUuid()));
             RegionMasks.Bound mask = request.mode().usesMask() ? RegionMasks.parse(player, request.mask()) : null;
             List<Pattern> palette = palette(player, request.palette());
             TextureContext.Settings settings = TextureContext.Settings.at(player.getX(), player.getEyeY(),
@@ -197,7 +199,7 @@ public final class TextureCommands {
     }
 
     private static List<Pattern> palette(ServerPlayerEntity player, String input) {
-        List<String> entries = PaletteSpec.parse(input);
+        List<String> entries = SavedPalettes.parse(player.getUuid(), input);
         WorldEditService.PlayerContext context = WorldEditService.context(player);
         List<Pattern> patterns = new ArrayList<>(entries.size());
         for (String entry : entries) {
