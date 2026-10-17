@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class SculptManager {
     private static final Map<UUID, SculptProfile> PROFILES = new ConcurrentHashMap<>();
+    /** Bloques que puede leer una pasada de {@link BrushOperation} (un trazo largo captura su caja entera). */
+    public static final long MAX_OPERATION_CAPTURE = 4_000_000L;
 
     private SculptManager() {
     }
@@ -182,6 +184,86 @@ public final class SculptManager {
                     ServerPlayerEntity currentPlayer = server.getPlayerManager().getPlayer(playerId);
                     if (currentPlayer != null) {
                         currentPlayer.sendMessage(message("No se pudo calcular: " + readableMessage(throwable)), false);
+                    }
+                })
+        );
+    }
+
+    /**
+     * Calcula una pasada de pincel por el mismo camino que las brochas: captura repartida entre ticks, cálculo en
+     * un worker cancelable y, después, vista previa ({@code preview}) o edición por lotes con su //undo.
+     */
+    public static void run(ServerPlayerEntity player, BrushOperation operation, boolean preview) {
+        UUID playerId = player.getUuid();
+        SnapshotCaptureService.cancel(playerId);
+        AsyncEngine.cancel(playerId);
+        SculptPreviewManager.remove(player);
+        MinecraftServer server = player.getServer();
+        RegistryKey<World> worldKey = player.getWorld().getRegistryKey();
+        BrushOperation.Capture capture = operation.capture();
+        if (capture == null) {
+            planOperation(server, playerId, worldKey, operation, preview, null);
+            return;
+        }
+        long side = capture.horizontalRadius() * 2L + 1L;
+        long volume = side * side * (capture.verticalRadius() * 2L + 1L);
+        if (volume > MAX_OPERATION_CAPTURE) {
+            throw new IllegalArgumentException(operation.displayName() + ": la zona es demasiado grande ("
+                    + volume + " bloques; máximo " + MAX_OPERATION_CAPTURE + ")");
+        }
+        SnapshotCaptureService.submit(
+                player,
+                WorldEditService.context(player).world(),
+                capture.center(),
+                capture.horizontalRadius(),
+                capture.verticalRadius(),
+                snapshot -> planOperation(server, playerId, worldKey, operation, preview, snapshot),
+                throwable -> player.sendMessage(message(
+                        "No se pudo capturar el terreno: " + readableMessage(throwable)
+                ), false)
+        );
+    }
+
+    private static void planOperation(
+            MinecraftServer server,
+            UUID playerId,
+            RegistryKey<World> worldKey,
+            BrushOperation operation,
+            boolean preview,
+            WorldSnapshot snapshot
+    ) {
+        AsyncEngine.submit(
+                playerId,
+                () -> operation.plan(snapshot),
+                plan -> server.execute(() -> {
+                    ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
+                    if (current == null || !current.getWorld().getRegistryKey().equals(worldKey)) {
+                        return;
+                    }
+                    if (plan.size() == 0) {
+                        current.sendMessage(message(operation.displayName() + ": no hay nada que cambiar aquí"), true);
+                        return;
+                    }
+                    if (preview) {
+                        SculptPreviewManager.put(current, new SculptPreview(worldKey, null, "air", plan,
+                                System.currentTimeMillis(), operation.displayName(), operation.previewColor()));
+                        current.sendMessage(message("Vista previa " + operation.displayName() + ": " + plan.size()
+                                + " bloques · /komaedit pincel aplicar"), false);
+                        return;
+                    }
+                    try {
+                        int queued = BatchEditService.submit(current, plan, "air", operation.displayName());
+                        current.sendMessage(message(operation.displayName() + ": " + queued
+                                + " bloques · //undo para deshacer"), true);
+                    } catch (IllegalArgumentException | IllegalStateException exception) {
+                        current.sendMessage(message(operation.displayName() + ": " + exception.getMessage()), true);
+                    }
+                }),
+                throwable -> server.execute(() -> {
+                    ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
+                    if (current != null) {
+                        current.sendMessage(message(operation.displayName() + ": " + readableMessage(throwable)),
+                                false);
                     }
                 })
         );
