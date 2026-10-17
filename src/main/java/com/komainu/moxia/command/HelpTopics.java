@@ -128,6 +128,20 @@ public final class HelpTopics {
                     new Entry("/komaedit glassgradient <inicio> [fin] <capas> [longitud] [calidad] [dirección] [-c] [-b] [-s]",
                             "Vidriera degradada de cristal tintado (alias vidriera)")
             )),
+            new Topic("generators", "Generadores", List.of("generadores", "forma", "shape", "noisegen", "ruidogen",
+                    "flowfield", "flujo", "flowline"), List.of(
+                    new Entry("/komaedit shape cone|polydome|polygon|square|tetrahedron|torus <patrón> …",
+                            "Forma suelta donde estás (alias forma)"),
+                    new Entry("/komaedit shape torus prismarine 14 3 rounded_square -o", "Ejemplo: aro de pie hacia la mirada"),
+                    new Entry("/komaedit noisegen heightmap|terrain|advanced <paleta> [ruido] …",
+                            "Terreno con ruido en la selección (alias ruidogen)"),
+                    new Entry("/komaedit noisegen heightmap water,sand,grass_block,stone,snow Perlin(F:0.03) -t",
+                            "Ejemplo: colinas con lagos planos y nieve en capas"),
+                    new Entry("/komaedit flowfield <paleta> <líneas|n%> [iteraciones] [velocidad] [escala] [ruido] …",
+                            "Campo de flujo en la selección (alias flujo)"),
+                    new Entry("/komaedit flowline <patrón> <longitud> [gravedad] [ruido] [-l líneas] [-s]",
+                            "Línea de flujo hacia donde miras (alias lineaflujo)")
+            )),
             new Topic("palette", "Paletas guardadas", List.of("paleta", "paletas", "palettes"), List.of(
                     new Entry("/komaedit palette list [all|default|mine]", "Paletas de serie y tuyas; pulsa una para verla"),
                     new Entry("/komaedit palette save <nombre> <paleta> [-f]", "Guarda una paleta para usarla con #nombre"),

@@ -234,6 +234,7 @@ public final class MoxiaCommands {
                 .then(HelpCommands.command("ayuda"))
                 .executes(MoxiaCommands::openHudMenu));
         TextureCommands.register(dispatcher);
+        GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
         NoiseCommands.register(root);
         SelectionCommands.register(root);
