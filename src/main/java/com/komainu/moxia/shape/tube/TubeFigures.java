@@ -5,6 +5,7 @@ import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeParameters;
 import com.komainu.moxia.shape.Vec3;
+import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.sk89q.worldedit.math.BlockVector3;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -48,6 +49,42 @@ public final class TubeFigures {
             blocks = largestComponent(blocks);
         }
         return toBlocks(blocks);
+    }
+
+    /** Si la figura pide losas o escaleras en la superficie ({@code smooth} distinto de cero y cobertura > 0). */
+    public static boolean usesPieces(ShapeParameters parameters) {
+        return supports(parameters.shape()) && TubeSmoother.enabled(TubeSettings.from(parameters));
+    }
+
+    /**
+     * Sustituye por losas o escaleras los bloques de superficie que la figura solo ocupa en parte y añade piezas
+     * en los huecos que casi llena. Recibe la geometría final (después de reparar huecos o fusionar acentos) y
+     * devuelve la misma con las posiciones añadidas; sin piezas activas la devuelve tal cual.
+     */
+    public static Smoothed smooth(
+            SampledPath path,
+            ShapeParameters parameters,
+            TubeCurve curve,
+            Set<BlockVector3> blocks,
+            int limit
+    ) {
+        TubeSettings settings = TubeSettings.from(parameters);
+        if (!supports(parameters.shape()) || !TubeSmoother.enabled(settings) || blocks.isEmpty()) {
+            return new Smoothed(blocks, SmoothPieces.NONE);
+        }
+        TubeCenterline line = TubeCenterline.create(path, settings, curve);
+        TubeShapes.TubeShape shape = TubeShapes.create(settings, pathSeed(path));
+        LongOpenHashSet packed = new LongOpenHashSet(blocks.size());
+        for (BlockVector3 block : blocks) {
+            packed.add(PackedBlockPlan.pack(block.x(), block.y(), block.z()));
+        }
+        int before = packed.size();
+        SmoothPieces pieces = TubeSmoother.smooth(new TubeVoxelizer.Evaluator(line, settings, shape), settings,
+                packed, limit);
+        return new Smoothed(packed.size() == before ? blocks : toBlocks(packed), pieces);
+    }
+
+    public record Smoothed(Set<BlockVector3> blocks, SmoothPieces pieces) {
     }
 
     /**

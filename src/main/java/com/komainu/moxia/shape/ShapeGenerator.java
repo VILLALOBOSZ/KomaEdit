@@ -1,5 +1,7 @@
 package com.komainu.moxia.shape;
 
+import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.shape.tube.TubeCurve;
 import com.komainu.moxia.shape.tube.TubeFigures;
 import com.sk89q.worldedit.math.BlockVector3;
 
@@ -46,6 +48,20 @@ public final class ShapeGenerator {
             case ARCH_BRIDGE -> archBridge(canvas, path, parameters);
         }
         return canvas.blocks();
+    }
+
+    /**
+     * Igual que {@link #generate}, pero en forma de plan y con las losas y escaleras que pidan las figuras de
+     * tubo ({@code smooth}/{@code coverage}).
+     */
+    public static PackedBlockPlan generatePlan(SampledPath path, ShapeParameters parameters) {
+        Set<BlockVector3> blocks = generate(path, parameters);
+        if (!TubeFigures.usesPieces(parameters)) {
+            return PackedBlockPlan.pattern(blocks);
+        }
+        TubeFigures.Smoothed smoothed = TubeFigures.smooth(path, parameters, TubeCurve.NONE, blocks,
+                MAX_GENERATED_BLOCKS);
+        return PackedBlockPlan.pattern(smoothed.blocks(), smoothed.pieces());
     }
 
     public static Set<BlockVector3> generateStamp(

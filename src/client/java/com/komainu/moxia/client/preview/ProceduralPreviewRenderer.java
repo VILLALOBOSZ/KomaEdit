@@ -4,6 +4,8 @@ import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeGeometryEngine;
+import com.komainu.moxia.shape.smooth.SmoothPiece;
+import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -46,6 +48,9 @@ public final class ProceduralPreviewRenderer {
     private static final int[] OFFSETS_X = {-1, 1, 0, 0, 0, 0};
     private static final int[] OFFSETS_Y = {0, 0, -1, 1, 0, 0};
     private static final int[] OFFSETS_Z = {0, 0, 0, 0, -1, 1};
+    /** Bit del octante en el eje de cada dirección (x = 1, y = 2, z = 4), en el orden de {@code OFFSETS_*}. */
+    private static final int[] AXIS_BITS = {1, 1, 2, 2, 4, 4};
+    private static final int OCTANT_FACE = 1 << 18;
     private static final AtomicLong GENERATIONS = new AtomicLong();
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor(new PreviewThreadFactory());
 
@@ -161,6 +166,7 @@ public final class ProceduralPreviewRenderer {
             status = "Holograma base · adaptación ambiental/servidor se completa al construir";
         } else {
             status = "Holograma exacto · " + current.blockCount() + " bloques · "
+                    + (current.pieceSummary().isEmpty() ? "" : current.pieceSummary() + " · ")
                     + current.faceCount() + " caras visibles";
         }
     }
@@ -172,7 +178,7 @@ public final class ProceduralPreviewRenderer {
             if (result.blocks().isEmpty()) {
                 throw new IllegalStateException("La geometría resultó vacía");
             }
-            PreparedPreview prepared = prepare(result.blocks(), request);
+            PreparedPreview prepared = prepare(result.blocks(), result.pieces(), request);
             checkCancelled(request);
             client.execute(() -> install(request, prepared));
         } catch (CancellationException ignored) {
@@ -196,6 +202,7 @@ public final class ProceduralPreviewRenderer {
 
     private static PreparedPreview prepare(
             java.util.Set<BlockVector3> blocks,
+            SmoothPieces pieces,
             PreviewRequest request
     ) {
         LongOpenHashSet occupancy = new LongOpenHashSet(blocks.size());
@@ -219,28 +226,57 @@ public final class ProceduralPreviewRenderer {
             int localZ = Math.floorMod(block.z(), 16);
             SectionKey key = new SectionKey(sectionX, sectionY, sectionZ);
             IntArrayList sectionFaces = null;
+            int mask = SmoothPiece.mask(pieces.at(block.x(), block.y(), block.z()));
+            int local = localX | localY << 4 | localZ << 8;
             for (int direction = 0; direction < 6; direction++) {
+                int neighborX = block.x() + OFFSETS_X[direction];
                 int neighborY = block.y() + OFFSETS_Y[direction];
+                int neighborZ = block.z() + OFFSETS_Z[direction];
                 boolean occupied = neighborY >= -2048 && neighborY <= 2047
-                        && occupancy.contains(pack(
-                        block.x() + OFFSETS_X[direction],
-                        neighborY,
-                        block.z() + OFFSETS_Z[direction]
-                ));
-                if (occupied) {
+                        && occupancy.contains(pack(neighborX, neighborY, neighborZ));
+                int neighborMask = occupied ? SmoothPiece.mask(pieces.at(neighborX, neighborY, neighborZ)) : 0;
+                if (mask == SmoothPiece.FULL_MASK && neighborMask == SmoothPiece.FULL_MASK) {
                     continue;
                 }
                 if (sectionFaces == null) {
                     sectionFaces = grouped.computeIfAbsent(key, ignored -> new IntArrayList());
                 }
-                sectionFaces.add(localX | localY << 4 | localZ << 8 | direction << 12);
-                faces++;
+                if (mask == SmoothPiece.FULL_MASK && neighborMask == 0) {
+                    sectionFaces.add(local | direction << 12);
+                    faces++;
+                    continue;
+                }
+                faces += octantFaces(sectionFaces, local, direction, mask, neighborMask);
             }
         }
         List<SectionData> sections = grouped.entrySet().stream()
                 .map(entry -> new SectionData(entry.getKey(), entry.getValue().toIntArray()))
                 .toList();
-        return new PreparedPreview(sections, blocks.size(), faces);
+        return new PreparedPreview(sections, blocks.size(), faces, pieces.isEmpty() ? "" : pieces.summary());
+    }
+
+    /**
+     * Caras de medio bloque de una losa o escalera (o de un bloque entero pegado a una): cada octante ocupado
+     * dibuja su cara si el octante de al lado, dentro del mismo bloque o en el vecino, está vacío.
+     */
+    private static int octantFaces(IntArrayList faces, int local, int direction, int mask, int neighborMask) {
+        int axisBit = AXIS_BITS[direction];
+        boolean positive = (direction & 1) == 1;
+        int added = 0;
+        for (int octant = 0; octant < 8; octant++) {
+            if ((mask & 1 << octant) == 0) {
+                continue;
+            }
+            int adjacent = octant ^ axisBit;
+            boolean boundary = ((octant & axisBit) != 0) == positive;
+            int adjacentMask = boundary ? neighborMask : mask;
+            if ((adjacentMask & 1 << adjacent) != 0) {
+                continue;
+            }
+            faces.add(local | direction << 12 | octant << 15 | OCTANT_FACE);
+            added++;
+        }
+        return added;
     }
 
     private static void install(PreviewRequest request, PreparedPreview prepared) {
@@ -254,7 +290,8 @@ public final class ProceduralPreviewRenderer {
                 new ArrayList<>(meshes),
                 prepared.blockCount(),
                 prepared.faceCount(),
-                request.serverAdjusted()
+                request.serverAdjusted(),
+                prepared.pieceSummary()
         );
         clearFailure(request.key());
         status = "Holograma preparado · " + prepared.blockCount() + " bloques · cargando GPU…";
@@ -390,7 +427,7 @@ public final class ProceduralPreviewRenderer {
     private record SectionData(SectionKey key, int[] faces) {
     }
 
-    private record PreparedPreview(List<SectionData> sections, int blockCount, int faceCount) {
+    private record PreparedPreview(List<SectionData> sections, int blockCount, int faceCount, String pieceSummary) {
     }
 
     private static final class RenderState {
@@ -398,17 +435,25 @@ public final class ProceduralPreviewRenderer {
         private final int blockCount;
         private final int faceCount;
         private final boolean serverAdjusted;
+        private final String pieceSummary;
         private int uploadedSections;
 
-        private RenderState(List<SectionMesh> sections, int blockCount, int faceCount, boolean serverAdjusted) {
+        private RenderState(
+                List<SectionMesh> sections,
+                int blockCount,
+                int faceCount,
+                boolean serverAdjusted,
+                String pieceSummary
+        ) {
             this.sections = sections;
             this.blockCount = blockCount;
             this.faceCount = faceCount;
             this.serverAdjusted = serverAdjusted;
+            this.pieceSummary = pieceSummary;
         }
 
         private static RenderState empty() {
-            return new RenderState(new ArrayList<>(), 0, 0, false);
+            return new RenderState(new ArrayList<>(), 0, 0, false, "");
         }
 
         private List<SectionMesh> sections() {
@@ -425,6 +470,10 @@ public final class ProceduralPreviewRenderer {
 
         private boolean serverAdjusted() {
             return serverAdjusted;
+        }
+
+        private String pieceSummary() {
+            return pieceSummary;
         }
 
         private int uploadedSections() {
@@ -527,19 +576,27 @@ public final class ProceduralPreviewRenderer {
             int y = packed >> 4 & 15;
             int z = packed >> 8 & 15;
             int direction = packed >> 12 & 7;
+            // Las caras de octante ocupan medio bloque; el margen solo se aplica en el borde del bloque para que
+            // las caras de una misma pieza se vean continuas.
+            boolean octantFace = (packed & OCTANT_FACE) != 0;
+            int octant = packed >> 15 & 7;
+            float size = octantFace ? 0.5F : 1.0F;
+            float cellX = x + (octantFace ? (octant & 1) * 0.5F : 0.0F);
+            float cellY = y + (octantFace ? (octant >> 1 & 1) * 0.5F : 0.0F);
+            float cellZ = z + (octantFace ? (octant >> 2 & 1) * 0.5F : 0.0F);
             float inset = 0.035F;
-            float minimumX = x + inset;
-            float minimumY = y + inset;
-            float minimumZ = z + inset;
-            float maximumX = x + 1.0F - inset;
-            float maximumY = y + 1.0F - inset;
-            float maximumZ = z + 1.0F - inset;
-            float west = x - 0.012F;
-            float east = x + 1.012F;
-            float down = y - 0.012F;
-            float up = y + 1.012F;
-            float north = z - 0.012F;
-            float south = z + 1.012F;
+            float minimumX = cellX + (cellX == x ? inset : 0.0F);
+            float minimumY = cellY + (cellY == y ? inset : 0.0F);
+            float minimumZ = cellZ + (cellZ == z ? inset : 0.0F);
+            float maximumX = cellX + size - (cellX + size == x + 1.0F ? inset : 0.0F);
+            float maximumY = cellY + size - (cellY + size == y + 1.0F ? inset : 0.0F);
+            float maximumZ = cellZ + size - (cellZ + size == z + 1.0F ? inset : 0.0F);
+            float west = cellX - 0.012F;
+            float east = cellX + size + 0.012F;
+            float down = cellY - 0.012F;
+            float up = cellY + size + 0.012F;
+            float north = cellZ - 0.012F;
+            float south = cellZ + size + 0.012F;
             int brightness = switch (direction) {
                 case 2 -> 145;
                 case 3 -> 245;
