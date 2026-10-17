@@ -14,6 +14,7 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.persistence.OperationLedger;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.recipe.RecipeActionService;
 import com.komainu.moxia.recipe.RecipeCatalogPayload;
@@ -126,9 +127,11 @@ public final class KomaEditMod implements ModInitializer {
             PathManager.remove(handler.player.getUuid());
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
+            RegionOperationService.cancel(handler.player.getUuid());
         });
         ServerTickEvents.END_SERVER_TICK.register(BatchEditService::tick);
         ServerTickEvents.END_SERVER_TICK.register(FastPaintService::tick);
+        ServerTickEvents.END_SERVER_TICK.register(RegionOperationService::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> AsyncEngine.start());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             BatchEditService.shutdown();
@@ -137,6 +140,7 @@ public final class KomaEditMod implements ModInitializer {
             PathManager.clearAll();
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
+            RegionOperationService.clearAll();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");
     }
