@@ -42,10 +42,12 @@ Las figuras convierten una trayectoria tridimensional en superficies o volúmene
 - Knots
 - DNA
 - Tendrils
-- Braids
 - Mandalas tridimensionales
 - Nubes orgánicas
 - Telarañas adaptativas
+- Perfil 2D (espacio de tubo)
+- Trenza (espacio de tubo)
+- Tubo erosionado (espacio de tubo)
 
 Cada figura conserva su gramática propia y puede combinar radio, espaciado, grosor, giro y materiales sin reutilizar estado residual de una figura anterior.
 
@@ -150,6 +152,84 @@ También está disponible con el comando general:
 - Si tres o más puntos son prácticamente colineales, el generador utiliza los dos extremos para desplegar automáticamente una malla radial en un plano estable.
 - Una distribución muy irregular o no coplanar produce una telaraña tridimensional tensada, no una circunferencia plana.
 
+## Figuras de espacio de tubo
+
+### Objetivo y acceso
+
+**Perfil 2D** (`sweep`), **Trenza** (`braid`) y **Tubo erosionado** (`noisetube`) se generan con un motor distinto al de las demás figuras: en lugar de estampar pinceles a lo largo de la curva, recorre los bloques cercanos al eje y evalúa en cada uno una función implícita de la figura. El resultado es estanco por construcción, sin puentes ni reparación posterior.
+
+- Studio: aparecen en **Figuras**. Las tres añaden filas de **Extremos** y **Normales**; **Perfil 2D** añade además **Perfil** y **Relleno**.
+- Comandos rápidos:
+
+```text
+/komaedit sweep <perfil> <radios> [patrón] [banderas]
+/komaedit perfil <perfil> <radios> [patrón] [banderas]
+/komaedit braid <radios> [patrón] [banderas]
+/komaedit trenza <radios> [patrón] [banderas]
+/komaedit noisetube <radios> [patrón] [banderas]
+/komaedit erosion <radios> [patrón] [banderas]
+```
+
+### Comportamiento
+
+- **Espacio de tubo:** cada bloque se localiza por su punto más cercano del eje. De ahí salen `x` e `y` sobre la sección, en radios (de `-1` a `1`), y `z` a lo largo del recorrido, que avanza un radio por cada radio de longitud. Las figuras se definen en ese espacio, así que crecen, giran y se estiran con el tubo.
+- **Curva Kochanek–Bartels:** la trayectoria pasa exactamente por todos los puntos. Con tensión, sesgo y continuidad a `0` equivale a un Catmull-Rom; las tangentes se corrigen por longitud de cuerda para no formar bucles con puntos desigualmente separados.
+- **Marcos sin giro espurio:** la sección se transporta con marcos de mínima rotación (doble reflexión). En trayectorias cerradas el desfase de cierre se reparte por todo el lazo para que el empalme no se note.
+- **Normales:** `consistent` rueda con suavidad en las curvas; `horizontal` mantiene la cara superior mirando al cielo; `upright` alinea el eje vertical de la sección con el eje Y del mundo.
+- **Extremos** (solo trayectorias abiertas): `flat` corta en seco, `soft` afila el último radio hacia dentro, `round` añade una cúpula, `spike` un cono de dos radios y `cube` un remate cuadrado.
+- **Hueco:** la pared se obtiene por morfología (bloque dentro con algún vecino fuera a la distancia de la pared), así que queda cerrada aunque la superficie vaya en diagonal. Con extremo `flat` el tubo queda abierto como una tubería.
+- **Modificadores exactos:** escala, espaciado y torsión de la sección Deformar se aplican dentro del espacio de tubo al evaluar cada bloque, sin deformar bloques ya generados ni puentear huecos.
+- **Determinismo:** el ruido del tubo erosionado usa una semilla derivada de los puntos; holograma y Build coinciden.
+
+### Parámetros
+
+| Control / bandera | Opción de receta | Efecto |
+| --- | --- | --- |
+| Radio / `<radios>` | radio + `k0`…`k5`, `p1`…`p4` | Radio base. Con varios valores (`2,10,2`) el grosor sigue esos fotogramas con interpolación monótona; `2,0.3:12,2` fija la posición del intermedio. Sin comillas: `2_10_2`. |
+| Lados / puntas | `sides` | Lados del polígono, puntas de la estrella, pétalos de la flor o hebras de la cuerda (Studio 2–8, comando hasta 32 con `star12`). |
+| Pared (hueco), `-hollow <n>` | `hollow`, `wall` | Grosor de pared en bloques cuando el relleno es **Hueco**. |
+| Giro, `-r <a>[,<b>]` | `angle`, `rollend` | Giro inicial de la sección; con dos valores gira de `a` a `b` a lo largo del recorrido. |
+| `-t <grados>` | `twist` | Torsión por diámetro, como una cuerda: tras recorrer un diámetro la sección ha girado esos grados. La cuerda usa 90 por defecto. |
+| `-e <modo>` / Extremos | `end` | `flat`, `soft`, `spike`, `round`, `cube`. |
+| `-n <modo>` / Normales | `normal` | `consistent`, `horizontal`, `upright`. |
+| `-p t:b:c` | `tension`, `bias`, `continuity` | Kochanek–Bartels, cada valor entre `-1` y `1`. |
+| `-q <calidad>` | `quality` | `fast` (centro del bloque), `balanced` (rescata detalles finos con seis muestras), `high` (27 muestras, cobertura ≥ 25 %). |
+| `-s <factor>` | `stretch` | Estira o comprime el patrón a lo largo del recorrido. |
+| `-d <0–1>` | `depthmultiplier` | Profundidad de las estrellas y flores, o de la erosión. |
+| `-a <0.1–1>` | `aspect` | Proporción de elipse y rectángulo. |
+| `-x <exponente>` | `exponent` | Forma del perfil redondeado (4 = squircle). |
+| `-k <2–8>` | `strands` | Hebras de la trenza. |
+| `-f <frecuencia>` | `frequency` | Tamaño de las vetas del tubo erosionado. |
+| `-fill` | `filled` | Rellena el alma de la cuerda. |
+
+Perfiles: `circle`, `square`, `diamond`, `rounded`, `polygon`, `star`, `flower`, `rope`, `ellipse` y `rectangle` (también en español: `circulo`, `estrella`, `cuerda`…). Un número al final fija los lados: `polygon6`, `star5`, `rope4`.
+
+En recetas y expresiones también se aceptan nombres: `sweep(profile:star,sides:7,end:round,normal:horizontal,hollow:true)`.
+
+Ejemplos:
+
+```text
+/komaedit sweep circle 8
+/komaedit sweep star5 "2,0.3:12,2" polished_andesite -e spike -t 30
+/komaedit sweep rope3 6 oak_planks
+/komaedit sweep polygon6 10 deepslate_tiles -hollow 2 -n horizontal
+/komaedit braid 7 stripped_birch_wood -k 4
+/komaedit noisetube 2_12_4 60%stone,25%andesite,15%cobblestone -e round
+```
+
+### Materiales
+
+Con **Patrón figura** las figuras de tubo usan su propio valor implícito: en los perfiles va del núcleo (`0`) al borde (`1`), y en cuerdas y trenzas cada hebra ocupa su tramo de la paleta, de modo que una paleta de tres colores pinta tres hebras distintas. **Relieve**, **Frente / reverso** y **Filas alternas** funcionan igual que en el resto de figuras.
+
+### Rendimiento y limitaciones
+
+- Solo se evalúan ladrillos de 8×8×8 bloques que tocan el tubo; un árbol de esferas sobre el eje localiza el punto más cercano en tiempo logarítmico y parte del resultado del bloque anterior.
+- Un tubo de radio 14 y 360 bloques de recorrido (~220 000 bloques) se calcula en menos de un segundo en un worker.
+- El volumen candidato se limita a 64 millones de bloques y el resultado al límite general de 1 500 000.
+- Con normales `upright` las secciones se inclinan en tramos empinados y pueden solaparse; en tramos verticales conviene `consistent`.
+- Si una curva se cierra más que el propio radio, el tubo se pliega por dentro como en cualquier barrido: separa más los puntos o reduce el radio.
+- El tubo erosionado conserva solo la pieza conectada al núcleo, sin fragmentos flotantes.
+
 ## Modificadores
 
 Los modificadores transforman de manera continua la figura seleccionada:
@@ -162,6 +242,8 @@ Los modificadores transforman de manera continua la figura seleccionada:
 - Conformado a suelo, techo o superficie.
 - Sockets Kitbash.
 - Reparación de microhuecos y componentes aislados.
+
+En las figuras de espacio de tubo la escala, el espaciado y la torsión se aplican al evaluar cada bloque, sin deformación posterior ni puentes entre bloques separados.
 
 ## Estructuras
 
@@ -240,6 +322,7 @@ Una configuración inválida se rechaza completa y el servidor utiliza límites 
 - La colocación se agrupa por chunks y lotes.
 - Los hologramas utilizan secciones persistentes, descarte por cámara y caras expuestas.
 - Los generadores poseen límites de seguridad y cancelación cooperativa.
+- Las figuras de espacio de tubo recorren solo los ladrillos de 8³ bloques cercanos al eje y localizan el eje con un árbol de esferas.
 - El límite de volumen y la cuota global de jobs se aplican antes de abrir una sesión de edición.
 - Cada job persistente registra avance con frecuencia limitada y su finalización o cancelación.
 

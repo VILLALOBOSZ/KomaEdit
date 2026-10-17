@@ -7,6 +7,7 @@ import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
 import com.komainu.moxia.shape.ShapeParameters;
 import com.komainu.moxia.shape.Vec3;
+import com.komainu.moxia.shape.tube.TubeFigures;
 import com.sk89q.worldedit.math.BlockVector3;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -27,18 +28,12 @@ final class ContinuousModifierEngine {
     static Set<BlockVector3> generate(PathSnapshot snapshot, ProceduralRecipe recipe) {
         SampledPath path = createPath(snapshot, recipe.shape());
         ShapeParameters mainParameters = recipe.shapeParameters();
-        Set<BlockVector3> main = ShapeGenerator.generate(path, mainParameters);
         PathField field = new PathField(path, recipe.radius());
-        Set<BlockVector3> modifiedMain = recipe.extensions().usesCurve()
-                ? deform(path, field, main, recipe.extensions())
-                : main;
+        Set<BlockVector3> modifiedMain = generateCurved(path, field, mainParameters, recipe.extensions());
         if (!recipe.extensions().rhythmEnabled()) {
             return modifiedMain;
         }
-        Set<BlockVector3> accent = rhythmAccent(path, field, recipe);
-        Set<BlockVector3> modifiedAccent = recipe.extensions().usesCurve()
-                ? deform(path, field, accent, recipe.extensions())
-                : accent;
+        Set<BlockVector3> modifiedAccent = rhythmAccent(path, field, recipe);
         Set<BlockVector3> result = new HashSet<>(Math.min(
                 MAX_BLOCKS,
                 modifiedMain.size() + modifiedAccent.size()
@@ -78,7 +73,10 @@ final class ContinuousModifierEngine {
                 recipe.rollDegrees(),
                 extensions.accentShape().defaults().options()
         );
-        Set<BlockVector3> accent = ShapeGenerator.generate(path, accentParameters);
+        boolean nativeCurve = TubeFigures.supports(accentParameters.shape());
+        Set<BlockVector3> accent = nativeCurve
+                ? TubeFigures.generate(path, accentParameters, extensions.tubeCurve(), MAX_BLOCKS)
+                : ShapeGenerator.generate(path, accentParameters);
         double windowLength = Math.max(4.0, recipe.radius() * 1.6);
         Set<BlockVector3> result = new HashSet<>(Math.min(MAX_BLOCKS, accent.size() / 3));
         int processed = 0;
@@ -90,7 +88,24 @@ final class ContinuousModifierEngine {
                 add(result, block);
             }
         }
-        return result;
+        return !nativeCurve && extensions.usesCurve() ? deform(path, field, result, extensions) : result;
+    }
+
+    /**
+     * Las figuras de espacio de tubo aplican escala, espaciado y torsión al evaluar cada bloque; el resto se
+     * genera recto y se deforma después.
+     */
+    private static Set<BlockVector3> generateCurved(
+            SampledPath path,
+            PathField field,
+            ShapeParameters parameters,
+            RecipeExtensions extensions
+    ) {
+        if (TubeFigures.supports(parameters.shape())) {
+            return TubeFigures.generate(path, parameters, extensions.tubeCurve(), MAX_BLOCKS);
+        }
+        Set<BlockVector3> generated = ShapeGenerator.generate(path, parameters);
+        return extensions.usesCurve() ? deform(path, field, generated, extensions) : generated;
     }
 
     private static Window window(double progress, double pathLength, double windowLength, int interval) {
