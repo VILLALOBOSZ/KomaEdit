@@ -13,7 +13,8 @@ import com.komainu.moxia.generator.ShapeVoxelizer;
 import com.komainu.moxia.generator.SnapshotMask;
 import com.komainu.moxia.generator.SnapshotTerrain;
 import com.komainu.moxia.generator.Volume;
-import com.komainu.moxia.gradient.PaletteSpec;
+import com.komainu.moxia.noise.SavedNoises;
+import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.region.RegionEdits;
@@ -211,7 +212,8 @@ public final class GeneratorCommands {
 
     private static void noise(ServerPlayerEntity player, NoiseGenerator.Mode mode, String args) throws Exception {
         GeneratorRequests.NoiseRequest request = GeneratorRequests.noise(mode, args,
-                () -> ThreadLocalRandom.current().nextLong(1L << 31));
+                () -> ThreadLocalRandom.current().nextLong(1L << 31),
+                text -> SavedNoises.parse(player.getUuid(), text));
         KomaPermissions.requireBuild(player, "noisegen");
         Palette palette = Palette.resolve(player, request.palette());
         SnapshotMask mask = request.mask() == null ? null : SnapshotMask.parse(request.mask());
@@ -248,7 +250,8 @@ public final class GeneratorCommands {
 
     private static void flowField(ServerPlayerEntity player, String args) throws Exception {
         GeneratorRequests.FlowFieldRequest request = GeneratorRequests.flowField(args,
-                () -> ThreadLocalRandom.current().nextLong(1L << 31));
+                () -> ThreadLocalRandom.current().nextLong(1L << 31),
+                text -> SavedNoises.parse(player.getUuid(), text));
         KomaPermissions.requireBuild(player, "flowfield");
         Palette palette = Palette.resolve(player, request.palette());
         SnapshotMask mask = request.mask() == null ? null : SnapshotMask.parse(request.mask());
@@ -283,7 +286,8 @@ public final class GeneratorCommands {
     /** Pocos miles de bloques: se calcula en el hilo del servidor y lee el mundo para pegarse a las superficies. */
     private static void flowLine(ServerPlayerEntity player, String args) throws Exception {
         GeneratorRequests.FlowLineRequest request = GeneratorRequests.flowLine(args,
-                () -> ThreadLocalRandom.current().nextLong(1L << 31));
+                () -> ThreadLocalRandom.current().nextLong(1L << 31),
+                text -> SavedNoises.parse(player.getUuid(), text));
         KomaPermissions.requireBuild(player, "flowline");
         WorldEditService.validatePattern(player, request.pattern());
         ServerWorld world = player.getServerWorld();
@@ -418,7 +422,7 @@ public final class GeneratorCommands {
      */
     private record Palette(List<BlockState> states, PaletteTraits traits, BlockState[][] snowLayers) {
         static Palette resolve(ServerPlayerEntity player, String text) {
-            List<String> entries = PaletteSpec.parse(text);
+            List<String> entries = SavedPalettes.parse(player.getUuid(), text);
             WorldEditService.PlayerContext context = WorldEditService.context(player);
             List<BlockState> states = new ArrayList<>(entries.size());
             List<String> ids = new ArrayList<>(entries.size());

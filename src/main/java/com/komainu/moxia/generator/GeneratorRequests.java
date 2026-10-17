@@ -3,6 +3,7 @@ package com.komainu.moxia.generator;
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.shape.tube.TubeFormula;
 
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 
 /**
@@ -35,8 +36,16 @@ public final class GeneratorRequests {
         };
     }
 
-    /** @param randomSeed semilla cuando {@code -s} falta o vale -1 */
     public static NoiseRequest noise(NoiseGenerator.Mode mode, String text, LongSupplier randomSeed) {
+        return noise(mode, text, randomSeed, NoiseSpec::parse);
+    }
+
+    /**
+     * @param randomSeed semilla cuando {@code -s} falta o vale -1
+     * @param noises     lee el ruido (con los ruidos guardados del jugador, si los hay)
+     */
+    public static NoiseRequest noise(NoiseGenerator.Mode mode, String text, LongSupplier randomSeed,
+                                     Function<String, NoiseSpec> noises) {
         String usage = usage(mode);
         String switches = switch (mode) {
             case HEIGHTMAP -> "cty";
@@ -45,7 +54,7 @@ public final class GeneratorRequests {
         };
         GeneratorArgs args = GeneratorArgs.parse(text, "zsolm", switches).atMost(4, usage);
         String palette = args.require(0, "la paleta", usage);
-        NoiseSpec noise = NoiseSpec.parse(args.positional(1) == null ? DEFAULT_NOISE : args.positional(1));
+        NoiseSpec noise = noises.apply(args.positional(1) == null ? DEFAULT_NOISE : args.positional(1));
         int height = 0;
         double[] strength = {1.0, 0.5, 0.0};
         Threshold lower = Threshold.constant(0.0);
@@ -125,6 +134,11 @@ public final class GeneratorRequests {
             + " [-b borde] [-x/-y/-z expresión] [-p inicio:fin] [-s semilla] [-cft]";
 
     public static FlowFieldRequest flowField(String text, LongSupplier randomSeed) {
+        return flowField(text, randomSeed, NoiseSpec::parse);
+    }
+
+    public static FlowFieldRequest flowField(String text, LongSupplier randomSeed,
+                                             Function<String, NoiseSpec> noises) {
         String usage = FLOWFIELD_USAGE;
         GeneratorArgs args = GeneratorArgs.parse(text, "mijgbxyzps", "cft", "h", FlowField.Distribution::known)
                 .atMost(6, usage);
@@ -141,7 +155,7 @@ public final class GeneratorRequests {
                 : GeneratorArgs.number(args.positional(3), 0.05, 16.0, "La velocidad");
         double scalar = args.positional(4) == null ? 1.0
                 : GeneratorArgs.number(args.positional(4), 0.001, 1_000.0, "La escala de paleta");
-        NoiseSpec noise = NoiseSpec.parse(args.positional(5) == null ? DEFAULT_NOISE : args.positional(5));
+        NoiseSpec noise = noises.apply(args.positional(5) == null ? DEFAULT_NOISE : args.positional(5));
         FlowField.Distribution heightmap = !args.has('h') ? null
                 : args.value('h') == null ? FlowField.Distribution.SURFACE
                 : FlowField.Distribution.byId(args.value('h'));
@@ -203,6 +217,11 @@ public final class GeneratorRequests {
             + " [-i inercia] [-c puntos] [-l líneas] [-r azar] [-s]";
 
     public static FlowLineRequest flowLine(String text, LongSupplier randomSeed) {
+        return flowLine(text, randomSeed, NoiseSpec::parse);
+    }
+
+    public static FlowLineRequest flowLine(String text, LongSupplier randomSeed,
+                                           Function<String, NoiseSpec> noises) {
         String usage = FLOWLINE_USAGE;
         GeneratorArgs args = GeneratorArgs.parse(text, "iclr", "s").atMost(4, usage);
         String pattern = args.require(0, "el patrón", usage);
@@ -210,7 +229,7 @@ public final class GeneratorRequests {
                 "La longitud");
         double gravity = args.positional(2) == null ? -1.0
                 : GeneratorArgs.number(args.positional(2), -16.0, 16.0, "La gravedad");
-        NoiseSpec noise = NoiseSpec.parse(args.positional(3) == null ? DEFAULT_NOISE : args.positional(3));
+        NoiseSpec noise = noises.apply(args.positional(3) == null ? DEFAULT_NOISE : args.positional(3));
         double inertia = args.value('i') == null ? 0.0
                 : GeneratorArgs.number(args.value('i'), 0.0, 1.0, "La inercia (-i)");
         int convex = args.value('c') == null ? 0

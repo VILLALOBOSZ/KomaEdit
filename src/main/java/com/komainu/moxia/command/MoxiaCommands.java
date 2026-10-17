@@ -234,6 +234,9 @@ public final class MoxiaCommands {
                 .then(HelpCommands.command("ayuda"))
                 .executes(MoxiaCommands::openHudMenu));
         GeneratorCommands.register(dispatcher);
+        PaletteCommands.register(root);
+        NoiseCommands.register(root);
+        SelectionCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
                 .requires(source -> can(source, KomaPermissions.PATH))
