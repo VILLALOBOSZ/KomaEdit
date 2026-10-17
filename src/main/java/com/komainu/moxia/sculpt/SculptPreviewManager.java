@@ -43,7 +43,8 @@ public final class SculptPreviewManager {
         }
         if (ServerPlayNetworking.canSend(player, PreviewHologramPayload.ID)) {
             ServerPlayNetworking.send(player, PreviewHologramPayload.show(
-                    preview.plan().bounds(), color(preview.settings().type())
+                    preview.plan().bounds(),
+                    preview.color() >= 0 ? preview.color() : color(preview.settings().type())
             ));
         }
     }

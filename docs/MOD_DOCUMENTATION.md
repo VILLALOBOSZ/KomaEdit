@@ -606,6 +606,318 @@ Alias: `/komaedit retocar` y `desinfestar`, `persistir`, `anegar`, `encerar`.
 - Los carteles encerados guardan el encerado en sus datos, no en el estado del bloque; `wax` no los toca.
 - La selección más su margen admite hasta 16 millones de bloques y 1 500 000 cambios.
 
+## Pinceles
+
+### Objetivo y acceso
+
+Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit: cada clic se captura, se calcula en un worker y se aplica como **una sola operación de //undo**, igual que las brochas de esculpido.
+
+```text
+/komaedit pincel <tipo> [parámetros] [banderas]
+/komaedit ezbrush <tipo> [parámetros] [banderas]
+/komaedit pincel aplicar | cancelar | quitar | estado
+```
+
+| Tipo | Alias | Pincel |
+| --- | --- | --- |
+| `paletteshift` | `desplazar`, `ps` | [Desplazar paleta](#pincel-desplazar-paleta) |
+| `gradient` | `degradado`, `gr` | [Degradado](#pinceles-de-degradado) |
+| `gradientstroke` | `trazo`, `gs` | [Trazo de degradado](#pinceles-de-degradado) |
+| `petalpainter` | `petalos`, `pp` | [Pintor de pétalos](#pintor-de-pétalos) |
+| `place` | `colocar`, `pl` | [Colocación](#pincel-de-colocación) |
+
+- El pincel se liga al **objeto de la mano principal**, como los de WorldEdit: cada objeto guarda el suyo y se pueden llevar varios a la vez. Con la mano vacía se entrega una pluma llamada «Pincel de KomaEdit». Volver a configurar un objeto que ya tiene pincel lo sustituye.
+- `quitar` (`off`) suelta el pincel del objeto de la mano; `estado` (`status`) dice qué pincel lleva y sus controles.
+- Los pinceles apuntan al bloque que miras hasta a **192 bloques**.
+- Permiso: `komaedit.build`.
+
+### Comportamiento común
+
+- **Controles:** con un pincel en la mano, el clic izquierdo no rompe bloques, el derecho no usa el objeto y la tecla de cambiar de mano (F) no cambia de mano: todo se lo queda el pincel. Mantener el clic derecho repite la pasada, como un pincel de verdad.
+- **Vista previa:** con `-p` cada clic calcula la pasada y la deja en el holograma (una caja con el color del pincel) en vez de aplicarla; `/komaedit pincel aplicar` la coloca y `/komaedit pincel cancelar` la descarta. Sin `-p` se aplica en el acto.
+- **Historial:** cada pasada es una edición por lotes de `BatchEditService` y queda en el historial de WorldEdit; `//undo` la quita entera y `/komaedit job status|cancel` funcionan como en el resto del mod.
+- **Paletas:** donde un pincel pide una paleta vale la notación de ezEdits (`##Magma`, `-##Grayscale(1:8)`, `stone*3,andesite`…, ver [Paletas con nombre](#paletas-con-nombre)). Las entradas tienen que ser bloques sueltos, con estado si hace falta (`oak_log[axis=x]`); los patrones aleatorios de WorldEdit no valen dentro de un pincel.
+- **Ruido:** `-n` acepta el [ruido configurable](#ruido-configurable) y `-z` multiplica las coordenadas antes de muestrearlo. Sin `-n` el ruido es blanco por bloque: cada bloque tira su propio dado.
+- **Piezas (`-w`):** con `-w` los pinceles de paleta también pintan losas y escaleras, cambiándolas por la losa o escalera del material de la paleta (la misma que usa el modo [losas y escaleras](#losas-y-escaleras-en-la-superficie): por nombre o del color más parecido) y conservando su forma, orientación y anegado. Sin `-w` las piezas no se tocan.
+- Lo que no es un cubo entero (flores, vallas, antorchas, carteles…) nunca se pinta.
+- Con KomaEdit solo en el servidor (cliente vanilla) el pincel responde al clic derecho y al izquierdo sobre bloques al alcance; la F y el clic izquierdo a distancia necesitan el mod en el cliente.
+
+### Rendimiento y limitaciones
+
+- El cálculo es lo de menos: con radio 32 (unos 140 000 bloques) tarda menos de 20 ms en un worker. Lo que cuesta es leer la zona, que se reparte entre ticks (unos 16 000 bloques por tramo): con el radio por defecto (8) es instantáneo y con radio 32, alrededor de un segundo.
+- Radio de 1 a 32. Una pasada lee como mucho 4 millones de bloques y cambia como mucho 1 000 000 (o el límite de operación del servidor, si es menor).
+- Una pasada nueva cancela la anterior si aún se estaba calculando; si la anterior ya se está escribiendo, la nueva se descarta y el chat lo avisa.
+- La vista previa es la caja que ocupa la pasada, no los bloques uno a uno.
+- Los pinceles viven en la sesión: se pierden al salir del servidor o reiniciarlo (la marca del objeto se queda y basta con volver a configurarlo).
+
+## Pincel Desplazar paleta
+
+### Objetivo y acceso
+
+Recorre una paleta bloque a bloque: cada bloque del pincel que esté en la paleta pasa al que tiene unas posiciones más allá. Sirve para oscurecer, aclarar, envejecer o «subir de nivel» una zona sin perder su textura (el Palette Shift de ezEdits).
+
+```text
+/komaedit pincel paletteshift <paleta> [radio] [desplazamiento] [-r] [-p]
+```
+
+### Comportamiento
+
+- **Clic derecho** desplaza hacia delante; **clic izquierdo**, hacia atrás. Con desplazamiento 2, el primer bloque de la paleta pasa a ser el tercero.
+- Se mira el id del bloque, no su estado: una escalera de la paleta sigue siendo escalera y conserva su orientación.
+- Las **losas y escaleras** del material de cada entrada cuentan como esa entrada y pasan a la losa o escalera del material de destino. Si ese material no tiene, se quedan como estaban.
+- Si un bloque se repite en la paleta (`stone*3,andesite`), hacia delante se cuenta desde su última aparición y hacia atrás desde la primera: un desplazamiento de 1 siempre cambia algo.
+- En los extremos el bloque se queda en el primero o el último de la paleta; con `-r` da la vuelta (el último pasa al primero).
+- Los bloques que no están en la paleta no se tocan.
+
+### Parámetros
+
+| Parámetro | Efecto |
+| --- | --- |
+| `<paleta>` | Al menos dos bloques, en orden. |
+| `[radio]` | Radio de la esfera (1–32, por defecto 8). |
+| `[desplazamiento]` | Posiciones que avanza cada clic (−255 a 255, por defecto 1). |
+| `-r` | Da la vuelta en los extremos. |
+| `-p` | Vista previa antes de aplicar. |
+
+Ejemplos:
+
+```text
+/komaedit pincel paletteshift ##Grayscale
+/komaedit pincel paletteshift stone,andesite,cobblestone,mossy_cobblestone 6 1
+/komaedit pincel desplazar -##Magma 12 2 -r
+```
+
+### Rendimiento y limitaciones
+
+- Ver [Pinceles](#pinceles). Las paletas de serie mezclan materiales de familias distintas: para envejecer una pared conviene una paleta propia del mismo material.
+
+## Pinceles de degradado
+
+### Objetivo y acceso
+
+Pintan un degradado de paleta sobre lo que ya hay construido (los Gradient y Gradient Stroke de ezEdits): el color de cada bloque sale de su posición entre dos puntos, o a lo largo de un trazo, mezclado con ruido.
+
+```text
+/komaedit pincel gradient <paleta> [radio] [interpolación] [sangrado] [-a] [-v] [-w] [-n <ruido>] [-z <escala>] [-d <distancia>] [-p]
+/komaedit pincel gradientstroke <paleta> [radio] [interpolación] [sangrado] [-a] [-d] [-v] [-w] [-x] [-n <ruido>] [-z <escala>] [-p]
+```
+
+### Comportamiento
+
+**Degradado (`gradient`):**
+
+- **Clic izquierdo** marca el inicio en el bloque que miras (**Mayús**: en tus pies). **Clic derecho** marca el final (**Mayús**: en tus pies); con los dos puestos, cada **clic derecho** pinta la esfera del pincel donde miras.
+- El degradado va del primer punto (primera entrada de la paleta) al segundo (última), por planos perpendiculares a la recta que los une: lo que queda antes del inicio es la primera entrada y lo que queda después del final, la última.
+- Con `-d <distancia>` el degradado se mide desde el primer punto hacia fuera, con la distancia `euclidean`, `manhattan` o `chebyshev`; el segundo punto marca dónde termina.
+- **F** cambia entre puntos **PER_ITEM** (de esta herramienta, por defecto) y **GLOBAL** (compartidos por todas tus herramientas de degradado).
+
+**Trazo (`gradientstroke`):**
+
+- **Clic izquierdo** añade un punto al trazo; **Mayús + izquierdo** quita el último. **Clic derecho** pinta el trazo entero; **Mayús + derecho** lo borra.
+- Pinta un tubo de radio `[radio]` alrededor de la línea que une los puntos, con el degradado a lo largo del recorrido. Con `-d` el degradado va del eje del tubo (primera entrada) a su borde (última).
+- `-x` borra el trazo después de cada pasada; sin él se puede repintar con otra paleta.
+- **F** cambia entre trazo PER_ITEM y GLOBAL, como en `gradient`.
+
+**En los dos:**
+
+- Solo se pintan bloques enteros que ya existen; con `-a` también el aire (el trazo con `-a` construye el tubo) y con `-w` las losas y escaleras.
+- Los puntos se marcan con partículas que solo ves tú; `-v` las quita.
+- El **sangrado** y la **interpolación** deciden cómo se mezclan los colores vecinos. El ruido (de 0 a 1) se convierte en un empujón de −sangrado a +sangrado a lo largo del degradado:
+
+| Interpolación | Efecto |
+| --- | --- |
+| `NONE` | Bandas limpias; el ruido no se usa. Por defecto en `gradient`. |
+| `LINEAR` | El mismo empujón en todo el degradado: cerca de los extremos se sale de los dos puntos. Por defecto en `gradientstroke`. |
+| `TAPERED` | Fuerte en el centro y nulo en los extremos (4·t·(1−t)): no ensucia el principio ni el final. |
+| `BEZIER` | Curva de Bézier con el punto de control movido por el ruido: mezcla más suave. Con sangrado mayor que 1 deja de ser monótona y salpica. |
+| `SIN` | Como `TAPERED`, con un seno: reparte el sangrado más ancho por el centro. |
+
+### Parámetros
+
+| Parámetro | Efecto |
+| --- | --- |
+| `<paleta>` | Al menos dos bloques; la primera entrada es el inicio. |
+| `[radio]` | Radio de la esfera o del tubo (1–32, por defecto 8). |
+| `[interpolación]` | `NONE`, `LINEAR`, `TAPERED`, `BEZIER` o `SIN` (también `ninguna`, `lineal`, `seno`). |
+| `[sangrado]` | Cuánto se mezclan los colores (0–4, por defecto 0,5; lo normal, de 0 a 1). |
+| `-n <ruido>` | Ruido de la mezcla, por ejemplo `Perlin(F:0.25)`. Sin él, blanco por bloque. |
+| `-z <escala>` | Multiplica las coordenadas del ruido (por defecto 1). |
+| `-d <distancia>` | (`gradient`) Degradado por distancia al inicio: `euclidean`, `manhattan`, `chebyshev`. |
+| `-d` | (`gradientstroke`) Degradado del eje al borde del tubo. |
+| `-a` | Pinta también el aire. |
+| `-w` | Pinta también losas y escaleras con su pieza del material. |
+| `-v` | Sin partículas en los puntos. |
+| `-x` | (`gradientstroke`) Borra el trazo tras cada pasada. |
+| `-p` | Vista previa antes de aplicar. |
+
+Ejemplos:
+
+```text
+/komaedit pincel gradient ##Grayscale
+/komaedit pincel gradient ##Magma 10 tapered 0.6 -n Perlin(F:0.25)
+/komaedit pincel gradient stone,andesite,tuff,deepslate 8 linear 0.4 -w -n Ce(F:0.15)
+/komaedit pincel gradient -##GlowBlue 12 sin 0.5 -d euclidean
+/komaedit pincel gradientstroke ##Grayscale 3 linear 0.5 -a -x
+/komaedit pincel trazo moss_block,mossy_cobblestone,cobblestone 4 tapered 0.8 -d
+```
+
+### Rendimiento y limitaciones
+
+- Ver [Pinceles](#pinceles). El trazo lee la caja que lo contiene más el radio: un trazo de 100 bloques en diagonal con radio 4 son unos 170 000 bloques (alrededor de medio segundo).
+- El trazo admite hasta 256 puntos y es una polilínea: no se suaviza en curva.
+- La integración con WorldEditCUI de ezEdits se sustituye por las partículas de los puntos.
+
+## Pintor de pétalos
+
+### Objetivo y acceso
+
+Esparce follaje en capas sobre el terreno (el Petal Painter de ezEdits): pétalos rosas, flores silvestres u hojarasca, con más o menos piezas por bloque y orientación al azar.
+
+```text
+/komaedit pincel petalpainter <tipo> [radio] [densidad] [-n <ruido>] [-z <escala>] [-m <máscara>] [-p]
+```
+
+### Comportamiento
+
+- **Clic derecho** esparce el follaje en la esfera del pincel, justo encima del bloque que miras; **clic izquierdo** quita el follaje de ese tipo en la esfera.
+- Cada hueco de aire con un bloque de la máscara debajo toma un valor del ruido. Si queda por debajo de la densidad recibe follaje, y cuanto más bajo, más piezas (de 1 a 4). Con el ruido blanco de serie, la densidad es la fracción de suelo cubierta.
+- Donde ya hay follaje del mismo tipo, se conserva su orientación y solo se suben las piezas; como el ruido blanco cambia en cada clic, repasar una zona la va espesando. Con un ruido propio (`-n`) el dibujo se mantiene de un clic a otro.
+- Las piezas nuevas se orientan al azar hacia los cuatro puntos cardinales.
+
+### Parámetros
+
+| Parámetro | Efecto |
+| --- | --- |
+| `<tipo>` | `petals` (`pink_petals`), `wildflowers` (`minecraft:wildflowers`) o `leaves` (`minecraft:leaf_litter`); también cualquier bloque con `flower_amount` o `segment_amount`. |
+| `[radio]` | Radio de la esfera (1–32, por defecto 8). |
+| `[densidad]` | Cuánto follaje (0–1, por defecto 0,3). |
+| `-n <ruido>` | Ruido que reparte el follaje, por ejemplo `Perlin(F:0.05)` para manchas. |
+| `-z <escala>` | Multiplica las coordenadas del ruido (por defecto 0,03, como en ezEdits; con `Perlin(F:1)` da manchas de unos 30 bloques). |
+| `-m <máscara>` | Bloques sobre los que se pone (por defecto `#fullblock`). Lista separada por comas de ids y de `#fullblock`, `#solid` (cubo, losa o escalera) y `#existing`; `!` excluye. |
+| `-p` | Vista previa antes de aplicar. |
+
+Ejemplos:
+
+```text
+/komaedit pincel petalpainter petals
+/komaedit pincel petalpainter petals 10 0.6 -m grass_block,moss_block
+/komaedit pincel petalos petals 16 0.5 -n Perlin(F:1) -z 0.05
+/komaedit pincel petalpainter petals 6 1 -m #fullblock,!sand,!gravel
+```
+
+### Rendimiento y limitaciones
+
+- Ver [Pinceles](#pinceles).
+- Minecraft 1.21.1 solo tiene `pink_petals`: `wildflowers` y `leaf_litter` llegaron en 1.21.5 y dan un error claro hasta que KomaEdit se actualice. Los bloques de mods con `flower_amount` o `segment_amount` funcionan.
+- La máscara es la propia de los pinceles, sobre la foto capturada: no admite etiquetas (`#minecraft:logs`) ni las máscaras de expresión de WorldEdit.
+
+## Pincel de colocación
+
+### Objetivo y acceso
+
+Coloca una estructura en cada clic (el `//ezbrush place` de ezEdits), orientada con el sistema de **primaria + secundaria**: la primaria fija hacia dónde mira el «arriba» de la estructura y la secundaria, su «delante».
+
+```text
+/komaedit pincel place <estructura> [primaria] [secundaria] [-a] [-x] [-p]
+```
+
+### Comportamiento
+
+- **Clic derecho** coloca la estructura en el bloque de aire delante de la cara que miras.
+- **Estructuras:** de momento `Clipboard` (`Cl`), el portapapeles de WorldEdit (`//copy`):
+  - `Origin`/`O`: `INHERENT` (`I`, por defecto: el punto desde el que se copió) o `CENTER` (`C`, el centro de la copia).
+  - `Rotation`/`R`: giro previo alrededor del «arriba», en múltiplos de 90° (sentido horario visto desde arriba).
+  - `PasteMethod`/`PM`: solo `FAST`.
+- **Alineación:** `primaria` y `secundaria` aceptan `Constant` (`C`, con `Direction`/`D`: `up`, `down`, `north`, `south`, `east`, `west`, `x`, `-z`, un vector `(x,y,z)` o `aim`, la mirada al configurar el pincel), `Aim` (`A`, la mirada en cada clic), `Upward` (`U`, la perpendicular a la mirada que más sube), `SurfaceNormal` (`S`, la cara que miras), `PlayerRelative` (`P`, hacia ti) y `Random` (`R`). Por defecto, primaria `Constant` (arriba) y secundaria `Constant` (este): la estructura sale como se copió.
+- De todas las direcciones perpendiculares a la primaria se elige la más parecida a la secundaria. Si las dos van en la misma línea la colocación falla; con `-x` se elige una perpendicular cualquiera.
+- Los bloques se giran con sus estados (escaleras, troncos, vallas) y el aire de la copia no se pega salvo con `-a`.
+
+### Parámetros
+
+| Parámetro | Efecto |
+| --- | --- |
+| `<estructura>` | `Clipboard`/`Cl` con sus opciones, por ejemplo `Cl(O:C,R:90)`. |
+| `[primaria]` | Hacia dónde mira el «arriba» (por defecto `Constant`, arriba). |
+| `[secundaria]` | Hacia dónde mira el «delante» (por defecto `Constant`, este). |
+| `-a` | Pega también el aire de la copia. |
+| `-x` | Si primaria y secundaria son colineales, toma una perpendicular cualquiera. |
+| `-p` | Vista previa antes de aplicar. |
+
+Ejemplos:
+
+```text
+/komaedit pincel place Clipboard
+/komaedit pincel place Cl(O:C) SurfaceNormal Aim
+/komaedit pincel place Cl Constant Random
+/komaedit pincel place Cl(R:90) C(D:south) C(D:east)
+/komaedit pincel colocar Cl PlayerRelative Constant -x
+```
+
+### Rendimiento y limitaciones
+
+- No lee el mundo: el portapapeles se copia en cada clic y la colocación se calcula en un worker. Hasta 1 000 000 bloques por estructura.
+- Las direcciones se ajustan al eje más cercano (giros de 90°, como `-j MULTIPLES_90` de ezEdits): así cada bloque se gira con su estado exacto y no hay remuestreo. Los giros libres, el `PasteMethod:SMOOTHED`, `ViewDiff`, las direcciones `Noise`, `Expression` y `Mixed`, las opciones `RelativeOffset`/`WorldOffset` y los parámetros de colocación (`-s`, `-o`, `-c`, `-f`, `-r`, `-j`) llegarán con el motor común de colocación (`place`, `array` y `scatter`); el pincel ya admite cualquier estructura que se registre en `StructureSources`.
+- Se pegan bloques y estados, sin los datos de los bloques con inventario (cofres, carteles) ni entidades.
+
+## Supervarita
+
+### Objetivo y acceso
+
+Herramienta de selección avanzada (la Superwand de ezEdits) que escribe directamente en la **selección de WorldEdit**: lo que marques lo ven al momento `//set`, `//copy`, WorldEditCUI y las operaciones de KomaEdit.
+
+```text
+/komaedit superwand [modo] [-d <distancia>]
+/komaedit supervarita [modo] [-d <distancia>]
+/komaedit superwand off
+```
+
+- Se liga al objeto de la mano principal; con la mano vacía se entrega una vara de blaze llamada «Supervarita». `off` la desactiva y quita la marca del objeto.
+- Al activarla lee los puntos de tu selección actual.
+- Permiso: `komaedit.select`.
+
+### Comportamiento
+
+| Modo | Clic derecho |
+| --- | --- |
+| `trace` (`apuntar`, por defecto) | Marca el bloque que miras (hasta 192 bloques). |
+| `position` (`posicion`) | Marca el bloque en el que estás. |
+| `relative` (`relativo`) | Marca un punto a partir del último, en la dirección en la que miras: a la distancia de `-d` o, sin ella, a la que estás del último punto. |
+| `grab` (`agarrar`) | Agarra el punto que miras (a menos de 1,5 bloques del rayo) o, si no miras ninguno, la selección entera, y la lleva a la misma distancia delante de ti mientras te mueves y giras. Otro clic, o el izquierdo, la suelta. |
+
+| Control | Efecto |
+| --- | --- |
+| Clic derecho | Punto nuevo; si la selección ya está llena (dos puntos en un cuboide, una esfera o un cilindro) sustituye el último. En `grab`, agarra o suelta. |
+| Clic izquierdo | Quita el último punto. En `grab`, suelta. |
+| Mayús + clic izquierdo | Pasa al modo siguiente (`trace` → `position` → `relative` → `grab`). |
+| F (cambiar de mano) | Invierte el orden de los puntos. |
+| Mayús + F | Desplaza todos los puntos una posición en la lista (el primero pasa al final). |
+
+- La selección se reconstruye con el **selector que tengas en WorldEdit** (`//sel cuboid`, `sphere`, `cyl`, `poly`, `convex`…): el primer punto es el primario y los demás, secundarios. Con `//sel convex` o `//sel poly` no hay límite práctico de puntos (256).
+- Si cambias la selección por otro camino (`//pos1`, la varita de WorldEdit), la supervarita vuelve a leerla antes del siguiente clic.
+- Cada cambio marca los puntos con partículas y avisa a WorldEditCUI.
+
+### Parámetros y ejemplos
+
+| Parámetro | Efecto |
+| --- | --- |
+| `[modo]` | `trace`, `position`, `relative` o `grab`. |
+| `-d <distancia>` | Distancia fija del modo relativo (0–512; 0 = la del último punto). |
+
+```text
+/komaedit superwand
+/komaedit superwand relative -d 8
+//sel convex
+/komaedit superwand trace
+/komaedit supervarita grab
+```
+
+### Rendimiento y limitaciones
+
+- No escribe bloques, solo la selección: no pasa por el historial ni tiene vista previa (la selección ya se ve con WorldEditCUI o con las partículas).
+- Al leer una esfera, un elipsoide o un cilindro se toman el centro y un punto en el borde a lo largo del eje x: el radio en las otras direcciones se pierde si era distinto.
+- La F y el clic izquierdo a distancia necesitan KomaEdit en el cliente; sin él, la supervarita responde al clic derecho y al izquierdo sobre bloques al alcance.
+- La selección agarrada se mueve por bloques enteros y se actualiza en cada tick en que cambia.
+
 ## Recetas, instancias y paquetes
 
 - Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
@@ -650,7 +962,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - Base: `komaedit.use`.
 - Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>`.
 - Contenido: `komaedit.recipe`, `komaedit.instance`.
-- Edición: `komaedit.select`, `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
+- Edición: `komaedit.select` (también la supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
+- Pinceles (`/komaedit pincel`): `komaedit.build`.
 - Administración de proyecto: `komaedit.project.backup`.
 - Excepción de volumen: `komaedit.limit.unrestricted`.
 

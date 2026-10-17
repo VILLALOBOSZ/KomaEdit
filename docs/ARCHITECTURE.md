@@ -36,6 +36,12 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 6. `BatchEditService` mantiene un `EditSession` y aplica slices con presupuesto temporal.
 7. Al terminar o cancelar, la sesión se cierra y se registra una vez en el historial WorldEdit.
 
+Los pinceles de `/komaedit pincel` (paquete `brush.ez`, `brush.place`) siguen el mismo camino con `SculptManager.run(jugador, operación, vistaPrevia)`. Cada clic crea una `BrushOperation` inmutable: dice qué zona capturar (`capture()`, o `null` si no lee el mundo) y calcula el plan sobre la foto en el worker (`plan(snapshot)`). Paletas, ruido y portapapeles se resuelven antes, en el hilo del servidor. La lógica de cada pincel (`PaletteShift`, `GradientPainter`, `PetalPainter`, `Alignment`) trabaja sobre `BrushWorld`, una vista mínima de la foto, y se prueba sin Minecraft.
+
+Las herramientas (pinceles y supervarita) se marcan en el `custom_data` del objeto. El cliente intercepta con ellas el clic izquierdo, el derecho y la tecla de cambiar de mano y los manda como `BrushToolPayload`; el servidor apunta con su propio rayo. Para clientes sin el mod quedan los eventos de uso y ataque de Fabric en el servidor.
+
+El pincel de colocación pide sus estructuras a `StructureSources`: cualquier `StructureSource` registrada (hoy el portapapeles) devuelve en el hilo del servidor una `PlacementTemplate` inmutable que el worker gira con la base de `Alignment`.
+
 ## Representación compacta
 
 `PackedBlockPlan` usa el mismo reparto lógico de bits que una posición Minecraft:
@@ -96,6 +102,6 @@ Los nuevos tipos de brocha se incorporan en tres puntos:
 2. Planificador puro en `SculptPlanner` o un futuro `BrushOperation` registrable.
 3. Control opcional en GUI/comandos.
 
-El siguiente refactor de extensibilidad extraerá cada algoritmo a implementaciones de una interfaz `BrushOperation`, manteniendo estable `SculptManager` y el pipeline de preview/aplicación.
+Los pinceles nuevos ya usan la interfaz `BrushOperation`; las brochas de `SculptPlanner` pueden pasarse a ella sin tocar `SculptManager` ni el pipeline de preview/aplicación.
 
 Para schematics y clipboard se prevé otro tipo de plan que transporte índices de paleta/NBT, sin forzar esos datos dentro del plan simple de brochas.
