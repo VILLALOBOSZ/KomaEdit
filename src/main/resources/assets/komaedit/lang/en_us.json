@@ -33,6 +33,8 @@
   "gui.komaedit.stage.modifiers.subtitle": "Shape scale, rhythm, twist and surface adaptation",
   "gui.komaedit.stage.material": "Material",
   "gui.komaedit.stage.material.subtitle": "Assign blocks, gradients and figure-aware shading",
+  "gui.komaedit.stage.weather": "Weathering",
+  "gui.komaedit.stage.weather.subtitle": "Turn the selection into a ruin driven by exposure and support",
   "gui.komaedit.stage.instances": "Instances",
   "gui.komaedit.stage.instances.subtitle": "Reopen and edit persistent procedural results",
   "gui.komaedit.stage.recipes": "Recipes",

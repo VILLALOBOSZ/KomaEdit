@@ -34,6 +34,8 @@ import com.komainu.moxia.sculpt.SculptManager;
 import com.komainu.moxia.sculpt.SculptPreviewManager;
 import com.komainu.moxia.sculpt.SculptProfile;
 import com.komainu.moxia.sculpt.SculptSettings;
+import com.komainu.moxia.weathering.WeatheringService;
+import com.komainu.moxia.weathering.WeatheringSettings;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.ui.QuickBuildPayload;
 import com.mojang.brigadier.CommandDispatcher;
@@ -113,6 +115,15 @@ public final class MoxiaCommands {
         }
         return tail.buildFuture();
     };
+    private static final SuggestionProvider<ServerCommandSource> WEATHER_SUGGESTIONS = (context, builder) -> {
+        String remaining = builder.getRemaining();
+        var tail = builder.createOffset(builder.getStart() + remaining.lastIndexOf(' ') + 1);
+        for (String option : new String[]{"30", "60", "90", "templado", "desierto", "nevado", "hundido", "-d 50",
+                "-v 50", "-seed 7", "-agua"}) {
+            tail.suggest(option);
+        }
+        return tail.buildFuture();
+    };
     /** Al empezar, las fórmulas de serie, un ejemplo y las banderas; luego solo banderas, que van delante. */
     private static final SuggestionProvider<ServerCommandSource> EXPRESSION_SUGGESTIONS = (context, builder) -> {
         String remaining = builder.getRemaining();
@@ -171,6 +182,8 @@ public final class MoxiaCommands {
                 .then(noodlesCommand())
                 .then(bendCommand("bend"))
                 .then(bendCommand("doblar"))
+                .then(weatherCommand("weather"))
+                .then(weatherCommand("envejecer"))
                 .then(sweepCommand("sweep"))
                 .then(sweepCommand("perfil"))
                 .then(tubeCommand("braid", PathShape.BRAID))
@@ -607,6 +620,39 @@ public final class MoxiaCommands {
             return 1;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
+        } catch (IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    /**
+     * {@code /komaedit weather [intensidad] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]}: convierte la
+     * selección de WorldEdit en una ruina.
+     */
+    private static LiteralArgumentBuilder<ServerCommandSource> weatherCommand(String name) {
+        return literal(name)
+                .executes(context -> weather(context, ""))
+                .then(argument("weather_options", StringArgumentType.greedyString())
+                        .suggests(WEATHER_SUGGESTIONS)
+                        .executes(context -> weather(context,
+                                StringArgumentType.getString(context, "weather_options"))));
+    }
+
+    private static int weather(CommandContext<ServerCommandSource> context, String options)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            WeatheringSettings settings = WeatheringSettings.parse(options);
+            long volume = WeatheringService.start(player, settings);
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal("Envejeciendo " + volume + " bloques de selección (intensidad "
+                            + settings.intensity() + ", derrumbe " + settings.collapse() + ", vida "
+                            + settings.vegetation() + ", " + settings.style().id() + ")…").formatted(Formatting.GRAY)),
+                    false
+            );
+            return 1;
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Selecciona la construcción con //pos1 y //pos2");
         } catch (IllegalArgumentException exception) {
             return fail(context.getSource(), message(exception));
         }
@@ -2030,6 +2076,14 @@ public final class MoxiaCommands {
                                 + "sección, z a lo largo (en radios), t de 0 a 1, r radio, a ángulo, n repeticiones; "
                                 + "> 0 coloca bloque. De serie: " + TubeFormulaPreset.ids() + " (ventanas8 fija n). "
                                 + "Ej.: /komaedit expr 8 stone r<1&&abs(sin(a*3+z))>0.4"
+                ).formatted(Formatting.GRAY),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Envejecer la selección: /komaedit weather [intensidad 0–100] [templado|desierto|nevado|"
+                                + "hundido] [-d derrumbe] [-v vida] [-seed semilla] [-agua] (alias envejecer). "
+                                + "Ej.: /komaedit envejecer 70 nevado -d 40"
                 ).formatted(Formatting.GRAY),
                 false
         );

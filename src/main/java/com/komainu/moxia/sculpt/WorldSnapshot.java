@@ -58,6 +58,20 @@ public final class WorldSnapshot {
         return new Capture(world, minimumX, minimumY, minimumZ, sizeX, sizeY, sizeZ, blocks);
     }
 
+    /** Captura de una caja (esquinas incluidas); la altura se recorta a la del mundo. */
+    public static Capture begin(World world, BlockVector3 minimum, BlockVector3 maximum) {
+        int minimumY = Math.max(world.getMinY(), minimum.y());
+        int maximumY = Math.min(world.getMaxY(), maximum.y());
+        if (maximumY < minimumY) {
+            throw new IllegalArgumentException("La caja queda fuera de la altura del mundo");
+        }
+        int sizeX = maximum.x() - minimum.x() + 1;
+        int sizeY = maximumY - minimumY + 1;
+        int sizeZ = maximum.z() - minimum.z() + 1;
+        BlockState[] blocks = new BlockState[Math.multiplyExact(Math.multiplyExact(sizeX, sizeY), sizeZ)];
+        return new Capture(world, minimum.x(), minimumY, minimum.z(), sizeX, sizeY, sizeZ, blocks);
+    }
+
     public BlockState get(int x, int y, int z) {
         if (!contains(x, y, z)) {
             return AIR;

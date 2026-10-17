@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Añade **Envejecer** (`/komaedit weather`, alias `envejecer`): convierte la construcción seleccionada con WorldEdit en una ruina creíble. El desgaste sigue la exposición a la intemperie (caras y vecinos al aire, ponderados por la distancia al cielo abierto: lo que está bajo techo apenas se gasta), lo que se queda sin apoyo cae según el vano que aguanta cada material y forma montones de escombro con losas y escaleras, y crecen musgo, hierba, helechos, enredaderas, raíces y telarañas donde tiene sentido.
+- Añade una tabla de variantes envejecidas que conserva las propiedades del bloque: musgo, grietas, pérdida del pulido, óxido del cobre por pasos (el encerado no cambia), madera descortezada y tablones podridos.
+- Añade cuatro climas (`templado`, `desierto` con arena y terracota, `nevado` con nieve y hielo, `hundido` con agua, algas y kelp), intensidad, derrumbe y vida de 0 a 100, semilla repetible y charcos de agua estancada (`-agua`).
+- Añade la categoría **Envejecer** al Studio.
 - Añade la figura **Expresión** (`expression`): una fórmula del jugador en espacio de tubo (`x`, `y` de -1 a 1 en la sección, `z` a lo largo en radios, más `t`, `r`, `a` y `n`) decide qué bloques se colocan (salida > 0) y, con **Patrón figura**, su material (valor en `(0, 1]`).
 - Añade un compilador de fórmulas propio, sin bucles ni estado compartido: operadores `+ - * / % ^`, comparaciones, `&& || !`, ternario, 26 funciones (con `noise` determinista), definiciones `nombre = valor;`, nombres sensibles a mayúsculas, límites de 256 caracteres, 16 definiciones, 40 niveles y 400 operaciones, y errores en español con la posición. Evalúa 6–12 veces más rápido que el motor de WorldEdit 7.3.8 con las mismas fórmulas.
 - Acota el alcance de la fórmula por análisis (`r <= 1 && …`) para no recorrer las esquinas de la sección: `r <= 1` cuesta lo mismo que el perfil círculo.
