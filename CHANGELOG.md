@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.1.0 (estable, 2026-10-17)
+
+Primera publicación estable desde `1.0.0`; recoge todo lo integrado en `staging` sobre `4.8.0-alpha.1`.
+
 - Añade el motor de **espacio de tubo**: voxelizado inverso por ladrillos de 8³, árbol de esferas para localizar el eje y figuras implícitas estancas por construcción.
 - Añade **Perfil 2D** (`sweep`) con diez perfiles (círculo, cuadrado, rombo, redondeado, polígono, estrella, flor, cuerda, elipse y rectángulo), relleno macizo o hueco y pared cerrada por morfología.
 - Añade **Trenza** (`braid`) y **Tubo erosionado** (`noisetube`), este último sin fragmentos flotantes.
