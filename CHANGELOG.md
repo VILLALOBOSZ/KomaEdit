@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.0 (estable, 2026-10-18)
+
 - Añade la **colocación de estructuras** de ezEdits: `/komaedit place` (alias `colocar`), `/komaedit array` (alias `hilera`) y `/komaedit scatter` (alias `dispersar`), con la forma `<estructura> [<primaria>] [<secundaria>] [banderas]` y la cadena dimensiones → escala aleatoria → orientación → simetrías → giros de 90° → alineación. Se calcula en un worker, se coloca de abajo arriba en una sola edición deshacible con //undo y, donde se lee el mundo, sin pisar lo que cambie mientras tanto.
 - Añade las alineaciones `Constant`, `Random`, `Noise`, `Aim`, `Upward`, `PlayerRelative`, `SurfaceNormal`, `Expression` (con `rx`, `ry`, `rz` y espacios `WORLD`, `LOCAL` y `NORMALIZED`), `Tangential`, `Orthogonal` y las mezclas con pesos (`10%C,2%R`), con direcciones escritas como `east-z+(0,0.5,0)` o `2*up+aim`, el ajuste `-j` (`MULTIPLES_90` … `DIAGONALS_5_1`) y la perturbación `-x`.
 - Añade las banderas comunes `-s`, `-o`, `-k`/`-c`, `-f`, `-r`, `-a`, `-w slabs|stairs[:cobertura]` e `-i`, las de dispersión `-h` (`Active`, `Box`, `Ellipsoid`, `Cylinder`, `Saved`), `-d`/`-e`, `-m`, `-n`, `-u`, `-l` y `-t`, y las de array `-g`, `-y`, `-q`, `-p`, `-n` y `-b`.
