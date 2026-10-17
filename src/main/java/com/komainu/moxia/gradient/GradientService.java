@@ -16,7 +16,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
-import java.util.Arrays;
 import java.util.List;
 
 public final class GradientService {
@@ -34,16 +33,7 @@ public final class GradientService {
             throw new IllegalArgumentException("La mezcla debe estar entre 0 y 100");
         }
 
-        List<String> entries = Arrays.stream(paletteInput.split(";"))
-                .map(String::trim)
-                .filter(entry -> !entry.isEmpty())
-                .toList();
-        if (entries.size() < 2) {
-            throw new IllegalArgumentException("La paleta necesita al menos dos bloques separados por ;");
-        }
-        if (entries.size() > 32) {
-            throw new IllegalArgumentException("La paleta admite un máximo de 32 bloques");
-        }
+        List<String> entries = paletteEntries(paletteInput);
 
         WorldEditService.PlayerContext context = WorldEditService.context(player);
         Region selection = context.session().getSelection(context.world()).clone();
@@ -118,16 +108,7 @@ public final class GradientService {
         if (ditherPercent < 0 || ditherPercent > 100) {
             throw new IllegalArgumentException("La mezcla debe estar entre 0 y 100");
         }
-        List<String> entries = Arrays.stream(paletteInput.split(";"))
-                .map(String::trim)
-                .filter(entry -> !entry.isEmpty())
-                .toList();
-        if (entries.size() < 2) {
-            throw new IllegalArgumentException("La paleta necesita al menos dos bloques separados por ;");
-        }
-        if (entries.size() > 32) {
-            throw new IllegalArgumentException("La paleta admite un máximo de 32 bloques");
-        }
+        List<String> entries = paletteEntries(paletteInput);
         WorldEditService.PlayerContext context = WorldEditService.context(player);
         List<Pattern> patterns = entries.stream()
                 .map(entry -> WorldEditService.parsePatternUnchecked(context, entry))
@@ -152,6 +133,18 @@ public final class GradientService {
             int paletteIndex = paletteIndex(block, normalized, patterns.size(), dither);
             return patterns.get(paletteIndex);
         };
+    }
+
+    /**
+     * Lee la paleta con la notación de ezEdits ({@code ##Magma}, {@code -##Grayscale(1:8)}, {@code oro*3,diamante})
+     * o como la lista {@code a;b;c} de siempre.
+     */
+    static List<String> paletteEntries(String paletteInput) {
+        List<String> entries = PaletteSpec.parse(paletteInput);
+        if (entries.size() < 2) {
+            throw new IllegalArgumentException("La paleta necesita al menos dos bloques, por ejemplo stone;andesite o ##Grayscale");
+        }
+        return entries;
     }
 
     private static double metricValue(

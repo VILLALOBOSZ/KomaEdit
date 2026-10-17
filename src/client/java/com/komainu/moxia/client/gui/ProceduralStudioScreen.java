@@ -116,6 +116,18 @@ public final class ProceduralStudioScreen extends Screen {
     private static ShapeCategory rememberedCategory = ShapeCategory.ALL;
 
     private ProceduralRecipe draft = rememberedDraft;
+    private static final String[] WEATHER_STYLES = {"templado", "desierto", "nevado", "hundido"};
+    private static final String[] WEATHER_HINTS = {
+            "Musgo abajo y al norte, hierba, enredaderas y telarañas.",
+            "Arena contra los muros, madera blanqueada, terracota.",
+            "Nieve en lo que mira al cielo y más grietas por la helada.",
+            "La selección se llena de agua: algas, kelp y pepinos de mar."
+    };
+    private int weatherIntensity = 50;
+    private int weatherCollapse = 50;
+    private int weatherVegetation = 50;
+    private int weatherStyle;
+    private boolean weatherWater;
     private Stage stage = STRUCTURE_SHAPES.contains(draft.shape()) ? Stage.STRUCTURES : Stage.FIGURE;
     private int inspectorWidth;
     private int contentScroll;
@@ -379,6 +391,7 @@ public final class ProceduralStudioScreen extends Screen {
             case STRUCTURES -> drawStructuresStage(context, mouseX, mouseY, left, top);
             case MODIFIERS -> drawModifiersStage(context, mouseX, mouseY, left, top);
             case MATERIAL -> drawMaterialStage(context, mouseX, mouseY, left, top);
+            case WEATHER -> drawWeatherStage(context, mouseX, mouseY, left, top);
             case INSTANCES -> drawInstancesStage(context, mouseX, mouseY, left, top);
             case RECIPES -> drawRecipesStage(context, mouseX, mouseY, left, top);
         }
@@ -993,6 +1006,64 @@ public final class ProceduralStudioScreen extends Screen {
         }
     }
 
+    /** Envejecer la selección de WorldEdit: clima, intensidad, derrumbe, vida y charcos; lanza el comando. */
+    private void drawWeatherStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
+        int inner = inspectorWidth - 32;
+        int half = (inner - 7) / 2;
+        drawSectionLabel(context, "CLIMA", left + 16, top);
+        for (int index = 0; index < WEATHER_STYLES.length; index++) {
+            int x = left + 16 + index % 2 * (half + 7);
+            int y = top + 17 + index / 2 * 27;
+            String label = WEATHER_STYLES[index].substring(0, 1).toUpperCase(Locale.ROOT)
+                    + WEATHER_STYLES[index].substring(1);
+            drawSmallButton(context, mouseX, mouseY, x, y, half, 22, label, weatherStyle == index);
+        }
+        drawTrimmed(context, WEATHER_HINTS[weatherStyle], left + 18, top + 73, inner - 4, MUTED);
+        drawSectionLabel(context, "DESGASTE", left + 16, top + 92);
+        drawStepper(context, mouseX, mouseY, left + 16, top + 110, inner, "Intensidad", weatherIntensity,
+                Control.WEATHER_INTENSITY);
+        drawStepper(context, mouseX, mouseY, left + 16, top + 140, inner, "Derrumbe", weatherCollapse,
+                Control.WEATHER_COLLAPSE);
+        drawStepper(context, mouseX, mouseY, left + 16, top + 170, inner, "Vida", weatherVegetation,
+                Control.WEATHER_VEGETATION);
+        drawSmallButton(context, mouseX, mouseY, left + 16, top + 200, inner, 25,
+                weatherWater ? "Agua estancada: sí" : "Agua estancada: no", weatherWater);
+        drawCard(context, mouseX, mouseY, left + 16, top + 234, inner, 44, false);
+        drawTrimmed(context, "Selecciona la obra con //pos1 y //pos2.", left + 28, top + 243, inner - 24, TEXT);
+        drawTrimmed(context, "Se deshace con //undo; la semilla sale en el chat.", left + 28, top + 259,
+                inner - 24, MUTED);
+        drawSmallButton(context, mouseX, mouseY, left + 16, top + 286, inner, 29, "Envejecer selección", true);
+    }
+
+    private boolean weatherStageClicked(double mouseX, double mouseY, int left, int top) {
+        int inner = inspectorWidth - 32;
+        int half = (inner - 7) / 2;
+        for (int index = 0; index < WEATHER_STYLES.length; index++) {
+            int x = left + 16 + index % 2 * (half + 7);
+            int y = top + 17 + index / 2 * 27;
+            if (inside(mouseX, mouseY, x, y, half, 22)) {
+                weatherStyle = index;
+                return true;
+            }
+        }
+        if (stepperClicked(mouseX, mouseY, left + 16, top + 110, inner, Control.WEATHER_INTENSITY)
+                || stepperClicked(mouseX, mouseY, left + 16, top + 140, inner, Control.WEATHER_COLLAPSE)
+                || stepperClicked(mouseX, mouseY, left + 16, top + 170, inner, Control.WEATHER_VEGETATION)) {
+            return true;
+        }
+        if (inside(mouseX, mouseY, left + 16, top + 200, inner, 25)) {
+            weatherWater = !weatherWater;
+            return true;
+        }
+        if (inside(mouseX, mouseY, left + 16, top + 286, inner, 29)) {
+            sendCommand("komaedit weather " + weatherIntensity + " " + WEATHER_STYLES[weatherStyle]
+                    + " -d " + weatherCollapse + " -v " + weatherVegetation + (weatherWater ? " -agua" : ""));
+            status = "Envejeciendo la selección…";
+            return true;
+        }
+        return true;
+    }
+
     private void drawRecipesStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
         int inner = inspectorWidth - 32;
         drawSectionLabel(context, "RECETAS GUARDADAS", left + 16, top);
@@ -1297,6 +1368,14 @@ public final class ProceduralStudioScreen extends Screen {
                 context.drawBorder(centerX - 10, centerY - 8, 14, 14, color);
                 context.drawBorder(centerX - 3, centerY - 1, 14, 14, color);
             }
+            case WEATHER -> {
+                context.fill(centerX - 9, centerY + 6, centerX + 10, centerY + 9, color);
+                context.fill(centerX - 7, centerY - 3, centerX - 2, centerY + 6, color);
+                context.fill(centerX - 7, centerY - 8, centerX - 4, centerY - 3, color);
+                context.fill(centerX + 1, centerY + 2, centerX + 5, centerY + 6, color);
+                context.fill(centerX + 5, centerY + 4, centerX + 9, centerY + 6, color);
+                context.fill(centerX + 2, centerY - 1, centerX + 4, centerY + 1, color);
+            }
             case RECIPES -> {
                 context.drawBorder(centerX - 9, centerY - 10, 18, 20, color);
                 context.fill(centerX - 5, centerY - 5, centerX + 6, centerY - 4, color);
@@ -1427,6 +1506,7 @@ public final class ProceduralStudioScreen extends Screen {
             case STRUCTURES -> shapeStageClicked(mouseX, mouseY, left, top, STRUCTURE_SHAPES);
             case MODIFIERS -> modifiersStageClicked(mouseX, mouseY, left, top);
             case MATERIAL -> materialStageClicked(mouseX, mouseY, left, top);
+            case WEATHER -> weatherStageClicked(mouseX, mouseY, left, top);
             case INSTANCES -> instancesStageClicked(mouseX, mouseY, left, top);
             case RECIPES -> recipesStageClicked(mouseX, mouseY, left, top);
         };
@@ -2321,6 +2401,9 @@ public final class ProceduralStudioScreen extends Screen {
             case CONFORM_RADIUS -> extensions.conformRadius();
             case SURFACE_OFFSET -> extensions.surfaceOffset();
             case SOCKET_INTERVAL -> extensions.socketInterval();
+            case WEATHER_INTENSITY -> weatherIntensity;
+            case WEATHER_COLLAPSE -> weatherCollapse;
+            case WEATHER_VEGETATION -> weatherVegetation;
         };
     }
 
@@ -2344,11 +2427,29 @@ public final class ProceduralStudioScreen extends Screen {
             case CONFORM_RADIUS -> extensions.conformRadius();
             case SURFACE_OFFSET -> extensions.surfaceOffset();
             case SOCKET_INTERVAL -> extensions.socketInterval();
+            case WEATHER_INTENSITY, WEATHER_COLLAPSE, WEATHER_VEGETATION -> 50;
         };
     }
 
     private void setValue(Control control, int requested) {
         int next = range(control).clamp(requested);
+        // Envejecer no es parte de la receta: sus valores viven en la pantalla y no entran en el historial.
+        switch (control) {
+            case WEATHER_INTENSITY -> {
+                weatherIntensity = next;
+                return;
+            }
+            case WEATHER_COLLAPSE -> {
+                weatherCollapse = next;
+                return;
+            }
+            case WEATHER_VEGETATION -> {
+                weatherVegetation = next;
+                return;
+            }
+            default -> {
+            }
+        }
         int radius = draft.radius();
         int spacing = draft.spacing();
         int thickness = draft.thickness();
@@ -2394,6 +2495,8 @@ public final class ProceduralStudioScreen extends Screen {
                     extensions.surfaceMode(), extensions.conformRadius(), next);
             case SOCKET_INTERVAL -> extensions = extensions.withSockets(
                     extensions.socketsEnabled(), extensions.socketPlacement(), next);
+            case WEATHER_INTENSITY, WEATHER_COLLAPSE, WEATHER_VEGETATION -> {
+            }
         }
         draft = draft.copy(draft.name(), draft.shape(), draft.pattern(), radius, spacing, thickness, roll, height,
                 draft.paletteId(), draft.gradientAxis(), dither, draft.reverse()).withExtensions(extensions);
@@ -2862,6 +2965,7 @@ public final class ProceduralStudioScreen extends Screen {
             case STRUCTURES -> structuresContentHeight();
             case MODIFIERS -> 723;
             case MATERIAL -> materialContentHeight();
+            case WEATHER -> 330;
             case INSTANCES -> 70 + ClientInstanceCatalog.instances().size() * 55;
             case RECIPES -> 84 + ClientRecipeCatalog.recipes().size() * 49;
         };
@@ -3019,6 +3123,7 @@ public final class ProceduralStudioScreen extends Screen {
         STRUCTURES("gui.komaedit.stage.structures", "gui.komaedit.stage.structures.subtitle"),
         MODIFIERS("gui.komaedit.stage.modifiers", "gui.komaedit.stage.modifiers.subtitle"),
         MATERIAL("gui.komaedit.stage.material", "gui.komaedit.stage.material.subtitle"),
+        WEATHER("gui.komaedit.stage.weather", "gui.komaedit.stage.weather.subtitle"),
         INSTANCES("gui.komaedit.stage.instances", "gui.komaedit.stage.instances.subtitle"),
         RECIPES("gui.komaedit.stage.recipes", "gui.komaedit.stage.recipes.subtitle");
 
@@ -3046,7 +3151,10 @@ public final class ProceduralStudioScreen extends Screen {
         RHYTHM_INTERVAL(NumericRange.of(2, 32, 1)),
         CONFORM_RADIUS(NumericRange.of(2, 32, 1)),
         SURFACE_OFFSET(new NumericRange(-8, 8, 1, 4)),
-        SOCKET_INTERVAL(new NumericRange(2, 64, 1, 8));
+        SOCKET_INTERVAL(new NumericRange(2, 64, 1, 8)),
+        WEATHER_INTENSITY(new NumericRange(0, 100, 5, 25)),
+        WEATHER_COLLAPSE(new NumericRange(0, 100, 5, 25)),
+        WEATHER_VEGETATION(new NumericRange(0, 100, 5, 25));
 
         private final NumericRange range;
         private final String helpKey;

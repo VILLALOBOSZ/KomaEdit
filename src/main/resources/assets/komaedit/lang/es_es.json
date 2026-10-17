@@ -33,6 +33,8 @@
   "gui.komaedit.stage.modifiers.subtitle": "Controla escala, ritmo, giro y adaptación a superficies",
   "gui.komaedit.stage.material": "Material",
   "gui.komaedit.stage.material.subtitle": "Asigna bloques, degradados y sombreado por figura",
+  "gui.komaedit.stage.weather": "Envejecer",
+  "gui.komaedit.stage.weather.subtitle": "Convierte la selección en una ruina con lógica de exposición y apoyo",
   "gui.komaedit.stage.instances": "Instancias",
   "gui.komaedit.stage.instances.subtitle": "Reabre y edita resultados procedurales persistentes",
   "gui.komaedit.stage.recipes": "Recetas",
@@ -113,7 +115,7 @@
   "gui.komaedit.help.top.nodes": "Nodos de la trayectoria · clic para ir a la etapa Trayectoria",
   "gui.komaedit.shortcuts.title": "ATAJOS DEL STUDIO",
   "gui.komaedit.shortcuts.close": "Esc, F1 o clic para cerrar",
-  "gui.komaedit.shortcut.stage.keys": "1 – 7",
+  "gui.komaedit.shortcut.stage.keys": "1 – 8",
   "gui.komaedit.shortcut.stage": "Ir a una etapa (en el orden de la barra lateral)",
   "gui.komaedit.shortcut.next_stage.keys": "Tab / Mayús+Tab",
   "gui.komaedit.shortcut.next_stage": "Etapa siguiente / anterior",
@@ -148,5 +150,8 @@
   "gui.komaedit.shortcut.reset.keys": "Clic derecho",
   "gui.komaedit.shortcut.reset": "Restablecer el valor de serie de un control",
   "gui.komaedit.shortcut.favorite.keys": "★",
-  "gui.komaedit.shortcut.favorite": "Marcar una figura como favorita"
+  "gui.komaedit.shortcut.favorite": "Marcar una figura como favorita",
+  "gui.komaedit.help.weather_intensity": "Cuánto se desgasta la obra: más alto, más musgo, grietas y bloques perdidos.",
+  "gui.komaedit.help.weather_collapse": "Cuánto se derrumba lo que queda sin apoyo.",
+  "gui.komaedit.help.weather_vegetation": "Cuánta vida crece encima: hierba, enredaderas, hojas o algas según el clima."
 }
