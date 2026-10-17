@@ -9,6 +9,7 @@ import com.komainu.moxia.deform.SmoothProfile;
 import com.komainu.moxia.deform.SmoothingOps;
 import com.komainu.moxia.deform.SurfaceOps;
 import com.komainu.moxia.noise.NoiseSpec;
+import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -155,7 +156,7 @@ public final class DeformCommands {
                 if (args.text(0) == null) {
                     throw new IllegalArgumentException("Falta el ruido, por ejemplo deform noise Perlin(F:0.05) 3");
                 }
-                NoiseSpec spec = NoiseSpec.parse(args.text(0));
+                NoiseSpec spec = SavedNoises.parse(player.getUuid(), args.text(0));
                 double strength = args.number(1, 2.0, 0.0, 64.0, "La fuerza");
                 double zoom = args.value("z", 1.0, 0.01, 1_000.0, "El zoom");
                 long seed = args.seed(args.value("seed") != null ? "seed" : "s", random);
@@ -309,7 +310,7 @@ public final class DeformCommands {
                 if (args.text(1) == null) {
                     throw new IllegalArgumentException("Falta el ruido, por ejemplo surface noisify 3 Perlin(F:0.08)");
                 }
-                NoiseSpec spec = NoiseSpec.parse(args.text(1));
+                NoiseSpec spec = SavedNoises.parse(player.getUuid(), args.text(1));
                 double scale = args.number(2, 1.0, 0.01, 1_000.0, "La escala");
                 displacement = SurfaceOps.Displacement.of(spec, scale, seed);
                 smoothRadius = (int) args.number(3, 1.0, 0.0, 8.0, "El radio de suavizado");

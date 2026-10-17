@@ -33,7 +33,7 @@ public final class GradientService {
             throw new IllegalArgumentException("La mezcla debe estar entre 0 y 100");
         }
 
-        List<String> entries = paletteEntries(paletteInput);
+        List<String> entries = paletteEntries(player.getUuid(), paletteInput);
 
         WorldEditService.PlayerContext context = WorldEditService.context(player);
         Region selection = context.session().getSelection(context.world()).clone();
@@ -108,7 +108,7 @@ public final class GradientService {
         if (ditherPercent < 0 || ditherPercent > 100) {
             throw new IllegalArgumentException("La mezcla debe estar entre 0 y 100");
         }
-        List<String> entries = paletteEntries(paletteInput);
+        List<String> entries = paletteEntries(player.getUuid(), paletteInput);
         WorldEditService.PlayerContext context = WorldEditService.context(player);
         List<Pattern> patterns = entries.stream()
                 .map(entry -> WorldEditService.parsePatternUnchecked(context, entry))
@@ -137,10 +137,10 @@ public final class GradientService {
 
     /**
      * Lee la paleta con la notación de ezEdits ({@code ##Magma}, {@code -##Grayscale(1:8)}, {@code oro*3,diamante})
-     * o como la lista {@code a;b;c} de siempre.
+     * o como la lista {@code a;b;c} de siempre, con las paletas guardadas del jugador ({@code #nombre}).
      */
-    static List<String> paletteEntries(String paletteInput) {
-        List<String> entries = PaletteSpec.parse(paletteInput);
+    static List<String> paletteEntries(java.util.UUID playerId, String paletteInput) {
+        List<String> entries = SavedPalettes.parse(playerId, paletteInput);
         if (entries.size() < 2) {
             throw new IllegalArgumentException("La paleta necesita al menos dos bloques, por ejemplo stone;andesite o ##Grayscale");
         }

@@ -55,6 +55,7 @@ public final class KomaEditMod implements ModInitializer {
                 context.server().execute(() -> RecipeActionService.handle(context.player(), payload))
         );
         MoxiaCommands.register();
+        com.komainu.moxia.worldedit.EzExtensions.register();
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (world.isClient() || !(player instanceof ServerPlayerEntity serverPlayer)) {
                 return ActionResult.PASS;
