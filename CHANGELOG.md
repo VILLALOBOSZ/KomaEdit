@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Registra en WorldEdit las máscaras de ezEdits para cualquier orden (`//set`, `//replace`, `//gmask`, pinceles…): `#aim`, `#attached`, `#blocklight`, `#clipblocks`, `#current`, `#eznoisemask`, `#fullblock`, `#fuzzypalette`, `#infested`, `#lightsource`, `#near`, `#palette`, `#radialgradientmask`, `#schemblocks`, `#truelight` y `#vectorgradientmask`, con sus alias.
+- Registra los patrones `#aim`, `#palette`, `#eznoisepattern` (y los atajos `#ridged`, `#smoothcells`, `#voronoiedge`), `#radialgradientpattern`, `#vectorgradientpattern` (`#vectorgradient`) y `#selection`.
+- Añade las paletas guardadas por jugador y mundo: `/komaedit palette` (alias `paleta`) con `list`, `save`, `delete`, `fetch`, `place`, `swap`, `print`, `encode` y `decode`, y `#nombre` en cualquier paleta, también en los degradados.
+- Añade las paletas de serie `##Beige`, `##Brown`, `##DustyBrown`, `##EnchantedDark`, `##EnchantedWarm`, `##EnchantedBright`, `##LegacyWool`, `##Light`, `##Moss`, `##Ice`, `##Rocks`, `##Leaf`, `##LeavesAll`, `##Sand` y `##ShiningGold`, con listas propias.
+- Añade los ruidos guardados: `/komaedit noise` (alias `ruido`) con `list`, `save`, `delete` y `print`, y nueve ruidos de serie por nombre (`ridged`, `smoothcells`, `voronoiedge`, `clouds`, `marble`, `veins`, `pebbles`, `dunes`, `static`) donde se acepte un ruido.
+- Añade `/komaedit sel` (alias `seleccion`): `list`, `save`, `load [-h]`, `delete`, `next`, `here`, `invert`, `delpos2`, `encapsulate` y `encapsulatenear`, como las órdenes de selección de ezEdits.
 - Añade la **Hiedra viva**: `/komaedit ivy` (alias `hiedra`) hace crecer una enredadera desde los puntos P o desde el bloque que miras sobre lo que ya hay construido. Las puntas se pegan a las caras enteras, trepan muros, cruzan tejados, se ramifican, cuelgan con gravedad de dinteles y aleros y florecen; cada bloque lleva sus caras y propiedades de vanilla (`vine`, `glow_lichen`, `moss_carpet`, hojas persistentes, `cave_vines` con bayas, `spore_blossom`).
 - Añade cuatro estilos (`hiedra`, `florido`, `selvatico`, `cueva`) y las banderas `-l` (largo), `-b` (ramas), `-g` (cuelgue), `-n` (tallos) y `-seed`; con la misma semilla sale la misma hiedra. Captura repartida por ticks, cálculo en un worker, una sola edición deshacible con //undo y sin pisar bloques puestos mientras crecía.
 - Registra el avance por ticks de la captura del entorno, que no llegaba a ejecutarse.

@@ -208,6 +208,9 @@ public final class MoxiaCommands {
                 .then(tweakCommand("retocar").requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(literal("help").executes(MoxiaCommands::help))
                 .executes(MoxiaCommands::openHudMenu));
+        PaletteCommands.register(root);
+        NoiseCommands.register(root);
+        SelectionCommands.register(root);
         dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
         dispatcher.register(literal("moxia").requires(MoxiaCommands::canUse).redirect(root));
         dispatcher.register(literal("mx").requires(MoxiaCommands::canUse).redirect(root));
