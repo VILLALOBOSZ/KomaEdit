@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Añade **losas y escaleras en la superficie** de las figuras de tubo (`sweep`, `braid`, `noisetube`): cada bloque del borde se mide por octantes con la función implícita de la figura y se sustituye por la losa o escalera orientada que mejor encaja, o se rellena un hueco casi lleno.
+- Añade las banderas `-w slabs|stairs` y `-c <cobertura>` a los comandos de tubo, las opciones de receta `smooth` y `coverage`, y las filas **Piezas** y **Cobertura** al Studio.
+- Calcula las esquinas de las escaleras con la misma regla que Minecraft para que el mundo construido coincida con el holograma.
+- Elige la pieza del mismo material que el patrón (por nombre, con tabla para los casos sin convención y, si no existe, por color de mapa), también con patrones aleatorios y degradados.
+- Dibuja las losas y escaleras en el holograma con su forma real, por medios bloques.
+
 ## 1.1.0 (estable, 2026-10-17)
 
 Primera publicación estable desde `1.0.0`; recoge todo lo integrado en `staging` sobre `4.8.0-alpha.1`.

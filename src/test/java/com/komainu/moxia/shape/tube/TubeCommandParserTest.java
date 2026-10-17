@@ -3,6 +3,7 @@ package com.komainu.moxia.shape.tube;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.ShapeExpression;
 import com.komainu.moxia.shape.ShapeOptions;
+import com.komainu.moxia.shape.smooth.SmoothMode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,6 +63,38 @@ class TubeCommandParserTest {
                 () -> TubeCommandParser.parse(PathShape.SWEEP, "circle", "8", "stone dirt", "stone"));
         assertThrows(IllegalArgumentException.class,
                 () -> TubeCommandParser.parse(PathShape.CHAINLINK, null, "8", "", "stone"));
+    }
+
+    @Test
+    void parsesSmoothBlockFlags() {
+        TubeSettings stairs = TubeSettings.from(TubeCommandParser.parse(
+                PathShape.SWEEP, "circle", "8", "stone -w stairs -c 0.7", "stone").parameters());
+        assertEquals(SmoothMode.STAIRS, stairs.smoothMode());
+        assertEquals(0.7, stairs.coverage(), 1.0E-9);
+
+        TubeSettings slabs = TubeSettings.from(TubeCommandParser.parse(
+                PathShape.BRAID, null, "6", "-w slabs", "oak_log").parameters());
+        assertEquals(SmoothMode.SLABS, slabs.smoothMode());
+        assertEquals(0.5, slabs.coverage(), 0.0, "cobertura por defecto");
+
+        TubeSettings implied = TubeSettings.from(TubeCommandParser.parse(
+                PathShape.NOISE_TUBE, null, "6", "-c 0.3", "stone").parameters());
+        assertEquals(SmoothMode.STAIRS, implied.smoothMode(), "-c sin -w activa losas y escaleras");
+
+        TubeSettings plain = TubeSettings.from(TubeCommandParser.parse(
+                PathShape.SWEEP, "circle", "8", "", "stone").parameters());
+        assertEquals(SmoothMode.NONE, plain.smoothMode());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> TubeCommandParser.parse(PathShape.SWEEP, "circle", "8", "-w triangles", "stone"));
+        assertThrows(IllegalArgumentException.class,
+                () -> TubeCommandParser.parse(PathShape.SWEEP, "circle", "8", "-w stairs -c 1.5", "stone"));
+
+        ShapeExpression expression = ShapeExpression.parse("braid(smooth:slabsandstairs,cobertura:0.8)");
+        TubeSettings fromExpression = TubeSettings.from(
+                expression.shape().defaults().withOptions(expression.options()));
+        assertEquals(SmoothMode.STAIRS, fromExpression.smoothMode());
+        assertEquals(0.8, fromExpression.coverage(), 1.0E-9);
     }
 
     @Test

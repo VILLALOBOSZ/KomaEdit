@@ -3,6 +3,7 @@ package com.komainu.moxia.edit;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.persistence.OperationLedger;
+import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -10,6 +11,7 @@ import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.function.pattern.Pattern;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
+import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockState;
 import net.minecraft.block.Block;
 import net.minecraft.server.MinecraftServer;
@@ -331,18 +333,19 @@ public final class BatchEditService {
                     if (!allowed) {
                         job.protectedBlocks++;
                     } else {
+                        boolean placed = true;
                         if (override == null && job.positionPattern != null) {
                             Pattern resolved = job.positionPattern.pattern(position);
                             if (resolved != null) {
-                                job.editSession.setBlock(position, resolved);
+                                placed = place(job, position, resolved, job.plan.piece(planIndex));
                             }
                         } else if (override == null) {
-                            job.editSession.setBlock(position, job.defaultPattern);
+                            placed = place(job, position, job.defaultPattern, job.plan.piece(planIndex));
                         } else {
                             job.editSession.setBlock(position, override);
                         }
                         int captureIndex = job.plan.captureIndex(planIndex);
-                        if (captureIndex != PackedBlockPlan.NO_CAPTURE) {
+                        if (placed && captureIndex != PackedBlockPlan.NO_CAPTURE) {
                             job.capturedStateIds[captureIndex] = Block.getRawIdFromState(
                                     player.getServerWorld().getBlockState(minecraftPosition)
                             );
@@ -382,6 +385,31 @@ public final class BatchEditService {
             KomaEditMod.LOGGER.error("Batch edit failed for {}", job.playerId, exception);
             player.sendMessage(message("La edición falló: " + readableMessage(exception)), false);
         }
+    }
+
+    /**
+     * Coloca el bloque del patrón o, si el plan pide una losa o escalera, la pieza de ese mismo material. Si el
+     * material no tiene piezas, el bloque de la figura se queda entero y las piezas añadidas fuera se omiten.
+     *
+     * @return {@code false} si la posición se dejó sin tocar
+     */
+    private static boolean place(Job job, BlockVector3 position, Pattern pattern, byte piece)
+            throws MaxChangedBlocksException {
+        if (piece == SmoothPiece.FULL) {
+            job.editSession.setBlock(position, pattern);
+            return true;
+        }
+        BaseBlock base = pattern.applyBlock(position);
+        BlockState shaped = SmoothBlockStates.shape(base, piece);
+        if (shaped != null) {
+            job.editSession.setBlock(position, shaped);
+            return true;
+        }
+        if (SmoothPiece.isAdded(piece)) {
+            return false;
+        }
+        job.editSession.setBlock(position, base);
+        return true;
     }
 
     private static void finish(Job job, ServerPlayerEntity player, boolean cancelled) {
