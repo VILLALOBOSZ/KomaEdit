@@ -237,7 +237,7 @@ final class FigureMaterialField {
             case PILLAR_ARCHES -> axis * 0.38 + relief * 0.42 + motifWave * 0.20;
             case TORII -> axis * 0.44 + angularWave * 0.32 + relief * 0.24;
             case ARCH_BRIDGE -> axis * 0.58 + relief * 0.42;
-            case SWEEP, BRAID, NOISE_TUBE -> relief * 0.60 + angularWave * 0.20 + motifWave * 0.20;
+            case SWEEP, BRAID, NOISE_TUBE, EXPRESSION -> relief * 0.60 + angularWave * 0.20 + motifWave * 0.20;
         }, 0.0, 1.0);
     }
 
@@ -280,7 +280,7 @@ final class FigureMaterialField {
             case PILLAR_ARCHES -> radius * interpolate(0.65, 1.35, spacing);
             case TORII -> radius * interpolate(0.70, 1.45, spacing);
             case ARCH_BRIDGE -> Math.max(recipe.spacing(), radius * 1.55 * (1.0 + gap));
-            case SWEEP, BRAID, NOISE_TUBE -> radius * interpolate(1.0, 3.0, spacing);
+            case SWEEP, BRAID, NOISE_TUBE, EXPRESSION -> radius * interpolate(1.0, 3.0, spacing);
         });
     }
 

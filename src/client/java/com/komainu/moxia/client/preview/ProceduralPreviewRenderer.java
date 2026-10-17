@@ -408,7 +408,7 @@ public final class ProceduralPreviewRenderer {
             var extensions = recipe.extensions();
             int geometryHash = Objects.hash(
                     recipe.shape(), recipe.radius(), recipe.spacing(), recipe.thickness(), recipe.rollDegrees(),
-                    recipe.height(), recipe.options(),
+                    recipe.height(), recipe.options(), recipe.formula(),
                     extensions.startScalePercent(), extensions.endScalePercent(),
                     extensions.startSpacingPercent(), extensions.endSpacingPercent(),
                     extensions.twistDegrees(), extensions.easing(),

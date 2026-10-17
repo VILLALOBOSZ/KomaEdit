@@ -14,7 +14,8 @@ import java.util.Locale;
  * Parámetros del espacio de tubo resueltos a partir de {@link ShapeParameters}.
  *
  * <p>Las opciones numéricas viven en el mapa de opciones de la receta, así que se pueden guardar,
- * sincronizar y exportar sin cambiar el formato de recetas.</p>
+ * sincronizar y exportar sin cambiar el formato de recetas. La fórmula de la figura Expresión llega ya
+ * compilada en {@code formula} (nula en el resto de figuras).</p>
  */
 public record TubeSettings(
         PathShape shape,
@@ -44,7 +45,8 @@ public record TubeSettings(
         long seed,
         RadiusProgression radii,
         SmoothMode smoothMode,
-        double coverage
+        double coverage,
+        TubeFormula formula
 ) {
     public static TubeSettings from(ShapeParameters parameters) {
         ShapeOptions options = parameters.options();
@@ -95,8 +97,16 @@ public record TubeSettings(
                 (long) options.get("seed", 0.0),
                 RadiusProgression.fromOptions(options),
                 SmoothMode.byIndex((int) Math.round(Math.clamp(options.get("smooth", 0.0), 0.0, 2.0))),
-                Math.clamp(options.get("coverage", PieceFit.DEFAULT_COVERAGE), 0.0, 1.0)
+                Math.clamp(options.get("coverage", PieceFit.DEFAULT_COVERAGE), 0.0, 1.0),
+                shape == PathShape.EXPRESSION ? resolveFormula(options) : null
         );
+    }
+
+    /** La fórmula escrita por el usuario manda; si no hay, la de serie indicada por la opción {@code preset}. */
+    static TubeFormula resolveFormula(ShapeOptions options) {
+        return options.hasFormula()
+                ? TubeFormula.compile(options.formula())
+                : TubeFormulaPreset.byIndex((int) Math.round(options.get("preset", 0.0))).formula();
     }
 
     /** Perfiles 2D barridos por {@code sweep}. El índice se guarda como opción numérica. */
