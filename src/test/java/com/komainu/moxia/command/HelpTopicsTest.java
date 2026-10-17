@@ -15,6 +15,7 @@ class HelpTopicsTest {
         assertEquals("/komaedit path insert ", HelpTopics.suggestionOf("/komaedit path insert <n> [here]"));
         assertEquals("/komaedit path close ", HelpTopics.suggestionOf("/komaedit path close [on|off]"));
         assertEquals("/komaedit path reverse", HelpTopics.suggestionOf("/komaedit path reverse"));
+        assertEquals("/komaedit tweak ", HelpTopics.suggestionOf("/komaedit tweak deinfest|persist"));
     }
 
     @Test

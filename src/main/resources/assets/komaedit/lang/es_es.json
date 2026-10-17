@@ -33,6 +33,8 @@
   "gui.komaedit.stage.modifiers.subtitle": "Controla escala, ritmo, giro y adaptación a superficies",
   "gui.komaedit.stage.material": "Material",
   "gui.komaedit.stage.material.subtitle": "Asigna bloques, degradados y sombreado por figura",
+  "gui.komaedit.stage.weather": "Envejecer",
+  "gui.komaedit.stage.weather.subtitle": "Convierte la selección en una ruina con lógica de exposición y apoyo",
   "gui.komaedit.stage.instances": "Instancias",
   "gui.komaedit.stage.instances.subtitle": "Reabre y edita resultados procedurales persistentes",
   "gui.komaedit.stage.recipes": "Recetas",

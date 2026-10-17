@@ -92,6 +92,16 @@ public final class HelpTopics {
                     new Entry("/komaedit job status", "Progreso de la construcción en curso"),
                     new Entry("/komaedit job cancel", "Cancela la construcción en curso")
             )),
+            new Topic("region", "Sobre lo construido", List.of("hiedra", "ivy", "envejecer", "weather", "retocar", "tweak"),
+                    List.of(
+                            new Entry("/komaedit ivy [estilo] [-l largo] [-b ramas 0–1] [-g cuelgue 0–1] [-n tallos] [-seed semilla]",
+                                    "Hiedra viva desde los puntos P o el bloque que miras (alias hiedra)"),
+                            new Entry("/komaedit ivy cancel", "Detiene la hiedra en curso"),
+                            new Entry("/komaedit weather [intensidad 0–100] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]",
+                                    "Envejece la selección (alias envejecer)"),
+                            new Entry("/komaedit envejecer 70 nevado -d 40", "Ejemplo: ruina nevada con derrumbe"),
+                            new Entry("/komaedit tweak deinfest|persist|waterlog|wax", "Retoques sobre la selección (alias retocar)")
+                    )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),
@@ -131,19 +141,14 @@ public final class HelpTopics {
     }
 
     static String suggestionOf(String syntax) {
-        int cut = syntax.length();
-        for (char marker : new char[]{'<', '['}) {
-            int found = syntax.indexOf(marker);
-            if (found >= 0) {
-                cut = Math.min(cut, found);
+        String[] tokens = syntax.split(" ");
+        StringBuilder prefix = new StringBuilder();
+        for (String token : tokens) {
+            if (token.contains("<") || token.contains("[") || token.contains("|")) {
+                return prefix.toString();
             }
+            prefix.append(token).append(' ');
         }
-        String prefix = syntax.substring(0, cut);
-        // «here|<x>»: se corta antes de la alternativa para no dejar texto a medias.
-        int pipe = prefix.lastIndexOf(' ');
-        if (cut < syntax.length() && pipe >= 0 && prefix.substring(pipe + 1).contains("|")) {
-            prefix = prefix.substring(0, pipe + 1);
-        }
-        return cut == syntax.length() ? syntax : prefix;
+        return syntax;
     }
 }
