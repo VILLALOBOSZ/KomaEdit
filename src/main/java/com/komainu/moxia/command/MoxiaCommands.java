@@ -3,6 +3,9 @@ package com.komainu.moxia.command;
 import com.komainu.moxia.brush.BrushManager;
 import com.komainu.moxia.brush.BrushSettings;
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.BuildEstimate;
+import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.gradient.GradientAxis;
 import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.gradient.GradientService;
@@ -40,6 +43,8 @@ import com.komainu.moxia.sculpt.SculptManager;
 import com.komainu.moxia.sculpt.SculptPreviewManager;
 import com.komainu.moxia.sculpt.SculptProfile;
 import com.komainu.moxia.sculpt.SculptSettings;
+import com.komainu.moxia.weathering.WeatheringService;
+import com.komainu.moxia.weathering.WeatheringSettings;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.ui.QuickBuildPayload;
 import com.mojang.brigadier.CommandDispatcher;
@@ -86,17 +91,20 @@ public final class MoxiaCommands {
     private static final String LIGHTNING_PATTERN =
             "45%light_blue_concrete,25%white_concrete,20%sea_lantern,10%verdant_froglight";
     private static final SuggestionProvider<ServerCommandSource> SHAPE_SUGGESTIONS = (context, builder) -> {
-        Arrays.stream(PathShape.values()).map(PathShape::id).forEach(builder::suggest);
+        Arrays.stream(PathShape.values()).forEach(shape -> builder.suggest(shape.id(), Text.literal(shape.displayName())));
         return builder.buildFuture();
     };
     private static final SuggestionProvider<ServerCommandSource> FIGURE_SUGGESTIONS = (context, builder) -> {
-        Arrays.stream(PathShape.values()).filter(PathShape::isFigure).map(PathShape::id).forEach(builder::suggest);
+        Arrays.stream(PathShape.values()).filter(PathShape::isFigure)
+                .forEach(shape -> builder.suggest(shape.id(), Text.literal(shape.displayName())));
         return builder.buildFuture();
     };
     private static final SuggestionProvider<ServerCommandSource> PROFILE_SUGGESTIONS = (context, builder) -> {
         Arrays.stream(TubeSettings.TubeProfile.values())
-                .map(profile -> profile.usesSides() ? profile.id() + "6" : profile.id())
-                .forEach(builder::suggest);
+                .forEach(profile -> builder.suggest(
+                        profile.usesSides() ? profile.id() + "6" : profile.id(),
+                        Text.literal(profile.displayName() + (profile.usesSides() ? " · el número son los lados" : ""))
+                ));
         return builder.buildFuture();
     };
     private static final SuggestionProvider<ServerCommandSource> TUBE_FLAG_SUGGESTIONS = (context, builder) -> {
@@ -115,6 +123,15 @@ public final class MoxiaCommands {
         var tail = builder.createOffset(builder.getStart() + remaining.lastIndexOf(' ') + 1);
         for (String option : new String[]{"repeat", "stretch", "-n upright", "-n horizontal", "-g 1", "-a x", "-a z",
                 "-y -1", "-p 0:0:0"}) {
+            tail.suggest(option);
+        }
+        return tail.buildFuture();
+    };
+    private static final SuggestionProvider<ServerCommandSource> WEATHER_SUGGESTIONS = (context, builder) -> {
+        String remaining = builder.getRemaining();
+        var tail = builder.createOffset(builder.getStart() + remaining.lastIndexOf(' ') + 1);
+        for (String option : new String[]{"30", "60", "90", "templado", "desierto", "nevado", "hundido", "-d 50",
+                "-v 50", "-seed 7", "-agua"}) {
             tail.suggest(option);
         }
         return tail.buildFuture();
@@ -149,7 +166,8 @@ public final class MoxiaCommands {
         return tail.buildFuture();
     };
     private static final SuggestionProvider<ServerCommandSource> PALETTE_SUGGESTIONS = (context, builder) -> {
-        Arrays.stream(GradientPalette.values()).map(GradientPalette::id).forEach(builder::suggest);
+        Arrays.stream(GradientPalette.values())
+                .forEach(palette -> builder.suggest(palette.id(), Text.literal(palette.displayName())));
         return builder.buildFuture();
     };
     private static final SuggestionProvider<ServerCommandSource> SCULPT_SUGGESTIONS = (context, builder) -> {
@@ -175,7 +193,11 @@ public final class MoxiaCommands {
                 .then(literal("gui").executes(MoxiaCommands::guiHint))
                 .then(literal("shapes").executes(MoxiaCommands::openHudMenu))
                 .then(generationCommand("build", true))
-                .then(pathCommand().requires(source -> can(source, KomaPermissions.PATH)))
+                .then(generationCommand("estimate", false))
+                .then(generationCommand("estimar", false))
+                .then(confirmCommand("confirm"))
+                .then(confirmCommand("confirmar"))
+                .then(PathCommands.command().requires(source -> can(source, KomaPermissions.PATH)))
                 .then(bridgeCommand())
                 .then(pillarCommand())
                 .then(pillarArchesCommand())
@@ -191,6 +213,8 @@ public final class MoxiaCommands {
                 .then(noodlesCommand())
                 .then(bendCommand("bend"))
                 .then(bendCommand("doblar"))
+                .then(weatherCommand("weather"))
+                .then(weatherCommand("envejecer"))
                 .then(sweepCommand("sweep"))
                 .then(sweepCommand("perfil"))
                 .then(tubeCommand("braid", PathShape.BRAID))
@@ -201,14 +225,29 @@ public final class MoxiaCommands {
                 .then(expressionCommand("expresion"))
                 .then(ivyCommand("ivy"))
                 .then(ivyCommand("hiedra"))
+                .then(BrushCommands.brush("pincel"))
+                .then(BrushCommands.brush("ezbrush"))
+                .then(BrushCommands.superwand("superwand"))
+                .then(BrushCommands.superwand("supervarita"))
                 .then(jobCommand())
                 .then(projectCommand())
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(tweakCommand("tweak").requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(tweakCommand("retocar").requires(source -> can(source, KomaPermissions.BUILD)))
-                .then(literal("help").executes(MoxiaCommands::help))
+                .then(HelpCommands.command("help"))
+                .then(HelpCommands.command("ayuda"))
                 .executes(MoxiaCommands::openHudMenu));
+        DeformCommands.register(root);
         PlacementCommands.register(root);
+        GeneratorCommands.register(dispatcher);
+        PaletteCommands.register(root);
+        NoiseCommands.register(root);
+        SelectionCommands.register(root);
+        // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
+        dispatcher.register(literal("komaedit").then(literal("ruta")
+                .requires(source -> can(source, KomaPermissions.PATH))
+                .executes(PathCommands::status)
+                .redirect(root.getChild("path"))));
         dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
         dispatcher.register(literal("moxia").requires(MoxiaCommands::canUse).redirect(root));
         dispatcher.register(literal("mx").requires(MoxiaCommands::canUse).redirect(root));
@@ -637,6 +676,39 @@ public final class MoxiaCommands {
         }
     }
 
+    /**
+     * {@code /komaedit weather [intensidad] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]}: convierte la
+     * selección de WorldEdit en una ruina.
+     */
+    private static LiteralArgumentBuilder<ServerCommandSource> weatherCommand(String name) {
+        return literal(name)
+                .executes(context -> weather(context, ""))
+                .then(argument("weather_options", StringArgumentType.greedyString())
+                        .suggests(WEATHER_SUGGESTIONS)
+                        .executes(context -> weather(context,
+                                StringArgumentType.getString(context, "weather_options"))));
+    }
+
+    private static int weather(CommandContext<ServerCommandSource> context, String options)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            WeatheringSettings settings = WeatheringSettings.parse(options);
+            long seed = WeatheringService.start(player, settings);
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal("Envejeciendo la selección (intensidad " + settings.intensity()
+                            + ", derrumbe " + settings.collapse() + ", vida " + settings.vegetation() + ", "
+                            + settings.style().id() + ", semilla " + seed + ")…").formatted(Formatting.GRAY)),
+                    false
+            );
+            return 1;
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Selecciona la construcción con //pos1 y //pos2");
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
     /** {@code ivy [estilo] [banderas]}: la hiedra viva crece desde las semillas sobre lo que ya hay construido. */
     private static LiteralArgumentBuilder<ServerCommandSource> ivyCommand(String name) {
         return literal(name)
@@ -797,38 +869,11 @@ public final class MoxiaCommands {
         return literal(name).then(shape);
     }
 
-    private static LiteralArgumentBuilder<ServerCommandSource> pathCommand() {
-        return literal("path")
-                .then(literal("add").executes(MoxiaCommands::addTargetPoint))
-                .then(literal("point")
-                        .then(argument("point_x", IntegerArgumentType.integer(-30_000_000, 30_000_000))
-                                .then(argument("point_y", IntegerArgumentType.integer(-2048, 2048))
-                                        .then(argument("point_z", IntegerArgumentType.integer(-30_000_000, 30_000_000))
-                                                .executes(MoxiaCommands::addExactPoint)))))
-                .then(literal("here").executes(MoxiaCommands::addHerePoint))
-                .then(literal("selection").executes(MoxiaCommands::useSelectionPath))
-                .then(literal("circle")
-                        .then(argument("path_radius", IntegerArgumentType.integer(2, 128))
-                                .executes(context -> createCirclePath(
-                                        context,
-                                        IntegerArgumentType.getInteger(context, "path_radius"),
-                                        16
-                                ))
-                                .then(argument("points", IntegerArgumentType.integer(8, 32))
-                                        .executes(context -> createCirclePath(
-                                                context,
-                                                IntegerArgumentType.getInteger(context, "path_radius"),
-                                                IntegerArgumentType.getInteger(context, "points")
-                                        )))))
-                .then(literal("undo").executes(MoxiaCommands::undoPathPoint))
-                .then(literal("clear").executes(MoxiaCommands::clearPath))
-                .then(literal("close").executes(MoxiaCommands::toggleClosedPath))
-                .then(literal("mode")
-                        .then(literal("toggle").executes(MoxiaCommands::togglePathCapture))
-                        .then(literal("on").executes(context -> setPathCapture(context, true)))
-                        .then(literal("off").executes(context -> setPathCapture(context, false))))
-                .then(literal("status").executes(MoxiaCommands::pathStatus))
-                .executes(MoxiaCommands::pathStatus);
+    /** {@code confirm} lanza el Build grande en espera; {@code confirm cancel} lo descarta. */
+    private static LiteralArgumentBuilder<ServerCommandSource> confirmCommand(String name) {
+        return literal(name)
+                .then(literal("cancel").executes(MoxiaCommands::discardPendingBuild))
+                .executes(MoxiaCommands::confirmPendingBuild);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> brushCommand() {
@@ -1825,13 +1870,16 @@ public final class MoxiaCommands {
             String pattern,
             ShapeParameters requestedParameters
     ) throws IncompleteRegionException, InputParseException {
+        // buildNow = false es /komaedit estimate: calcula la misma geometría y solo informa.
+        boolean estimateOnly = !buildNow;
         KomaPermissions.requireBuild(player, requestedParameters.shape().id());
         WorldEditService.validatePattern(player, pattern);
         PathSnapshot pathSnapshot = WorldEditService.resolvePath(player);
         UUID playerId = player.getUuid();
         var server = player.getServer();
         context.getSource().sendFeedback(
-                () -> prefix().append(Text.literal("Calculando geometría 3D fuera del hilo del servidor…")
+                () -> prefix().append(Text.literal((estimateOnly ? "Estimando: " : "")
+                                + "Calculando geometría 3D fuera del hilo del servidor…")
                         .formatted(Formatting.GRAY)),
                 false
         );
@@ -1850,27 +1898,36 @@ public final class MoxiaCommands {
                     if (current == null) {
                         return;
                     }
-                    try {
-                        int changed = BatchEditService.submit(
-                                current,
-                                plan,
-                                pattern,
-                                requestedParameters.shape().displayName()
-                        );
-                        int pieces = plan.pieceCount();
-                        current.getCommandSource().sendFeedback(
-                                () -> prefix().append(Text.literal(
-                                        requestedParameters.shape().displayName() + " en cola: " + changed
-                                                + " bloques" + (pieces == 0
-                                                ? " · espaciado " + requestedParameters.spacing()
-                                                : " · " + pieces + " losas/escaleras")
-                                                + " · /komaedit job status"
-                                ).formatted(Formatting.GREEN)),
-                                false
-                        );
-                    } catch (IllegalArgumentException | IllegalStateException exception) {
-                        fail(current.getCommandSource(), message(exception));
+                    if (estimateOnly) {
+                        reportEstimate(current, requestedParameters.shape().displayName(), BuildEstimate.of(plan));
+                        return;
                     }
+                    Runnable submit = () -> {
+                        try {
+                            int changed = BatchEditService.submit(
+                                    current,
+                                    plan,
+                                    pattern,
+                                    requestedParameters.shape().displayName()
+                            );
+                            int pieces = plan.pieceCount();
+                            current.getCommandSource().sendFeedback(
+                                    () -> prefix().append(Text.literal(
+                                            requestedParameters.shape().displayName() + " en cola: " + changed
+                                                    + " bloques" + (pieces == 0
+                                                    ? " · espaciado " + requestedParameters.spacing()
+                                                    : " · " + pieces + " losas/escaleras")
+                                                    + " · /komaedit job status"
+                                    ).formatted(Formatting.GREEN)),
+                                    false
+                            );
+                        } catch (IllegalArgumentException | IllegalStateException exception) {
+                            fail(current.getCommandSource(), message(exception));
+                        }
+                    };
+                    PendingBuilds.submitOrHold(
+                            current, requestedParameters.shape().displayName(), BuildEstimate.of(plan), submit
+                    );
                 }),
                 throwable -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
@@ -1882,175 +1939,44 @@ public final class MoxiaCommands {
         return 1;
     }
 
-    private static int addTargetPoint(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private static int confirmPendingBuild(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
-            BlockVector3 point = PathManager.addTarget(player);
-            return pointAdded(context.getSource(), player, point);
-        } catch (IllegalArgumentException exception) {
-            return fail(context.getSource(), exception.getMessage());
-        }
-    }
-
-    private static int addExactPoint(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        BlockVector3 point = PathManager.add(player.getUuid(), BlockVector3.at(
-                IntegerArgumentType.getInteger(context, "point_x"),
-                IntegerArgumentType.getInteger(context, "point_y"),
-                IntegerArgumentType.getInteger(context, "point_z")
-        ));
-        return pointAdded(context.getSource(), player, point);
-    }
-
-    private static int addHerePoint(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        try {
-            BlockVector3 point = PathManager.addHere(player);
-            return pointAdded(context.getSource(), player, point);
-        } catch (IllegalArgumentException exception) {
-            return fail(context.getSource(), exception.getMessage());
-        }
-    }
-
-    private static int useSelectionPath(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        try {
-            PathSnapshot selection = WorldEditService.selectionPath(player);
-            PathManager.replace(player.getUuid(), selection.points());
-            PathHologramSync.sync(player);
+            String description = PendingBuilds.confirm(player);
             context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal(
-                            "Trayectoria importada: " + selection.points().size() + " puntos de WorldEdit"
-                    ).formatted(Formatting.AQUA)),
+                    () -> prefix().append(Text.literal("Confirmado: " + description).formatted(Formatting.GREEN)),
                     false
             );
-            return selection.points().size();
-        } catch (IncompleteRegionException exception) {
-            return fail(context.getSource(), "La selección de WorldEdit está incompleta");
-        } catch (IllegalArgumentException exception) {
-            return fail(context.getSource(), exception.getMessage());
+            return 1;
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
         }
     }
 
-    private static int undoPathPoint(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private static int discardPendingBuild(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        if (!PathManager.removeLast(player.getUuid())) {
-            return fail(context.getSource(), "La trayectoria no tiene puntos");
+        Optional<String> discarded = PendingBuilds.cancel(player.getUuid());
+        if (discarded.isEmpty()) {
+            return fail(context.getSource(), "No hay ningún Build esperando confirmación");
         }
-        PathHologramSync.sync(player);
-        return pathStatus(context);
-    }
-
-    private static int clearPath(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        PathManager.clear(player.getUuid());
-        PathHologramSync.sync(player);
         context.getSource().sendFeedback(
-                () -> prefix().append(Text.literal("Trayectoria eliminada").formatted(Formatting.YELLOW)),
+                () -> prefix().append(Text.literal("Descartado: " + discarded.get()).formatted(Formatting.YELLOW)),
                 false
         );
         return 1;
     }
 
-    private static int toggleClosedPath(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        boolean closed = PathManager.toggleClosed(player.getUuid());
-        PathHologramSync.sync(player);
-        context.getSource().sendFeedback(
-                () -> prefix().append(Text.literal(
-                        "Trayectoria " + (closed ? "cerrada" : "abierta")
-                ).formatted(Formatting.AQUA)),
+    private static void reportEstimate(ServerPlayerEntity player, String description, BuildEstimate estimate) {
+        int threshold = KomaEditConfig.settings().confirmBuildAboveBlocks();
+        int limit = KomaEditConfig.settings().maxBlocksPerOperation();
+        String verdict = estimate.blocks() > limit && !KomaPermissions.can(player, KomaPermissions.LIMIT_UNRESTRICTED)
+                ? " · supera tu límite de " + limit + " bloques"
+                : BuildEstimate.needsConfirmation(estimate.blocks(), threshold) ? " · pedirá confirmación" : "";
+        player.getCommandSource().sendFeedback(
+                () -> prefix().append(Text.literal("Estimación de " + description + ": " + estimate.summary() + verdict)
+                        .formatted(Formatting.AQUA)),
                 false
         );
-        return closed ? 1 : 0;
-    }
-
-    private static int createCirclePath(
-            CommandContext<ServerCommandSource> context,
-            int radius,
-            int requestedPoints
-    ) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        var center = player.getBlockPos();
-        LinkedHashSet<BlockVector3> uniquePoints = new LinkedHashSet<>();
-        for (int pointIndex = 0; pointIndex < requestedPoints; pointIndex++) {
-            double angle = Math.PI * 2.0 * pointIndex / requestedPoints;
-            uniquePoints.add(BlockVector3.at(
-                    center.getX() + (int) Math.round(Math.cos(angle) * radius),
-                    center.getY(),
-                    center.getZ() + (int) Math.round(Math.sin(angle) * radius)
-            ));
-        }
-        List<BlockVector3> points = new ArrayList<>(uniquePoints);
-        if (points.size() < 3) {
-            return fail(context.getSource(), "El círculo necesita al menos tres puntos distintos");
-        }
-        PathManager.replace(player.getUuid(), points, true);
-        PathHologramSync.sync(player);
-        context.getSource().sendFeedback(
-                () -> prefix().append(Text.literal(
-                        "Círculo creado: radio " + radius + " · " + points.size() + " puntos"
-                ).formatted(Formatting.AQUA)),
-                false
-        );
-        return points.size();
-    }
-
-    private static int pathStatus(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        PathSnapshot path = PathManager.saved(player.getUuid());
-        context.getSource().sendFeedback(
-                () -> prefix().append(Text.literal(
-                        path.points().size() + " puntos · " + (path.closed() ? "cerrada" : "abierta")
-                                + (PathManager.isCaptureMode(player.getUuid()) ? " · captura activa" : "")
-                                + (path.points().size() < 2 ? " · se usará la selección de WorldEdit" : "")
-                ).formatted(Formatting.AQUA)),
-                false
-        );
-        return path.points().size();
-    }
-
-    private static int pointAdded(ServerCommandSource source, ServerPlayerEntity player, BlockVector3 point) {
-        PathSnapshot path = PathManager.saved(player.getUuid());
-        PathHologramSync.sync(player);
-        source.sendFeedback(
-                () -> prefix().append(Text.literal(
-                        "Punto " + path.points().size() + ": " + point.x() + ", " + point.y() + ", " + point.z()
-                ).formatted(Formatting.AQUA)),
-                false
-        );
-        return path.points().size();
-    }
-
-    private static int togglePathCapture(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        boolean active = PathManager.toggleCaptureMode(player.getUuid());
-        return pathCaptureChanged(context.getSource(), player, active);
-    }
-
-    private static int setPathCapture(
-            CommandContext<ServerCommandSource> context,
-            boolean active
-    ) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        PathManager.setCaptureMode(player.getUuid(), active);
-        return pathCaptureChanged(context.getSource(), player, active);
-    }
-
-    private static int pathCaptureChanged(
-            ServerCommandSource source,
-            ServerPlayerEntity player,
-            boolean active
-    ) {
-        PathHologramSync.sync(player);
-        source.sendFeedback(
-                () -> prefix().append(Text.literal(active
-                        ? "Captura de trayectoria activa · clic derecho para añadir puntos"
-                        : "Captura desactivada · los puntos se conservaron"
-                ).formatted(active ? Formatting.AQUA : Formatting.YELLOW)),
-                false
-        );
-        return active ? 1 : 0;
     }
 
     private static int openHudMenu(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -2072,89 +1998,6 @@ public final class MoxiaCommands {
         return 1;
     }
 
-    private static int help(CommandContext<ServerCommandSource> context) {
-        context.getSource().sendFeedback(
-                () -> prefix().append(Text.literal(
-                                "/komaedit build <figura> [patrón] [escala] [espaciado 2–8] [grosor] [giro]"
-                        )
-                        .formatted(Formatting.AQUA)),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal("Ejemplo: /komaedit build tiles stone 60 5 2 0")
-                        .formatted(Formatting.GRAY),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal(
-                        "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, fishnet, oscillate, "
-                                + "lightning, ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
-                                + "pillararches, torii, archbridge, sweep, braid, noisetube y expression."
-                )
-                        .formatted(Formatting.AQUA),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal(
-                        "Motor exacto (sin huecos, con extremos, normales y radios del tubo) para chainlink, rings, "
-                                + "beads, oscillate, fishnet, honeycomb, knots y coil: /komaedit build "
-                                + "\"coil(engine:exact,end:round)\" stone"
-                )
-                        .formatted(Formatting.GRAY),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal(
-                        "Puente: /komaedit bridge <altura> <ancho> [material] · "
-                                + "Pilar: /komaedit pillar <ancho> <detalle 2–8> [material] · "
-                                + "Arcos: /komaedit pillararches <altura> <ancho> [material] · "
-                                + "Torii: /komaedit torii <altura> <grosor> <detalle 2–8> [material] · "
-                                + "Mandala: /komaedit mandala <tamaño> <simetría 2–8> [material] · "
-                                + "Telaraña: /komaedit web <elasticidad> <separación 2–8> [material] · "
-                                + "Rayos: /komaedit lightning <amplitud> <ramificación 2–8> [material] · "
-                                + "Aro: /komaedit lightningcircle <radio> <ramificación 2–8> [material] · "
-                                + "Nube: /komaedit cloud <tamaño> <organicidad 2–8> [separación] [material] · "
-                                + "Noodles: /komaedit noodles <radio> <espaciado 2–8> [patrón]."
-                ).formatted(Formatting.GRAY),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal(
-                        "Tubos sin huecos: /komaedit sweep <perfil> <radios> [patrón] [-e round|spike|soft|cube] "
-                                + "[-n horizontal|upright] [-t torsión] [-r giro,giroFinal] [-p tensión:sesgo:continuidad] "
-                                + "[-hollow pared] [-w slabs|stairs] [-c cobertura 0–1] · /komaedit braid <radios> · "
-                                + "/komaedit noisetube <radios>. Radios con fotogramas: \"2,0.3:12,2\" o 2_12_2. "
-                                + "-w cambia la superficie por losas o escaleras del mismo material. "
-                                + "Doblar el portapapeles: /komaedit bend [repeat|stretch] [-n upright|horizontal] "
-                                + "[-g hueco] [-a x|z|-x|-z] [-y desplazamiento]."
-                ).formatted(Formatting.GRAY),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal(
-                        "Fórmula: /komaedit expr <radios> [banderas] [patrón] <fórmula…> · x e y de -1 a 1 en la "
-                                + "sección, z a lo largo (en radios), t de 0 a 1, r radio, a ángulo, n repeticiones; "
-                                + "> 0 coloca bloque. De serie: " + TubeFormulaPreset.ids() + " (ventanas8 fija n). "
-                                + "Ej.: /komaedit expr 8 stone r<1&&abs(sin(a*3+z))>0.4"
-                ).formatted(Formatting.GRAY),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal(
-                        "Hiedra viva: /komaedit ivy [" + IvyStyle.ids().replace(", ", "|")
-                                + "] [-l largo] [-b ramas 0–1] [-g cuelgue 0–1] [-n tallos] [-seed semilla] · crece "
-                                + "desde los puntos P o desde el bloque que miras · /komaedit ivy cancel"
-                ).formatted(Formatting.GRAY),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal("Jobs: /komaedit job status|cancel · historial: //undo y //redo.")
-                        .formatted(Formatting.GRAY),
-                false
-        );
-        return 1;
-    }
-
     private static MutableText commandButton(String label, String command, Formatting color) {
         return Text.literal(label).styled(style -> style
                 .withColor(color)
@@ -2168,7 +2011,7 @@ public final class MoxiaCommands {
 
     private static int fail(ServerCommandSource source, String message) {
         source.sendError(prefix().append(Text.literal(
-                message == null || message.isBlank() ? "Operación inválida" : message
+                message == null || message.isBlank() ? "Operación inválida" : CommandHints.enrich(message)
         ).formatted(Formatting.RED)));
         return 0;
     }

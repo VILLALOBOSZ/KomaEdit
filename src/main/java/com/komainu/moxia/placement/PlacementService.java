@@ -3,7 +3,7 @@ package com.komainu.moxia.placement;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.SmoothBlockStates;
-import com.komainu.moxia.gradient.PaletteSpec;
+import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.region.RegionOperationService;
@@ -11,6 +11,8 @@ import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.shape.Vec3;
 import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.worldedit.ez.SavedSelections;
+import com.komainu.moxia.worldedit.ez.SelectionBridge;
 import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.WorldEdit;
@@ -59,7 +61,6 @@ import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 /**
@@ -81,16 +82,7 @@ public final class PlacementService {
     public static final int SNAP_RADIUS = 48;
     private static final long GOLDEN = 0x9E3779B97F4A7C15L;
 
-    /**
-     * Selecciones guardadas ({@code -h Saved(Name:…)}): las registra quien las guarda; sin registro, se avisa.
-     */
-    private static volatile BiFunction<ServerPlayerEntity, String, Region> savedSelections;
-
     private PlacementService() {
-    }
-
-    public static void registerSavedSelections(BiFunction<ServerPlayerEntity, String, Region> lookup) {
-        savedSelections = lookup;
     }
 
     /** @return el texto de la confirmación inicial */
@@ -292,11 +284,14 @@ public final class PlacementService {
         }
     }
 
-    /** Paleta de ezEdits ({@code ##Magma}, {@code a,b,c}…); cada entrada tiene que ser un bloque concreto. */
+    /**
+     * Paleta de ezEdits ({@code ##Magma}, {@code a,b,c}, {@code #guardada}…); cada entrada tiene que ser un bloque
+     * concreto.
+     */
     static List<BlockState> palette(WorldEditService.PlayerContext context, String input) {
         List<BlockState> states = new ArrayList<>();
         ParserContext parser = parser(context);
-        for (String entry : PaletteSpec.parse(input)) {
+        for (String entry : SavedPalettes.parse(context.actor().getUniqueId(), input)) {
             try {
                 BaseBlock block = WorldEdit.getInstance().getBlockFactory().parseFromInput(entry, parser);
                 states.add(block.toImmutableState());
@@ -349,20 +344,18 @@ public final class PlacementService {
             }
             case "active", "a", "seleccion", "saved", "s", "guardada" -> {
                 call.requireOnly("useoriginalposition", "p", "name", "n", "nombre", "offset", "o");
-                boolean saved = name.startsWith("s") || name.equals("guardada");
+                boolean saved = name.equals("saved") || name.equals("s") || name.equals("guardada");
                 Region region;
                 if (saved) {
                     String selection = call.get("name", "n", "nombre");
                     if (selection == null) {
                         throw new IllegalArgumentException("Saved necesita el nombre: Saved(Name:mi_seleccion)");
                     }
-                    BiFunction<ServerPlayerEntity, String, Region> lookup = savedSelections;
-                    if (lookup == null) {
-                        throw new IllegalArgumentException("No hay selecciones guardadas disponibles en este servidor");
-                    }
-                    region = lookup.apply(player, selection);
-                    if (region == null) {
-                        throw new IllegalArgumentException("No tienes ninguna selección guardada llamada " + selection);
+                    try {
+                        region = SelectionBridge.selector(SavedSelections.load(player.getUuid(), selection), world)
+                                .getRegion();
+                    } catch (IncompleteRegionException exception) {
+                        throw new IllegalArgumentException("La selección guardada " + selection + " está incompleta");
                     }
                     region = region.clone();
                 } else {

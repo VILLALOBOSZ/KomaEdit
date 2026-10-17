@@ -57,7 +57,22 @@ public final class RegionOperationService {
             String description,
             RegionOperation operation
     ) throws IncompleteRegionException {
-        start(player, WorldEditService.selection(player).clone(), padding, description, operation, null);
+        submit(player, padding, null, description, operation);
+    }
+
+    /**
+     * Igual que {@link #submit(ServerPlayerEntity, int, String, RegionOperation)}, pero la foto cubre además la
+     * caja {@code extra} ({@code {minX, minY, minZ, maxX, maxY, maxZ}}): ahí la operación puede escribir con
+     * {@link RegionEdits#setInCapture} aunque quede lejos de la selección (proyecciones, giros…).
+     */
+    public static void submit(
+            ServerPlayerEntity player,
+            int padding,
+            int[] extra,
+            String description,
+            RegionOperation operation
+    ) throws IncompleteRegionException {
+        start(player, WorldEditService.selection(player).clone(), padding, extra, description, operation, null);
     }
 
     /**
@@ -75,13 +90,14 @@ public final class RegionOperationService {
             String description,
             Consumer<RegionSnapshot> onCaptured
     ) {
-        start(player, region.clone(), padding, description, null, onCaptured);
+        start(player, region.clone(), padding, null, description, null, onCaptured);
     }
 
     private static void start(
             ServerPlayerEntity player,
             Region selection,
             int padding,
+            int[] extra,
             String description,
             RegionOperation operation,
             Consumer<RegionSnapshot> onCaptured
@@ -90,13 +106,35 @@ public final class RegionOperationService {
         BlockVector3 minimum = selection.getMinimumPoint();
         BlockVector3 maximum = selection.getMaximumPoint();
         int margin = Math.clamp(padding, 0, 32);
-        int minimumY = Math.max(world.getBottomY(), minimum.y() - margin);
-        int maximumY = Math.min(world.getTopY() - 1, maximum.y() + margin);
-        int minimumX = minimum.x() - margin;
-        int minimumZ = minimum.z() - margin;
-        int sizeX = maximum.x() + margin - minimumX + 1;
+        int lowX = minimum.x() - margin;
+        int lowY = minimum.y() - margin;
+        int lowZ = minimum.z() - margin;
+        int highX = maximum.x() + margin;
+        int highY = maximum.y() + margin;
+        int highZ = maximum.z() + margin;
+        if (extra != null) {
+            if (extra.length != 6) {
+                throw new IllegalArgumentException("La caja extra necesita seis coordenadas");
+            }
+            lowX = Math.min(lowX, extra[0]);
+            lowY = Math.min(lowY, extra[1]);
+            lowZ = Math.min(lowZ, extra[2]);
+            highX = Math.max(highX, extra[3]);
+            highY = Math.max(highY, extra[4]);
+            highZ = Math.max(highZ, extra[5]);
+        }
+        int minimumY = Math.max(world.getBottomY(), lowY);
+        int maximumY = Math.min(world.getTopY() - 1, highY);
+        int minimumX = lowX;
+        int minimumZ = lowZ;
+        long spanX = (long) highX - minimumX + 1;
+        long spanZ = (long) highZ - minimumZ + 1;
+        if (spanX > MAX_CAPTURE_BLOCKS || spanZ > MAX_CAPTURE_BLOCKS) {
+            throw new IllegalArgumentException("La zona a leer es demasiado grande para esta operación");
+        }
+        int sizeX = (int) spanX;
         int sizeY = maximumY - minimumY + 1;
-        int sizeZ = maximum.z() + margin - minimumZ + 1;
+        int sizeZ = (int) spanZ;
         long volume = (long) sizeX * sizeY * sizeZ;
         if (sizeY <= 0) {
             throw new IllegalArgumentException("La selección está fuera de la altura del mundo");

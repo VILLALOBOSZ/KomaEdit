@@ -1,6 +1,7 @@
 package com.komainu.moxia;
 
 import com.komainu.moxia.brush.BrushManager;
+import com.komainu.moxia.brush.BrushToolInputs;
 import com.komainu.moxia.command.MoxiaCommands;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
@@ -15,6 +16,7 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.persistence.OperationLedger;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.preview.PreviewHologramPayload;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.recipe.RecipeActionService;
@@ -46,6 +48,7 @@ public final class KomaEditMod implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(QuickBuildPayload.ID, QuickBuildPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RecipeCatalogPayload.ID, RecipeCatalogPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(InstanceCatalogPayload.ID, InstanceCatalogPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(PreviewHologramPayload.ID, PreviewHologramPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(EditorActionPayload.ID, EditorActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RecipeActionPayload.ID, RecipeActionPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(EditorActionPayload.ID, (payload, context) ->
@@ -55,6 +58,7 @@ public final class KomaEditMod implements ModInitializer {
                 context.server().execute(() -> RecipeActionService.handle(context.player(), payload))
         );
         MoxiaCommands.register();
+        com.komainu.moxia.worldedit.EzExtensions.register();
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (world.isClient() || !(player instanceof ServerPlayerEntity serverPlayer)) {
                 return ActionResult.PASS;
@@ -94,6 +98,7 @@ public final class KomaEditMod implements ModInitializer {
                 return ActionResult.FAIL;
             }
         });
+        BrushToolInputs.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             try {
                 ProjectStorage.bind(handler.player.getUuid(), server);
@@ -128,6 +133,7 @@ public final class KomaEditMod implements ModInitializer {
             FastPaintService.remove(handler.player.getUuid());
             IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
+            com.komainu.moxia.edit.PendingBuilds.remove(handler.player.getUuid());
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
             RegionOperationService.cancel(handler.player.getUuid());
@@ -143,6 +149,7 @@ public final class KomaEditMod implements ModInitializer {
             SnapshotCaptureService.clearAll();
             AsyncEngine.shutdown();
             PathManager.clearAll();
+            com.komainu.moxia.edit.PendingBuilds.clearAll();
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
             RegionOperationService.clearAll();

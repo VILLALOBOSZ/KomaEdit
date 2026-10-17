@@ -1,6 +1,7 @@
 package com.komainu.moxia.command;
 
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.placement.PlacementBrushStructures;
 import com.komainu.moxia.placement.PlacementService;
 import com.komainu.moxia.placement.PlacementSettings;
 import com.komainu.moxia.placement.ParamText;
@@ -47,6 +48,7 @@ public final class PlacementCommands {
 
     /** Cuelga los comandos de {@code /komaedit} (y de sus alias, que redirigen a la misma raíz). */
     public static void register(LiteralCommandNode<ServerCommandSource> root) {
+        PlacementBrushStructures.register();
         for (String name : new String[]{"place", "colocar"}) {
             root.addChild(command(name, PlacementSettings.Kind.PLACE).build());
         }

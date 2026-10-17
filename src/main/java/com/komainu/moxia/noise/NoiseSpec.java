@@ -1,10 +1,12 @@
 package com.komainu.moxia.noise;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.SplittableRandom;
+import java.util.function.Function;
 
 /**
  * Ruido configurable con la notación de ezEdits: {@code Tipo(clave:valor,...)}, con nombres largos o abreviados y sin
@@ -28,10 +30,83 @@ public final class NoiseSpec {
         this.values = values;
     }
 
+    /**
+     * Ruidos de serie que se pueden usar por su nombre en cualquier sitio que acepte un ruido (y en las máscaras y
+     * patrones de WorldEdit). Son ajustes propios de KomaEdit.
+     */
+    public static final Map<String, String> PRESETS = presets();
+
     public static NoiseSpec parse(String input) {
+        return parse(input, null);
+    }
+
+    /**
+     * Lee un ruido escrito con la notación de ezEdits, el nombre de un ruido de serie ({@link #PRESETS}) o el de un
+     * ruido guardado del jugador (con o sin {@code #} delante).
+     *
+     * @param savedNoises busca los ruidos guardados por nombre en minúsculas; {@code null} si no hay almacén
+     */
+    public static NoiseSpec parse(String input, Function<String, String> savedNoises) {
         if (input == null || input.isBlank()) {
             throw new IllegalArgumentException("Falta el ruido, por ejemplo Perlin() o Ce(F:0.1)");
         }
+        String named = resolveName(input.trim(), savedNoises);
+        return parseDefinition(named == null ? input : named);
+    }
+
+    /** ¿Es el nombre de un ruido de serie o de un tipo? Esos nombres no se pueden usar para guardar ruidos. */
+    public static boolean isReservedName(String name) {
+        String normalized = normalize(name);
+        if (PRESETS.containsKey(normalized)) {
+            return true;
+        }
+        try {
+            Type.byName(normalized);
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    /** Definición de un ruido nombrado (de serie o guardado), o {@code null} si el texto no es un nombre. */
+    private static String resolveName(String text, Function<String, String> savedNoises) {
+        if (text.indexOf('(') >= 0) {
+            return null;
+        }
+        boolean hashed = text.startsWith("#");
+        String name = hashed ? text.substring(1) : text;
+        if (!hashed) {
+            try {
+                Type.byName(name);
+                return null;
+            } catch (IllegalArgumentException ignored) {
+                // No es un tipo: puede ser un ruido de serie o uno guardado.
+            }
+        }
+        String preset = PRESETS.get(normalize(name));
+        if (preset != null) {
+            return preset;
+        }
+        if (savedNoises != null) {
+            String saved = savedNoises.apply(name.toLowerCase(Locale.ROOT));
+            if (saved != null) {
+                return saved;
+            }
+        }
+        if (hashed || savedNoises != null) {
+            throw new IllegalArgumentException(savedNoises == null
+                    ? "Aquí no se pueden usar ruidos guardados (" + text + ")"
+                    : "No existe el ruido " + text + " (ni de serie ni guardado)");
+        }
+        return null;
+    }
+
+    /** Los parámetros escritos, con su nombre canónico, en el orden en que se dieron. */
+    public Map<String, String> parameters() {
+        return values;
+    }
+
+    private static NoiseSpec parseDefinition(String input) {
         String text = input.trim();
         if (text.length() > 512) {
             throw new IllegalArgumentException("El ruido admite como mucho 512 caracteres");
@@ -59,7 +134,7 @@ public final class NoiseSpec {
                 }
             }
         }
-        NoiseSpec spec = new NoiseSpec(text, type, Map.copyOf(values));
+        NoiseSpec spec = new NoiseSpec(text, type, Collections.unmodifiableMap(values));
         spec.build(0L);
         return spec;
     }
@@ -334,6 +409,20 @@ public final class NoiseSpec {
         alias(keys, "gabormagnitude", "gabormagnitude", "gm");
         alias(keys, "sharpness", "sharpness", "h");
         return Map.copyOf(keys);
+    }
+
+    private static Map<String, String> presets() {
+        Map<String, String> presets = new LinkedHashMap<>();
+        presets.put("ridged", "Si(fT:R,fO:5,F:0.03)");
+        presets.put("smoothcells", "Ce(cD:e,cR:1,F:0.04,i:true)");
+        presets.put("voronoiedge", "Ce(cD:e,cR:edge,F:0.05)");
+        presets.put("clouds", "Pe(fT:F,fO:5,F:0.02)");
+        presets.put("marble", "Si(fT:F,fO:3,F:0.02,wT:S,wA:40)");
+        presets.put("veins", "Si(fT:R,fO:3,F:0.015,wT:S,wA:25)");
+        presets.put("pebbles", "Ce(cR:cell,cJ:0.9,F:0.12)");
+        presets.put("dunes", "Pe(F:0.03,z:0.25)");
+        presets.put("static", "White(F:1)");
+        return Collections.unmodifiableMap(presets);
     }
 
     private static void alias(Map<String, String> keys, String canonical, String... names) {
