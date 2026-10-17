@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.komainu.moxia.gradient.GradientAxis;
 import com.komainu.moxia.persistence.AtomicStorage;
 import com.komainu.moxia.persistence.ProjectStorage;
+import com.komainu.moxia.persistence.TolerantListing;
 import com.komainu.moxia.shape.PathShape;
 
 import java.io.IOException;
@@ -39,13 +40,13 @@ public final class RecipeStore {
             return List.of();
         }
         try (var files = Files.list(directory)) {
-            return files
+            List<Path> paths = files
                     .filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".json"))
                     .sorted()
                     .limit(64)
-                    .map(RecipeStore::read)
                     .toList();
+            return TolerantListing.readAll(paths, RecipeStore::read, "la receta");
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudieron listar las recetas: " + exception.getMessage(), exception);
         }

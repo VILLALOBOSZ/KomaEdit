@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Corrige que una sola receta o instancia ilegible (p. ej. de la 4.7, con una figura retirada) desactivase KomaEdit en todo el mundo con «The KomaEdit project is not initialized for this player»: ahora se omite con un aviso en `latest.log` y el proyecto sigue abierto.
+
 ## 1.1.0 (estable, 2026-10-17)
 
 Primera publicación estable desde `1.0.0`; recoge todo lo integrado en `staging` sobre `4.8.0-alpha.1`.
