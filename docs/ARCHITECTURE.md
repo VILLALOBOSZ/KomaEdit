@@ -19,6 +19,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `performance` | Pool acotado, cancelación, cuotas y aislamiento de cálculos |
 | `preview` | Estado de preview y generación de hologramas de trayectoria |
 | `gradient` | Paletas y selección streaming por eje |
+| `generator` | Generadores de ezEdits (formas, noisegen, flowfield, flowline): lógica pura sobre `Volume` y `GeneratedBlocks` |
 | `persistence` | Proyecto por mundo, migraciones, journal, backups y escritura atómica |
 | `permission` | Permisos granulares y excepciones de cuota |
 | `config` | Límites del servidor y política de compatibilidad |
