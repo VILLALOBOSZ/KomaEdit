@@ -20,6 +20,7 @@ import com.komainu.moxia.recipe.SocketPlacement;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.smooth.PieceFit;
 import com.komainu.moxia.shape.smooth.SmoothMode;
+import com.komainu.moxia.shape.tube.TubeEngine;
 import com.komainu.moxia.shape.tube.TubeFigures;
 import com.komainu.moxia.shape.tube.TubeFormula;
 import com.komainu.moxia.shape.tube.TubeFormulaPreset;
@@ -364,14 +365,23 @@ public final class ProceduralStudioScreen extends Screen {
             drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 138, inner,
                     secondaryLabel, draft.height(), Control.HEIGHT);
         }
-        if (tube) {
+        if (tubeRowCount() > 0) {
             drawTubeRows(context, mouseX, mouseY, left + 16, controlsTop + 140, inner);
         }
     }
 
-    /** Filas del espacio de tubo: perfil o fórmula, relleno, extremos, orientación de la sección y piezas. */
+    /**
+     * Filas del espacio de tubo: motor (en las figuras clásicas que tienen versión exacta), perfil o fórmula,
+     * relleno, extremos, orientación de la sección y piezas.
+     */
     private void drawTubeRows(DrawContext context, int mouseX, int mouseY, int x, int y, int inner) {
         int row = 0;
+        if (TubeFigures.hasExactEngine(draft.shape())) {
+            drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Motor", tubeEngine().displayName());
+            if (tubeEngine() != TubeEngine.EXACT) {
+                return;
+            }
+        }
         if (draft.shape() == PathShape.EXPRESSION) {
             drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Fórmula",
                     draft.formula().isEmpty() ? formulaPreset().displayName() : "Propia");
@@ -398,6 +408,25 @@ public final class ProceduralStudioScreen extends Screen {
     private boolean tubeRowsClicked(double mouseX, double mouseY, int x, int y, int inner) {
         int direction = mouseX < x + inner - 80 ? -1 : 1;
         int row = 0;
+        if (TubeFigures.hasExactEngine(draft.shape())) {
+            if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
+                TubeEngine engine = TubeEngine.byIndex(tubeEngine().ordinal() + direction);
+                Map<String, Double> next = new LinkedHashMap<>(draft.options());
+                if (engine == TubeEngine.EXACT) {
+                    next.put(TubeEngine.OPTION, (double) engine.ordinal());
+                } else {
+                    next.remove(TubeEngine.OPTION);
+                }
+                draft = draft.withOptions(next);
+                status = engine == TubeEngine.EXACT
+                        ? "Motor exacto · sin huecos, con extremos, normales, radios por fotogramas y torsión"
+                        : "Motor clásico · la figura se estampa con pinceles";
+                return true;
+            }
+            if (tubeEngine() != TubeEngine.EXACT) {
+                return false;
+            }
+        }
         if (draft.shape() == PathShape.EXPRESSION) {
             if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
                 // Desde una fórmula propia, el primer clic vuelve a la de serie que había debajo.
@@ -478,10 +507,14 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private int tubeRowCount() {
+        int smoothRows = smoothMode() == SmoothMode.NONE ? 1 : 2;
+        if (TubeFigures.hasExactEngine(draft.shape())) {
+            // Motor y, con el exacto, extremos, normales y piezas.
+            return tubeEngine() == TubeEngine.EXACT ? 3 + smoothRows : 1;
+        }
         if (!TubeFigures.supports(draft.shape())) {
             return 0;
         }
-        int smoothRows = smoothMode() == SmoothMode.NONE ? 1 : 2;
         int shapeRows = switch (draft.shape()) {
             case EXPRESSION -> 5;
             case SWEEP -> 4;
@@ -496,6 +529,10 @@ public final class ProceduralStudioScreen extends Screen {
 
     private double coverage() {
         return Math.clamp(tubeOption("coverage", PieceFit.DEFAULT_COVERAGE), 0.0, 1.0);
+    }
+
+    private TubeEngine tubeEngine() {
+        return TubeEngine.byIndex((int) Math.round(tubeOption(TubeEngine.OPTION, 0.0)));
     }
 
     private boolean usesHollowRow() {
@@ -1140,7 +1177,7 @@ public final class ProceduralStudioScreen extends Screen {
                 return true;
             }
         }
-        if (TubeFigures.supports(draft.shape())
+        if (tubeRowCount() > 0
                 && tubeRowsClicked(mouseX, mouseY, left + 16, controlsTop + 140, inner)) {
             return true;
         }

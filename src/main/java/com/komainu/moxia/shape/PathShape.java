@@ -20,6 +20,8 @@ public enum PathShape {
             "crown", "corona", "coronas", "flores", "flowers", "petals"),
     HONEYCOMB("honeycomb", "Panal", "Celdas hexagonales tridimensionales conectadas", 5, 5, 1,
             "panal", "honey", "ho"),
+    FISHNET("fishnet", "Red", "Malla de hilos helicoidales cruzados que envuelve el recorrido", 6, 5, 1,
+            "net", "red", "malla", "fi"),
     OSCILLATE("oscillate", "Oscilar", "Cinta volumétrica que ondula y gira", 4, 5, 1,
             "oscilar", "onda", "os"),
     RIB_LOOPS("ribloops", "Costillas", "Arcos abiertos repetidos con una espina longitudinal", 9, 5, 2,

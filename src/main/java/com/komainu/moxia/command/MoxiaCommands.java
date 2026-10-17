@@ -641,7 +641,8 @@ public final class MoxiaCommands {
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> generationCommand(String name, boolean buildNow) {
-        RequiredArgumentBuilder<ServerCommandSource, String> shape = argument("shape", StringArgumentType.word())
+        // string() acepta lo mismo que word() sin comillas y, entre comillas, expresiones como "coil(engine:exact)".
+        RequiredArgumentBuilder<ServerCommandSource, String> shape = argument("shape", StringArgumentType.string())
                 .suggests(SHAPE_SUGGESTIONS)
                 .executes(context -> generate(context, buildNow, "stone", null, null, null, null));
         RequiredArgumentBuilder<ServerCommandSource, String> pattern = argument("pattern", StringArgumentType.string())
@@ -1990,11 +1991,20 @@ public final class MoxiaCommands {
         );
         context.getSource().sendFeedback(
                 () -> Text.literal(
-                        "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, oscillate, "
+                        "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, fishnet, oscillate, "
                                 + "lightning, ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
                                 + "pillararches, torii, archbridge, sweep, braid, noisetube y expression."
                 )
                         .formatted(Formatting.AQUA),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Motor exacto (sin huecos, con extremos, normales y radios del tubo) para chainlink, rings, "
+                                + "beads, oscillate, fishnet, honeycomb, knots y coil: /komaedit build "
+                                + "\"coil(engine:exact,end:round)\" stone"
+                )
+                        .formatted(Formatting.GRAY),
                 false
         );
         context.getSource().sendFeedback(
