@@ -1,5 +1,7 @@
 package com.komainu.moxia.shape;
 
+import com.komainu.moxia.shape.tube.TubeSettings;
+
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -32,7 +34,7 @@ public record ShapeExpression(PathShape shape, ShapeOptions options) {
             try {
                 number = Double.parseDouble(pair[1].trim());
             } catch (NumberFormatException exception) {
-                throw new IllegalArgumentException("Valor inválido para " + pair[0].trim() + ": " + pair[1].trim());
+                number = symbolicValue(name, pair[0].trim(), pair[1].trim());
             }
             if (!Double.isFinite(number) || Math.abs(number) > 1_000.0) {
                 throw new IllegalArgumentException("Valor fuera de rango para " + pair[0].trim());
@@ -40,6 +42,22 @@ public record ShapeExpression(PathShape shape, ShapeOptions options) {
             options.put(name, number);
         }
         return new ShapeExpression(shape, new ShapeOptions(options));
+    }
+
+    /** Permite escribir {@code profile:star}, {@code end:round} o {@code hollow:true} en vez de índices. */
+    private static double symbolicValue(String name, String rawName, String value) {
+        return switch (name) {
+            case "profile" -> TubeSettings.TubeProfile.byId(value).ordinal();
+            case "end" -> TubeSettings.EndMode.byId(value).ordinal();
+            case "normal" -> TubeSettings.NormalMode.byId(value).ordinal();
+            case "quality" -> TubeSettings.Quality.byId(value).value();
+            case "hollow", "filled" -> switch (value.toLowerCase(Locale.ROOT)) {
+                case "true", "yes", "si", "sí", "on" -> 1.0;
+                case "false", "no", "off" -> 0.0;
+                default -> throw new IllegalArgumentException("Valor inválido para " + rawName + ": " + value);
+            };
+            default -> throw new IllegalArgumentException("Valor inválido para " + rawName + ": " + value);
+        };
     }
 
     private static String canonicalName(String input) {
@@ -56,7 +74,25 @@ public record ShapeExpression(PathShape shape, ShapeOptions options) {
             case "c", "columns" -> "columns";
             case "h", "horizontaloffset" -> "horizontaloffset";
             case "v", "verticaloffset" -> "verticaloffset";
-            case "d", "depth", "depthmultiplier" -> "depthmultiplier";
+            case "d", "depth", "depthmultiplier", "profundidad" -> "depthmultiplier";
+            case "profile", "perfil" -> "profile";
+            case "sides", "lados", "points", "puntas", "petals", "petalos" -> "sides";
+            case "aspect", "aspecto" -> "aspect";
+            case "exponent", "exponente" -> "exponent";
+            case "hollow", "hueco" -> "hollow";
+            case "wall", "pared" -> "wall";
+            case "filled", "fill", "relleno" -> "filled";
+            case "end", "endmode", "extremo", "extremos" -> "end";
+            case "normal", "normalmode", "normales" -> "normal";
+            case "tension" -> "tension";
+            case "bias", "sesgo" -> "bias";
+            case "continuity", "continuidad" -> "continuity";
+            case "twist", "torsion" -> "twist";
+            case "rollend", "girofinal" -> "rollend";
+            case "strands", "hebras" -> "strands";
+            case "frequency", "frecuencia" -> "frequency";
+            case "seed", "semilla" -> "seed";
+            case "k0", "k1", "k2", "k3", "k4", "k5", "p1", "p2", "p3", "p4" -> name;
             default -> throw new IllegalArgumentException("Parámetro de figura desconocido: " + input.trim());
         };
     }

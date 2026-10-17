@@ -1,5 +1,47 @@
 # Changelog
 
+## Unreleased
+
+## 1.1.0 (estable, 2026-10-17)
+
+Primera publicación estable desde `1.0.0`; recoge todo lo integrado en `staging` sobre `4.8.0-alpha.1`.
+
+- Añade el motor de **espacio de tubo**: voxelizado inverso por ladrillos de 8³, árbol de esferas para localizar el eje y figuras implícitas estancas por construcción.
+- Añade **Perfil 2D** (`sweep`) con diez perfiles (círculo, cuadrado, rombo, redondeado, polígono, estrella, flor, cuerda, elipse y rectángulo), relleno macizo o hueco y pared cerrada por morfología.
+- Añade **Trenza** (`braid`) y **Tubo erosionado** (`noisetube`), este último sin fragmentos flotantes.
+- Añade trayectoria Kochanek–Bartels con corrección por cuerda, marcos de mínima rotación con cierre de lazos y normales `consistent`, `horizontal` y `upright`.
+- Añade progresión de radio por fotogramas (`2,0.3:12,2`), extremos `flat`, `soft`, `spike`, `round` y `cube`, torsión por diámetro y giro inicial/final.
+- Aplica escala, espaciado y torsión de los modificadores dentro del espacio de tubo, sin deformación posterior ni puentes.
+- Añade `/komaedit sweep`, `/komaedit perfil`, `/komaedit braid`, `/komaedit trenza`, `/komaedit noisetube` y `/komaedit erosion` con banderas `-e -n -t -r -p -q -s -d -a -x -k -f -hollow -fill`.
+- Añade filas de Perfil, Relleno, Extremos y Normales al Studio para las figuras de tubo.
+- Permite nombres simbólicos en expresiones de figura (`profile:star`, `end:round`, `hollow:true`).
+- Amplía de 16 a 32 los parámetros avanzados por receta.
+- Persiste recetas, instancias y bitácoras dentro de cada mundo, separadas por UUID, en lugar de eliminarlas al desconectarse.
+- Migra de forma no destructiva los datos heredados de `config/komaedit/` al primer acceso al mundo.
+- Añade escrituras atómicas, recuperación de temporales, respaldos `.bak` y checksum SHA-256 para la geometría de instancias.
+- Añade `/komaedit project status` y `/komaedit project backup`, con retención configurable de backups ZIP.
+- Permite reabrir una instancia desde el Studio recuperando también su trayectoria editable.
+- Registra el progreso de jobs de larga duración y marca operaciones interrumpidas después de un cierre inesperado.
+- Añade permisos granulares para trayectoria, figuras, recetas, instancias, selección, pintura, clipboard, historial y backups.
+- Añade límites configurables por operación y para jobs concurrentes en `config/komaedit/config.json`.
+- Internacionaliza en español e inglés la navegación, estados y acciones principales de Procedural Studio.
+- Añade pruebas JUnit para almacenamiento atómico, recuperación, posiciones empaquetadas y curvas de interpolación.
+- Permite recuperar manualmente la publicación de una prerelease de `staging` cuando GitHub no emite el evento automático, sin habilitar publicaciones manuales de `main`.
+- Añade la figura procedural **Rayos**, con núcleos quebrados deterministas, anclajes exactos y ramificación configurable de `2` a `8`.
+- Añade bifurcaciones secundarias en densidades altas y una corona exterior especial para trayectorias cerradas, manteniendo el centro completamente hueco.
+- Añade `/komaedit lightning`, `/komaedit rayos`, `/komaedit lightningcircle` y `/komaedit circulorayos`, con materiales eléctricos predeterminados y compatibilidad con patrones de fuego.
+- Añade la figura procedural **Telaraña**, con nudos gruesos en P1 y P2 unidos por un puente fino, ahusado y ligeramente curvado.
+- Convierte tres o más puntos en anclajes radiales ordenados, con radios rectos y vueltas cóncavas adaptadas a su distribución.
+- Añade controles de apertura, separación, grosor y espiral, holograma exacto, degradados y `/komaedit web`.
+- Elimina la categoría, generadores, comandos, materiales secundarios y hologramas de Assets naturales.
+- Mueve Pilar monumental y Pilares arqueados exclusivamente a la categoría Estructuras, sin duplicarlos en Figuras.
+- Conserva sin cambios las figuras procedurales existentes y su geometría.
+- Separa el versionado de desarrollo (`mod_version`) del versionado estable (`release_version`).
+- Añade automáticamente el SHA corto a la versión interna y al JAR de cada build de desarrollo.
+- Publica cada merge a `staging` como prerelease `komaedit-staging-<versión>-<sha>` en GitHub Releases.
+- Publica `main` únicamente como `komaedit-<release_version>`, sin nombres de canal, alpha ni SHA.
+- Impide reutilizar una versión estable de `main` para un commit diferente.
+
 ## 4.7.0-alpha.1
 
 - Añade la categoría lateral responsive **Assets** al Procedural Studio.

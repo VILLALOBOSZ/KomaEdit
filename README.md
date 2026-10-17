@@ -1,28 +1,32 @@
-# KomaEdit 4.7 Procedural Studio
+# KomaEdit 4.8 Procedural Studio
+
+## Documentación del mod
+
+- [Catálogo funcional completo](docs/MOD_DOCUMENTATION.md)
+- [Arquitectura](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Flujo de contribución](CONTRIBUTING.md)
 
 KomaEdit es un complemento Fabric + WorldEdit para crear **detalle procedural reutilizable** sobre trayectorias 3D. No intenta sustituir las herramientas de selección masiva de WorldEdit ni el modelado general de Axiom: se concentra en convertir un recorrido en una pieza estilizada, repetible y editable mediante recetas.
-
-> `4.7.0-alpha.1` estrena **Assets naturales**: árboles inteligentes, megalitos, troncos ancestrales y raíces monumentales generados desde un solo P1.
 
 ## Flujo de trabajo
 
 1. Pulsa `K` para abrir **Procedural Studio**.
 2. En **Trayectoria**, añade puntos con clic sobre el mundo o con la tecla `P`.
-3. En **Figura**, selecciona una gramática 3D; usa **Estructuras** para arquitectura monumental o **Assets** para naturaleza procedural desde P1.
+3. En **Figura**, selecciona una gramática 3D; usa **Estructuras** para arquitectura monumental orientada por puntos.
 4. En **Modificadores**, añade taper, torsión, fusión procedural, conformado, sockets Kitbash y reparación geométrica.
 5. En **Material**, elige un bloque del registro completo o un degradado guiado por la forma.
 6. Pulsa **Construir receta**. La geometría se calcula fuera del hilo principal y se coloca por lotes; la trayectoria permanece disponible para probar otras configuraciones.
 7. Abre **Instancias** para actualizar o retirar la pieza sin destruir bloques modificados manualmente.
 8. Asigna un nombre y pulsa **Guardar** para reutilizar o exportar la configuración.
 
-Las recetas e instancias son temporales durante la sesión del mundo. Se limpian al entrar y al desconectarse para que cada mundo comience sin configuraciones heredadas. Solo los paquetes exportados en `config/komaedit/packages/` permanecen para poder compartirlos o importarlos después.
+Las recetas, instancias y bitácoras de operación se guardan dentro de cada mundo, separadas por UUID de jugador. KomaEdit migra una sola vez los datos antiguos de `config/komaedit/` y conserva copias de seguridad atómicas para reducir el riesgo de corrupción tras un cierre inesperado.
 
 ## Procedural Studio
 
 - Interfaz flotante: mantiene visible el mundo y no aplica blur ni pausa el juego.
 - Inspector derecho redimensionable y contenido con desplazamiento para resoluciones pequeñas.
-- Categoría lateral **Estructuras** separada, con Pilar, Puente arqueado y Torii.
-- Categoría lateral **Assets** con Árbol épico, Roca monumental, Tronco ancestral y Raíces antiguas.
+- Categoría lateral **Estructuras** separada, con Pilar, Pilares arqueados, Puente arqueado y Torii.
 - Navegación con `WASD`; clic derecho y arrastre para mover la cámara.
 - Trayectoria con raycast de hasta 4096 bloques cargados.
 - Nodos colocables y arrastrables desde el Studio.
@@ -62,13 +66,14 @@ La sección **Deformar** es opcional y no edita los puntos ni suaviza las curvas
 
 Los modificadores ahora deforman una única geometría continua. Ya no dividen el path en figuras independientes, por lo que cadenas, anillos y otras formas no reinician su patrón en cada tramo. Al escoger otra figura se reinician automáticamente todos los modificadores y opciones específicas de la anterior. El botón **Restablecer modificadores** permite volver manualmente a `100%`, sin torsión, sin ritmo, sin conformado y sin Kitbash.
 
-## Figuras conservadas
+## Figuras disponibles
 
 - `chainlink`
 - `scales`
 - `spiked_scales`
 - `beads`
 - `coil`
+- `lightning`
 - `crowns`
 - `honeycomb`
 - `oscillate`
@@ -81,59 +86,44 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `noodles`
 - `mandala`
 - `clouds`
-- `archbridge`
-- `pillar`
-- `pillararches`
-- `torii`
+- `web`
+- `sweep` (perfil 2D en espacio de tubo)
+- `braid` (trenza en espacio de tubo)
+- `noisetube` (tubo erosionado en espacio de tubo)
 
 `scales` y `spiked_scales` continúan usando su muestreo geométrico heredado para preservar exactamente su apariencia. Las demás figuras conservan el spline suavizado actual.
 
-## Assets naturales
+## Telarañas adaptativas
 
-Los assets no son árboles vanilla ampliados ni combinaciones simples de esferas. Cada generador utiliza una gramática espacial propia, ruido determinista y zonas de material explícitas. Coloca **un solo P1** con `P`, abre `K`, entra en **Assets**, ajusta el diseño y construye.
-
-### Árbol épico
-
-- Genera raíces radiales con contrafuertes, tronco curvo y ahusado, ramas Bézier jerárquicas, ramificaciones secundarias, copa erosionada por lóbulos y lianas opcionales.
-- **Crecimiento inteligente:** cliente y servidor analizan 16 sectores alrededor de P1. Si detectan muros, construcciones o masas sólidas, el tronco, las ramas y la copa se inclinan hacia el sector con más espacio libre.
-- La lectura ambiental es dispersa y se almacena temporalmente; no recorre volúmenes completos ni carga chunks lejanos.
-- Controles: **Copa**, **Ramificación**, **Nudos**, **Orientación** y **Altura**.
-- Materiales independientes: **Tronco y ramas** y **Hojas y lianas**.
-
-### Roca monumental
-
-- Crea un megalito sólido mediante un superelipsoide erosionado, ruido de escala amplia, grietas superficiales, estratos y piedras satélite.
-- Controles: **Ancho**, **Erosión**, **Estratos**, **Orientación** y **Altura**.
-- Materiales independientes: **Piedra principal** y **Musgo y estratos**.
-
-### Tronco ancestral
-
-- Genera un tronco caído largo y curvo con taper, extremos erosionados y huecos, raíces expuestas, ramas rotas y crecimientos superficiales.
-- P2 es opcional: si existe, define la dirección; con solo P1 se usa **Orientación**.
-- Controles: **Grosor**, **Desgaste**, **Relieve**, **Orientación** y **Largo**.
-- Materiales independientes: **Madera y corteza** y **Musgo y crecimiento**.
-
-### Raíces antiguas
-
-- Produce un tocón retorcido con raíces radiales, arcos naturales elevados, musgo, vegetación y elementos colgantes.
-- Controles: **Extensión**, **Densidad**, **Relieve**, **Orientación** y **Altura**.
-- Materiales independientes: **Raíz principal** y **Musgo y vegetación**.
-
-El selector utiliza el registro completo de bloques, por lo que ambos materiales pueden ser hojas, slabs, escaleras, bloques de mods u otros estados aceptados por WorldEdit. El holograma usa la misma geometría y la adaptación ambiental se actualiza mediante una caché ligera.
-
-### Comandos rápidos de assets
-
-```text
-/komaedit asset tree <altura> <copa> <detalle 2–8> [tronco] [hojas]
-/komaedit asset boulder <altura> <ancho> <detalle 2–8> [piedra] [musgo]
-/komaedit asset log <largo> <grosor> <detalle 2–8> [madera] [crecimiento]
-/komaedit asset roots <altura> <extensión> <detalle 2–8> [raíz] [vegetación]
-```
+- **Dos puntos:** P1 y P2 forman nudos gruesos unidos por un puente fino. El grosor disminuye progresivamente hacia el centro y la hebra presenta una comba suave.
+- **Tres o más puntos:** cada punto se convierte en un anclaje exterior. Desde el centro salen radios rectos y entre cada par de radios se dibujan arcos cóncavos como una telaraña clásica triangular, cuadrada o circular.
+- **Controles:** **Elasticidad** controla la comba del puente o la curvatura de los arcos, **Separación hilos** ajusta la distancia entre vueltas, **Grosor** modifica los filamentos y **Relieve 3D** levanta los arcos fuera del plano sin mover los anclajes.
+- **Holograma exacto:** la previsualización utiliza la misma geometría que el Build.
+- **Comando rápido:** `/komaedit web <elasticidad> <separación 2–8> [patrón]`.
 
 Ejemplo:
 
 ```text
-/komaedit asset tree 72 24 7 dark_oak_wood azalea_leaves
+/komaedit web 12 4 white_wool
+```
+
+## Rayos ramificados
+
+- **Trayectoria por puntos:** cada par de puntos consecutivos queda unido por un núcleo quebrado. Todos los anclajes se conservan exactamente.
+- **Aleatoriedad estable:** las desviaciones y bifurcaciones se calculan a partir de las coordenadas marcadas; mover un punto cambia el rayo, pero el mismo recorrido siempre produce el mismo holograma y Build.
+- **Ramificación configurable:** valores `2–8`; los valores altos reducen la distancia entre ramas y permiten bifurcaciones secundarias.
+- **Corona hueca:** al cerrar la trayectoria, las descargas se orientan hacia fuera y fuera del plano, formando un aro de electricidad o fuego sin colocar bloques en el centro.
+- **Controles:** **Amplitud**, **Ramificación**, **Grosor núcleo** y **Caos 3D**.
+- **Material predeterminado:** mezcla de concreto celeste y blanco, linterna marina y verdant froglight. Puede sustituirse por magma, shroomlight y bloques naranjas para un aro de fuego.
+- **Comandos rápidos:** `/komaedit lightning <amplitud> <ramificación 2–8> [patrón]` y `/komaedit rayos`.
+- **Círculo automático:** `/komaedit lightningcircle <radio> <ramificación 2–8> [patrón]` o `/komaedit circulorayos`.
+
+Ejemplos:
+
+```text
+/komaedit lightning 8 6
+/komaedit lightningcircle 40 7
+/komaedit circulorayos 48 8 40%magma_block,30%orange_concrete,20%shroomlight,10%yellow_concrete
 ```
 
 ## Mandalas tridimensionales
@@ -154,7 +144,8 @@ Ejemplo:
 
 ## Arquitectura monumental
 
-- **Pilar monumental:** marca la base y la parte superior con `P`; el recorrido define el eje, altura e inclinación. Ajusta **Ancho**, **Detalle**, **Relieve** y **Giro** desde la sección Figura.
+- **Categoría exclusiva:** Pilar monumental y Pilares arqueados aparecen únicamente en **Estructuras**, nunca en la cuadrícula de Figuras.
+- **Pilar monumental:** marca la base y la parte superior con `P`; el recorrido define el eje, altura e inclinación. Ajusta **Ancho**, **Detalle**, **Relieve** y **Giro** desde Estructuras.
 - **Pilares arqueados:** marca dos bases con `P`; KomaEdit levanta un pilar monumental en cada punto y los conecta mediante un arco profundo con dovelas, clave central, vigas y refuerzos.
 - **Altura ajustable:** `Pilares arqueados` muestra un control de altura propio; la separación entre P1 y P2 determina la luz del arco.
 - **Geometría sólida:** bases escalonadas, fuste con éntasis, nervaduras, bandas, contrafuertes y capiteles se generan como una sola pieza construible.
@@ -186,6 +177,21 @@ Ejemplo:
 - **Comandos rápidos:** `/komaedit cloud <tamaño> <organicidad 2–8> [separación] [patrón]` y su alias español `/komaedit nube`.
 - **Rendimiento:** genera directamente un conjunto compacto de vóxeles, cancela cálculos obsoletos y reutiliza el motor asíncrono y el holograma seccionado de las demás figuras.
 
+## Figuras de espacio de tubo
+
+- **Sin huecos por construcción:** `sweep`, `braid` y `noisetube` recorren los bloques cercanos al eje y evalúan en cada uno la función implícita de la figura, en vez de estampar pinceles y puentear lo que queda abierto.
+- **Perfiles 2D:** círculo, cuadrado, rombo, redondeado, polígono, estrella, flor, cuerda, elipse y rectángulo, macizos o huecos con pared cerrada.
+- **Radios por fotogramas:** `2,10,2` o `2,0.3:12,2` engordan y afinan el tubo con interpolación monótona.
+- **Curva y marcos:** Kochanek–Bartels (tensión, sesgo, continuidad) y marcos de mínima rotación; normales `consistent`, `horizontal` o `upright`.
+- **Extremos:** plano, suave, punta, cúpula o cubo.
+- **Modificadores exactos:** escala, espaciado y torsión se aplican al evaluar cada bloque.
+- **Comandos rápidos:** `/komaedit sweep <perfil> <radios> [patrón] [-e …] [-n …] [-t …] [-r …] [-p …] [-hollow …]`, `/komaedit braid <radios>` y `/komaedit noisetube <radios>`.
+
+```text
+/komaedit sweep star5 "2,0.3:12,2" polished_andesite -e spike -t 30
+/komaedit sweep polygon6 10 deepslate_tiles -hollow 2 -n horizontal
+```
+
 ## Materiales integrados
 
 Una receta puede usar:
@@ -205,7 +211,28 @@ En `scales`, las métricas locales usan el mismo paso de fila que la figura orig
 
 ## Instancias editables
 
-Cada construcción avanzada crea un identificador de instancia válido durante la sesión actual. Al actualizarla, KomaEdit reutiliza su trayectoria guardada, calcula la nueva geometría fuera del hilo principal y aplica únicamente el resultado por lotes. Al retirarla, solo elimina bloques que todavía coinciden con el estado colocado por KomaEdit; cualquier edición manual se conserva y se informa al jugador.
+Cada construcción avanzada crea un identificador persistente dentro del mundo actual. Al seleccionar una instancia, KomaEdit recupera también su trayectoria para poder mover los nodos y reconstruirla. Al actualizarla, calcula la nueva geometría fuera del hilo principal y aplica únicamente el resultado por lotes. Al retirarla, solo elimina bloques que todavía coinciden con el estado colocado por KomaEdit; cualquier edición manual se conserva y se informa al jugador.
+
+## Proyectos persistentes y recuperación
+
+- Datos por mundo: `<carpeta-del-mundo>/komaedit/players/<uuid>/`.
+- Escrituras atómicas con archivos temporales y respaldo `.bak` antes de reemplazar datos existentes.
+- Verificación SHA-256 de la geometría binaria de cada instancia.
+- Migración no destructiva de recetas e instancias antiguas desde `config/komaedit/`.
+- Bitácora de jobs con progreso periódico; un job que quedó activo durante un cierre se marca como `INTERRUPTED` al volver a entrar.
+- `/komaedit project status` muestra recetas, instancias, jobs, interrupciones y espacio utilizado.
+- `/komaedit project backup` crea un ZIP del proyecto del jugador; la retención predeterminada es de cinco copias.
+
+## Permisos y cuotas
+
+Los operadores conservan acceso total. En servidores con un proveedor de permisos compatible con WorldEdit, un jugador normal necesita `komaedit.use` y el nodo específico de la herramienta:
+
+- `komaedit.path`, `komaedit.build` o `komaedit.build.<figura>`.
+- `komaedit.instance`, `komaedit.recipe`, `komaedit.select` y `komaedit.paint`.
+- `komaedit.clipboard`, `komaedit.history` y `komaedit.project.backup`.
+- `komaedit.limit.unrestricted` omite el límite de bloques de una operación, pero no el scheduler global.
+
+`config/komaedit/config.json` permite ajustar `maxBlocksPerOperation`, `maxConcurrentJobs`, `backupRetention` y el modo de compatibilidad `rootPermissionGrantsAll`.
 
 ## Paquetes compartibles
 
@@ -226,7 +253,7 @@ Cada construcción avanzada crea un identificador de instancia válido durante l
 - Subida gradual de VBOs, frustum culling, límite de distancia y caché hasta el siguiente cambio geométrico.
 - Cancelación inmediata de previews obsoletos para no competir con la construcción.
 
-Usa `/komaedit job status`, `/komaedit job cancel`, `//undo` y `//redo` para administrar trabajos.
+Usa `/komaedit job status`, `/komaedit job cancel`, `/komaedit project status`, `//undo` y `//redo` para administrar trabajos.
 
 ## Compatibilidad
 
@@ -235,3 +262,5 @@ Usa `/komaedit job status`, `/komaedit job cancel`, `//undo` y `//redo` para adm
 - Fabric API `0.116.6+1.21.1` o posterior
 - WorldEdit `7.3.8` o posterior
 - Java `21`
+
+KomaEdit no es un producto oficial de Minecraft y no está aprobado ni asociado con Mojang o Microsoft.

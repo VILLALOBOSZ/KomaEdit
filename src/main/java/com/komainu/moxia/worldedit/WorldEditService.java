@@ -52,14 +52,8 @@ public final class WorldEditService {
     }
 
     public static PathSnapshot resolvePath(ServerPlayerEntity player) throws IncompleteRegionException {
-        return resolvePath(player, false);
-    }
-
-    public static PathSnapshot resolvePath(ServerPlayerEntity player, boolean allowSinglePoint)
-            throws IncompleteRegionException {
         PathSnapshot saved = PathManager.saved(player.getUuid());
-        int minimum = allowSinglePoint ? 1 : 2;
-        if (saved.points().size() >= minimum) {
+        if (saved.points().size() >= 2) {
             return saved;
         }
         return selectionPath(player);

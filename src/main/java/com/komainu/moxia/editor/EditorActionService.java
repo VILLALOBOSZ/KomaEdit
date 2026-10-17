@@ -3,6 +3,7 @@ package com.komainu.moxia.editor;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathManager;
+import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.function.pattern.Pattern;
@@ -27,9 +28,10 @@ public final class EditorActionService {
 
     public static void handle(ServerPlayerEntity player, EditorActionPayload payload) {
         try {
-            if (!player.hasPermissionLevel(2) && !WorldEditService.hasUsePermission(player)) {
+            if (!KomaPermissions.canAccess(player)) {
                 throw new IllegalArgumentException("No tienes permiso para usar el editor");
             }
+            requireAction(player, payload.action());
             validatePosition(player.getServerWorld(), payload.position());
             switch (payload.action()) {
                 case EditorActionPayload.PATH_ADD -> {
@@ -130,6 +132,20 @@ public final class EditorActionService {
 
         WorldEditService.setCuboid(player, minimum, maximum);
         message(player, "Área mágica: " + visited.size() + " bloques conectados");
+    }
+
+    private static void requireAction(ServerPlayerEntity player, int action) {
+        String permission = switch (action) {
+            case EditorActionPayload.PATH_ADD, EditorActionPayload.PATH_MOVE, EditorActionPayload.PATH_REMOVE ->
+                    KomaPermissions.PATH;
+            case EditorActionPayload.PAINT, EditorActionPayload.PAINT_BEGIN, EditorActionPayload.PAINT_END ->
+                    KomaPermissions.PAINT;
+            case EditorActionPayload.CLIPBOARD_COPY, EditorActionPayload.CLIPBOARD_CUT,
+                 EditorActionPayload.CLIPBOARD_PASTE -> KomaPermissions.CLIPBOARD;
+            case EditorActionPayload.UNDO, EditorActionPayload.REDO -> KomaPermissions.HISTORY;
+            default -> KomaPermissions.SELECT;
+        };
+        KomaPermissions.require(player, permission);
     }
 
     private static void paintSelection(ServerPlayerEntity player, String patternInput)

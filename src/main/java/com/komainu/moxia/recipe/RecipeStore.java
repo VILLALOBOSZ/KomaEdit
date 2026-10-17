@@ -5,15 +5,14 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.komainu.moxia.gradient.GradientAxis;
+import com.komainu.moxia.persistence.AtomicStorage;
+import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.shape.PathShape;
-import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +20,6 @@ import java.util.UUID;
 
 public final class RecipeStore {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path ROOT = FabricLoader.getInstance().getConfigDir()
-            .resolve("komaedit")
-            .resolve("recipes");
-
     private RecipeStore() {
     }
 
@@ -32,13 +27,7 @@ public final class RecipeStore {
         Path target = recipePath(playerId, recipe.name());
         try {
             Files.createDirectories(target.getParent());
-            Path temporary = target.resolveSibling(target.getFileName() + ".tmp");
-            Files.writeString(temporary, GSON.toJson(toJson(recipe)), StandardCharsets.UTF_8);
-            try {
-                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException exception) {
-                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
-            }
+            AtomicStorage.writeString(target, GSON.toJson(toJson(recipe)));
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudo guardar la receta: " + exception.getMessage(), exception);
         }
@@ -71,8 +60,12 @@ public final class RecipeStore {
     }
 
     public static boolean delete(UUID playerId, String name) {
+        Path target = recipePath(playerId, name);
         try {
-            return Files.deleteIfExists(recipePath(playerId, name));
+            boolean deleted = Files.deleteIfExists(target);
+            Files.deleteIfExists(AtomicStorage.temporary(target));
+            Files.deleteIfExists(AtomicStorage.backup(target));
+            return deleted;
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudo eliminar la receta: " + exception.getMessage(), exception);
         }
@@ -217,11 +210,7 @@ public final class RecipeStore {
     }
 
     private static String defaultAccentPattern(PathShape shape) {
-        return switch (shape) {
-            case EPIC_TREE -> "azalea_leaves";
-            case GIANT_BOULDER, FALLEN_LOG, ANCIENT_ROOTS -> "moss_block";
-            default -> "oak_leaves";
-        };
+        return "oak_leaves";
     }
 
     private static Path recipePath(UUID playerId, String name) {
@@ -232,6 +221,6 @@ public final class RecipeStore {
     }
 
     private static Path playerDirectory(UUID playerId) {
-        return ROOT.resolve(playerId.toString());
+        return ProjectStorage.namespace(playerId, "recipes");
     }
 }

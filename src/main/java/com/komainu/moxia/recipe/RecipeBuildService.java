@@ -4,14 +4,13 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.gradient.GradientService;
 import com.komainu.moxia.path.PathSnapshot;
+import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.performance.AsyncEngine;
-import com.komainu.moxia.shape.NaturalAssetEnvironment;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -51,11 +50,11 @@ public final class RecipeBuildService {
                 ? ProceduralInstanceStore.load(playerId, requestedInstanceId)
                 : null;
         String instanceId = update ? previous.id() : UUID.randomUUID().toString();
+        PathSnapshot activePath = PathManager.saved(playerId);
         PathSnapshot storedPath = update
-                ? previous.path()
-                : WorldEditService.resolvePath(player, recipe.shape().isAsset());
+                ? activePath.points().size() >= 2 ? activePath : previous.path()
+                : WorldEditService.resolvePath(player);
         PathSnapshot buildPath = SurfaceConformService.project(player, storedPath, recipe.extensions());
-        ProceduralRecipe resolvedRecipe = NaturalAssetEnvironment.adapt(player.getWorld(), buildPath, recipe);
         KitbashSocketService.Template socketTemplate = KitbashSocketService.capture(player, recipe.extensions());
         var server = player.getServer();
         player.sendMessage(message(
@@ -64,7 +63,7 @@ public final class RecipeBuildService {
 
         AsyncEngine.submit(
                 playerId,
-                () -> preparePlan(resolvedRecipe, buildPath, previous, socketTemplate),
+                () -> preparePlan(recipe, buildPath, previous, socketTemplate),
                 bundle -> server.execute(() -> finish(
                         playerId,
                         server.getPlayerManager().getPlayer(playerId),
@@ -136,9 +135,6 @@ public final class RecipeBuildService {
             KitbashSocketService.Template socketTemplate
     ) {
         GeometryDiagnostics.Result result = RecipeGeometryEngine.generate(buildPath, recipe);
-        LongOpenHashSet accentPositions = new LongOpenHashSet(result.accentBlocks().size());
-        result.accentBlocks().forEach(position ->
-                accentPositions.add(PackedBlockPlan.pack(position.x(), position.y(), position.z())));
         PackedBlockPlan.Builder instanceBuilder = PackedBlockPlan.builder(result.blocks().size());
         result.blocks().forEach(instanceBuilder::addPattern);
         KitbashSocketService.append(instanceBuilder, socketTemplate, buildPath, recipe.extensions());
@@ -148,7 +144,7 @@ public final class RecipeBuildService {
         PackedBlockPlan instancePlan = instanceBuilder.build();
 
         if (previous == null) {
-            return new PlanBundle(instancePlan, capturedPlacement(instancePlan), accentPositions, result.report());
+            return new PlanBundle(instancePlan, capturedPlacement(instancePlan), result.report());
         }
         Long2IntOpenHashMap previousStates = ownership(previous);
         Long2IntOpenHashMap newPositions = new Long2IntOpenHashMap(instancePlan.size());
@@ -182,7 +178,7 @@ public final class RecipeBuildService {
             }
         }
         appendForUpdate(updateBuilder, instancePlan, previousStates);
-        return new PlanBundle(instancePlan, updateBuilder.build(), accentPositions, result.report());
+        return new PlanBundle(instancePlan, updateBuilder.build(), result.report());
     }
 
     private static PackedBlockPlan capturedPlacement(PackedBlockPlan source) {
@@ -274,20 +270,7 @@ public final class RecipeBuildService {
                 }
             };
             int queued;
-            if (recipe.shape().isAsset()) {
-                var context = WorldEditService.context(player);
-                var primaryPattern = WorldEditService.parsePatternUnchecked(context, recipe.pattern());
-                var accentPattern = WorldEditService.parsePatternUnchecked(context, recipe.accentPattern());
-                queued = BatchEditService.submitStyledCapturing(
-                        player,
-                        bundle.placementPlan(),
-                        position -> bundle.accentPositions().contains(PackedBlockPlan.pack(
-                                position.x(), position.y(), position.z()
-                        )) ? accentPattern : primaryPattern,
-                        (update ? "Actualizar " : "Construir ") + recipe.name(),
-                        listener
-                );
-            } else if (recipe.usesGradient()) {
+            if (recipe.usesGradient()) {
                 queued = BatchEditService.submitStyledCapturing(
                         player,
                         bundle.placementPlan(),
@@ -349,9 +332,6 @@ public final class RecipeBuildService {
             throws InputParseException {
         if (!recipe.usesGradient()) {
             WorldEditService.validatePattern(player, recipe.pattern());
-            if (recipe.shape().isAsset()) {
-                WorldEditService.validatePattern(player, recipe.accentPattern());
-            }
             return;
         }
         for (String entry : Arrays.stream(recipe.palette().patterns().split(";"))
@@ -378,7 +358,6 @@ public final class RecipeBuildService {
     private record PlanBundle(
             PackedBlockPlan instancePlan,
             PackedBlockPlan placementPlan,
-            LongOpenHashSet accentPositions,
             GeometryDiagnostics.Report report
     ) {
     }

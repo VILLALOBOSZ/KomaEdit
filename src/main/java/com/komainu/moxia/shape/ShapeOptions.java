@@ -5,6 +5,8 @@ import java.util.Map;
 
 public record ShapeOptions(Map<String, Double> values) {
     public static final ShapeOptions EMPTY = new ShapeOptions(Map.of());
+    /** Máximo de parámetros avanzados por figura; lo comparten recetas y red. */
+    public static final int MAX_ENTRIES = 32;
 
     public ShapeOptions {
         values = Map.copyOf(values);

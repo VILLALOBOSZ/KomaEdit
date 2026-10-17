@@ -1,5 +1,6 @@
 package com.komainu.moxia.shape;
 
+import com.komainu.moxia.shape.tube.TubeFigures;
 import com.sk89q.worldedit.math.BlockVector3;
 
 import java.util.ArrayList;
@@ -15,6 +16,9 @@ public final class ShapeGenerator {
     }
 
     public static Set<BlockVector3> generate(SampledPath path, ShapeParameters parameters) {
+        if (TubeFigures.supports(parameters.shape())) {
+            return TubeFigures.generate(path, parameters, MAX_GENERATED_BLOCKS);
+        }
         VoxelCanvas canvas = new VoxelCanvas(MAX_GENERATED_BLOCKS);
         switch (parameters.shape()) {
             case CHAINLINK -> chainlink(canvas, path, parameters);
@@ -22,6 +26,7 @@ public final class ShapeGenerator {
             case SPIKED_SCALES -> spikedScales(canvas, path, parameters);
             case BEADS -> beads(canvas, path, parameters);
             case COIL -> coil(canvas, path, parameters);
+            case LIGHTNING -> lightning(canvas, path, parameters);
             case CROWNS -> crowns(canvas, path, parameters);
             case HONEYCOMB -> honeycomb(canvas, path, parameters);
             case OSCILLATE -> oscillate(canvas, path, parameters);
@@ -34,12 +39,11 @@ public final class ShapeGenerator {
             case NOODLES -> noodles(canvas, path, parameters);
             case MANDALA -> mandala(canvas, path, parameters);
             case CLOUDS -> organicCloud(canvas, path, parameters);
+            case WEB -> web(canvas, path, parameters);
             case PILLAR -> monumentalPillar(canvas, path, parameters);
             case PILLAR_ARCHES -> pillarArches(canvas, path, parameters);
             case TORII -> torii(canvas, path, parameters);
             case ARCH_BRIDGE -> archBridge(canvas, path, parameters);
-            case EPIC_TREE, GIANT_BOULDER, FALLEN_LOG, ANCIENT_ROOTS ->
-                    throw new IllegalArgumentException("Los assets naturales se generan desde P1");
         }
         return canvas.blocks();
     }
@@ -152,6 +156,555 @@ public final class ShapeGenerator {
             }
             station++;
         }
+    }
+
+    private static void web(VoxelCanvas canvas, SampledPath path, ShapeParameters parameters) {
+        List<Vec3> anchors = uniqueWebAnchors(path.controlPoints());
+        if (anchors.size() == 2) {
+            stickyWebStrand(canvas, anchors.get(0), anchors.get(1), parameters);
+            return;
+        }
+        orbWeb(canvas, sortedWebAnchors(anchors, parameters), parameters);
+    }
+
+    private static void lightning(
+            VoxelCanvas canvas,
+            SampledPath path,
+            ShapeParameters parameters
+    ) {
+        List<Vec3> anchors = lightningAnchors(path.controlPoints(), path.closed());
+        int segmentCount = path.closed() ? anchors.size() : anchors.size() - 1;
+        Vec3 ringCenter = path.closed() ? average(anchors) : null;
+        Vec3 ringNormal = path.closed() ? upwardNormal(webNormal(anchors, ringCenter)) : null;
+        int figureSeed = lightningSeed(anchors, path.closed());
+        int coreThickness = parameters.thickness();
+
+        for (int segment = 0; segment < segmentCount; segment++) {
+            checkInterrupted();
+            Vec3 start = anchors.get(segment);
+            Vec3 end = anchors.get((segment + 1) % anchors.size());
+            int segmentSeed = figureSeed ^ lightningSeed(start, end, segment);
+            List<Vec3> core = lightningPolyline(
+                    start,
+                    end,
+                    parameters.radius(),
+                    parameters.rollDegrees(),
+                    segmentSeed
+            );
+            drawLightningPolyline(canvas, core, coreThickness);
+            lightningBranches(
+                    canvas,
+                    core,
+                    start,
+                    end,
+                    ringCenter,
+                    ringNormal,
+                    parameters,
+                    segmentSeed
+            );
+            canvas.brush(start, Math.min(6, coreThickness + 1));
+            canvas.brush(end, Math.min(6, coreThickness + 1));
+        }
+    }
+
+    private static List<Vec3> lightningAnchors(List<Vec3> controls, boolean closed) {
+        List<Vec3> anchors = new ArrayList<>(controls.size());
+        for (Vec3 control : controls) {
+            if (anchors.isEmpty() || anchors.getLast().distance(control) >= 0.25) {
+                anchors.add(control);
+            }
+        }
+        if (closed && anchors.size() > 1 && anchors.getFirst().distance(anchors.getLast()) < 0.25) {
+            anchors.removeLast();
+        }
+        int minimum = closed ? 3 : 2;
+        if (anchors.size() < minimum) {
+            throw new IllegalArgumentException(
+                    "Los rayos necesitan al menos " + minimum + " puntos diferentes"
+            );
+        }
+        return anchors;
+    }
+
+    private static List<Vec3> lightningPolyline(
+            Vec3 start,
+            Vec3 end,
+            double amplitude,
+            int chaosDegrees,
+            int seed
+    ) {
+        Vec3 axis = end.subtract(start).normalized();
+        double length = start.distance(end);
+        Vec3 firstAxis = lightningPerpendicular(axis);
+        Vec3 secondAxis = axis.cross(firstAxis).normalized();
+        double vertexGap = Math.clamp(amplitude * 0.58, 2.0, 7.0);
+        int vertices = Math.clamp((int) Math.ceil(length / vertexGap), 2, 512);
+        double depthMix = 0.20 + Math.abs(chaosDegrees) / 180.0 * 0.80;
+        double depthSign = chaosDegrees < 0 ? -1.0 : 1.0;
+        List<Vec3> points = new ArrayList<>(vertices + 1);
+        for (int vertex = 0; vertex <= vertices; vertex++) {
+            double progress = vertex / (double) vertices;
+            if (vertex == 0) {
+                points.add(start);
+                continue;
+            }
+            if (vertex == vertices) {
+                points.add(end);
+                continue;
+            }
+            double envelope = Math.pow(Math.sin(Math.PI * progress), 0.58);
+            double firstJitter = signedHash(seed, vertex, 1_103);
+            double secondJitter = signedHash(seed, vertex, 1_117);
+            double pulse = 0.72 + hash01(seed, vertex, 1_121) * 0.28;
+            points.add(start.lerp(end, progress)
+                    .add(firstAxis.multiply(amplitude * envelope * firstJitter * pulse))
+                    .add(secondAxis.multiply(
+                            amplitude * envelope * secondJitter * depthMix * depthSign
+                    )));
+        }
+        return points;
+    }
+
+    private static void drawLightningPolyline(
+            VoxelCanvas canvas,
+            List<Vec3> points,
+            int thickness
+    ) {
+        for (int index = 1; index < points.size(); index++) {
+            canvas.line(points.get(index - 1), points.get(index), thickness);
+        }
+    }
+
+    private static void lightningBranches(
+            VoxelCanvas canvas,
+            List<Vec3> core,
+            Vec3 start,
+            Vec3 end,
+            Vec3 ringCenter,
+            Vec3 ringNormal,
+            ShapeParameters parameters,
+            int seed
+    ) {
+        double density = (parameters.spacing() - 2.0) / 6.0;
+        double segmentLength = start.distance(end);
+        double branchGap = interpolate(30.0, 7.0, density);
+        int branchCount = Math.clamp(
+                (int) Math.round(segmentLength / branchGap) + (parameters.spacing() >= 7 ? 1 : 0),
+                1,
+                128
+        );
+        Vec3 segmentAxis = end.subtract(start).normalized();
+        Vec3 firstAxis = lightningPerpendicular(segmentAxis);
+        Vec3 secondAxis = segmentAxis.cross(firstAxis).normalized();
+        int branchThickness = Math.max(1, parameters.thickness() - 1);
+
+        for (int branch = 0; branch < branchCount; branch++) {
+            double slot = (branch + 0.24 + hash01(seed, branch, 1_201) * 0.52) / branchCount;
+            double progress = Math.clamp(slot, 0.10, 0.90);
+            Vec3 origin = pointAlongPolyline(core, progress);
+            Vec3 direction = lightningBranchDirection(
+                    origin,
+                    segmentAxis,
+                    firstAxis,
+                    secondAxis,
+                    ringCenter,
+                    ringNormal,
+                    seed,
+                    branch
+            );
+            double branchLength = Math.min(
+                    segmentLength * 0.38,
+                    parameters.radius() * interpolate(1.15, 2.95, density)
+                            * interpolate(0.72, 1.28, hash01(seed, branch, 1_223))
+                            + 1.5
+            );
+            Vec3 branchEnd = origin.add(direction.multiply(branchLength));
+            List<Vec3> branchBolt = lightningPolyline(
+                    origin,
+                    branchEnd,
+                    Math.max(0.75, parameters.radius() * 0.32),
+                    parameters.rollDegrees(),
+                    seed ^ branch * 1_229 ^ 0x45D9F3B
+            );
+            drawLightningPolyline(canvas, branchBolt, branchThickness);
+            if (parameters.spacing() >= 6
+                    && hash01(seed, branch, 1_237) < interpolate(0.28, 0.72, density)) {
+                lightningFork(
+                        canvas,
+                        branchBolt,
+                        direction,
+                        firstAxis,
+                        secondAxis,
+                        parameters,
+                        seed,
+                        branch,
+                        branchLength
+                );
+            }
+        }
+    }
+
+    private static Vec3 lightningBranchDirection(
+            Vec3 origin,
+            Vec3 segmentAxis,
+            Vec3 firstAxis,
+            Vec3 secondAxis,
+            Vec3 ringCenter,
+            Vec3 ringNormal,
+            int seed,
+            int branch
+    ) {
+        double lateralAngle = hash01(seed, branch, 1_303) * Math.PI * 2.0;
+        Vec3 randomSide = firstAxis.multiply(Math.cos(lateralAngle))
+                .add(secondAxis.multiply(Math.sin(lateralAngle)))
+                .normalized();
+        if (ringCenter == null || ringNormal == null) {
+            return randomSide
+                    .add(segmentAxis.multiply(signedHash(seed, branch, 1_307) * 0.24))
+                    .normalized();
+        }
+        Vec3 outward = origin.subtract(ringCenter);
+        outward = outward.subtract(ringNormal.multiply(outward.dot(ringNormal))).normalized();
+        if (outward.length() < 1.0E-4) {
+            outward = randomSide;
+        }
+        Vec3 tangent = ringNormal.cross(outward).normalized();
+        return outward.multiply(interpolate(0.72, 1.08, hash01(seed, branch, 1_309)))
+                .add(ringNormal.multiply(interpolate(0.22, 0.82, hash01(seed, branch, 1_313))))
+                .add(tangent.multiply(signedHash(seed, branch, 1_321) * 0.28))
+                .normalized();
+    }
+
+    private static void lightningFork(
+            VoxelCanvas canvas,
+            List<Vec3> parent,
+            Vec3 parentDirection,
+            Vec3 firstAxis,
+            Vec3 secondAxis,
+            ShapeParameters parameters,
+            int seed,
+            int branch,
+            double parentLength
+    ) {
+        double progress = interpolate(0.48, 0.76, hash01(seed, branch, 1_401));
+        Vec3 origin = pointAlongPolyline(parent, progress);
+        double angle = hash01(seed, branch, 1_409) * Math.PI * 2.0;
+        Vec3 side = firstAxis.multiply(Math.cos(angle))
+                .add(secondAxis.multiply(Math.sin(angle)))
+                .normalized();
+        Vec3 direction = parentDirection.multiply(0.44).add(side.multiply(0.90)).normalized();
+        double length = parentLength * interpolate(0.28, 0.52, hash01(seed, branch, 1_419));
+        List<Vec3> fork = lightningPolyline(
+                origin,
+                origin.add(direction.multiply(length)),
+                Math.max(0.55, parameters.radius() * 0.20),
+                parameters.rollDegrees(),
+                seed ^ branch * 1_421 ^ 0x27D4EB2D
+        );
+        drawLightningPolyline(canvas, fork, 1);
+    }
+
+    private static Vec3 pointAlongPolyline(List<Vec3> points, double progress) {
+        double scaled = Math.clamp(progress, 0.0, 1.0) * (points.size() - 1);
+        int index = Math.min(points.size() - 2, (int) Math.floor(scaled));
+        return points.get(index).lerp(points.get(index + 1), scaled - index);
+    }
+
+    private static Vec3 lightningPerpendicular(Vec3 axis) {
+        Vec3 reference = Math.abs(axis.y()) < 0.88 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+        Vec3 perpendicular = axis.cross(reference).normalized();
+        if (perpendicular.length() < 1.0E-4) {
+            return new Vec3(0, 0, 1);
+        }
+        return perpendicular;
+    }
+
+    private static Vec3 upwardNormal(Vec3 normal) {
+        if (normal.y() < -1.0E-6) {
+            return normal.multiply(-1.0);
+        }
+        return normal;
+    }
+
+    private static int lightningSeed(List<Vec3> anchors, boolean closed) {
+        int seed = closed ? 0x5F356495 : 0x2C1B3C6D;
+        for (int index = 0; index < anchors.size(); index++) {
+            Vec3 anchor = anchors.get(index);
+            seed ^= lightningSeed(anchor, anchor, index);
+            seed = Integer.rotateLeft(seed * 0x45D9F3B, 11);
+        }
+        return seed;
+    }
+
+    private static int lightningSeed(Vec3 start, Vec3 end, int segment) {
+        int startX = (int) Math.floor(start.x());
+        int startY = (int) Math.floor(start.y());
+        int startZ = (int) Math.floor(start.z());
+        int endX = (int) Math.floor(end.x());
+        int endY = (int) Math.floor(end.y());
+        int endZ = (int) Math.floor(end.z());
+        int seed = startX * 73_856_093
+                ^ startY * 19_349_663
+                ^ startZ * 83_492_791
+                ^ endX * 1_369_723
+                ^ endY * 4_294_967
+                ^ endZ * 15_485_867
+                ^ segment * 1_048_583;
+        seed ^= seed >>> 16;
+        seed *= 0x45D9F3B;
+        return seed ^ seed >>> 16;
+    }
+
+    private static double signedHash(int first, int second, int salt) {
+        return hash01(first, second, salt) * 2.0 - 1.0;
+    }
+
+    private static List<Vec3> uniqueWebAnchors(List<Vec3> controls) {
+        List<Vec3> unique = new ArrayList<>(controls.size());
+        for (Vec3 control : controls) {
+            boolean duplicate = unique.stream().anyMatch(existing -> existing.distance(control) < 0.25);
+            if (!duplicate) {
+                unique.add(control);
+            }
+        }
+        if (unique.size() < 2) {
+            throw new IllegalArgumentException("La telaraña necesita al menos dos anclajes diferentes");
+        }
+        return unique;
+    }
+
+    private static void stickyWebStrand(
+            VoxelCanvas canvas,
+            Vec3 first,
+            Vec3 second,
+            ShapeParameters parameters
+    ) {
+        Vec3 axis = second.subtract(first).normalized();
+        double length = first.distance(second);
+        Vec3 gravity = new Vec3(0, -1, 0);
+        Vec3 downward = gravity.subtract(axis.multiply(gravity.dot(axis))).normalized();
+        if (downward.length() < 1.0E-4) {
+            downward = new Vec3(1, 0, 0);
+        }
+        Vec3 lateral = axis.cross(downward).normalized();
+        double roll = Math.toRadians(parameters.rollDegrees());
+        Vec3 strandDown = downward.multiply(Math.cos(roll))
+                .add(lateral.multiply(Math.sin(roll)))
+                .normalized();
+        Vec3 strandSide = lateral.multiply(Math.cos(roll))
+                .subtract(downward.multiply(Math.sin(roll)))
+                .normalized();
+        double sag = Math.min(length * 0.16, Math.max(0.75, parameters.radius() * 0.28));
+        double wave = Math.min(length * 0.025, Math.max(0.15, parameters.radius() * 0.06));
+        int bridgeThickness = parameters.thickness();
+        int nodeThickness = Math.clamp(
+                bridgeThickness + (int) Math.ceil(parameters.radius() / 4.0),
+                bridgeThickness + 1,
+                8
+        );
+        int samples = Math.max(4, (int) Math.ceil(length * 2.2));
+        Vec3 previous = first;
+        for (int sample = 1; sample <= samples; sample++) {
+            double progress = sample / (double) samples;
+            Vec3 point = stickyBridgePoint(first, second, strandDown, strandSide, sag, wave, progress);
+            double edgeStrength = Math.pow(Math.abs(progress * 2.0 - 1.0), 3.2);
+            int localThickness = bridgeThickness + (int) Math.round(
+                    (nodeThickness - bridgeThickness) * edgeStrength
+            );
+            canvas.line(previous, point, localThickness);
+            previous = point;
+        }
+        canvas.brush(first, nodeThickness);
+        canvas.brush(second, nodeThickness);
+    }
+
+    private static Vec3 stickyBridgePoint(
+            Vec3 first,
+            Vec3 second,
+            Vec3 downward,
+            Vec3 lateral,
+            double sag,
+            double wave,
+            double progress
+    ) {
+        double envelope = Math.sin(Math.PI * progress);
+        return first.lerp(second, progress)
+                .add(downward.multiply(sag * envelope))
+                .add(lateral.multiply(Math.sin(Math.PI * 2.0 * progress) * wave * envelope));
+    }
+
+    private static List<Vec3> automaticWebAnchors(
+            Vec3 first,
+            Vec3 second,
+            ShapeParameters parameters
+    ) {
+        Vec3 center = first.lerp(second, 0.5);
+        Vec3 majorAxis = second.subtract(first).normalized();
+        Vec3 reference = Math.abs(majorAxis.y()) < 0.92 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+        Vec3 verticalAxis = reference.subtract(majorAxis.multiply(reference.dot(majorAxis))).normalized();
+        Vec3 depthAxis = majorAxis.cross(verticalAxis).normalized();
+        double roll = Math.toRadians(parameters.rollDegrees());
+        Vec3 minorAxis = verticalAxis.multiply(Math.cos(roll))
+                .add(depthAxis.multiply(Math.sin(roll)))
+                .normalized();
+        double majorRadius = first.distance(second) * 0.5;
+        double minorRadius = Math.min(majorRadius * 0.92, Math.max(3.0, parameters.radius()));
+        int spokes = Math.clamp(14 - parameters.spacing(), 6, 12);
+        if ((spokes & 1) != 0) {
+            spokes++;
+        }
+        List<Vec3> anchors = new ArrayList<>(spokes);
+        for (int spoke = 0; spoke < spokes; spoke++) {
+            double angle = Math.PI * 2.0 * spoke / spokes;
+            anchors.add(center
+                    .add(majorAxis.multiply(Math.cos(angle) * majorRadius))
+                    .add(minorAxis.multiply(Math.sin(angle) * minorRadius)));
+        }
+        return anchors;
+    }
+
+    private static List<Vec3> sortedWebAnchors(
+            List<Vec3> anchors,
+            ShapeParameters parameters
+    ) {
+        Vec3 center = average(anchors);
+        Vec3 primaryAxis = anchors.stream()
+                .map(anchor -> anchor.subtract(center))
+                .max((first, second) -> Double.compare(first.length(), second.length()))
+                .orElseThrow()
+                .normalized();
+        Vec3 planeNormal = anchors.stream()
+                .map(anchor -> primaryAxis.cross(anchor.subtract(center)))
+                .max((first, second) -> Double.compare(first.length(), second.length()))
+                .orElseThrow();
+        if (planeNormal.length() < 1.0E-4) {
+            Vec3 first = anchors.getFirst();
+            Vec3 second = anchors.stream()
+                    .max((left, right) -> Double.compare(left.distance(first), right.distance(first)))
+                    .orElseThrow();
+            return automaticWebAnchors(first, second, parameters);
+        }
+        planeNormal = planeNormal.normalized();
+        Vec3 secondaryAxis = planeNormal.cross(primaryAxis).normalized();
+        Vec3 resolvedPrimary = primaryAxis;
+        Vec3 resolvedSecondary = secondaryAxis;
+        return anchors.stream()
+                .sorted((first, second) -> Double.compare(
+                        webAngle(first, center, resolvedPrimary, resolvedSecondary),
+                        webAngle(second, center, resolvedPrimary, resolvedSecondary)
+                ))
+                .toList();
+    }
+
+    private static double webAngle(Vec3 point, Vec3 center, Vec3 primaryAxis, Vec3 secondaryAxis) {
+        Vec3 offset = point.subtract(center);
+        return Math.atan2(offset.dot(secondaryAxis), offset.dot(primaryAxis));
+    }
+
+    private static void orbWeb(
+            VoxelCanvas canvas,
+            List<Vec3> anchors,
+            ShapeParameters parameters
+    ) {
+        Vec3 center = average(anchors);
+        Vec3 normal = webNormal(anchors, center);
+        double averageRadius = anchors.stream()
+                .mapToDouble(anchor -> anchor.distance(center))
+                .average()
+                .orElse(1.0);
+        double ringGap = scaledSpacing(parameters, 4.0, 12.0);
+        double hubFraction = Math.clamp(ringGap / Math.max(averageRadius, ringGap) * 0.55, 0.06, 0.18);
+        int ringCount = Math.clamp(
+                (int) Math.ceil(averageRadius * (1.0 - hubFraction) / ringGap),
+                2,
+                64
+        );
+        int thickness = parameters.thickness();
+        double curvature = Math.clamp(parameters.radius() / 56.0, 0.10, 0.36);
+        double roll = Math.toRadians(parameters.rollDegrees());
+
+        canvas.brush(center, Math.min(5, thickness + 1));
+        for (Vec3 anchor : anchors) {
+            canvas.line(center, anchor, thickness);
+            canvas.brush(anchor, Math.min(6, thickness + 1));
+        }
+        for (int ring = 1; ring <= ringCount; ring++) {
+            double progress = hubFraction + (1.0 - hubFraction) * ring / ringCount;
+            for (int spoke = 0; spoke < anchors.size(); spoke++) {
+                Vec3 start = center.lerp(anchors.get(spoke), progress);
+                Vec3 end = center.lerp(anchors.get((spoke + 1) % anchors.size()), progress);
+                curvedWebThread(
+                        canvas,
+                        start,
+                        end,
+                        center,
+                        normal,
+                        curvature,
+                        roll * progress,
+                        thickness
+                );
+            }
+        }
+    }
+
+    private static void curvedWebThread(
+            VoxelCanvas canvas,
+            Vec3 start,
+            Vec3 end,
+            Vec3 center,
+            Vec3 normal,
+            double curvature,
+            double roll,
+            int thickness
+    ) {
+        Vec3 chordMiddle = start.lerp(end, 0.5);
+        Vec3 inward = center.subtract(chordMiddle).normalized();
+        double radialDistance = (start.distance(center) + end.distance(center)) * 0.5;
+        double bow = Math.min(start.distance(end) * curvature, radialDistance * 0.56);
+        Vec3 arcDirection = inward.multiply(Math.cos(roll))
+                .add(normal.multiply(Math.sin(roll)))
+                .normalized();
+        Vec3 control = chordMiddle.add(arcDirection.multiply(bow));
+        int steps = Math.max(4, (int) Math.ceil(
+                (start.distance(control) + control.distance(end)) * 1.35
+        ));
+        Vec3 previous = start;
+        for (int step = 1; step <= steps; step++) {
+            double progress = step / (double) steps;
+            double inverse = 1.0 - progress;
+            Vec3 point = start.multiply(inverse * inverse)
+                    .add(control.multiply(2.0 * inverse * progress))
+                    .add(end.multiply(progress * progress));
+            canvas.line(previous, point, thickness);
+            previous = point;
+        }
+    }
+
+    private static Vec3 webNormal(List<Vec3> anchors, Vec3 center) {
+        Vec3 strongest = new Vec3(0, 0, 0);
+        for (int first = 0; first < anchors.size(); first++) {
+            Vec3 firstOffset = anchors.get(first).subtract(center);
+            for (int second = first + 1; second < anchors.size(); second++) {
+                Vec3 candidate = firstOffset.cross(anchors.get(second).subtract(center));
+                if (candidate.length() > strongest.length()) {
+                    strongest = candidate;
+                }
+            }
+        }
+        if (strongest.length() >= 1.0E-4) {
+            return strongest.normalized();
+        }
+        Vec3 axis = anchors.getLast().subtract(anchors.getFirst()).normalized();
+        Vec3 reference = Math.abs(axis.y()) < 0.92 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+        return axis.cross(reference).normalized();
+    }
+
+    private static Vec3 average(List<Vec3> points) {
+        Vec3 sum = new Vec3(0, 0, 0);
+        for (Vec3 point : points) {
+            sum = sum.add(point);
+        }
+        return sum.multiply(1.0 / points.size());
     }
 
     private static void coil(VoxelCanvas canvas, SampledPath path, ShapeParameters parameters) {

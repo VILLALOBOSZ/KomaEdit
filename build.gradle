@@ -34,6 +34,8 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     modImplementation "com.sk89q.worldedit:worldedit-fabric-mc1.21:${project.worldedit_version}"
+    testImplementation platform("org.junit:junit-bom:5.11.4")
+    testImplementation "org.junit.jupiter:junit-jupiter"
 }
 
 def resourceVersion = project.version.toString()
@@ -48,6 +50,14 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.release = 21
+}
+
+tasks.named("test") {
+    useJUnitPlatform()
+    testLogging {
+        events "failed", "skipped"
+        exceptionFormat "full"
+    }
 }
 
 java {

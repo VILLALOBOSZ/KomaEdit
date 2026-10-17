@@ -7,8 +7,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.path.PathSnapshot;
+import com.komainu.moxia.persistence.AtomicStorage;
+import com.komainu.moxia.persistence.ProjectStorage;
 import com.sk89q.worldedit.math.BlockVector3;
-import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -16,10 +17,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -28,11 +27,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public final class ProceduralInstanceStore {
-    private static final int FORMAT_VERSION = 2;
+    private static final int FORMAT_VERSION = 3;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path ROOT = FabricLoader.getInstance().getConfigDir()
-            .resolve("komaedit")
-            .resolve("instances");
 
     private ProceduralInstanceStore() {
     }
@@ -56,7 +52,7 @@ public final class ProceduralInstanceStore {
         Path blocks = blocksPath(playerId, id);
         try {
             Files.createDirectories(directory);
-            Path temporaryBlocks = blocks.resolveSibling(blocks.getFileName() + ".tmp");
+            Path temporaryBlocks = AtomicStorage.temporary(blocks);
             try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(
                     new GZIPOutputStream(Files.newOutputStream(temporaryBlocks))
             ))) {
@@ -66,13 +62,12 @@ public final class ProceduralInstanceStore {
                     output.writeInt(stateIds[index]);
                 }
             }
-            atomicMove(temporaryBlocks, blocks);
-
             JsonObject root = new JsonObject();
             root.addProperty("version", FORMAT_VERSION);
             root.addProperty("id", id);
             root.addProperty("updatedAt", System.currentTimeMillis());
             root.addProperty("blockCount", geometry.size());
+            root.addProperty("blocksSha256", AtomicStorage.sha256(temporaryBlocks));
             root.add("recipe", RecipeStore.toJson(recipe));
             JsonObject pathJson = new JsonObject();
             pathJson.addProperty("closed", path.closed());
@@ -87,9 +82,10 @@ public final class ProceduralInstanceStore {
             }
             pathJson.add("points", points);
             root.add("path", pathJson);
-            Path temporaryMetadata = metadata.resolveSibling(metadata.getFileName() + ".tmp");
+            Path temporaryMetadata = AtomicStorage.temporary(metadata);
             Files.writeString(temporaryMetadata, GSON.toJson(root), StandardCharsets.UTF_8);
-            atomicMove(temporaryMetadata, metadata);
+            AtomicStorage.replace(temporaryBlocks, blocks);
+            AtomicStorage.replace(temporaryMetadata, metadata);
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudo guardar la instancia: " + exception.getMessage(), exception);
         }
@@ -106,6 +102,9 @@ public final class ProceduralInstanceStore {
             int version = root.get("version").getAsInt();
             if (version < 1 || version > FORMAT_VERSION) {
                 throw new IllegalArgumentException("Versión de instancia no compatible");
+            }
+            if (version >= 3) {
+                root = recoverConsistentPair(metadata, blocks, root);
             }
             JsonObject recipeJson = root.getAsJsonObject("recipe");
             ProceduralRecipe recipe = RecipeStore.fromJson(recipeJson, recipeJson.get("version").getAsInt());
@@ -214,12 +213,46 @@ public final class ProceduralInstanceStore {
     }
 
     public static void delete(UUID playerId, String id) {
+        Path metadata = metadataPath(playerId, id);
+        Path blocks = blocksPath(playerId, id);
         try {
-            Files.deleteIfExists(metadataPath(playerId, id));
-            Files.deleteIfExists(blocksPath(playerId, id));
+            deleteWithRecoveryFiles(metadata);
+            deleteWithRecoveryFiles(blocks);
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudo eliminar la instancia: " + exception.getMessage(), exception);
         }
+    }
+
+    private static JsonObject recoverConsistentPair(Path metadata, Path blocks, JsonObject root) throws IOException {
+        String expected = root.get("blocksSha256").getAsString();
+        if (AtomicStorage.sha256(blocks).equals(expected)) {
+            return root;
+        }
+
+        Path previousBlocks = AtomicStorage.backup(blocks);
+        if (Files.isRegularFile(previousBlocks) && AtomicStorage.sha256(previousBlocks).equals(expected)) {
+            Files.copy(previousBlocks, blocks, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            return root;
+        }
+
+        Path previousMetadata = AtomicStorage.backup(metadata);
+        if (Files.isRegularFile(previousMetadata)) {
+            JsonObject previous = JsonParser.parseString(
+                    Files.readString(previousMetadata, StandardCharsets.UTF_8)
+            ).getAsJsonObject();
+            if (previous.has("blocksSha256")
+                    && AtomicStorage.sha256(blocks).equals(previous.get("blocksSha256").getAsString())) {
+                Files.copy(previousMetadata, metadata, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                return previous;
+            }
+        }
+        throw new IllegalArgumentException("The instance geometry checksum does not match");
+    }
+
+    private static void deleteWithRecoveryFiles(Path target) throws IOException {
+        Files.deleteIfExists(target);
+        Files.deleteIfExists(AtomicStorage.temporary(target));
+        Files.deleteIfExists(AtomicStorage.backup(target));
     }
 
     public static void clear(UUID playerId) {
@@ -249,14 +282,6 @@ public final class ProceduralInstanceStore {
         }
     }
 
-    private static void atomicMove(Path source, Path target) throws IOException {
-        try {
-            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException exception) {
-            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
-        }
-    }
-
     private static Path metadataPath(UUID playerId, String id) {
         validateId(id);
         return playerDirectory(playerId).resolve(id + ".json");
@@ -268,7 +293,7 @@ public final class ProceduralInstanceStore {
     }
 
     private static Path playerDirectory(UUID playerId) {
-        return ROOT.resolve(playerId.toString());
+        return ProjectStorage.namespace(playerId, "instances");
     }
 
     private static void validateId(String id) {

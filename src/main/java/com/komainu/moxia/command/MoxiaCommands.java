@@ -11,7 +11,9 @@ import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.persistence.SculptPresetStore;
+import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.recipe.RecipeExtensions;
@@ -21,6 +23,8 @@ import com.komainu.moxia.shape.ShapeGenerator;
 import com.komainu.moxia.shape.ShapeExpression;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.shape.tube.TubeCommandParser;
+import com.komainu.moxia.shape.tube.TubeSettings;
 import com.komainu.moxia.sculpt.BrushFalloff;
 import com.komainu.moxia.sculpt.BrushMask;
 import com.komainu.moxia.sculpt.SculptBrushType;
@@ -71,13 +75,31 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public final class MoxiaCommands {
+    private static final String LIGHTNING_PATTERN =
+            "45%light_blue_concrete,25%white_concrete,20%sea_lantern,10%verdant_froglight";
     private static final SuggestionProvider<ServerCommandSource> SHAPE_SUGGESTIONS = (context, builder) -> {
-        Arrays.stream(PathShape.values()).filter(shape -> !shape.isAsset()).map(PathShape::id).forEach(builder::suggest);
+        Arrays.stream(PathShape.values()).map(PathShape::id).forEach(builder::suggest);
         return builder.buildFuture();
     };
     private static final SuggestionProvider<ServerCommandSource> FIGURE_SUGGESTIONS = (context, builder) -> {
         Arrays.stream(PathShape.values()).filter(PathShape::isFigure).map(PathShape::id).forEach(builder::suggest);
         return builder.buildFuture();
+    };
+    private static final SuggestionProvider<ServerCommandSource> PROFILE_SUGGESTIONS = (context, builder) -> {
+        Arrays.stream(TubeSettings.TubeProfile.values())
+                .map(profile -> profile.usesSides() ? profile.id() + "6" : profile.id())
+                .forEach(builder::suggest);
+        return builder.buildFuture();
+    };
+    private static final SuggestionProvider<ServerCommandSource> TUBE_FLAG_SUGGESTIONS = (context, builder) -> {
+        String remaining = builder.getRemaining();
+        int lastSpace = remaining.lastIndexOf(' ');
+        var tail = builder.createOffset(builder.getStart() + lastSpace + 1);
+        for (String flag : new String[]{"-e round", "-e spike", "-e soft", "-e cube", "-n horizontal",
+                "-n upright", "-t 90", "-r 0,180", "-p 0:0:0", "-q high", "-hollow 1", "-s 2"}) {
+            tail.suggest(flag);
+        }
+        return tail.buildFuture();
     };
     private static final SuggestionProvider<ServerCommandSource> PALETTE_SUGGESTIONS = (context, builder) -> {
         Arrays.stream(GradientPalette.values()).map(GradientPalette::id).forEach(builder::suggest);
@@ -106,18 +128,29 @@ public final class MoxiaCommands {
                 .then(literal("gui").executes(MoxiaCommands::guiHint))
                 .then(literal("shapes").executes(MoxiaCommands::openHudMenu))
                 .then(generationCommand("build", true))
-                .then(pathCommand())
+                .then(pathCommand().requires(source -> can(source, KomaPermissions.PATH)))
                 .then(bridgeCommand())
                 .then(pillarCommand())
                 .then(pillarArchesCommand())
                 .then(toriiCommand())
-                .then(assetCommand())
                 .then(cloudCommand("cloud"))
                 .then(cloudCommand("nube"))
                 .then(mandalaCommand())
+                .then(webCommand())
+                .then(lightningCommand("lightning"))
+                .then(lightningCommand("rayos"))
+                .then(lightningCircleCommand("lightningcircle"))
+                .then(lightningCircleCommand("circulorayos"))
                 .then(noodlesCommand())
+                .then(sweepCommand("sweep"))
+                .then(sweepCommand("perfil"))
+                .then(tubeCommand("braid", PathShape.BRAID))
+                .then(tubeCommand("trenza", PathShape.BRAID))
+                .then(tubeCommand("noisetube", PathShape.NOISE_TUBE))
+                .then(tubeCommand("erosion", PathShape.NOISE_TUBE))
                 .then(jobCommand())
-                .then(gradientCommand())
+                .then(projectCommand())
+                .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(literal("help").executes(MoxiaCommands::help))
                 .executes(MoxiaCommands::openHudMenu));
         dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
@@ -235,108 +268,6 @@ public final class MoxiaCommands {
         return literal("torii").then(height);
     }
 
-    private static LiteralArgumentBuilder<ServerCommandSource> assetCommand() {
-        return literal("asset")
-                .then(assetVariantCommand(
-                        "tree",
-                        PathShape.EPIC_TREE,
-                        "dark_oak_wood",
-                        "azalea_leaves",
-                        16,
-                        160,
-                        6,
-                        48
-                ))
-                .then(assetVariantCommand(
-                        "boulder",
-                        PathShape.GIANT_BOULDER,
-                        "stone",
-                        "moss_block",
-                        5,
-                        110,
-                        4,
-                        52
-                ))
-                .then(assetVariantCommand(
-                        "log",
-                        PathShape.FALLEN_LOG,
-                        "stripped_dark_oak_wood",
-                        "moss_block",
-                        10,
-                        180,
-                        2,
-                        24
-                ))
-                .then(assetVariantCommand(
-                        "roots",
-                        PathShape.ANCIENT_ROOTS,
-                        "mangrove_roots",
-                        "moss_block",
-                        10,
-                        120,
-                        5,
-                        44
-                ));
-    }
-
-    private static LiteralArgumentBuilder<ServerCommandSource> assetVariantCommand(
-            String commandName,
-            PathShape shape,
-            String defaultPrimary,
-            String defaultAccent,
-            int minimumHeight,
-            int maximumHeight,
-            int minimumRadius,
-            int maximumRadius
-    ) {
-        RequiredArgumentBuilder<ServerCommandSource, Integer> height = argument(
-                commandName + "_height",
-                IntegerArgumentType.integer(minimumHeight, maximumHeight)
-        );
-        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
-                commandName + "_radius",
-                IntegerArgumentType.integer(minimumRadius, maximumRadius)
-        );
-        RequiredArgumentBuilder<ServerCommandSource, Integer> detail = argument(
-                commandName + "_detail",
-                IntegerArgumentType.integer(2, 8)
-        ).executes(context -> generateAsset(
-                context,
-                shape,
-                defaultPrimary,
-                defaultAccent,
-                IntegerArgumentType.getInteger(context, commandName + "_height"),
-                IntegerArgumentType.getInteger(context, commandName + "_radius"),
-                IntegerArgumentType.getInteger(context, commandName + "_detail")
-        ));
-        RequiredArgumentBuilder<ServerCommandSource, String> primary = argument(
-                commandName + "_primary",
-                StringArgumentType.string()
-        ).executes(context -> generateAsset(
-                context,
-                shape,
-                StringArgumentType.getString(context, commandName + "_primary"),
-                defaultAccent,
-                IntegerArgumentType.getInteger(context, commandName + "_height"),
-                IntegerArgumentType.getInteger(context, commandName + "_radius"),
-                IntegerArgumentType.getInteger(context, commandName + "_detail")
-        ));
-        primary.then(argument(commandName + "_accent", StringArgumentType.greedyString())
-                .executes(context -> generateAsset(
-                        context,
-                        shape,
-                        StringArgumentType.getString(context, commandName + "_primary"),
-                        StringArgumentType.getString(context, commandName + "_accent"),
-                        IntegerArgumentType.getInteger(context, commandName + "_height"),
-                        IntegerArgumentType.getInteger(context, commandName + "_radius"),
-                        IntegerArgumentType.getInteger(context, commandName + "_detail")
-                )));
-        detail.then(primary);
-        radius.then(detail);
-        height.then(radius);
-        return literal(commandName).then(height);
-    }
-
     private static LiteralArgumentBuilder<ServerCommandSource> cloudCommand(String commandName) {
         String naturalCloud = "70%white_wool,20%calcite,10%light_gray_wool";
         RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
@@ -412,6 +343,91 @@ public final class MoxiaCommands {
         return literal("mandala").then(radius);
     }
 
+    private static LiteralArgumentBuilder<ServerCommandSource> webCommand() {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> elasticity = argument(
+                "web_elasticity", IntegerArgumentType.integer(3, 64)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> spacing = argument(
+                "web_spacing", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateFixed(
+                context,
+                true,
+                PathShape.WEB,
+                "white_wool",
+                IntegerArgumentType.getInteger(context, "web_elasticity"),
+                IntegerArgumentType.getInteger(context, "web_spacing"),
+                1,
+                0
+        ));
+        spacing.then(argument("web_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateFixed(
+                        context,
+                        true,
+                        PathShape.WEB,
+                        StringArgumentType.getString(context, "web_pattern"),
+                        IntegerArgumentType.getInteger(context, "web_elasticity"),
+                        IntegerArgumentType.getInteger(context, "web_spacing"),
+                        1,
+                        0
+                )));
+        elasticity.then(spacing);
+        return literal("web").then(elasticity);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> lightningCommand(String commandName) {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> amplitude = argument(
+                commandName + "_amplitude", IntegerArgumentType.integer(2, 32)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> branching = argument(
+                commandName + "_branching", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateFixed(
+                context,
+                true,
+                PathShape.LIGHTNING,
+                LIGHTNING_PATTERN,
+                IntegerArgumentType.getInteger(context, commandName + "_amplitude"),
+                IntegerArgumentType.getInteger(context, commandName + "_branching"),
+                1,
+                45
+        ));
+        branching.then(argument(commandName + "_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateFixed(
+                        context,
+                        true,
+                        PathShape.LIGHTNING,
+                        StringArgumentType.getString(context, commandName + "_pattern"),
+                        IntegerArgumentType.getInteger(context, commandName + "_amplitude"),
+                        IntegerArgumentType.getInteger(context, commandName + "_branching"),
+                        1,
+                        45
+                )));
+        amplitude.then(branching);
+        return literal(commandName).then(amplitude);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> lightningCircleCommand(String commandName) {
+        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
+                commandName + "_radius", IntegerArgumentType.integer(4, 128)
+        );
+        RequiredArgumentBuilder<ServerCommandSource, Integer> branching = argument(
+                commandName + "_branching", IntegerArgumentType.integer(2, 8)
+        ).executes(context -> generateLightningCircle(
+                context,
+                LIGHTNING_PATTERN,
+                IntegerArgumentType.getInteger(context, commandName + "_radius"),
+                IntegerArgumentType.getInteger(context, commandName + "_branching")
+        ));
+        branching.then(argument(commandName + "_pattern", StringArgumentType.greedyString())
+                .executes(context -> generateLightningCircle(
+                        context,
+                        StringArgumentType.getString(context, commandName + "_pattern"),
+                        IntegerArgumentType.getInteger(context, commandName + "_radius"),
+                        IntegerArgumentType.getInteger(context, commandName + "_branching")
+                )));
+        radius.then(branching);
+        return literal(commandName).then(radius);
+    }
+
     private static LiteralArgumentBuilder<ServerCommandSource> noodlesCommand() {
         return literal("noodles").then(noodlesArguments());
     }
@@ -446,6 +462,61 @@ public final class MoxiaCommands {
                 )));
         radius.then(flow);
         return radius;
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> sweepCommand(String name) {
+        RequiredArgumentBuilder<ServerCommandSource, String> profile = argument(
+                "sweep_profile", StringArgumentType.word()
+        ).suggests(PROFILE_SUGGESTIONS);
+        profile.then(tubeArguments(PathShape.SWEEP, "sweep_profile", "stone"));
+        return literal(name).then(profile);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> tubeCommand(String name, PathShape shape) {
+        String pattern = shape == PathShape.BRAID
+                ? "stripped_birch_wood"
+                : "60%stone,25%andesite,15%cobblestone";
+        return literal(name).then(tubeArguments(shape, null, pattern));
+    }
+
+    /** {@code <radios> [patrón y banderas]}: los radios admiten fotogramas, p. ej. {@code 2,0.3:12,2}. */
+    private static RequiredArgumentBuilder<ServerCommandSource, String> tubeArguments(
+            PathShape shape,
+            String profileArgument,
+            String defaultPattern
+    ) {
+        RequiredArgumentBuilder<ServerCommandSource, String> radii = argument(
+                "tube_radii", StringArgumentType.string()
+        ).executes(context -> generateTube(context, shape, profileArgument, defaultPattern, ""));
+        radii.then(argument("tube_options", StringArgumentType.greedyString())
+                .suggests(TUBE_FLAG_SUGGESTIONS)
+                .executes(context -> generateTube(context, shape, profileArgument, defaultPattern,
+                        StringArgumentType.getString(context, "tube_options"))));
+        return radii;
+    }
+
+    private static int generateTube(
+            CommandContext<ServerCommandSource> context,
+            PathShape shape,
+            String profileArgument,
+            String defaultPattern,
+            String options
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            TubeCommandParser.Result parsed = TubeCommandParser.parse(
+                    shape,
+                    profileArgument == null ? null : StringArgumentType.getString(context, profileArgument),
+                    StringArgumentType.getString(context, "tube_radii"),
+                    options,
+                    defaultPattern
+            );
+            return enqueueShape(context, player, true, parsed.pattern(), parsed.parameters());
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> generationCommand(String name, boolean buildNow) {
@@ -689,6 +760,15 @@ public final class MoxiaCommands {
                 .then(literal("status").executes(MoxiaCommands::jobStatus))
                 .then(literal("cancel").executes(MoxiaCommands::cancelJob))
                 .executes(MoxiaCommands::jobStatus);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> projectCommand() {
+        return literal("project")
+                .then(literal("status").executes(MoxiaCommands::projectStatus))
+                .then(literal("backup")
+                        .requires(source -> can(source, KomaPermissions.PROJECT_BACKUP))
+                        .executes(MoxiaCommands::backupProject))
+                .executes(MoxiaCommands::projectStatus);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> sculptPresetCommand() {
@@ -1221,6 +1301,42 @@ public final class MoxiaCommands {
         return 1;
     }
 
+    private static int projectStatus(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        UUID playerId = context.getSource().getPlayerOrThrow().getUuid();
+        ProjectStorage.ProjectStatus status = ProjectStorage.status(playerId);
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Proyecto persistente · " + status.recipes() + " recetas · "
+                                + status.instances() + " instancias · " + status.jobs() + " jobs · "
+                                + status.interruptedJobs() + " interrumpidos · " + readableBytes(status.bytes())
+                ).formatted(Formatting.AQUA)),
+                false
+        );
+        return (int) Math.min(Integer.MAX_VALUE, status.instances());
+    }
+
+    private static int backupProject(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        UUID playerId = context.getSource().getPlayerOrThrow().getUuid();
+        var backup = ProjectStorage.backup(playerId);
+        context.getSource().sendFeedback(
+                () -> prefix().append(Text.literal(
+                        "Backup creado: " + backup.getFileName()
+                ).formatted(Formatting.GREEN)),
+                false
+        );
+        return 1;
+    }
+
+    private static String readableBytes(long bytes) {
+        if (bytes < 1_024L) {
+            return bytes + " B";
+        }
+        if (bytes < 1_048_576L) {
+            return String.format(Locale.ROOT, "%.1f KiB", bytes / 1_024.0);
+        }
+        return String.format(Locale.ROOT, "%.1f MiB", bytes / 1_048_576.0);
+    }
+
     private static Set<String> parseBlockList(String input) {
         Set<String> blocks = Arrays.stream(input.split("[,;\\s]+"))
                 .map(String::trim)
@@ -1297,11 +1413,12 @@ public final class MoxiaCommands {
         if (!(source.getEntity() instanceof ServerPlayerEntity player)) {
             return false;
         }
-        try {
-            return source.hasPermissionLevel(2) || WorldEditService.hasUsePermission(player);
-        } catch (RuntimeException exception) {
-            return source.hasPermissionLevel(2);
-        }
+        return KomaPermissions.canAccess(player);
+    }
+
+    private static boolean can(ServerCommandSource source, String permission) {
+        return source.getEntity() instanceof ServerPlayerEntity player
+                && KomaPermissions.can(player, permission);
     }
 
     private static int generate(
@@ -1317,9 +1434,6 @@ public final class MoxiaCommands {
         try {
             ShapeExpression expression = ShapeExpression.parse(StringArgumentType.getString(context, "shape"));
             PathShape shape = expression.shape();
-            if (shape.isAsset()) {
-                throw new IllegalArgumentException("Usa /komaedit asset para assets con dos materiales");
-            }
             ShapeParameters parameters = shape.defaults().withOptions(expression.options());
             if (scale != null) {
                 parameters = parameters.withRadius(scale);
@@ -1425,6 +1539,46 @@ public final class MoxiaCommands {
         }
     }
 
+    private static int generateLightningCircle(
+            CommandContext<ServerCommandSource> context,
+            String pattern,
+            int circleRadius,
+            int branching
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        var center = player.getBlockPos();
+        int requestedPoints = Math.clamp(
+                (int) Math.ceil(Math.PI * 2.0 * circleRadius / 7.0),
+                12,
+                PathManager.MAX_POINTS
+        );
+        LinkedHashSet<BlockVector3> uniquePoints = new LinkedHashSet<>();
+        for (int pointIndex = 0; pointIndex < requestedPoints; pointIndex++) {
+            double angle = Math.PI * 2.0 * pointIndex / requestedPoints;
+            uniquePoints.add(BlockVector3.at(
+                    center.getX() + (int) Math.round(Math.cos(angle) * circleRadius),
+                    center.getY(),
+                    center.getZ() + (int) Math.round(Math.sin(angle) * circleRadius)
+            ));
+        }
+        if (uniquePoints.size() < 3) {
+            return fail(context.getSource(), "El círculo de rayos necesita al menos tres puntos distintos");
+        }
+        PathManager.replace(player.getUuid(), new ArrayList<>(uniquePoints), true);
+        PathHologramSync.sync(player);
+        int amplitude = Math.clamp((int) Math.round(circleRadius * 0.10), 3, 16);
+        return generateFixed(
+                context,
+                true,
+                PathShape.LIGHTNING,
+                pattern,
+                amplitude,
+                branching,
+                1,
+                45
+        );
+    }
+
     private static int generateTorii(
             CommandContext<ServerCommandSource> context,
             String pattern,
@@ -1446,50 +1600,6 @@ public final class MoxiaCommands {
         }
     }
 
-    private static int generateAsset(
-            CommandContext<ServerCommandSource> context,
-            PathShape shape,
-            String primaryPattern,
-            String accentPattern,
-            int height,
-            int radius,
-            int detail
-    ) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        try {
-            ShapeParameters defaults = shape.defaults();
-            ProceduralRecipe recipe = new ProceduralRecipe(
-                    "asset_" + shape.id(),
-                    shape,
-                    primaryPattern,
-                    accentPattern,
-                    radius,
-                    detail,
-                    defaults.thickness(),
-                    defaults.rollDegrees(),
-                    height,
-                    "",
-                    GradientAxis.Y,
-                    35,
-                    false,
-                    defaults.options().values(),
-                    RecipeExtensions.DEFAULT
-            );
-            RecipeBuildService.submit(player, recipe);
-            context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal(
-                            shape.displayName() + " en P1 · " + primaryPattern + " + " + accentPattern
-                    ).formatted(Formatting.AQUA)),
-                    false
-            );
-            return 1;
-        } catch (IncompleteRegionException exception) {
-            return fail(context.getSource(), "Marca P1 con la tecla P antes de generar el asset");
-        } catch (InputParseException | IllegalArgumentException | IllegalStateException exception) {
-            return fail(context.getSource(), message(exception));
-        }
-    }
-
     private static int enqueueShape(
             CommandContext<ServerCommandSource> context,
             ServerPlayerEntity player,
@@ -1497,6 +1607,7 @@ public final class MoxiaCommands {
             String pattern,
             ShapeParameters requestedParameters
     ) throws IncompleteRegionException, InputParseException {
+        KomaPermissions.requireBuild(player, requestedParameters.shape().id());
         WorldEditService.validatePattern(player, pattern);
         PathSnapshot pathSnapshot = WorldEditService.resolvePath(player);
         UUID playerId = player.getUuid();
@@ -1756,17 +1867,10 @@ public final class MoxiaCommands {
         context.getSource().sendFeedback(
                 () -> Text.literal(
                         "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, oscillate, "
-                                + "ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, pillar, "
-                                + "pillararches, torii y archbridge."
+                                + "lightning, ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
+                                + "pillararches, torii, archbridge, sweep, braid y noisetube."
                 )
                         .formatted(Formatting.AQUA),
-                false
-        );
-        context.getSource().sendFeedback(
-                () -> Text.literal(
-                        "Assets en P1: /komaedit asset tree|boulder|log|roots "
-                                + "<altura/largo> <tamaño> <detalle 2–8> [principal] [acento]."
-                ).formatted(Formatting.GREEN),
                 false
         );
         context.getSource().sendFeedback(
@@ -1776,8 +1880,20 @@ public final class MoxiaCommands {
                                 + "Arcos: /komaedit pillararches <altura> <ancho> [material] · "
                                 + "Torii: /komaedit torii <altura> <grosor> <detalle 2–8> [material] · "
                                 + "Mandala: /komaedit mandala <tamaño> <simetría 2–8> [material] · "
+                                + "Telaraña: /komaedit web <elasticidad> <separación 2–8> [material] · "
+                                + "Rayos: /komaedit lightning <amplitud> <ramificación 2–8> [material] · "
+                                + "Aro: /komaedit lightningcircle <radio> <ramificación 2–8> [material] · "
                                 + "Nube: /komaedit cloud <tamaño> <organicidad 2–8> [separación] [material] · "
                                 + "Noodles: /komaedit noodles <radio> <espaciado 2–8> [patrón]."
+                ).formatted(Formatting.GRAY),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Tubos sin huecos: /komaedit sweep <perfil> <radios> [patrón] [-e round|spike|soft|cube] "
+                                + "[-n horizontal|upright] [-t torsión] [-r giro,giroFinal] [-p tensión:sesgo:continuidad] "
+                                + "[-hollow pared] · /komaedit braid <radios> · /komaedit noisetube <radios>. "
+                                + "Radios con fotogramas: \"2,0.3:12,2\" o 2_12_2."
                 ).formatted(Formatting.GRAY),
                 false
         );

@@ -24,18 +24,9 @@ public final class GeometryDiagnostics {
     }
 
     public static Result process(Set<BlockVector3> input, RecipeExtensions extensions) {
-        return process(input, Set.of(), extensions);
-    }
-
-    public static Result process(
-            Set<BlockVector3> input,
-            Set<BlockVector3> accentInput,
-            RecipeExtensions extensions
-    ) {
         if ((!extensions.closeMicroGaps() && !extensions.removeIsolated()) || input.size() > MAX_REPAIR_BLOCKS) {
             Set<BlockVector3> blocks = Collections.unmodifiableSet(input);
-            Set<BlockVector3> accents = retainedAccents(accentInput, blocks);
-            return new Result(blocks, accents, new Report(
+            return new Result(blocks, new Report(
                     input.size(),
                     input.size(),
                     0,
@@ -50,21 +41,8 @@ public final class GeometryDiagnostics {
         Set<BlockVector3> resolvedBlocks = Set.copyOf(blocks);
         return new Result(
                 resolvedBlocks,
-                retainedAccents(accentInput, resolvedBlocks),
                 new Report(input.size(), blocks.size(), filled, removed, false)
         );
-    }
-
-    private static Set<BlockVector3> retainedAccents(
-            Set<BlockVector3> accentInput,
-            Set<BlockVector3> blocks
-    ) {
-        if (accentInput.isEmpty()) {
-            return Set.of();
-        }
-        Set<BlockVector3> accents = new HashSet<>(accentInput);
-        accents.retainAll(blocks);
-        return Set.copyOf(accents);
     }
 
     private static int closeMicroGaps(Set<BlockVector3> blocks) {
@@ -123,7 +101,7 @@ public final class GeometryDiagnostics {
         }
     }
 
-    public record Result(Set<BlockVector3> blocks, Set<BlockVector3> accentBlocks, Report report) {
+    public record Result(Set<BlockVector3> blocks, Report report) {
     }
 
     public record Report(int original, int result, int gapsFilled, int isolatedRemoved, boolean repairSkipped) {

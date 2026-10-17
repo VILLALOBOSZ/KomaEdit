@@ -14,6 +14,8 @@ public enum PathShape {
             "beats", "cuentas", "be"),
     COIL("coil", "Espiral", "Hélice continua tipo resorte, cable o raíz", 7, 5, 2,
             "espiral", "resorte", "spring", "helix"),
+    LIGHTNING("lightning", "Rayos", "Descarga 3D quebrada con ramificaciones deterministas; cerrada forma una corona hueca", 7, 5, 1,
+            "rayos", "rayo", "bolt", "electric", "electricidad", "energy_ring"),
     CROWNS("crowns", "Coronas", "Bucles florales dentados que alternan su rotación", 9, 5, 2,
             "crown", "corona", "coronas", "flores", "flowers", "petals"),
     HONEYCOMB("honeycomb", "Panal", "Celdas hexagonales tridimensionales conectadas", 5, 5, 1,
@@ -38,6 +40,14 @@ public enum PathShape {
             "mandalas", "rosette", "roseton", "radial", "sacred_geometry"),
     CLOUDS("clouds", "Nube orgánica", "Volumen nuboso natural con masas, lóbulos, coronas y estelas erosionadas", 18, 6, 2,
             "cloud", "nube", "nubes", "organic_cloud", "epic_cloud"),
+    WEB("web", "Telaraña", "Puente fino entre nudos gruesos o telaraña clásica de radios rectos y arcos cóncavos", 8, 4, 1,
+            "spiderweb", "cobweb", "telarana", "telaraña", "red_aracnida"),
+    SWEEP("sweep", "Perfil 2D", "Perfil 2D (círculo, estrella, cuerda…) barrido en espacio de tubo, estanco y sin puentes", 6, 6, 1,
+            "perfil", "profile", "tube", "tubo", "spline", "ezspline", "basic"),
+    BRAID("braid", "Trenza", "Hebras en ocho que se cruzan por encima y por debajo a lo largo del recorrido", 6, 4, 2,
+            "braids", "trenza", "trenzas", "br"),
+    NOISE_TUBE("noisetube", "Tubo erosionado", "Tubo macizo cuya corteza muerde un ruido 3D que sigue la curva", 8, 4, 2,
+            "noise_tube", "noise", "erosion", "erosionado", "rock", "roca", "ruido"),
     PILLAR("pillar", "Pilar monumental", "Columna épica entre P1 y P2 con base, fuste, nervaduras y capitel", 10, 6, 2,
             "pilar", "column", "columna", "epic_pillar", "monumental_pillar"),
     PILLAR_ARCHES("pillararches", "Pilares arqueados", "Dos pilares monumentales levantados desde P1 y P2 y unidos mediante un arco ornamentado", 9, 6, 2,
@@ -45,15 +55,7 @@ public enum PathShape {
     TORII("torii", "Torii monumental", "Portal japonés gigante con pilares inclinados, vigas curvas, ménsulas y placa central", 9, 6, 2,
             "japanese_gate", "japanesegate", "arco_japones", "portal_japones", "torii_gate"),
     ARCH_BRIDGE("archbridge", "Puente arqueado", "Puente transitable con arco, pretiles y nervaduras", 9, 5, 2,
-            "bridge", "puente", "puente_arqueado", "archedbridge"),
-    EPIC_TREE("epic_tree", "Árbol épico", "Árbol monumental inteligente con raíces, tronco curvo, ramas jerárquicas y copa orgánica", 18, 6, 2,
-            "tree", "arbol", "arbol_epico", "epictree", "giant_tree"),
-    GIANT_BOULDER("giant_boulder", "Roca monumental", "Megalito erosionado con estratos, grietas, musgo y piedras satélite", 16, 5, 2,
-            "boulder", "rock", "roca", "piedra", "megalith"),
-    FALLEN_LOG("fallen_log", "Tronco ancestral", "Tronco caído gigante, curvo, erosionado, hueco y cubierto de crecimiento natural", 7, 5, 2,
-            "log", "tronco", "fallenlog", "ancient_log", "deadwood"),
-    ANCIENT_ROOTS("ancient_roots", "Raíces antiguas", "Conjunto monumental de raíces retorcidas, arcos naturales, tocones y vegetación", 16, 6, 2,
-            "roots", "raices", "root_cluster", "natural_shrine", "wild_roots");
+            "bridge", "puente", "puente_arqueado", "archedbridge");
 
     private final String id;
     private final String displayName;
@@ -98,7 +100,7 @@ public enum PathShape {
     }
 
     public boolean usesHeight() {
-        return this == ARCH_BRIDGE || this == PILLAR_ARCHES || this == TORII || isAsset();
+        return this == ARCH_BRIDGE || this == PILLAR_ARCHES || this == TORII;
     }
 
     public boolean usesSecondaryMeasure() {
@@ -115,30 +117,11 @@ public enum PathShape {
         if (this == TORII) {
             return 96;
         }
-        if (this == EPIC_TREE) {
-            return 54;
-        }
-        if (this == GIANT_BOULDER) {
-            return 26;
-        }
-        if (this == FALLEN_LOG) {
-            return 44;
-        }
-        if (this == ANCIENT_ROOTS) {
-            return 34;
-        }
         return 18;
     }
 
     public boolean isFigure() {
         return false;
-    }
-
-    public boolean isAsset() {
-        return this == EPIC_TREE
-                || this == GIANT_BOULDER
-                || this == FALLEN_LOG
-                || this == ANCIENT_ROOTS;
     }
 
     public static PathShape byId(String input) {

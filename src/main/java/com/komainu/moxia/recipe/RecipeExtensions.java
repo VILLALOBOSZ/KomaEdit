@@ -1,6 +1,7 @@
 package com.komainu.moxia.recipe;
 
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.shape.tube.TubeCurve;
 
 public record RecipeExtensions(
         int startScalePercent,
@@ -80,6 +81,19 @@ public record RecipeExtensions(
                 || startSpacingPercent != 100
                 || endSpacingPercent != 100
                 || twistDegrees != 0;
+    }
+
+    /** Curva de escala, espaciado y torsión expresada para el espacio de tubo (se aplica sin deformar bloques). */
+    public TubeCurve tubeCurve() {
+        CurveEasing curveEasing = easing;
+        return new TubeCurve(
+                startScalePercent / 100.0,
+                endScalePercent / 100.0,
+                startSpacingPercent / 100.0,
+                endSpacingPercent / 100.0,
+                twistDegrees,
+                curveEasing::apply
+        );
     }
 
     public boolean needsContinuousModifier() {
