@@ -102,6 +102,38 @@ public final class HelpTopics {
                             new Entry("/komaedit envejecer 70 nevado -d 40", "Ejemplo: ruina nevada con derrumbe"),
                             new Entry("/komaedit tweak deinfest|persist|waterlog|wax", "Retoques sobre la selección (alias retocar)")
                     )),
+            new Topic("palette", "Paletas guardadas", List.of("paleta", "paletas", "palettes"), List.of(
+                    new Entry("/komaedit palette list [all|default|mine]", "Paletas de serie y tuyas; pulsa una para verla"),
+                    new Entry("/komaedit palette save <nombre> <paleta> [-f]", "Guarda una paleta para usarla con #nombre"),
+                    new Entry("/komaedit palette fetch <world|selection|hotbar> <nombre> [largo] [-d dir] [-f]",
+                            "Guarda los bloques de una fila, una selección de 1×1×N o la barra rápida"),
+                    new Entry("/komaedit palette place <paleta> [dirección]", "Pone la paleta en fila delante de ti"),
+                    new Entry("/komaedit palette swap <origen> <destino> [-a] [-s] [-f] [-b]",
+                            "Cambia en la selección cada bloque del origen por el del destino"),
+                    new Entry("/komaedit palette print <paleta> [-v]", "Muestra los bloques; pulsa para copiarlos"),
+                    new Entry("/komaedit palette encode <paleta>", "Código kp1:… para compartirla"),
+                    new Entry("/komaedit palette decode <código>", "Convierte un código kp1:… en bloques"),
+                    new Entry("/komaedit palette delete <nombre>", "Borra una paleta guardada")
+            )),
+            new Topic("noise", "Ruidos guardados", List.of("ruido", "ruidos", "noises"), List.of(
+                    new Entry("/komaedit noise list [all|default|mine]", "Ruidos de serie y tuyos"),
+                    new Entry("/komaedit noise save <nombre> <ruido> [-f]", "Guarda un ruido para usarlo por su nombre"),
+                    new Entry("/komaedit noise print <ruido>", "Muestra el tipo y los parámetros"),
+                    new Entry("/komaedit noise delete <nombre>", "Borra un ruido guardado")
+            )),
+            new Topic("sel", "Selecciones", List.of("seleccion", "selecciones", "selection"), List.of(
+                    new Entry("/komaedit sel save <nombre> [-f]", "Guarda la selección de WorldEdit"),
+                    new Entry("/komaedit sel load <nombre> [-h]", "La recupera; -h la trae a tu posición"),
+                    new Entry("/komaedit sel list [-g]", "Tus selecciones; -g las agrupa por tipo"),
+                    new Entry("/komaedit sel delete <nombre>", "Borra una selección guardada"),
+                    new Entry("/komaedit sel next [dirección] [hueco]", "Desplaza la selección su propio tamaño"),
+                    new Entry("/komaedit sel here [pos1|pos2|center]", "Lleva ese punto de la selección a tus pies"),
+                    new Entry("/komaedit sel invert", "Invierte el orden de los puntos"),
+                    new Entry("/komaedit sel delpos2", "Quita el último punto de una selección convex o poly"),
+                    new Entry("/komaedit sel encapsulate <máscara>", "Ajusta la selección a los bloques de la máscara"),
+                    new Entry("/komaedit sel encapsulatenear <radio> <máscara>",
+                            "Selecciona los bloques de la máscara que hay cerca")
+            )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),
