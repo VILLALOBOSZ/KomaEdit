@@ -5,8 +5,10 @@ import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
+import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
 import com.komainu.moxia.shape.Vec3;
+import com.komainu.moxia.shape.tube.TubeEngine;
 import com.komainu.moxia.shape.tube.TubeFigures;
 import com.sk89q.worldedit.math.BlockVector3;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -14,8 +16,10 @@ import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 
@@ -71,9 +75,9 @@ final class ContinuousModifierEngine {
                 recipe.spacing(),
                 recipe.thickness(),
                 recipe.rollDegrees(),
-                extensions.accentShape().defaults().options()
+                accentOptions(recipe, extensions.accentShape())
         );
-        boolean nativeCurve = TubeFigures.supports(accentParameters.shape());
+        boolean nativeCurve = TubeFigures.handles(accentParameters);
         Set<BlockVector3> accent = nativeCurve
                 ? TubeFigures.generate(path, accentParameters, extensions.tubeCurve(), MAX_BLOCKS)
                 : ShapeGenerator.generate(path, accentParameters);
@@ -101,11 +105,23 @@ final class ContinuousModifierEngine {
             ShapeParameters parameters,
             RecipeExtensions extensions
     ) {
-        if (TubeFigures.supports(parameters.shape())) {
+        if (TubeFigures.handles(parameters)) {
             return TubeFigures.generate(path, parameters, extensions.tubeCurve(), MAX_BLOCKS);
         }
         Set<BlockVector3> generated = ShapeGenerator.generate(path, parameters);
         return extensions.usesCurve() ? deform(path, field, generated, extensions) : generated;
+    }
+
+    /** El acento usa las opciones por defecto de su figura, pero hereda el motor elegido en la receta. */
+    private static ShapeOptions accentOptions(ProceduralRecipe recipe, PathShape accent) {
+        ShapeOptions defaults = accent.defaults().options();
+        if (TubeEngine.of(recipe.shapeParameters().options()) != TubeEngine.EXACT
+                || !TubeFigures.hasExactEngine(accent)) {
+            return defaults;
+        }
+        Map<String, Double> options = new HashMap<>(defaults.values());
+        options.put(TubeEngine.OPTION, (double) TubeEngine.EXACT.ordinal());
+        return new ShapeOptions(options);
     }
 
     private static Window window(double progress, double pathLength, double windowLength, int interval) {

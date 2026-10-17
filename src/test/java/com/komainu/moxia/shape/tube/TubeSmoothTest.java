@@ -216,8 +216,9 @@ class TubeSmoothTest {
 
     private static TubeVoxelizer.Evaluator evaluator(SampledPath path, ShapeParameters parameters) {
         TubeSettings settings = TubeSettings.from(parameters);
-        return new TubeVoxelizer.Evaluator(TubeCenterline.create(path, settings, TubeCurve.NONE), settings,
-                TubeShapes.create(settings, TubeFigures.pathSeed(path)));
+        TubeCenterline line = TubeCenterline.create(path, settings, TubeCurve.NONE);
+        return new TubeVoxelizer.Evaluator(line, settings,
+                TubeShapes.create(settings, parameters, line, TubeFigures.pathSeed(path)));
     }
 
     private static LongOpenHashSet packed(Set<BlockVector3> blocks) {

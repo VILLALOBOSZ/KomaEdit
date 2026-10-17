@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Añade la **Hiedra viva**: `/komaedit ivy` (alias `hiedra`) hace crecer una enredadera desde los puntos P o desde el bloque que miras sobre lo que ya hay construido. Las puntas se pegan a las caras enteras, trepan muros, cruzan tejados, se ramifican, cuelgan con gravedad de dinteles y aleros y florecen; cada bloque lleva sus caras y propiedades de vanilla (`vine`, `glow_lichen`, `moss_carpet`, hojas persistentes, `cave_vines` con bayas, `spore_blossom`).
+- Añade cuatro estilos (`hiedra`, `florido`, `selvatico`, `cueva`) y las banderas `-l` (largo), `-b` (ramas), `-g` (cuelgue), `-n` (tallos) y `-seed`; con la misma semilla sale la misma hiedra. Captura repartida por ticks, cálculo en un worker, una sola edición deshacible con //undo y sin pisar bloques puestos mientras crecía.
+- Registra el avance por ticks de la captura del entorno, que no llegaba a ejecutarse.
+- Añade paletas con la notación de ezEdits en los degradados: `##Nombre`, `-` (invertir), `(a:b)` (tramo), `*n` (repetir) y `[…]` (agrupar), compatibles con la lista `a;b;c`.
+- Añade ruido configurable con la notación de ezEdits (`Perlin(f:0.04)`, `Ce(cD:e,cR:sub)`…) sobre FastNoiseLite (MIT): fractales, distorsión de dominio, mapeo de valores, ruido blanco, Gabor y retornos celulares derivados.
+- Añade el motor de operaciones sobre la selección: lectura repartida entre ticks, cálculo en un worker y escritura condicional por lotes, deshacible con //undo.
+- Añade `/komaedit tweak` (alias `retocar`): `deinfest`, `persist`, `waterlog` y `wax` sobre la selección.
 - Añade **Envejecer** (`/komaedit weather`, alias `envejecer`): convierte la construcción seleccionada con WorldEdit en una ruina creíble. El desgaste sigue la exposición a la intemperie (caras y vecinos al aire, ponderados por la distancia al cielo abierto: lo que está bajo techo apenas se gasta), lo que se queda sin apoyo cae según el vano que aguanta cada material y forma montones de escombro con losas y escaleras, y crecen musgo, hierba, helechos, enredaderas, raíces y telarañas donde tiene sentido.
 - Añade una tabla de variantes envejecidas que conserva las propiedades del bloque: musgo, grietas, pérdida del pulido, óxido del cobre por pasos (el encerado no cambia), madera descortezada y tablones podridos.
 - Añade cuatro climas (`templado`, `desierto` con arena y terracota, `nevado` con nieve y hielo, `hundido` con agua, algas y kelp), intensidad, derrumbe y vida de 0 a 100, semilla repetible y charcos de agua estancada (`-agua`).
@@ -12,6 +19,12 @@
 - Añade cinco fórmulas de serie (ventanas, raíles, espiral, celosía y costillas), una fila **Fórmula** y un campo editable en el Studio, y `preset:` en las expresiones de figura.
 - Añade `/komaedit expr` y `/komaedit expresion <radios> [banderas] [patrón] <fórmula…>`, con nombre de serie y `n` pegado (`ventanas8`).
 - Guarda la fórmula propia como texto en recetas, instancias y paquetes (formato de receta 4) y la envía por red; los formatos 1–3 se leen sin migración.
+- Añade el **motor exacto** opcional (`engine:exact`, fila **Motor** del Studio) para Chainlink, Rings, Beads, Oscillate, Red, Honeycomb, Knots y Coil: cada figura se evalúa como función implícita en espacio de tubo, sin huecos, con las proporciones del motor clásico y heredando extremos, normales, radios por fotogramas, torsión y la curva de modificadores. El motor clásico sigue siendo el predeterminado y no cambia ninguna figura existente.
+- Las figuras con motor exacto también admiten **losas y escaleras** (`smooth`, `coverage`, filas **Piezas** y **Cobertura**).
+- **Patrón figura** usa el valor implícito de las figuras con motor exacto (eslabones, cuentas, familias de hilos y puntales por franjas de paleta).
+- Añade la figura **Red** (`fishnet`): dos familias de hilos helicoidales a ±45° con celdas cuadradas a cualquier escala.
+- El comando general acepta expresiones de figura entre comillas, por ejemplo `/komaedit build "coil(engine:exact,end:round)" stone`.
+- Añade pruebas JUnit del motor exacto: almas de hilo sin huecos en rectas, diagonales y curvas, cinta sin agujeros, cuentas cerradas, determinismo, volumen frente al clásico y opción por defecto sin cambios.
 
 ## 1.2.0 (estable, 2026-10-17)
 

@@ -39,25 +39,6 @@ public final class SnapshotCaptureService {
         ));
     }
 
-    /** Igual que {@link #submit(ServerPlayerEntity, World, BlockVector3, int, int, Consumer, Consumer)} pero de una caja. */
-    public static void submitBox(
-            ServerPlayerEntity player,
-            World world,
-            BlockVector3 minimum,
-            BlockVector3 maximum,
-            Consumer<WorldSnapshot> success,
-            Consumer<Throwable> failure
-    ) {
-        UUID playerId = player.getUuid();
-        JOBS.remove(playerId);
-        JOBS.put(playerId, new CaptureJob(
-                playerId,
-                WorldSnapshot.begin(world, minimum, maximum),
-                success,
-                failure
-        ));
-    }
-
     public static boolean cancel(UUID playerId) {
         return JOBS.remove(playerId) != null;
     }

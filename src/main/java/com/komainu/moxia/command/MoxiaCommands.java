@@ -6,6 +6,9 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.gradient.GradientAxis;
 import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.gradient.GradientService;
+import com.komainu.moxia.ivy.IvyService;
+import com.komainu.moxia.ivy.IvySettings;
+import com.komainu.moxia.ivy.IvyStyle;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathSnapshot;
@@ -17,6 +20,9 @@ import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.recipe.RecipeExtensions;
 import com.komainu.moxia.recipe.StructureBendService;
+import com.komainu.moxia.region.RegionOperationService;
+import com.komainu.moxia.region.TweakOperation;
+import com.komainu.moxia.region.TweakRules;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
@@ -139,6 +145,20 @@ public final class MoxiaCommands {
         }
         return tail.buildFuture();
     };
+    private static final SuggestionProvider<ServerCommandSource> IVY_SUGGESTIONS = (context, builder) -> {
+        String remaining = builder.getRemaining();
+        var tail = builder.createOffset(builder.getStart() + remaining.lastIndexOf(' ') + 1);
+        if (remaining.isBlank()) {
+            tail.suggest("cancel");
+        }
+        for (IvyStyle style : IvyStyle.values()) {
+            tail.suggest(style.id());
+        }
+        for (String flag : new String[]{"-l 28", "-l 60", "-b 0.4", "-g 0.5", "-g 1", "-n 3", "-seed 7"}) {
+            tail.suggest(flag);
+        }
+        return tail.buildFuture();
+    };
     private static final SuggestionProvider<ServerCommandSource> PALETTE_SUGGESTIONS = (context, builder) -> {
         Arrays.stream(GradientPalette.values()).map(GradientPalette::id).forEach(builder::suggest);
         return builder.buildFuture();
@@ -192,9 +212,13 @@ public final class MoxiaCommands {
                 .then(tubeCommand("erosion", PathShape.NOISE_TUBE))
                 .then(expressionCommand("expr"))
                 .then(expressionCommand("expresion"))
+                .then(ivyCommand("ivy"))
+                .then(ivyCommand("hiedra"))
                 .then(jobCommand())
                 .then(projectCommand())
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
+                .then(tweakCommand("tweak").requires(source -> can(source, KomaPermissions.BUILD)))
+                .then(tweakCommand("retocar").requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(literal("help").executes(MoxiaCommands::help))
                 .executes(MoxiaCommands::openHudMenu));
         dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
@@ -643,17 +667,53 @@ public final class MoxiaCommands {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
             WeatheringSettings settings = WeatheringSettings.parse(options);
-            long volume = WeatheringService.start(player, settings);
+            long seed = WeatheringService.start(player, settings);
             context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal("Envejeciendo " + volume + " bloques de selección (intensidad "
-                            + settings.intensity() + ", derrumbe " + settings.collapse() + ", vida "
-                            + settings.vegetation() + ", " + settings.style().id() + ")…").formatted(Formatting.GRAY)),
+                    () -> prefix().append(Text.literal("Envejeciendo la selección (intensidad " + settings.intensity()
+                            + ", derrumbe " + settings.collapse() + ", vida " + settings.vegetation() + ", "
+                            + settings.style().id() + ", semilla " + seed + ")…").formatted(Formatting.GRAY)),
                     false
             );
             return 1;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Selecciona la construcción con //pos1 y //pos2");
-        } catch (IllegalArgumentException exception) {
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    /** {@code ivy [estilo] [banderas]}: la hiedra viva crece desde las semillas sobre lo que ya hay construido. */
+    private static LiteralArgumentBuilder<ServerCommandSource> ivyCommand(String name) {
+        return literal(name)
+                .executes(context -> generateIvy(context, ""))
+                .then(argument("ivy_options", StringArgumentType.greedyString())
+                        .suggests(IVY_SUGGESTIONS)
+                        .executes(context -> generateIvy(context,
+                                StringArgumentType.getString(context, "ivy_options"))));
+    }
+
+    private static int generateIvy(CommandContext<ServerCommandSource> context, String options)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        String trimmed = options.strip();
+        if (trimmed.equalsIgnoreCase("cancel") || trimmed.equalsIgnoreCase("cancelar")) {
+            if (!IvyService.cancel(player.getUuid())) {
+                return fail(context.getSource(), "No hay ninguna hiedra creciendo");
+            }
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal("Hiedra cancelada").formatted(Formatting.YELLOW)),
+                    false
+            );
+            return 1;
+        }
+        try {
+            String started = IvyService.start(player, IvySettings.parse(trimmed));
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal(started + "…").formatted(Formatting.GRAY)),
+                    false
+            );
+            return 1;
+        } catch (IllegalArgumentException | IllegalStateException exception) {
             return fail(context.getSource(), message(exception));
         }
     }
@@ -686,8 +746,44 @@ public final class MoxiaCommands {
         }
     }
 
+    /** {@code /komaedit tweak <deinfest|persist|waterlog|wax> [on|off]}: retoques sobre la selección de WorldEdit. */
+    private static LiteralArgumentBuilder<ServerCommandSource> tweakCommand(String name) {
+        RequiredArgumentBuilder<ServerCommandSource, String> tweak = argument("tweak", StringArgumentType.word())
+                .suggests((context, builder) -> {
+                    for (TweakRules.Tweak option : TweakRules.Tweak.values()) {
+                        builder.suggest(option.id());
+                    }
+                    return builder.buildFuture();
+                })
+                .executes(context -> runTweak(context, null));
+        tweak.then(argument("tweak_state", StringArgumentType.word())
+                .suggests((context, builder) -> builder.suggest("on").suggest("off").buildFuture())
+                .executes(context -> runTweak(context, StringArgumentType.getString(context, "tweak_state"))));
+        return literal(name).then(tweak);
+    }
+
+    private static int runTweak(CommandContext<ServerCommandSource> context, String state)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            TweakRules.Tweak tweak = TweakRules.Tweak.byId(StringArgumentType.getString(context, "tweak"));
+            boolean enable = TweakRules.enabled(state);
+            if (tweak == TweakRules.Tweak.DEINFEST && !enable) {
+                throw new IllegalArgumentException("Quitar la infestación no tiene modo off");
+            }
+            RegionOperationService.submit(player, 0, tweak.displayName() + (enable ? "" : " (off)"),
+                    new TweakOperation(tweak, enable));
+            return 1;
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Selecciona primero la zona con //pos1 y //pos2");
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
     private static LiteralArgumentBuilder<ServerCommandSource> generationCommand(String name, boolean buildNow) {
-        RequiredArgumentBuilder<ServerCommandSource, String> shape = argument("shape", StringArgumentType.word())
+        // string() acepta lo mismo que word() sin comillas y, entre comillas, expresiones como "coil(engine:exact)".
+        RequiredArgumentBuilder<ServerCommandSource, String> shape = argument("shape", StringArgumentType.string())
                 .suggests(SHAPE_SUGGESTIONS)
                 .executes(context -> generate(context, buildNow, "stone", null, null, null, null));
         RequiredArgumentBuilder<ServerCommandSource, String> pattern = argument("pattern", StringArgumentType.string())
@@ -2036,11 +2132,20 @@ public final class MoxiaCommands {
         );
         context.getSource().sendFeedback(
                 () -> Text.literal(
-                        "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, oscillate, "
+                        "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, fishnet, oscillate, "
                                 + "lightning, ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
                                 + "pillararches, torii, archbridge, sweep, braid, noisetube y expression."
                 )
                         .formatted(Formatting.AQUA),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Motor exacto (sin huecos, con extremos, normales y radios del tubo) para chainlink, rings, "
+                                + "beads, oscillate, fishnet, honeycomb, knots y coil: /komaedit build "
+                                + "\"coil(engine:exact,end:round)\" stone"
+                )
+                        .formatted(Formatting.GRAY),
                 false
         );
         context.getSource().sendFeedback(
@@ -2076,6 +2181,14 @@ public final class MoxiaCommands {
                                 + "sección, z a lo largo (en radios), t de 0 a 1, r radio, a ángulo, n repeticiones; "
                                 + "> 0 coloca bloque. De serie: " + TubeFormulaPreset.ids() + " (ventanas8 fija n). "
                                 + "Ej.: /komaedit expr 8 stone r<1&&abs(sin(a*3+z))>0.4"
+                ).formatted(Formatting.GRAY),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Hiedra viva: /komaedit ivy [" + IvyStyle.ids().replace(", ", "|")
+                                + "] [-l largo] [-b ramas 0–1] [-g cuelgue 0–1] [-n tallos] [-seed semilla] · crece "
+                                + "desde los puntos P o desde el bloque que miras · /komaedit ivy cancel"
                 ).formatted(Formatting.GRAY),
                 false
         );
