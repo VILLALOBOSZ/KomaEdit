@@ -20,6 +20,9 @@ import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.recipe.RecipeExtensions;
 import com.komainu.moxia.recipe.StructureBendService;
+import com.komainu.moxia.region.RegionOperationService;
+import com.komainu.moxia.region.TweakOperation;
+import com.komainu.moxia.region.TweakRules;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
@@ -201,6 +204,8 @@ public final class MoxiaCommands {
                 .then(jobCommand())
                 .then(projectCommand())
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
+                .then(tweakCommand("tweak").requires(source -> can(source, KomaPermissions.BUILD)))
+                .then(tweakCommand("retocar").requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(literal("help").executes(MoxiaCommands::help))
                 .executes(MoxiaCommands::openHudMenu));
         dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
@@ -691,6 +696,41 @@ public final class MoxiaCommands {
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
         } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    /** {@code /komaedit tweak <deinfest|persist|waterlog|wax> [on|off]}: retoques sobre la selección de WorldEdit. */
+    private static LiteralArgumentBuilder<ServerCommandSource> tweakCommand(String name) {
+        RequiredArgumentBuilder<ServerCommandSource, String> tweak = argument("tweak", StringArgumentType.word())
+                .suggests((context, builder) -> {
+                    for (TweakRules.Tweak option : TweakRules.Tweak.values()) {
+                        builder.suggest(option.id());
+                    }
+                    return builder.buildFuture();
+                })
+                .executes(context -> runTweak(context, null));
+        tweak.then(argument("tweak_state", StringArgumentType.word())
+                .suggests((context, builder) -> builder.suggest("on").suggest("off").buildFuture())
+                .executes(context -> runTweak(context, StringArgumentType.getString(context, "tweak_state"))));
+        return literal(name).then(tweak);
+    }
+
+    private static int runTweak(CommandContext<ServerCommandSource> context, String state)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            TweakRules.Tweak tweak = TweakRules.Tweak.byId(StringArgumentType.getString(context, "tweak"));
+            boolean enable = TweakRules.enabled(state);
+            if (tweak == TweakRules.Tweak.DEINFEST && !enable) {
+                throw new IllegalArgumentException("Quitar la infestación no tiene modo off");
+            }
+            RegionOperationService.submit(player, 0, tweak.displayName() + (enable ? "" : " (off)"),
+                    new TweakOperation(tweak, enable));
+            return 1;
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Selecciona primero la zona con //pos1 y //pos2");
+        } catch (IllegalArgumentException | IllegalStateException exception) {
             return fail(context.getSource(), message(exception));
         }
     }

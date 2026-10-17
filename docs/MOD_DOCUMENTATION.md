@@ -547,6 +547,65 @@ La categoría Estructuras contiene generadores arquitectónicos orientados por p
 
 KomaEdit admite bloques individuales, patrones de WorldEdit y paletas de degradado. La distribución puede seguir el eje, exposición, cavidades, bordes, curvatura o propiedades específicas de la figura.
 
+### Paletas con nombre
+
+Donde KomaEdit espera una paleta (por ejemplo, `/komaedit gradient` o el material de una receta) se puede usar la notación de paletas de ezEdits, además de la lista `a;b;c` de siempre:
+
+| Escritura | Resultado |
+| --- | --- |
+| `##Grayscale`, `##Magma`, `##GlowBlue`… | Paleta de serie de KomaEdit; no distingue mayúsculas. |
+| `stone,andesite` o `stone;andesite` | Concatena bloques o paletas. |
+| `-##Grayscale` | Invierte el orden. |
+| `##Grayscale(1:8)` | Tramo de la posición 1 a la 8, ambas incluidas. |
+| `gold_block*3,diamond_block` | Repite el tramo anterior. |
+| `-[##Grayscale,gold_block]` | Agrupa para aplicar un modificador a todo el grupo. |
+| `oak_stairs[facing=east]` | Bloques con estado: los corchetes pegados al nombre son parte del bloque. |
+
+Una paleta admite hasta 256 entradas.
+
+### Ruido configurable
+
+Las herramientas que usan ruido aceptan la notación de ezEdits `Tipo(clave:valor,…)`, con nombres largos o abreviados y sin distinguir mayúsculas. Por defecto el valor va de 0 a 1.
+
+- **Tipos:** `Perlin` (`Pe`), `OpenSimplex2` (`Si`), `OpenSimplex2S` (`Sm`), `Value` (`Va`), `ValueCubic` (`VC`), `White` (`Wh`), `Cellular` (`Ce`) y `Gabor` (`Gb`).
+- **Básicos:** `Seed` (`s`, `-1` = semilla del contexto), `Frequency` (`f`), `Inverted` (`i`), escalas `x`, `y` y `z`, y `ValueMapping` (`m`): `Default`, `None` (valor crudo de −1 a 1) u `Override` (`OR`) con `l`, `u`, `Mn` y `Mx`.
+- **Celular:** `cJ` (jitter), `cD` (`e`, `sq`, `man`, `h`) y `cR`: `cell`, `distance`, `distance2`, `add`, `sub`, `mul`, `div`, `sq`, `inv`, `log`, `exp`, `2sq`, `2inv`, `2log`, `2exp` y `edge`.
+- **Fractal:** `fT` (`N`, `F`, `R`, `P`), `fO` (octavas), `fL` (lacunaridad), `fG` (ganancia), `fW` (fuerza ponderada) y `fP` (ping-pong).
+- **Distorsión de dominio:** `wT` (`G`, `S`, `R`), `wF`, `wO`, `wG`, `wA`, `wC` (`N`, `I`, `P`) y `wl`.
+- **Gabor:** `gR` (radio), `gF` (frecuencia de vetas), `gFs` (dispersión), `gO` (orientación `1;0;0`), `gJ` (variación), `gN` (impulsos por celda, máx. 8) y `gM` (contraste).
+
+Ejemplos: `Perlin(f:0.04)`, `Ce(cD:e,cR:sub,F:.1)`, `Si(fT:R,fO:4,wT:S,wA:30)`.
+
+Limitaciones: `Shard`, las distancias Minkowski y los retornos celulares `rounded` y `noiseLookup` aún no están disponibles y dan un error claro. El ruido se calcula con FastNoiseLite (licencia MIT), con posiciones en doble precisión.
+
+## Retoques sobre la selección
+
+### Objetivo y acceso
+
+Ajustes rápidos de supervivencia sobre la selección de WorldEdit, como `//eztweak` de ezEdits:
+
+```text
+/komaedit tweak deinfest
+/komaedit tweak persist [on|off]
+/komaedit tweak waterlog [on|off]
+/komaedit tweak wax [on|off]
+```
+
+Alias: `/komaedit retocar` y `desinfestar`, `persistir`, `anegar`, `encerar`.
+
+### Comportamiento
+
+- `deinfest` cambia cada bloque infestado por su versión normal, conservando las propiedades (por ejemplo, el eje de la pizarra profunda).
+- `persist` activa o desactiva la persistencia de las hojas para que no se caigan.
+- `waterlog` anega o seca todo lo que admita agua (escaleras, losas, vallas…).
+- `wax` encera o desencera el cobre, incluidas escaleras, losas, puertas, trampillas, rejillas y bombillas. El mineral, el bloque de cobre en bruto y el pararrayos no tienen versión encerada y se dejan igual.
+- La selección se lee repartiendo el trabajo entre ticks, se calcula en un worker y se escribe por lotes. Cada bloque solo se cambia si sigue igual que al leerlo, así no se pisa lo que alguien construya mientras tanto. Se deshace con `//undo`.
+
+### Limitaciones
+
+- Los carteles encerados guardan el encerado en sus datos, no en el estado del bloque; `wax` no los toca.
+- La selección más su margen admite hasta 16 millones de bloques y 1 500 000 cambios.
+
 ## Recetas, instancias y paquetes
 
 - Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
