@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Añade la edición de puntos de trayectoria por comando: `path insert`, `remove`, `set`, `shift`, `reverse`, `close on|off`/`open`, `mirror` (con `append` para completar una curva simétrica), `rotate`, `snap`, `smooth`, `simplify` y `subdivide`, y `path points` con botones para insertar, quitar o mover cada punto. Ej.: `/komaedit path insert 3`, `/komaedit path mirror x append`.
+- Añade deshacer y rehacer de la edición de puntos (`path undo`, `path redo`), con 64 pasos por jugador; arrastrar el mismo nodo cuenta como un paso. `path undo` ya no quita siempre el último punto: deshace el último cambio; el comportamiento anterior pasa a `path pop`.
+- Añade generadores de trayectoria: `path polygon`, `path spiral`, `path helix`, `path arc` y `path catenary` (cadena colgante entre el primer y el último punto, como `//selcatenary` de ezEdits, con comba y dirección `down|up|left|right`). Ej.: `/komaedit path catenary 8`.
+- Añade recorridos guardados con nombre por mundo y jugador: `path save|load|list|delete`, con escritura atómica en `<mundo>/komaedit/players/<uuid>/paths/` (formato nuevo, documentado).
+- Añade `/komaedit estimate` (alias `estimar`): bloques, chunks, caja, memoria y tiempo aproximado sin construir. Ej.: `/komaedit estimate coil stone 8`.
+- Los Build de más de `confirmBuildAboveBlocks` bloques (250 000 por defecto, clave nueva y opcional de `config.json`) esperan a `/komaedit confirm` con botones en el chat, también desde el Studio.
+- Rehace `/komaedit help [tema]` (alias `ayuda`) por temas, con comandos clicables que se escriben solos en el chat.
+- Los errores de figura, perfil, extremo, paleta, bandera, parámetro, tema de ayuda o recorrido desconocidos proponen «¿Quisiste decir…?», y el autocompletado de figuras, perfiles y paletas muestra su nombre.
+- Añade el alias `ruta` de `path` y la tecla **Insert** del editor en vivo para insertar un nodo a mitad.
+- Añade pruebas JUnit de la edición de puntos, los generadores (catenaria incluida), el historial, «¿quisiste decir…?», las estimaciones, la ayuda y el formato de recorridos guardados.
+
 - Añade la figura **Expresión** (`expression`): una fórmula del jugador en espacio de tubo (`x`, `y` de -1 a 1 en la sección, `z` a lo largo en radios, más `t`, `r`, `a` y `n`) decide qué bloques se colocan (salida > 0) y, con **Patrón figura**, su material (valor en `(0, 1]`).
 - Añade un compilador de fórmulas propio, sin bucles ni estado compartido: operadores `+ - * / % ^`, comparaciones, `&& || !`, ternario, 26 funciones (con `noise` determinista), definiciones `nombre = valor;`, nombres sensibles a mayúsculas, límites de 256 caracteres, 16 definiciones, 40 niveles y 400 operaciones, y errores en español con la posición. Evalúa 6–12 veces más rápido que el motor de WorldEdit 7.3.8 con las mismas fórmulas.
 - Acota el alcance de la fórmula por análisis (`r <= 1 && …`) para no recorrer las esquinas de la sección: `r <= 1` cuesta lo mismo que el perfil círculo.

@@ -63,7 +63,7 @@ public final class PathCaptureHud {
                 true,
                 Text.literal(status),
                 Text.literal(payload.closed() ? "TRAYECTORIA CERRADA" : "TRAYECTORIA ABIERTA"),
-                Text.literal("K herramientas  ·  P terminar captura"),
+                Text.literal("K herramientas  ·  P terminar captura  ·  /ke path points"),
                 List.copyOf(lines),
                 lines.size() > 16 ? 2 : 1
         );

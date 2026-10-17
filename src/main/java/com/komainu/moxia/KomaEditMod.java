@@ -124,6 +124,7 @@ public final class KomaEditMod implements ModInitializer {
             BatchEditService.cancel(handler.player.getUuid(), false);
             FastPaintService.remove(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
+            com.komainu.moxia.edit.PendingBuilds.remove(handler.player.getUuid());
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
         });
@@ -135,6 +136,7 @@ public final class KomaEditMod implements ModInitializer {
             FastPaintService.shutdown();
             AsyncEngine.shutdown();
             PathManager.clearAll();
+            com.komainu.moxia.edit.PendingBuilds.clearAll();
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
         });
