@@ -102,6 +102,20 @@ public final class HelpTopics {
                             new Entry("/komaedit envejecer 70 nevado -d 40", "Ejemplo: ruina nevada con derrumbe"),
                             new Entry("/komaedit tweak deinfest|persist|waterlog|wax", "Retoques sobre la selección (alias retocar)")
                     )),
+            new Topic("deform", "Deformar y suavizar", List.of("deformar", "superficie", "surface", "suavizar",
+                    "smooth", "inflate", "inflar", "deflate", "smoothblocks", "cilindro", "esfera"),
+                    List.of(
+                            new Entry("/komaedit deform hexagonalize|noise|rotate|voronoialize|voronoialize2|voxelize …",
+                                    "Deforma la selección (alias deformar)"),
+                            new Entry("/komaedit deform cylindrify|spherify [-aflost] [-r radios] [-d profundidad]",
+                                    "Proyecta la selección sobre un cilindro o una esfera nuevos"),
+                            new Entry("/komaedit surface fuzzify|rockify|voronoify|noisify <radio> … [-c] [-e] [-m] [-t]",
+                                    "Talla o hace crecer la superficie (alias superficie)"),
+                            new Entry("/komaedit smooth <radios> [iteraciones] [sesgo]", "Suaviza la selección (alias suavizar)"),
+                            new Entry("/komaedit inflate|deflate <radios>", "Engorda o adelgaza (alias inflar, desinflar)"),
+                            new Entry("/komaedit smoothblocks <perfil> [radio] [sesgo]",
+                                    "Suaviza con losas y escaleras; todas admiten -w Slabs|SlabsAndStairs")
+                    )),
             new Topic("generators", "Generadores", List.of("generadores", "forma", "shape", "noisegen", "ruidogen",
                     "flowfield", "flujo", "flowline"), List.of(
                     new Entry("/komaedit shape cone|polydome|polygon|square|tetrahedron|torus <patrón> …",
