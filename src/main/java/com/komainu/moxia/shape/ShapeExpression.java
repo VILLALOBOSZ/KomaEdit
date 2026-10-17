@@ -1,6 +1,7 @@
 package com.komainu.moxia.shape;
 
 import com.komainu.moxia.shape.smooth.SmoothMode;
+import com.komainu.moxia.shape.tube.TubeFormulaPreset;
 import com.komainu.moxia.shape.tube.TubeSettings;
 
 import java.util.LinkedHashMap;
@@ -45,7 +46,10 @@ public record ShapeExpression(PathShape shape, ShapeOptions options) {
         return new ShapeExpression(shape, new ShapeOptions(options));
     }
 
-    /** Permite escribir {@code profile:star}, {@code end:round} o {@code hollow:true} en vez de índices. */
+    /**
+     * Permite escribir {@code profile:star}, {@code end:round}, {@code preset:lattice} o {@code hollow:true} en vez
+     * de índices.
+     */
     private static double symbolicValue(String name, String rawName, String value) {
         return switch (name) {
             case "profile" -> TubeSettings.TubeProfile.byId(value).ordinal();
@@ -53,6 +57,7 @@ public record ShapeExpression(PathShape shape, ShapeOptions options) {
             case "normal" -> TubeSettings.NormalMode.byId(value).ordinal();
             case "quality" -> TubeSettings.Quality.byId(value).value();
             case "smooth" -> SmoothMode.byId(value).ordinal();
+            case "preset" -> TubeFormulaPreset.byId(value).ordinal();
             case "hollow", "filled" -> switch (value.toLowerCase(Locale.ROOT)) {
                 case "true", "yes", "si", "sí", "on" -> 1.0;
                 case "false", "no", "off" -> 0.0;
@@ -96,6 +101,7 @@ public record ShapeExpression(PathShape shape, ShapeOptions options) {
             case "seed", "semilla" -> "seed";
             case "smooth", "smoothblocks", "piezas", "suavizado", "w" -> "smooth";
             case "coverage", "cobertura" -> "coverage";
+            case "preset", "serie", "formula" -> "preset";
             case "k0", "k1", "k2", "k3", "k4", "k5", "p1", "p2", "p3", "p4" -> name;
             default -> throw new IllegalArgumentException("Parámetro de figura desconocido: " + input.trim());
         };

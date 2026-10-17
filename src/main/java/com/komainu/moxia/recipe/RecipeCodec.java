@@ -34,6 +34,7 @@ public final class RecipeCodec {
                     buffer.writeDouble(entry.getValue());
                 });
         writeExtensions(buffer, recipe.extensions());
+        buffer.writeString(recipe.formula(), ShapeOptions.MAX_FORMULA_LENGTH);
     }
 
     public static ProceduralRecipe read(RegistryByteBuf buffer) {
@@ -59,6 +60,7 @@ public final class RecipeCodec {
             options.put(buffer.readString(32), buffer.readDouble());
         }
         RecipeExtensions extensions = readExtensions(buffer);
+        String formula = buffer.readString(ShapeOptions.MAX_FORMULA_LENGTH);
         return new ProceduralRecipe(
                 name,
                 shape,
@@ -74,7 +76,8 @@ public final class RecipeCodec {
                 dither,
                 reverse,
                 options,
-                extensions
+                extensions,
+                formula
         );
     }
 

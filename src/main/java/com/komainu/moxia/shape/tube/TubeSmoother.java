@@ -200,6 +200,7 @@ final class TubeSmoother {
         interpolated.radius = field(3, base.radius, dx, dy, dz);
         interpolated.longitudinal = field(4, base.longitudinal, dx, dy, dz);
         interpolated.roll = field(5, base.roll, dx, dy, dz);
+        interpolated.progress = interpolated.distance / evaluator.length();
         interpolated.beyond = 0.0;
         return evaluator.evaluate(interpolated, false) >= 0.0;
     }

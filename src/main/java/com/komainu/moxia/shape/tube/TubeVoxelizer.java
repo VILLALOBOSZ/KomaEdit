@@ -347,7 +347,7 @@ final class TubeVoxelizer {
                 double box = Math.max(Math.abs(shapeX), Math.abs(shapeY));
                 return box <= 1.0 ? box : -1.0;
             }
-            return shape.sample(shapeX, shapeY, located.longitudinal);
+            return shape.sample(shapeX, shapeY, located.longitudinal, located.progress);
         }
 
         private static double square(double value) {

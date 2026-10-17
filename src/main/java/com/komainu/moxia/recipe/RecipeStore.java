@@ -118,6 +118,7 @@ public final class RecipeStore {
             String accentPattern = version >= 3 && root.has("accentPattern")
                     ? root.get("accentPattern").getAsString()
                     : defaultAccentPattern(shape);
+            String formula = version >= 4 && root.has("formula") ? root.get("formula").getAsString() : "";
             return new ProceduralRecipe(
                     root.get("name").getAsString(),
                     shape,
@@ -133,7 +134,8 @@ public final class RecipeStore {
                     root.get("dither").getAsInt(),
                     root.get("reverse").getAsBoolean(),
                     options,
-                    extensions
+                    extensions,
+                    formula
             );
         } catch (RuntimeException exception) {
             throw new IllegalArgumentException("La receta guardada no es válida: " + exception.getMessage(), exception);
@@ -161,6 +163,9 @@ public final class RecipeStore {
                 .forEach(entry -> options.addProperty(entry.getKey(), entry.getValue()));
         root.add("options", options);
         root.add("extensions", extensionsToJson(recipe.extensions()));
+        if (!recipe.formula().isEmpty()) {
+            root.addProperty("formula", recipe.formula());
+        }
         return root;
     }
 
