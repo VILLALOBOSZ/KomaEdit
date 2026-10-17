@@ -12,7 +12,7 @@ KomaEdit se enfoca en ser el complemento procedural no destructivo de WorldEdit 
 
 ## 4.9 — Diagnóstico antes de construir
 
-- Estimación exacta de bloques, chunks y memoria antes de Build.
+- Estimación exacta de bloques, chunks y memoria antes de Build (hecha: `/komaedit estimate` y confirmación de Build grandes).
 - Mapa de conflictos con bloques modificados manualmente.
 - Presupuesto configurable de holograma y construcción por jugador.
 - Panel de salud del proyecto con acciones de reparación seguras.
