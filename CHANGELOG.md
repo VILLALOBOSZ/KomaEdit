@@ -2,11 +2,13 @@
 
 ## Unreleased
 
+- Añade la **Hiedra viva**: `/komaedit ivy` (alias `hiedra`) hace crecer una enredadera desde los puntos P o desde el bloque que miras sobre lo que ya hay construido. Las puntas se pegan a las caras enteras, trepan muros, cruzan tejados, se ramifican, cuelgan con gravedad de dinteles y aleros y florecen; cada bloque lleva sus caras y propiedades de vanilla (`vine`, `glow_lichen`, `moss_carpet`, hojas persistentes, `cave_vines` con bayas, `spore_blossom`).
+- Añade cuatro estilos (`hiedra`, `florido`, `selvatico`, `cueva`) y las banderas `-l` (largo), `-b` (ramas), `-g` (cuelgue), `-n` (tallos) y `-seed`; con la misma semilla sale la misma hiedra. Captura repartida por ticks, cálculo en un worker, una sola edición deshacible con //undo y sin pisar bloques puestos mientras crecía.
+- Registra el avance por ticks de la captura del entorno, que no llegaba a ejecutarse.
 - Añade paletas con la notación de ezEdits en los degradados: `##Nombre`, `-` (invertir), `(a:b)` (tramo), `*n` (repetir) y `[…]` (agrupar), compatibles con la lista `a;b;c`.
 - Añade ruido configurable con la notación de ezEdits (`Perlin(f:0.04)`, `Ce(cD:e,cR:sub)`…) sobre FastNoiseLite (MIT): fractales, distorsión de dominio, mapeo de valores, ruido blanco, Gabor y retornos celulares derivados.
 - Añade el motor de operaciones sobre la selección: lectura repartida entre ticks, cálculo en un worker y escritura condicional por lotes, deshacible con //undo.
 - Añade `/komaedit tweak` (alias `retocar`): `deinfest`, `persist`, `waterlog` y `wax` sobre la selección.
-
 - Añade la figura **Expresión** (`expression`): una fórmula del jugador en espacio de tubo (`x`, `y` de -1 a 1 en la sección, `z` a lo largo en radios, más `t`, `r`, `a` y `n`) decide qué bloques se colocan (salida > 0) y, con **Patrón figura**, su material (valor en `(0, 1]`).
 - Añade un compilador de fórmulas propio, sin bucles ni estado compartido: operadores `+ - * / % ^`, comparaciones, `&& || !`, ternario, 26 funciones (con `noise` determinista), definiciones `nombre = valor;`, nombres sensibles a mayúsculas, límites de 256 caracteres, 16 definiciones, 40 niveles y 400 operaciones, y errores en español con la posición. Evalúa 6–12 veces más rápido que el motor de WorldEdit 7.3.8 con las mismas fórmulas.
 - Acota el alcance de la fórmula por análisis (`r <= 1 && …`) para no recorrer las esquinas de la sección: `r <= 1` cuesta lo mismo que el perfil círculo.
