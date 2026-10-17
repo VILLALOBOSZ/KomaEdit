@@ -2,6 +2,7 @@ package com.komainu.moxia.recipe;
 
 import com.komainu.moxia.gradient.GradientAxis;
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.shape.ShapeOptions;
 import net.minecraft.network.RegistryByteBuf;
 
 import java.util.LinkedHashMap;
@@ -50,7 +51,7 @@ public final class RecipeCodec {
         int dither = buffer.readVarInt();
         boolean reverse = buffer.readBoolean();
         int optionCount = buffer.readVarInt();
-        if (optionCount < 0 || optionCount > 16) {
+        if (optionCount < 0 || optionCount > ShapeOptions.MAX_ENTRIES) {
             throw new IllegalArgumentException("Cantidad de parámetros de receta no válida");
         }
         Map<String, Double> options = new LinkedHashMap<>();

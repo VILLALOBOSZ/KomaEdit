@@ -18,6 +18,8 @@ import com.komainu.moxia.recipe.MaterialMetric;
 import com.komainu.moxia.recipe.SurfaceMode;
 import com.komainu.moxia.recipe.SocketPlacement;
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.shape.tube.TubeFigures;
+import com.komainu.moxia.shape.tube.TubeSettings;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
@@ -39,8 +41,10 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public final class ProceduralStudioScreen extends Screen {
     private static final int PANEL = 0xEE0C0D12;
@@ -309,16 +313,24 @@ public final class ProceduralStudioScreen extends Screen {
         boolean mandala = draft.shape() == PathShape.MANDALA;
         boolean web = draft.shape() == PathShape.WEB;
         boolean lightning = draft.shape() == PathShape.LIGHTNING;
-        String radiusLabel = lightning ? "Amplitud"
+        boolean tube = TubeFigures.supports(draft.shape());
+        String radiusLabel = tube ? "Radio"
+                : lightning ? "Amplitud"
                 : web ? "Elasticidad"
                 : draft.shape() == PathShape.CLOUDS || mandala ? "Tamaño"
                 : torii ? "Grosor" : monumental ? "Ancho" : "Escala";
-        String spacingLabel = lightning ? "Ramificación"
+        String spacingLabel = draft.shape() == PathShape.SWEEP ? "Lados / puntas"
+                : draft.shape() == PathShape.BRAID ? "Paso de trenza"
+                : draft.shape() == PathShape.NOISE_TUBE ? "Frecuencia"
+                : lightning ? "Ramificación"
                 : web ? "Separación hilos"
                 : mandala ? "Simetría"
                 : draft.shape() == PathShape.CLOUDS ? "Organicidad"
                 : torii || monumental ? "Detalle" : "Espaciado";
-        String thicknessLabel = lightning ? "Grosor núcleo"
+        String thicknessLabel = draft.shape() == PathShape.SWEEP ? "Pared (hueco)"
+                : draft.shape() == PathShape.BRAID ? "Grosor hebra"
+                : draft.shape() == PathShape.NOISE_TUBE ? "Profundidad"
+                : lightning ? "Grosor núcleo"
                 : mandala ? "Relieve"
                 : draft.shape() == PathShape.CLOUDS ? "Densidad"
                 : torii || monumental ? "Relieve" : "Grosor";
@@ -334,6 +346,83 @@ public final class ProceduralStudioScreen extends Screen {
             drawStepper(context, mouseX, mouseY, left + 16, controlsTop + 138, inner,
                     secondaryLabel, draft.height(), Control.HEIGHT);
         }
+        if (tube) {
+            drawTubeRows(context, mouseX, mouseY, left + 16, controlsTop + 140, inner);
+        }
+    }
+
+    /** Filas propias del espacio de tubo: perfil, relleno, extremos y orientación de la sección. */
+    private void drawTubeRows(DrawContext context, int mouseX, int mouseY, int x, int y, int inner) {
+        int row = 0;
+        if (draft.shape() == PathShape.SWEEP) {
+            drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Perfil", tubeProfile().displayName());
+            drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Relleno",
+                    tubeOption("hollow", 0.0) >= 0.5 ? "Hueco" : "Macizo");
+        }
+        drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Extremos",
+                TubeSettings.EndMode.byIndex((int) tubeOption("end", 0.0)).displayName());
+        drawCycleRow(context, mouseX, mouseY, x, y + row * 31, inner, "Normales",
+                TubeSettings.NormalMode.byIndex((int) tubeOption("normal", 0.0)).displayName());
+    }
+
+    private boolean tubeRowsClicked(double mouseX, double mouseY, int x, int y, int inner) {
+        int direction = mouseX < x + inner - 80 ? -1 : 1;
+        int row = 0;
+        if (draft.shape() == PathShape.SWEEP) {
+            if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
+                TubeSettings.TubeProfile profile = TubeSettings.TubeProfile.byIndex(
+                        tubeProfile().ordinal() + direction);
+                setTubeOption("profile", profile.ordinal());
+                status = "Perfil " + profile.displayName()
+                        + (profile.usesSides() ? " · Lados / puntas fija cuántas" : "");
+                return true;
+            }
+            if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
+                boolean hollow = tubeOption("hollow", 0.0) < 0.5;
+                setTubeOption("hollow", hollow ? 1.0 : 0.0);
+                status = hollow ? "Tubo hueco · Pared fija el grosor en bloques" : "Tubo macizo";
+                return true;
+            }
+        }
+        if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
+            TubeSettings.EndMode mode = TubeSettings.EndMode.byIndex((int) tubeOption("end", 0.0) + direction);
+            setTubeOption("end", mode.ordinal());
+            status = "Extremos: " + mode.displayName();
+            return true;
+        }
+        if (cycleRowClicked(mouseX, mouseY, x, y + row * 31, inner, false)) {
+            TubeSettings.NormalMode mode = TubeSettings.NormalMode.byIndex(
+                    (int) tubeOption("normal", 0.0) + direction);
+            setTubeOption("normal", mode.ordinal());
+            status = switch (mode) {
+                case CONSISTENT -> "Normales continuas · la sección rueda con suavidad en las curvas";
+                case HORIZONTAL -> "Normales horizontales · la cara de arriba sigue mirando al cielo";
+                case UPRIGHT -> "Normales verticales · la sección queda alineada con el eje Y";
+            };
+            return true;
+        }
+        return false;
+    }
+
+    private int tubeRowCount() {
+        if (!TubeFigures.supports(draft.shape())) {
+            return 0;
+        }
+        return draft.shape() == PathShape.SWEEP ? 4 : 2;
+    }
+
+    private TubeSettings.TubeProfile tubeProfile() {
+        return TubeSettings.TubeProfile.byIndex((int) tubeOption("profile", 0.0));
+    }
+
+    private double tubeOption(String name, double fallback) {
+        return draft.options().getOrDefault(name, fallback);
+    }
+
+    private void setTubeOption(String name, double value) {
+        Map<String, Double> next = new LinkedHashMap<>(draft.options());
+        next.put(name, value);
+        draft = draft.withOptions(next);
     }
 
     private void drawModifiersStage(DrawContext context, int mouseX, int mouseY, int left, int top) {
@@ -882,13 +971,25 @@ public final class ProceduralStudioScreen extends Screen {
         }
         int controlsTop = top + 17 + ((shapes.size() + 1) / 2) * 27 + 31;
         if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 18, inner, Control.RADIUS)) return true;
-        if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 48, inner, Control.SPACING)) return true;
+        if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 48, inner, Control.SPACING)) {
+            if (draft.options().containsKey("sides")) {
+                // El paso del Studio manda sobre los lados fijados por comando.
+                Map<String, Double> next = new LinkedHashMap<>(draft.options());
+                next.remove("sides");
+                draft = draft.withOptions(next);
+            }
+            return true;
+        }
         if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 78, inner, Control.THICKNESS)) return true;
         if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 108, inner, Control.ROLL)) return true;
         if (draft.shape().usesSecondaryMeasure()) {
             if (stepperClicked(mouseX, mouseY, left + 16, controlsTop + 138, inner, Control.HEIGHT)) {
                 return true;
             }
+        }
+        if (TubeFigures.supports(draft.shape())
+                && tubeRowsClicked(mouseX, mouseY, left + 16, controlsTop + 140, inner)) {
+            return true;
         }
         return true;
     }
@@ -1635,7 +1736,7 @@ public final class ProceduralStudioScreen extends Screen {
     private int shapeContentHeight(int shapeCount) {
         int rows = (shapeCount + 1) / 2;
         int controlsTop = 17 + rows * 27 + 31;
-        return controlsTop + (draft.shape().usesSecondaryMeasure() ? 180 : 150);
+        return controlsTop + (draft.shape().usesSecondaryMeasure() ? 180 : 150) + tubeRowCount() * 31;
     }
 
     private int materialContentHeight() {

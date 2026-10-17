@@ -23,6 +23,8 @@ import com.komainu.moxia.shape.ShapeGenerator;
 import com.komainu.moxia.shape.ShapeExpression;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.shape.tube.TubeCommandParser;
+import com.komainu.moxia.shape.tube.TubeSettings;
 import com.komainu.moxia.sculpt.BrushFalloff;
 import com.komainu.moxia.sculpt.BrushMask;
 import com.komainu.moxia.sculpt.SculptBrushType;
@@ -83,6 +85,22 @@ public final class MoxiaCommands {
         Arrays.stream(PathShape.values()).filter(PathShape::isFigure).map(PathShape::id).forEach(builder::suggest);
         return builder.buildFuture();
     };
+    private static final SuggestionProvider<ServerCommandSource> PROFILE_SUGGESTIONS = (context, builder) -> {
+        Arrays.stream(TubeSettings.TubeProfile.values())
+                .map(profile -> profile.usesSides() ? profile.id() + "6" : profile.id())
+                .forEach(builder::suggest);
+        return builder.buildFuture();
+    };
+    private static final SuggestionProvider<ServerCommandSource> TUBE_FLAG_SUGGESTIONS = (context, builder) -> {
+        String remaining = builder.getRemaining();
+        int lastSpace = remaining.lastIndexOf(' ');
+        var tail = builder.createOffset(builder.getStart() + lastSpace + 1);
+        for (String flag : new String[]{"-e round", "-e spike", "-e soft", "-e cube", "-n horizontal",
+                "-n upright", "-t 90", "-r 0,180", "-p 0:0:0", "-q high", "-hollow 1", "-s 2"}) {
+            tail.suggest(flag);
+        }
+        return tail.buildFuture();
+    };
     private static final SuggestionProvider<ServerCommandSource> PALETTE_SUGGESTIONS = (context, builder) -> {
         Arrays.stream(GradientPalette.values()).map(GradientPalette::id).forEach(builder::suggest);
         return builder.buildFuture();
@@ -124,6 +142,12 @@ public final class MoxiaCommands {
                 .then(lightningCircleCommand("lightningcircle"))
                 .then(lightningCircleCommand("circulorayos"))
                 .then(noodlesCommand())
+                .then(sweepCommand("sweep"))
+                .then(sweepCommand("perfil"))
+                .then(tubeCommand("braid", PathShape.BRAID))
+                .then(tubeCommand("trenza", PathShape.BRAID))
+                .then(tubeCommand("noisetube", PathShape.NOISE_TUBE))
+                .then(tubeCommand("erosion", PathShape.NOISE_TUBE))
                 .then(jobCommand())
                 .then(projectCommand())
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
@@ -438,6 +462,61 @@ public final class MoxiaCommands {
                 )));
         radius.then(flow);
         return radius;
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> sweepCommand(String name) {
+        RequiredArgumentBuilder<ServerCommandSource, String> profile = argument(
+                "sweep_profile", StringArgumentType.word()
+        ).suggests(PROFILE_SUGGESTIONS);
+        profile.then(tubeArguments(PathShape.SWEEP, "sweep_profile", "stone"));
+        return literal(name).then(profile);
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> tubeCommand(String name, PathShape shape) {
+        String pattern = shape == PathShape.BRAID
+                ? "stripped_birch_wood"
+                : "60%stone,25%andesite,15%cobblestone";
+        return literal(name).then(tubeArguments(shape, null, pattern));
+    }
+
+    /** {@code <radios> [patrón y banderas]}: los radios admiten fotogramas, p. ej. {@code 2,0.3:12,2}. */
+    private static RequiredArgumentBuilder<ServerCommandSource, String> tubeArguments(
+            PathShape shape,
+            String profileArgument,
+            String defaultPattern
+    ) {
+        RequiredArgumentBuilder<ServerCommandSource, String> radii = argument(
+                "tube_radii", StringArgumentType.string()
+        ).executes(context -> generateTube(context, shape, profileArgument, defaultPattern, ""));
+        radii.then(argument("tube_options", StringArgumentType.greedyString())
+                .suggests(TUBE_FLAG_SUGGESTIONS)
+                .executes(context -> generateTube(context, shape, profileArgument, defaultPattern,
+                        StringArgumentType.getString(context, "tube_options"))));
+        return radii;
+    }
+
+    private static int generateTube(
+            CommandContext<ServerCommandSource> context,
+            PathShape shape,
+            String profileArgument,
+            String defaultPattern,
+            String options
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            TubeCommandParser.Result parsed = TubeCommandParser.parse(
+                    shape,
+                    profileArgument == null ? null : StringArgumentType.getString(context, profileArgument),
+                    StringArgumentType.getString(context, "tube_radii"),
+                    options,
+                    defaultPattern
+            );
+            return enqueueShape(context, player, true, parsed.pattern(), parsed.parameters());
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
+        } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> generationCommand(String name, boolean buildNow) {
@@ -1789,7 +1868,7 @@ public final class MoxiaCommands {
                 () -> Text.literal(
                         "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, oscillate, "
                                 + "lightning, ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
-                                + "pillararches, torii y archbridge."
+                                + "pillararches, torii, archbridge, sweep, braid y noisetube."
                 )
                         .formatted(Formatting.AQUA),
                 false
@@ -1806,6 +1885,15 @@ public final class MoxiaCommands {
                                 + "Aro: /komaedit lightningcircle <radio> <ramificación 2–8> [material] · "
                                 + "Nube: /komaedit cloud <tamaño> <organicidad 2–8> [separación] [material] · "
                                 + "Noodles: /komaedit noodles <radio> <espaciado 2–8> [patrón]."
+                ).formatted(Formatting.GRAY),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Tubos sin huecos: /komaedit sweep <perfil> <radios> [patrón] [-e round|spike|soft|cube] "
+                                + "[-n horizontal|upright] [-t torsión] [-r giro,giroFinal] [-p tensión:sesgo:continuidad] "
+                                + "[-hollow pared] · /komaedit braid <radios> · /komaedit noisetube <radios>. "
+                                + "Radios con fotogramas: \"2,0.3:12,2\" o 2_12_2."
                 ).formatted(Formatting.GRAY),
                 false
         );
