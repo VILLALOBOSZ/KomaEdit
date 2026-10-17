@@ -1,10 +1,13 @@
 package com.komainu.moxia.edit;
 
+import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PackedBlockPlanTest {
     @Test
@@ -33,6 +36,28 @@ class PackedBlockPlanTest {
         assertEquals(new BlockBounds(-4, -3, -7, 9, 20, 8), plan.bounds());
         assertEquals(PackedBlockPlan.NO_CAPTURE, plan.captureIndex(0));
         assertEquals(4, plan.captureIndex(1));
+    }
+
+    @Test
+    void carriesPiecesOnlyWhenNeeded() {
+        PackedBlockPlan.Builder plain = PackedBlockPlan.builder(2);
+        plain.addPattern(0, 0, 0);
+        plain.setPiece(0, SmoothPiece.FULL);
+        assertFalse(plain.build().hasPieces(), "un plan sin piezas no reserva memoria para ellas");
+
+        byte stairs = SmoothPiece.stairs(SmoothPiece.EAST, true, SmoothPiece.OUTER_LEFT);
+        PackedBlockPlan.Builder builder = PackedBlockPlan.builder(1);
+        for (int index = 0; index < 40; index++) {
+            builder.addPattern(index, 0, 0);
+        }
+        builder.setPiece(37, stairs);
+        PackedBlockPlan plan = builder.build();
+        assertTrue(plan.hasPieces());
+        assertEquals(1, plan.pieceCount());
+        assertEquals(stairs, plan.piece(37));
+        assertEquals(SmoothPiece.FULL, plan.piece(36));
+        assertThrows(IndexOutOfBoundsException.class, () -> builder.setPiece(40, SmoothPiece.slab(false)));
+        assertThrows(IllegalArgumentException.class, () -> builder.setPiece(0, (byte) 50));
     }
 
     private static void assertRoundTrip(int x, int y, int z) {

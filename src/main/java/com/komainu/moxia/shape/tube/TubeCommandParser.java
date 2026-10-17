@@ -3,6 +3,7 @@ package com.komainu.moxia.shape.tube;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.shape.smooth.SmoothMode;
 
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -12,7 +13,8 @@ import java.util.Map;
  * Traduce la forma corta de los comandos de tubo a {@link ShapeParameters}:
  * {@code <perfil> <radios> [patrón] [-e extremo] [-n normales] [-t torsión] [-r giro[,giroFinal]]
  * [-p tensión:sesgo:continuidad] [-q calidad] [-s estiramiento] [-hollow pared] [-d profundidad]
- * [-a aspecto] [-x exponente] [-k hebras] [-f frecuencia] [-seed semilla] [-fill]}.
+ * [-a aspecto] [-x exponente] [-k hebras] [-f frecuencia] [-seed semilla] [-fill] [-w slabs|stairs]
+ * [-c cobertura]}. {@code -c} sin {@code -w} activa losas y escaleras.
  */
 public final class TubeCommandParser {
     private TubeCommandParser() {
@@ -75,6 +77,8 @@ public final class TubeCommandParser {
                 case "-k" -> options.put("strands", number(value, 2.0, 8.0, token));
                 case "-f" -> options.put("frequency", number(value, 0.05, 8.0, token));
                 case "-seed", "-semilla" -> options.put("seed", number(value, -1.0E9, 1.0E9, token));
+                case "-w" -> options.put("smooth", (double) SmoothMode.byId(value).ordinal());
+                case "-c" -> options.put("coverage", number(value, 0.0, 1.0, token));
                 case "-hollow", "-hueco" -> {
                     options.put("hollow", 1.0);
                     options.put("wall", number(value, 1.0, 16.0, token));
@@ -101,6 +105,9 @@ public final class TubeCommandParser {
                 }
                 default -> throw new IllegalArgumentException("Bandera desconocida: " + token);
             }
+        }
+        if (options.containsKey("coverage") && !options.containsKey("smooth")) {
+            options.put("smooth", (double) SmoothMode.STAIRS.ordinal());
         }
         if (options.size() > ShapeOptions.MAX_ENTRIES) {
             throw new IllegalArgumentException("Demasiados parámetros a la vez (máximo " + ShapeOptions.MAX_ENTRIES + ")");

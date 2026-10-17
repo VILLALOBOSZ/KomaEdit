@@ -1,5 +1,6 @@
 package com.komainu.moxia.recipe;
 
+import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.sk89q.worldedit.math.BlockVector3;
 
 import java.util.ArrayDeque;
@@ -101,7 +102,15 @@ public final class GeometryDiagnostics {
         }
     }
 
-    public record Result(Set<BlockVector3> blocks, Report report) {
+    /** Geometría final; {@code pieces} indica qué posiciones llevan losa o escalera. */
+    public record Result(Set<BlockVector3> blocks, Report report, SmoothPieces pieces) {
+        public Result(Set<BlockVector3> blocks, Report report) {
+            this(blocks, report, SmoothPieces.NONE);
+        }
+
+        public Result withPieces(Set<BlockVector3> nextBlocks, SmoothPieces nextPieces) {
+            return new Result(nextBlocks, report, nextPieces);
+        }
     }
 
     public record Report(int original, int result, int gapsFilled, int isolatedRemoved, boolean repairSkipped) {

@@ -6,6 +6,7 @@ import com.komainu.moxia.gradient.GradientService;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.extension.input.InputParseException;
@@ -136,7 +137,13 @@ public final class RecipeBuildService {
     ) {
         GeometryDiagnostics.Result result = RecipeGeometryEngine.generate(buildPath, recipe);
         PackedBlockPlan.Builder instanceBuilder = PackedBlockPlan.builder(result.blocks().size());
-        result.blocks().forEach(instanceBuilder::addPattern);
+        SmoothPieces pieces = result.pieces();
+        for (var block : result.blocks()) {
+            instanceBuilder.addPattern(block);
+            if (!pieces.isEmpty()) {
+                instanceBuilder.setPiece(instanceBuilder.size() - 1, pieces.at(block.x(), block.y(), block.z()));
+            }
+        }
         KitbashSocketService.append(instanceBuilder, socketTemplate, buildPath, recipe.extensions());
         if (instanceBuilder.size() > MAX_INSTANCE_BLOCKS) {
             throw new IllegalArgumentException("La geometría y sus sockets superan 1 500 000 bloques");
@@ -144,7 +151,7 @@ public final class RecipeBuildService {
         PackedBlockPlan instancePlan = instanceBuilder.build();
 
         if (previous == null) {
-            return new PlanBundle(instancePlan, capturedPlacement(instancePlan), result.report());
+            return new PlanBundle(instancePlan, capturedPlacement(instancePlan), result.report(), pieces);
         }
         Long2IntOpenHashMap previousStates = ownership(previous);
         Long2IntOpenHashMap newPositions = new Long2IntOpenHashMap(instancePlan.size());
@@ -178,7 +185,7 @@ public final class RecipeBuildService {
             }
         }
         appendForUpdate(updateBuilder, instancePlan, previousStates);
-        return new PlanBundle(instancePlan, updateBuilder.build(), result.report());
+        return new PlanBundle(instancePlan, updateBuilder.build(), result.report(), pieces);
     }
 
     private static PackedBlockPlan capturedPlacement(PackedBlockPlan source) {
@@ -188,6 +195,7 @@ public final class RecipeBuildService {
             var override = source.override(index);
             if (override == null) {
                 builder.addCapturedPattern(position, index);
+                builder.setPiece(builder.size() - 1, source.piece(index));
             } else {
                 builder.addCapturedOverride(position, override, index);
             }
@@ -228,6 +236,9 @@ public final class RecipeBuildService {
             } else {
                 builder.addConditionalCapturedOverride(position, expectedStateId, override, index);
             }
+            if (override == null) {
+                builder.setPiece(builder.size() - 1, source.piece(index));
+            }
         }
     }
 
@@ -265,6 +276,7 @@ public final class RecipeBuildService {
                     player.sendMessage(message(
                             "Instancia " + (update ? "actualizada" : "creada") + ": " + recipe.name()
                                     + " · " + bundle.report().summary()
+                                    + (bundle.pieces().isEmpty() ? "" : " · " + bundle.pieces().summary())
                                     + (protectedBlocks == 0 ? "" : " · cambios manuales conservados")
                     ), false);
                 }
@@ -358,7 +370,8 @@ public final class RecipeBuildService {
     private record PlanBundle(
             PackedBlockPlan instancePlan,
             PackedBlockPlan placementPlan,
-            GeometryDiagnostics.Report report
+            GeometryDiagnostics.Report report,
+            SmoothPieces pieces
     ) {
     }
 
