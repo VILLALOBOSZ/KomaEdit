@@ -67,8 +67,9 @@ public record ProceduralRecipe(
             throw new IllegalArgumentException("La mezcla debe estar entre 0 y 100");
         }
         options = options == null ? Map.of() : Map.copyOf(options);
-        if (options.size() > 16) {
-            throw new IllegalArgumentException("La receta admite un máximo de 16 parámetros avanzados");
+        if (options.size() > ShapeOptions.MAX_ENTRIES) {
+            throw new IllegalArgumentException("La receta admite un máximo de " + ShapeOptions.MAX_ENTRIES
+                    + " parámetros avanzados");
         }
         new ShapeOptions(options);
         extensions = extensions == null ? RecipeExtensions.DEFAULT : extensions;

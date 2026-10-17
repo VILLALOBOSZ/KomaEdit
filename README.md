@@ -87,6 +87,9 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `mandala`
 - `clouds`
 - `web`
+- `sweep` (perfil 2D en espacio de tubo)
+- `braid` (trenza en espacio de tubo)
+- `noisetube` (tubo erosionado en espacio de tubo)
 
 `scales` y `spiked_scales` continúan usando su muestreo geométrico heredado para preservar exactamente su apariencia. Las demás figuras conservan el spline suavizado actual.
 
@@ -173,6 +176,21 @@ Ejemplos:
 - **Material por defecto:** el comando rápido mezcla lana blanca, calcita y lana gris clara; desde Material puede sustituirse por cualquier bloque, patrón o degradado para nubes mágicas y piezas orgánicas.
 - **Comandos rápidos:** `/komaedit cloud <tamaño> <organicidad 2–8> [separación] [patrón]` y su alias español `/komaedit nube`.
 - **Rendimiento:** genera directamente un conjunto compacto de vóxeles, cancela cálculos obsoletos y reutiliza el motor asíncrono y el holograma seccionado de las demás figuras.
+
+## Figuras de espacio de tubo
+
+- **Sin huecos por construcción:** `sweep`, `braid` y `noisetube` recorren los bloques cercanos al eje y evalúan en cada uno la función implícita de la figura, en vez de estampar pinceles y puentear lo que queda abierto.
+- **Perfiles 2D:** círculo, cuadrado, rombo, redondeado, polígono, estrella, flor, cuerda, elipse y rectángulo, macizos o huecos con pared cerrada.
+- **Radios por fotogramas:** `2,10,2` o `2,0.3:12,2` engordan y afinan el tubo con interpolación monótona.
+- **Curva y marcos:** Kochanek–Bartels (tensión, sesgo, continuidad) y marcos de mínima rotación; normales `consistent`, `horizontal` o `upright`.
+- **Extremos:** plano, suave, punta, cúpula o cubo.
+- **Modificadores exactos:** escala, espaciado y torsión se aplican al evaluar cada bloque.
+- **Comandos rápidos:** `/komaedit sweep <perfil> <radios> [patrón] [-e …] [-n …] [-t …] [-r …] [-p …] [-hollow …]`, `/komaedit braid <radios>` y `/komaedit noisetube <radios>`.
+
+```text
+/komaedit sweep star5 "2,0.3:12,2" polished_andesite -e spike -t 30
+/komaedit sweep polygon6 10 deepslate_tiles -hollow 2 -n horizontal
+```
 
 ## Materiales integrados
 

@@ -1,5 +1,6 @@
 package com.komainu.moxia.shape;
 
+import com.komainu.moxia.shape.tube.TubeFigures;
 import com.sk89q.worldedit.math.BlockVector3;
 
 import java.util.ArrayList;
@@ -15,6 +16,9 @@ public final class ShapeGenerator {
     }
 
     public static Set<BlockVector3> generate(SampledPath path, ShapeParameters parameters) {
+        if (TubeFigures.supports(parameters.shape())) {
+            return TubeFigures.generate(path, parameters, MAX_GENERATED_BLOCKS);
+        }
         VoxelCanvas canvas = new VoxelCanvas(MAX_GENERATED_BLOCKS);
         switch (parameters.shape()) {
             case CHAINLINK -> chainlink(canvas, path, parameters);

@@ -7,6 +7,7 @@ import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.Vec3;
+import com.komainu.moxia.shape.tube.TubeFigures;
 import com.sk89q.worldedit.math.BlockVector3;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -22,6 +23,7 @@ final class FigureMaterialField {
     private final LongitudinalMapping longitudinal;
     private final double pitch;
     private final double roll;
+    private final TubeFigures.MaterialProbe tubeProbe;
 
     FigureMaterialField(ProceduralRecipe recipe, PathSnapshot snapshot) {
         this.recipe = recipe;
@@ -36,6 +38,9 @@ final class FigureMaterialField {
         longitudinal = new LongitudinalMapping(recipe);
         pitch = motifPitch(recipe);
         roll = Math.toRadians(recipe.rollDegrees());
+        tubeProbe = TubeFigures.supports(recipe.shape())
+                ? TubeFigures.materialProbe(path, recipe.shapeParameters(), recipe.extensions().tubeCurve())
+                : null;
     }
 
     double value(MaterialMetric metric, BlockVector3 block, double axisValue) {
@@ -60,6 +65,10 @@ final class FigureMaterialField {
         double relief = relief(sourceRadial, 1.0);
         double motif = fraction(sourceDistance / pitch + 0.5);
         double angle = fraction((sourceAngle - roll) / (Math.PI * 2.0));
+        if (tubeProbe != null && metric == MaterialMetric.FIGURE) {
+            // Las figuras de tubo ya saben qué zona es cada bloque: núcleo, borde o hebra.
+            return tubeProbe.value(block, relief);
+        }
         ScaleCoordinates scaleCoordinates = recipe.shape() == PathShape.SCALES
                 ? scaleCoordinates(sourceDistance, sourceAngle, sourceRadial)
                 : null;
@@ -228,6 +237,7 @@ final class FigureMaterialField {
             case PILLAR_ARCHES -> axis * 0.38 + relief * 0.42 + motifWave * 0.20;
             case TORII -> axis * 0.44 + angularWave * 0.32 + relief * 0.24;
             case ARCH_BRIDGE -> axis * 0.58 + relief * 0.42;
+            case SWEEP, BRAID, NOISE_TUBE -> relief * 0.60 + angularWave * 0.20 + motifWave * 0.20;
         }, 0.0, 1.0);
     }
 
@@ -270,6 +280,7 @@ final class FigureMaterialField {
             case PILLAR_ARCHES -> radius * interpolate(0.65, 1.35, spacing);
             case TORII -> radius * interpolate(0.70, 1.45, spacing);
             case ARCH_BRIDGE -> Math.max(recipe.spacing(), radius * 1.55 * (1.0 + gap));
+            case SWEEP, BRAID, NOISE_TUBE -> radius * interpolate(1.0, 3.0, spacing);
         });
     }
 
