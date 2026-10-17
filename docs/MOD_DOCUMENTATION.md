@@ -906,6 +906,168 @@ Alias: `/komaedit retocar` y `desinfestar`, `persistir`, `anegar`, `encerar`.
 - Los carteles encerados guardan el encerado en sus datos, no en el estado del bloque; `wax` no los toca.
 - La selección más su margen admite hasta 16 millones de bloques y 1 500 000 cambios.
 
+## Deformar la selección
+
+### Objetivo y acceso
+
+Transforma lo que hay en la selección de WorldEdit en columnas, celdas, cuboides o figuras nuevas, como `//ezdeform` de ezEdits:
+
+```text
+/komaedit deform hexagonalize [tamaño 12] [hueco 0] [giroX 0] [giroZ 0] [ángulo 60] [-w perfil]
+/komaedit deform noise <ruido> [fuerza 2] [-z zoom] [-s semilla] [-h] [-v] [-w perfil]
+/komaedit deform rotate <ángulo> [-o] [-w perfil]
+/komaedit deform voronoialize [tamaño 12] [hueco 0] [-s semilla] [-w perfil]
+/komaedit deform voronoialize2 <cantidad> [hueco 0] [-s semilla] [-r uniformidad] [-n profundidad] [-w perfil]
+/komaedit deform voxelize [escalas 3] [hueco 0] [distorsión 0] [-i eje] [-j eje] [-s semilla] [-h] [-v] [-w perfil]
+/komaedit deform cylindrify [-afost] [-r radios] [-d profundidad] [-x mapa] [-i eje] [-j eje] [-w perfil]
+/komaedit deform spherify [-aflost] [-r radios] [-d profundidad] [-x mapa] [-i eje] [-j eje] [-w perfil]
+```
+
+Alias: `/komaedit deformar` y los modos `hex`, `ruido`, `girar`, `voronoi`, `voronoi2`, `voxeles`, `cilindro` y `esfera`. Necesita el permiso de construir.
+
+### Comportamiento
+
+Cada modo es una función de punto: para cada punto del resultado dice de qué punto de la selección original sale su material, o que queda hueco. Así no aparecen agujeros al estirar o girar, y las losas y escaleras de `-w` miden la forma deformada dentro de cada bloque. Cuenta como «forma» todo lo que no es aire ni líquido. Donde el resultado deja aire sobre agua o lava, el líquido se conserva.
+
+- **hexagonalize**: reparte el plano perpendicular a las columnas en celdas de una red y cada columna copia la línea que pasa por el centro de su celda. Quedan columnas de tapa plana, como el basalto. `ángulo` es el que forman los dos vectores de la red: 60° da hexágonos regulares y 90° cuadrados. `giroX` y `giroZ` tumban las columnas (en grados). Las celdas del borde leen el punto más cercano dentro de la selección para no desaparecer.
+- **noise**: desplaza cada punto según tres campos del ruido indicado, uno por eje. `fuerza` es el desplazamiento máximo en bloques y `-z` agranda los rasgos (2 = el doble de grandes). `-h` solo mueve en horizontal y `-v` solo en vertical. El ruido usa la notación de ezEdits (ver [Ruido configurable](#ruido-configurable)) o el nombre de un ruido de serie o guardado (ver [Ruidos guardados](#ruidos-guardados)).
+- **rotate**: gira la selección en el sentido de las agujas del reloj mirando a lo largo de tu mirada, alrededor del centro de la selección (o de tus ojos con `-o`). Si miras a menos de 10° de un eje del mundo, se usa ese eje exacto. Lo que sale de la selección se escribe fuera de ella. Donde la selección queda vacía se pone aire.
+- **voronoialize**: celdas de Voronoi al azar, una por cada cubo de `tamaño` bloques. Cada celda queda entera si su sitio cae dentro de la forma y desaparece si no, así salen trozos convexos de roca. El `hueco` los separa.
+- **voronoialize2**: reparte `cantidad` puntos por la superficie y los separa entre sí con `-r` pasadas de repulsión (0 = al azar, 15 = uniforme). Cada punto da el plano tangente de su zona y su sitio se hunde `-n` bloques hacia dentro. Dentro de cada celda la forma queda cortada por su plano, de modo que la superficie se vuelve facetas planas que siguen la forma original. Las facetas solo actúan cerca de la superficie: el interior y lo lejano no cambian.
+- **voxelize**: reparte la selección en celdas de `escalas` bloques (`3` o `2,4,2` en x, y, z de la rejilla). Cada celda queda llena si más de la mitad estaba ocupada y vacía si no. Lo que se rellena toma el material mayoritario de la celda. `-i` y `-j` eligen qué eje del mundo es la «y» y la «x» de la rejilla (por defecto `y` y `-x`). `distorsión` (0–1) desplaza al azar los planos de corte sin dejar de formar cuboides. `-h` agrupa solo en horizontal y `-v` solo en vertical.
+- **cylindrify** y **spherify**: proyectan la selección, como si fuera un mapa, sobre un cilindro o una esfera nuevos que se construyen aparte. La selección original no se toca. Por defecto el eje X del mapa da la vuelta, el Z recorre el cilindro a lo largo (o la latitud de la esfera) y el Y es la profundidad: lo más alto del mapa queda en la cara exterior. La esfera usa Mercator, o LAEA de un solo parche con `-l` (área igual; el centro del mapa queda arriba y los bordes se juntan abajo).
+
+### Parámetros de cylindrify y spherify
+
+- `-r`: radios. Cilindro: `r`, `r,mitad` o `r1,r2,mitad` (mitad = media longitud). Esfera: `r` o `r1,r2,r3` en los ejes `-j`, `-i` y el tercero. Sin `-r`, la vuelta mide lo mismo que el mapa (radio = ancho / 2π; con LAEA, la esfera tiene la misma área que el mapa).
+- `-d`: profundidad de la proyección hacia el centro. Por defecto, el alto de la selección.
+- `-x`: qué eje del mapa va a cada eje de la figura, en orden `EW,UD,NS`: `xyz` (por defecto), `zyx`, `-xyz` (el signo menos da la vuelta a ese eje).
+- `-i`: eje de la figura en el mundo (`y` por defecto). `-j`: dirección donde empieza la vuelta (`x` por defecto). Valen `x`, `-x`, `y`, `-y`, `z` y `-z`.
+- `-a`: no pone la caja de aire alrededor de la figura. Lo que la figura no ocupa se respeta, aunque el aire del mapa sí se coloca.
+- `-f`: rellena el interior repitiendo la capa más honda del mapa hasta el centro.
+- `-o`: construye alrededor de tu posición en vez de encima de la selección. Si encima no cabe en la altura del mundo, se construye al lado (al este).
+- `-s`: descarta medio bloque del mapa en la dirección de la vuelta, para que un patrón repetido case en la costura.
+- `-t`: centro de dos bloques (diámetro par). Necesita `-r`.
+
+Antes de empezar se avisa del radio, la profundidad, la caja donde se construye y cuántos bloques fuera de la selección se van a sustituir. Esa caja se lee y se escribe con la misma escritura condicional que el resto: si alguien cambia un bloque mientras se calcula, ese bloque se respeta.
+
+### Ejemplos
+
+```text
+/komaedit deform hexagonalize 8 1
+/komaedit deform hexagonalize 16 0 45 0 60 -w SlabsAndStairs
+/komaedit deform noise Perlin(F:0.06) 4 -z 2 -h
+/komaedit deform rotate 30 -w Slabs
+/komaedit deform voronoialize 16 2 -s 69420
+/komaedit deform voronoialize2 50 -r 15 -n 5
+/komaedit deform voxelize 4,2,4 0 0.5
+/komaedit deform cylindrify -f
+/komaedit deform spherify -l -r 24 -d 4 -o
+```
+
+### Rendimiento y limitaciones
+
+- La lectura se reparte entre ticks y el cálculo va en un worker. La selección más su margen (y, en rotate, cylindrify y spherify, la caja de salida) admite hasta 16 millones de bloques y 1 500 000 cambios. Con `-o` lejos de la selección, la caja que hay que leer crece; acércate si el aviso dice que es demasiado grande.
+- `voronoialize2` admite hasta 4096 celdas. En formas finas con pocas celdas, los planos de celdas vecinas pueden cruzarse y rellenar huecos pequeños. Baja `-n` o sube la cantidad.
+- hexagonalize, noise, voronoialize, voronoialize2 y voxelize escriben solo dentro de la selección: lo que el ruido o las celdas empujen fuera se corta en su borde.
+- Los modos se calculan con el bloque más cercano, sin mezclar materiales: los estados (orientación de troncos, escaleras…) se copian tal cual y no se giran con rotate.
+- Respeta la máscara global de WorldEdit (`//gmask`) al escribir, como el resto de ediciones por lotes.
+
+## Superficie
+
+### Objetivo y acceso
+
+Retoca la superficie de lo que hay en la selección, tallándola hacia dentro o haciéndola crecer hacia fuera hasta un radio, como `//ezsurface` de ezEdits:
+
+```text
+/komaedit surface fuzzify <radio> [radioSuave 0] [iteraciones 0] [-c] [-e] [-m máscara] [-t] [-w perfil]
+/komaedit surface rockify <radio> [tamaño 10] [octavas 1] [radioSuave 1] [iteraciones 4] [-c] [-e] [-m máscara] [-t] [-w perfil]
+/komaedit surface voronoify <radio> [celda 12] [radioSuave 0] [iteraciones 0] [-c] [-e] [-m máscara] [-t] [-w perfil]
+/komaedit surface noisify <radio> <ruido> [escala 1] [radioSuave 1] [iteraciones 4] [-c] [-e] [-m máscara] [-t] [-w perfil]
+```
+
+Alias: `/komaedit superficie` y los modos `pelusa`, `roca`, `celdas` y `ruido`. Todos admiten además `-seed <n>` para repetir el resultado.
+
+### Comportamiento
+
+Se calcula la distancia exacta de cada bloque a la superficie (positiva fuera, negativa dentro) y la superficie nueva pasa por donde esa distancia iguala `radio × ruido`. El ruido va de −1 (tallar el radio entero) a +1 (crecer el radio entero). Nada a más del radio cambia. Después, si se pide, el campo se suaviza `iteraciones` veces con una caja de `radioSuave` bloques. Lo que crece toma el material del bloque ocupado más cercano: sobre la hierba crece hierba y en la roca, roca.
+
+- **fuzzify**: ruido blanco, un valor al azar por bloque. Deja la superficie áspera.
+- **rockify**: Perlin fractal con rasgos de unos `tamaño` bloques y `octavas` capas. Da roca ondulada.
+- **voronoify**: celdas de unos `celda` bloques: una cúpula por celda con un pliegue en cada borde, como roca agrietada.
+- **noisify**: cualquier ruido con la notación de ezEdits (ver [Ruido configurable](#ruido-configurable)) o por su nombre, de serie o guardado, muestreado a `escala` (2 = rasgos el doble de grandes).
+
+Banderas:
+
+- `-c`: solo talla (el ruido va de 0 a −1).
+- `-e`: solo crece (de 0 a +1). No se puede usar a la vez que `-c`.
+- `-m <máscara>`: solo se tallan los bloques de la lista y solo se crece desde ellos. Es una lista de ids y etiquetas separadas por comas; con `!` delante, la lista se invierte. Por ejemplo: `stone,andesite`, `#minecraft:base_stone_overworld` o `!grass_block`.
+- `-t`: intenta conservar la topología. Los cambios se aplican de uno en uno, del más claro al más dudoso, y solo si el bloque es *simple* en ese momento: no se abren túneles, no se cierran huecos y nada se parte en dos ni se une. Lo que no se puede cambiar se queda como estaba.
+
+### Ejemplos
+
+```text
+/komaedit surface fuzzify 1.5
+/komaedit surface rockify 4 12 2 1 4
+/komaedit surface voronoify 3 10 -c
+/komaedit surface noisify 3 Ce(F:0.1,cR:sub) 1 1 4 -m stone,andesite -t
+/komaedit surface rockify 3 -w SlabsAndStairs
+```
+
+### Rendimiento y limitaciones
+
+- Se lee la selección más un margen de `radio + radioSuave × iteraciones + 2` bloques (como mucho 32), así el borde de la selección ve lo que hay al otro lado. Solo se escribe dentro de la selección; amplíala si quieres que la superficie crezca hacia fuera.
+- `-t` es más lento: comprueba cada cambio con sus 26 vecinos, en dos pasadas.
+- `-m` usa una lista de bloques y etiquetas, no la sintaxis completa de máscaras de WorldEdit. La máscara global (`//gmask`) se respeta al escribir.
+- Radio de 0 a 32; suavizado de radio 0–8 y 0–16 iteraciones.
+
+## Suavizado
+
+### Objetivo y acceso
+
+Suaviza, engorda o adelgaza lo que hay en la selección, como `//ezsmooth`, `//ezinflate`, `//ezdeflate` y `//ezsmoothblocks` de ezEdits:
+
+```text
+/komaedit smooth <radios> [iteraciones 1] [sesgo 0] [-w perfil]
+/komaedit inflate <radios> [-w perfil]
+/komaedit deflate <radios> [-w perfil]
+/komaedit smoothblocks <perfil> [radio 2] [sesgo 0]
+```
+
+Alias: `suavizar`, `inflar`, `desinflar` y `suavizarpiezas`.
+
+### Comportamiento
+
+- **smooth**: la ocupación se convierte en densidad (1 lleno, 0 vacío), se desenfoca con una caja de los radios dados (dos pasadas, que se parecen a un desenfoque gaussiano) y se vuelve a cortar. Cada iteración repite las dos cosas. El `sesgo` (−1 a 1) mueve el corte: positivo engorda y negativo adelgaza.
+- **inflate**: añade todo lo que queda a menos de los radios de un bloque ocupado, con distancia euclídea exacta: un bloque suelto con radio 2 se convierte en una esfera de 33 bloques.
+- **deflate**: quita todo lo que queda a menos de los radios del aire. Un cubo de 5 con radio 1 se queda en uno de 3.
+- **smoothblocks**: suaviza una vez con el radio y el sesgo dados y pone losas y escaleras en la superficie según el perfil.
+- Los radios son un número o tres separados por comas para este-oeste, arriba-abajo y norte-sur: `inflate 3,0,3` solo crece en horizontal.
+- Lo que aparece toma el material del bloque ocupado más cercano y solo se escribe dentro de la selección.
+
+### Ejemplos
+
+```text
+/komaedit smooth 2 3 0
+/komaedit smooth 3,1,3 2 0.3 -w SlabsAndStairs
+/komaedit inflate 2
+/komaedit deflate 1,2,1
+/komaedit smoothblocks Slabs 2 0
+/komaedit smoothblocks SlabsAndStairs(C:0.7) 3 -0.2
+```
+
+### Rendimiento y limitaciones
+
+- smooth lee un margen de dos veces el radio por iteración (como mucho 32 bloques); inflate y deflate, el radio. Radios de hasta 16 en smooth y smoothblocks y de hasta 30 en inflate y deflate, con 1–32 iteraciones.
+- Al suavizar un terreno, lo que se talla deja a la vista la capa de debajo (tierra o piedra). La hierba no se vuelve a poner encima.
+
+## Losas y escaleras en las operaciones sobre la selección (`-w`)
+
+Todos los modos de deform, surface y suavizado admiten `-w <perfil>`, como la bandera de smoothblocks de ezEdits. Cada bloque de la superficie del resultado se mide por octantes y se sustituye por la losa o escalera que mejor encaja, del mismo material (o del más parecido por color si ese material no tiene piezas), con la misma elección que las figuras de tubo.
+
+- Perfiles: `Slabs` (losas) y `SlabsAndStairs` o `SAS` (losas y escaleras). También valen los nombres de KomaEdit `slabs`, `stairs`, `losas` y `escaleras`. `SlabsAndStairs2D` y `SSW` se tratan como `SlabsAndStairs`.
+- Cobertura entre paréntesis: `Slabs(C:0.7)`. 0,5 es lo más fiel; hacia 1 se usan piezas en toda la superficie y hacia 0 casi ninguna.
+- Limitaciones: no hay perfil `Layers` (capas de nieve), ni muros, ni materiales a elegir por pieza (`Slabs(Slab:acacia)`). Las piezas salen del bloque original.
 ## Formas sueltas
 
 ### Objetivo y acceso

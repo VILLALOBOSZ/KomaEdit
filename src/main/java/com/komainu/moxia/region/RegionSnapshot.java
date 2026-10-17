@@ -106,6 +106,12 @@ public final class RegionSnapshot {
         return info == null ? air : info;
     }
 
+    /** Información de un estado leído en la foto por su id crudo; el aire si ese id no aparece. */
+    public StateInfo stateInfo(int rawId) {
+        StateInfo info = states.get(rawId);
+        return info == null ? air : info;
+    }
+
     /** Estado de WorldEdit; {@code null} en fotos construidas sin Minecraft. */
     public BlockState state(int x, int y, int z) {
         return info(x, y, z).state();

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Añade `/komaedit deform` (alias `deformar`) con los modos de `//ezdeform` de ezEdits: `hexagonalize` (columnas de tapa plana, red de ángulo variable, hueco y giro), `noise` (desplazamiento por ruido, `-z`, `-h`, `-v`), `rotate` (giro según la mirada, `-o`), `voronoialize` (trozos convexos con hueco), `voronoialize2` (facetas planas repartidas por la superficie, `-r` y `-n`) y `voxelize` (cuboides por mayoría con escalas por eje, distorsión, `-i`, `-j`, `-h` y `-v`).
+- Añade `cylindrify` y `spherify` (Mercator o LAEA con `-l`): proyectan la selección sobre un cilindro o una esfera nuevos, encima de ella o alrededor del jugador, con `-r`, `-d`, `-x`, `-i`, `-j`, `-a`, `-f`, `-o`, `-s` y `-t`. La caja de salida se lee y se escribe de forma condicional y se avisa de su volumen antes de empezar.
+- Añade `/komaedit surface` (alias `superficie`) con `fuzzify`, `rockify`, `voronoify` y `noisify` sobre una distancia exacta a la superficie, con suavizado, `-c` (solo tallar), `-e` (solo crecer), `-m` (lista de bloques y etiquetas) y `-t` (conserva la topología con la prueba de punto simple).
+- Añade `/komaedit smooth` (radios por eje, iteraciones y sesgo), `inflate`, `deflate` (elipsoides exactos) y `smoothblocks <perfil> [radio] [sesgo]`, con alias en español.
+- Todas estas operaciones admiten `-w <perfil>` con los nombres de ezEdits (`Slabs`, `SlabsAndStairs`, cobertura con `(C:0.7)`), reutilizando las losas y escaleras de las figuras de tubo.
+- El motor de operaciones sobre la selección puede leer y escribir una caja extra fuera de la selección.
 - Registra en WorldEdit las máscaras de ezEdits para cualquier orden (`//set`, `//replace`, `//gmask`, pinceles…): `#aim`, `#attached`, `#blocklight`, `#clipblocks`, `#current`, `#eznoisemask`, `#fullblock`, `#fuzzypalette`, `#infested`, `#lightsource`, `#near`, `#palette`, `#radialgradientmask`, `#schemblocks`, `#truelight` y `#vectorgradientmask`, con sus alias.
 - Registra los patrones `#aim`, `#palette`, `#eznoisepattern` (y los atajos `#ridged`, `#smoothcells`, `#voronoiedge`), `#radialgradientpattern`, `#vectorgradientpattern` (`#vectorgradient`) y `#selection`.
 - Añade las paletas guardadas por jugador y mundo: `/komaedit palette` (alias `paleta`) con `list`, `save`, `delete`, `fetch`, `place`, `swap`, `print`, `encode` y `decode`, y `#nombre` en cualquier paleta, también en los degradados.
