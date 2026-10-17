@@ -20,6 +20,8 @@ public enum PathShape {
             "crown", "corona", "coronas", "flores", "flowers", "petals"),
     HONEYCOMB("honeycomb", "Panal", "Celdas hexagonales tridimensionales conectadas", 5, 5, 1,
             "panal", "honey", "ho"),
+    FISHNET("fishnet", "Red", "Malla de hilos helicoidales cruzados que envuelve el recorrido", 6, 5, 1,
+            "net", "red", "malla", "fi"),
     OSCILLATE("oscillate", "Oscilar", "Cinta volumétrica que ondula y gira", 4, 5, 1,
             "oscilar", "onda", "os"),
     RIB_LOOPS("ribloops", "Costillas", "Arcos abiertos repetidos con una espina longitudinal", 9, 5, 2,
@@ -48,6 +50,8 @@ public enum PathShape {
             "braids", "trenza", "trenzas", "br"),
     NOISE_TUBE("noisetube", "Tubo erosionado", "Tubo macizo cuya corteza muerde un ruido 3D que sigue la curva", 8, 4, 2,
             "noise_tube", "noise", "erosion", "erosionado", "rock", "roca", "ruido"),
+    EXPRESSION("expression", "Expresión", "Figura definida por una fórmula en espacio de tubo: x e y en la sección, z a lo largo", 7, 6, 1,
+            "expresion", "expr", "formula", "fórmula", "ecuacion"),
     PILLAR("pillar", "Pilar monumental", "Columna épica entre P1 y P2 con base, fuste, nervaduras y capitel", 10, 6, 2,
             "pilar", "column", "columna", "epic_pillar", "monumental_pillar"),
     PILLAR_ARCHES("pillararches", "Pilares arqueados", "Dos pilares monumentales levantados desde P1 y P2 y unidos mediante un arco ornamentado", 9, 6, 2,
@@ -93,6 +97,11 @@ public enum PathShape {
 
     public String description() {
         return description;
+    }
+
+    /** Otros nombres que acepta {@link #byId(String)}; los usan el buscador del Studio y las sugerencias de comando. */
+    public java.util.List<String> aliases() {
+        return java.util.List.of(aliases);
     }
 
     public ShapeParameters defaults() {

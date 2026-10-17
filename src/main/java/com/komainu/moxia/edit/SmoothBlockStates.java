@@ -68,6 +68,28 @@ public final class SmoothBlockStates {
         return target == null ? null : orient(target, piece);
     }
 
+    /**
+     * Losa y escalera del material de un cubo entero, las mismas que usa el modo piezas: por nombre o, si no tiene,
+     * del color más parecido. Los pinceles con {@code -w} las usan para texturizar las piezas que ya hay.
+     *
+     * @return {@code [losa, escalera]}; cualquiera puede ser {@code null}
+     */
+    public static Block[] pieceFamily(BlockState state) {
+        Block block = state.getBlock();
+        if (block instanceof SlabBlock) {
+            return new Block[]{block, null};
+        }
+        if (block instanceof StairsBlock) {
+            return new Block[]{null, block};
+        }
+        if (state.isAir() || state.hasBlockEntity() || !state.isOpaque()
+                || !state.isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN)) {
+            return new Block[]{null, null};
+        }
+        Family family = FAMILIES.computeIfAbsent(block, SmoothBlockStates::resolve);
+        return new Block[]{family.slab(), family.stairs()};
+    }
+
     private static BlockState orient(Block block, byte piece) {
         BlockState state = block.getDefaultState();
         if (block instanceof SlabBlock) {

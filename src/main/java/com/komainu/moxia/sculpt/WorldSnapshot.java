@@ -74,6 +74,15 @@ public final class WorldSnapshot {
                 && z >= minimumZ && z < minimumZ + sizeZ;
     }
 
+    /** Estados distintos de la captura, para clasificarlos una sola vez cada uno. */
+    public java.util.Set<BlockState> distinctStates() {
+        java.util.Set<BlockState> states = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        for (BlockState state : blocks) {
+            states.add(state);
+        }
+        return states;
+    }
+
     public int minimumY() {
         return minimumY;
     }

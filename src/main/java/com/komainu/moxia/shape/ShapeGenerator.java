@@ -18,7 +18,7 @@ public final class ShapeGenerator {
     }
 
     public static Set<BlockVector3> generate(SampledPath path, ShapeParameters parameters) {
-        if (TubeFigures.supports(parameters.shape())) {
+        if (TubeFigures.handles(parameters)) {
             return TubeFigures.generate(path, parameters, MAX_GENERATED_BLOCKS);
         }
         VoxelCanvas canvas = new VoxelCanvas(MAX_GENERATED_BLOCKS);
@@ -31,6 +31,7 @@ public final class ShapeGenerator {
             case LIGHTNING -> lightning(canvas, path, parameters);
             case CROWNS -> crowns(canvas, path, parameters);
             case HONEYCOMB -> honeycomb(canvas, path, parameters);
+            case FISHNET -> fishnet(canvas, path, parameters);
             case OSCILLATE -> oscillate(canvas, path, parameters);
             case RIB_LOOPS -> ribLoops(canvas, path, parameters);
             case RINGS -> rings(canvas, path, parameters);
@@ -885,20 +886,21 @@ public final class ShapeGenerator {
         }
     }
 
+    /**
+     * Red: dos familias de hilos helicoidales a ±45° (una vuelta por perímetro recorrido), así las celdas salen
+     * cuadradas a cualquier escala. El espaciado fija el ancho de celda y con él cuántos hilos hay.
+     */
     private static void fishnet(VoxelCanvas canvas, SampledPath path, ShapeParameters parameters) {
-        int strands = Math.clamp(
-                (int) Math.round(Math.PI * 2.0 * parameters.radius() / Math.max(2.0, parameters.spacing() * 0.45)),
-                4,
-                12
-        );
+        int strands = fishnetStrands(parameters);
         int thickness = structuralThickness(parameters);
+        double roll = Math.toRadians(parameters.rollDegrees());
         for (int direction : new int[]{-1, 1}) {
             Vec3[] previous = new Vec3[strands];
             for (double distance : traceDistances(path)) {
                 SampledPath.Frame frame = path.at(distance);
                 for (int strand = 0; strand < strands; strand++) {
-                    double phase = strand * Math.PI * 2.0 / strands;
-                    double angle = phase + direction * Math.PI * 2.0 * distance / (parameters.spacing() * 2.0);
+                    double phase = roll + strand * Math.PI * 2.0 / strands;
+                    double angle = phase + direction * distance / parameters.radius();
                     Vec3 point = radial(frame, angle, parameters.radius());
                     if (previous[strand] != null) {
                         canvas.line(previous[strand], point, thickness);
@@ -907,6 +909,15 @@ public final class ShapeGenerator {
                 }
             }
         }
+    }
+
+    /** Hilos por familia de la red: uno cada {@code 1,2 · espaciado} bloques de perímetro. */
+    public static int fishnetStrands(ShapeParameters parameters) {
+        return Math.clamp(
+                (int) Math.round(Math.PI * 2.0 * parameters.radius() / (parameters.spacing() * 1.2)),
+                3,
+                24
+        );
     }
 
     private static void honeycomb(VoxelCanvas canvas, SampledPath path, ShapeParameters parameters) {

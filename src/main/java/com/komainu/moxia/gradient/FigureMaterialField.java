@@ -38,7 +38,7 @@ final class FigureMaterialField {
         longitudinal = new LongitudinalMapping(recipe);
         pitch = motifPitch(recipe);
         roll = Math.toRadians(recipe.rollDegrees());
-        tubeProbe = TubeFigures.supports(recipe.shape())
+        tubeProbe = TubeFigures.handles(recipe.shapeParameters())
                 ? TubeFigures.materialProbe(path, recipe.shapeParameters(), recipe.extensions().tubeCurve())
                 : null;
     }
@@ -66,7 +66,8 @@ final class FigureMaterialField {
         double motif = fraction(sourceDistance / pitch + 0.5);
         double angle = fraction((sourceAngle - roll) / (Math.PI * 2.0));
         if (tubeProbe != null && metric == MaterialMetric.FIGURE) {
-            // Las figuras de tubo ya saben qué zona es cada bloque: núcleo, borde o hebra.
+            // Las figuras de tubo (y las clásicas con motor exacto) ya saben qué zona es cada bloque:
+            // núcleo, borde, hebra o eslabón.
             return tubeProbe.value(block, relief);
         }
         ScaleCoordinates scaleCoordinates = recipe.shape() == PathShape.SCALES
@@ -228,7 +229,7 @@ final class FigureMaterialField {
             case CHAINLINK, RINGS, KNOTS -> angularWave * 0.52 + motifWave * 0.30 + relief * 0.18;
             case LIGHTNING -> motifWave * 0.24 + angularWave * 0.26 + relief * 0.50;
             case BEADS, CROWNS, RIB_LOOPS -> relief * 0.56 + angularWave * 0.29 + motifWave * 0.15;
-            case COIL, OSCILLATE, NOODLES -> angularWave * 0.50 + smooth(motif) * 0.35 + relief * 0.15;
+            case COIL, OSCILLATE, NOODLES, FISHNET -> angularWave * 0.50 + smooth(motif) * 0.35 + relief * 0.15;
             case HONEYCOMB -> motifWave * 0.42 + angularWave * 0.42 + relief * 0.16;
             case MANDALA -> motifWave * 0.34 + angularWave * 0.38 + relief * 0.28;
             case CLOUDS -> relief * 0.48 + angularWave * 0.30 + smooth(motif) * 0.22;
@@ -237,7 +238,7 @@ final class FigureMaterialField {
             case PILLAR_ARCHES -> axis * 0.38 + relief * 0.42 + motifWave * 0.20;
             case TORII -> axis * 0.44 + angularWave * 0.32 + relief * 0.24;
             case ARCH_BRIDGE -> axis * 0.58 + relief * 0.42;
-            case SWEEP, BRAID, NOISE_TUBE -> relief * 0.60 + angularWave * 0.20 + motifWave * 0.20;
+            case SWEEP, BRAID, NOISE_TUBE, EXPRESSION -> relief * 0.60 + angularWave * 0.20 + motifWave * 0.20;
         }, 0.0, 1.0);
     }
 
@@ -263,6 +264,7 @@ final class FigureMaterialField {
             case LIGHTNING -> radius * interpolate(0.46, 1.08, spacing);
             case CROWNS -> radius * interpolate(0.80, 2.30, spacing);
             case HONEYCOMB -> radius * interpolate(0.45, 1.50, spacing);
+            case FISHNET -> recipe.spacing() * 2.0;
             case OSCILLATE -> radius * interpolate(1.10, 4.50, spacing);
             case RIB_LOOPS -> radius * interpolate(0.55, 1.75, spacing);
             case CHAINLINK -> radius * interpolate(1.10, 3.20, spacing) + gap * radius;
@@ -280,7 +282,7 @@ final class FigureMaterialField {
             case PILLAR_ARCHES -> radius * interpolate(0.65, 1.35, spacing);
             case TORII -> radius * interpolate(0.70, 1.45, spacing);
             case ARCH_BRIDGE -> Math.max(recipe.spacing(), radius * 1.55 * (1.0 + gap));
-            case SWEEP, BRAID, NOISE_TUBE -> radius * interpolate(1.0, 3.0, spacing);
+            case SWEEP, BRAID, NOISE_TUBE, EXPRESSION -> radius * interpolate(1.0, 3.0, spacing);
         });
     }
 

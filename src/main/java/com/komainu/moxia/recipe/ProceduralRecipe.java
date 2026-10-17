@@ -5,6 +5,7 @@ import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.shape.tube.TubeFormula;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,9 +26,14 @@ public record ProceduralRecipe(
         int dither,
         boolean reverse,
         Map<String, Double> options,
-        RecipeExtensions extensions
+        RecipeExtensions extensions,
+        String formula
 ) {
-    public static final int FORMAT_VERSION = 3;
+    /**
+     * 4: fórmula de la figura Expresión ({@code formula}, texto). Las versiones 1–3 se leen con la fórmula vacía,
+     * es decir, con la fórmula de serie que indique la opción {@code preset}.
+     */
+    public static final int FORMAT_VERSION = 4;
     public static final Pattern VALID_NAME = Pattern.compile("[a-zA-Z0-9_-]{1,32}");
 
     public ProceduralRecipe {
@@ -73,6 +79,32 @@ public record ProceduralRecipe(
         }
         new ShapeOptions(options);
         extensions = extensions == null ? RecipeExtensions.DEFAULT : extensions;
+        // Solo la figura Expresión lleva texto; en el resto se descarta para no arrastrar estado invisible.
+        formula = formula == null || shape != PathShape.EXPRESSION ? "" : formula.trim();
+        if (!formula.isEmpty()) {
+            TubeFormula.compile(formula);
+        }
+    }
+
+    public ProceduralRecipe(
+            String name,
+            PathShape shape,
+            String pattern,
+            String accentPattern,
+            int radius,
+            int spacing,
+            int thickness,
+            int rollDegrees,
+            int height,
+            String paletteId,
+            GradientAxis gradientAxis,
+            int dither,
+            boolean reverse,
+            Map<String, Double> options,
+            RecipeExtensions extensions
+    ) {
+        this(name, shape, pattern, accentPattern, radius, spacing, thickness, rollDegrees, height, paletteId,
+                gradientAxis, dither, reverse, options, extensions, "");
     }
 
     public ProceduralRecipe(
@@ -160,7 +192,7 @@ public record ProceduralRecipe(
                 spacing,
                 thickness,
                 rollDegrees,
-                new ShapeOptions(resolved)
+                new ShapeOptions(resolved, formula)
         );
     }
 
@@ -198,7 +230,8 @@ public record ProceduralRecipe(
                 nextDither,
                 nextReverse,
                 options,
-                extensions
+                extensions,
+                formula
         );
     }
 
@@ -218,7 +251,8 @@ public record ProceduralRecipe(
                 dither,
                 reverse,
                 options,
-                value
+                value,
+                formula
         );
     }
 
@@ -259,7 +293,30 @@ public record ProceduralRecipe(
                 dither,
                 reverse,
                 nextOptions,
-                extensions
+                extensions,
+                formula
+        );
+    }
+
+    /** Fórmula propia de la figura Expresión; vacía vuelve a la fórmula de serie. */
+    public ProceduralRecipe withFormula(String value) {
+        return new ProceduralRecipe(
+                name,
+                shape,
+                pattern,
+                accentPattern,
+                radius,
+                spacing,
+                thickness,
+                rollDegrees,
+                height,
+                paletteId,
+                gradientAxis,
+                dither,
+                reverse,
+                options,
+                extensions,
+                value
         );
     }
 

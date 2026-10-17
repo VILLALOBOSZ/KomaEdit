@@ -1,12 +1,14 @@
 package com.komainu.moxia;
 
 import com.komainu.moxia.brush.BrushManager;
+import com.komainu.moxia.brush.BrushToolInputs;
 import com.komainu.moxia.command.MoxiaCommands;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.editor.EditorActionPayload;
 import com.komainu.moxia.editor.EditorActionService;
 import com.komainu.moxia.editor.FastPaintService;
+import com.komainu.moxia.ivy.IvyService;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramPayload;
 import com.komainu.moxia.path.PathHologramSync;
@@ -14,10 +16,13 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.persistence.OperationLedger;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.preview.PreviewHologramPayload;
+import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.recipe.RecipeActionService;
 import com.komainu.moxia.recipe.RecipeCatalogPayload;
 import com.komainu.moxia.recipe.InstanceCatalogPayload;
+import com.komainu.moxia.sculpt.SnapshotCaptureService;
 import com.komainu.moxia.ui.QuickBuildPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -43,6 +48,7 @@ public final class KomaEditMod implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(QuickBuildPayload.ID, QuickBuildPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RecipeCatalogPayload.ID, RecipeCatalogPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(InstanceCatalogPayload.ID, InstanceCatalogPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(PreviewHologramPayload.ID, PreviewHologramPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(EditorActionPayload.ID, EditorActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RecipeActionPayload.ID, RecipeActionPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(EditorActionPayload.ID, (payload, context) ->
@@ -52,6 +58,7 @@ public final class KomaEditMod implements ModInitializer {
                 context.server().execute(() -> RecipeActionService.handle(context.player(), payload))
         );
         MoxiaCommands.register();
+        com.komainu.moxia.worldedit.EzExtensions.register();
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (world.isClient() || !(player instanceof ServerPlayerEntity serverPlayer)) {
                 return ActionResult.PASS;
@@ -91,6 +98,7 @@ public final class KomaEditMod implements ModInitializer {
                 return ActionResult.FAIL;
             }
         });
+        BrushToolInputs.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             try {
                 ProjectStorage.bind(handler.player.getUuid(), server);
@@ -123,20 +131,28 @@ public final class KomaEditMod implements ModInitializer {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             BatchEditService.cancel(handler.player.getUuid(), false);
             FastPaintService.remove(handler.player.getUuid());
+            IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
+            com.komainu.moxia.edit.PendingBuilds.remove(handler.player.getUuid());
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
+            RegionOperationService.cancel(handler.player.getUuid());
         });
         ServerTickEvents.END_SERVER_TICK.register(BatchEditService::tick);
         ServerTickEvents.END_SERVER_TICK.register(FastPaintService::tick);
+        ServerTickEvents.END_SERVER_TICK.register(SnapshotCaptureService::tick);
+        ServerTickEvents.END_SERVER_TICK.register(RegionOperationService::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> AsyncEngine.start());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             BatchEditService.shutdown();
             FastPaintService.shutdown();
+            SnapshotCaptureService.clearAll();
             AsyncEngine.shutdown();
             PathManager.clearAll();
+            com.komainu.moxia.edit.PendingBuilds.clearAll();
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
+            RegionOperationService.clearAll();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");
     }

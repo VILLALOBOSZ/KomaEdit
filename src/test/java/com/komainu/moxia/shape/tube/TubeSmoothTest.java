@@ -172,7 +172,10 @@ class TubeSmoothTest {
         List<ShapeParameters> cases = List.of(
                 sweep(9, star),
                 PathShape.BRAID.defaults().withOptions(new ShapeOptions(smooth(SmoothMode.STAIRS, 0.5))),
-                PathShape.NOISE_TUBE.defaults().withOptions(new ShapeOptions(smooth(SmoothMode.SLABS, 0.7)))
+                PathShape.NOISE_TUBE.defaults().withOptions(new ShapeOptions(smooth(SmoothMode.SLABS, 0.7))),
+                // t también se interpola: una fórmula que cambia a lo largo del recorrido.
+                PathShape.EXPRESSION.defaults().withOptions(new ShapeOptions(smooth(SmoothMode.STAIRS, 0.5),
+                        "r <= 1 && abs(sin(a * 3 + z)) > 0.2 + 0.6 * t"))
         );
         for (ShapeParameters parameters : cases) {
             Set<BlockVector3> blocks = TubeFigures.generate(path, parameters, LIMIT);
@@ -213,8 +216,9 @@ class TubeSmoothTest {
 
     private static TubeVoxelizer.Evaluator evaluator(SampledPath path, ShapeParameters parameters) {
         TubeSettings settings = TubeSettings.from(parameters);
-        return new TubeVoxelizer.Evaluator(TubeCenterline.create(path, settings, TubeCurve.NONE), settings,
-                TubeShapes.create(settings, TubeFigures.pathSeed(path)));
+        TubeCenterline line = TubeCenterline.create(path, settings, TubeCurve.NONE);
+        return new TubeVoxelizer.Evaluator(line, settings,
+                TubeShapes.create(settings, parameters, line, TubeFigures.pathSeed(path)));
     }
 
     private static LongOpenHashSet packed(Set<BlockVector3> blocks) {

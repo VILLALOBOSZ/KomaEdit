@@ -1,7 +1,9 @@
 package com.komainu.moxia.recipe;
 
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.edit.PendingBuilds;
 import com.komainu.moxia.gradient.GradientService;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.path.PathManager;
@@ -255,6 +257,25 @@ public final class RecipeBuildService {
         if (player == null || !player.getUuid().equals(playerId)) {
             return;
         }
+        // Los Build muy grandes esperan a /komaedit confirm; la geometría ya está calculada.
+        PendingBuilds.submitOrHold(
+                player,
+                (update ? "Actualizar " : "Construir ") + recipe.name(),
+                BuildEstimate.of(bundle.placementPlan()),
+                () -> enqueue(playerId, player, instanceId, recipe, storedPath, buildPath, bundle, update)
+        );
+    }
+
+    private static void enqueue(
+            UUID playerId,
+            ServerPlayerEntity player,
+            String instanceId,
+            ProceduralRecipe recipe,
+            PathSnapshot storedPath,
+            PathSnapshot buildPath,
+            PlanBundle bundle,
+            boolean update
+    ) {
         try {
             BatchEditService.CapturedJobListener listener = (
                     cancelled,

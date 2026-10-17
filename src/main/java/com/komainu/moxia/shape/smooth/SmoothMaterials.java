@@ -49,6 +49,14 @@ public final class SmoothMaterials {
         return withSuffix(blockId, "_stairs");
     }
 
+    /**
+     * Candidatos a la pieza de un bloque con cualquier sufijo de forma ({@code _wall}, {@code _fence}…), por orden
+     * de preferencia; quien la usa se queda con el primero que exista.
+     */
+    public static List<String> shapeIds(String blockId, String suffix) {
+        return withSuffix(blockId, suffix);
+    }
+
     /** Raíces por orden de preferencia: primero el propio bloque, después sus parientes más cercanos. */
     static List<String> stems(String path) {
         Set<String> found = new LinkedHashSet<>();

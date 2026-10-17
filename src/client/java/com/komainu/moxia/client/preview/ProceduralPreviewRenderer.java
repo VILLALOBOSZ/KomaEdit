@@ -64,6 +64,8 @@ public final class ProceduralPreviewRenderer {
     private static long retryNotBefore;
     private static RenderState state = RenderState.empty();
     private static String status = "Holograma esperando puntos";
+    /** Oculto desde el Studio (tecla H): se sigue calculando para el recuento, pero no se dibuja. */
+    private static boolean hidden;
 
     private ProceduralPreviewRenderer() {
     }
@@ -121,13 +123,32 @@ public final class ProceduralPreviewRenderer {
         return status;
     }
 
+    public static boolean hidden() {
+        return hidden;
+    }
+
+    public static void setHidden(boolean value) {
+        hidden = value;
+    }
+
+    /** Bloques del último holograma calculado, o -1 si no hay; puede ir un paso por detrás del borrador. */
+    public static int blockCount() {
+        RenderState current = state;
+        return current.sections().isEmpty() ? -1 : current.blockCount();
+    }
+
+    /** Si el holograma corresponde ya a lo último pedido (nada en cola ni calculándose). */
+    public static boolean settled() {
+        return pending == null && (running == null || running.isDone());
+    }
+
     public static void clear() {
         clearPreview("Holograma desactivado");
     }
 
     public static void render(WorldRenderContext context) {
         RenderState current = state;
-        if (current.sections().isEmpty()) {
+        if (current.sections().isEmpty() || hidden) {
             return;
         }
         Vec3d camera = context.camera().getPos();
@@ -408,7 +429,7 @@ public final class ProceduralPreviewRenderer {
             var extensions = recipe.extensions();
             int geometryHash = Objects.hash(
                     recipe.shape(), recipe.radius(), recipe.spacing(), recipe.thickness(), recipe.rollDegrees(),
-                    recipe.height(), recipe.options(),
+                    recipe.height(), recipe.options(), recipe.formula(),
                     extensions.startScalePercent(), extensions.endScalePercent(),
                     extensions.startSpacingPercent(), extensions.endSpacingPercent(),
                     extensions.twistDegrees(), extensions.easing(),

@@ -8,15 +8,20 @@ import com.komainu.moxia.shape.smooth.SmoothMode;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Traduce la forma corta de los comandos de tubo a {@link ShapeParameters}:
  * {@code <perfil> <radios> [patrón] [-e extremo] [-n normales] [-t torsión] [-r giro[,giroFinal]]
  * [-p tensión:sesgo:continuidad] [-q calidad] [-s estiramiento] [-hollow pared] [-d profundidad]
  * [-a aspecto] [-x exponente] [-k hebras] [-f frecuencia] [-seed semilla] [-fill] [-w slabs|stairs]
- * [-c cobertura]}. {@code -c} sin {@code -w} activa losas y escaleras.
+ * [-c cobertura]}. {@code -c} sin {@code -w} activa losas y escaleras. La de {@code expr} es
+ * {@code <radios> [banderas] [patrón] <fórmula…>}.
  */
 public final class TubeCommandParser {
+    /** Una bandera escrita después de la fórmula: se avisa de que van delante. */
+    private static final Pattern TRAILING_FLAG = Pattern.compile("\\s-[a-zA-Z]+\\s+\\S");
+
     private TubeCommandParser() {
     }
 
@@ -121,6 +126,142 @@ public final class TubeCommandParser {
                 new ShapeOptions(options)
         );
         return new Result(parameters, pattern == null ? defaultPattern : pattern);
+    }
+
+    /**
+     * Forma corta de {@code /komaedit expr <radios> [banderas] [patrón] <fórmula…>}. Las banderas van delante, el
+     * patrón es opcional y la fórmula ocupa el resto del texto, con espacios si se quiere; también vale el nombre
+     * de una fórmula de serie con {@code n} pegado al final ({@code ventanas8}).
+     *
+     * <p>El patrón no se puede reconocer por su forma, así que se decide compilando: si todo el texto es una
+     * fórmula válida no hay patrón; si no, la primera palabra es el patrón y el resto la fórmula.</p>
+     */
+    public static Result parseExpression(String radii, String rest, String defaultPattern) {
+        String text = rest == null ? "" : rest.strip();
+        StringBuilder flags = new StringBuilder();
+        int cursor = 0;
+        while (cursor < text.length()) {
+            int end = tokenEnd(text, cursor);
+            String token = text.substring(cursor, end);
+            if (!isExpressionFlag(token)) {
+                break;
+            }
+            flags.append(' ').append(token);
+            cursor = skipSpaces(text, end);
+            String flag = token.toLowerCase(Locale.ROOT);
+            if (!flag.equals("-fill") && !flag.equals("-relleno")) {
+                if (cursor >= text.length()) {
+                    throw new IllegalArgumentException("Falta el valor de " + token);
+                }
+                int valueEnd = tokenEnd(text, cursor);
+                flags.append(' ').append(text, cursor, valueEnd);
+                cursor = skipSpaces(text, valueEnd);
+            }
+        }
+        String remainder = text.substring(cursor);
+        if (remainder.isEmpty()) {
+            throw new IllegalArgumentException("Falta la fórmula: escribe una, como r < 1 && abs(x) > 0.3, "
+                    + "o el nombre de una de serie (" + TubeFormulaPreset.ids() + ")");
+        }
+        Choice formula = choose(remainder);
+        String pattern = null;
+        if (formula.error() != null) {
+            int split = tokenEnd(remainder, 0);
+            String tail = remainder.substring(split).strip();
+            Choice afterPattern = tail.isEmpty() ? null : choose(tail);
+            if (afterPattern != null && afterPattern.error() == null) {
+                pattern = remainder.substring(0, split);
+                formula = afterPattern;
+            } else {
+                // Se informa del error que llegó más lejos: el de todo el texto o el de lo que sigue al patrón.
+                TubeFormula.FormulaException error = formula.error();
+                if (afterPattern != null && afterPattern.error().position()
+                        + remainder.length() - tail.length() > error.position()) {
+                    error = afterPattern.error();
+                }
+                String message = error.getMessage();
+                if (TRAILING_FLAG.matcher(remainder).find()) {
+                    message += " · las banderas (-e, -n, -t…) van antes del patrón y la fórmula";
+                }
+                throw new IllegalArgumentException(message);
+            }
+        }
+        Result parsed = parse(PathShape.EXPRESSION, null, radii,
+                pattern == null ? flags.toString() : flags + " " + pattern, defaultPattern);
+        Map<String, Double> options = new LinkedHashMap<>(parsed.parameters().options().values());
+        String source = "";
+        if (formula.preset() != null) {
+            options.put("preset", (double) formula.preset().ordinal());
+            if (formula.repeat() > 0) {
+                options.put("sides", (double) formula.repeat());
+            }
+        } else {
+            source = formula.source();
+        }
+        if (options.size() > ShapeOptions.MAX_ENTRIES) {
+            throw new IllegalArgumentException("Demasiados parámetros a la vez (máximo " + ShapeOptions.MAX_ENTRIES + ")");
+        }
+        ShapeParameters parameters = parsed.parameters().withOptions(new ShapeOptions(options, source));
+        return new Result(parameters, parsed.pattern());
+    }
+
+    /** Fórmula de serie (con su {@code n} si lo lleva pegado) o fórmula propia ya comprobada. */
+    private record Choice(TubeFormulaPreset preset, int repeat, String source, TubeFormula.FormulaException error) {
+    }
+
+    private static Choice choose(String text) {
+        String token = text.strip();
+        int digits = token.length();
+        while (digits > 0 && Character.isDigit(token.charAt(digits - 1))) {
+            digits--;
+        }
+        TubeFormulaPreset preset = digits > 0 ? TubeFormulaPreset.find(token.substring(0, digits)) : null;
+        if (preset != null) {
+            int repeat = 0;
+            if (digits < token.length()) {
+                String count = token.substring(digits);
+                repeat = count.length() > 2 ? Integer.MAX_VALUE : Integer.parseInt(count);
+                if (repeat < 2 || repeat > 32) {
+                    throw new IllegalArgumentException("Las repeticiones de " + preset.id()
+                            + " deben estar entre 2 y 32");
+                }
+            }
+            return new Choice(preset, repeat, null, null);
+        }
+        try {
+            TubeFormula.compile(token);
+            return new Choice(null, 0, token, null);
+        } catch (TubeFormula.FormulaException exception) {
+            return new Choice(null, 0, null, exception);
+        }
+    }
+
+    private static boolean isExpressionFlag(String token) {
+        if (token.length() < 2 || token.charAt(0) != '-') {
+            return false;
+        }
+        for (int index = 1; index < token.length(); index++) {
+            if (!Character.isLetter(token.charAt(index))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int tokenEnd(String text, int start) {
+        int end = start;
+        while (end < text.length() && !Character.isWhitespace(text.charAt(end))) {
+            end++;
+        }
+        return end;
+    }
+
+    private static int skipSpaces(String text, int start) {
+        int end = start;
+        while (end < text.length() && Character.isWhitespace(text.charAt(end))) {
+            end++;
+        }
+        return end;
     }
 
     private static boolean isFlag(String token) {

@@ -1,6 +1,8 @@
 package com.komainu.moxia.editor;
 
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.path.PathEditing;
+import com.komainu.moxia.path.PathHistory;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.permission.KomaPermissions;
@@ -45,6 +47,14 @@ public final class EditorActionService {
                 case EditorActionPayload.PATH_REMOVE -> {
                     PathManager.remove(player.getUuid(), payload.index());
                     PathHologramSync.sync(player);
+                }
+                case EditorActionPayload.PATH_INSERT -> {
+                    PathManager.update(player.getUuid(), state -> new PathHistory.State(
+                            PathEditing.insertMidpoint(state.points(), payload.index(), state.closed()),
+                            state.closed()
+                    ));
+                    PathHologramSync.sync(player);
+                    message(player, "Punto insertado tras el " + (payload.index() + 1));
                 }
                 case EditorActionPayload.BOX_PRIMARY -> WorldEditService.setCuboidPoint(
                         player, true, payload.position(), payload.index() < 0
@@ -136,7 +146,8 @@ public final class EditorActionService {
 
     private static void requireAction(ServerPlayerEntity player, int action) {
         String permission = switch (action) {
-            case EditorActionPayload.PATH_ADD, EditorActionPayload.PATH_MOVE, EditorActionPayload.PATH_REMOVE ->
+            case EditorActionPayload.PATH_ADD, EditorActionPayload.PATH_MOVE, EditorActionPayload.PATH_REMOVE,
+                 EditorActionPayload.PATH_INSERT ->
                     KomaPermissions.PATH;
             case EditorActionPayload.PAINT, EditorActionPayload.PAINT_BEGIN, EditorActionPayload.PAINT_END ->
                     KomaPermissions.PAINT;

@@ -1007,6 +1007,14 @@ public final class LiveBuildScreen extends Screen {
             }
             return true;
         }
+        if (keyCode == GLFW.GLFW_KEY_INSERT && selectedTool == Tool.PATH) {
+            Ray ray = rayForMouse(width / 2.0, height / 2.0);
+            int point = pickPathPoint(ray);
+            if (point >= 0) {
+                sendEditor(EditorActionPayload.PATH_INSERT, point, BlockPos.ORIGIN);
+            }
+            return true;
+        }
         if (keyCode == GLFW.GLFW_KEY_DELETE && (selectedTool == Tool.BOX || selectedTool == Tool.MAGIC)) {
             sendEditor(EditorActionPayload.SELECTION_DELETE, -1, BlockPos.ORIGIN);
             status = "Borrado de selección enviado";

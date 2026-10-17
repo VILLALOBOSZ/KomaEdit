@@ -1,5 +1,6 @@
 package com.komainu.moxia.client;
 
+import com.komainu.moxia.client.brush.BrushToolControls;
 import com.komainu.moxia.client.hud.PathCaptureHud;
 import com.komainu.moxia.client.gui.ProceduralStudioScreen;
 import com.komainu.moxia.client.preview.PathHologramRenderer;
@@ -66,6 +67,7 @@ public final class KomaEditClient implements ClientModInitializer {
         WorldRenderEvents.AFTER_ENTITIES.register(EditorOverlayRenderer::render);
         WorldRenderEvents.AFTER_TRANSLUCENT.register(ProceduralPreviewRenderer::render);
         PathCaptureHud.register();
+        BrushToolControls.register();
         openEditor = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.komaedit.open",
                 InputUtil.Type.KEYSYM,
