@@ -7,6 +7,7 @@
 - Calcula las esquinas de las escaleras con la misma regla que Minecraft para que el mundo construido coincida con el holograma.
 - Elige la pieza del mismo material que el patrón (por nombre, con tabla para los casos sin convención y, si no existe, por color de mapa), también con patrones aleatorios y degradados.
 - Dibuja las losas y escaleras en el holograma con su forma real, por medios bloques.
+- Corrige que una sola receta o instancia ilegible (p. ej. de la 4.7, con una figura retirada) desactivase KomaEdit en todo el mundo con «The KomaEdit project is not initialized for this player»: ahora se omite con un aviso en `latest.log` y el proyecto sigue abierto.
 
 ## 1.1.0 (estable, 2026-10-17)
 
