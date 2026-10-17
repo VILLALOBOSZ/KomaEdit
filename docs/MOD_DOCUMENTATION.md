@@ -93,6 +93,150 @@ Las trayectorias se crean con puntos colocados mediante `P` o desde Procedural S
 - La previsualización permanece visible al cerrar la interfaz.
 - El cálculo se ejecuta fuera del hilo de renderizado, admite cancelación y conserva temporalmente el último resultado válido.
 
+### Captura y estado
+
+Requiere el permiso `komaedit.path`. Todos los subcomandos aceptan también el alias `ruta` (`/komaedit ruta …`, `/ke ruta …`).
+
+```text
+/komaedit path mode toggle            captura con clic derecho (como la tecla P)
+/komaedit path add                    punto en la cara del bloque que miras
+/komaedit path here                   punto en tu posición
+/komaedit path point 120 64 -40       punto en coordenadas exactas
+/komaedit path status                 resumen con botones: puntos, deshacer, invertir, cerrar, guardar
+/komaedit path points                 lista los puntos con [+] insertar, [−] quitar, [aquí] y [editar]
+```
+
+`status` indica el número de puntos, si el lazo está cerrado, la longitud en bloques y los pasos de deshacer y rehacer disponibles. Con menos de dos puntos, los comandos de construcción usan la selección de WorldEdit.
+
+### Editar puntos
+
+Los puntos se numeran desde 1, como en el HUD. El autocompletado de `<n>` muestra las coordenadas de cada punto.
+
+| Comando | Efecto |
+|---|---|
+| `path insert <n>` | Inserta un punto a mitad entre el `n` y el siguiente. Tras el último punto, en un lazo cerrado va entre el último y el primero; en uno abierto prolonga medio tramo. Falla si los dos puntos están pegados. |
+| `path insert <n> here` | Inserta tu posición después del punto `n`. |
+| `path remove <n>` | Quita el punto `n`. |
+| `path set <n> here` · `path set <n> <x> <y> <z>` | Mueve el punto `n`. |
+| `path shift <dx> <dy> <dz>` · `path shift here` | Mueve todo el recorrido; `here` lo lleva para que el primer punto quede en tu posición. |
+| `path reverse` | Invierte el sentido (importa en figuras con dirección, extremos o progresión de radio). |
+| `path close [on/off]` · `path open` | Cierra o abre el lazo; sin argumento lo alterna. |
+| `path mirror <x/y/z>` | Refleja el recorrido dentro de su propia caja. |
+| `path mirror <x/y/z> append` | Añade al final el reflejo apoyado en el último punto: media curva pasa a ser una curva simétrica completa. |
+| `path rotate <90/180/270>` | Gira sobre el eje vertical alrededor del centro de su caja. |
+| `path snap <paso> [all]` | Ajusta X y Z al múltiplo de `paso` más cercano (`all` también la altura). |
+| `path smooth [fuerza 0.05–1] [pasadas 1–8]` | Acerca cada punto a la media de sus vecinos sin cambiar cuántos hay; los extremos de un recorrido abierto no se mueven. Por defecto `0.5` y una pasada. |
+| `path simplify [tolerancia]` | Quita los puntos que se separan menos de `tolerancia` bloques (1 por defecto) de la recta entre sus vecinos (Ramer–Douglas–Peucker). |
+| `path subdivide` | Añade un punto a mitad de cada tramo, si caben. |
+| `path pop` | Quita el último punto (lo que hacía antes `path undo`). |
+| `path clear` | Vacía la trayectoria; se puede deshacer. |
+
+En el editor en vivo (`K`, herramienta de trayectoria), **Supr** quita el nodo señalado e **Insert** añade uno a mitad entre ese nodo y el siguiente.
+
+Ejemplos:
+
+```text
+/komaedit path insert 3
+/komaedit path shift 0 5 0
+/komaedit path mirror x append
+/komaedit path snap 2
+/komaedit path smooth 0.7 3
+```
+
+### Deshacer y rehacer
+
+`/komaedit path undo` y `/komaedit path redo` deshacen y rehacen cualquier cambio de puntos: añadir, mover con el gizmo, borrar, insertar, generar, cargar o vaciar. Arrastrar el mismo nodo de forma seguida cuenta como un solo paso. Se guardan los últimos 64 pasos por jugador, en memoria; se pierden al desconectarse. El historial de bloques del mundo sigue siendo el de WorldEdit (`//undo`, `//redo`, Ctrl+Z en el editor).
+
+### Generar trayectorias
+
+Las figuras centradas usan tu posición como centro; el arco y la catenaria van del primer al último punto del recorrido actual (o de `//pos1` a `//pos2` si no hay recorrido). Todas sustituyen la trayectoria (se puede deshacer) y respetan el máximo de 32 puntos.
+
+```text
+/komaedit path selection                                  cuboide (dos esquinas), convex (vértices) o poly (contorno)
+/komaedit path circle <radio 2–128> [puntos 8–32]         círculo cerrado (16 puntos)
+/komaedit path polygon <radio> <lados 3–32> [giro]        polígono regular cerrado
+/komaedit path spiral <radio inicial> <radio final> <vueltas> [altura] [puntos]
+/komaedit path helix <radio> <vueltas> <altura> [puntos]
+/komaedit path arc <altura> [up|down|left|right] [puntos]
+/komaedit path catenary <comba> [down|up|left|right] [puntos]
+```
+
+- **Espiral y hélice:** el radio pasa del inicial al final en las vueltas dadas mientras sube `altura` bloques (negativa baja). Sin `puntos`, usa unos doce por vuelta, entre 8 y 32.
+- **Arco:** arco de circunferencia cuya flecha (separación máxima respecto a la recta) es `altura`; `up` por defecto. Con una altura mayor que media cuerda da más de media vuelta. `left` y `right` se miran yendo del primer punto al último.
+- **Catenaria:** la curva de una cadena colgante, como `//selcatenary` de ezEdits. `comba` es la mayor distancia entre la cadena y la recta que une los extremos. Con `down` (por defecto) es la curva física: si un extremo está más alto, el punto más bajo se desplaza hacia el otro. `up` la invierte, como un arco de catenaria; `left` y `right` la tienden en horizontal. Falla si los extremos están uno encima del otro. 16 puntos por defecto.
+
+```text
+/komaedit path point 0 80 0
+/komaedit path point 60 72 0
+/komaedit path catenary 8
+/komaedit build chainlink iron_block
+```
+
+### Recorridos guardados
+
+```text
+/komaedit path save <nombre>       guarda el recorrido actual (sobrescribe si existe)
+/komaedit path load <nombre>       lo carga (se puede deshacer)
+/komaedit path list                tus recorridos; clic en uno para cargarlo
+/komaedit path delete <nombre>     lo borra
+```
+
+- Se guardan por mundo y jugador en `<mundo>/komaedit/players/<uuid>/paths/<nombre>.json`, con la escritura atómica del proyecto (`.tmp` y `.bak`).
+- Nombres de 1 a 32 caracteres: letras sin tilde, números, `_` y `-`; se pasan a minúsculas.
+- Formato 1: `{"format":1,"name":…,"dimension":…,"closed":…,"points":[[x,y,z],…]}`. Al leer se ignoran los campos desconocidos. El archivo guarda la dimensión; cargarlo en otra avisa pero no lo impide.
+- Guardar con otro nombre sirve para copiar un recorrido; combinado con `shift` o `mirror`, para repetirlo en otro sitio.
+
+### Limitaciones
+
+- Máximo 32 puntos por trayectoria, como hasta ahora: el holograma y la red no cambian.
+- Los puntos son posiciones de bloque enteras: no hay ajuste a media altura de bloque. `snap` trabaja en rejillas de 1 a 64 bloques.
+- La trayectoria activa y su historial viven en memoria; para conservarla entre sesiones, guárdala con `path save`.
+
+## Ayuda y comandos
+
+```text
+/komaedit help                     índice de temas clicables (alias: ayuda)
+/komaedit help path                trayectorias
+/komaedit help generate            generar trayectorias
+/komaedit help saved               recorridos guardados
+/komaedit help build               figuras, con todas las figuras clicables
+/komaedit help tubes               tubos, banderas y fórmula
+/komaedit help edit                doblar, degradados y jobs
+/komaedit help region              hiedra, envejecer y retocar
+/komaedit help project             proyecto y menús
+```
+
+- Cada comando de la ayuda se puede pulsar: se escribe en el chat hasta su primer argumento para completarlo. Al pasar el ratón se ve qué hace.
+- El autocompletado de figuras, perfiles, paletas, direcciones e índices de punto muestra una descripción junto a cada opción.
+- Los errores de nombre desconocido proponen el más parecido: figuras y sus alias, perfiles, extremos, normales, calidad, piezas, paletas, banderas de tubo, parámetros de figura, temas de ayuda y recorridos guardados. Por ejemplo, `/komaedit build coli stone` responde «Forma 3D desconocida: coli · ¿Quisiste decir «coil»?». Se acepta un error cada cuatro letras (cambiar, sobrar, faltar o intercambiar dos vecinas), sin contar tildes ni mayúsculas, o un prefijo de tres letras o más.
+- Alias: `/ke`, `/mx` y `/moxia` para `/komaedit`; `ruta` para `path`; `ayuda` para `help`; `estimar` para `estimate`; `confirmar` para `confirm`.
+
+## Diagnóstico antes de construir
+
+### Estimar
+
+```text
+/komaedit estimate <figura> [patrón] [escala] [espaciado] [grosor] [giro]
+/komaedit estimate coil stone 8
+```
+
+Calcula la misma geometría que `build` (fuera del hilo del servidor) y responde sin tocar el mundo, por ejemplo «Estimación de Coil: 120 345 bloques · 42 chunks · caja 60×24×88 · ~5 MB · ~2 s». Indica también si superaría tu límite de bloques o si pedirá confirmación.
+
+- **Chunks:** columnas de 16×16 distintas que toca la construcción.
+- **Memoria:** aproximada, unos 40 bytes por bloque mientras el plan está en cola.
+- **Tiempo:** aproximado, suponiendo unos 3000 bloques por tick (20 ticks por segundo) en la cola de KomaEdit; en servidores cargados o con muchos chunks sin cargar tarda más.
+
+### Confirmación de Build grandes
+
+Cuando un Build supera `confirmBuildAboveBlocks` bloques (250 000 por defecto) no se encola enseguida: el chat muestra la estimación con los botones **[Construir]** y **[Descartar]**, y la barra de acción recuerda `/komaedit confirm`. Afecta al comando `build`, a los comandos de figura y tubo, y a Construir y Actualizar del Studio.
+
+```text
+/komaedit confirm            manda a la cola el Build en espera
+/komaedit confirm cancel     lo descarta
+```
+
+La geometría ya está calculada, así que se construye exactamente lo estimado. La espera caduca a los dos minutos, al desconectarse o al pedir otro Build. Con `confirmBuildAboveBlocks` a `0` no se pregunta nunca.
+
 ## Figuras procedurales
 
 Las figuras convierten una trayectoria tridimensional en superficies o volúmenes repetibles. Actualmente se incluyen:
@@ -780,7 +924,7 @@ El proyecto persistente evita perder recetas e instancias al desconectarse y per
 
 ### Almacenamiento y migración
 
-- Ruta: `<mundo>/komaedit/players/<uuid>/` con namespaces `recipes`, `instances` y `jobs`.
+- Ruta: `<mundo>/komaedit/players/<uuid>/` con namespaces `recipes`, `instances`, `jobs` y `paths` (recorridos guardados).
 - La primera entrada copia de forma no destructiva las recetas e instancias heredadas de `config/komaedit/`; un marcador impide repetir la migración.
 - Cada reemplazo conserva el archivo anterior como `.bak` y utiliza un `.tmp` recuperable si el proceso se interrumpe.
 - La geometría comprimida de una instancia incluye SHA-256 en sus metadatos. Una discrepancia detiene la carga en vez de aplicar datos dañados.
@@ -814,6 +958,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - `maxBlocksPerOperation`: `1500000` de forma predeterminada; rango válido `10000–10000000`.
 - `maxConcurrentJobs`: `4` de forma predeterminada; rango válido `1–64`.
 - `backupRetention`: `5` de forma predeterminada; rango válido `1–50`.
+- `confirmBuildAboveBlocks`: `250000` de forma predeterminada; rango válido `0–10000000`. Por encima, un Build pide confirmación; `0` lo desactiva. Si falta en un `config.json` anterior se usa el valor por defecto.
 - `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
 
 Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios requieren reiniciar el servidor.

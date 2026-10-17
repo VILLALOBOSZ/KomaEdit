@@ -99,7 +99,7 @@ public enum PathShape {
         return description;
     }
 
-    /** Otros nombres que acepta el comando; el buscador del Studio también los usa. */
+    /** Otros nombres que acepta {@link #byId(String)}; los usan el buscador del Studio y las sugerencias de comando. */
     public java.util.List<String> aliases() {
         return java.util.List.of(aliases);
     }

@@ -12,6 +12,16 @@
 - Corrige que escribir una `k` en el nombre de la receta o en el buscador de bloques cerrara el Studio, y que el personaje se moviera al escribir el nombre.
 - La barra lateral, la barra superior y el pie se adaptan a pantallas bajas y escalas de GUI grandes, y las filas desplazadas bajo la cabecera o el pie ya no responden a clics.
 
+- Añade la edición de puntos de trayectoria por comando: `path insert`, `remove`, `set`, `shift`, `reverse`, `close on|off`/`open`, `mirror` (con `append` para completar una curva simétrica), `rotate`, `snap`, `smooth`, `simplify` y `subdivide`, y `path points` con botones para insertar, quitar o mover cada punto. Ej.: `/komaedit path insert 3`, `/komaedit path mirror x append`.
+- Añade deshacer y rehacer de la edición de puntos (`path undo`, `path redo`), con 64 pasos por jugador; arrastrar el mismo nodo cuenta como un paso. `path undo` ya no quita siempre el último punto: deshace el último cambio; el comportamiento anterior pasa a `path pop`.
+- Añade generadores de trayectoria: `path polygon`, `path spiral`, `path helix`, `path arc` y `path catenary` (cadena colgante entre el primer y el último punto, como `//selcatenary` de ezEdits, con comba y dirección `down|up|left|right`). Ej.: `/komaedit path catenary 8`.
+- Añade recorridos guardados con nombre por mundo y jugador: `path save|load|list|delete`, con escritura atómica en `<mundo>/komaedit/players/<uuid>/paths/` (formato nuevo, documentado).
+- Añade `/komaedit estimate` (alias `estimar`): bloques, chunks, caja, memoria y tiempo aproximado sin construir. Ej.: `/komaedit estimate coil stone 8`.
+- Los Build de más de `confirmBuildAboveBlocks` bloques (250 000 por defecto, clave nueva y opcional de `config.json`) esperan a `/komaedit confirm` con botones en el chat, también desde el Studio.
+- Rehace `/komaedit help [tema]` (alias `ayuda`) por temas, con comandos clicables que se escriben solos en el chat.
+- Los errores de figura, perfil, extremo, paleta, bandera, parámetro, tema de ayuda o recorrido desconocidos proponen «¿Quisiste decir…?», y el autocompletado de figuras, perfiles y paletas muestra su nombre.
+- Añade el alias `ruta` de `path` y la tecla **Insert** del editor en vivo para insertar un nodo a mitad.
+- Añade pruebas JUnit de la edición de puntos, los generadores (catenaria incluida), el historial, «¿quisiste decir…?», las estimaciones, la ayuda y el formato de recorridos guardados.
 - Añade la **Hiedra viva**: `/komaedit ivy` (alias `hiedra`) hace crecer una enredadera desde los puntos P o desde el bloque que miras sobre lo que ya hay construido. Las puntas se pegan a las caras enteras, trepan muros, cruzan tejados, se ramifican, cuelgan con gravedad de dinteles y aleros y florecen; cada bloque lleva sus caras y propiedades de vanilla (`vine`, `glow_lichen`, `moss_carpet`, hojas persistentes, `cave_vines` con bayas, `spore_blossom`).
 - Añade cuatro estilos (`hiedra`, `florido`, `selvatico`, `cueva`) y las banderas `-l` (largo), `-b` (ramas), `-g` (cuelgue), `-n` (tallos) y `-seed`; con la misma semilla sale la misma hiedra. Captura repartida por ticks, cálculo en un worker, una sola edición deshacible con //undo y sin pisar bloques puestos mientras crecía.
 - Registra el avance por ticks de la captura del entorno, que no llegaba a ejecutarse.

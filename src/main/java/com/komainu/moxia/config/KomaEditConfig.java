@@ -40,7 +40,8 @@ public final class KomaEditConfig {
                     integer(root, "maxBlocksPerOperation", Settings.DEFAULT.maxBlocksPerOperation()),
                     integer(root, "maxConcurrentJobs", Settings.DEFAULT.maxConcurrentJobs()),
                     bool(root, "rootPermissionGrantsAll", Settings.DEFAULT.rootPermissionGrantsAll()),
-                    integer(root, "backupRetention", Settings.DEFAULT.backupRetention())
+                    integer(root, "backupRetention", Settings.DEFAULT.backupRetention()),
+                    integer(root, "confirmBuildAboveBlocks", Settings.DEFAULT.confirmBuildAboveBlocks())
             );
         } catch (IOException | RuntimeException exception) {
             KomaEditMod.LOGGER.error("Could not load KomaEdit config; safe defaults will be used", exception);
@@ -59,6 +60,7 @@ public final class KomaEditConfig {
         root.addProperty("maxConcurrentJobs", value.maxConcurrentJobs());
         root.addProperty("rootPermissionGrantsAll", value.rootPermissionGrantsAll());
         root.addProperty("backupRetention", value.backupRetention());
+        root.addProperty("confirmBuildAboveBlocks", value.confirmBuildAboveBlocks());
         AtomicStorage.writeString(FILE, GSON.toJson(root));
     }
 
@@ -74,9 +76,16 @@ public final class KomaEditConfig {
             int maxBlocksPerOperation,
             int maxConcurrentJobs,
             boolean rootPermissionGrantsAll,
-            int backupRetention
+            int backupRetention,
+            int confirmBuildAboveBlocks
     ) {
-        public static final Settings DEFAULT = new Settings(1_500_000, 4, false, 5);
+        /** Por encima de estos bloques, un Build pide confirmación antes de encolarse; 0 no pregunta nunca. */
+        public static final Settings DEFAULT = new Settings(1_500_000, 4, false, 5, 250_000);
+
+        public Settings(int maxBlocksPerOperation, int maxConcurrentJobs, boolean rootPermissionGrantsAll,
+                        int backupRetention) {
+            this(maxBlocksPerOperation, maxConcurrentJobs, rootPermissionGrantsAll, backupRetention, 250_000);
+        }
 
         public Settings {
             if (maxBlocksPerOperation < 10_000 || maxBlocksPerOperation > 10_000_000) {
@@ -87,6 +96,9 @@ public final class KomaEditConfig {
             }
             if (backupRetention < 1 || backupRetention > 50) {
                 throw new IllegalArgumentException("backupRetention must be between 1 and 50");
+            }
+            if (confirmBuildAboveBlocks < 0 || confirmBuildAboveBlocks > 10_000_000) {
+                throw new IllegalArgumentException("confirmBuildAboveBlocks must be between 0 and 10000000");
             }
         }
     }
