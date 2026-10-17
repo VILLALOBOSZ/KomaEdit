@@ -7,6 +7,7 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.editor.EditorActionPayload;
 import com.komainu.moxia.editor.EditorActionService;
 import com.komainu.moxia.editor.FastPaintService;
+import com.komainu.moxia.ivy.IvyService;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramPayload;
 import com.komainu.moxia.path.PathHologramSync;
@@ -18,6 +19,7 @@ import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.recipe.RecipeActionService;
 import com.komainu.moxia.recipe.RecipeCatalogPayload;
 import com.komainu.moxia.recipe.InstanceCatalogPayload;
+import com.komainu.moxia.sculpt.SnapshotCaptureService;
 import com.komainu.moxia.ui.QuickBuildPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -123,16 +125,19 @@ public final class KomaEditMod implements ModInitializer {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             BatchEditService.cancel(handler.player.getUuid(), false);
             FastPaintService.remove(handler.player.getUuid());
+            IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
         });
         ServerTickEvents.END_SERVER_TICK.register(BatchEditService::tick);
         ServerTickEvents.END_SERVER_TICK.register(FastPaintService::tick);
+        ServerTickEvents.END_SERVER_TICK.register(SnapshotCaptureService::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> AsyncEngine.start());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             BatchEditService.shutdown();
             FastPaintService.shutdown();
+            SnapshotCaptureService.clearAll();
             AsyncEngine.shutdown();
             PathManager.clearAll();
             BrushManager.clearAll();
