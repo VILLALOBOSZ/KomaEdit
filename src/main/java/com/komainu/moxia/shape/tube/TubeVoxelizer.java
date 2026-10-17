@@ -19,6 +19,12 @@ final class TubeVoxelizer {
     static final long MAX_CANDIDATES = 64_000_000L;
     private static final double BALANCED_OFFSET = 0.3;
     private static final double[] HIGH_OFFSETS = {-1.0 / 3.0, 0.0, 1.0 / 3.0};
+    /**
+     * Holgura (en bloques) a partir de la cual el supermuestreo no puede rescatar el bloque: el doble del mayor
+     * desplazamiento de muestra, para cubrir las aproximaciones de distancia de las figuras.
+     */
+    private static final double BALANCED_CLEARANCE = 0.6;
+    private static final double HIGH_CLEARANCE = 1.15;
 
     private TubeVoxelizer() {
     }
@@ -86,7 +92,9 @@ final class TubeVoxelizer {
         }
         int last = line.count - 1;
         markSphere(seen, ordered, line.px[last], line.py[last], line.pz[last], line.radius[last] * reach + 1.0);
-        double extension = line.closed ? 0.0 : settings.endMode().extension();
+        double extension = line.closed ? 0.0 : settings.endMode() == TubeSettings.EndMode.FLAT
+                ? shape.overhang()
+                : settings.endMode().extension();
         if (extension > 0.0) {
             markCap(seen, ordered, line, 0, -1.0, extension, reach);
             markCap(seen, ordered, line, last, 1.0, extension, reach);
@@ -178,6 +186,8 @@ final class TubeVoxelizer {
         private final TubeShapes.TubeShape shape;
         private final TubeSettings.EndMode endMode;
         private final double reach;
+        private final double margin;
+        private final double overhang;
         final TubeCenterline.TubePoint point = new TubeCenterline.TubePoint();
 
         Evaluator(TubeCenterline line, TubeSettings settings, TubeShapes.TubeShape shape) {
@@ -186,6 +196,8 @@ final class TubeVoxelizer {
             this.shape = shape;
             endMode = line.closed ? TubeSettings.EndMode.FLAT : settings.endMode();
             reach = TubeVoxelizer.reach(line, settings, shape);
+            margin = shape.margin();
+            overhang = shape.overhang();
         }
 
         boolean place(double x, double y, double z) {
@@ -196,10 +208,11 @@ final class TubeVoxelizer {
             if (center >= 0.0) {
                 return true;
             }
+            // Las figuras que miden su holgura devuelven -1 - bloques: si el centro queda lejos, no hay rescate.
             return switch (settings.quality()) {
                 case FAST -> false;
-                case BALANCED -> balanced(x, y, z);
-                case HIGH -> high(x, y, z);
+                case BALANCED -> center > -1.0 - BALANCED_CLEARANCE && balanced(x, y, z);
+                case HIGH -> center > -1.0 - HIGH_CLEARANCE && high(x, y, z);
             };
         }
 
@@ -292,7 +305,7 @@ final class TubeVoxelizer {
         /** Lo mismo que {@link #sample}, para un punto ya localizado en el espacio de tubo. */
         double evaluate(TubeCenterline.TubePoint located, boolean openEnds) {
             double radius = located.radius;
-            double limit = radius * reach;
+            double limit = radius * reach + margin;
             double radialSquared = located.localX * located.localX + located.localY * located.localY;
             if (radialSquared > limit * limit) {
                 return -1.0;
@@ -303,7 +316,13 @@ final class TubeVoxelizer {
                 double along = located.beyond / radius;
                 if (!(openEnds && endMode == TubeSettings.EndMode.FLAT)) {
                     switch (endMode) {
-                        case FLAT, SOFT -> {
+                        case FLAT -> {
+                            // Solo las figuras de motivos asoman: así la primera y la última cuenta salen enteras.
+                            if (along >= overhang) {
+                                return -1.0;
+                            }
+                        }
+                        case SOFT -> {
                             return -1.0;
                         }
                         case ROUND -> {
@@ -347,7 +366,7 @@ final class TubeVoxelizer {
                 double box = Math.max(Math.abs(shapeX), Math.abs(shapeY));
                 return box <= 1.0 ? box : -1.0;
             }
-            return shape.sample(shapeX, shapeY, located.longitudinal);
+            return shape.sample(shapeX, shapeY, located.longitudinal, radius * contraction, located.stretch);
         }
 
         private static double square(double value) {

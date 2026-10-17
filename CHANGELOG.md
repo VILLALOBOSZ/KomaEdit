@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Añade el **motor exacto** opcional (`engine:exact`, fila **Motor** del Studio) para Chainlink, Rings, Beads, Oscillate, Red, Honeycomb, Knots y Coil: cada figura se evalúa como función implícita en espacio de tubo, sin huecos, con las proporciones del motor clásico y heredando extremos, normales, radios por fotogramas, torsión y la curva de modificadores. El motor clásico sigue siendo el predeterminado y no cambia ninguna figura existente.
+- Las figuras con motor exacto también admiten **losas y escaleras** (`smooth`, `coverage`, filas **Piezas** y **Cobertura**).
+- **Patrón figura** usa el valor implícito de las figuras con motor exacto (eslabones, cuentas, familias de hilos y puntales por franjas de paleta).
+- Añade la figura **Red** (`fishnet`): dos familias de hilos helicoidales a ±45° con celdas cuadradas a cualquier escala.
+- El comando general acepta expresiones de figura entre comillas, por ejemplo `/komaedit build "coil(engine:exact,end:round)" stone`.
+- Añade pruebas JUnit del motor exacto: almas de hilo sin huecos en rectas, diagonales y curvas, cinta sin agujeros, cuentas cerradas, determinismo, volumen frente al clásico y opción por defecto sin cambios.
+
 ## 1.2.0 (estable, 2026-10-17)
 
 - Añade **losas y escaleras en la superficie** de las figuras de tubo (`sweep`, `braid`, `noisetube`): cada bloque del borde se mide por octantes con la función implícita de la figura y se sustituye por la losa o escalera orientada que mejor encaja, o se rellena un hueco casi lleno.

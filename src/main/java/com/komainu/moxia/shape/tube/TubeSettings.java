@@ -75,7 +75,8 @@ public record TubeSettings(
                 depth,
                 Math.clamp(options.get("aspect", 0.5), 0.1, 1.0),
                 Math.clamp(options.get("exponent", 4.0), 1.0, 24.0),
-                options.get("hollow", 0.0) >= 0.5,
+                // Las cuentas hacen su propia cáscara; en ellas `hollow:false` solo las rellena.
+                shape != PathShape.BEADS && options.get("hollow", 0.0) >= 0.5,
                 (int) Math.round(Math.clamp(options.get("wall", parameters.thickness()), 1.0, 16.0)),
                 options.get("filled", 0.0) >= 0.5,
                 EndMode.byIndex((int) Math.round(options.get("end", 0.0))),
@@ -88,7 +89,8 @@ public record TubeSettings(
                 startRoll,
                 endRoll,
                 rollRange,
-                Math.clamp(options.get("stretch", 1.0), 0.1, 10.0),
+                // En la cadena `stretch` alarga cada eslabón (como en el motor clásico), no el espacio de tubo.
+                shape == PathShape.CHAINLINK ? 1.0 : Math.clamp(options.get("stretch", 1.0), 0.1, 10.0),
                 strands,
                 strandThickness,
                 frequency,

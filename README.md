@@ -76,6 +76,7 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `lightning`
 - `crowns`
 - `honeycomb`
+- `fishnet` (red de hilos helicoidales a ±45°)
 - `oscillate`
 - `ribloops`
 - `rings`
@@ -187,11 +188,13 @@ Ejemplos:
 - **Modificadores exactos:** escala, espaciado y torsión se aplican al evaluar cada bloque.
 - **Losas y escaleras:** con `-w slabs|stairs` (fila **Piezas** del Studio) la superficie que la figura solo ocupa en parte se termina con losas o escaleras orientadas del mismo material; `-c` (Cobertura, 0–1) decide cuántas.
 - **Comandos rápidos:** `/komaedit sweep <perfil> <radios> [patrón] [-e …] [-n …] [-t …] [-r …] [-p …] [-hollow …] [-w …] [-c …]`, `/komaedit braid <radios>` y `/komaedit noisetube <radios>`.
+- **Motor exacto para figuras clásicas:** `chainlink`, `rings`, `beads`, `oscillate`, `fishnet`, `honeycomb`, `knots` y `coil` aceptan `engine:exact` (fila **Motor** del Studio) y se evalúan en este mismo espacio de tubo, sin huecos y con extremos, normales, radios por fotogramas, torsión y piezas. El motor clásico sigue siendo el predeterminado.
 
 ```text
 /komaedit sweep star5 "2,0.3:12,2" polished_andesite -e spike -t 30
 /komaedit sweep polygon6 10 deepslate_tiles -hollow 2 -n horizontal
 /komaedit sweep circle 9 stone_bricks -w stairs -c 0.6
+/komaedit build "coil(engine:exact,end:round)" stone 8
 ```
 
 ## Materiales integrados

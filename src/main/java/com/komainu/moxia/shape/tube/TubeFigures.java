@@ -17,7 +17,8 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 
 /**
- * Punto de entrada de las figuras de espacio de tubo ({@code sweep}, {@code braid} y {@code noisetube}).
+ * Punto de entrada de las figuras de espacio de tubo ({@code sweep}, {@code braid} y {@code noisetube}) y del
+ * motor exacto de las figuras clásicas.
  *
  * <p>Mismo contrato que el resto de {@code ShapeGenerator}: recibe la trayectoria y los parámetros y devuelve
  * bloques. La geometría se calcula entera fuera del hilo del servidor y respeta la cancelación cooperativa.</p>
@@ -26,8 +27,23 @@ public final class TubeFigures {
     private TubeFigures() {
     }
 
+    /** Figuras propias del espacio de tubo ({@code sweep}, {@code braid} y {@code noisetube}). */
     public static boolean supports(PathShape shape) {
         return TubeShapes.supports(shape);
+    }
+
+    /** Figuras clásicas que pueden generarse también con el motor exacto ({@link TubeEngine#EXACT}). */
+    public static boolean hasExactEngine(PathShape shape) {
+        return TubeShapes.supportsExact(shape);
+    }
+
+    /**
+     * Si estos parámetros se generan en espacio de tubo: siempre en las figuras propias y, en las clásicas, solo
+     * con {@code engine:exact}. Con el motor por defecto las clásicas siguen estampando pinceles.
+     */
+    public static boolean handles(ShapeParameters parameters) {
+        return supports(parameters.shape())
+                || hasExactEngine(parameters.shape()) && TubeEngine.of(parameters.options()) == TubeEngine.EXACT;
     }
 
     public static Set<BlockVector3> generate(SampledPath path, ShapeParameters parameters, int limit) {
@@ -42,7 +58,7 @@ public final class TubeFigures {
     ) {
         TubeSettings settings = TubeSettings.from(parameters);
         TubeCenterline line = TubeCenterline.create(path, settings, curve);
-        TubeShapes.TubeShape shape = TubeShapes.create(settings, pathSeed(path));
+        TubeShapes.TubeShape shape = TubeShapes.create(settings, parameters, line, pathSeed(path));
         LongOpenHashSet blocks = TubeVoxelizer.voxelize(line, settings, shape, limit);
         if (settings.shape() == PathShape.NOISE_TUBE) {
             // El ruido deja islas sueltas en la corteza; solo se conserva la pieza unida al núcleo.
@@ -53,7 +69,7 @@ public final class TubeFigures {
 
     /** Si la figura pide losas o escaleras en la superficie ({@code smooth} distinto de cero y cobertura > 0). */
     public static boolean usesPieces(ShapeParameters parameters) {
-        return supports(parameters.shape()) && TubeSmoother.enabled(TubeSettings.from(parameters));
+        return handles(parameters) && TubeSmoother.enabled(TubeSettings.from(parameters));
     }
 
     /**
@@ -69,11 +85,11 @@ public final class TubeFigures {
             int limit
     ) {
         TubeSettings settings = TubeSettings.from(parameters);
-        if (!supports(parameters.shape()) || !TubeSmoother.enabled(settings) || blocks.isEmpty()) {
+        if (!handles(parameters) || !TubeSmoother.enabled(settings) || blocks.isEmpty()) {
             return new Smoothed(blocks, SmoothPieces.NONE);
         }
         TubeCenterline line = TubeCenterline.create(path, settings, curve);
-        TubeShapes.TubeShape shape = TubeShapes.create(settings, pathSeed(path));
+        TubeShapes.TubeShape shape = TubeShapes.create(settings, parameters, line, pathSeed(path));
         LongOpenHashSet packed = new LongOpenHashSet(blocks.size());
         for (BlockVector3 block : blocks) {
             packed.add(PackedBlockPlan.pack(block.x(), block.y(), block.z()));
@@ -89,12 +105,13 @@ public final class TubeFigures {
 
     /**
      * Sonda de material para el modo "Patrón figura": devuelve el valor implícito de la figura en cada bloque
-     * (núcleo → borde en perfiles, una franja de paleta por hebra en cuerdas y trenzas).
+     * (núcleo → borde en perfiles, una franja de paleta por hebra en cuerdas y trenzas, y por eslabón, cuenta,
+     * familia de hilos o puntal en las figuras clásicas con motor exacto).
      */
     public static MaterialProbe materialProbe(SampledPath path, ShapeParameters parameters, TubeCurve curve) {
         TubeSettings settings = TubeSettings.from(parameters);
         TubeCenterline line = TubeCenterline.create(path, settings, curve);
-        TubeShapes.TubeShape shape = TubeShapes.create(settings, pathSeed(path));
+        TubeShapes.TubeShape shape = TubeShapes.create(settings, parameters, line, pathSeed(path));
         return new MaterialProbe(new TubeVoxelizer.Evaluator(line, settings, shape));
     }
 
