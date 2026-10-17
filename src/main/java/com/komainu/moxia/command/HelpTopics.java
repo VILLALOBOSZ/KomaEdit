@@ -100,7 +100,14 @@ public final class HelpTopics {
                             new Entry("/komaedit weather [intensidad 0–100] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]",
                                     "Envejece la selección (alias envejecer)"),
                             new Entry("/komaedit envejecer 70 nevado -d 40", "Ejemplo: ruina nevada con derrumbe"),
-                            new Entry("/komaedit tweak deinfest|persist|waterlog|wax", "Retoques sobre la selección (alias retocar)")
+                            new Entry("/komaedit tweak deinfest|persist|waterlog|wax", "Retoques sobre la selección (alias retocar)"),
+                            new Entry("/komaedit vines <máscara> <patrón> [porcentaje] [mínimo] [máximo] [-s semilla]",
+                                    "Cuelga enredaderas bajo los bloques (alias enredaderas)"),
+                            new Entry("/komaedit moss <patrón> [cantidad] [radios] [iteraciones] [-s semilla]",
+                                    "Manchas de musgo en las caras de arriba (alias musgo)"),
+                            new Entry("/komaedit slabmerge [máscara] [-b] [-t]", "Losas dobles a bloque entero (alias unirlosas)"),
+                            new Entry("/komaedit statecycle <máscara> <propiedad> [pasos]",
+                                    "Avanza una propiedad de estado (alias ciclarestado)")
                     )),
             new Topic("deform", "Deformar y suavizar", List.of("deformar", "superficie", "surface", "suavizar",
                     "smooth", "inflate", "inflar", "deflate", "smoothblocks", "cilindro", "esfera"),
@@ -116,6 +123,25 @@ public final class HelpTopics {
                             new Entry("/komaedit smoothblocks <perfil> [radio] [sesgo]",
                                     "Suaviza con losas y escaleras; todas admiten -w Slabs|SlabsAndStairs")
                     )),
+            new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass"), List.of(
+                    new Entry("/komaedit texture ambient|curvature <máscara> <paleta> [radio] [brillo] [contraste] [-w]",
+                            "Oclusión ambiental o curvatura (alias textura)"),
+                    new Entry("/komaedit texture axisgradient <máscara> <paleta> [x|y|z] [-r]", "Degradado por eje"),
+                    new Entry("/komaedit texture noise <máscara> <paleta> [ruido] [-z escala] [-s semilla]", "Ruido"),
+                    new Entry("/komaedit texture cells <máscara> <paleta> <cantidad> [brillo] [contraste] [-s] [-r]",
+                            "Celdas de Voronoi"),
+                    new Entry("/komaedit texture flow <máscara> <paleta> [exposición] [iteraciones] [velocidad] "
+                            + "[escalar] [ruido] [-m] [-g] [-f]", "Líneas de flujo sobre la superficie"),
+                    new Entry("/komaedit texture pointlight|sunlight <máscara> <paleta> … [-l] [-o oclusión] [-r radio]",
+                            "Luz puntual o del sol con sombras"),
+                    new Entry("/komaedit texture blocklight <máscara> <paleta> [-v] [-s] [-l]", "Luz de bloque del mundo"),
+                    new Entry("/komaedit texture blend|shift <paleta> [radio|desplazamiento]",
+                            "Mezcla o desplaza los bloques de la paleta que ya hay"),
+                    new Entry("/komaedit texture advanced <máscara> <paleta> <textura>",
+                            "Combina modos: WeightedAverage(T1:Sun(),T2:Ambient())"),
+                    new Entry("/komaedit glassgradient <inicio> [fin] <capas> [longitud] [calidad] [dirección] [-c] [-b] [-s]",
+                            "Vidriera degradada de cristal tintado (alias vidriera)")
+            )),
             new Topic("generators", "Generadores", List.of("generadores", "forma", "shape", "noisegen", "ruidogen",
                     "flowfield", "flujo", "flowline"), List.of(
                     new Entry("/komaedit shape cone|polydome|polygon|square|tetrahedron|torus <patrón> …",

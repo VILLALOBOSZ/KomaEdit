@@ -17,6 +17,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.LightType;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -264,6 +265,7 @@ public final class RegionOperationService {
         private final int minimumY;
         private final int minimumZ;
         private final long total;
+        private final boolean light;
         private final BlockPos.Mutable position = new BlockPos.Mutable();
         private long index;
 
@@ -295,6 +297,7 @@ public final class RegionOperationService {
             this.minimumY = minimumY;
             this.minimumZ = minimumZ;
             this.total = (long) sizeX * sizeY * sizeZ;
+            this.light = operation.needsLight();
         }
 
         /** @return {@code true} cuando la lectura ha terminado */
@@ -319,6 +322,10 @@ public final class RegionOperationService {
                     builder.state(describe(rawId, state));
                 }
                 builder.set(x, y, z, rawId, selection.contains(BlockVector3.at(x, y, z)));
+                if (light) {
+                    builder.light(x, y, z, world.getLightLevel(LightType.BLOCK, position),
+                            world.getLightLevel(LightType.SKY, position));
+                }
                 index++;
                 processed++;
             }
@@ -337,7 +344,8 @@ public final class RegionOperationService {
                     state.isAir(),
                     !state.getFluidState().isEmpty(),
                     state.isSolidBlock(world, position),
-                    properties
+                    properties,
+                    state.getLuminance()
             );
         }
     }

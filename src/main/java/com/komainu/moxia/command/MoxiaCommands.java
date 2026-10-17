@@ -239,6 +239,7 @@ public final class MoxiaCommands {
                 .executes(MoxiaCommands::openHudMenu));
         DeformCommands.register(root);
         PlacementCommands.register(root);
+        TextureCommands.register(dispatcher);
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
         NoiseCommands.register(root);

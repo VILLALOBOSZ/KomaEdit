@@ -8,4 +8,9 @@ package com.komainu.moxia.region;
 @FunctionalInterface
 public interface RegionOperation {
     void apply(RegionSnapshot snapshot, RegionEdits edits);
+
+    /** Si la operación necesita los niveles de luz en la foto; leerlos hace la captura algo más lenta. */
+    default boolean needsLight() {
+        return false;
+    }
 }
