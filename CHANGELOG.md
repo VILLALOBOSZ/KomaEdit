@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Añade el doblado de estructuras: `/komaedit bend` (alias `doblar`) curva el portapapeles de WorldEdit a lo largo de la trayectoria, repitiendo copias enteras o estirando una sola, sin huecos por fuera de las curvas y con escaleras, troncos y vallas girados para seguirla.
+- Añade los modos de Kitbash **Doblar** y **Estirar**, que meten el módulo doblado en la instancia de la receta.
+- En modo `upright` el módulo se asocia a la vertical de cada punto, así que en las cuestas los muros y postes quedan a plomo.
+
 ## 1.1.0 (estable, 2026-10-17)
 
 Primera publicación estable desde `1.0.0`; recoge todo lo integrado en `staging` sobre `4.8.0-alpha.1`.

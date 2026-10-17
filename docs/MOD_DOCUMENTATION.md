@@ -230,6 +230,57 @@ Con **Patrón figura** las figuras de tubo usan su propio valor implícito: en l
 - Si una curva se cierra más que el propio radio, el tubo se pliega por dentro como en cualquier barrido: separa más los puntos o reduce el radio.
 - El tubo erosionado conserva solo la pieza conectada al núcleo, sin fragmentos flotantes.
 
+## Doblar estructuras del portapapeles
+
+### Objetivo y acceso
+
+Curva un módulo copiado con WorldEdit (un tramo de muro, puente, calzada, vía o valla) a lo largo de la trayectoria: o lo repite copia tras copia, o estira una sola copia por todo el recorrido. A diferencia de los sockets Kitbash normales, que pegan el módulo entero en puntos sueltos, aquí el módulo se dobla con la curva.
+
+- Comando rápido, solo la estructura:
+
+```text
+/komaedit bend [repeat|stretch] [banderas]
+/komaedit doblar [repetir|estirar] [banderas]
+```
+
+- En recetas: en **Modificadores → Kitbash**, la fila **Colocar** tiene dos modos nuevos, **Doblar** (repetir) y **Estirar**, que se suman a la figura de la receta y quedan dentro de la instancia, así que se pueden actualizar o retirar.
+
+### Comportamiento
+
+- Se usa el portapapeles de WorldEdit (`//copy`). Su origen, el bloque donde estabas al copiar, es el que recorre la trayectoria.
+- **Repetir:** en un recorrido abierto caben tantas copias enteras como permita la longitud, centradas, sin trozos cortados. En uno cerrado, las copias se ajustan un poco para que el lazo empalme sin costura.
+- **Estirar:** una sola copia ocupa todo el recorrido.
+- Igual que las figuras de tubo, se trabaja al revés: cada bloque del mundo cercano al eje pregunta qué bloque del módulo le toca. Por fuera de las curvas el módulo se estira sin abrir huecos; por dentro se comprime y puede perder algún detalle fino.
+- **Normales `upright` (por defecto):** el módulo se asocia a la vertical de cada punto del recorrido, así que en una cuesta los postes y muros quedan a plomo y la altura se mide en bloques del mundo. Con `horizontal` o `consistent` la sección se inclina con la pendiente.
+- Escaleras, troncos, vallas y demás bloques con dirección se giran en cuartos de vuelta para seguir la curva.
+
+### Parámetros
+
+| Bandera | Efecto |
+| --- | --- |
+| `repeat` / `stretch` | Repetir copias (por defecto) o estirar una sola. |
+| `-a <x\|z\|-x\|-z>` | Dirección del portapapeles que avanza con el recorrido. Por defecto, el lado horizontal más largo; el comando dice cuál ha usado. Con módulos más anchos que largos (un tramo de puente, por ejemplo) hay que indicarla. |
+| `-g <bloques>` | Hueco entre copias al repetir; admite valores negativos para solaparlas. |
+| `-y <bloques>` | Sube o baja el módulo respecto al recorrido. |
+| `-n <modo>` | `upright`, `horizontal` o `consistent`. |
+| `-p t:b:c` | Tensión, sesgo y continuidad de la curva Kochanek–Bartels. |
+
+Ejemplos:
+
+```text
+/komaedit bend
+/komaedit bend -a x -g 2
+/komaedit bend stretch -n horizontal
+/komaedit doblar repetir -a z -y -1
+```
+
+### Rendimiento y limitaciones
+
+- El portapapeles admite hasta 100 000 bloques y como mucho 128 bloques de alto o de lado desde el origen.
+- Un tramo de puente de 7×3×6 doblado sobre 85 bloques de curva (unos 850 bloques) se calcula en menos de 0,1 s en un worker.
+- Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
+- El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
+
 ## Modificadores
 
 Los modificadores transforman de manera continua la figura seleccionada:
@@ -240,7 +291,7 @@ Los modificadores transforman de manera continua la figura seleccionada:
 - Torsión progresiva.
 - Fusión con una figura secundaria.
 - Conformado a suelo, techo o superficie.
-- Sockets Kitbash.
+- Sockets Kitbash, también doblados a lo largo del recorrido (modos **Doblar** y **Estirar**).
 - Reparación de microhuecos y componentes aislados.
 
 En las figuras de espacio de tubo la escala, el espaciado y la torsión se aplican al evaluar cada bloque, sin deformación posterior ni puentes entre bloques separados.

@@ -114,7 +114,7 @@ final class TubeVoxelizer {
         }
     }
 
-    private static void markSphere(
+    static void markSphere(
             LongOpenHashSet seen,
             LongArrayList ordered,
             double x,
