@@ -606,6 +606,286 @@ Alias: `/komaedit retocar` y `desinfestar`, `persistir`, `anegar`, `encerar`.
 - Los carteles encerados guardan el encerado en sus datos, no en el estado del bloque; `wax` no los toca.
 - La selección más su margen admite hasta 16 millones de bloques y 1 500 000 cambios.
 
+## Colocar estructuras
+
+### Objetivo y acceso
+
+Coloca «estructuras» (el portapapeles, schematics o formas procedurales) con una orientación precisa, como la colocación de ezEdits. Hay tres comandos que comparten la misma sintaxis, la misma cadena de transformaciones y las mismas banderas comunes:
+
+```text
+/komaedit place <estructura> [<primaria>] [<secundaria>] [banderas]
+/komaedit colocar …
+/komaedit array <estructura> [<primaria>] [<secundaria>] [banderas]
+/komaedit hilera …
+/komaedit scatter <estructura> [<primaria>] [<secundaria>] [banderas]
+/komaedit dispersar …
+```
+
+- `place` coloca una sola estructura en el bloque de tus pies.
+- `array` coloca una tras otra a lo largo de la trayectoria (puntos P o la selección de WorldEdit). Ver **Arrays a lo largo de la trayectoria**.
+- `scatter` reparte muchas sobre las superficies de una región. Ver **Dispersión de estructuras**.
+- Permisos: `komaedit.build` (o `komaedit.build.place`, `.array`, `.scatter`); el portapapeles y los schematics piden además `komaedit.clipboard`.
+- Sin argumentos, cada comando muestra su uso con un ejemplo. El autocompletado propone estructuras, alineaciones y banderas.
+
+### Comportamiento
+
+Cada colocación pasa por esta cadena, en este orden:
+
+1. **Dimensiones** (`-s`): el tamaño de la caja. Las formas procedurales miden 20×20×20 por defecto; el portapapeles y los schematics, lo que miden de verdad. Si las proporciones cambian, la estructura se estira o se aplasta.
+2. **Escala aleatoria** (`-o`).
+3. **Orientación** (`-k` y `-c`): qué eje es «arriba» y «delante» para la estructura.
+4. **Simetrías aleatorias** (`-f`) y **giros de 90° aleatorios** (`-r`).
+5. **Alineación**: la primaria y la secundaria (ver **Alineación primaria y secundaria**).
+6. **Desplazamientos** de la estructura (`RO`, `WO`, `OJ`).
+
+- Se trabaja al revés: cada bloque del mundo de la caja orientada pregunta qué bloque de la estructura le toca. Ni con giros libres ni al ampliar quedan agujeros. Con giros de 90° y escala 1, el portapapeles se copia exacto.
+- Las escaleras, troncos, vallas y demás bloques con dirección se giran con la orientación de cada colocación (con giros libres, a la dirección más cercana); las simetrías invierten escaleras, losas y cofres.
+- El aire de la estructura no se coloca salvo con `-a` (al revés que `//paste -a`). Donde se solapan colocaciones gana la última, pero su aire nunca borra un bloque que otra acaba de poner.
+- Se coloca de abajo arriba, en una sola edición deshacible con `//undo`. El cálculo va en un worker; si hace falta leer el mundo (superficies, normales, `-b`), la lectura se reparte entre ticks y, dentro de lo leído, cada bloque solo se cambia si sigue igual que al leerlo.
+- La semilla (`-i`) fija todo lo aleatorio: con la misma semilla y el mismo mundo sale lo mismo. Sin `-i` se elige una al azar y `scatter` la dice al empezar.
+
+### Parámetros
+
+| Bandera | Efecto |
+| --- | --- |
+| `-s <ancho,alto,fondo>` | Dimensiones de la caja en bloques (un número solo vale para los tres). |
+| `-o <mín,máx>` | Escala aleatoria por colocación. Por defecto `1,1`. |
+| `-k <dirección>` y `-c <grados>` | Orientación: gira la estructura `-c` grados alrededor de `-k` (por defecto `y` y `0`). |
+| `-f <ejes>` | Simetrías aleatorias en `X`, `Y`, `Z`, `XY`, `XZ`, `YZ` o `XYZ`. |
+| `-r <eje>` | Giros aleatorios de 90° alrededor de `X`, `Y` o `Z`. |
+| `-a` | Coloca también el aire de la estructura. |
+| `-j <ajuste>` y `-x` | Ajuste de direcciones y perturbación de la secundaria (ver **Alineación primaria y secundaria**). |
+| `-w <slabs\|stairs>[:cobertura]` | Losas y escaleras en la superficie, como en las figuras de tubo; la cobertura va de 0 a 1 (0,5 por defecto). |
+| `-i <semilla>` | Semilla de todo lo aleatorio; `-1` (por defecto) elige una nueva. |
+
+Ejemplos:
+
+```text
+/komaedit place Clipboard
+/komaedit place Sh(S:Cone,P:stone) Aim Constant -s 12,36,12
+/komaedit place Cl(O:C) C(D:(-1,2,-1)) C(D:west) -j MULTIPLES_45
+/komaedit place Sh(S:Torus(Thickness:0.4),P:gold_block) C C -k x -c 90 -s 20,20,30
+/komaedit colocar Ic(P:"stone,andesite",R:0.7,S:1) C R -s 9,6,9 -w stairs
+```
+
+### Rendimiento y limitaciones
+
+- Se colocan como mucho 5000 estructuras y 1 500 000 bloques por comando; el cálculo se corta si pasaría de 400 millones de muestras.
+- Medido en un worker: 1311 conos de 5×12×5 dispersos sobre 256×256 bloques de colinas, 110 000 bloques, en unos 20–100 ms, más 200–400 ms si llevan `-w stairs`; una icosfera de 40³ con 4 subdivisiones, 20–55 ms.
+- El portapapeles y los schematics se copian sin NBT: los cofres, carteles o macetas pierden su contenido. Las entidades no se copian.
+- Un portapapeles o schematic admite hasta 2 000 000 de bloques de caja.
+- Con giros libres, los bloques con dirección quedan en la dirección de Minecraft más cercana; una escalera no puede quedar a 30°.
+
+## Alineación primaria y secundaria
+
+### Objetivo y acceso
+
+Las dos alineaciones son el segundo y el tercer argumento de `place`, `array` y `scatter`. Definen hacia dónde mira cada colocación:
+
+- La **primaria** es el +y (el «arriba») de la estructura.
+- La **secundaria** sugiere su +x (el «delante»): de todas las direcciones perpendiculares a la primaria se usa la más parecida a la secundaria. Así la estructura nunca se deforma aunque las dos no sean perpendiculares.
+
+Por defecto, la primaria es `Constant` (+y) y la secundaria `Constant` (+x, el este): la estructura queda como se copió.
+
+### Comportamiento
+
+| Modo | Abreviatura | Dirección |
+| --- | --- | --- |
+| `Constant(Direction:<dirección>)` | `C(D:…)` | La misma para todas. Sin `D`, +y en la primaria y +x en la secundaria. |
+| `Random` | `R` | Al azar en cada colocación. |
+| `Noise(Noise:<ruido>)` | `N(N:…)` | Del ruido en la posición de cada colocación (por defecto `Perlin(Freq:0.01)`); con celdas (`Ce(cR:cell)`) cada celda tiene la suya. |
+| `Aim` | `A` | Hacia donde miras. |
+| `Upward` | `U` | La perpendicular a la mirada más hacia arriba. |
+| `PlayerRelative` | `P` | Desde la colocación hacia ti. |
+| `SurfaceNormal` | `S` | Perpendicular al terreno en la colocación. |
+| `Expression(Expression:=…,Space:…)` | `E(E:…,S:…)` | Una fórmula que da `rx`, `ry` y `rz` a partir de `x`, `y`, `z`. |
+| `Tangential` | `T` | A lo largo de la trayectoria (solo `array`). |
+| `Orthogonal(Angle:<grados>)` | `O(A:…)` | Perpendicular a la trayectoria: 0° arriba, 90° izquierda, 180° abajo, 270° derecha (solo `array`). |
+| `<peso>%<modo>,…` | | Mezcla: suma de las direcciones con sus pesos, por ejemplo `10%C,2%R`. |
+
+- **Direcciones** (en `Constant`, `-k` y `-d`): ejes (`x`, `-z`), puntos cardinales (`north`, `east`, `up`, `down`, también `norte`, `este`, `arriba`…), vectores `(1,2,0)`, direcciones relativas a ti (`aim`, `forward`, `back`, `left`, `right`) y sumas con factores: `east-z+(0,0.5,0)`, `2*up+aim`. Un `=` final se ignora.
+- **Expression:** las sentencias van separadas por `;` y asignan `rx`, `ry` o `rz` (las que falten valen 0; el resto de asignaciones son variables auxiliares). Usa el compilador de fórmulas de KomaEdit (sin bucles, con `noise`). `Space` es `WORLD` (la posición en el mundo, por defecto), `LOCAL` o `NORMALIZED`: en `place`, 0; en `scatter`, relativa al centro de la región (normalizada a [-1, 1]); en `array`, `z` es la distancia recorrida (normalizada, de 0 a 1).
+- **SurfaceNormal** necesita leer el mundo: en `scatter` es la normal de cada superficie; en `place`, la del suelo bajo tus pies; en `array`, la de la superficie que encuentra `-b` (sin `-b`, arriba).
+- `ViewDiff` (dos clics) es solo para pinceles y aquí da un error.
+
+### Parámetros
+
+| Bandera | Efecto |
+| --- | --- |
+| `-j <ajuste>` | Solo deja usar ciertas direcciones: `MULTIPLES_90` (ejes), `MULTIPLES_45`, `MULTIPLES_22_5`, `MULTIPLES_15`, o `DIAGONALS_1_1` a `DIAGONALS_5_1` (vectores enteros con proporciones hasta 5:1). |
+| `-x` | Si la primaria y la secundaria caen en la misma recta, empuja un poco la secundaria en vez de fallar. |
+
+Ejemplos:
+
+```text
+/komaedit scatter Clipboard Constant Random
+/komaedit scatter Clipboard SurfaceNormal Constant -d up -e 0.4
+/komaedit scatter Cl C Noise(N:Ce(F:0.02,cR:cell))
+/komaedit scatter TS(P:##Grayscale,S:Fur,T:=y) C Ex(E:"=rx=z;rz=-x",S:N)
+/komaedit place Cl C(D:(-1,2,-1)) C(D:-aim) -x
+/komaedit scatter Sh(P:clay,S:Cone) 10%C,4%R -s 11,30,11 -n 1
+```
+
+### Rendimiento y limitaciones
+
+- Cada alineación se evalúa una vez por colocación: no tiene coste apreciable.
+- `-j` con ángulos (`MULTIPLES_22_5`, `MULTIPLES_15`) ajusta por separado el rumbo y la inclinación.
+- En las fórmulas de `Expression` los nombres distinguen mayúsculas: hay que escribir `rx`, no `RX`.
+
+## Estructuras colocables
+
+### Objetivo y acceso
+
+Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la notación de ezEdits (nombre largo, abreviado o en español, sin distinguir mayúsculas):
+
+| Estructura | Abreviatura | Qué es |
+| --- | --- | --- |
+| `Clipboard(Origin:…,PasteMethod:…,FillBias:…,Rotation:…)` | `Cl` | Tu portapapeles de WorldEdit (`//copy`). |
+| `Schematic(Filename:<regex>,Format:…,Origin:…,PasteMethod:…,Rotation:…)` | `Sc(N:…)` | Schematics de la carpeta de WorldEdit cuyo nombre casa con la expresión regular. |
+| `Shape(Shape:<forma>,Pattern:<patrón>)` | `Sh(S:…,P:…)` | Una forma pintada con un patrón de WorldEdit. |
+| `Expression(Expression:=<fórmula>,Palette:<paleta>)` | `Ex(E:…,P:…)` | Una fórmula que decide forma y material. |
+| `TexturedShape(Shape:<forma>,TexturingShape:<forma>,Palette:<paleta>)` | `TS(S:…,T:…,P:…)` | Una forma pintada por otra forma o fórmula. |
+| `Icosphere(Pattern:…,Randomness:…,Subdivisions:…,Platform:…)` | `Ic(P:…,R:…,S:…,PL:…)` | Una roca: icosfera deformada. |
+
+### Comportamiento
+
+- **Clipboard y Schematic:** `Origin` es `INHERENT` (el punto desde el que se copió, por defecto) o `CENTER` (el centro de la caja). `PasteMethod` es `FAST` (vecino más cercano: con giros de 90° es como `//paste`) o `SMOOTHED`, que mira 27 puntos por bloque y coloca el bloque mayoritario cuando la parte llena, multiplicada por `FillBias` (1 por defecto), llega a la mitad: bordes más limpios con giros libres y, con `FillBias` alto, láminas finas que no se rompen. `Rotation` gira la estructura alrededor de su vertical antes que nada.
+- **Schematic:** `Filename` es una expresión regular (`arbol_.*` casa con `arbol_1`, `arbol_2`…) sobre el nombre con o sin extensión; admite subcarpetas (`bosque/roble_.*`) y `%p` es tu UUID, para las carpetas por jugador. Cada colocación elige uno al azar de los que casan (hasta 32). `Format` fuerza un formato (`sponge.3`, `mcedit`…); sin él se detecta.
+- **Shape:** formas `Cone`, `Crystal(Sides:6,Extrusion:0.5)`, `Cuboid`, `Curl`, `Cylinder`, `Ellipsoid`, `Fur(Strands:18)`, `Heart`, `Jellybean`, `Leaf`, `Lemon`, `Onion`, `Polygon(Sides:6)`, `Pyramid(Sides:4)`, `Supersphere(Exponent:4)`, `Tetrahedron`, `Torus(Thickness:0.5)` o una fórmula propia `=…` (dentro donde vale más que 0). Las geométricas llenan su caja; las orgánicas (corazón, limón, hoja, rizo…) conservan sus proporciones centradas. El pelo cambia en cada colocación.
+- **Expression:** `x`, `y`, `z` van de -1 a 1 y `seed` es un entero distinto en cada colocación. Hasta 0 es aire, entre 0 y 1 elige el bloque de la paleta y de 1 en adelante el último.
+- **TexturedShape:** `S` decide qué se coloca y `T` reparte la paleta con la misma regla que `Expression` (una forma con nombre usa el primer bloque fuera y el último dentro).
+- **Icosphere:** `Randomness` (0–1, por defecto 0,5) deforma los vértices; `Subdivisions` (0–4, por defecto 0) añade polígonos y suaviza la deformación; `Platform` (0–1) aplasta la mitad de arriba. Cada colocación sale distinta.
+- **Paletas** con la notación de ezEdits (`##Magma`, `-##Grayscale(1:8)`, `a,b,c`); cada entrada debe ser un bloque concreto. Los **patrones** de `Shape` e `Icosphere` son de WorldEdit (`50%stone,50%andesite`, `##Gradiente`…). Si llevan comas, van entre comillas: `P:"dirt,stone"`.
+- **Opciones comunes:** `RelativeOffset` (`RO`) desplaza siguiendo la orientación de la colocación, `WorldOffset` (`WO`) en ejes del mundo y `OffsetJitter` (`OJ`, 0–1) multiplica los dos por un valor al azar entre `1-OJ` y 1. Ejemplo: `Sh(S:Cone,P:stone,RO:(0,1,0),WO:(0,0,2))`.
+- **Origin:BOTTOM** (propio de KomaEdit) apoya las formas procedurales en el suelo: el origen pasa al centro de su cara de abajo. Por defecto, como en ezEdits, el origen es el centro.
+
+### Parámetros
+
+| Opción | Valores |
+| --- | --- |
+| `Origin` (`O`) | `INHERENT` o `CENTER` en portapapeles y schematics; `CENTER` o `BOTTOM` en las formas. |
+| `PasteMethod` (`PM`) | `FAST` o `SMOOTHED` (`smooth`). |
+| `FillBias` (`FB`) | 0,05–8; más alto coloca más bloques en `SMOOTHED`. |
+| `Rotation` (`R`) | Grados alrededor de la vertical (portapapeles y schematics). |
+| `RO`, `WO`, `OJ` | Desplazamientos comunes. |
+
+Ejemplos:
+
+```text
+/komaedit place Cl(O:C,PM:smooth,R:45) C C -s 14,10,14
+/komaedit scatter Sc(N:arbol_.*) C R -o 0.8,1.3 -n 0.5
+/komaedit scatter Sc(N:%p/rocas/.*) S R
+/komaedit place Sh(S:Crystal(Sides:5,Extrusion:0.3),P:amethyst_block,O:BOTTOM) C C -s 6,18,6
+/komaedit place Ex(E:"=x*x+y*y+z*z<0.6+noise(x*3,y*3,z*3)*0.3",P:clay)
+/komaedit place TS(S:Ellipsoid,T:=y*.5+.5,P:##Magma) C C -s 16
+/komaedit scatter Ic(P:"stone,andesite,tuff",R:0.7,S:1,PL:0.3,O:BOTTOM) C R -s 7,5,7 -n 0.3
+```
+
+### Rendimiento y limitaciones
+
+- `SMOOTHED` cuesta 27 veces más que `FAST` (un portapapeles de 32³ girado libremente y ampliado ×1,5: unos 60–150 ms).
+- Las icosferas de 4 subdivisiones tienen 5120 caras; se buscan por el árbol de subdivisión, así que cuestan poco más que las de 0.
+- Las fórmulas propias de `Shape` y `Expression` usan el compilador de KomaEdit (ver **Figura Expresión**): no admiten bucles ni reasignaciones del estilo `x+=…` de WorldEdit; usa definiciones (`a=x+sin(y);…`).
+
+## Dispersión de estructuras
+
+### Objetivo y acceso
+
+`/komaedit scatter` (alias `dispersar`) reparte estructuras sobre las superficies de una región: árboles por un bosque, rocas por una ladera, cristales en una cueva.
+
+```text
+/komaedit scatter <estructura> [<primaria>] [<secundaria>] [banderas]
+```
+
+### Comportamiento
+
+1. Se lee la región con un margen de 3 bloques, repartido entre ticks.
+2. **Superficies:** bloques que no son aire, dentro de la región y con alguna cara al aire. Si no hay, avisa para que amplíes la región hasta incluir aire.
+3. **Normal** de cada superficie: la media de las direcciones hacia el aire en un radio de 2 bloques. El origen de la estructura cae en el bloque de aire vecino que más mira hacia ella (encima del suelo, delante de un muro).
+4. **Filtros:** por dirección (`-d`/`-e`) y por máscara (`-m`). La máscara de WorldEdit se comprueba contra lo leído, fuera del hilo del servidor.
+5. **Cantidad:** la densidad (`-n`) es el porcentaje de las superficies que quedan tras los filtros.
+6. **Uniformidad** (`-u`): se empieza al azar y en cada vuelta los puntos se repelen y vuelven a la superficie libre más cercana. `0` es puro azar.
+7. Las estructuras pueden asomar fuera de la región salvo con `-t`.
+
+### Parámetros
+
+| Bandera | Efecto |
+| --- | --- |
+| `-h <región>` | Dónde repartir. Por defecto `Active(UseOriginalPosition:true)`, tu selección. `Box`, `Ellipsoid` y `Cylinder` (`B`, `E`, `C`) crean una alrededor de ti con `Dimensions:"40,40,40"` (`D`). `Active(P:false)` mueve tu selección hasta ti y `Saved(Name:…)` usa una selección guardada. Todas admiten `Offset:(x,y,z)` (`O`). |
+| `-d <direcciones>` y `-e <umbral>` | Solo superficies que miran hacia alguna de las direcciones (`up`, `west,up`…) con un parecido de al menos `-e` (de -1 a 1, por defecto 0,5). |
+| `-m <máscara>` | Solo superficies que cumplen la máscara de WorldEdit: `red_wool`, `!red_wool`, `=y>95`… |
+| `-n <densidad>` | Porcentaje de superficies que reciben estructura; el `%` es opcional. Por defecto 2. |
+| `-i <semilla>` | Semilla del reparto. |
+| `-u <vueltas>` | Uniformidad, de 0 a 200. Por defecto 15. |
+| `-l <patrón>` | Al terminar, cubre con ese patrón las superficies que cumplen `-m` y no han recibido estructura (necesita `-m`). Sirve para no volver a sembrar lo ya sembrado al repetir en una zona vecina. |
+| `-t` | No coloca bloques fuera de la región. |
+
+Ejemplos:
+
+```text
+/komaedit scatter Clipboard
+/komaedit scatter Clipboard -n 0.5% -u 20
+/komaedit scatter Sc(N:arbol_.*) C R -m grass_block -d up -e 0.7 -o 0.7,1.4
+/komaedit scatter Sh(S:Crystal,P:amethyst_block,O:BOTTOM) S R -s 3,9,3 -h Ellipsoid(D:"30,20,30") -n 3
+/komaedit scatter Clipboard -m sea_lantern -n 100%
+/komaedit scatter Cl C R -m clay -l pink_wool
+/komaedit scatter Cl C C -s 15,21,15 -n 0.5 -t
+```
+
+### Rendimiento y limitaciones
+
+- La región más su margen admite hasta 16 millones de bloques; salen como mucho 5000 estructuras.
+- Medido en un worker: 65 536 superficies (256×256) con densidad 2 % y 15 vueltas de uniformidad, unos 200–400 ms de reparto.
+- `Saved(Name:…)` necesita que el servidor tenga selecciones guardadas disponibles; si no, lo dice.
+- La densidad se cuenta sobre bloques de superficie, no sobre área: en una ladera escalonada hay más superficies por bloque de suelo que en un llano.
+
+## Arrays a lo largo de la trayectoria
+
+### Objetivo y acceso
+
+`/komaedit array` (alias `hilera`) coloca estructuras una tras otra a lo largo de la trayectoria: postes de una valla, arcos de un acueducto, piedras de un camino, faroles de una calle o los saltos de un parkour.
+
+```text
+/komaedit array <estructura> [<primaria>] [<secundaria>] [banderas]
+```
+
+La trayectoria son los puntos P o, si no hay, la selección de WorldEdit (dos puntos de un cuboide o los vértices de `//sel convex`).
+
+### Comportamiento
+
+- La curva pasa por los puntos (Kochanek–Bartels, como las figuras de tubo). La primera colocación cae al principio y cada una avanza lo que mide su caja a lo largo de la curva más el hueco `-g`.
+- Con `Tangential` la estructura sigue la curva y con `Orthogonal` queda perpendicular a ella, con su ángulo. El marco de la curva lo decide `-n`.
+- En un lazo cerrado no se coloca una última copia encima de la primera.
+
+### Parámetros
+
+| Bandera | Efecto |
+| --- | --- |
+| `-g <bloques>` | Hueco entre colocaciones. `0` (por defecto) las pone seguidas; en negativo se solapan. |
+| `-y <bloques>` | Una colocación nunca queda más de esto por encima de la anterior (hacia abajo no limita): pensado para parkour. |
+| `-q <factores>` | Escala progresiva: `1`, `0.3,3` o tantos como quieras (`1.5,0.5,5,2,0.2`), repartidos y suavizados a lo largo del recorrido; con `posición:factor` se fija dónde va cada uno. Se combina con `-o`. |
+| `-p t:b:c` | Tensión, sesgo y continuidad de la curva (de -1 a 1). |
+| `-n <modo>` | Marco de `Orthogonal`: `consistent` (por defecto, sin girar sobre sí mismo), `horizontal` (la perpendicular más hacia arriba) o `upright` (el +y del mundo, sin inclinarse). |
+| `-b` | Lleva cada colocación a la superficie más cercana (hasta 48 bloques; si no la encuentra, se queda en la curva). |
+
+Ejemplos:
+
+```text
+/komaedit array Clipboard
+/komaedit array Cl -g 10
+/komaedit array Cl Tangential Constant -g 11 -o 2
+/komaedit array Cl C Tangential -g 2 -q 0.6,1.8
+/komaedit array Cl Orthogonal Constant -n upright
+/komaedit array Sh(S:Fur,P:clay) C E(E:"=rx=sin(2*pi*z);rz=cos(2*pi*z)",S:N) -g -12
+/komaedit array Cl -g 1 -y 1 -b
+```
+
+### Rendimiento y limitaciones
+
+- La trayectoria admite hasta 4096 bloques y salen como mucho 5000 colocaciones.
+- Con `-b` se lee la caja de la trayectoria con 48 bloques de margen (menos si no cabe en el límite de lectura de 16 millones): la superficie se busca dentro de lo leído, así que el alcance real es ese margen.
+- El paso se mide con la caja de cada colocación sobre la tangente: en curvas cerradas, estructuras muy anchas pueden tocarse por el lado de dentro.
+
 ## Recetas, instancias y paquetes
 
 - Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
