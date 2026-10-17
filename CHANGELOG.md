@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Studio más cómodo y rápido.** Buscador de figuras sin tildes por nombre, id, alias y descripción (`Ctrl+F` o `/`), familias (Tubo, Eslabones, Pieles, Orgánicas), favoritas con ★ y las cuatro recientes; favoritas y recientes se guardan por jugador en `config/komaedit/studio.json`.
+- Los controles numéricos aceptan rueda (sobre botones y valor), `Mayús` para pasos grandes, arrastre horizontal como deslizador, escribir el valor con un clic y clic derecho para volver al de serie, con una barra que enseña el valor dentro de su rango. Las filas ‹ › también responden a la rueda y al clic derecho.
+- Ayuda al pasar el ratón: qué hace cada control, su rango, paso y valor de serie; descripción completa de cada figura.
+- Deshacer y rehacer de ajustes dentro del Studio (`Z`, `Y`, botones ↶ ↷), con 100 pasos y los cambios seguidos del mismo control fundidos en uno; `Ctrl+Z` sigue deshaciendo en el mundo.
+- Presets por figura (Compacto, De serie, Amplio, Robusto) y variante al azar con semilla (`R`).
+- Recuento estimado de bloques antes de Construir y confirmación con segunda pulsación por encima de 250 000 bloques; aviso en rojo por encima del límite de serie del servidor.
+- Atajos de teclado (`1`–`8`, `Tab`, `B`, `H`, `Ctrl+S`, `Ctrl+Supr`, `RePág`/`AvPág`) con chuleta en `F1` o `?`, y botón para ocultar el holograma.
+- Corrige que escribir una `k` en el nombre de la receta o en el buscador de bloques cerrara el Studio, y que el personaje se moviera al escribir el nombre.
+- La barra lateral, la barra superior y el pie se adaptan a pantallas bajas y escalas de GUI grandes, y las filas desplazadas bajo la cabecera o el pie ya no responden a clics.
+
 - Añade la edición de puntos de trayectoria por comando: `path insert`, `remove`, `set`, `shift`, `reverse`, `close on|off`/`open`, `mirror` (con `append` para completar una curva simétrica), `rotate`, `snap`, `smooth`, `simplify` y `subdivide`, y `path points` con botones para insertar, quitar o mover cada punto. Ej.: `/komaedit path insert 3`, `/komaedit path mirror x append`.
 - Añade deshacer y rehacer de la edición de puntos (`path undo`, `path redo`), con 64 pasos por jugador; arrastrar el mismo nodo cuenta como un paso. `path undo` ya no quita siempre el último punto: deshace el último cambio; el comportamiento anterior pasa a `path pop`.
 - Añade generadores de trayectoria: `path polygon`, `path spiral`, `path helix`, `path arc` y `path catenary` (cadena colgante entre el primer y el último punto, como `//selcatenary` de ezEdits, con comba y dirección `down|up|left|right`). Ej.: `/komaedit path catenary 8`.
