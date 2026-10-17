@@ -76,6 +76,7 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `lightning`
 - `crowns`
 - `honeycomb`
+- `fishnet` (red de hilos helicoidales a ±45°)
 - `oscillate`
 - `ribloops`
 - `rings`
@@ -189,6 +190,7 @@ Ejemplos:
 - **Losas y escaleras:** con `-w slabs|stairs` (fila **Piezas** del Studio) la superficie que la figura solo ocupa en parte se termina con losas o escaleras orientadas del mismo material; `-c` (Cobertura, 0–1) decide cuántas.
 - **Fórmulas:** `expression` construye lo que dé mayor que cero una fórmula en `x`, `y` (sección, de -1 a 1), `z` (a lo largo, en radios), `t`, `r`, `a` y `n`, con cinco fórmulas de serie (ventanas, raíles, espiral, celosía y costillas).
 - **Comandos rápidos:** `/komaedit sweep <perfil> <radios> [patrón] [-e …] [-n …] [-t …] [-r …] [-p …] [-hollow …] [-w …] [-c …]`, `/komaedit braid <radios>`, `/komaedit noisetube <radios>` y `/komaedit expr <radios> [banderas] [patrón] <fórmula…>`.
+- **Motor exacto para figuras clásicas:** `chainlink`, `rings`, `beads`, `oscillate`, `fishnet`, `honeycomb`, `knots` y `coil` aceptan `engine:exact` (fila **Motor** del Studio) y se evalúan en este mismo espacio de tubo, sin huecos y con extremos, normales, radios por fotogramas, torsión y piezas. El motor clásico sigue siendo el predeterminado.
 
 ```text
 /komaedit sweep star5 "2,0.3:12,2" polished_andesite -e spike -t 30
@@ -196,6 +198,7 @@ Ejemplos:
 /komaedit sweep circle 9 stone_bricks -w stairs -c 0.6
 /komaedit expr 8 stone_bricks ventanas8
 /komaedit expr 6 -e round polished_andesite r<1 && abs(sin(a*3+z)) > 0.4
+/komaedit build "coil(engine:exact,end:round)" stone 8
 ```
 
 ## Materiales integrados

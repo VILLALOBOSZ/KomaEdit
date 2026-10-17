@@ -11,6 +11,12 @@
 - Añade cinco fórmulas de serie (ventanas, raíles, espiral, celosía y costillas), una fila **Fórmula** y un campo editable en el Studio, y `preset:` en las expresiones de figura.
 - Añade `/komaedit expr` y `/komaedit expresion <radios> [banderas] [patrón] <fórmula…>`, con nombre de serie y `n` pegado (`ventanas8`).
 - Guarda la fórmula propia como texto en recetas, instancias y paquetes (formato de receta 4) y la envía por red; los formatos 1–3 se leen sin migración.
+- Añade el **motor exacto** opcional (`engine:exact`, fila **Motor** del Studio) para Chainlink, Rings, Beads, Oscillate, Red, Honeycomb, Knots y Coil: cada figura se evalúa como función implícita en espacio de tubo, sin huecos, con las proporciones del motor clásico y heredando extremos, normales, radios por fotogramas, torsión y la curva de modificadores. El motor clásico sigue siendo el predeterminado y no cambia ninguna figura existente.
+- Las figuras con motor exacto también admiten **losas y escaleras** (`smooth`, `coverage`, filas **Piezas** y **Cobertura**).
+- **Patrón figura** usa el valor implícito de las figuras con motor exacto (eslabones, cuentas, familias de hilos y puntales por franjas de paleta).
+- Añade la figura **Red** (`fishnet`): dos familias de hilos helicoidales a ±45° con celdas cuadradas a cualquier escala.
+- El comando general acepta expresiones de figura entre comillas, por ejemplo `/komaedit build "coil(engine:exact,end:round)" stone`.
+- Añade pruebas JUnit del motor exacto: almas de hilo sin huecos en rectas, diagonales y curvas, cinta sin agujeros, cuentas cerradas, determinismo, volumen frente al clásico y opción por defecto sin cambios.
 
 ## 1.2.0 (estable, 2026-10-17)
 
