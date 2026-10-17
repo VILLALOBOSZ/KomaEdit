@@ -99,6 +99,11 @@ public enum PathShape {
         return description;
     }
 
+    /** Otros nombres que acepta el comando; el buscador del Studio también los usa. */
+    public java.util.List<String> aliases() {
+        return java.util.List.of(aliases);
+    }
+
     public ShapeParameters defaults() {
         return new ShapeParameters(this, defaultRadius, defaultSpacing, defaultThickness, 0);
     }

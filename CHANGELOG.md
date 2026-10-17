@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Studio más cómodo y rápido.** Buscador de figuras sin tildes por nombre, id, alias y descripción (`Ctrl+F` o `/`), familias (Tubo, Eslabones, Pieles, Orgánicas), favoritas con ★ y las cuatro recientes; favoritas y recientes se guardan por jugador en `config/komaedit/studio.json`.
+- Los controles numéricos aceptan rueda (sobre botones y valor), `Mayús` para pasos grandes, arrastre horizontal como deslizador, escribir el valor con un clic y clic derecho para volver al de serie, con una barra que enseña el valor dentro de su rango. Las filas ‹ › también responden a la rueda y al clic derecho.
+- Ayuda al pasar el ratón: qué hace cada control, su rango, paso y valor de serie; descripción completa de cada figura.
+- Deshacer y rehacer de ajustes dentro del Studio (`Z`, `Y`, botones ↶ ↷), con 100 pasos y los cambios seguidos del mismo control fundidos en uno; `Ctrl+Z` sigue deshaciendo en el mundo.
+- Presets por figura (Compacto, De serie, Amplio, Robusto) y variante al azar con semilla (`R`).
+- Recuento estimado de bloques antes de Construir y confirmación con segunda pulsación por encima de 250 000 bloques; aviso en rojo por encima del límite de serie del servidor.
+- Atajos de teclado (`1`–`8`, `Tab`, `B`, `H`, `Ctrl+S`, `Ctrl+Supr`, `RePág`/`AvPág`) con chuleta en `F1` o `?`, y botón para ocultar el holograma.
+- Corrige que escribir una `k` en el nombre de la receta o en el buscador de bloques cerrara el Studio, y que el personaje se moviera al escribir el nombre.
+- La barra lateral, la barra superior y el pie se adaptan a pantallas bajas y escalas de GUI grandes, y las filas desplazadas bajo la cabecera o el pie ya no responden a clics.
+
 - Añade la **Hiedra viva**: `/komaedit ivy` (alias `hiedra`) hace crecer una enredadera desde los puntos P o desde el bloque que miras sobre lo que ya hay construido. Las puntas se pegan a las caras enteras, trepan muros, cruzan tejados, se ramifican, cuelgan con gravedad de dinteles y aleros y florecen; cada bloque lleva sus caras y propiedades de vanilla (`vine`, `glow_lichen`, `moss_carpet`, hojas persistentes, `cave_vines` con bayas, `spore_blossom`).
 - Añade cuatro estilos (`hiedra`, `florido`, `selvatico`, `cueva`) y las banderas `-l` (largo), `-b` (ramas), `-g` (cuelgue), `-n` (tallos) y `-seed`; con la misma semilla sale la misma hiedra. Captura repartida por ticks, cálculo en un worker, una sola edición deshacible con //undo y sin pisar bloques puestos mientras crecía.
 - Registra el avance por ticks de la captura del entorno, que no llegaba a ejecutarse.
