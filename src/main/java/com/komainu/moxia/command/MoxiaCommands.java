@@ -16,12 +16,14 @@ import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.recipe.RecipeExtensions;
+import com.komainu.moxia.recipe.StructureBendService;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
 import com.komainu.moxia.shape.ShapeExpression;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.shape.tube.TubeBender;
 import com.komainu.moxia.shape.tube.TubeCommandParser;
 import com.komainu.moxia.shape.tube.TubeSettings;
 import com.komainu.moxia.sculpt.BrushFalloff;
@@ -101,6 +103,15 @@ public final class MoxiaCommands {
         }
         return tail.buildFuture();
     };
+    private static final SuggestionProvider<ServerCommandSource> BEND_SUGGESTIONS = (context, builder) -> {
+        String remaining = builder.getRemaining();
+        var tail = builder.createOffset(builder.getStart() + remaining.lastIndexOf(' ') + 1);
+        for (String option : new String[]{"repeat", "stretch", "-n upright", "-n horizontal", "-g 1", "-a x", "-a z",
+                "-y -1", "-p 0:0:0"}) {
+            tail.suggest(option);
+        }
+        return tail.buildFuture();
+    };
     private static final SuggestionProvider<ServerCommandSource> PALETTE_SUGGESTIONS = (context, builder) -> {
         Arrays.stream(GradientPalette.values()).map(GradientPalette::id).forEach(builder::suggest);
         return builder.buildFuture();
@@ -142,6 +153,8 @@ public final class MoxiaCommands {
                 .then(lightningCircleCommand("lightningcircle"))
                 .then(lightningCircleCommand("circulorayos"))
                 .then(noodlesCommand())
+                .then(bendCommand("bend"))
+                .then(bendCommand("doblar"))
                 .then(sweepCommand("sweep"))
                 .then(sweepCommand("perfil"))
                 .then(tubeCommand("braid", PathShape.BRAID))
@@ -515,6 +528,68 @@ public final class MoxiaCommands {
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
         } catch (InputParseException | IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    /** {@code /komaedit bend [repeat|stretch] [banderas]}: dobla el portapapeles a lo largo de la trayectoria. */
+    private static LiteralArgumentBuilder<ServerCommandSource> bendCommand(String name) {
+        return literal(name)
+                .executes(context -> generateBend(context, ""))
+                .then(argument("bend_options", StringArgumentType.greedyString())
+                        .suggests(BEND_SUGGESTIONS)
+                        .executes(context -> generateBend(context,
+                                StringArgumentType.getString(context, "bend_options"))));
+    }
+
+    private static int generateBend(CommandContext<ServerCommandSource> context, String options)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            KomaPermissions.requireBuild(player, "bend");
+            KomaPermissions.require(player, KomaPermissions.CLIPBOARD);
+            TubeBender.Settings settings = TubeBender.Settings.parse(options);
+            StructureBendService.Captured captured = StructureBendService.capture(player);
+            PathSnapshot pathSnapshot = WorldEditService.resolvePath(player);
+            UUID playerId = player.getUuid();
+            var server = player.getServer();
+            String axis = TubeBender.resolvedAxis(captured.template(), settings.axis()).id();
+            context.getSource().sendFeedback(
+                    () -> prefix().append(Text.literal("Doblando " + captured.blocks()
+                            + " bloques del portapapeles; avanza por su eje " + axis
+                            + " (cámbialo con -a x|z|-x|-z)…").formatted(Formatting.GRAY)),
+                    false
+            );
+            AsyncEngine.submit(
+                    playerId,
+                    () -> StructureBendService.plan(captured, pathSnapshot, settings),
+                    plan -> server.execute(() -> {
+                        ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
+                        if (current == null) {
+                            return;
+                        }
+                        try {
+                            int changed = BatchEditService.submit(current, plan, "air", "Doblar estructura");
+                            current.getCommandSource().sendFeedback(
+                                    () -> prefix().append(Text.literal("Estructura doblada en cola: " + changed
+                                            + " bloques · /komaedit job status").formatted(Formatting.GREEN)),
+                                    false
+                            );
+                        } catch (IllegalArgumentException | IllegalStateException exception) {
+                            fail(current.getCommandSource(), message(exception));
+                        }
+                    }),
+                    throwable -> server.execute(() -> {
+                        ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
+                        if (current != null) {
+                            fail(current.getCommandSource(), throwableMessage(throwable));
+                        }
+                    })
+            );
+            return 1;
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
+        } catch (IllegalArgumentException exception) {
             return fail(context.getSource(), message(exception));
         }
     }
@@ -1897,7 +1972,9 @@ public final class MoxiaCommands {
                                 + "[-n horizontal|upright] [-t torsión] [-r giro,giroFinal] [-p tensión:sesgo:continuidad] "
                                 + "[-hollow pared] [-w slabs|stairs] [-c cobertura 0–1] · /komaedit braid <radios> · "
                                 + "/komaedit noisetube <radios>. Radios con fotogramas: \"2,0.3:12,2\" o 2_12_2. "
-                                + "-w cambia la superficie por losas o escaleras del mismo material."
+                                + "-w cambia la superficie por losas o escaleras del mismo material. "
+                                + "Doblar el portapapeles: /komaedit bend [repeat|stretch] [-n upright|horizontal] "
+                                + "[-g hueco] [-a x|z|-x|-z] [-y desplazamiento]."
                 ).formatted(Formatting.GRAY),
                 false
         );
