@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Añade el **texturizado** `/komaedit texture` (alias `textura`) con los doce modos de `//eztexture` de ezEdits y sus argumentos y banderas: `ambient` (oclusión ambiental por rayos), `axisgradient`, `blend`, `blocklight`, `cells` (Voronoi con repulsión), `curvature`, `flow` (líneas pegadas a la superficie que siguen un ruido, con inercia, gravedad y relleno), `noise`, `pointlight` y `sunlight` (ángulo a la luz, atenuación y sombras suavizadas), `shift` y `advanced`.
+- `advanced` combina texturas con la notación de ezEdits: `Add`, `Subtract`, `Multiply`, `Divide`, `WeightedAverage`, `Darken`, `Lighten`, `Difference`, `Screen`, `Adjust`, `Invert` y `Blend`, anidables, y ruidos de serie `@@nombre` (`@@ridged(Freq:0.12)`).
+- `-w` conserva escaleras, losas, muros, vallas, botones, placas y trampillas con el material más cercano de la paleta que tenga esa pieza; `-d` añade tramado entre bloques vecinos de la paleta.
+- Añade `/komaedit vines` (`enredaderas`), `moss` (`musgo`), `slabmerge` (`unirlosas`) y `statecycle` (`ciclarestado`), los comandos de región de ezEdits; las enredaderas de vanilla se cuelgan con sus caras, tallo y punta.
+- Añade la **vidriera degradada** `/komaedit glassgradient` (`vidriera`): busca en haz las capas de cristal tintado que más se acercan a cada color (OKLab, colores medidos en las texturas de 1.21.1), con fondo fijo (`-c`) o el mejor bloque opaco detrás (`-b`), y la coloca delante del jugador.
+- Las operaciones de región aceptan cualquier máscara de WorldEdit que mire bloques: se evalúa en el worker sobre la foto con un `Extent` de solo lectura, sin tocar el mundo.
+- La captura de región puede guardar la luz de bloque y del cielo cuando la operación la pide, y la luz que emite cada estado.
+
 - Añade la **Hiedra viva**: `/komaedit ivy` (alias `hiedra`) hace crecer una enredadera desde los puntos P o desde el bloque que miras sobre lo que ya hay construido. Las puntas se pegan a las caras enteras, trepan muros, cruzan tejados, se ramifican, cuelgan con gravedad de dinteles y aleros y florecen; cada bloque lleva sus caras y propiedades de vanilla (`vine`, `glow_lichen`, `moss_carpet`, hojas persistentes, `cave_vines` con bayas, `spore_blossom`).
 - Añade cuatro estilos (`hiedra`, `florido`, `selvatico`, `cueva`) y las banderas `-l` (largo), `-b` (ramas), `-g` (cuelgue), `-n` (tallos) y `-seed`; con la misma semilla sale la misma hiedra. Captura repartida por ticks, cálculo en un worker, una sola edición deshacible con //undo y sin pisar bloques puestos mientras crecía.
 - Registra el avance por ticks de la captura del entorno, que no llegaba a ejecutarse.
