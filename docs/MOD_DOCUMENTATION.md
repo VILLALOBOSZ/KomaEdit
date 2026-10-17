@@ -606,6 +606,225 @@ Alias: `/komaedit retocar` y `desinfestar`, `persistir`, `anegar`, `encerar`.
 - Los carteles encerados guardan el encerado en sus datos, no en el estado del bloque; `wax` no los toca.
 - La selección más su margen admite hasta 16 millones de bloques y 1 500 000 cambios.
 
+## Formas sueltas
+
+### Objetivo y acceso
+
+Formas geométricas de una sola pieza colocadas donde estás, como `//ezshapes` de ezEdits. No dependen de trayectorias ni de la selección: se calculan con sus parámetros y aparecen con la base en el bloque de tus pies (el toro, centrado en él).
+
+```text
+/komaedit shape <forma> <parámetros> [banderas]
+/komaedit forma <forma> <parámetros> [banderas]
+```
+
+| Forma | Uso |
+| --- | --- |
+| `cone` (`cono`) | `<patrón> <radios> <altura> [giro] [-dhos]` |
+| `polydome` (`polidomo`) | `<patrón> <lados> <radio> [altura] [-v <patrón>] [-s]` |
+| `polygon` (`poligono`) | `<patrón> <lados> <radio> [altura] [dirección] [-s]` |
+| `square` (`cuadrado`) | `<patrón> <radio> [altura] [-fws]` |
+| `tetrahedron` (`tetraedro`) | `<patrón> <radio> [giro] [-hos]` |
+| `torus` (`toro`) | `<patrón> <radio_mayor> <radio_menor> [sección] [-hos]` |
+
+- Permiso: `komaedit.build` o `komaedit.build.shape`.
+- El patrón es cualquier patrón de WorldEdit (`stone`, `50%stone,50%andesite`, `#clipboard`…).
+- Cada forma es una sola edición por lotes: **//undo** la quita entera y `/komaedit job status|cancel` funciona como en el resto de figuras.
+- No duplican las brochas de esculpir (`/komaedit sculpt`): aquellas modelan terreno con cono, esfera, cubo o domo a golpe de clic; estas colocan una forma exacta con medidas.
+
+### Comportamiento
+
+- Cada forma se evalúa en el centro de cada bloque. Los radios cuentan medio bloque más, como en `//sphere`: un radio de 3 da 7 bloques de lado a lado.
+- **Cono:** base elíptica; el primer radio va de norte a sur y el segundo de este a oeste (con uno solo, base redonda). La base sale con el radio entero y la cúspide es un solo bloque. `[giro]` lo gira en grados alrededor de la vertical.
+- **Polidomo:** un domo facetado. En planta es un polígono regular de `<lados>` lados y en alzado una poligonal que sigue un cuarto de círculo, con un tramo por cada cuatro lados (como mínimo dos). Siempre es hueco, con un bloque de grosor y el suelo abierto. `[altura]` es una proporción del radio (1 = media esfera, 0,5 = domo rebajado; de 0,1 a 4).
+- **Polígono:** prisma relleno de base regular y `[altura]` capas (1 por defecto). Con lados pares tiene una arista mirando a cada eje (un cuadrado sale alineado); con impares, un vértice hacia el sur. Crece en la `[dirección]` dada o, sin ella, hacia donde miras redondeado a una de las 26 direcciones (ejes y diagonales). Las placas inclinadas engordan lo justo para no dejar agujeros.
+- **Cuadrado:** caja de 2·radio+1 de lado y `[altura]` capas, bloque a bloque, sin redondeos.
+- **Tetraedro:** regular, apoyado en una cara. El radio es el de la circunferencia de la base; la altura sale sola (radio × √2).
+- **Toro:** aro horizontal alrededor del bloque de tus pies, con sección `circle` (círculo, por defecto), `diamond` (rombo), `rounded_square` (cuadrado redondeado) o `square` (cuadrado).
+- Las formas huecas dejan una cáscara de un bloque de grosor, sin huecos por las diagonales. El cono hueco queda abierto por la base, como un tejado.
+
+### Parámetros
+
+| Bandera | Formas | Efecto |
+| --- | --- | --- |
+| `-h` | cone, tetrahedron, torus | Hueca. |
+| `-d` | cone | Con la punta hacia abajo. |
+| `-o` | cone, tetrahedron | Suma al giro el de tu mirada (en horizontal). |
+| `-o` | torus | El aro se pone perpendicular a tu mirada: mirando al frente sale de pie, como un portal; mirando abajo, tumbado. |
+| `-s` | todas | Mueve tu selección de WorldEdit para que envuelva la forma. |
+| `-v <patrón>` | polydome | Pinta las aristas con otro patrón (los nervios del domo). |
+| `-f` | square | Solo las caras: paredes, suelo y techo. |
+| `-w` | square | Solo las paredes. |
+
+Las direcciones del polígono son `north`, `south`, `east`, `west`, `up` y `down` y sus combinaciones (`northeast`, `upwest`, `down-south`…), también con iniciales (`une`) o en español (`norte`, `arriba`…); `me` es tu mirada. Las banderas sin valor se pueden juntar (`-hos`).
+
+Ejemplos:
+
+```text
+/komaedit shape cone stone 6,10 12 30
+/komaedit shape cone spruce_planks 8 6 -ho
+/komaedit shape polydome white_concrete 8 12 -v gold_block -s
+/komaedit forma poligono quartz_block 6 10 3 up
+/komaedit shape square stone_bricks 7 5 -w
+/komaedit shape tetrahedron sandstone 12 45
+/komaedit shape torus prismarine 14 3 rounded_square -o
+```
+
+### Rendimiento y limitaciones
+
+- La forma se calcula en un worker: los ejemplos de arriba tardan entre 1 y 20 ms.
+- Radios hasta 160 y alturas hasta 384. La caja que envuelve la forma puede tener hasta 48 millones de bloques y la forma hasta 1 500 000 (o el límite de operación del servidor, si es menor).
+- Lo que quede fuera de la altura del mundo se recorta.
+- No hay holograma previo: se coloca directamente y se deshace con //undo.
+
+## Terreno con ruido
+
+### Objetivo y acceso
+
+Genera terreno dentro de la selección de WorldEdit a partir de un ruido y una paleta, como `//eznoisegen` de ezEdits.
+
+```text
+/komaedit noisegen heightmap <paleta> [ruido] [altura] [-z zoom] [-s semilla] [-o x,y,z] [-m máscara] [-cty]
+/komaedit noisegen terrain <paleta> [ruido] [altura] [fuerza] [-z zoom] [-s semilla] [-l estirado] [-o x,y,z] [-m máscara] [-c]
+/komaedit noisegen advanced <paleta> [ruido] [inferior] [superior] [-z zoom] [-s semilla] [-l estirado] [-o x,y,z] [-m máscara] [-chnty]
+```
+
+- Alias: `/komaedit ruidogen` y los modos `alturas`, `terreno` y `avanzado`.
+- Permiso: `komaedit.build` o `komaedit.build.noisegen`.
+- La paleta usa la notación de [paletas con nombre](#paletas-con-nombre) (`##Nombre`, `-`, `(a:b)`, `*n`, `[…]`) y el ruido la de [ruido configurable](#ruido-configurable); sin ruido se usa `Perlin()`.
+
+### Comportamiento
+
+- Solo añade bloques: lo que haya por encima de la superficie generada se queda como estaba. Para regenerar una zona, vacíala antes con `//set air`.
+- La paleta se reparte **por alturas**: la primera entrada abajo y la última arriba, en franjas iguales de la altura del terreno.
+- **heightmap:** cada columna de la selección toma un valor de ruido 2D (de 0 a 1) y se llena desde el suelo de la selección hasta ese valor por la altura. La altura por defecto (0) es la de la selección; si se pone mayor, el terreno puede salir por encima de ella.
+- **terrain:** ruido 3D sobre un degradado vertical que va de macizo abajo a vacío arriba. La **fuerza** dice cuánto pesa el ruido a cada altura: con poca fuerza sale un llano a media altura y con mucha aparecen voladizos, cuevas e islas sueltas.
+- **advanced:** coloca donde el ruido 3D cae entre el umbral inferior y el superior (0 y 0,5 por defecto, de 0 a 1), y la paleta se reparte de un umbral a otro. Con `-h` es un mapa de alturas 2D en el que los umbrales hacen de rango: por debajo del inferior la columna queda vacía y por encima del superior, llena.
+- Los umbrales admiten fórmulas de KomaEdit (las de la [figura Expresión](#figura-expresión)) con `x`, `y` y `z` normalizadas de −1 a 1 dentro de la selección y `t`, la altura relativa (0 abajo, 1 arriba). Por ejemplo `"0.3+0.2*t"` o `"r < 0.5 ? 0.1 : 0.4"`. Se eligió el compilador de KomaEdit y no el de WorldEdit porque es cerrado (sin bucles ni búferes globales) y unas diez veces más rápido, y aquí se evalúa una vez por bloque.
+- Las coordenadas del ruido son las del mundo, así que dos selecciones vecinas empalman sin costura. Con `-c` se cuentan desde el centro de la selección y con `-n` (advanced) van de −1 a 1 dentro de ella (pide frecuencias altas, del orden de 1).
+- Con `-m` la base de cada columna es el bloque más alto que cumple la máscara: el terreno crece encima de lo que ya hay y las columnas sin ese bloque se saltan. La máscara admite bloques con o sin propiedades (`grass_block`, `oak_log[axis=y]`), `#solid`, `#existing`, `#air`, `#liquid` y `!` para negar, separados por comas.
+- Se respeta la forma de la selección (cilindros, polígonos, esferas…).
+- Con la misma semilla, la misma selección y los mismos parámetros sale el mismo terreno. Si no se fija `-s` (o vale −1) se elige una al azar y el chat la dice para poder repetirla.
+
+### Parámetros
+
+| Parámetro | Modos | Efecto |
+| --- | --- | --- |
+| `<paleta>` | todos | Bloques de abajo arriba. Cada entrada tiene que ser un bloque (con estado si se quiere). |
+| `[ruido]` | todos | Ruido; por defecto `Perlin()`. |
+| `[altura]` | heightmap, terrain | Altura del terreno en bloques; 0 = la de la selección. |
+| `[fuerza]` | terrain | Hasta tres valores separados por comas, de abajo arriba e interpolados: `0.5` = 50 % en toda la altura, `0.7,0` = del 70 % abajo al 0 % arriba, `0,1,0` = solo en medio. Por defecto `1,0.5,0`. |
+| `[inferior] [superior]` | advanced | Umbrales del ruido (números de 0 a 1 o fórmulas entre comillas). |
+| `-z <zoom>` | todos | Divide las coordenadas: con 2 el dibujo del ruido sale el doble de grande. |
+| `-s <semilla>` | todos | Semilla del ruido (si el ruido no fija la suya con `s:`). |
+| `-o x,y,z` | todos | Desplaza las coordenadas del ruido. |
+| `-l <estirado>` | terrain, advanced | Estira el ruido 3D en vertical: con 1 sale el doble de alto. |
+| `-m <máscara>` | todos | Genera encima de los bloques que la cumplen. |
+| `-c` | todos | Coordenadas desde el centro de la selección. |
+| `-h` | advanced | Modo mapa de alturas (ruido 2D). |
+| `-n` | advanced | Coordenadas normalizadas de −1 a 1 centradas en la selección. |
+| `-t` | heightmap, advanced con `-h` | Modo suave: la nieve (`snow`) de la paleta se pone en capas según la altura exacta de la columna y solo en la cima; el agua y la lava forman lagos planos hasta el techo de su franja, y bajo tierra se cambian por la entrada sólida más cercana. |
+| `-y` | heightmap, advanced con `-h` | Usa ruido 3D cortado a la altura del suelo de la selección; así cuenta también la `y` de `-o`. |
+
+Ejemplos:
+
+```text
+/komaedit noisegen heightmap water,sand,grass_block,stone,snow Perlin(F:0.03,fT:F,fO:4) -t
+/komaedit noisegen heightmap ##Grayscale Si(F:0.02,fT:R,fO:5) 24 -z 2 -s 7
+/komaedit noisegen terrain stone,dirt,grass_block Perlin(F:0.05,fT:F,fO:3) 0 1,0.5,0
+/komaedit ruidogen terreno andesite,stone,moss_block Si(F:0.04) 0 0,1,0 -l 2
+/komaedit noisegen advanced -##Magma Perlin(F:0.06) 0.55 1
+/komaedit noisegen advanced sand,grass_block,stone,snow Ce(F:0.05) 0 "0.3+0.2*t" -h -t
+/komaedit noisegen heightmap dirt,grass_block Perlin(F:0.05) 6 -m grass_block
+```
+
+### Rendimiento y limitaciones
+
+- Sin máscara no hace falta leer el mundo: se calcula directamente en un worker. Una selección de 80×32×80 tarda unos 10 ms en heightmap y unos 30 ms en terrain y advanced; el tiempo crece con columnas × altura.
+- Con `-m` primero se lee la selección repartida entre ticks (unos 4 ms por tick), y cada bloque solo se cambia si sigue igual que al leerlo. En ese modo el terreno no pasa del techo de la selección.
+- Límites: hasta 64 millones de bloques recorridos (columnas × altura), 16 millones leídos con `-m` y 1 500 000 bloques colocados (o el límite de operación del servidor).
+- La paleta de los generadores solo admite bloques, no patrones (`#clipboard`, porcentajes…), porque el worker escribe estados fijos. Las paletas guardadas `#nombre` aún no están disponibles aquí.
+- La máscara es un subconjunto de las de WorldEdit (ver arriba); las expresiones, los porcentajes o las máscaras de región dan un error claro.
+- No hay holograma previo; se deshace con //undo.
+
+## Campos y líneas de flujo
+
+### Objetivo y acceso
+
+El arte generativo de los «flow fields», como `//ezflowfield` y `//ezflowline` de ezEdits: un ruido da una dirección en cada punto y muchas partículas lo recorren dejando rastro. Sirve para vetas, ríos de bloques, texturas de suelo, raíces o lianas.
+
+```text
+/komaedit flowfield <paleta> <líneas|n%> [iteraciones] [velocidad] [escala_paleta] [ruido] [banderas]
+/komaedit flujo …
+/komaedit flowline <patrón> <longitud> [gravedad] [ruido] [-i inercia] [-c puntos] [-l líneas] [-r azar] [-s]
+/komaedit lineaflujo …
+```
+
+- Permiso: `komaedit.build` o `komaedit.build.flowfield` / `komaedit.build.flowline`.
+- `flowfield` trabaja dentro de la selección de WorldEdit; `flowline` sale de tus ojos hacia donde miras.
+
+### Comportamiento
+
+- **Campo de flujo:** las líneas salen de puntos al azar de la selección (o de los bloques que cumplen `-m`). En cada paso avanzan `velocidad` bloques en la dirección del campo, mezclada con la anterior según la inercia y con la gravedad sumada. Una línea se corta al salir de la selección (más el borde `-b`) o al agotar sus iteraciones.
+- Cada paso suma su fuerza a los bloques que pisa (una vez por línea) y al final la suma de cada bloque, multiplicada por la escala de paleta, elige la entrada: con escala 1, por donde pasa una línea va la primera entrada, por donde se cruzan dos la segunda, y así. Con escala 0,5 hacen falta dos pasadas por entrada. Las fuerzas negativas de `-p` restan, y donde la suma no es positiva no se coloca nada.
+- Por defecto el flujo es **plano**: las partículas se mueven en horizontal (la gravedad puede moverlas en vertical) y el ruido se muestrea en 3D, así que cada altura tiene su propio dibujo. La dirección da dos vueltas completas en el rango del ruido.
+- `-t` hace el flujo **3D**: la dirección sale de tres muestras del ruido desfasadas.
+- `-h` es el modo **mapa de alturas**: las partículas siguen la superficie del terreno de la selección (el bloque sólido o líquido más alto de cada columna) y pintan ese bloque (`surface`, por defecto) o el de encima (`above`).
+- `-c` usa el **rotacional** del campo: en plano, (∂ψ/∂z, −∂ψ/∂x) con ψ el ruido; en 3D, el rotacional de tres ruidos. No tiene fuentes ni sumideros, así que salen remolinos en vez de líneas que se juntan.
+- `-x`, `-y` y `-z` transforman las coordenadas antes de muestrear el ruido con una fórmula de KomaEdit en `x`, `y` y `z`; si empieza por un operador se aplica al propio eje (`-x *10` es `x*10`, `-z "+x/2"` es `z+x/2`).
+- **Línea de flujo:** la dirección en cada paso es tu mirada torcida por un ruido 3D, mezclada con la anterior según la inercia y con la gravedad empujando en vertical (−1 por defecto: tiende a caer). Cada línea mide `longitud` pasos de un bloque. Con `-l` salen varias, cada una con el ruido desplazado y el arranque torcido según `-r`.
+
+### Parámetros
+
+| Parámetro | Comando | Efecto |
+| --- | --- | --- |
+| `<paleta>` | flowfield | Bloques por número de pasadas, de menos a más. |
+| `<líneas>` | flowfield | Número de líneas, o `n%`: n líneas por cada 100 bloques de la selección (columnas con `-h`); `100%` es una por bloque. |
+| `[iteraciones]` | flowfield | Pasos por línea (32). |
+| `[velocidad]` | flowfield | Bloques por paso (1). |
+| `[escala_paleta]` | flowfield | Multiplica la suma de cada bloque (1). |
+| `[ruido]` | ambos | Ruido; por defecto `Perlin()`. Frecuencias de 0,01 a 0,05 dan curvas amplias. |
+| `-m <máscara>` | flowfield | Solo salen líneas de los bloques que la cumplen (misma sintaxis que en noisegen). Va bien con `-j`. |
+| `-h [surface\|above]` | flowfield | Mapa de alturas. |
+| `-i <0–1>` | ambos | Inercia: cuánto pesa la dirección anterior (0). |
+| `-g x,y,z` | flowfield | Gravedad sumada a cada paso, en bloques. |
+| `-j x,y,z` | flowfield | Temblor: desplaza al azar los puntos de salida hasta esos bloques. |
+| `-b <bloques>` | flowfield | Las líneas pueden salir de la selección hasta esa distancia y volver; fuera no se coloca nada. |
+| `-x`, `-y`, `-z <fórmula>` | flowfield | Transforman las coordenadas del ruido. |
+| `-p inicio:fin` | flowfield | Fuerza de la línea al principio y al final (1:1); con negativos resta. |
+| `-s <semilla>` | flowfield | Semilla de las salidas y del ruido. |
+| `-c` | flowfield | Rotacional del campo. |
+| `-f` | flowfield | Rellena el resto de la selección (o de la superficie con `-h`) con la primera entrada. |
+| `-t` | flowfield | Flujo 3D; no se combina con `-h`. |
+| `<patrón>` | flowline | Cualquier patrón de WorldEdit. |
+| `<longitud>` | flowline | Pasos de la línea (hasta 2 048). |
+| `[gravedad]` | flowline | Empuje vertical por paso: negativo cae, positivo sube (−1). |
+| `-c <puntos>` | flowline | Crea una selección convexa de WorldEdit con esos puntos repartidos a lo largo de las líneas. |
+| `-l <líneas>` | flowline | Número de líneas (1, hasta 32). |
+| `-r <azar>` | flowline | Cuánto difieren las líneas: desplaza el ruido de cada una hasta r bloques y tuerce su arranque hasta r/2 grados (50). |
+| `-s` | flowline | Pega las líneas a las superficies: cada paso sube o baja hasta 8 bloques hasta el suelo y pinta su bloque de arriba. |
+
+Ejemplos:
+
+```text
+/komaedit flowfield ##GlowBlue 600 64 1 0.5 Perlin(F:0.02)
+/komaedit flowfield stone,andesite,diorite,calcite 400 80 1 0.34 Perlin(F:0.015) -c
+/komaedit flujo coarse_dirt,rooted_dirt 50% 24 1 1 Si(F:0.03) -h -f
+/komaedit flowfield moss_block,moss_carpet 300 48 1 1 Perlin(F:0.03) -m grass_block -j 2,0,2 -h above
+/komaedit flowfield ##Magma 120 96 1 1 Perlin(F:0.03) -t -c -s 5
+/komaedit flowline oak_log 80 -1 Perlin(F:0.05) -i 0.6
+/komaedit flowline moss_block 120 -2 Si(F:0.04) -l 5 -r 30 -s
+/komaedit flowline stone 60 0 -c 16
+```
+
+### Rendimiento y limitaciones
+
+- El campo de flujo se calcula en un worker: 600 líneas de 64 pasos tardan unos 45 ms. Topes: 200 000 líneas, 4 096 iteraciones y 60 millones de pasos en total.
+- Sin `-h` ni `-m` no se lee el mundo. Con ellos primero se lee la selección repartida entre ticks y cada bloque solo se cambia si sigue igual que al leerlo.
+- La línea de flujo son pocos miles de bloques como mucho (longitud × líneas ≤ 16 384), así que se calcula en el hilo del servidor y puede leer el mundo para `-s` sin foto previa.
+- Como en noisegen, la paleta del campo solo admite bloques y las paletas guardadas `#nombre` aún no están disponibles.
+- La selección convexa de `-c` necesita al menos cuatro puntos que no estén en un mismo plano para tener volumen.
+- No hay holograma previo; los dos se deshacen con //undo.
+
 ## Recetas, instancias y paquetes
 
 - Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
