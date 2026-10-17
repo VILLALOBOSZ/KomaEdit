@@ -4,7 +4,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 ## Procedural Studio
 
-Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, recetas e instancias.
+Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, envejecer, recetas e instancias.
 
 - Los paneles son desplazables y se adaptan a resoluciones pequeñas.
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
@@ -376,6 +376,87 @@ Ejemplos:
 - Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
 - El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
 
+## Envejecer
+
+### Objetivo y acceso
+
+Convierte una construcción terminada en una ruina creíble. No es ruido al azar: el desgaste sigue la exposición a la intemperie, lo que pierde el apoyo se cae y forma montones de escombro, y la vida crece donde tiene sentido. Ningún otro editor hace esto sobre lo que ya está construido.
+
+- Selecciona la obra con WorldEdit (`//pos1`, `//pos2`; vale cualquier forma de selección) y escribe:
+
+```text
+/komaedit weather [intensidad] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]
+/komaedit envejecer [intensidad] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]
+```
+
+- En el Studio, la categoría **Envejecer** tiene los cuatro climas, los pasos de **Intensidad**, **Derrumbe** y **Vida**, el interruptor de **Agua estancada** y el botón **Envejecer selección**, que lanza el mismo comando.
+- Permiso: `komaedit.build` o `komaedit.build.weather`.
+
+### Comportamiento
+
+El cálculo imita el orden en que trabaja el tiempo:
+
+1. **Desgaste por exposición.** Cada bloque mide sus caras y sus 26 vecinos al aire, ponderados por la intemperie de ese aire: 1 bajo el cielo abierto, 0,6 y 0,3 a uno y dos pasos de él (una ventana, bajo un alero) y 0,1 en el aire cerrado de una habitación o de un tejado hueco. Así las aristas, esquinas y almenas se pierden antes que una cara lisa, lo alto antes que lo bajo, y lo que está bajo techo apenas se gasta mientras el tejado aguante. Un ruido suave por semilla agrupa el daño en mordiscos de unos 4 bloques en vez de agujeros sueltos. Se hacen de una a cuatro pasadas según la intensidad, recalculando la exposición, de modo que el daño entra desde los bordes. El vidrio y la lana se van antes que la piedra, la madera algo antes, y la pizarra profunda, la piedra negra y el cobre aguantan más.
+2. **Derrumbe.** Se mide, capa a capa desde el suelo, la distancia en horizontal de cada bloque a una columna que baje hasta algo firme, como el andamio de Minecraft. El apoyo baja en vertical sin coste y en diagonal (arista con arista) con coste uno, que es como descansan los tejados de escaleras y los escalonados. Si la distancia supera el vano que aguanta el material, el bloque cae: con derrumbe 50 la piedra vuela 5 bloques, con 100 solo 2; la madera y el metal aguantan 2 más y la pizarra 1 más. Lo que queda suelto del todo cae siempre (salvo con derrumbe 0, que desactiva esta fase). Sostienen la obra el terreno, los bloques protegidos y lo que está fuera de la selección.
+3. **Escombro.** Lo que cae y parte de lo desgastado baja en vertical (con un pequeño desvío), resbala si el montón queda dos bloques más alto que el hueco de al lado y se amontona con su propio material: adoquín, grava y andesita bajo la piedra, adoquín de pizarra bajo la pizarra, ladrillo bajo el ladrillo, tablones bajo la madera. La cara de arriba del montón se cubre de losas y de escaleras apoyadas contra lo que tienen al lado. Una parte se pulveriza (todo el vidrio, el 45 % de la piedra).
+4. **Variantes envejecidas.** Conservan las propiedades del original (una escalera musgosa mira hacia el mismo lado):
+
+| Envejecimiento | Bloques | Dónde |
+| --- | --- | --- |
+| Musgo | adoquín y ladrillo de piedra, con sus escaleras, losas y muros | abajo, en caras norte, a la sombra y cerca del suelo, en manchas |
+| Grieta | ladrillo de piedra (y cincelado), ladrillo y baldosa de pizarra profunda, ladrillo del Nether, ladrillo de piedra negra pulida | lo más expuesto y alto; más con helada (nevado) |
+| Desgaste | lo pulido o tallado pierde el acabado: andesita, diorita, granito, pizarra, piedra negra y toba pulidas, piedra lisa, arenisca cortada, lisa y cincelada, cuarzo; la escalera y la losa de piedra pasan a adoquín | según exposición; en el desierto el ladrillo pasa a terracota |
+| Óxido | cobre en bloque, cortado, escaleras, losas, cincelado, rejilla, puerta, trampilla y lámpara: de normal a expuesto, erosionado y oxidado, hasta tres pasos según la intensidad | todo lo que se ve; **el cobre encerado no cambia** |
+| Corteza | troncos, madera, tallos e hifas pasan a descortezados | más en el desierto |
+| Podrido | los tablones quedan en media losa de la misma madera | según exposición |
+
+5. **Vida**, según el clima:
+   - `templado` (por defecto): hierba y helechos sobre tierra, musgo en alfombra y algún bloque de musgo con hierba en lo alto, enredaderas que cuelgan de lo alto de los muros al sol (más en las caras norte), telarañas en rincones oscuros con techo y dos paredes, y raíces colgantes bajo techo.
+   - `desierto`: arena acumulada contra los muros y en las esquinas, sobre todo abajo; arbustos secos sobre arena y terracota; el escombro lleva arena y terracota; sin musgo.
+   - `nevado`: capas de nieve sobre todo lo que mira al cielo (más gruesas contra las paredes); los charcos son hielo; poco musgo y más grietas.
+   - `hundido`: el aire de la selección se vuelve agua y lo que admite agua queda anegado; crecen algas, kelp de 2 a 6 bloques y pepinos de mar; más musgo. Pensado para ruinas bajo el mar o para seleccionar hasta el nivel del agua.
+6. **Agua estancada** (`-agua`): rellena con agua (hielo en el clima nevado) los huecos pequeños del suelo cerrados por todos los lados, de una capa y hasta 40 bloques.
+
+Antorchas, faroles, velas, alfombras y estandartes desaparecen con la intensidad (nadie los repuso) y lo pequeño que se queda sin nada que lo sujete se cae.
+
+### Parámetros
+
+| Parámetro | Efecto |
+| --- | --- |
+| `intensidad` (0–100, 50 por defecto) | Cuánto tiempo ha pasado. Con 0 no cambia nada; hacia 50 la obra está vieja pero en pie; desde 80 se hunden tejados y suelos. |
+| `clima` | `templado`, `desierto`, `nevado` o `hundido` (también en inglés: `temperate`, `desert`, `snowy`, `sunken`). |
+| `-d <0–100>` | Derrumbe (50 por defecto): lo que vuela cada material sin apoyo. 0 no tumba nada. |
+| `-v <0–100>` | Vida (50 por defecto): cuánta vegetación, nieve, arena o algas; escala también con la intensidad. |
+| `-seed <n>` | Semilla. Con la misma semilla y la misma obra el resultado es idéntico. Sin ella se elige una al azar y el chat la dice para poder repetirla. |
+| `-agua` | Charcos de agua estancada. |
+
+Ejemplos:
+
+```text
+/komaedit weather
+/komaedit envejecer 30
+/komaedit envejecer 85 -d 80 -v 70 -agua
+/komaedit weather 70 nevado -d 40 -seed 1234
+/komaedit envejecer 60 desierto -v 30
+/komaedit envejecer 70 hundido -v 80
+```
+
+### Materiales y bloques protegidos
+
+- Solo cambian los bloques dentro de la selección; el borde de un bloque alrededor se lee para saber qué sostiene la obra y qué está a la intemperie.
+- El terreno (hierba, tierra, piedra, pizarra profunda, arena, grava, nieve, hielo, menas…) sostiene y recibe vegetación, pero no se desgasta. La piedra natural cuenta como terreno.
+- Nunca se tocan los bloques con contenido o de dos piezas: cofres, barriles, cajas de shulker, hornos, tolvas, generadores, atriles, camas, puertas, vasijas, etc.
+- Los bloques de otros mods se desgastan y se caen como piedra, pero no tienen variantes.
+
+### Rendimiento y limitaciones
+
+- Usa el motor común de operaciones sobre la selección (como los retoques): la selección y un bloque de margen se leen repartidos entre ticks sin congelar el servidor, el cálculo va en un worker y tarda alrededor de 1 s con 2 millones de bloques, y el resultado se coloca como una edición por lotes que se deshace entera con `//undo`.
+- Hasta 2 000 000 bloques de selección por vez; a los cambios se les aplica además el límite de bloques por operación de la configuración.
+- Si alguien cambia un bloque de la selección entre la captura y la colocación, ese bloque se respeta y el chat lo cuenta como protegido.
+- Las plantas se escriben con su estado completo sin comprobar que puedan vivir ahí: Minecraft puede romper alguna si se actualiza un vecino. Por eso la hierba solo sale sobre tierra o musgo, y sobre piedra se pone alfombra de musgo.
+- `hundido` llena de agua todo el aire de la selección: en tierra firme queda un bloque de agua con la forma de la selección.
+- No hay holograma previo: para probar, envejece, mira y usa `//undo`, o cambia de semilla.
+
 ## Figura Expresión
 
 ### Objetivo y acceso
@@ -648,7 +729,7 @@ El proyecto persistente evita perder recetas e instancias al desconectarse y per
 Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta permisos a través del actor de WorldEdit:
 
 - Base: `komaedit.use`.
-- Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>`.
+- Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
 - Contenido: `komaedit.recipe`, `komaedit.instance`.
 - Edición: `komaedit.select`, `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
 - Administración de proyecto: `komaedit.project.backup`.
