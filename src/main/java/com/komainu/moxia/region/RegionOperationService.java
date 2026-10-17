@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
+import java.util.function.Consumer;
 
 /**
  * Motor común de las operaciones sobre la selección de WorldEdit (texturizar, deformar, suavizar, retocar…).
@@ -72,7 +73,36 @@ public final class RegionOperationService {
             String description,
             RegionOperation operation
     ) throws IncompleteRegionException {
-        Region selection = WorldEditService.selection(player).clone();
+        start(player, WorldEditService.selection(player).clone(), padding, extra, description, operation, null);
+    }
+
+    /**
+     * Lee una región cualquiera (no tiene por qué ser la selección) y entrega la foto en el hilo del servidor, sin
+     * calcular nada: para operaciones que montan su propio plan, como la dispersión de estructuras, que escribe
+     * también fuera de la región.
+     *
+     * @param region     las posiciones de la región quedan marcadas como seleccionadas en la foto
+     * @param onCaptured recibe la foto terminada en el hilo del servidor
+     */
+    public static void capture(
+            ServerPlayerEntity player,
+            Region region,
+            int padding,
+            String description,
+            Consumer<RegionSnapshot> onCaptured
+    ) {
+        start(player, region.clone(), padding, null, description, null, onCaptured);
+    }
+
+    private static void start(
+            ServerPlayerEntity player,
+            Region selection,
+            int padding,
+            int[] extra,
+            String description,
+            RegionOperation operation,
+            Consumer<RegionSnapshot> onCaptured
+    ) {
         ServerWorld world = player.getServerWorld();
         BlockVector3 minimum = selection.getMinimumPoint();
         BlockVector3 maximum = selection.getMaximumPoint();
@@ -119,7 +149,7 @@ public final class RegionOperationService {
         if (JOBS.containsKey(playerId)) {
             throw new IllegalStateException("Ya hay una operación leyendo tu selección; espera a que termine");
         }
-        JOBS.put(playerId, new CaptureJob(playerId, world, selection, description, operation,
+        JOBS.put(playerId, new CaptureJob(playerId, world, selection, description, operation, onCaptured,
                 RegionSnapshot.builder(minimumX, minimumY, minimumZ, sizeX, sizeY, sizeZ), sizeX, sizeY, sizeZ,
                 minimumX, minimumY, minimumZ));
         player.sendMessage(message(description + ": leyendo " + volume + " bloques…", Formatting.GRAY), false);
@@ -151,7 +181,11 @@ public final class RegionOperationService {
             try {
                 if (job.step(deadline)) {
                     JOBS.remove(job.playerId);
-                    compute(server, player, job.description, job.operation, job.builder.build());
+                    if (job.onCaptured != null) {
+                        job.onCaptured.accept(job.builder.build());
+                    } else {
+                        compute(server, player, job.description, job.operation, job.builder.build());
+                    }
                 }
             } catch (RuntimeException exception) {
                 JOBS.remove(job.playerId);
@@ -223,6 +257,7 @@ public final class RegionOperationService {
         private final Region selection;
         private final String description;
         private final RegionOperation operation;
+        private final Consumer<RegionSnapshot> onCaptured;
         private final RegionSnapshot.Builder builder;
         private final int sizeX;
         private final int sizeZ;
@@ -240,6 +275,7 @@ public final class RegionOperationService {
                 Region selection,
                 String description,
                 RegionOperation operation,
+                Consumer<RegionSnapshot> onCaptured,
                 RegionSnapshot.Builder builder,
                 int sizeX,
                 int sizeY,
@@ -253,6 +289,7 @@ public final class RegionOperationService {
             this.selection = selection;
             this.description = description;
             this.operation = operation;
+            this.onCaptured = onCaptured;
             this.builder = builder;
             this.sizeX = sizeX;
             this.sizeZ = sizeZ;

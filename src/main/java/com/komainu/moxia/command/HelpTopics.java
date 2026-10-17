@@ -156,6 +156,22 @@ public final class HelpTopics {
                     new Entry("/komaedit flowline <patrón> <longitud> [gravedad] [ruido] [-l líneas] [-s]",
                             "Línea de flujo hacia donde miras (alias lineaflujo)")
             )),
+            new Topic("placement", "Colocación", List.of("colocar", "colocacion", "place", "array", "hilera",
+                    "scatter", "dispersar", "estructuras"), List.of(
+                    new Entry("/komaedit place <estructura> [primaria] [secundaria] [banderas]",
+                            "Una estructura en tus pies (alias colocar)"),
+                    new Entry("/komaedit array <estructura> [primaria] [secundaria] [-g hueco] [-q escalas] [-b]",
+                            "Una tras otra por la trayectoria (alias hilera)"),
+                    new Entry("/komaedit scatter <estructura> [primaria] [secundaria] [-n %] [-u] [-d] [-m] [-h región]",
+                            "Repartidas por las superficies de la región (alias dispersar)"),
+                    new Entry("/komaedit place Sh(S:Crystal,P:amethyst_block,O:BOTTOM) Aim Constant -s 6,18,6",
+                            "Estructuras: Clipboard, Sc(N:regex), Sh(S:forma,P:patrón), Ex, TS e Ic(P:…)"),
+                    new Entry("/komaedit array Cl C Tangential -g 2 -q 0.6,1.8",
+                            "Alineaciones: Constant, Random, Noise, Aim, Upward, PlayerRelative, SurfaceNormal, "
+                                    + "Expression, Tangential, Orthogonal y mezclas 10%C,2%R"),
+                    new Entry("/komaedit scatter Cl C R -n 0.5 -d up -e 0.7 -o 0.8,1.3",
+                            "Ejemplo: árboles del portapapeles en lo llano, girados y con tamaños distintos")
+            )),
             new Topic("palette", "Paletas guardadas", List.of("paleta", "paletas", "palettes"), List.of(
                     new Entry("/komaedit palette list [all|default|mine]", "Paletas de serie y tuyas; pulsa una para verla"),
                     new Entry("/komaedit palette save <nombre> <paleta> [-f]", "Guarda una paleta para usarla con #nombre"),
