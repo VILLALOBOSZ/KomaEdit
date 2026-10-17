@@ -109,6 +109,20 @@ public final class HelpTopics {
                             new Entry("/komaedit statecycle <máscara> <propiedad> [pasos]",
                                     "Avanza una propiedad de estado (alias ciclarestado)")
                     )),
+            new Topic("deform", "Deformar y suavizar", List.of("deformar", "superficie", "surface", "suavizar",
+                    "smooth", "inflate", "inflar", "deflate", "smoothblocks", "cilindro", "esfera"),
+                    List.of(
+                            new Entry("/komaedit deform hexagonalize|noise|rotate|voronoialize|voronoialize2|voxelize …",
+                                    "Deforma la selección (alias deformar)"),
+                            new Entry("/komaedit deform cylindrify|spherify [-aflost] [-r radios] [-d profundidad]",
+                                    "Proyecta la selección sobre un cilindro o una esfera nuevos"),
+                            new Entry("/komaedit surface fuzzify|rockify|voronoify|noisify <radio> … [-c] [-e] [-m] [-t]",
+                                    "Talla o hace crecer la superficie (alias superficie)"),
+                            new Entry("/komaedit smooth <radios> [iteraciones] [sesgo]", "Suaviza la selección (alias suavizar)"),
+                            new Entry("/komaedit inflate|deflate <radios>", "Engorda o adelgaza (alias inflar, desinflar)"),
+                            new Entry("/komaedit smoothblocks <perfil> [radio] [sesgo]",
+                                    "Suaviza con losas y escaleras; todas admiten -w Slabs|SlabsAndStairs")
+                    )),
             new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass"), List.of(
                     new Entry("/komaedit texture ambient|curvature <máscara> <paleta> [radio] [brillo] [contraste] [-w]",
                             "Oclusión ambiental o curvatura (alias textura)"),

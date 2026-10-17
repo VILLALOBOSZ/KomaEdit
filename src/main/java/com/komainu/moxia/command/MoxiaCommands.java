@@ -225,6 +225,10 @@ public final class MoxiaCommands {
                 .then(expressionCommand("expresion"))
                 .then(ivyCommand("ivy"))
                 .then(ivyCommand("hiedra"))
+                .then(BrushCommands.brush("pincel"))
+                .then(BrushCommands.brush("ezbrush"))
+                .then(BrushCommands.superwand("superwand"))
+                .then(BrushCommands.superwand("supervarita"))
                 .then(jobCommand())
                 .then(projectCommand())
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
@@ -233,6 +237,7 @@ public final class MoxiaCommands {
                 .then(HelpCommands.command("help"))
                 .then(HelpCommands.command("ayuda"))
                 .executes(MoxiaCommands::openHudMenu));
+        DeformCommands.register(root);
         TextureCommands.register(dispatcher);
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
