@@ -25,6 +25,8 @@ public final class RegionSnapshot {
     private final BitSet selected;
     private final Int2ObjectMap<StateInfo> states;
     private final StateInfo air;
+    /** Luz de bloque en los 4 bits altos y luz del cielo en los bajos; {@code null} si no se capturó. */
+    private final byte[] light;
 
     RegionSnapshot(
             int minimumX,
@@ -35,7 +37,8 @@ public final class RegionSnapshot {
             int sizeZ,
             int[] ids,
             BitSet selected,
-            Int2ObjectMap<StateInfo> states
+            Int2ObjectMap<StateInfo> states,
+            byte[] light
     ) {
         this.minimumX = minimumX;
         this.minimumY = minimumY;
@@ -46,6 +49,7 @@ public final class RegionSnapshot {
         this.ids = ids;
         this.selected = selected;
         this.states = states;
+        this.light = light;
         StateInfo foundAir = states.get(0);
         this.air = foundAir != null ? foundAir : new StateInfo(0, null, "minecraft:air", true, false, false);
     }
@@ -133,6 +137,29 @@ public final class RegionSnapshot {
         return info(x, y, z).solid();
     }
 
+    /** Si la foto guarda los niveles de luz (solo cuando la operación los pide). */
+    public boolean hasLight() {
+        return light != null;
+    }
+
+    /** Luz de bloque (0–15) sin contar el cielo; 0 fuera de la foto o si no se capturó la luz. */
+    public int blockLight(int x, int y, int z) {
+        return light == null || !contains(x, y, z) ? 0 : (light[index(x, y, z)] >> 4) & 15;
+    }
+
+    /** Luz del cielo (0–15); fuera de la foto se supone cielo abierto. */
+    public int skyLight(int x, int y, int z) {
+        if (light == null) {
+            return 0;
+        }
+        return contains(x, y, z) ? light[index(x, y, z)] & 15 : 15;
+    }
+
+    /** Luz que emite el bloque (0–15). */
+    public int luminance(int x, int y, int z) {
+        return info(x, y, z).luminance();
+    }
+
     /** Caras al aire (0–6): la base de casi todas las métricas de exposición. */
     public int exposedFaces(int x, int y, int z) {
         int exposed = 0;
@@ -152,6 +179,7 @@ public final class RegionSnapshot {
     /**
      * Información de un estado. {@code blockId} es el id con espacio de nombres ({@code minecraft:stone}) y
      * {@code properties} el texto de propiedades de WorldEdit ({@code facing=north,half=top}) o vacío.
+     * {@code luminance} es la luz que emite (0–15).
      */
     public record StateInfo(
             int rawId,
@@ -160,10 +188,23 @@ public final class RegionSnapshot {
             boolean air,
             boolean liquid,
             boolean solid,
-            String properties
+            String properties,
+            int luminance
     ) {
         public StateInfo(int rawId, BlockState state, String blockId, boolean air, boolean liquid, boolean solid) {
-            this(rawId, state, blockId, air, liquid, solid, "");
+            this(rawId, state, blockId, air, liquid, solid, "", 0);
+        }
+
+        public StateInfo(
+                int rawId,
+                BlockState state,
+                String blockId,
+                boolean air,
+                boolean liquid,
+                boolean solid,
+                String properties
+        ) {
+            this(rawId, state, blockId, air, liquid, solid, properties, 0);
         }
     }
 
@@ -178,6 +219,7 @@ public final class RegionSnapshot {
         private final int[] ids;
         private final BitSet selected;
         private final Int2ObjectMap<StateInfo> states = new Int2ObjectOpenHashMap<>();
+        private byte[] light;
 
         private Builder(int minimumX, int minimumY, int minimumZ, int sizeX, int sizeY, int sizeZ) {
             if (sizeX <= 0 || sizeY <= 0 || sizeZ <= 0) {
@@ -209,9 +251,19 @@ public final class RegionSnapshot {
             return this;
         }
 
+        /** Guarda los niveles de luz de una posición (luz de bloque y del cielo, 0–15). */
+        public Builder light(int x, int y, int z, int blockLight, int skyLight) {
+            if (light == null) {
+                light = new byte[ids.length];
+            }
+            int index = ((y - minimumY) * sizeZ + (z - minimumZ)) * sizeX + (x - minimumX);
+            light[index] = (byte) ((Math.clamp(blockLight, 0, 15) << 4) | Math.clamp(skyLight, 0, 15));
+            return this;
+        }
+
         public RegionSnapshot build() {
             return new RegionSnapshot(minimumX, minimumY, minimumZ, sizeX, sizeY, sizeZ, ids, selected,
-                    new Int2ObjectOpenHashMap<>(states));
+                    new Int2ObjectOpenHashMap<>(states), light);
         }
     }
 }

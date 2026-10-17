@@ -94,6 +94,9 @@ Piezas relacionadas:
 
 - `noise.NoiseSpec`: ruido con la notación de ezEdits sobre FastNoiseLite. Es inmutable y se puede usar desde varios hilos tras `build(semilla)`.
 - `gradient.PaletteSpec`: paletas `##Nombre`, `-`, `(a:b)`, `*n` y `[…]`. Se resuelven a texto en el hilo del servidor, y los patrones de WorldEdit se parsean ahí antes de pasar al worker.
+- `region.RegionMasks` y `region.SnapshotExtent`: las máscaras de WorldEdit se parsean en el hilo del servidor con un `Extent` de solo lectura sin foto; la operación llama a `bind(snapshot)` al empezar y desde ahí la máscara lee la foto en el worker. Fuera de la foto todo es aire y los biomas dan error.
+- Luz: si `RegionOperation.needsLight()` devuelve `true`, la captura guarda también la luz de bloque y del cielo de cada posición (`RegionSnapshot.blockLight`, `skyLight`); `StateInfo.luminance` es la luz que emite cada estado.
+- `texture.TextureContext` y `texture.TextureField`: los modos de `/komaedit texture` son campos puros (un valor de 0 a 1 o `NaN` por bloque) sobre la foto, combinables; `TextureOperation` los convierte en bloques de la paleta. Sirven de ejemplo para medir sobre la foto (sumas acumuladas de sólidos, normales, suavizado).
 - `gradient.SavedPalettes` y `noise.SavedNoises`: paletas (`#nombre`) y ruidos guardados por jugador y mundo sobre `persistence.NamedDefinitions`. Para aceptarlos, pasa `SavedPalettes.resolver(uuid)` a `PaletteSpec.parse` o `SavedNoises.resolver(uuid)` a `NoiseSpec.parse`.
 
 ## Máscaras y patrones en WorldEdit
