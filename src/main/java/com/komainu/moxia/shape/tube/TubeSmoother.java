@@ -202,6 +202,7 @@ final class TubeSmoother {
         interpolated.roll = field(5, base.roll, dx, dy, dz);
         // El estiramiento varía muy despacio: dentro del bloque basta el del centro.
         interpolated.stretch = base.stretch;
+        interpolated.progress = interpolated.distance / evaluator.length();
         interpolated.beyond = 0.0;
         return evaluator.evaluate(interpolated, false) >= 0.0;
     }

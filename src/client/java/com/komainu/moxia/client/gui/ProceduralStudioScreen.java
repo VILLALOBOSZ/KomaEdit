@@ -22,6 +22,8 @@ import com.komainu.moxia.shape.smooth.PieceFit;
 import com.komainu.moxia.shape.smooth.SmoothMode;
 import com.komainu.moxia.shape.tube.TubeEngine;
 import com.komainu.moxia.shape.tube.TubeFigures;
+import com.komainu.moxia.shape.tube.TubeFormula;
+import com.komainu.moxia.shape.tube.TubeFormulaPreset;
 import com.komainu.moxia.shape.tube.TubeSettings;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.block.Block;
@@ -106,6 +108,13 @@ public final class ProceduralStudioScreen extends Screen {
     private boolean blockCatalog;
     private boolean editingName;
     private String nameInput = draft.name();
+    private boolean editingFormula;
+    private String formulaInput = "";
+    /** Error de lo último escrito; si quedó sin aplicar, al reabrir el campo se recupera para corregirlo. */
+    private String formulaError;
+    private int formulaFieldX;
+    private int formulaFieldY;
+    private int formulaFieldWidth;
     private String blockSearch = "";
     private String status = tr("gui.komaedit.status.ready");
     private String selectedInstanceId = "";
@@ -139,7 +148,12 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public void tick() {
-        updateMovementKeys();
+        if (editingFormula) {
+            // Mientras se escribe la fórmula, W, A, S, D y el espacio son letras, no movimiento.
+            releaseMovementKeys();
+        } else {
+            updateMovementKeys();
+        }
         previewDraft = draft;
         if (client != null) {
             ProceduralPreviewRenderer.request(draft, PathHologramRenderer.points(), PathHologramRenderer.closed());
@@ -323,6 +337,7 @@ public final class ProceduralStudioScreen extends Screen {
                 : draft.shape() == PathShape.CLOUDS || mandala ? "Tamaño"
                 : torii ? "Grosor" : monumental ? "Ancho" : "Escala";
         String spacingLabel = draft.shape() == PathShape.SWEEP ? "Lados / puntas"
+                : draft.shape() == PathShape.EXPRESSION ? "Repeticiones (n)"
                 : draft.shape() == PathShape.BRAID ? "Paso de trenza"
                 : draft.shape() == PathShape.NOISE_TUBE ? "Frecuencia"
                 : lightning ? "Ramificación"
@@ -330,7 +345,8 @@ public final class ProceduralStudioScreen extends Screen {
                 : mandala ? "Simetría"
                 : draft.shape() == PathShape.CLOUDS ? "Organicidad"
                 : torii || monumental ? "Detalle" : "Espaciado";
-        String thicknessLabel = draft.shape() == PathShape.SWEEP ? "Pared (hueco)"
+        String thicknessLabel = draft.shape() == PathShape.SWEEP || draft.shape() == PathShape.EXPRESSION
+                ? "Pared (hueco)"
                 : draft.shape() == PathShape.BRAID ? "Grosor hebra"
                 : draft.shape() == PathShape.NOISE_TUBE ? "Profundidad"
                 : lightning ? "Grosor núcleo"
@@ -355,7 +371,7 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     /**
-     * Filas propias del espacio de tubo: motor (en las figuras clásicas que tienen versión exacta), perfil,
+     * Filas del espacio de tubo: motor (en las figuras clásicas que tienen versión exacta), perfil o fórmula,
      * relleno, extremos, orientación de la sección y piezas.
      */
     private void drawTubeRows(DrawContext context, int mouseX, int mouseY, int x, int y, int inner) {
@@ -366,8 +382,15 @@ public final class ProceduralStudioScreen extends Screen {
                 return;
             }
         }
+        if (draft.shape() == PathShape.EXPRESSION) {
+            drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Fórmula",
+                    draft.formula().isEmpty() ? formulaPreset().displayName() : "Propia");
+            drawFormulaField(context, mouseX, mouseY, x, y + row++ * 31, inner);
+        }
         if (draft.shape() == PathShape.SWEEP) {
             drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Perfil", tubeProfile().displayName());
+        }
+        if (usesHollowRow()) {
             drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Relleno",
                     tubeOption("hollow", 0.0) >= 0.5 ? "Hueco" : "Macizo");
         }
@@ -404,6 +427,29 @@ public final class ProceduralStudioScreen extends Screen {
                 return false;
             }
         }
+        if (draft.shape() == PathShape.EXPRESSION) {
+            if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
+                // Desde una fórmula propia, el primer clic vuelve a la de serie que había debajo.
+                TubeFormulaPreset preset = draft.formula().isEmpty()
+                        ? TubeFormulaPreset.byIndex(formulaPreset().ordinal() + direction)
+                        : formulaPreset();
+                setTubeOption("preset", preset.ordinal());
+                draft = draft.withFormula("");
+                formulaError = null;
+                status = "Fórmula " + preset.displayName() + " · " + preset.description();
+                return true;
+            }
+            if (inside(mouseX, mouseY, x, y + row++ * 31, inner, 25)) {
+                editingFormula = true;
+                if (formulaError == null) {
+                    formulaInput = activeFormulaSource();
+                }
+                status = formulaError == null
+                        ? "Escribe la fórmula · Intro la aplica, Esc cancela, Ctrl+V pega"
+                        : formulaError;
+                return true;
+            }
+        }
         if (draft.shape() == PathShape.SWEEP) {
             if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
                 TubeSettings.TubeProfile profile = TubeSettings.TubeProfile.byIndex(
@@ -413,6 +459,8 @@ public final class ProceduralStudioScreen extends Screen {
                         + (profile.usesSides() ? " · Lados / puntas fija cuántas" : "");
                 return true;
             }
+        }
+        if (usesHollowRow()) {
             if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
                 boolean hollow = tubeOption("hollow", 0.0) < 0.5;
                 setTubeOption("hollow", hollow ? 1.0 : 0.0);
@@ -467,7 +515,12 @@ public final class ProceduralStudioScreen extends Screen {
         if (!TubeFigures.supports(draft.shape())) {
             return 0;
         }
-        return (draft.shape() == PathShape.SWEEP ? 4 : 2) + smoothRows;
+        int shapeRows = switch (draft.shape()) {
+            case EXPRESSION -> 5;
+            case SWEEP -> 4;
+            default -> 2;
+        };
+        return shapeRows + smoothRows;
     }
 
     private SmoothMode smoothMode() {
@@ -480,6 +533,65 @@ public final class ProceduralStudioScreen extends Screen {
 
     private TubeEngine tubeEngine() {
         return TubeEngine.byIndex((int) Math.round(tubeOption(TubeEngine.OPTION, 0.0)));
+    }
+
+    private boolean usesHollowRow() {
+        return draft.shape() == PathShape.SWEEP || draft.shape() == PathShape.EXPRESSION;
+    }
+
+    private TubeFormulaPreset formulaPreset() {
+        return TubeFormulaPreset.byIndex((int) tubeOption("preset", 0.0));
+    }
+
+    /** La fórmula que se está usando: la propia o, si no hay, la de serie. */
+    private String activeFormulaSource() {
+        return draft.formula().isEmpty() ? formulaPreset().source() : draft.formula();
+    }
+
+    /** Campo de fórmula: muestra la activa (gris si es de serie) y, al editar, el final de lo escrito. */
+    private void drawFormulaField(DrawContext context, int mouseX, int mouseY, int x, int y, int rowWidth) {
+        formulaFieldX = x;
+        formulaFieldY = y;
+        formulaFieldWidth = rowWidth;
+        boolean hovered = inside(mouseX, mouseY, x, y, rowWidth, 25);
+        context.fill(x, y, x + rowWidth, y + 25, editingFormula ? CARD_SELECTED : hovered ? CARD_HOVER : CARD);
+        if (editingFormula && formulaError != null) {
+            context.fill(x, y + 23, x + rowWidth, y + 25, WARNING);
+        }
+        int textWidth = rowWidth - 16;
+        if (editingFormula) {
+            String shown = textRenderer.trimToWidth(formulaInput + "_", textWidth, true);
+            context.drawText(textRenderer, shown, x + 8, y + 8, TEXT, false);
+        } else {
+            drawTrimmed(context, activeFormulaSource(), x + 8, y + 8, textWidth,
+                    draft.formula().isEmpty() ? MUTED : TEXT);
+        }
+    }
+
+    private void updateFormulaError() {
+        formulaError = formulaInput.isBlank() ? null : TubeFormula.validate(formulaInput);
+        status = formulaError == null ? "Fórmula válida · Intro la aplica" : formulaError;
+    }
+
+    /** Aplica lo escrito; vacío o igual a la de serie vuelve a la de serie. Si no compila, no cambia nada. */
+    private void commitFormula() {
+        editingFormula = false;
+        String input = formulaInput.trim();
+        TubeFormulaPreset preset = formulaPreset();
+        formulaError = null;
+        if (input.isEmpty() || input.equals(preset.source())) {
+            draft = draft.withFormula("");
+            status = "Fórmula " + preset.displayName();
+            return;
+        }
+        String error = TubeFormula.validate(input);
+        if (error != null) {
+            formulaError = error;
+            status = "Fórmula sin aplicar · " + error;
+            return;
+        }
+        draft = draft.withFormula(input);
+        status = "Fórmula propia aplicada · lo que da > 0 se construye";
     }
 
     private TubeSettings.TubeProfile tubeProfile() {
@@ -923,6 +1035,13 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (editingFormula) {
+            if (inside(mouseX, mouseY, formulaFieldX, formulaFieldY, formulaFieldWidth, 25)) {
+                return true;
+            }
+            // Pulsar fuera aplica la fórmula antes de atender el clic.
+            commitFormula();
+        }
         if (blockCatalog) {
             return blockCatalogClicked(mouseX, mouseY, button);
         }
@@ -1454,6 +1573,9 @@ public final class ProceduralStudioScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         boolean control = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+        if (editingFormula) {
+            return formulaKeyPressed(keyCode, control);
+        }
         if (control && keyCode == GLFW.GLFW_KEY_Z) {
             sendEditor(shift ? EditorActionPayload.REDO : EditorActionPayload.UNDO, -1, BlockPos.ORIGIN);
             status = shift ? "Rehacer solicitado" : "Deshacer solicitado";
@@ -1498,8 +1620,42 @@ public final class ProceduralStudioScreen extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
+    /** Con el campo de fórmula abierto ninguna tecla dispara atajos (K cierra el Studio, Ctrl+Z deshace…). */
+    private boolean formulaKeyPressed(int keyCode, boolean control) {
+        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+            commitFormula();
+        } else if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            editingFormula = false;
+            formulaError = null;
+            status = "Edición de fórmula cancelada";
+        } else if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !formulaInput.isEmpty()) {
+            formulaInput = control ? "" : formulaInput.substring(0, formulaInput.length() - 1);
+            updateFormulaError();
+        } else if (control && keyCode == GLFW.GLFW_KEY_V && client != null) {
+            appendFormula(client.keyboard.getClipboard());
+        }
+        return true;
+    }
+
+    private void appendFormula(String text) {
+        StringBuilder next = new StringBuilder(formulaInput);
+        for (int index = 0; index < text.length() && next.length() < TubeFormula.MAX_LENGTH; index++) {
+            char value = text.charAt(index);
+            next.append(value >= 32 && value < 127 ? value : ' ');
+        }
+        formulaInput = next.toString();
+        updateFormulaError();
+    }
+
     @Override
     public boolean charTyped(char chr, int modifiers) {
+        if (editingFormula) {
+            if (chr >= 32 && chr < 127 && formulaInput.length() < TubeFormula.MAX_LENGTH) {
+                formulaInput += chr;
+                updateFormulaError();
+            }
+            return true;
+        }
         if (blockCatalog && blockSearch.length() < 64
                 && (Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == '-')) {
             blockSearch += Character.toLowerCase(chr);

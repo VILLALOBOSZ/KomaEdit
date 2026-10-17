@@ -28,6 +28,7 @@ final class TubeShapes {
             case SWEEP -> new Profile(settings);
             case BRAID -> new Braid(settings);
             case NOISE_TUBE -> new Erosion(settings, settings.seed() != 0L ? settings.seed() : pathSeed);
+            case EXPRESSION -> new Formula(settings, settings.seed() != 0L ? settings.seed() : pathSeed);
             case BEADS -> new Beads(parameters, line);
             case RINGS -> new Rings(parameters, line);
             case CHAINLINK -> new Chainlink(parameters, line);
@@ -42,7 +43,8 @@ final class TubeShapes {
     }
 
     static boolean supports(PathShape shape) {
-        return shape == PathShape.SWEEP || shape == PathShape.BRAID || shape == PathShape.NOISE_TUBE;
+        return shape == PathShape.SWEEP || shape == PathShape.BRAID || shape == PathShape.NOISE_TUBE
+                || shape == PathShape.EXPRESSION;
     }
 
     /** Figuras clásicas que tienen versión exacta en espacio de tubo. */
@@ -59,14 +61,19 @@ final class TubeShapes {
 
         double sample(double x, double y, double z);
 
-        /**
-         * Igual que {@link #sample(double, double, double)} conociendo el entorno del punto: {@code blocks} es
-         * cuántos bloques mide un radio de sección y {@code stretch} cuánto se estira la coordenada
-         * longitudinal. Las figuras clásicas lo usan para que sus hilos nunca bajen de un grosor mínimo en
-         * bloques y para que el espaciado de la curva separe los motivos sin aplastarlos.
-         */
-        default double sample(double x, double y, double z, double blocks, double stretch) {
+        /** Igual, con el progreso (0 a 1) a lo largo del recorrido para las figuras que lo usan. */
+        default double sample(double x, double y, double z, double progress) {
             return sample(x, y, z);
+        }
+
+        /**
+         * Igual, conociendo todo el entorno del punto: además del progreso, {@code blocks} es cuántos bloques mide
+         * un radio de sección y {@code stretch} cuánto se estira la coordenada longitudinal. Las figuras clásicas
+         * lo usan para que sus hilos nunca bajen de un grosor mínimo en bloques y para que el espaciado de la
+         * curva separe los motivos sin aplastarlos.
+         */
+        default double sample(double x, double y, double z, double progress, double blocks, double stretch) {
+            return sample(x, y, z, progress);
         }
 
         /** Margen radial extra, en bloques, que puede ocupar la figura más allá de {@link #extent()}. */
@@ -301,6 +308,41 @@ final class TubeShapes {
     }
 
     /**
+     * Expresión: la fórmula del usuario decide cada punto. Solo se evalúa dentro del cuadrado [-1, 1] de la
+     * sección; una salida mayor que cero coloca bloque y su valor, limitado a 1, es el material. El alcance sale
+     * de la cota radial de la fórmula: √2 (las esquinas del cuadrado) salvo que la fórmula se limite a un radio.
+     */
+    static final class Formula implements TubeShape {
+        private final TubeFormula.Runner runner;
+        private final double extent;
+
+        Formula(TubeSettings settings, long seed) {
+            runner = settings.formula().runner(seed, settings.sides());
+            extent = settings.formula().radialBound();
+        }
+
+        @Override
+        public double extent() {
+            return extent;
+        }
+
+        @Override
+        public double sample(double x, double y, double z) {
+            return sample(x, y, z, 0.0);
+        }
+
+        @Override
+        public double sample(double x, double y, double z, double progress) {
+            if (Math.abs(x) > 1.0 || Math.abs(y) > 1.0) {
+                return -1.0;
+            }
+            double value = runner.evaluate(x, y, z, progress);
+            // NaN también queda fuera: la comparación es falsa.
+            return value > 0.0 ? Math.min(value, 1.0) : -1.0;
+        }
+    }
+
+    /**
      * Base de las figuras clásicas en motor exacto. Las proporciones salen de las mismas fórmulas que
      * {@code ShapeGenerator}; las medidas en bloques se pasan a radios con la escala base, así crecen y encogen
      * con los radios por fotogramas y con la curva de modificadores.
@@ -331,7 +373,12 @@ final class TubeShapes {
         }
 
         @Override
-        public abstract double sample(double x, double y, double z, double blocks, double stretch);
+        public final double sample(double x, double y, double z, double progress, double blocks, double stretch) {
+            return sample(x, y, z, blocks, stretch);
+        }
+
+        /** La figura en el punto, con {@code blocks} bloques por radio de sección y el estiramiento local. */
+        abstract double sample(double x, double y, double z, double blocks, double stretch);
 
         @Override
         public double margin() {

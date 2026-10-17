@@ -25,6 +25,7 @@ import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
 import com.komainu.moxia.shape.tube.TubeBender;
 import com.komainu.moxia.shape.tube.TubeCommandParser;
+import com.komainu.moxia.shape.tube.TubeFormulaPreset;
 import com.komainu.moxia.shape.tube.TubeSettings;
 import com.komainu.moxia.sculpt.BrushFalloff;
 import com.komainu.moxia.sculpt.BrushMask;
@@ -112,6 +113,21 @@ public final class MoxiaCommands {
         }
         return tail.buildFuture();
     };
+    /** Al empezar, las fórmulas de serie, un ejemplo y las banderas; luego solo banderas, que van delante. */
+    private static final SuggestionProvider<ServerCommandSource> EXPRESSION_SUGGESTIONS = (context, builder) -> {
+        String remaining = builder.getRemaining();
+        int lastSpace = remaining.lastIndexOf(' ');
+        var tail = builder.createOffset(builder.getStart() + lastSpace + 1);
+        for (TubeFormulaPreset preset : TubeFormulaPreset.values()) {
+            tail.suggest(preset.id());
+        }
+        tail.suggest("r<1&&abs(sin(a*3+z))>0.4");
+        for (String flag : new String[]{"-e round", "-e spike", "-n horizontal", "-n upright", "-t 90",
+                "-q high", "-hollow 1", "-s 2", "-seed 7", "-w stairs", "-w slabs"}) {
+            tail.suggest(flag);
+        }
+        return tail.buildFuture();
+    };
     private static final SuggestionProvider<ServerCommandSource> PALETTE_SUGGESTIONS = (context, builder) -> {
         Arrays.stream(GradientPalette.values()).map(GradientPalette::id).forEach(builder::suggest);
         return builder.buildFuture();
@@ -161,6 +177,8 @@ public final class MoxiaCommands {
                 .then(tubeCommand("trenza", PathShape.BRAID))
                 .then(tubeCommand("noisetube", PathShape.NOISE_TUBE))
                 .then(tubeCommand("erosion", PathShape.NOISE_TUBE))
+                .then(expressionCommand("expr"))
+                .then(expressionCommand("expresion"))
                 .then(jobCommand())
                 .then(projectCommand())
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
@@ -590,6 +608,34 @@ public final class MoxiaCommands {
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
         } catch (IllegalArgumentException exception) {
+            return fail(context.getSource(), message(exception));
+        }
+    }
+
+    /** {@code expr <radios> [banderas] [patrón] <fórmula…>}: la fórmula ocupa el resto de la línea. */
+    private static LiteralArgumentBuilder<ServerCommandSource> expressionCommand(String name) {
+        RequiredArgumentBuilder<ServerCommandSource, String> radii = argument(
+                "tube_radii", StringArgumentType.string()
+        );
+        radii.then(argument("expression", StringArgumentType.greedyString())
+                .suggests(EXPRESSION_SUGGESTIONS)
+                .executes(context -> generateExpression(context, StringArgumentType.getString(context, "expression"))));
+        return literal(name).then(radii);
+    }
+
+    private static int generateExpression(CommandContext<ServerCommandSource> context, String expression)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        try {
+            TubeCommandParser.Result parsed = TubeCommandParser.parseExpression(
+                    StringArgumentType.getString(context, "tube_radii"),
+                    expression,
+                    "stone"
+            );
+            return enqueueShape(context, player, true, parsed.pattern(), parsed.parameters());
+        } catch (IncompleteRegionException exception) {
+            return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
+        } catch (InputParseException | IllegalArgumentException exception) {
             return fail(context.getSource(), message(exception));
         }
     }
@@ -1947,7 +1993,7 @@ public final class MoxiaCommands {
                 () -> Text.literal(
                         "3D: scales, spiked_scales, chainlink, beads, coil, crowns, honeycomb, fishnet, oscillate, "
                                 + "lightning, ribloops, rings, tiles, hexarmor, voronoi, knots, noodles, mandala, clouds, web, pillar, "
-                                + "pillararches, torii, archbridge, sweep, braid y noisetube."
+                                + "pillararches, torii, archbridge, sweep, braid, noisetube y expression."
                 )
                         .formatted(Formatting.AQUA),
                 false
@@ -1985,6 +2031,15 @@ public final class MoxiaCommands {
                                 + "-w cambia la superficie por losas o escaleras del mismo material. "
                                 + "Doblar el portapapeles: /komaedit bend [repeat|stretch] [-n upright|horizontal] "
                                 + "[-g hueco] [-a x|z|-x|-z] [-y desplazamiento]."
+                ).formatted(Formatting.GRAY),
+                false
+        );
+        context.getSource().sendFeedback(
+                () -> Text.literal(
+                        "Fórmula: /komaedit expr <radios> [banderas] [patrón] <fórmula…> · x e y de -1 a 1 en la "
+                                + "sección, z a lo largo (en radios), t de 0 a 1, r radio, a ángulo, n repeticiones; "
+                                + "> 0 coloca bloque. De serie: " + TubeFormulaPreset.ids() + " (ventanas8 fija n). "
+                                + "Ej.: /komaedit expr 8 stone r<1&&abs(sin(a*3+z))>0.4"
                 ).formatted(Formatting.GRAY),
                 false
         );

@@ -50,6 +50,8 @@ public enum PathShape {
             "braids", "trenza", "trenzas", "br"),
     NOISE_TUBE("noisetube", "Tubo erosionado", "Tubo macizo cuya corteza muerde un ruido 3D que sigue la curva", 8, 4, 2,
             "noise_tube", "noise", "erosion", "erosionado", "rock", "roca", "ruido"),
+    EXPRESSION("expression", "Expresión", "Figura definida por una fórmula en espacio de tubo: x e y en la sección, z a lo largo", 7, 6, 1,
+            "expresion", "expr", "formula", "fórmula", "ecuacion"),
     PILLAR("pillar", "Pilar monumental", "Columna épica entre P1 y P2 con base, fuste, nervaduras y capitel", 10, 6, 2,
             "pilar", "column", "columna", "epic_pillar", "monumental_pillar"),
     PILLAR_ARCHES("pillararches", "Pilares arqueados", "Dos pilares monumentales levantados desde P1 y P2 y unidos mediante un arco ornamentado", 9, 6, 2,

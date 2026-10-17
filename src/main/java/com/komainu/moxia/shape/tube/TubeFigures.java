@@ -17,8 +17,8 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 
 /**
- * Punto de entrada de las figuras de espacio de tubo ({@code sweep}, {@code braid} y {@code noisetube}) y del
- * motor exacto de las figuras clásicas.
+ * Punto de entrada de las figuras de espacio de tubo ({@code sweep}, {@code braid}, {@code noisetube} y
+ * {@code expression}) y del motor exacto de las figuras clásicas.
  *
  * <p>Mismo contrato que el resto de {@code ShapeGenerator}: recibe la trayectoria y los parámetros y devuelve
  * bloques. La geometría se calcula entera fuera del hilo del servidor y respeta la cancelación cooperativa.</p>
