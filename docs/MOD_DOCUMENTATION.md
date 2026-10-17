@@ -158,7 +158,7 @@ También está disponible con el comando general:
 
 **Perfil 2D** (`sweep`), **Trenza** (`braid`) y **Tubo erosionado** (`noisetube`) se generan con un motor distinto al de las demás figuras: en lugar de estampar pinceles a lo largo de la curva, recorre los bloques cercanos al eje y evalúa en cada uno una función implícita de la figura. El resultado es estanco por construcción, sin puentes ni reparación posterior.
 
-- Studio: aparecen en **Figuras**. Las tres añaden filas de **Extremos** y **Normales**; **Perfil 2D** añade además **Perfil** y **Relleno**.
+- Studio: aparecen en **Figuras**. Las tres añaden filas de **Extremos**, **Normales** y **Piezas** (con **Cobertura** cuando hay piezas); **Perfil 2D** añade además **Perfil** y **Relleno**.
 - Comandos rápidos:
 
 ```text
@@ -180,6 +180,7 @@ También está disponible con el comando general:
 - **Hueco:** la pared se obtiene por morfología (bloque dentro con algún vecino fuera a la distancia de la pared), así que queda cerrada aunque la superficie vaya en diagonal. Con extremo `flat` el tubo queda abierto como una tubería.
 - **Modificadores exactos:** escala, espaciado y torsión de la sección Deformar se aplican dentro del espacio de tubo al evaluar cada bloque, sin deformar bloques ya generados ni puentear huecos.
 - **Determinismo:** el ruido del tubo erosionado usa una semilla derivada de los puntos; holograma y Build coinciden.
+- **Losas y escaleras:** opcionalmente la superficie se termina con piezas del mismo material; ver [Losas y escaleras en la superficie](#losas-y-escaleras-en-la-superficie).
 
 ### Parámetros
 
@@ -201,10 +202,12 @@ También está disponible con el comando general:
 | `-k <2–8>` | `strands` | Hebras de la trenza. |
 | `-f <frecuencia>` | `frequency` | Tamaño de las vetas del tubo erosionado. |
 | `-fill` | `filled` | Rellena el alma de la cuerda. |
+| `-w <modo>` / Piezas | `smooth` | `none` (bloques enteros), `slabs` (losas) o `stairs` (losas y escaleras). |
+| `-c <0–1>` / Cobertura | `coverage` | Cuánta superficie se cubre con piezas: `0` solo bloques enteros, `0.5` (por defecto) la pieza que mejor encaja, `1` toda la superficie que no esté entera. `-c` sin `-w` activa `stairs`. |
 
 Perfiles: `circle`, `square`, `diamond`, `rounded`, `polygon`, `star`, `flower`, `rope`, `ellipse` y `rectangle` (también en español: `circulo`, `estrella`, `cuerda`…). Un número al final fija los lados: `polygon6`, `star5`, `rope4`.
 
-En recetas y expresiones también se aceptan nombres: `sweep(profile:star,sides:7,end:round,normal:horizontal,hollow:true)`.
+En recetas y expresiones también se aceptan nombres: `sweep(profile:star,sides:7,end:round,normal:horizontal,hollow:true)` o `braid(smooth:stairs,coverage:0.7)`.
 
 Ejemplos:
 
@@ -215,7 +218,28 @@ Ejemplos:
 /komaedit sweep polygon6 10 deepslate_tiles -hollow 2 -n horizontal
 /komaedit braid 7 stripped_birch_wood -k 4
 /komaedit noisetube 2_12_4 60%stone,25%andesite,15%cobblestone -e round
+/komaedit sweep circle 9 stone_bricks -w stairs
+/komaedit sweep ellipse 12 smooth_stone -a 0.4 -n horizontal -w slabs -c 0.7
 ```
+
+### Losas y escaleras en la superficie
+
+Los tubos hechos solo con bloques enteros dejan escalones en la superficie. Con **Piezas** (`-w`) los bloques del borde que la figura solo ocupa en parte se sustituyen por losas o escaleras orientadas del mismo material, y los huecos vacíos que la figura casi llena reciben una pieza.
+
+- **Medición:** cada bloque de la superficie, y cada hueco vacío pegado a ella, se divide en 8 octantes. La misma función implícita que decide la figura mide qué fracción de cada octante queda dentro: el centro de cada octante y, si el bloque está a medias, cuatro muestras más en damero (con calidad `fast`, solo el centro). Para no localizar el eje en cada muestra, se localiza el centro del bloque y tres puntos a un cuarto de bloque y el resto se interpola; cerca de los extremos, en la costura de los lazos o donde el eje salta, cada muestra se localiza por separado.
+- **Elección:** las piezas candidatas son las dos losas y, con `stairs`, las escaleras rectas en las cuatro orientaciones, apoyadas o colgadas. Gana la que menos se aleja de la ocupación medida, y sustituye al bloque (o rellena el hueco) si mejora el encaje en más que el umbral de la cobertura. Con `0.5` basta con encajar mejor; hacia `0` hace falta tanta ventaja que no se usa ninguna; con `1` se aceptan piezas hasta dos octantes peores.
+- **Esquinas como en vanilla:** al colocar bloques, Minecraft recalcula la forma de cada escalera según las escaleras de alrededor. El plan ya trae esa forma (esquinas interiores y exteriores) calculada con la misma regla, así el mundo queda igual que el holograma.
+- **Material:** la pieza sale del bloque que elige el patrón en esa posición, también con patrones aleatorios, degradados y **Patrón figura**. La familia se busca por nombre (`stone` → `stone_slab`/`stone_stairs`, `stone_bricks` → `stone_brick_*`, `oak_planks` o `oak_log` → `oak_*`, `quartz_pillar` → `quartz_*`, cobre → cobre cortado) con una tabla para los casos sin convención (`deepslate` → `cobbled_deepslate`, `smooth_stone` → losa propia y escalera de `stone`, `end_stone` → `end_stone_brick`…). Funciona igual con bloques de otros mods que sigan la convención.
+- **Sin familia:** si el bloque no tiene losas o escaleras (hormigón, lana, basalto…), se usa la losa o escalera registrada con el color de mapa más parecido, solo si el color se parece de verdad. Si tampoco hay, el bloque de la figura se queda entero y la pieza que iba en un hueco vacío no se coloca.
+- **No se convierten:** cristal, hojas y demás bloques no opacos, bloques con entidad (cofres, hornos…) y patrones que ya son losas o escaleras (estos solo se orientan).
+- **Holograma:** dibuja las losas y escaleras con su forma real, por medios bloques, y el estado indica cuántas hay.
+
+Limitaciones:
+
+- En tubos huecos no se añaden piezas fuera y la capa que toca el interior se queda entera, para que ninguna losa abra la pared.
+- Solo se tocan bloques que coloca la propia figura de tubo: la figura de acento del ritmo y los bloques que añade **Cerrar huecos** se quedan enteros.
+- Las escaleras son de una sola pieza por bloque: superficies muy finas (hebras de trenza de 1–2 bloques) pueden quedar con escalones de media altura.
+- Si junto al tubo ya había escaleras en el mundo, Minecraft puede doblar las del borde hacia ellas.
 
 ### Materiales
 
@@ -229,6 +253,58 @@ Con **Patrón figura** las figuras de tubo usan su propio valor implícito: en l
 - Con normales `upright` las secciones se inclinan en tramos empinados y pueden solaparse; en tramos verticales conviene `consistent`.
 - Si una curva se cierra más que el propio radio, el tubo se pliega por dentro como en cualquier barrido: separa más los puntos o reduce el radio.
 - El tubo erosionado conserva solo la pieza conectada al núcleo, sin fragmentos flotantes.
+- Las losas y escaleras solo miden la superficie. En un tubo de radio 14 y unos 360 bloques de recorrido (~230 000 bloques) añaden unos 0,3 s a los 0,6 s de la figura en calidad `balanced`; en radio 6, menos de 0,1 s. Solo cuentan como bloques nuevos las piezas que rellenan huecos.
+
+## Doblar estructuras del portapapeles
+
+### Objetivo y acceso
+
+Curva un módulo copiado con WorldEdit (un tramo de muro, puente, calzada, vía o valla) a lo largo de la trayectoria: o lo repite copia tras copia, o estira una sola copia por todo el recorrido. A diferencia de los sockets Kitbash normales, que pegan el módulo entero en puntos sueltos, aquí el módulo se dobla con la curva.
+
+- Comando rápido, solo la estructura:
+
+```text
+/komaedit bend [repeat|stretch] [banderas]
+/komaedit doblar [repetir|estirar] [banderas]
+```
+
+- En recetas: en **Modificadores → Kitbash**, la fila **Colocar** tiene dos modos nuevos, **Doblar** (repetir) y **Estirar**, que se suman a la figura de la receta y quedan dentro de la instancia, así que se pueden actualizar o retirar.
+
+### Comportamiento
+
+- Se usa el portapapeles de WorldEdit (`//copy`). Su origen, el bloque donde estabas al copiar, es el que recorre la trayectoria.
+- **Repetir:** en un recorrido abierto caben tantas copias enteras como permita la longitud, centradas, sin trozos cortados. En uno cerrado, las copias se ajustan un poco para que el lazo empalme sin costura.
+- **Estirar:** una sola copia ocupa todo el recorrido.
+- Igual que las figuras de tubo, se trabaja al revés: cada bloque del mundo cercano al eje pregunta qué bloque del módulo le toca. Por fuera de las curvas el módulo se estira sin abrir huecos; por dentro se comprime y puede perder algún detalle fino.
+- **Normales `upright` (por defecto):** el módulo se asocia a la vertical de cada punto del recorrido, así que en una cuesta los postes y muros quedan a plomo y la altura se mide en bloques del mundo. Con `horizontal` o `consistent` la sección se inclina con la pendiente.
+- Escaleras, troncos, vallas y demás bloques con dirección se giran en cuartos de vuelta para seguir la curva.
+
+### Parámetros
+
+| Bandera | Efecto |
+| --- | --- |
+| `repeat` / `stretch` | Repetir copias (por defecto) o estirar una sola. |
+| `-a <x\|z\|-x\|-z>` | Dirección del portapapeles que avanza con el recorrido. Por defecto, el lado horizontal más largo; el comando dice cuál ha usado. Con módulos más anchos que largos (un tramo de puente, por ejemplo) hay que indicarla. |
+| `-g <bloques>` | Hueco entre copias al repetir; admite valores negativos para solaparlas. |
+| `-y <bloques>` | Sube o baja el módulo respecto al recorrido. |
+| `-n <modo>` | `upright`, `horizontal` o `consistent`. |
+| `-p t:b:c` | Tensión, sesgo y continuidad de la curva Kochanek–Bartels. |
+
+Ejemplos:
+
+```text
+/komaedit bend
+/komaedit bend -a x -g 2
+/komaedit bend stretch -n horizontal
+/komaedit doblar repetir -a z -y -1
+```
+
+### Rendimiento y limitaciones
+
+- El portapapeles admite hasta 100 000 bloques y como mucho 128 bloques de alto o de lado desde el origen.
+- Un tramo de puente de 7×3×6 doblado sobre 85 bloques de curva (unos 850 bloques) se calcula en menos de 0,1 s en un worker.
+- Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
+- El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
 
 ## Modificadores
 
@@ -240,7 +316,7 @@ Los modificadores transforman de manera continua la figura seleccionada:
 - Torsión progresiva.
 - Fusión con una figura secundaria.
 - Conformado a suelo, techo o superficie.
-- Sockets Kitbash.
+- Sockets Kitbash, también doblados a lo largo del recorrido (modos **Doblar** y **Estirar**).
 - Reparación de microhuecos y componentes aislados.
 
 En las figuras de espacio de tubo la escala, el espaciado y la torsión se aplican al evaluar cada bloque, sin deformación posterior ni puentes entre bloques separados.
@@ -291,6 +367,7 @@ El proyecto persistente evita perder recetas e instancias al desconectarse y per
 - Tras un cierre inesperado, los jobs `RUNNING` pasan a `INTERRUPTED`; no se reanudan automáticamente porque el mundo pudo cambiar mientras el servidor estaba apagado.
 - Las operaciones ya confirmadas siguen usando el historial de WorldEdit para `//undo`; la bitácora persistente es de diagnóstico, no una sustitución del historial.
 - Los backups son manuales y por jugador. Los administradores deben incluir la carpeta `komaedit` del mundo en su estrategia normal de respaldo.
+- Una receta o instancia que no se pueda leer (dañada, o de una versión que usaba una figura ya retirada) se omite del catálogo y se registra en `latest.log` con su nombre de archivo; el archivo se queda en disco y el resto del proyecto sigue funcionando.
 
 ## Permisos, cuotas y configuración
 

@@ -5,7 +5,9 @@ import java.util.Locale;
 public enum SocketPlacement {
     ENDPOINTS("endpoints", "Extremos"),
     NODES("nodes", "Cada nodo"),
-    INTERVAL("interval", "Intervalos");
+    INTERVAL("interval", "Intervalos"),
+    BEND("bend", "Doblar"),
+    STRETCH("stretch", "Estirar");
 
     private final String id;
     private final String displayName;
@@ -21,6 +23,11 @@ public enum SocketPlacement {
 
     public String displayName() {
         return displayName;
+    }
+
+    /** Doblar y Estirar curvan el módulo por todo el recorrido en vez de pegarlo en puntos sueltos. */
+    public boolean bends() {
+        return this == BEND || this == STRETCH;
     }
 
     public static SocketPlacement byId(String input) {

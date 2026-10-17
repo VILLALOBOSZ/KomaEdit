@@ -3,6 +3,8 @@ package com.komainu.moxia.shape.tube;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.shape.smooth.PieceFit;
+import com.komainu.moxia.shape.smooth.SmoothMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +42,9 @@ public record TubeSettings(
         double strandThickness,
         double frequency,
         long seed,
-        RadiusProgression radii
+        RadiusProgression radii,
+        SmoothMode smoothMode,
+        double coverage
 ) {
     public static TubeSettings from(ShapeParameters parameters) {
         ShapeOptions options = parameters.options();
@@ -89,7 +93,9 @@ public record TubeSettings(
                 strandThickness,
                 frequency,
                 (long) options.get("seed", 0.0),
-                RadiusProgression.fromOptions(options)
+                RadiusProgression.fromOptions(options),
+                SmoothMode.byIndex((int) Math.round(Math.clamp(options.get("smooth", 0.0), 0.0, 2.0))),
+                Math.clamp(options.get("coverage", PieceFit.DEFAULT_COVERAGE), 0.0, 1.0)
         );
     }
 

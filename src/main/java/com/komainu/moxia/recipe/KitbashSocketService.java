@@ -4,6 +4,7 @@ import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.Vec3;
+import com.komainu.moxia.shape.tube.TubeBender;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -61,6 +62,13 @@ public final class KitbashSocketService {
         if (template.voxels().isEmpty()) {
             return 0;
         }
+        if (extensions.socketPlacement().bends()) {
+            TubeBender.Mode mode = extensions.socketPlacement() == SocketPlacement.STRETCH
+                    ? TubeBender.Mode.STRETCH
+                    : TubeBender.Mode.REPEAT;
+            return StructureBendService.append(builder, StructureBendService.fromKitbash(template), snapshot,
+                    TubeBender.Settings.defaults(mode));
+        }
         List<Anchor> anchors = anchors(snapshot, extensions);
         int added = 0;
         for (Anchor anchor : anchors) {
@@ -97,6 +105,7 @@ public final class KitbashSocketService {
                 yield anchors;
             }
             case INTERVAL -> intervalAnchors(snapshot, extensions.socketInterval());
+            case BEND, STRETCH -> List.of();
         };
     }
 

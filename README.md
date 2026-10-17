@@ -61,7 +61,7 @@ La sección **Deformar** es opcional y no edita los puntos ni suaviza las curvas
 - **Torsión total:** gira gradualmente toda la sección alrededor del path. `360` representa una vuelta completa y `-360` invierte el sentido.
 - **Fusión procedural:** mantiene completa la figura principal y superpone una figura secundaria cada N tramos. Ambas se deforman por separado para soportar giro, torsión, escala y espaciado variable sin conexiones cruzadas.
 - **Conformado:** proyecta el recorrido al suelo, techo o superficie sólida más cercana.
-- **Kitbash sockets:** inserta el clipboard de WorldEdit en extremos, nodos o intervalos y lo orienta con la trayectoria.
+- **Kitbash sockets:** inserta el clipboard de WorldEdit en extremos, nodos o intervalos y lo orienta con la trayectoria, o lo dobla por todo el recorrido (**Doblar** / **Estirar**). Para doblar solo el módulo: `/komaedit bend [repeat|stretch] [-a x|z] [-g hueco] [-y desplazamiento]`.
 - **QA geométrico:** cierra microhuecos y elimina componentes aislados de forma opcional.
 
 Los modificadores ahora deforman una única geometría continua. Ya no dividen el path en figuras independientes, por lo que cadenas, anillos y otras formas no reinician su patrón en cada tramo. Al escoger otra figura se reinician automáticamente todos los modificadores y opciones específicas de la anterior. El botón **Restablecer modificadores** permite volver manualmente a `100%`, sin torsión, sin ritmo, sin conformado y sin Kitbash.
@@ -185,11 +185,13 @@ Ejemplos:
 - **Curva y marcos:** Kochanek–Bartels (tensión, sesgo, continuidad) y marcos de mínima rotación; normales `consistent`, `horizontal` o `upright`.
 - **Extremos:** plano, suave, punta, cúpula o cubo.
 - **Modificadores exactos:** escala, espaciado y torsión se aplican al evaluar cada bloque.
-- **Comandos rápidos:** `/komaedit sweep <perfil> <radios> [patrón] [-e …] [-n …] [-t …] [-r …] [-p …] [-hollow …]`, `/komaedit braid <radios>` y `/komaedit noisetube <radios>`.
+- **Losas y escaleras:** con `-w slabs|stairs` (fila **Piezas** del Studio) la superficie que la figura solo ocupa en parte se termina con losas o escaleras orientadas del mismo material; `-c` (Cobertura, 0–1) decide cuántas.
+- **Comandos rápidos:** `/komaedit sweep <perfil> <radios> [patrón] [-e …] [-n …] [-t …] [-r …] [-p …] [-hollow …] [-w …] [-c …]`, `/komaedit braid <radios>` y `/komaedit noisetube <radios>`.
 
 ```text
 /komaedit sweep star5 "2,0.3:12,2" polished_andesite -e spike -t 30
 /komaedit sweep polygon6 10 deepslate_tiles -hollow 2 -n horizontal
+/komaedit sweep circle 9 stone_bricks -w stairs -c 0.6
 ```
 
 ## Materiales integrados

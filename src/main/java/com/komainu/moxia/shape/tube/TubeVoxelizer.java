@@ -114,7 +114,7 @@ final class TubeVoxelizer {
         }
     }
 
-    private static void markSphere(
+    static void markSphere(
             LongOpenHashSet seen,
             LongArrayList ordered,
             double x,
@@ -273,16 +273,34 @@ final class TubeVoxelizer {
          */
         double sample(double x, double y, double z, boolean openEnds) {
             line.locate(x, y, z, point);
-            double radius = point.radius;
+            return evaluate(point, openEnds);
+        }
+
+        /** Localiza un punto en el espacio de tubo sin evaluarlo (para quien quiera interpolar entre puntos). */
+        void locate(double x, double y, double z, TubeCenterline.TubePoint target) {
+            line.locate(x, y, z, target);
+        }
+
+        double length() {
+            return line.length;
+        }
+
+        boolean closed() {
+            return line.closed;
+        }
+
+        /** Lo mismo que {@link #sample}, para un punto ya localizado en el espacio de tubo. */
+        double evaluate(TubeCenterline.TubePoint located, boolean openEnds) {
+            double radius = located.radius;
             double limit = radius * reach;
-            double radialSquared = point.localX * point.localX + point.localY * point.localY;
+            double radialSquared = located.localX * located.localX + located.localY * located.localY;
             if (radialSquared > limit * limit) {
                 return -1.0;
             }
             double contraction = 1.0;
             boolean cube = false;
-            if (point.beyond > 0.0) {
-                double along = point.beyond / radius;
+            if (located.beyond > 0.0) {
+                double along = located.beyond / radius;
                 if (!(openEnds && endMode == TubeSettings.EndMode.FLAT)) {
                     switch (endMode) {
                         case FLAT, SOFT -> {
@@ -309,7 +327,7 @@ final class TubeVoxelizer {
                     }
                 }
             } else if (endMode == TubeSettings.EndMode.SOFT) {
-                double fromEnd = Math.min(point.distance, line.length - point.distance) / radius;
+                double fromEnd = Math.min(located.distance, line.length - located.distance) / radius;
                 if (fromEnd < 1.0) {
                     double inset = 1.0 - fromEnd;
                     contraction = Math.sqrt(Math.max(0.0, 1.0 - inset * inset));
@@ -319,17 +337,17 @@ final class TubeVoxelizer {
                 return -1.0;
             }
             double scale = 1.0 / (radius * contraction);
-            double localX = point.localX * scale;
-            double localY = point.localY * scale;
-            double cosine = Math.cos(point.roll);
-            double sine = Math.sin(point.roll);
+            double localX = located.localX * scale;
+            double localY = located.localY * scale;
+            double cosine = Math.cos(located.roll);
+            double sine = Math.sin(located.roll);
             double shapeX = localX * cosine + localY * sine;
             double shapeY = -localX * sine + localY * cosine;
             if (cube) {
                 double box = Math.max(Math.abs(shapeX), Math.abs(shapeY));
                 return box <= 1.0 ? box : -1.0;
             }
-            return shape.sample(shapeX, shapeY, point.longitudinal);
+            return shape.sample(shapeX, shapeY, located.longitudinal);
         }
 
         private static double square(double value) {

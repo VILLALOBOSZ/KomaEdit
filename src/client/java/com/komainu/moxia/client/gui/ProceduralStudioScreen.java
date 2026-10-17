@@ -18,6 +18,8 @@ import com.komainu.moxia.recipe.MaterialMetric;
 import com.komainu.moxia.recipe.SurfaceMode;
 import com.komainu.moxia.recipe.SocketPlacement;
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.shape.smooth.PieceFit;
+import com.komainu.moxia.shape.smooth.SmoothMode;
 import com.komainu.moxia.shape.tube.TubeFigures;
 import com.komainu.moxia.shape.tube.TubeSettings;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -351,7 +353,7 @@ public final class ProceduralStudioScreen extends Screen {
         }
     }
 
-    /** Filas propias del espacio de tubo: perfil, relleno, extremos y orientación de la sección. */
+    /** Filas propias del espacio de tubo: perfil, relleno, extremos, orientación de la sección y piezas. */
     private void drawTubeRows(DrawContext context, int mouseX, int mouseY, int x, int y, int inner) {
         int row = 0;
         if (draft.shape() == PathShape.SWEEP) {
@@ -361,8 +363,13 @@ public final class ProceduralStudioScreen extends Screen {
         }
         drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Extremos",
                 TubeSettings.EndMode.byIndex((int) tubeOption("end", 0.0)).displayName());
-        drawCycleRow(context, mouseX, mouseY, x, y + row * 31, inner, "Normales",
+        drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Normales",
                 TubeSettings.NormalMode.byIndex((int) tubeOption("normal", 0.0)).displayName());
+        drawCycleRow(context, mouseX, mouseY, x, y + row++ * 31, inner, "Piezas", smoothMode().shortName());
+        if (smoothMode() != SmoothMode.NONE) {
+            drawCycleRow(context, mouseX, mouseY, x, y + row * 31, inner, "Cobertura",
+                    Math.round(coverage() * 100.0) + "%");
+        }
     }
 
     private boolean tubeRowsClicked(double mouseX, double mouseY, int x, int y, int inner) {
@@ -390,7 +397,7 @@ public final class ProceduralStudioScreen extends Screen {
             status = "Extremos: " + mode.displayName();
             return true;
         }
-        if (cycleRowClicked(mouseX, mouseY, x, y + row * 31, inner, false)) {
+        if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
             TubeSettings.NormalMode mode = TubeSettings.NormalMode.byIndex(
                     (int) tubeOption("normal", 0.0) + direction);
             setTubeOption("normal", mode.ordinal());
@@ -401,6 +408,24 @@ public final class ProceduralStudioScreen extends Screen {
             };
             return true;
         }
+        if (cycleRowClicked(mouseX, mouseY, x, y + row++ * 31, inner, false)) {
+            SmoothMode mode = SmoothMode.byIndex(smoothMode().ordinal() + direction);
+            setTubeOption("smooth", mode.ordinal());
+            status = switch (mode) {
+                case NONE -> "Sin piezas · solo bloques enteros";
+                case SLABS -> "Losas en la superficie · mismo material que el patrón";
+                case STAIRS -> "Losas y escaleras en la superficie · Cobertura decide cuántas";
+            };
+            return true;
+        }
+        if (smoothMode() != SmoothMode.NONE && cycleRowClicked(mouseX, mouseY, x, y + row * 31, inner, false)) {
+            double next = Math.clamp(Math.round(coverage() * 10.0 + direction) / 10.0, 0.0, 1.0);
+            setTubeOption("coverage", next);
+            status = next <= 0.0 ? "Cobertura 0% · solo bloques enteros"
+                    : next >= 1.0 ? "Cobertura 100% · toda la superficie con piezas"
+                    : "Cobertura " + Math.round(next * 100.0) + "% · más alto, más piezas";
+            return true;
+        }
         return false;
     }
 
@@ -408,7 +433,16 @@ public final class ProceduralStudioScreen extends Screen {
         if (!TubeFigures.supports(draft.shape())) {
             return 0;
         }
-        return draft.shape() == PathShape.SWEEP ? 4 : 2;
+        int smoothRows = smoothMode() == SmoothMode.NONE ? 1 : 2;
+        return (draft.shape() == PathShape.SWEEP ? 4 : 2) + smoothRows;
+    }
+
+    private SmoothMode smoothMode() {
+        return SmoothMode.byIndex((int) Math.round(tubeOption("smooth", 0.0)));
+    }
+
+    private double coverage() {
+        return Math.clamp(tubeOption("coverage", PieceFit.DEFAULT_COVERAGE), 0.0, 1.0);
     }
 
     private TubeSettings.TubeProfile tubeProfile() {
