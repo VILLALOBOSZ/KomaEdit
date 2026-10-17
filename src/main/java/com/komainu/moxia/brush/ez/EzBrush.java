@@ -8,6 +8,7 @@ import com.komainu.moxia.brush.place.PlacementTemplate;
 import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
 import com.komainu.moxia.noise.NoiseSpec;
+import com.komainu.moxia.noise.SavedNoises;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -74,7 +75,7 @@ public abstract sealed class EzBrush {
                         : GradientInterpolation.byName(interpolationText);
                 double bleed = options.decimal(3, 0.5, 0.0, 4.0, "El sangrado");
                 double scale = options.flagDecimal('z', 1.0, 0.0001, 1000.0, "La escala del ruido");
-                NoiseSpec noise = options.has('n') ? NoiseSpec.parse(options.flag('n')) : null;
+                NoiseSpec noise = options.has('n') ? SavedNoises.parse(player.getUuid(), options.flag('n')) : null;
                 long seed = ThreadLocalRandom.current().nextLong();
                 GradientPainter.Settings settings = new GradientPainter.Settings(palette.size(), interpolation, bleed,
                         BrushNoise.of(noise, scale, seed), options.has('a'), options.has('w'));
@@ -90,7 +91,7 @@ public abstract sealed class EzBrush {
                 int radius = options.integer(1, DEFAULT_RADIUS, 1, MAX_RADIUS, "El radio");
                 double density = options.decimal(2, 0.3, 0.0, 1.0, "La densidad");
                 double scale = options.flagDecimal('z', 0.03, 0.0001, 1000.0, "La escala del ruido");
-                NoiseSpec noise = options.has('n') ? NoiseSpec.parse(options.flag('n')) : null;
+                NoiseSpec noise = options.has('n') ? SavedNoises.parse(player.getUuid(), options.flag('n')) : null;
                 BlockFilter mask = options.has('m') ? BlockFilter.parse(options.flag('m')) : BlockFilter.FULL_BLOCK;
                 int maxAmount = maxAmount(block);
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);

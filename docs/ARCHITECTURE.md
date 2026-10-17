@@ -87,12 +87,22 @@ Base común de las operaciones sobre la selección de WorldEdit (texturizar, def
 2. La operación (`RegionOperation`) se ejecuta en un worker de `AsyncEngine`. Solo lee la foto y escribe en `RegionEdits`. Debe llamar a `RegionEdits.checkCancelled()` en bucles largos.
 3. `RegionEdits` produce un `PackedBlockPlan` de escrituras condicionales: cada cambio lleva el id del estado leído y `BatchEditService` lo descarta si el bloque cambió mientras tanto. El plan entra en el historial de WorldEdit.
 
-Para una operación nueva: escribe la lógica sobre `RegionSnapshot` (se puede montar a mano en tests con `RegionSnapshot.builder`), implementa `RegionOperation` y lánzala desde un comando con `RegionOperationService.submit`. `TweakOperation` es el ejemplo más pequeño.
+Para una operación nueva: escribe la lógica sobre `RegionSnapshot` (se puede montar a mano en tests con `RegionSnapshot.builder`), implementa `RegionOperation` y lánzala desde un comando con `RegionOperationService.submit`. `TweakOperation` es el ejemplo más pequeño. `weathering.WeatheringService` (Envejecer) adapta la foto a texto para `WeatheringEngine`, que es Java puro y se prueba con un mundo falso de texto.
 
 Piezas relacionadas:
 
 - `noise.NoiseSpec`: ruido con la notación de ezEdits sobre FastNoiseLite. Es inmutable y se puede usar desde varios hilos tras `build(semilla)`.
 - `gradient.PaletteSpec`: paletas `##Nombre`, `-`, `(a:b)`, `*n` y `[…]`. Se resuelven a texto en el hilo del servidor, y los patrones de WorldEdit se parsean ahí antes de pasar al worker.
+- `gradient.SavedPalettes` y `noise.SavedNoises`: paletas (`#nombre`) y ruidos guardados por jugador y mundo sobre `persistence.NamedDefinitions`. Para aceptarlos, pasa `SavedPalettes.resolver(uuid)` a `PaletteSpec.parse` o `SavedNoises.resolver(uuid)` a `NoiseSpec.parse`.
+
+## Máscaras y patrones en WorldEdit
+
+`worldedit.EzExtensions` registra `EzMaskParser` y `EzPatternParser` (paquete `worldedit.ez`) en las factorías de WorldEdit al arrancar el servidor, así que valen en cualquier orden de WorldEdit. Cada parser devuelve `null` si la entrada no es suya y deja seguir a los demás.
+
+- `EzArguments` lee `#nombre[a][b]…` con corchetes anidados; `NAMES` de cada parser asocia alias y nombre canónico.
+- Lo que depende del jugador (mirada, posición, portapapeles, máscara global) se fija al parsear, en el hilo de la orden.
+- Las máscaras leen bloques del `Extent` que da WorldEdit y la luz del `LightingProvider`, que no carga chunks. Guardan la respuesta por estado de bloque.
+- La lógica pura (`GradientMath`, `NearSearch`, `VoxelRay`, `EzDirections`, `SelectionShape`) no toca Minecraft y tiene pruebas.
 
 ## Extensiones previstas
 

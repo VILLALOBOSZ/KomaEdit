@@ -32,6 +32,8 @@ public record EditorActionPayload(
     public static final int CLIPBOARD_PASTE = 15;
     public static final int PAINT_BEGIN = 16;
     public static final int PAINT_END = 17;
+    /** Inserta un punto a mitad entre {@code index} y el siguiente. */
+    public static final int PATH_INSERT = 18;
 
     public static final Id<EditorActionPayload> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "editor_action"));
     public static final PacketCodec<RegistryByteBuf, EditorActionPayload> CODEC = PacketCodec.ofStatic(

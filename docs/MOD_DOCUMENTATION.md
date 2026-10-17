@@ -4,13 +4,85 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 ## Procedural Studio
 
-Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, recetas e instancias.
+Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, envejecer, recetas e instancias.
 
 - Los paneles son desplazables y se adaptan a resoluciones pequeñas.
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
 - La cámara puede desplazarse mientras el Studio permanece abierto.
 - `Ctrl+Z`, `Ctrl+Y` y `Ctrl+Shift+Z` utilizan el historial de WorldEdit.
 - La navegación principal, estados de trayectoria y acciones esenciales están disponibles en español e inglés mediante el idioma seleccionado en Minecraft.
+
+### Encontrar figuras
+
+La etapa **Figuras** empieza con un buscador, filtros por familia y las figuras recientes.
+
+- **Buscador** (`Ctrl+F` o `/` desde cualquier etapa): sin mayúsculas ni tildes, busca por nombre, id, alias del comando y descripción (`roca` encuentra Tubo erosionado; `chain`, Cadena). Cada palabra tiene que aparecer; el nombre pesa más que la descripción. `Intro` elige la primera, `Esc` borra la búsqueda y la cierra. La búsqueda recorre todas las familias.
+- **Familias:** Todas, ★ Favoritas, Tubo (Perfil 2D, Trenza, Tubo erosionado, Expresión), Eslabones (Cadena, Cuentas, Anillos, Nudos, Espiral, Noodles), Pieles (Escamas, Escamas espinadas, Cuadros 3D, Armadura hex, Celdas Voronoi, Panal, Red) y Orgánicas (el resto). Una figura nueva sin familia asignada aparece en Orgánicas.
+- **Favoritas:** la ★ a la derecha de cada botón la marca o la desmarca.
+- **Recientes:** las cuatro últimas figuras elegidas, encima de la lista.
+- Favoritas y recientes son de cada jugador y se guardan en su equipo en `config/komaedit/studio.json` (no viajan con recetas ni paquetes). Un archivo roto se ignora y se empieza de cero.
+- Al pasar el ratón por una figura aparece su descripción completa; la de la figura elegida se ve debajo de la lista en hasta tres líneas.
+
+### Ajustar rápido
+
+Todos los controles numéricos (Proporciones, Modificadores y Mezcla orgánica) y las filas de ciclo (‹ ›) comparten estos gestos:
+
+- **Rueda** sobre los botones o el valor: sube o baja un paso. Sobre la etiqueta o fuera de los controles, la rueda desplaza el panel como siempre, para no cambiar valores sin querer.
+- **Mayús** con `−` `+`, la rueda o el arrastre: paso grande (×5, o el propio del control: 45° el giro, 90° la torsión, 25 % las escalas).
+- **Arrastrar** el número en horizontal lo cambia como un deslizador (un paso cada 6 píxeles). **Un clic** sin mover abre el campo para escribirlo: `Intro` o pulsar fuera lo aplica (ajustado al rango), `Esc` lo cancela.
+- **Clic derecho** restablece el valor de serie: el de la figura para radio, espaciado, grosor, giro y altura; el de los modificadores para el resto; en las filas de tubo quita la opción para que valga la de serie.
+- Una barra fina bajo cada control muestra dónde está el valor dentro de su rango.
+- **Ayuda contextual:** al pasar el ratón por la etiqueta de un control se ve qué hace, su rango, el paso, el paso grande y el valor de serie. Los botones de la barra superior y de presets también la tienen.
+
+### Presets y variantes
+
+Debajo de la descripción de la figura (Figuras y Estructuras):
+
+- **Compacto** (radio ×0,6, un paso menos de espaciado, altura ×0,7), **De serie**, **Amplio** (radio ×1,5, un paso más de espaciado, altura ×1,4) y **Robusto** (radio ×1,2 y un punto más de grosor). Parten siempre de las proporciones de serie de la figura y no tocan opciones, material ni modificadores.
+- **⚄ Azar** (`R`): variante con semilla alrededor de las proporciones de serie (radio de ×0,6 a ×1,6, espaciado ±2, grosor ±1, giro ±45° y altura de ×0,7 a ×1,5). La semilla aparece en la barra de estado (`Variante #4821`); la misma figura y semilla dan siempre la misma variante.
+- Presets y variantes solo proponen valores dentro de los rangos del Studio y no cambian ningún generador.
+
+### Deshacer ajustes
+
+El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
+
+- `Z` deshace y `Y` o `Mayús+Z` rehacen (también los botones ↶ ↷ de la barra superior). `Ctrl+Z` / `Ctrl+Y` siguen deshaciendo en el mundo.
+- Guarda hasta 100 pasos. Los cambios seguidos del mismo control en menos de 0,8 s (arrastrar, la rueda o varios clics rápidos) cuentan como uno.
+- Entran todos los cambios de la receta: figura, proporciones, opciones de tubo, modificadores, material, presets, variantes y cargar una receta o instancia. El nombre de la receta no entra.
+- Sobrevive a cerrar y abrir el Studio y se borra al salir del mundo.
+
+### Antes de construir
+
+- El pie del panel y la barra inferior muestran **≈ N bloques**, el recuento del último holograma (con `…` mientras se recalcula).
+- A partir de **250 000 bloques** el recuento sale en amarillo y Construir pide una segunda pulsación en 5 s; si el recuento cambia entre medias, vuelve a pedirla. Por encima de **1 500 000** (el `maxBlocksPerOperation` de serie) sale en rojo: el servidor puede rechazarlo si no tienes `komaedit.limit.unrestricted` o si su configuración es más baja.
+- `H` o el botón **H** de la barra superior ocultan el holograma; se sigue calculando, así que el recuento sigue valiendo.
+
+### Atajos de teclado
+
+`F1` o `?` abren la chuleta dentro del Studio. Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
+
+| Tecla | Acción |
+| --- | --- |
+| `1` – `8` | Ir a una etapa, en el orden de la barra lateral |
+| `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
+| `Ctrl+F` o `/` | Buscar figura |
+| `B` | Construir (las obras grandes piden confirmar) |
+| `H` | Mostrar u ocultar el holograma |
+| `Z` / `Y` (`Mayús+Z`) | Deshacer / rehacer ajustes del Studio |
+| `Ctrl+Z` / `Ctrl+Y` (`Ctrl+Mayús+Z`) | Deshacer / rehacer en el mundo (WorldEdit) |
+| `R` | Variante al azar con semilla |
+| `Ctrl+S` | Guardar la receta |
+| `Ctrl+Supr` | Limpiar la trayectoria |
+| `RePág` / `AvPág` | Desplazar el panel |
+| `F1` / `?` | Chuleta de atajos |
+| `K` / `Esc` | Cerrar el Studio (`Esc` cierra antes la chuleta o el campo abierto) |
+
+### Pantallas pequeñas
+
+- La barra lateral encoge sus botones (hasta 24 píxeles) para no salirse en pantallas bajas o con escala de GUI grande.
+- Con menos de 330 píxeles de alto (escala de GUI), el pie pierde la etiqueta «RECETA» y la chuleta se muestra en dos columnas.
+- La barra superior omite primero el subtítulo, luego el título y por último el contador de nodos si no cabe.
+- Lo que queda desplazado bajo la cabecera o el pie del panel ya no responde a clics.
 
 ## Trayectorias y hologramas
 
@@ -20,6 +92,150 @@ Las trayectorias se crean con puntos colocados mediante `P` o desde Procedural S
 - El holograma representa las posiciones exactas de la futura construcción.
 - La previsualización permanece visible al cerrar la interfaz.
 - El cálculo se ejecuta fuera del hilo de renderizado, admite cancelación y conserva temporalmente el último resultado válido.
+
+### Captura y estado
+
+Requiere el permiso `komaedit.path`. Todos los subcomandos aceptan también el alias `ruta` (`/komaedit ruta …`, `/ke ruta …`).
+
+```text
+/komaedit path mode toggle            captura con clic derecho (como la tecla P)
+/komaedit path add                    punto en la cara del bloque que miras
+/komaedit path here                   punto en tu posición
+/komaedit path point 120 64 -40       punto en coordenadas exactas
+/komaedit path status                 resumen con botones: puntos, deshacer, invertir, cerrar, guardar
+/komaedit path points                 lista los puntos con [+] insertar, [−] quitar, [aquí] y [editar]
+```
+
+`status` indica el número de puntos, si el lazo está cerrado, la longitud en bloques y los pasos de deshacer y rehacer disponibles. Con menos de dos puntos, los comandos de construcción usan la selección de WorldEdit.
+
+### Editar puntos
+
+Los puntos se numeran desde 1, como en el HUD. El autocompletado de `<n>` muestra las coordenadas de cada punto.
+
+| Comando | Efecto |
+|---|---|
+| `path insert <n>` | Inserta un punto a mitad entre el `n` y el siguiente. Tras el último punto, en un lazo cerrado va entre el último y el primero; en uno abierto prolonga medio tramo. Falla si los dos puntos están pegados. |
+| `path insert <n> here` | Inserta tu posición después del punto `n`. |
+| `path remove <n>` | Quita el punto `n`. |
+| `path set <n> here` · `path set <n> <x> <y> <z>` | Mueve el punto `n`. |
+| `path shift <dx> <dy> <dz>` · `path shift here` | Mueve todo el recorrido; `here` lo lleva para que el primer punto quede en tu posición. |
+| `path reverse` | Invierte el sentido (importa en figuras con dirección, extremos o progresión de radio). |
+| `path close [on/off]` · `path open` | Cierra o abre el lazo; sin argumento lo alterna. |
+| `path mirror <x/y/z>` | Refleja el recorrido dentro de su propia caja. |
+| `path mirror <x/y/z> append` | Añade al final el reflejo apoyado en el último punto: media curva pasa a ser una curva simétrica completa. |
+| `path rotate <90/180/270>` | Gira sobre el eje vertical alrededor del centro de su caja. |
+| `path snap <paso> [all]` | Ajusta X y Z al múltiplo de `paso` más cercano (`all` también la altura). |
+| `path smooth [fuerza 0.05–1] [pasadas 1–8]` | Acerca cada punto a la media de sus vecinos sin cambiar cuántos hay; los extremos de un recorrido abierto no se mueven. Por defecto `0.5` y una pasada. |
+| `path simplify [tolerancia]` | Quita los puntos que se separan menos de `tolerancia` bloques (1 por defecto) de la recta entre sus vecinos (Ramer–Douglas–Peucker). |
+| `path subdivide` | Añade un punto a mitad de cada tramo, si caben. |
+| `path pop` | Quita el último punto (lo que hacía antes `path undo`). |
+| `path clear` | Vacía la trayectoria; se puede deshacer. |
+
+En el editor en vivo (`K`, herramienta de trayectoria), **Supr** quita el nodo señalado e **Insert** añade uno a mitad entre ese nodo y el siguiente.
+
+Ejemplos:
+
+```text
+/komaedit path insert 3
+/komaedit path shift 0 5 0
+/komaedit path mirror x append
+/komaedit path snap 2
+/komaedit path smooth 0.7 3
+```
+
+### Deshacer y rehacer
+
+`/komaedit path undo` y `/komaedit path redo` deshacen y rehacen cualquier cambio de puntos: añadir, mover con el gizmo, borrar, insertar, generar, cargar o vaciar. Arrastrar el mismo nodo de forma seguida cuenta como un solo paso. Se guardan los últimos 64 pasos por jugador, en memoria; se pierden al desconectarse. El historial de bloques del mundo sigue siendo el de WorldEdit (`//undo`, `//redo`, Ctrl+Z en el editor).
+
+### Generar trayectorias
+
+Las figuras centradas usan tu posición como centro; el arco y la catenaria van del primer al último punto del recorrido actual (o de `//pos1` a `//pos2` si no hay recorrido). Todas sustituyen la trayectoria (se puede deshacer) y respetan el máximo de 32 puntos.
+
+```text
+/komaedit path selection                                  cuboide (dos esquinas), convex (vértices) o poly (contorno)
+/komaedit path circle <radio 2–128> [puntos 8–32]         círculo cerrado (16 puntos)
+/komaedit path polygon <radio> <lados 3–32> [giro]        polígono regular cerrado
+/komaedit path spiral <radio inicial> <radio final> <vueltas> [altura] [puntos]
+/komaedit path helix <radio> <vueltas> <altura> [puntos]
+/komaedit path arc <altura> [up|down|left|right] [puntos]
+/komaedit path catenary <comba> [down|up|left|right] [puntos]
+```
+
+- **Espiral y hélice:** el radio pasa del inicial al final en las vueltas dadas mientras sube `altura` bloques (negativa baja). Sin `puntos`, usa unos doce por vuelta, entre 8 y 32.
+- **Arco:** arco de circunferencia cuya flecha (separación máxima respecto a la recta) es `altura`; `up` por defecto. Con una altura mayor que media cuerda da más de media vuelta. `left` y `right` se miran yendo del primer punto al último.
+- **Catenaria:** la curva de una cadena colgante, como `//selcatenary` de ezEdits. `comba` es la mayor distancia entre la cadena y la recta que une los extremos. Con `down` (por defecto) es la curva física: si un extremo está más alto, el punto más bajo se desplaza hacia el otro. `up` la invierte, como un arco de catenaria; `left` y `right` la tienden en horizontal. Falla si los extremos están uno encima del otro. 16 puntos por defecto.
+
+```text
+/komaedit path point 0 80 0
+/komaedit path point 60 72 0
+/komaedit path catenary 8
+/komaedit build chainlink iron_block
+```
+
+### Recorridos guardados
+
+```text
+/komaedit path save <nombre>       guarda el recorrido actual (sobrescribe si existe)
+/komaedit path load <nombre>       lo carga (se puede deshacer)
+/komaedit path list                tus recorridos; clic en uno para cargarlo
+/komaedit path delete <nombre>     lo borra
+```
+
+- Se guardan por mundo y jugador en `<mundo>/komaedit/players/<uuid>/paths/<nombre>.json`, con la escritura atómica del proyecto (`.tmp` y `.bak`).
+- Nombres de 1 a 32 caracteres: letras sin tilde, números, `_` y `-`; se pasan a minúsculas.
+- Formato 1: `{"format":1,"name":…,"dimension":…,"closed":…,"points":[[x,y,z],…]}`. Al leer se ignoran los campos desconocidos. El archivo guarda la dimensión; cargarlo en otra avisa pero no lo impide.
+- Guardar con otro nombre sirve para copiar un recorrido; combinado con `shift` o `mirror`, para repetirlo en otro sitio.
+
+### Limitaciones
+
+- Máximo 32 puntos por trayectoria, como hasta ahora: el holograma y la red no cambian.
+- Los puntos son posiciones de bloque enteras: no hay ajuste a media altura de bloque. `snap` trabaja en rejillas de 1 a 64 bloques.
+- La trayectoria activa y su historial viven en memoria; para conservarla entre sesiones, guárdala con `path save`.
+
+## Ayuda y comandos
+
+```text
+/komaedit help                     índice de temas clicables (alias: ayuda)
+/komaedit help path                trayectorias
+/komaedit help generate            generar trayectorias
+/komaedit help saved               recorridos guardados
+/komaedit help build               figuras, con todas las figuras clicables
+/komaedit help tubes               tubos, banderas y fórmula
+/komaedit help edit                doblar, degradados y jobs
+/komaedit help region              hiedra, envejecer y retocar
+/komaedit help project             proyecto y menús
+```
+
+- Cada comando de la ayuda se puede pulsar: se escribe en el chat hasta su primer argumento para completarlo. Al pasar el ratón se ve qué hace.
+- El autocompletado de figuras, perfiles, paletas, direcciones e índices de punto muestra una descripción junto a cada opción.
+- Los errores de nombre desconocido proponen el más parecido: figuras y sus alias, perfiles, extremos, normales, calidad, piezas, paletas, banderas de tubo, parámetros de figura, temas de ayuda y recorridos guardados. Por ejemplo, `/komaedit build coli stone` responde «Forma 3D desconocida: coli · ¿Quisiste decir «coil»?». Se acepta un error cada cuatro letras (cambiar, sobrar, faltar o intercambiar dos vecinas), sin contar tildes ni mayúsculas, o un prefijo de tres letras o más.
+- Alias: `/ke`, `/mx` y `/moxia` para `/komaedit`; `ruta` para `path`; `ayuda` para `help`; `estimar` para `estimate`; `confirmar` para `confirm`.
+
+## Diagnóstico antes de construir
+
+### Estimar
+
+```text
+/komaedit estimate <figura> [patrón] [escala] [espaciado] [grosor] [giro]
+/komaedit estimate coil stone 8
+```
+
+Calcula la misma geometría que `build` (fuera del hilo del servidor) y responde sin tocar el mundo, por ejemplo «Estimación de Coil: 120 345 bloques · 42 chunks · caja 60×24×88 · ~5 MB · ~2 s». Indica también si superaría tu límite de bloques o si pedirá confirmación.
+
+- **Chunks:** columnas de 16×16 distintas que toca la construcción.
+- **Memoria:** aproximada, unos 40 bytes por bloque mientras el plan está en cola.
+- **Tiempo:** aproximado, suponiendo unos 3000 bloques por tick (20 ticks por segundo) en la cola de KomaEdit; en servidores cargados o con muchos chunks sin cargar tarda más.
+
+### Confirmación de Build grandes
+
+Cuando un Build supera `confirmBuildAboveBlocks` bloques (250 000 por defecto) no se encola enseguida: el chat muestra la estimación con los botones **[Construir]** y **[Descartar]**, y la barra de acción recuerda `/komaedit confirm`. Afecta al comando `build`, a los comandos de figura y tubo, y a Construir y Actualizar del Studio.
+
+```text
+/komaedit confirm            manda a la cola el Build en espera
+/komaedit confirm cancel     lo descarta
+```
+
+La geometría ya está calculada, así que se construye exactamente lo estimado. La espera caduca a los dos minutos, al desconectarse o al pedir otro Build. Con `confirmBuildAboveBlocks` a `0` no se pregunta nunca.
 
 ## Figuras procedurales
 
@@ -376,6 +592,87 @@ Ejemplos:
 - Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
 - El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
 
+## Envejecer
+
+### Objetivo y acceso
+
+Convierte una construcción terminada en una ruina creíble. No es ruido al azar: el desgaste sigue la exposición a la intemperie, lo que pierde el apoyo se cae y forma montones de escombro, y la vida crece donde tiene sentido. Ningún otro editor hace esto sobre lo que ya está construido.
+
+- Selecciona la obra con WorldEdit (`//pos1`, `//pos2`; vale cualquier forma de selección) y escribe:
+
+```text
+/komaedit weather [intensidad] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]
+/komaedit envejecer [intensidad] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]
+```
+
+- En el Studio, la categoría **Envejecer** tiene los cuatro climas, los pasos de **Intensidad**, **Derrumbe** y **Vida**, el interruptor de **Agua estancada** y el botón **Envejecer selección**, que lanza el mismo comando.
+- Permiso: `komaedit.build` o `komaedit.build.weather`.
+
+### Comportamiento
+
+El cálculo imita el orden en que trabaja el tiempo:
+
+1. **Desgaste por exposición.** Cada bloque mide sus caras y sus 26 vecinos al aire, ponderados por la intemperie de ese aire: 1 bajo el cielo abierto, 0,6 y 0,3 a uno y dos pasos de él (una ventana, bajo un alero) y 0,1 en el aire cerrado de una habitación o de un tejado hueco. Así las aristas, esquinas y almenas se pierden antes que una cara lisa, lo alto antes que lo bajo, y lo que está bajo techo apenas se gasta mientras el tejado aguante. Un ruido suave por semilla agrupa el daño en mordiscos de unos 4 bloques en vez de agujeros sueltos. Se hacen de una a cuatro pasadas según la intensidad, recalculando la exposición, de modo que el daño entra desde los bordes. El vidrio y la lana se van antes que la piedra, la madera algo antes, y la pizarra profunda, la piedra negra y el cobre aguantan más.
+2. **Derrumbe.** Se mide, capa a capa desde el suelo, la distancia en horizontal de cada bloque a una columna que baje hasta algo firme, como el andamio de Minecraft. El apoyo baja en vertical sin coste y en diagonal (arista con arista) con coste uno, que es como descansan los tejados de escaleras y los escalonados. Si la distancia supera el vano que aguanta el material, el bloque cae: con derrumbe 50 la piedra vuela 5 bloques, con 100 solo 2; la madera y el metal aguantan 2 más y la pizarra 1 más. Lo que queda suelto del todo cae siempre (salvo con derrumbe 0, que desactiva esta fase). Sostienen la obra el terreno, los bloques protegidos y lo que está fuera de la selección.
+3. **Escombro.** Lo que cae y parte de lo desgastado baja en vertical (con un pequeño desvío), resbala si el montón queda dos bloques más alto que el hueco de al lado y se amontona con su propio material: adoquín, grava y andesita bajo la piedra, adoquín de pizarra bajo la pizarra, ladrillo bajo el ladrillo, tablones bajo la madera. La cara de arriba del montón se cubre de losas y de escaleras apoyadas contra lo que tienen al lado. Una parte se pulveriza (todo el vidrio, el 45 % de la piedra).
+4. **Variantes envejecidas.** Conservan las propiedades del original (una escalera musgosa mira hacia el mismo lado):
+
+| Envejecimiento | Bloques | Dónde |
+| --- | --- | --- |
+| Musgo | adoquín y ladrillo de piedra, con sus escaleras, losas y muros | abajo, en caras norte, a la sombra y cerca del suelo, en manchas |
+| Grieta | ladrillo de piedra (y cincelado), ladrillo y baldosa de pizarra profunda, ladrillo del Nether, ladrillo de piedra negra pulida | lo más expuesto y alto; más con helada (nevado) |
+| Desgaste | lo pulido o tallado pierde el acabado: andesita, diorita, granito, pizarra, piedra negra y toba pulidas, piedra lisa, arenisca cortada, lisa y cincelada, cuarzo; la escalera y la losa de piedra pasan a adoquín | según exposición; en el desierto el ladrillo pasa a terracota |
+| Óxido | cobre en bloque, cortado, escaleras, losas, cincelado, rejilla, puerta, trampilla y lámpara: de normal a expuesto, erosionado y oxidado, hasta tres pasos según la intensidad | todo lo que se ve; **el cobre encerado no cambia** |
+| Corteza | troncos, madera, tallos e hifas pasan a descortezados | más en el desierto |
+| Podrido | los tablones quedan en media losa de la misma madera | según exposición |
+
+5. **Vida**, según el clima:
+   - `templado` (por defecto): hierba y helechos sobre tierra, musgo en alfombra y algún bloque de musgo con hierba en lo alto, enredaderas que cuelgan de lo alto de los muros al sol (más en las caras norte), telarañas en rincones oscuros con techo y dos paredes, y raíces colgantes bajo techo.
+   - `desierto`: arena acumulada contra los muros y en las esquinas, sobre todo abajo; arbustos secos sobre arena y terracota; el escombro lleva arena y terracota; sin musgo.
+   - `nevado`: capas de nieve sobre todo lo que mira al cielo (más gruesas contra las paredes); los charcos son hielo; poco musgo y más grietas.
+   - `hundido`: el aire de la selección se vuelve agua y lo que admite agua queda anegado; crecen algas, kelp de 2 a 6 bloques y pepinos de mar; más musgo. Pensado para ruinas bajo el mar o para seleccionar hasta el nivel del agua.
+6. **Agua estancada** (`-agua`): rellena con agua (hielo en el clima nevado) los huecos pequeños del suelo cerrados por todos los lados, de una capa y hasta 40 bloques.
+
+Antorchas, faroles, velas, alfombras y estandartes desaparecen con la intensidad (nadie los repuso) y lo pequeño que se queda sin nada que lo sujete se cae.
+
+### Parámetros
+
+| Parámetro | Efecto |
+| --- | --- |
+| `intensidad` (0–100, 50 por defecto) | Cuánto tiempo ha pasado. Con 0 no cambia nada; hacia 50 la obra está vieja pero en pie; desde 80 se hunden tejados y suelos. |
+| `clima` | `templado`, `desierto`, `nevado` o `hundido` (también en inglés: `temperate`, `desert`, `snowy`, `sunken`). |
+| `-d <0–100>` | Derrumbe (50 por defecto): lo que vuela cada material sin apoyo. 0 no tumba nada. |
+| `-v <0–100>` | Vida (50 por defecto): cuánta vegetación, nieve, arena o algas; escala también con la intensidad. |
+| `-seed <n>` | Semilla. Con la misma semilla y la misma obra el resultado es idéntico. Sin ella se elige una al azar y el chat la dice para poder repetirla. |
+| `-agua` | Charcos de agua estancada. |
+
+Ejemplos:
+
+```text
+/komaedit weather
+/komaedit envejecer 30
+/komaedit envejecer 85 -d 80 -v 70 -agua
+/komaedit weather 70 nevado -d 40 -seed 1234
+/komaedit envejecer 60 desierto -v 30
+/komaedit envejecer 70 hundido -v 80
+```
+
+### Materiales y bloques protegidos
+
+- Solo cambian los bloques dentro de la selección; el borde de un bloque alrededor se lee para saber qué sostiene la obra y qué está a la intemperie.
+- El terreno (hierba, tierra, piedra, pizarra profunda, arena, grava, nieve, hielo, menas…) sostiene y recibe vegetación, pero no se desgasta. La piedra natural cuenta como terreno.
+- Nunca se tocan los bloques con contenido o de dos piezas: cofres, barriles, cajas de shulker, hornos, tolvas, generadores, atriles, camas, puertas, vasijas, etc.
+- Los bloques de otros mods se desgastan y se caen como piedra, pero no tienen variantes.
+
+### Rendimiento y limitaciones
+
+- Usa el motor común de operaciones sobre la selección (como los retoques): la selección y un bloque de margen se leen repartidos entre ticks sin congelar el servidor, el cálculo va en un worker y tarda alrededor de 1 s con 2 millones de bloques, y el resultado se coloca como una edición por lotes que se deshace entera con `//undo`.
+- Hasta 2 000 000 bloques de selección por vez; a los cambios se les aplica además el límite de bloques por operación de la configuración.
+- Si alguien cambia un bloque de la selección entre la captura y la colocación, ese bloque se respeta y el chat lo cuenta como protegido.
+- Las plantas se escriben con su estado completo sin comprobar que puedan vivir ahí: Minecraft puede romper alguna si se actualiza un vecino. Por eso la hierba solo sale sobre tierra o musgo, y sobre piedra se pone alfombra de musgo.
+- `hundido` llena de agua todo el aire de la selección: en tierra firme queda un bloque de agua con la forma de la selección.
+- No hay holograma previo: para probar, envejece, mira y usa `//undo`, o cambia de semilla.
+
 ## Figura Expresión
 
 ### Objetivo y acceso
@@ -554,6 +851,7 @@ Donde KomaEdit espera una paleta (por ejemplo, `/komaedit gradient` o el materia
 | Escritura | Resultado |
 | --- | --- |
 | `##Grayscale`, `##Magma`, `##GlowBlue`… | Paleta de serie de KomaEdit; no distingue mayúsculas. |
+| `#mipaleta` | Paleta guardada del jugador (ver «Paletas guardadas»). |
 | `stone,andesite` o `stone;andesite` | Concatena bloques o paletas. |
 | `-##Grayscale` | Invierte el orden. |
 | `##Grayscale(1:8)` | Tramo de la posición 1 a la 8, ambas incluidas. |
@@ -575,6 +873,8 @@ Las herramientas que usan ruido aceptan la notación de ezEdits `Tipo(clave:valo
 - **Gabor:** `gR` (radio), `gF` (frecuencia de vetas), `gFs` (dispersión), `gO` (orientación `1;0;0`), `gJ` (variación), `gN` (impulsos por celda, máx. 8) y `gM` (contraste).
 
 Ejemplos: `Perlin(f:0.04)`, `Ce(cD:e,cR:sub,F:.1)`, `Si(fT:R,fO:4,wT:S,wA:30)`.
+
+En lugar de escribir el ruido entero se puede usar el nombre de un ruido de serie (`ridged`, `smoothcells`, `voronoiedge`, `clouds`, `marble`, `veins`, `pebbles`, `dunes`, `static`) o el de un ruido guardado (ver «Ruidos guardados»).
 
 Limitaciones: `Shard`, las distancias Minkowski y los retornos celulares `rounded` y `noiseLookup` aún no están disponibles y dan un error claro. El ruido se calcula con FastNoiseLite (licencia MIT), con posiciones en doble precisión.
 
@@ -636,8 +936,8 @@ Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit:
 - **Controles:** con un pincel en la mano, el clic izquierdo no rompe bloques, el derecho no usa el objeto y la tecla de cambiar de mano (F) no cambia de mano: todo se lo queda el pincel. Mantener el clic derecho repite la pasada, como un pincel de verdad.
 - **Vista previa:** con `-p` cada clic calcula la pasada y la deja en el holograma (una caja con el color del pincel) en vez de aplicarla; `/komaedit pincel aplicar` la coloca y `/komaedit pincel cancelar` la descarta. Sin `-p` se aplica en el acto.
 - **Historial:** cada pasada es una edición por lotes de `BatchEditService` y queda en el historial de WorldEdit; `//undo` la quita entera y `/komaedit job status|cancel` funcionan como en el resto del mod.
-- **Paletas:** donde un pincel pide una paleta vale la notación de ezEdits (`##Magma`, `-##Grayscale(1:8)`, `stone*3,andesite`…, ver [Paletas con nombre](#paletas-con-nombre)). Las entradas tienen que ser bloques sueltos, con estado si hace falta (`oak_log[axis=x]`); los patrones aleatorios de WorldEdit no valen dentro de un pincel.
-- **Ruido:** `-n` acepta el [ruido configurable](#ruido-configurable) y `-z` multiplica las coordenadas antes de muestrearlo. Sin `-n` el ruido es blanco por bloque: cada bloque tira su propio dado.
+- **Paletas:** donde un pincel pide una paleta vale la notación de ezEdits (`##Magma`, `-##Grayscale(1:8)`, `stone*3,andesite`…, ver [Paletas con nombre](#paletas-con-nombre)) y tus [paletas guardadas](#paletas-guardadas) con `#nombre`. Las entradas tienen que ser bloques sueltos, con estado si hace falta (`oak_log[axis=x]`); los patrones aleatorios de WorldEdit no valen dentro de un pincel.
+- **Ruido:** `-n` acepta el [ruido configurable](#ruido-configurable) y los [ruidos guardados](#ruidos-guardados), y `-z` multiplica las coordenadas antes de muestrearlo. Sin `-n` el ruido es blanco por bloque: cada bloque tira su propio dado.
 - **Piezas (`-w`):** con `-w` los pinceles de paleta también pintan losas y escaleras, cambiándolas por la losa o escalera del material de la paleta (la misma que usa el modo [losas y escaleras](#losas-y-escaleras-en-la-superficie): por nombre o del color más parecido) y conservando su forma, orientación y anegado. Sin `-w` las piezas no se tocan.
 - Lo que no es un cubo entero (flores, vallas, antorchas, carteles…) nunca se pinta.
 - Con KomaEdit solo en el servidor (cliente vanilla) el pincel responde al clic derecho y al izquierdo sobre bloques al alcance; la F y el clic izquierdo a distancia necesitan el mod en el cliente.
@@ -918,6 +1218,162 @@ Herramienta de selección avanzada (la Superwand de ezEdits) que escribe directa
 - La F y el clic izquierdo a distancia necesitan KomaEdit en el cliente; sin él, la supervarita responde al clic derecho y al izquierdo sobre bloques al alcance.
 - La selección agarrada se mueve por bloques enteros y se actualiza en cada tick en que cambia.
 
+## Máscaras y patrones en WorldEdit
+
+### Objetivo y acceso
+
+KomaEdit registra en WorldEdit las máscaras y patrones de ezEdits, así que valen en **cualquier** orden de WorldEdit que acepte una máscara o un patrón: `//set`, `//replace`, `//gmask`, `//mask`, pinceles, `//overlay`… No hay que activar nada: se registran al arrancar el servidor. Se escriben `#nombre[argumento][argumento]…`; los argumentos entre `<…>` son opcionales y se pueden dejar vacíos (`[]`) para usar el valor por defecto.
+
+```text
+//replace #palette[##Grayscale] #palette[##Ice]
+//set #eznoisepattern[##Magma][ridged][2]
+//gmask #near[water][3]
+//replace #lightsource[10][15] #aim
+//set #vectorgradientpattern[##FadeBlue][up][20][marble]
+```
+
+### Máscaras
+
+| Máscara | Pasa en… |
+| --- | --- |
+| `#aim[<hitboxes>]` | Bloques iguales (mismo estado) al que miras. Con `true` respeta la forma de los bloques y puedes apuntar detrás de una losa; con `false` (por defecto) todo bloque cuenta como cubo. Si no miras a nada a menos de 256 bloques, no pasa ninguno. |
+| `#attached[<direcciones>]` | Bloques pegados a un vecino que no es aire. Por defecto mira los seis lados; `#attached[up,down,left,north]` solo esos. «Pegado» es que el bloque llegue a esa cara: una losa inferior no pasa `#attached[up]`; un farol colgado, una antorcha de pared, un botón o una enredadera sí, por su estado. |
+| `#blocklight[nivel]` / `#blocklight[mín][máx]` | Luz de bloques (sin el cielo) en ese nivel o rango. |
+| `#truelight[nivel]` / `#truelight[mín][máx]` | Luz total, incluida la del cielo sin el ciclo de día. |
+| `#lightsource` / `#lightsource[nivel]` / `#lightsource[mín][máx]` | Bloques que emiten luz (o la emiten en ese rango). |
+| `#clipblocks[<aire>][<estricto>]` (`#cb`) | Bloques que hay en tu portapapeles. `aire` (false) incluye el aire; `estricto` (false) exige el mismo estado. |
+| `#schemblocks[schematic][<aire>][<estricto>]` (`#sb`) | Lo mismo con un schematic de la carpeta `schematics` de WorldEdit (`.schem` o `.schematic`). |
+| `#current` (`#c`) | Tu máscara global actual (`//gmask`). `//gmask !#current` la invierte. Sin máscara global, pasa todo. |
+| `#eznoisemask[ruido][<escala>][<umbral>][<semilla>]` (`#eznm`) | Donde el ruido (de 0 a 1) supera el umbral (0,5). La escala estira el ruido (2 = el doble de grande). |
+| `#fullblock` | Bloques que ocupan el cubo entero (piedra, cristal, nieve de 8 capas; no losas ni nieve de 1 a 7). |
+| `#infested` | Bloques infestados de lepismas. |
+| `#near[máscara][distancia]` / `#near[máscara][mín][máx]` | Bloques a esa distancia esférica de alguno de la máscara, sin contar los de la propia máscara. Con mínimo, excluye los que están más cerca. Distancia hasta 16. |
+| `#palette[paleta][<estricto>]` | Bloques de la paleta. Estricto (por defecto) mira además las propiedades escritas: `oak_stairs[facing=east]` no encaja con una escalera al oeste; `oak_stairs` sin corchetes encaja con todas. |
+| `#fuzzypalette[paleta]` (`#fpalette`) | Igual que `#palette[paleta][false]`: solo el tipo de bloque. |
+| `#radialgradientmask[distancia][<modo>][<inicio>][<ruido>][<escala>][<semilla>]` (`#rgradientm`) | Degradado desde tu posición: cerca pasa casi todo, a `distancia` bloques ya nada. `modo`: `sphere`, `cube`, `diamond` o `cylinder`. `inicio`: bloques que pasan siempre antes de empezar el degradado. Con ruido, el borde sigue el ruido en vez de salir moteado. |
+| `#vectorgradientmask[vector][distancia][<ruido>][<escala>][<semilla>]` (`#vgradientm`) | Degradado a lo largo de un vector desde tu posición: `up`, `north`, `me`, `left`… o `x,y,z`. Lo que queda detrás pasa siempre. |
+
+### Patrones
+
+| Patrón | Pone… |
+| --- | --- |
+| `#aim[<hitboxes>]` | El bloque al que miras, con sus datos. |
+| `#palette[paleta]` | Un bloque al azar de la paleta: `//set #palette[##Ice]`. |
+| `#eznoisepattern[paleta][ruido][<escala>][<semilla>]` (`#eznp`) | El bloque de la paleta que toca según el valor del ruido (0 = primero, 1 = último). |
+| `#ridged[paleta][<escala>][<semilla>]`, `#smoothcells[…]`, `#voronoiedge[…]` | Atajos de `#eznoisepattern` con esos ruidos de serie. |
+| `#radialgradientpattern[paleta][distancia][<modo>][<inicio>][<ruido>][<escala>][<semilla>]` (`#rgradientp`) | La paleta según la distancia a ti, con medio bloque de mezcla a cada lado entre tramos (o el ruido si se da). |
+| `#vectorgradientpattern[paleta][vector][distancia][<ruido>][<escala>][<semilla>]` (`#vgradientp`, `#vectorgradient`) | La paleta a lo largo de un vector. |
+| `#selection[selección][<desplazamiento>]` (`#sel`) | Los bloques que hay ahora en una selección guardada, repetidos como un mosaico. `desplazamiento` = `x,y,z`. |
+
+Las paletas aceptan toda la notación de «Paletas con nombre», incluidas tus paletas guardadas (`#mipaleta`). Los ruidos aceptan la notación completa, los nombres de serie y tus ruidos guardados. La semilla `-1` o vacía es aleatoria en cada orden; con una semilla fija sale siempre lo mismo.
+
+En la wiki de ezEdits el apartado del patrón `#vectorgradient` describe en realidad el degradado radial; aquí `#vectorgradient` es el vectorial y el radial es `#radialgradientpattern`.
+
+### Rendimiento y limitaciones
+
+- Todo lo que depende de ti (la mirada de `#aim`, tu posición en los degradados, el portapapeles, la máscara global, la selección de `#selection`) se fija al escribir la orden.
+- Las máscaras leen los bloques a través de WorldEdit (ven los cambios de la propia edición) y guardan la respuesta por estado de bloque. La luz se lee del motor de luz de Minecraft, que no carga chunks: en zonas sin cargar vale 0. Se evalúan donde WorldEdit las evalúa, en el hilo del servidor.
+- `#near` revisa una esfera alrededor de cada bloque y se para en el primero que encuentra; guarda lo que ya sabe de la máscara interior. Con distancias grandes en zonas sin coincidencias es la más lenta.
+- `#clipblocks` y `#schemblocks` revisan hasta 4 millones de bloques; `#selection` copia hasta 262 144.
+- Solo las puede usar un jugador cuando dependen de él (`#aim`, degradados, `#selection`).
+
+## Paletas guardadas
+
+### Objetivo y acceso
+
+Como `//ezpalette` de ezEdits. Las paletas guardadas son de cada jugador y de cada mundo, y se usan con `#nombre` en cualquier sitio que acepte una paleta (degradados, recetas, máscaras y patrones de WorldEdit…).
+
+```text
+/komaedit palette list [all|default|mine]
+/komaedit palette save <nombre> <paleta> [-f]
+/komaedit palette delete <nombre>
+/komaedit palette fetch <world|selection|hotbar> <nombre> [largo] [-d dirección] [-f]
+/komaedit palette place <paleta> [dirección]
+/komaedit palette swap <origen> <destino> [-a] [-s] [-f] [-b]
+/komaedit palette print <paleta> [-v]
+/komaedit palette encode <paleta>
+/komaedit palette decode <código>
+```
+
+Alias: `/komaedit paleta`.
+
+### Comportamiento
+
+- `save` guarda la paleta ya desplegada: si guardas `#hielo,stone` y luego borras `#hielo`, la nueva sigue igual. `-f` sustituye una que ya exista.
+- `fetch world` lee bloques en fila desde el bloque al que miras (o el que pisas) hacia donde miras o hacia `-d`; `fetch selection` lee una selección de 1×1×N de pos1 a pos2; `fetch hotbar` toma los bloques de la barra rápida. Con largo 0 (por defecto) lee hasta encontrar aire. Solo guarda las propiedades que no son las de por defecto.
+- `place` pone la paleta en fila delante de ti; se deshace con `//undo`.
+- `swap` cambia, dentro de la selección, el bloque n del origen por el n del destino. `-a` no toca el aire del origen, `-s` estira el destino para cubrir todo el origen (sin él, lo que sobra del origen se queda igual), `-f` encaja el origen solo por tipo y `-b` copia las propiedades del bloque original sobre el nuevo cuando las admite. Va por el motor de operaciones sobre la selección: lectura repartida, cálculo en un worker y un solo `//undo`.
+- `print` muestra la paleta (`-v` con id completo y estados); al pulsarla se copia.
+- `encode` da un código `kp1:…` que se copia al pulsarlo; `decode` lo convierte otra vez en bloques. El formato es propio de KomaEdit (no es el de ezEdits) y admite bloques de mods.
+
+### Paletas de serie
+
+Además de las de degradados (`##Grayscale`, `##GlowBlue`, `##FadeRed`…), KomaEdit trae con sus propias listas `##Beige`, `##Brown`, `##DustyBrown`, `##EnchantedDark`, `##EnchantedWarm`, `##EnchantedBright`, `##LegacyWool` (las 16 lanas en el orden de los tintes), `##Light`, `##Moss`, `##Ice`, `##Rocks`, `##Leaf`, `##LeavesAll` (hojas persistentes), `##Sand` y `##ShiningGold`.
+
+### Rendimiento y limitaciones
+
+- Hasta 512 paletas por jugador y mundo, de hasta 256 entradas; se guardan en `<mundo>/komaedit/players/<uuid>/palettes/palettes.json` con escritura atómica.
+- `swap` y `fetch` solo admiten bloques (no porcentajes ni patrones) en las paletas; `save`, `place` y `print` admiten cualquier patrón de WorldEdit.
+- `place` y `swap` necesitan `komaedit.build`.
+
+## Ruidos guardados
+
+### Objetivo y acceso
+
+Como `//eznoise` de ezEdits. Un ruido guardado se usa por su nombre (o `#nombre`) en cualquier sitio que acepte un ruido.
+
+```text
+/komaedit noise list [all|default|mine]
+/komaedit noise save <nombre> <ruido> [-f]
+/komaedit noise delete <nombre>
+/komaedit noise print <ruido>
+```
+
+Alias: `/komaedit ruido`.
+
+### Comportamiento
+
+- `save` comprueba el ruido y lo guarda con su definición completa. No admite nombres de tipos ni de ruidos de serie.
+- `print` muestra el tipo y cada parámetro, y la definición para copiarla al pulsarla. Vale también con un ruido de serie: `/komaedit noise print marble`.
+- Ruidos de serie: `ridged`, `smoothcells`, `voronoiedge`, `clouds`, `marble`, `veins`, `pebbles`, `dunes` y `static`.
+
+### Rendimiento y limitaciones
+
+Hasta 512 ruidos por jugador y mundo, en `<mundo>/komaedit/players/<uuid>/noises/noises.json`.
+
+## Selecciones
+
+### Objetivo y acceso
+
+Las órdenes de selección de ezEdits, sobre la selección de WorldEdit, con el permiso `komaedit.select`:
+
+| KomaEdit | ezEdits | Qué hace |
+| --- | --- | --- |
+| `/komaedit sel list [-g]` | `//ezsel list` | Lista tus selecciones (pulsa una para cargarla); `-g` las agrupa por tipo. |
+| `/komaedit sel save <nombre> [-f]` | `//ezsel save` | Guarda la selección actual. |
+| `/komaedit sel load <nombre> [-h]` | `//selload`, `//ezsel load` | La recupera; con `-h` la trae a tu posición. |
+| `/komaedit sel delete <nombre>` | `//ezsel delete` | La borra. |
+| `/komaedit sel next [dirección] [hueco]` | `//next` | Desplaza la selección su propio tamaño hacia donde miras o en la dirección dada, más el hueco. |
+| `/komaedit sel here [pos1\|pos2\|center]` | `//selhere`, `//seltome` | Lleva ese punto de la selección a tus pies; el resto la acompaña. Alias `tome`. |
+| `/komaedit sel invert` | `//ezselinvert` | Invierte el orden de los puntos (en un cubo cambia pos1 por pos2). |
+| `/komaedit sel delpos2` | `//delpos2` | Quita el último punto de una selección convex o poly. |
+| `/komaedit sel encapsulate <máscara>` | `//encapsulate` | Ajusta la selección al cubo más pequeño que contiene los bloques de la máscara. Alias `enc`. |
+| `/komaedit sel encapsulatenear <radio> <máscara>` | `//encapsulatenear` | Lo mismo, buscando en un cubo de ese radio alrededor de ti. Alias `encnear`. |
+
+Alias: `/komaedit seleccion`. La catenaria (`//selcatenary` de ezEdits) es `/komaedit path catenary <comba> [dirección] [puntos]`, que la genera como trayectoria entre el primer y el último punto. También están en `/komaedit help palette`, `help noise` y `help sel`.
+
+### Comportamiento
+
+- Se guardan cuboid, extend, poly, convex, ellipsoid, sphere y cylinder, con el mundo donde se marcaron. Al cargar una de otro mundo se avisa y se carga igual; `#selection` en cambio exige el mismo mundo.
+- Las direcciones aceptan `up`, `down`, `north`, `south`, `east`, `west`, `me`, `back`, `left` y `right` (también `arriba`, `norte`, `izquierda`…).
+- `here` con una selección redonda usa siempre el centro.
+- `encapsulate` admite cualquier máscara de WorldEdit, también las de KomaEdit: `/komaedit sel enc #palette[##Ice]`.
+
+### Rendimiento y limitaciones
+
+- `encapsulate` revisa hasta 1 000 000 de bloques en el hilo del servidor; `encapsulatenear` admite un radio de hasta 48.
+- Las selecciones se guardan en `<mundo>/komaedit/players/<uuid>/selections/selections.json`.
+
 ## Recetas, instancias y paquetes
 
 - Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
@@ -939,7 +1395,7 @@ El proyecto persistente evita perder recetas e instancias al desconectarse y per
 
 ### Almacenamiento y migración
 
-- Ruta: `<mundo>/komaedit/players/<uuid>/` con namespaces `recipes`, `instances` y `jobs`.
+- Ruta: `<mundo>/komaedit/players/<uuid>/` con namespaces `recipes`, `instances`, `jobs` y `paths` (recorridos guardados).
 - La primera entrada copia de forma no destructiva las recetas e instancias heredadas de `config/komaedit/`; un marcador impide repetir la migración.
 - Cada reemplazo conserva el archivo anterior como `.bak` y utiliza un `.tmp` recuperable si el proceso se interrumpe.
 - La geometría comprimida de una instancia incluye SHA-256 en sus metadatos. Una discrepancia detiene la carga en vez de aplicar datos dañados.
@@ -960,7 +1416,7 @@ El proyecto persistente evita perder recetas e instancias al desconectarse y per
 Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta permisos a través del actor de WorldEdit:
 
 - Base: `komaedit.use`.
-- Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>`.
+- Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
 - Contenido: `komaedit.recipe`, `komaedit.instance`.
 - Edición: `komaedit.select` (también la supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
 - Pinceles (`/komaedit pincel`): `komaedit.build`.
@@ -974,6 +1430,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - `maxBlocksPerOperation`: `1500000` de forma predeterminada; rango válido `10000–10000000`.
 - `maxConcurrentJobs`: `4` de forma predeterminada; rango válido `1–64`.
 - `backupRetention`: `5` de forma predeterminada; rango válido `1–50`.
+- `confirmBuildAboveBlocks`: `250000` de forma predeterminada; rango válido `0–10000000`. Por encima, un Build pide confirmación; `0` lo desactiva. Si falta en un `config.json` anterior se usa el valor por defecto.
 - `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
 
 Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios requieren reiniciar el servidor.
