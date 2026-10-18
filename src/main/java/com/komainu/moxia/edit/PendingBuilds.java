@@ -1,6 +1,7 @@
 package com.komainu.moxia.edit;
 
 import com.komainu.moxia.config.KomaEditConfig;
+import com.komainu.moxia.preview.PlanPreviews;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
@@ -37,8 +38,24 @@ public final class PendingBuilds {
             BuildEstimate estimate,
             Runnable submit
     ) {
+        return submitOrHold(player, description, estimate, submit, false);
+    }
+
+    /**
+     * Igual, pero si {@code previewable} (el envío pasa por {@code BatchEditService.submit}) y el jugador va a ver la
+     * vista previa (-v o «previsualizar siempre»), no pregunta aquí: la confirmación la pide la vista previa, con
+     * displays.
+     */
+    public static boolean submitOrHold(
+            ServerPlayerEntity player,
+            String description,
+            BuildEstimate estimate,
+            Runnable submit,
+            boolean previewable
+    ) {
         int threshold = KomaEditConfig.settings().confirmBuildAboveBlocks();
-        if (!BuildEstimate.needsConfirmation(estimate.blocks(), threshold)) {
+        if (!BuildEstimate.needsConfirmation(estimate.blocks(), threshold)
+                || previewable && PlanPreviews.wouldPreview(player, estimate.blocks())) {
             PENDING.remove(player.getUuid());
             submit.run();
             return true;

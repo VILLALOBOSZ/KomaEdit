@@ -2,6 +2,7 @@ package com.komainu.moxia.glass;
 
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -79,7 +80,11 @@ public final class GlassGradientService {
             }
         }
         try {
-            int queued = BatchEditService.submit(player, plan.build(), "air", "Vidriera degradada");
+            PackedBlockPlan built = plan.build();
+            int queued = BatchEditService.submit(player, built, "air", "Vidriera degradada");
+            if (PlanPreviews.holds(player.getUuid(), built)) {
+                return;
+            }
             GlassGradientSolver.Stack first = stacks.getFirst();
             String detail = stacks.size() == 1
                     ? " · se ve " + GlassColors.toHex(first.color()) + " (buscado " + GlassColors.toHex(first.target())

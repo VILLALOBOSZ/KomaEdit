@@ -1,5 +1,6 @@
 package com.komainu.moxia.placement;
 
+import com.komainu.moxia.preview.PreviewFlags;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -23,7 +24,8 @@ class DocumentationExamplesTest {
         int examples = 0;
         while (matcher.find()) {
             String command = matcher.group(1);
-            String arguments = matcher.group(2).strip();
+            // La bandera de vista previa la quita la orden antes de llegar al analizador (ver PreviewFlags).
+            String arguments = PreviewFlags.strip(matcher.group(2).strip(), true).text();
             if (arguments.startsWith("<") || arguments.equals("…")) {
                 continue;
             }

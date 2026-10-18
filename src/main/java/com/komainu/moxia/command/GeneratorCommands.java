@@ -2,6 +2,7 @@ package com.komainu.moxia.command;
 
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.generator.FlowField;
 import com.komainu.moxia.generator.FlowLine;
 import com.komainu.moxia.generator.GeneratedBlocks;
@@ -190,7 +191,9 @@ public final class GeneratorCommands {
                                     new BlockPos(bounds[0], Math.max(bottom, bounds[1]), bounds[2]),
                                     new BlockPos(bounds[3], Math.min(top, bounds[4]), bounds[5]));
                         }
-                        success(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                        if (!PlanPreviews.holds(playerId, result.plan())) {
+                            success(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         fail(current.getCommandSource(), readable(exception));
                     }
@@ -325,6 +328,9 @@ public final class GeneratorCommands {
         if (!result.convex().isEmpty()) {
             convexSelection(player, result.convex());
         }
+        if (PlanPreviews.holds(player.getUuid(), built)) {
+            return;
+        }
         success(player, "Línea de flujo en cola: " + queued + " bloques"
                 + (result.convex().isEmpty() ? "" : " · selección convexa de " + result.convex().size() + " puntos")
                 + " · //undo para deshacer");
@@ -384,7 +390,9 @@ public final class GeneratorCommands {
                     }
                     try {
                         int queued = BatchEditService.submit(current, plan, "air", description);
-                        success(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                        if (!PlanPreviews.holds(playerId, plan)) {
+                            success(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         fail(current.getCommandSource(), readable(exception));
                     }

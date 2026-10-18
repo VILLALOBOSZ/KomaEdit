@@ -73,7 +73,7 @@ public final class HelpTopics {
                             "Opciones de figura entre comillas"),
                     new Entry("/komaedit estimate <figura> [patrón] [escala] [espaciado] [grosor] [giro]",
                             "Bloques, chunks y tiempo sin construir nada"),
-                    new Entry("/komaedit confirm [cancel]", "Lanza o descarta un Build grande en espera"),
+                    new Entry("/komaedit confirm [cancel]", "Aplica o descarta la vista previa o el Build grande en espera"),
                     new Entry("/komaedit bridge <altura> <ancho> [material]", "Puente arqueado"),
                     new Entry("/komaedit torii <altura> <grosor> <detalle> [material]", "Torii"),
                     new Entry("/komaedit lightningcircle <radio> <ramificación> [material]", "Aro de rayos")
@@ -223,6 +223,18 @@ public final class HelpTopics {
                             "Selecciona los bloques de la máscara que hay cerca"),
                     new Entry("/komaedit sel catenary <puntos> [comba] [down|up|left|right]",
                             "Selección convexa colgando como una cadena entre el principio y el final")
+            )),
+            new Topic("preview", "Vista previa y progreso", List.of("vistaprevia", "previa", "progreso", "cancelar",
+                    "confirmar"), List.of(
+                    new Entry("/komaedit texture rockify stone -v",
+                            "-v (o --preview) en cualquier orden: calcula y enseña sin colocar nada"),
+                    new Entry("/komaedit confirm", "Aplica exactamente lo que ves; si la zona cambió, lo recalcula"),
+                    new Entry("/komaedit cancel", "Descarta la vista previa o para la lectura, el cálculo y la colocación"),
+                    new Entry("/komaedit preview always <bloques>",
+                            "Previsualiza siempre las ediciones de N bloques o más"),
+                    new Entry("/komaedit preview off", "Vista previa solo con -v"),
+                    new Entry("/komaedit preview", "Tu preferencia y la vista previa que tengas esperando"),
+                    new Entry("/komaedit job status", "Progreso de la colocación (también en la bossbar)")
             )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),

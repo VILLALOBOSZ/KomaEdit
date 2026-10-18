@@ -5,6 +5,9 @@ import com.komainu.moxia.brush.BrushSettings;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.shape.smooth.PieceMaterials;
 import com.komainu.moxia.config.KomaEditConfig;
@@ -251,6 +254,7 @@ public final class MoxiaCommands {
         NoiseCommands.register(root);
         SelectionCommands.register(root);
         AdminCommands.register(root);
+        PreviewCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
                 .requires(source -> can(source, KomaPermissions.PATH))
@@ -259,6 +263,8 @@ public final class MoxiaCommands {
         dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
         dispatcher.register(literal("moxia").requires(MoxiaCommands::canUse).redirect(root));
         dispatcher.register(literal("mx").requires(MoxiaCommands::canUse).redirect(root));
+        // Siempre lo último: la bandera -v solo llega a las órdenes registradas antes.
+        PreviewCommands.installFlags(dispatcher, root);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> bridgeCommand() {
@@ -660,6 +666,9 @@ public final class MoxiaCommands {
                         }
                         try {
                             int changed = BatchEditService.submit(current, plan, "air", "Doblar estructura");
+                            if (PlanPreviews.holds(playerId, plan)) {
+                                return;
+                            }
                             current.getCommandSource().sendFeedback(
                                     () -> prefix().append(Text.literal("Estructura doblada en cola: " + changed
                                             + " bloques · /komaedit job status").formatted(Formatting.GREEN)),
@@ -1938,6 +1947,9 @@ public final class MoxiaCommands {
                                     pattern,
                                     requestedParameters.shape().displayName()
                             );
+                            if (PlanPreviews.holds(playerId, plan)) {
+                                return;
+                            }
                             int pieces = plan.pieceCount();
                             current.getCommandSource().sendFeedback(
                                     () -> prefix().append(Text.literal(
@@ -1954,7 +1966,7 @@ public final class MoxiaCommands {
                         }
                     };
                     PendingBuilds.submitOrHold(
-                            current, requestedParameters.shape().displayName(), BuildEstimate.of(plan), submit
+                            current, requestedParameters.shape().displayName(), BuildEstimate.of(plan), submit, true
                     );
                 }),
                 throwable -> server.execute(() -> {
@@ -1968,9 +1980,14 @@ public final class MoxiaCommands {
     }
 
     private static int confirmPendingBuild(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        Optional<Integer> preview = PreviewCommands.confirm(context);
+        if (preview.isPresent()) {
+            return preview.get();
+        }
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
-            String description = PendingBuilds.confirm(player);
+            // Ya confirmado: el Build no vuelve a pasar por la vista previa.
+            String description = EditRequests.within(EditRequest.CONFIRMED, () -> PendingBuilds.confirm(player));
             context.getSource().sendFeedback(
                     () -> prefix().append(Text.literal("Confirmado: " + description).formatted(Formatting.GREEN)),
                     false
@@ -1983,9 +2000,10 @@ public final class MoxiaCommands {
 
     private static int discardPendingBuild(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        Optional<String> discarded = PendingBuilds.cancel(player.getUuid());
+        Optional<String> discarded = PreviewCommands.discard(player).map(description -> "vista previa de " + description)
+                .or(() -> PendingBuilds.cancel(player.getUuid()));
         if (discarded.isEmpty()) {
-            return fail(context.getSource(), "No hay ningún Build esperando confirmación");
+            return fail(context.getSource(), "No hay ninguna vista previa ni Build esperando confirmación");
         }
         context.getSource().sendFeedback(
                 () -> prefix().append(Text.literal("Descartado: " + discarded.get()).formatted(Formatting.YELLOW)),
