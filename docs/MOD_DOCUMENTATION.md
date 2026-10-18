@@ -6,11 +6,23 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, envejecer, recetas e instancias.
 
-- Los paneles son desplazables y se adaptan a resoluciones pequeñas.
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
 - La cámara puede desplazarse mientras el Studio permanece abierto.
 - `Ctrl+Z`, `Ctrl+Y` y `Ctrl+Shift+Z` utilizan el historial de WorldEdit.
-- La navegación principal, estados de trayectoria y acciones esenciales están disponibles en español e inglés mediante el idioma seleccionado en Minecraft.
+- Todo el Studio (etapas, controles, nombres de figuras y modos, mensajes de estado, holograma y el HUD de captura) sale en el idioma de Minecraft, español o inglés. Los comandos y el chat siguen en español.
+
+### Disposición de la pantalla
+
+Todo el Studio vive en un único panel opaco pegado a la derecha; el resto de la pantalla es el mundo, sin nada encima, así que el chat de abajo a la izquierda queda a la vista y el marcador del servidor no se transparenta por detrás del panel.
+
+- **Barra de herramientas** (arriba): KomaEdit y los botones con icono de deshacer y rehacer ajustes, mostrar u ocultar el holograma, chuleta de atajos y cerrar. Cada uno explica su atajo al pasar el ratón.
+- **Etapas** (columna izquierda del panel): Trayectoria, Figuras, Estructuras, Modificadores, Material, Envejecer, Instancias y Recetas, con icono y nombre; la elegida se resalta con una barra de acento. El tooltip dice su número de atajo (`1` – `8`) y para qué sirve.
+- **Contenido**: título y subtítulo de la etapa y, debajo, sus secciones desplazables con la rueda (una barra fina a la derecha indica cuánto queda).
+- **Pie** (abajo, siempre visible): figura y material, la estimación **≈ N bloques**, el último mensaje (unos segundos) o el estado del holograma, y el botón **Construir**. Sin puntos suficientes el botón se ve apagado y dice cuántos faltan; al pulsarlo lleva a Trayectoria.
+- El borde izquierdo del panel se arrastra para cambiar su ancho (entre 300 y 470 píxeles de GUI, sin pasar de media pantalla); el ancho se recuerda.
+- La etapa **Trayectoria** cuenta los nodos (`3 / 32 nodos`), si la trayectoria está abierta o cerrada y si se puede construir; tiene **Añadir aquí**, **Deshacer punto**, **Cerrar / Abrir trayectoria** y **Limpiar**, la lista de nodos con sus coordenadas (un clic elige el nodo para moverlo con sus flechas) y un recordatorio de cómo se usa el puntero. El contador de nodos ya no se repite en la cabecera ni en una tarjeta sobre el mundo.
+- El nombre de la receta, **Guardar** y la exportación o importación de `.krecipe` están en la etapa **Recetas**; Construir usa ese mismo nombre.
+- Los interruptores (Fusión, Kitbash, Cerrar huecos, Quitar bloques sueltos, Invertir dirección, Agua estancada) son filas con un pulsador a la derecha. Fusión y Kitbash solo enseñan sus ajustes cuando están activados, y Alcance y Separación solo con un modo de superficie.
 
 ### Encontrar figuras
 
@@ -32,30 +44,30 @@ Todos los controles numéricos (Proporciones, Modificadores y Mezcla orgánica) 
 - **Arrastrar** el número en horizontal lo cambia como un deslizador (un paso cada 6 píxeles). **Un clic** sin mover abre el campo para escribirlo: `Intro` o pulsar fuera lo aplica (ajustado al rango), `Esc` lo cancela.
 - **Clic derecho** restablece el valor de serie: el de la figura para radio, espaciado, grosor, giro y altura; el de los modificadores para el resto; en las filas de tubo quita la opción para que valga la de serie.
 - Una barra fina bajo cada control muestra dónde está el valor dentro de su rango.
-- **Ayuda contextual:** al pasar el ratón por la etiqueta de un control se ve qué hace, su rango, el paso, el paso grande y el valor de serie. Los botones de la barra superior y de presets también la tienen.
+- **Ayuda contextual:** al pasar el ratón por la etiqueta de un control se ve qué hace, su rango, el paso, el paso grande y el valor de serie. Los botones de la barra de herramientas, las etapas, los presets y los interruptores también la tienen.
 
 ### Presets y variantes
 
 Debajo de la descripción de la figura (Figuras y Estructuras):
 
 - **Compacto** (radio ×0,6, un paso menos de espaciado, altura ×0,7), **De serie**, **Amplio** (radio ×1,5, un paso más de espaciado, altura ×1,4) y **Robusto** (radio ×1,2 y un punto más de grosor). Parten siempre de las proporciones de serie de la figura y no tocan opciones, material ni modificadores.
-- **⚄ Azar** (`R`): variante con semilla alrededor de las proporciones de serie (radio de ×0,6 a ×1,6, espaciado ±2, grosor ±1, giro ±45° y altura de ×0,7 a ×1,5). La semilla aparece en la barra de estado (`Variante #4821`); la misma figura y semilla dan siempre la misma variante.
+- **Azar** (`R`): variante con semilla alrededor de las proporciones de serie (radio de ×0,6 a ×1,6, espaciado ±2, grosor ±1, giro ±45° y altura de ×0,7 a ×1,5). La semilla aparece en el pie del panel (`Variante #4821`); la misma figura y semilla dan siempre la misma variante.
 - Presets y variantes solo proponen valores dentro de los rangos del Studio y no cambian ningún generador.
 
 ### Deshacer ajustes
 
 El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 
-- `Z` deshace y `Y` o `Mayús+Z` rehacen (también los botones ↶ ↷ de la barra superior). `Ctrl+Z` / `Ctrl+Y` siguen deshaciendo en el mundo.
+- `Z` deshace y `Y` o `Mayús+Z` rehacen (también los botones de deshacer y rehacer de la barra de herramientas). `Ctrl+Z` / `Ctrl+Y` siguen deshaciendo en el mundo.
 - Guarda hasta 100 pasos. Los cambios seguidos del mismo control en menos de 0,8 s (arrastrar, la rueda o varios clics rápidos) cuentan como uno.
 - Entran todos los cambios de la receta: figura, proporciones, opciones de tubo, modificadores, material, presets, variantes y cargar una receta o instancia. El nombre de la receta no entra.
 - Sobrevive a cerrar y abrir el Studio y se borra al salir del mundo.
 
 ### Antes de construir
 
-- El pie del panel y la barra inferior muestran **≈ N bloques**, el recuento del último holograma (con `…` mientras se recalcula).
+- El pie del panel muestra **≈ N bloques**, el recuento del último holograma (con `…` mientras se recalcula).
 - A partir de **250 000 bloques** el recuento sale en amarillo y Construir pide una segunda pulsación en 5 s; si el recuento cambia entre medias, vuelve a pedirla. Por encima de **1 500 000** (el `maxBlocksPerOperation` de serie) sale en rojo: el servidor puede rechazarlo si no tienes `komaedit.limit.unrestricted` o si su configuración es más baja.
-- `H` o el botón **H** de la barra superior ocultan el holograma; se sigue calculando, así que el recuento sigue valiendo.
+- `H` o el botón del holograma de la barra de herramientas lo ocultan; se sigue calculando, así que el recuento sigue valiendo.
 
 ### Atajos de teclado
 
@@ -63,7 +75,7 @@ El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 
 | Tecla | Acción |
 | --- | --- |
-| `1` – `8` | Ir a una etapa, en el orden de la barra lateral |
+| `1` – `8` | Ir a una etapa, en el orden de la columna de etapas |
 | `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
 | `Ctrl+F` o `/` | Buscar figura |
 | `B` | Construir (las obras grandes piden confirmar) |
@@ -79,10 +91,12 @@ El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 
 ### Pantallas pequeñas
 
-- La barra lateral encoge sus botones (hasta 24 píxeles) para no salirse en pantallas bajas o con escala de GUI grande.
-- Con menos de 330 píxeles de alto (escala de GUI), el pie pierde la etiqueta «RECETA» y la chuleta se muestra en dos columnas.
-- La barra superior omite primero el subtítulo, luego el título y por último el contador de nodos si no cabe.
-- Lo que queda desplazado bajo la cabecera o el pie del panel ya no responde a clics.
+- Las etapas encogen su alto (hasta 14 píxeles) para que las ocho quepan sin desplazarse con cualquier escala de GUI.
+- Con menos de 600 píxeles de ancho escalado (GUI 4 en 1080p, la escala automática) el panel mide 230 píxeles y las etapas se quedan en iconos con su nombre en el tooltip, para dejar al mundo al menos la mitad de la pantalla. Ahí el chat vanilla (320 píxeles) puede quedar en parte bajo el panel.
+- Los textos que no caben se recortan con «…»; el estado completo sale en un tooltip sobre el pie.
+- Con menos de 330 píxeles de alto la chuleta se muestra en dos columnas.
+- Lo que queda desplazado bajo la cabecera o el pie del panel no responde a clics.
+- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las ocho etapas caben y el panel no pisa el chat cuando hay sitio.
 
 ## Trayectorias y hologramas
 

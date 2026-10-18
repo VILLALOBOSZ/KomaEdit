@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -32,11 +33,17 @@ public final class ShapeSearch {
      * puntúa 1 en todas para conservar el orden de la lista.
      */
     public static int score(PathShape shape, String query) {
+        return score(shape, query, "");
+    }
+
+    /** Igual, contando además el nombre traducido que enseña el Studio con el mismo peso que el nombre. */
+    public static int score(PathShape shape, String query, String localizedName) {
         String normalized = normalize(query);
         if (normalized.isEmpty()) {
             return 1;
         }
         String name = normalize(shape.displayName());
+        String localized = normalize(localizedName);
         String id = normalize(shape.id());
         List<String> aliases = shape.aliases().stream().map(ShapeSearch::normalize).toList();
         String description = normalize(shape.description());
@@ -44,6 +51,9 @@ public final class ShapeSearch {
         for (String token : normalized.split(" ")) {
             int best = 0;
             best = Math.max(best, fieldScore(name, token, 100));
+            if (!localized.isEmpty()) {
+                best = Math.max(best, fieldScore(localized, token, 100));
+            }
             best = Math.max(best, fieldScore(id, token, 90));
             for (String alias : aliases) {
                 best = Math.max(best, fieldScore(alias, token, 70));
@@ -59,9 +69,18 @@ public final class ShapeSearch {
 
     /** Las figuras que encajan, de mejor a peor; a igual puntuación, en el orden recibido. */
     public static List<PathShape> search(List<PathShape> shapes, String query) {
+        return search(shapes, query, shape -> "");
+    }
+
+    /** Búsqueda que también reconoce el nombre de la figura en el idioma del cliente. */
+    public static List<PathShape> search(
+            List<PathShape> shapes,
+            String query,
+            Function<PathShape, String> localizedName
+    ) {
         List<Scored> scored = new ArrayList<>();
         for (int index = 0; index < shapes.size(); index++) {
-            int value = score(shapes.get(index), query);
+            int value = score(shapes.get(index), query, localizedName.apply(shapes.get(index)));
             if (value > 0) {
                 scored.add(new Scored(shapes.get(index), value, index));
             }
