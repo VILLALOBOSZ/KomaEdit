@@ -205,7 +205,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | --- | --- | --- |
 | `//ezplace`, `//ezscatter`, `//ezarray` y sus pinceles | `/komaedit place`, `scatter`, `array` (`PlacementCommands`, `PlacementService`) y `/komaedit pincel place\|scatter\|array` | Completo |
 | `-w <smoothblocks>` en las tres | `-w slabs\|stairs[:cobertura]` | En curso (perfiles completos en `agent/ez-smoothblocks`) |
-| `//ezspline structure` | — | En curso (`agent/ez-splines`) |
+| `//ezspline structure` | `/komaedit ezspline structure` (`EzSplineCommands`, `StructureBendService.fromPlacement`) | Parcial (sin `-t`/`-r` ni radios por fotogramas) |
 
 ## Available Structures
 
@@ -271,7 +271,14 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| `//ezspline basic\|2d\|3d\|noise\|expression\|rope\|structure` con sus formas y parámetros comunes (`-p`, `-q`, `-r`, `-s`, `-t`, `-n`, `-e`, `-w`, `-h`) | Figuras de espacio de tubo (`shape/tube`, `/komaedit build …`) | En curso (`agent/ez-splines`: sintaxis exacta de `//ezspline` y lista de formas) |
+| `//ezspline` (`//ezsp`) con la sintaxis exacta de subcomandos, formas y parámetros largos y abreviados | `/komaedit ezspline` (alias `ezsp`, `spline`; `EzSpline`, `EzSplineCommands`) sobre las figuras de espacio de tubo | Completo |
+| Parámetros comunes `<radii>`, `-p`, `-q FAST\|BALANCED\|HIGH\|EXACT` (y el `-q <muestras>` antiguo), `-r a[,b]`, `-s`, `-t`, `-n`, `-e`, `-h` | Los mismos (`TubeCommandParser`; `-q EXACT` mide el volumen con 64 muestras) | Completo |
+| `-w <smoothblocks>` | Modos de piezas de KomaEdit (`none`, `slabs`, `stairs`) | Parcial (perfiles completos en `agent/ez-smoothblocks`) |
+| 2D: Circle, Square, Diamond, RoundedSquare, SuperCircle, CirclesCircle, Strands, Pipe, Polygon, Rectangle, Star, Flower; `basic` y `rope` | Perfiles de `sweep` con sus parámetros (`TubeShapes.Profile`) | Completo |
+| 3D: Beads, Cubes, Chainlink, Fishnet, Honeycomb, Oscillate, Rings, Scales, Noodles | Formas implícitas propias (`EzShapes`) | Completo |
+| 3D: Braids | Trenza de KomaEdit (`braid`) con `Thickness` | Parcial (la trenza es la de KomaEdit) |
+| `//ezspline noise <paleta> <radios> [ruido] [profundidad] [-i expresión]` | `EzShapes.NoiseCut` con cualquier ruido y expresión de corte (`n`, `d`) | Completo |
+| `//ezspline expression <paleta> <radios> [-z] [-o] <expresión>` | Figura Expresión con `-z` y `-o` | Completo |
 
 ## Stained Glass
 

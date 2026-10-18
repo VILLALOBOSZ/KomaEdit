@@ -51,6 +51,7 @@ class EzSplineParserTest {
             "3d Noodles(Amount:8,Density:60%,Tangle:2,Seed:7) clay 12",
             // Avanzadas
             "noise ##Grayscale 10",
+            "noise ##GrayWarm(3:11),251:8*15 25,10,25 Ce(F:1.6,fO:1,cD:r,cR:r,M:OR,L:-1.1,U:-.2) 0.4",
             "noise -##Magma 5,25 Ce(F:1.5,fO:1,cR:sub,M:OR,U:-.6) 0.6 -t 90",
             "noise ##Brown 20,12 Ce(f:4,cr:sub,cj:.8,m:or,u:-.5,l:-1.3) 0.2 -s 6 -t 20",
             "noise -##GlowBlue(6:16) 20,12 Ce(f:2,cr:sub,m:or,u:-.55,l:-0.551,z:0.1) 0.9 -t 200",

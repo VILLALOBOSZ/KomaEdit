@@ -125,13 +125,10 @@ class EzSplineShapesTest {
     void wireCoresHaveNoGaps() {
         for (SampledPath path : List.of(straight(60), oblique(), curved())) {
             for (String form : List.of("3d Chainlink clay 8", "3d Chainlink(M:99,N:99,E:0.6) clay 8",
-                    "3d Chainlink(M:2,N:2,E:0,G:1,T:0.3) clay 8", "3d Fishnet clay 8", "3d Fishnet(W:0.05) clay 12",
-                    "3d Honeycomb clay 10", "3d Honeycomb(W:0.01,D:0.05) clay 14", "3d Noodles clay 10",
+                    "3d Chainlink(M:2,N:2,E:0,G:1,T:0.3) clay 8", "3d Fishnet clay 8", "3d Fishnet(W:0.05) clay 10",
+                    "3d Honeycomb clay 10", "3d Honeycomb(W:0.01,D:0.05) clay 10", "3d Noodles clay 10",
                     "3d Noodles(A:20,D:40%) clay 12")) {
-                // Una tira de un bloque escaso en el lado interior de la curva más cerrada necesita el rescate de
-                // BALANCED: con FAST puede perder algún bloque, como cualquier barrido que se comprime.
-                double[] qualities = form.contains("W:0.0") ? new double[]{1.0} : new double[]{0.0, 1.0};
-                for (double quality : qualities) {
+                for (double quality : new double[]{0.0, 1.0}) {
                     ShapeParameters parameters = with(parameters(form), Map.of("quality", quality));
                     Set<BlockVector3> blocks = TubeFigures.generate(path, parameters, LIMIT);
                     List<BlockVector3> missing = missingCore(path, parameters, blocks);
