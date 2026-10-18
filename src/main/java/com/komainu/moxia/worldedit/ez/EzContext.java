@@ -97,6 +97,20 @@ public final class EzContext {
         return STATES.computeIfAbsent(state, FabricAdapter::adapt);
     }
 
+    /**
+     * Los bloques de la barra rápida del jugador (casillas 1 a 9), en orden y con su estado por defecto. Los objetos
+     * que no son bloques se saltan; un bloque repetido en varias casillas sale una vez por casilla.
+     */
+    public static List<BlockState> hotbar(ServerPlayerEntity player) {
+        List<BlockState> states = new java.util.ArrayList<>();
+        for (int slot = 0; slot < 9; slot++) {
+            if (player.getInventory().getStack(slot).getItem() instanceof net.minecraft.item.BlockItem item) {
+                states.add(FabricAdapter.adapt(item.getBlock().getDefaultState()));
+            }
+        }
+        return states;
+    }
+
     public static InputParseException error(String message) {
         return new InputParseException(TextComponent.of(message == null ? "Entrada inválida" : message));
     }

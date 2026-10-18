@@ -134,4 +134,22 @@ class PathGeneratorsTest {
         assertEquals(PathGenerators.Bulge.LEFT, PathGenerators.Bulge.byId("LEFT"));
         assertThrows(IllegalArgumentException.class, () -> PathGenerators.Bulge.byId("sideways"));
     }
+
+    @Test
+    void catenarySelectionUsesARelativeSagAndAStraightLineAtZero() {
+        BlockVector3 start = BlockVector3.at(0, 80, 0);
+        BlockVector3 end = BlockVector3.at(40, 80, 0);
+        List<BlockVector3> line = PathGenerators.catenarySelection(start, end, 0.0, PathGenerators.Bulge.DOWN, 5);
+        assertEquals(List.of(start, BlockVector3.at(10, 80, 0), BlockVector3.at(20, 80, 0),
+                BlockVector3.at(30, 80, 0), end), line);
+        List<BlockVector3> hanging = PathGenerators.catenarySelection(start, end, 0.25, PathGenerators.Bulge.DOWN, 9);
+        assertEquals(start, hanging.getFirst());
+        assertEquals(end, hanging.getLast());
+        int lowest = hanging.stream().mapToInt(BlockVector3::y).min().orElseThrow();
+        assertEquals(70, lowest, 1);
+        assertThrows(IllegalArgumentException.class,
+                () -> PathGenerators.catenarySelection(start, end, 6.0, PathGenerators.Bulge.DOWN, 9));
+        assertThrows(IllegalArgumentException.class,
+                () -> PathGenerators.catenarySelection(start, start, 0.1, PathGenerators.Bulge.DOWN, 9));
+    }
 }

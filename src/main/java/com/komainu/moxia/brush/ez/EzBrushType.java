@@ -10,7 +10,9 @@ public enum EzBrushType {
     GRADIENT_STROKE("gradientstroke", "Trazo de degradado", Set.of('a', 'd', 'v', 'w', 'x', 'p'), Set.of('n', 'z'),
             "trazo", "gs"),
     PETAL_PAINTER("petalpainter", "Pintor de pétalos", Set.of('p'), Set.of('n', 'z', 'm'), "petalos", "pp"),
-    PLACE("place", "Colocar", Set.of('a', 'x', 'p'), Set.of(), "colocar", "pl");
+    PLACE("place", "Colocar", Set.of('a', 'x', 'p'), Set.of(), "colocar", "pl"),
+    SCATTER("scatter", "Dispersar", Set.of(), Set.of(), "dispersar", "sc"),
+    ARRAY("array", "Hilera", Set.of(), Set.of(), "hilera", "ar");
 
     private final String id;
     private final String displayName;
@@ -34,6 +36,11 @@ public enum EzBrushType {
         return displayName;
     }
 
+    /** Los pinceles de colocación leen sus banderas como {@code place}, {@code scatter} y {@code array}. */
+    public boolean placement() {
+        return this == PLACE || this == SCATTER || this == ARRAY;
+    }
+
     public BrushOptions options(String input) {
         return BrushOptions.parse(input, switches, valued);
     }
@@ -51,6 +58,6 @@ public enum EzBrushType {
             }
         }
         throw new IllegalArgumentException("Pincel desconocido: " + input
-                + " (paletteshift, gradient, gradientstroke, petalpainter, place)");
+                + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array)");
     }
 }

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Añade `docs/EZEDITS_PARITY.md`: la wiki de ezEdits página a página frente a KomaEdit (orden, clase y estado: completo, parcial, falta o en curso).
+- Añade los **pinceles de colocación** `scatter` (alias `dispersar`, `sc`) y `array` (alias `hilera`, `ar`), y el pincel `place` pasa al motor de `/komaedit place`: todas las estructuras, alineaciones (también `ViewDiff`, con un segundo clic) y banderas. `scatter` reparte por defecto en una caja de 40³ centrada en el clic; `array` coloca a lo largo de un trazo marcado con el clic izquierdo. Con `-p` el pincel `place` sigue usando la colocación con holograma de antes.
+- Añade a los ruidos el tipo `Shard` (con nitidez `h`), las distancias celulares `m1`, `m4`, `m99` (Minkowski) y `r` (redondeada), los retornos `rounded` y `noiseLookup` (`cN`, `cF`) y las distorsiones de dominio `Flow` y `Turbulence`, con implementación propia.
+- Añade la máscara y el patrón `#hotbar` (los bloques de la barra rápida).
+- Añade `/komaedit sel catenary <puntos> [comba] [dirección]` (alias `catenaria`): una selección convexa colgando como una cadena entre el principio y el final de la selección, con la comba relativa al vano como `//selcatenary`.
+- Añade las **paletas de serie del servidor** en `config/komaedit/palettes.json`, que todos usan con `##nombre` y que salen en `/komaedit palette list default`.
+- Añade **permisos finos** por orden y modo (`komaedit.build.deform.noise`, `komaedit.palette.save`, `komaedit.select.catenary`…) y los paquetes `komaedit.permpack.basic`, `intermediate`, `advanced` y `admin`, como la página de permisos de ezEdits. Los permisos amplios de siempre siguen funcionando igual; `/komaedit permisos` muestra cuáles tienes.
+- Añade `/komaedit info` y `/komaedit reload` (permiso `komaedit.admin.reload`), que recarga `config.json` y las paletas del servidor sin reiniciar.
+- Añade los alias `/komaedit pincel none` y `/komaedit survival` (como `tweak`).
+- `-b` de `array` busca la superficie hasta 96 bloques, como ezEdits (antes 48).
+- Los avisos de permiso salen en español («Te falta el permiso …»).
+
 ## 1.3.0 (estable, 2026-10-18)
 
 - Añade la **colocación de estructuras** de ezEdits: `/komaedit place` (alias `colocar`), `/komaedit array` (alias `hilera`) y `/komaedit scatter` (alias `dispersar`), con la forma `<estructura> [<primaria>] [<secundaria>] [banderas]` y la cadena dimensiones → escala aleatoria → orientación → simetrías → giros de 90° → alineación. Se calcula en un worker, se coloca de abajo arriba en una sola edición deshacible con //undo y, donde se lee el mundo, sin pisar lo que cambie mientras tanto.

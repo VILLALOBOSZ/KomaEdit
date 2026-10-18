@@ -41,6 +41,7 @@ public final class EzMaskParser extends InputParser<Mask> {
             Map.entry("current", "current"), Map.entry("c", "current"),
             Map.entry("eznoisemask", "eznoisemask"), Map.entry("eznm", "eznoisemask"),
             Map.entry("fullblock", "fullblock"),
+            Map.entry("hotbar", "hotbar"),
             Map.entry("fuzzypalette", "fuzzypalette"), Map.entry("fpalette", "fuzzypalette"),
             Map.entry("infested", "infested"),
             Map.entry("lightsource", "lightsource"),
@@ -52,7 +53,8 @@ public final class EzMaskParser extends InputParser<Mask> {
             Map.entry("vectorgradientmask", "vectorgradientmask"), Map.entry("vgradientm", "vectorgradientmask")
     );
     private static final List<String> SUGGESTIONS = List.of("#aim", "#attached", "#blocklight[", "#clipblocks",
-            "#current", "#eznoisemask[", "#fullblock", "#fuzzypalette[", "#infested", "#lightsource", "#near[",
+            "#current", "#eznoisemask[", "#fullblock", "#fuzzypalette[", "#hotbar", "#infested", "#lightsource",
+            "#near[",
             "#palette[", "#radialgradientmask[", "#schemblocks[", "#truelight[", "#vectorgradientmask[");
     private static final int MAX_SCAN = 4_000_000;
 
@@ -135,6 +137,15 @@ public final class EzMaskParser extends InputParser<Mask> {
             }
             case "fullblock" -> new EzMasks.StateMask(context.requireExtent(), EzMasks::fullBlock);
             case "infested" -> new EzMasks.StateMask(context.requireExtent(), EzMasks::infested);
+            case "hotbar" -> {
+                arguments.atMost(0);
+                Set<com.sk89q.worldedit.world.block.BlockType> types = new LinkedHashSet<>();
+                for (BlockState state : EzContext.hotbar(EzContext.player(context, "#hotbar"))) {
+                    types.add(state.getBlockType());
+                }
+                yield types.isEmpty() ? Masks.negate(Masks.alwaysTrue())
+                        : new EzMasks.StateMask(context.requireExtent(), state -> types.contains(state.getBlockType()));
+            }
             case "palette", "fuzzypalette" -> {
                 arguments.atMost(name.equals("palette") ? 2 : 1);
                 List<BlockSpec> entries = EzContext.palette(context, arguments.require(0, "una paleta"))

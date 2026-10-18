@@ -42,7 +42,9 @@ Los pinceles de `/komaedit pincel` (paquete `brush.ez`, `brush.place`) siguen el
 
 Las herramientas (pinceles y supervarita) se marcan en el `custom_data` del objeto. El cliente intercepta con ellas el clic izquierdo, el derecho y la tecla de cambiar de mano y los manda como `BrushToolPayload`; el servidor apunta con su propio rayo. Para clientes sin el mod quedan los eventos de uso y ataque de Fabric en el servidor.
 
-El pincel de colocación pide sus estructuras a `StructureSources`: cualquier `StructureSource` registrada (hoy el portapapeles) devuelve en el hilo del servidor una `PlacementTemplate` inmutable que el worker gira con la base de `Alignment`.
+Los pinceles de colocación (`place`, `scatter`, `array`) no usan `BrushOperation`: cada clic llama a `PlacementService.startBrush` con un `BrushTarget` (bloque mirado, normal de la cara, trazo y dirección de `ViewDiff`) y siguen el camino de `/komaedit place`. Solo `place -p` usa aún la colocación de 90° con holograma, que pide sus estructuras a `StructureSources` y las gira con la base de `brush.place.Alignment`.
+
+Los permisos finos y sus paquetes viven en `permission.PermissionNodes`, lógica pura que recibe qué nodos tiene el jugador; `KomaPermissions` le pasa el actor de WorldEdit. Una orden con varios modos se oculta con `KomaPermissions.canAny(familia)` y cada modo se comprueba al ejecutarse con `requireBuild`.
 
 ## Representación compacta
 

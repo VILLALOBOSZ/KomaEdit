@@ -170,7 +170,11 @@ public final class HelpTopics {
                             "Alineaciones: Constant, Random, Noise, Aim, Upward, PlayerRelative, SurfaceNormal, "
                                     + "Expression, Tangential, Orthogonal y mezclas 10%C,2%R"),
                     new Entry("/komaedit scatter Cl C R -n 0.5 -d up -e 0.7 -o 0.8,1.3",
-                            "Ejemplo: árboles del portapapeles en lo llano, girados y con tamaños distintos")
+                            "Ejemplo: árboles del portapapeles en lo llano, girados y con tamaños distintos"),
+                    new Entry("/komaedit pincel place|scatter|array <estructura> [primaria] [secundaria] [banderas]",
+                            "Los mismos como pinceles: en el clic, alrededor del clic o por un trazo"),
+                    new Entry("/komaedit pincel place Cl SurfaceNormal ViewDiff",
+                            "ViewDiff: clic derecho dónde y clic izquierdo hacia dónde")
             )),
             new Topic("palette", "Paletas guardadas", List.of("paleta", "paletas", "palettes"), List.of(
                     new Entry("/komaedit palette list [all|default|mine]", "Paletas de serie y tuyas; pulsa una para verla"),
@@ -202,12 +206,17 @@ public final class HelpTopics {
                     new Entry("/komaedit sel delpos2", "Quita el último punto de una selección convex o poly"),
                     new Entry("/komaedit sel encapsulate <máscara>", "Ajusta la selección a los bloques de la máscara"),
                     new Entry("/komaedit sel encapsulatenear <radio> <máscara>",
-                            "Selecciona los bloques de la máscara que hay cerca")
+                            "Selecciona los bloques de la máscara que hay cerca"),
+                    new Entry("/komaedit sel catenary <puntos> [comba] [down|up|left|right]",
+                            "Selección convexa colgando como una cadena entre el principio y el final")
             )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),
-                    new Entry("/komaedit menu", "Paleta rápida (tecla K)")
+                    new Entry("/komaedit menu", "Paleta rápida (tecla K)"),
+                    new Entry("/komaedit info", "Versión del mod y paletas y ruidos de serie"),
+                    new Entry("/komaedit permisos [paquete]", "Qué nodos y paquetes de permisos tienes"),
+                    new Entry("/komaedit reload", "Recarga la configuración y las paletas del servidor (admin)")
             ))
     );
 

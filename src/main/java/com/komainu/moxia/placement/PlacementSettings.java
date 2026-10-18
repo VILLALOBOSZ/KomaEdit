@@ -88,6 +88,14 @@ public record PlacementSettings(
     }
 
     public static PlacementSettings parse(Kind kind, String input) {
+        return parse(kind, input, false);
+    }
+
+    /**
+     * @param brush si es para un pincel ({@code /komaedit pincel place|scatter|array}): el de colocación admite
+     *              {@code ViewDiff}, la dirección que marca un segundo clic
+     */
+    public static PlacementSettings parse(Kind kind, String input, boolean brush) {
         List<String> words = ParamText.words(input);
         if (words.isEmpty()) {
             throw new IllegalArgumentException("Falta la estructura: Clipboard, Schematic(N:…), Shape(S:…,P:…), "
@@ -257,8 +265,11 @@ public record PlacementSettings(
         if (kind != Kind.ARRAY && (resolvedPrimary.needsPath() || resolvedSecondary.needsPath())) {
             throw new IllegalArgumentException("Tangential y Orthogonal solo funcionan en array");
         }
-        if (resolvedPrimary.needsViewDiff() || resolvedSecondary.needsViewDiff()) {
-            throw new IllegalArgumentException("ViewDiff solo funciona con un pincel (el segundo clic marca la dirección)");
+        if ((resolvedPrimary.needsViewDiff() || resolvedSecondary.needsViewDiff())
+                && (!brush || kind != Kind.PLACE)) {
+            throw new IllegalArgumentException(brush
+                    ? "ViewDiff solo funciona en el pincel de colocación (place)"
+                    : "ViewDiff solo funciona con un pincel (el segundo clic marca la dirección)");
         }
         boolean randomSeed = seed == -1;
         return new PlacementSettings(kind, structure, resolvedPrimary, resolvedSecondary, dimensions, minimumScale,
@@ -277,6 +288,10 @@ public record PlacementSettings(
 
     public boolean needsNormal() {
         return primary.needsNormal() || secondary.needsNormal();
+    }
+
+    public boolean needsViewDiff() {
+        return primary.needsViewDiff() || secondary.needsViewDiff();
     }
 
     private static void only(Kind kind, Kind expected, String flag) {

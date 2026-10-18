@@ -79,16 +79,42 @@ public final class PlacementService {
     public static final int MAX_STRUCTURE_VOLUME = 2_000_000;
     public static final int MAX_SCHEMATICS = 32;
     /** Radio de búsqueda de superficie de {@code -b}; se recorta si la caja de la trayectoria es muy grande. */
-    public static final int SNAP_RADIUS = 48;
+    public static final int SNAP_RADIUS = 96;
     private static final long GOLDEN = 0x9E3779B97F4A7C15L;
 
     private PlacementService() {
     }
 
+    /**
+     * Dónde actúa un pincel de colocación: el bloque de aire delante de la cara que se mira ({@code anchor}), el
+     * bloque mirado ({@code surface}), la normal de esa cara, los puntos del trazo ({@code array}) y la dirección del
+     * segundo clic ({@code ViewDiff}).
+     */
+    public record BrushTarget(BlockVector3 anchor, BlockVector3 surface, Vec3 faceNormal,
+                              List<BlockVector3> stroke, Vec3 viewDiff) {
+        public BrushTarget {
+            stroke = stroke == null ? List.of() : List.copyOf(stroke);
+        }
+    }
+
     /** @return el texto de la confirmación inicial */
     public static String start(ServerPlayerEntity player, PlacementSettings.Kind kind, String input)
             throws IncompleteRegionException {
-        PlacementSettings parsed = PlacementSettings.parse(kind, input);
+        return start(player, kind, PlacementSettings.parse(kind, input), null);
+    }
+
+    /**
+     * Una pasada de un pincel de colocación: la misma cadena que los comandos, pero en el punto del clic. En
+     * {@code scatter} la región por defecto es una caja de 40×40×40 centrada en el bloque mirado y {@code Active} o
+     * {@code Saved} con {@code P:false} se llevan a él; en {@code array} la trayectoria es el trazo del pincel.
+     */
+    public static String startBrush(ServerPlayerEntity player, PlacementSettings settings, BrushTarget target)
+            throws IncompleteRegionException {
+        return start(player, settings.kind(), settings, target);
+    }
+
+    private static String start(ServerPlayerEntity player, PlacementSettings.Kind kind, PlacementSettings parsed,
+                                BrushTarget target) throws IncompleteRegionException {
         PlacementSettings settings = parsed.randomSeed()
                 ? parsed.withSeed(new SplittableRandom().nextLong() & Long.MAX_VALUE)
                 : parsed;
@@ -104,14 +130,17 @@ public final class PlacementService {
         Vec3 eye = new Vec3(player.getEyePos().x, player.getEyePos().y, player.getEyePos().z);
         var look = player.getRotationVec(1.0F);
         DirectionExpr.Context view = new DirectionExpr.Context(new Vec3(look.x, look.y, look.z));
-        BlockVector3 feet = BlockVector3.at(player.getBlockX(), player.getBlockY(), player.getBlockZ());
+        BlockVector3 feet = target != null ? target.anchor()
+                : BlockVector3.at(player.getBlockX(), player.getBlockY(), player.getBlockZ());
         Job job = new Job(player.getUuid(), player.getServer(), kind, settings, spec, resolved, eye, view, feet);
+        job.target = target;
         String what = resolved.structures().size() == 1 ? resolved.structures().getFirst().describe()
                 : resolved.structures().size() + " schematics";
         switch (kind) {
             case PLACE -> {
                 if (settings.needsNormal()) {
-                    Region around = new CuboidRegion(context.world(), feet.subtract(3, 3, 3), feet.add(3, 3, 3));
+                    BlockVector3 middle = target != null ? target.surface() : feet;
+                    Region around = new CuboidRegion(context.world(), middle.subtract(3, 3, 3), middle.add(3, 3, 3));
                     RegionOperationService.capture(player, around, 0, "Colocar", snapshot -> job.compute(snapshot,
                             around, null));
                 } else {
@@ -120,7 +149,9 @@ public final class PlacementService {
                 return "Colocando " + what + "…";
             }
             case SCATTER -> {
-                Region region = region(player, context, settings.scatter().region(), feet);
+                String regionText = settings.scatter().region() == null && target != null ? "Box"
+                        : settings.scatter().region();
+                Region region = region(player, context, regionText, target != null ? target.surface() : feet);
                 SnapshotExtent extent = new SnapshotExtent();
                 Mask mask = settings.scatter().mask() == null ? null : mask(context, settings.scatter().mask(), extent);
                 RegionOperationService.capture(player, region, 3, "Dispersar",
@@ -129,7 +160,9 @@ public final class PlacementService {
                         + "% · semilla " + settings.seed();
             }
             default -> {
-                PathSnapshot path = WorldEditService.resolvePath(player);
+                PathSnapshot path = target != null
+                        ? new PathSnapshot(target.stroke(), false, "el trazo del pincel")
+                        : WorldEditService.resolvePath(player);
                 job.path = path;
                 if (settings.array().snapToSurface()) {
                     Region box = pathBox(context.world(), path);
@@ -482,6 +515,7 @@ public final class PlacementService {
         private final DirectionExpr.Context view;
         private final BlockVector3 feet;
         private PathSnapshot path;
+        private BrushTarget target;
 
         Job(UUID playerId, MinecraftServer server, PlacementSettings.Kind kind, PlacementSettings settings,
             StructureSpec spec, Resolved resolved, Vec3 eye, DirectionExpr.Context view, BlockVector3 feet) {
@@ -531,9 +565,13 @@ public final class PlacementService {
             switch (kind) {
                 case PLACE -> {
                     Vec3 anchor = new Vec3(feet.x() + 0.5, feet.y() + 0.5, feet.z() + 0.5);
-                    Vec3 normal = snapshot == null ? null : groundNormal(snapshot);
+                    Vec3 normal = snapshot == null ? target == null ? null : target.faceNormal()
+                            : target == null ? groundNormal(snapshot)
+                            : ScatterPlanner.normal(snapshot, target.surface().x(), target.surface().y(),
+                            target.surface().z());
                     Alignment.Context context = new Alignment.Context(anchor, eye, view, normal, null, null,
-                            new Vec3(0, 0, 0), new Vec3(0, 0, 0), new SplittableRandom(settings.seed()), null);
+                            new Vec3(0, 0, 0), new Vec3(0, 0, 0), new SplittableRandom(settings.seed()),
+                            target == null ? null : target.viewDiff());
                     placements.add(builder.build(anchor, context, 1.0));
                 }
                 case SCATTER -> {
