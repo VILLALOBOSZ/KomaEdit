@@ -100,6 +100,7 @@ class ShadeSetupTest {
                 "minecraft:gold_block", 6);
         ShadePalette palette = ShadePalette.fromCounts(counts, catalog, 7, false);
         assertFalse(palette.ramp());
+        assertTrue(Double.isNaN(palette.pivot()));
         assertEquals(5, palette.blocks().size(), palette.describe());
         assertFalse(palette.targets().contains("minecraft:gold_block"), "el oro (menos del 2 %) se queda");
         for (int index = 1; index < palette.blocks().size(); index++) {
@@ -117,6 +118,8 @@ class ShadeSetupTest {
         assertEquals(6, palette.blocks().size());
         assertTrue(palette.ids().contains("minecraft:sandstone"), palette.describe());
         assertEquals(Set.of("minecraft:sandstone"), palette.targets());
+        assertEquals(palette.ids().indexOf("minecraft:sandstone") / 5.0, palette.pivot(), 1.0E-9);
+        assertTrue(palette.pivot() > 0.5, "la rampa baja más de lo que sube: " + palette.describe());
         ShadePalette forced = ShadePalette.fromCounts(Map.of("minecraft:stone", 10, "minecraft:andesite", 10),
                 TestColors.VANILLA, 5, true);
         assertTrue(forced.ramp());

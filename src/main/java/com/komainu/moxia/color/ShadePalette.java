@@ -71,6 +71,22 @@ public record ShadePalette(List<BlockColor> blocks, Set<String> targets, boolean
         return new ShadePalette(BlockColorCatalog.byLightness(materials), targets, false);
     }
 
+    /**
+     * Sitio del material base en la rampa (de 0 a 1), para que la luz más corriente lo conserve; {@code NaN} si la
+     * paleta no es una rampa.
+     */
+    public double pivot() {
+        if (!ramp || blocks.size() < 2) {
+            return Double.NaN;
+        }
+        for (int index = 0; index < blocks.size(); index++) {
+            if (targets.contains(blocks.get(index).id())) {
+                return index / (blocks.size() - 1.0);
+            }
+        }
+        return Double.NaN;
+    }
+
     public List<String> ids() {
         return blocks.stream().map(BlockColor::id).toList();
     }

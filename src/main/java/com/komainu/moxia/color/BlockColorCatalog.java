@@ -54,8 +54,13 @@ public final class BlockColorCatalog {
         return new BlockColorCatalog(sorted);
     }
 
-    /** Lo medido de un bloque vanilla en la tabla de texturas. */
-    public record Measured(int rgb, boolean uniform) {
+    /**
+     * Lo medido de un bloque vanilla en la tabla de texturas.
+     *
+     * @param uniform   la misma textura en las seis caras
+     * @param patterned mena, esmaltada, máquina, bloque de función o textura con mucho dibujo
+     */
+    public record Measured(int rgb, boolean uniform, boolean patterned) {
     }
 
     /** Tabla de colores medidos de las texturas vanilla, {@code id → color y banderas}. */
@@ -82,7 +87,8 @@ public final class BlockColorCatalog {
                 int rgb = (Integer.parseInt(parts[1]) & 0xFF) << 16 | (Integer.parseInt(parts[2]) & 0xFF) << 8
                         | Integer.parseInt(parts[3]) & 0xFF;
                 boolean uniform = parts.length > 4 && parts[4].indexOf('u') >= 0;
-                result.put(parts[0], new Measured(rgb, uniform));
+                boolean patterned = parts.length > 4 && parts[4].indexOf('p') >= 0;
+                result.put(parts[0], new Measured(rgb, uniform, patterned));
             }
         }
         return Map.copyOf(result);

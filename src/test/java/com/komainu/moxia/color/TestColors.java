@@ -23,6 +23,9 @@ final class TestColors {
     private static final Set<String> NOT_CUBES = Set.of("minecraft:snow", "minecraft:moss_carpet",
             "minecraft:pumpkin_stem", "minecraft:melon_stem", "minecraft:attached_pumpkin_stem",
             "minecraft:attached_melon_stem", "minecraft:bamboo");
+    /** Bloques que dan luz (en el juego se mira su luminosidad). */
+    private static final List<String> LIGHTS = List.of("glowstone", "sea_lantern", "shroomlight", "froglight",
+            "magma_block", "jack_o_lantern", "crying_obsidian", "beacon", "lantern", "torch", "end_rod");
     /** Va después de las tablas de nombres: se monta con ellas. */
     static final BlockColorCatalog VANILLA = vanilla();
 
@@ -34,13 +37,16 @@ final class TestColors {
         for (Map.Entry<String, BlockColorCatalog.Measured> entry : BlockColorCatalog.measured().entrySet()) {
             String id = entry.getKey();
             BlockColorCatalog.Measured measured = entry.getValue();
-            blocks.add(BlockColor.of(id, measured.rgb(), flags(id, measured.uniform()), true));
+            blocks.add(BlockColor.of(id, measured.rgb(), flags(id, measured.uniform(), measured.patterned()), true));
         }
         return BlockColorCatalog.of(blocks);
     }
 
-    static int flags(String id, boolean uniform) {
+    static int flags(String id, boolean uniform, boolean patterned) {
         int flags = BlockColor.ITEM;
+        if (!patterned && LIGHTS.stream().noneMatch(id::endsWith) && !id.contains(":suspicious_")) {
+            flags |= BlockColor.PLAIN;
+        }
         if (uniform) {
             flags |= BlockColor.UNIFORM;
         }

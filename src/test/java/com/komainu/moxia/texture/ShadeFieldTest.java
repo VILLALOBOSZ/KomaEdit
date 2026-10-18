@@ -98,6 +98,20 @@ class ShadeFieldTest {
     }
 
     @Test
+    void pivotPutsTheMedianOnTheBaseMaterial() {
+        double[] values = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0, Double.NaN};
+        double[] pivoted = ShadeField.pivot(values, 0.75);
+        assertEquals(0.0, pivoted[0], 1.0E-9);
+        assertEquals(1.0, pivoted[5], 1.0E-9);
+        assertEquals(0.75, ShadeField.percentile(pivoted, 0.5), 1.0E-9, "la mediana cae en el pivote");
+        for (int index = 1; index < 6; index++) {
+            assertTrue(pivoted[index] > pivoted[index - 1], "conserva el orden");
+        }
+        assertTrue(Double.isNaN(pivoted[6]));
+        assertEquals(values, ShadeField.pivot(values, Double.NaN), "sin pivote no cambia nada");
+    }
+
+    @Test
     void pointLightComesFromItsPosition() {
         TextureContext context = context(cubeOnFloor());
         double[] values = ShadeField.spot(new double[]{11.5, 4, 22}, 0.0, 3, 0.0, null).evaluate(context);

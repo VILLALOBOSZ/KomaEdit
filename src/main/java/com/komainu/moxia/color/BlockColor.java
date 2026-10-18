@@ -11,7 +11,8 @@ import java.util.List;
  * @param l        luminosidad OKLab (0 negro, 1 blanco)
  * @param a        eje verde–rojo de OKLab
  * @param b        eje azul–amarillo de OKLab
- * @param flags    banderas {@link #CUBE}, {@link #SOLID}, {@link #OPAQUE}, {@link #UNIFORM} e {@link #ITEM}
+ * @param flags    banderas {@link #CUBE}, {@link #SOLID}, {@link #OPAQUE}, {@link #UNIFORM}, {@link #ITEM} y
+ *                 {@link #PLAIN}
  * @param measured el color sale de la textura (si no, del color de mapa, mucho más aproximado)
  */
 public record BlockColor(String id, int rgb, double l, double a, double b, int flags, boolean measured) {
@@ -25,6 +26,11 @@ public record BlockColor(String id, int rgb, double l, double a, double b, int f
     public static final int UNIFORM = 8;
     /** Tiene objeto: se puede llevar en la barra rápida. */
     public static final int ITEM = 16;
+    /**
+     * Material liso: no es una mena, una terracota esmaltada, una máquina ni un bloque de función, no tiene una
+     * textura con mucho dibujo y no da luz. Es lo que conviene en un degradado o un sombreado.
+     */
+    public static final int PLAIN = 32;
 
     public static BlockColor of(String id, int rgb, int flags, boolean measured) {
         double[] lab = OkLab.of(rgb);
@@ -66,6 +72,9 @@ public record BlockColor(String id, int rgb, double l, double a, double b, int f
         }
         if (has(UNIFORM)) {
             parts.add("misma textura en todas las caras");
+        }
+        if (!has(PLAIN)) {
+            parts.add("con dibujo, luz o función");
         }
         parts.add(measured ? "color de su textura" : "color de mapa (aproximado)");
         return String.join(", ", parts);

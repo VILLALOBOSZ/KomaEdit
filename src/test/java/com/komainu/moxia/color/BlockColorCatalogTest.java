@@ -44,11 +44,12 @@ class BlockColorCatalogTest {
 
     @Test
     void readsFourOrFiveColumns() throws IOException {
-        String text = "# cabecera\nminecraft:a 1 2 3\nminecraft:b 255 0 16 u\n";
+        String text = "# cabecera\nminecraft:a 1 2 3\nminecraft:b 255 0 16 u\nminecraft:c 9 9 9 p\n";
         Map<String, BlockColorCatalog.Measured> table = BlockColorCatalog.read(
                 new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)));
-        assertEquals(new BlockColorCatalog.Measured(0x010203, false), table.get("minecraft:a"));
-        assertEquals(new BlockColorCatalog.Measured(0xFF0010, true), table.get("minecraft:b"));
+        assertEquals(new BlockColorCatalog.Measured(0x010203, false, false), table.get("minecraft:a"));
+        assertEquals(new BlockColorCatalog.Measured(0xFF0010, true, false), table.get("minecraft:b"));
+        assertEquals(new BlockColorCatalog.Measured(0x090909, false, true), table.get("minecraft:c"));
     }
 
     @Test
@@ -95,6 +96,29 @@ class BlockColorCatalogTest {
         List<BlockColorCatalog.Match> any = CATALOG.similar(OkLab.of(0xE8F0F8), 40, ColorFilter.ANY, Set.of());
         assertTrue(any.stream().anyMatch(match -> !match.block().has(BlockColor.CUBE)),
                 "sin filtro también salen piezas y plantas");
+    }
+
+    @Test
+    void oresMachinesAndPatternsAreNotPlain() {
+        Map<String, BlockColorCatalog.Measured> measured = BlockColorCatalog.measured();
+        for (String id : List.of("gold_ore", "deepslate_lapis_ore", "orange_glazed_terracotta", "furnace", "dropper",
+                "observer", "crafting_table", "bookshelf", "chiseled_bookshelf", "tnt", "glowstone", "note_block",
+                "exposed_copper_bulb", "bee_nest")) {
+            assertTrue(measured.get("minecraft:" + id).patterned(), id);
+        }
+        for (String id : List.of("stone", "diorite", "cobblestone", "oak_log", "oak_planks", "sandstone", "white_wool",
+                "red_terracotta", "deepslate", "calcite", "bricks", "mud_bricks", "smooth_basalt")) {
+            assertFalse(measured.get("minecraft:" + id).patterned(), id);
+        }
+        // Por defecto los degradados y los parecidos solo usan materiales lisos; -x los deja entrar.
+        double[] gold = TestColors.block("gold_ore").lab();
+        assertTrue(CATALOG.similar(gold, 30, ColorFilter.PLAIN, Set.of()).stream()
+                .allMatch(match -> match.block().has(BlockColor.PLAIN)));
+        assertTrue(CATALOG.similar(gold, 30, ColorFilter.ANY, Set.of()).stream()
+                .anyMatch(match -> !match.block().has(BlockColor.PLAIN)));
+        assertEquals("-c -x", ColorFilter.of(true, false, false, false, true).flags());
+        assertEquals("-c -o", ColorFilter.of(true, false, true, false).flags());
+        assertEquals("lisos, cubo entero", ColorFilter.of(true, false, false, false).describe());
     }
 
     @Test

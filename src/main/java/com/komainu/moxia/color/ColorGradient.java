@@ -33,6 +33,25 @@ public final class ColorGradient {
     private static final double LIGHTNESS_STEP = 0.04;
     /** Coste extra por cada vez que un bloque salió en una variante anterior (0,05 de distancia OKLab). */
     private static final double REPEAT_PENALTY = 0.05 * 0.05;
+    /**
+     * En una rampa el tono pesa más que la luminosidad: un bloque un poco más claro u oscuro de lo pedido pasa, uno
+     * de otro color (cobre en una rampa de arenisca) no.
+     */
+    static final double RAMP_HUE_WEIGHT = 4.0;
+    /** Cuánto baja y cuánto sube la rampa desde el bloque: más sombras que brillos, como al sombrear a mano. */
+    static final double RAMP_DOWN = 0.22;
+    static final double RAMP_UP = 0.10;
+
+    /** Lo que cuesta cada bloque: veces que salió en variantes anteriores y peso del tono frente a la luz. */
+    private record Costs(Map<String, Integer> penalties, double hueWeight) {
+        double of(BlockColor block, double[] target) {
+            double dl = block.l() - target[0];
+            double da = block.a() - target[1];
+            double db = block.b() - target[2];
+            return dl * dl + hueWeight * (da * da + db * db)
+                    + REPEAT_PENALTY * penalties.getOrDefault(block.id(), 0);
+        }
+    }
 
     private ColorGradient() {
     }
@@ -80,19 +99,19 @@ public final class ColorGradient {
 
     /**
      * Rampa de luz alrededor de un bloque: {@code size} bloques de oscuro a claro con su tono, con él en el sitio que
-     * le toca por luminosidad. Es la paleta que usa el sombreado cuando la selección es de un solo material.
+     * le toca por luminosidad. Es la paleta que usa el sombreado cuando la selección es de un solo material. Baja más
+     * de lo que sube ({@link #RAMP_DOWN}, {@link #RAMP_UP}) y elige por tono antes que por luminosidad.
      */
     public static List<BlockColor> ramp(BlockColorCatalog catalog, BlockColor base, int size, ColorFilter filter) {
         if (size < 2 || size > MAX_STEPS) {
             throw new IllegalArgumentException("La rampa va de 2 a " + MAX_STEPS + " bloques");
         }
-        double spread = 0.24;
-        double low = Math.max(0.10, base.l() - spread);
-        double high = Math.min(0.97, base.l() + spread);
+        double low = Math.max(0.12, base.l() - RAMP_DOWN);
+        double high = Math.min(0.95, base.l() + RAMP_UP);
         if (high - low < 0.2) {
             // Un bloque casi blanco o casi negro: la rampa se abre hacia el otro lado.
-            low = Math.max(0.05, Math.min(low, high - 0.3));
-            high = Math.min(0.99, Math.max(high, low + 0.3));
+            low = Math.max(0.05, Math.min(low, high - 0.25));
+            high = Math.min(0.98, Math.max(high, low + 0.25));
         }
         int middle = (int) Math.round((base.l() - low) / (high - low) * (size - 1));
         middle = Math.clamp(middle, 0, size - 1);
@@ -106,20 +125,20 @@ public final class ColorGradient {
         }
         targets.set(middle, base.lab());
         Map<Integer, BlockColor> fixed = Map.of(middle, base);
-        return solve(catalog.candidates(filter), targets, fixed, Map.of());
+        return solve(catalog.candidates(filter), targets, fixed, new Costs(Map.of(), RAMP_HUE_WEIGHT));
     }
 
     private static List<BlockColor> withVariants(List<BlockColor> candidates, List<double[]> targets,
                                                  Map<Integer, BlockColor> fixed, int variant) {
         Map<String, Integer> used = new HashMap<>();
-        List<BlockColor> result = solve(candidates, targets, fixed, used);
+        List<BlockColor> result = solve(candidates, targets, fixed, new Costs(used, 1.0));
         for (int round = 0; round < Math.max(0, variant); round++) {
             for (int step = 0; step < result.size(); step++) {
                 if (!fixed.containsKey(step)) {
                     used.merge(result.get(step).id(), 1, Integer::sum);
                 }
             }
-            result = solve(candidates, targets, fixed, used);
+            result = solve(candidates, targets, fixed, new Costs(used, 1.0));
         }
         return result;
     }
@@ -131,6 +150,11 @@ public final class ColorGradient {
      */
     static List<BlockColor> solve(List<BlockColor> candidates, List<double[]> targets, Map<Integer, BlockColor> fixed,
                                   Map<String, Integer> penalties) {
+        return solve(candidates, targets, fixed, new Costs(penalties, 1.0));
+    }
+
+    private static List<BlockColor> solve(List<BlockColor> candidates, List<double[]> targets,
+                                          Map<Integer, BlockColor> fixed, Costs penalties) {
         if (candidates.isEmpty() && fixed.size() < targets.size()) {
             throw new IllegalArgumentException("Ningún bloque pasa el filtro");
         }
@@ -148,19 +172,21 @@ public final class ColorGradient {
                     return found;
                 }
             }
-            if (lightness != 0) {
-                List<BlockColor> found = path(candidates, targets, fixed, penalties, WIDE, axis, axisLength, 0);
-                if (found != null) {
-                    return found;
-                }
-            }
         }
-        return greedy(candidates, targets, fixed, penalties);
+        List<BlockColor> greedy = greedy(candidates, targets, fixed, penalties);
+        if (lightness == 0) {
+            return greedy;
+        }
+        // Sin fila posible (pocos bloques en ese tramo de luz): los más cercanos, ordenados para que la luminosidad
+        // no dé marcha atrás aunque algún bloque fijo cambie de sitio.
+        List<BlockColor> sorted = new ArrayList<>(greedy);
+        sorted.sort(Comparator.comparingDouble(block -> block.l() * lightness));
+        return List.copyOf(sorted);
     }
 
     /** Programación dinámica por pasos; {@code null} si las reglas no dejan ninguna fila posible. */
     private static List<BlockColor> path(List<BlockColor> candidates, List<double[]> targets,
-                                         Map<Integer, BlockColor> fixed, Map<String, Integer> penalties, int nearest,
+                                         Map<Integer, BlockColor> fixed, Costs penalties, int nearest,
                                          double[] axis, double axisLength, int lightness) {
         int steps = targets.size();
         BlockColor[][] options = new BlockColor[steps][];
@@ -184,7 +210,7 @@ public final class ColorGradient {
             position[step] = new double[options[step].length];
             for (int option = 0; option < options[step].length; option++) {
                 BlockColor block = options[step][option];
-                cost[step][option] = pinned != null ? 0.0 : cost(block, target, penalties);
+                cost[step][option] = pinned != null ? 0.0 : penalties.of(block, target);
                 position[step][option] = project(block.lab(), targets.getFirst(), axis, axisLength);
             }
         }
@@ -241,7 +267,7 @@ public final class ColorGradient {
 
     /** Último recurso: el más cercano a cada paso que no se haya usado. */
     private static List<BlockColor> greedy(List<BlockColor> candidates, List<double[]> targets,
-                                           Map<Integer, BlockColor> fixed, Map<String, Integer> penalties) {
+                                           Map<Integer, BlockColor> fixed, Costs penalties) {
         Set<String> used = new HashSet<>();
         for (BlockColor block : fixed.values()) {
             used.add(block.id());
@@ -259,7 +285,7 @@ public final class ColorGradient {
                 if (used.contains(block.id())) {
                     continue;
                 }
-                double value = cost(block, targets.get(step), penalties);
+                double value = penalties.of(block, targets.get(step));
                 if (value < bestCost) {
                     bestCost = value;
                     best = block;
@@ -276,20 +302,16 @@ public final class ColorGradient {
     }
 
     private static List<BlockColor> nearest(List<BlockColor> candidates, double[] target,
-                                            Map<String, Integer> penalties, Set<String> excluded, int count) {
+                                            Costs penalties, Set<String> excluded, int count) {
         List<BlockColor> sorted = new ArrayList<>(candidates.size());
         for (BlockColor block : candidates) {
             if (!excluded.contains(block.id())) {
                 sorted.add(block);
             }
         }
-        sorted.sort(Comparator.comparingDouble((BlockColor block) -> cost(block, target, penalties))
+        sorted.sort(Comparator.comparingDouble((BlockColor block) -> penalties.of(block, target))
                 .thenComparing(BlockColor::id));
         return sorted.subList(0, Math.min(count, sorted.size()));
-    }
-
-    private static double cost(BlockColor block, double[] target, Map<String, Integer> penalties) {
-        return OkLab.distanceSquared(block.lab(), target) + REPEAT_PENALTY * penalties.getOrDefault(block.id(), 0);
     }
 
     private static double project(double[] lab, double[] origin, double[] axis, double axisLength) {

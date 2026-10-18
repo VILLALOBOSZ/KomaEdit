@@ -140,7 +140,8 @@ public final class ColorCommands {
                 "/komaedit color palette <selection|hotbar|paleta> [nombre] [-f]: paleta de oscuro a claro",
                 "/komaedit color hotbar <bloques|undo>: a la barra rápida (creativo)",
                 "/komaedit shade [selection|rampa|paleta] [-l sol|jugador|mirada|foco|ne…] [-a 0–1] [-o 0–1] [-d 0–1]",
-                "Filtros: -c cubo entero, -s sólido, -o opaco, -u misma textura en todas las caras",
+                "Filtros: -c cubo entero, -s sólido, -o opaco, -u misma textura en todas las caras, -x también"
+                        + " menas, máquinas y bloques con luz",
                 "Clic en una muestra ███: a la barra rápida · Ej.: /komaedit color gradient deepslate calcite 7"
         };
         for (String line : lines) {
@@ -152,7 +153,7 @@ public final class ColorCommands {
     /** {@code similar [bloque|#hex] [n] [filtros]}: sin bloque, el de la mano o el que miras. */
     private static int similar(CommandContext<ServerCommandSource> context, String args) throws CommandSyntaxException {
         return EzCommandSupport.run(context, player -> {
-            CommandTokens tokens = CommandTokens.parse(args, Set.of()).allow("c", "s", "o", "u").atMost(2);
+            CommandTokens tokens = CommandTokens.parse(args, Set.of()).allow("c", "s", "o", "u", "x").atMost(2);
             BlockColorCatalog catalog = BlockColorCatalogs.get();
             ColorFilter filter = filter(tokens);
             String reference = tokens.at(0, null);
@@ -204,7 +205,7 @@ public final class ColorCommands {
     private static int gradient(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         return EzCommandSupport.run(context, player -> {
             CommandTokens tokens = CommandTokens.parse(StringArgumentType.getString(context, "args"), Set.of("v", "p"))
-                    .allow("c", "s", "o", "u", "v", "p", "f").atMost(3);
+                    .allow("c", "s", "o", "u", "x", "v", "p", "f").atMost(3);
             BlockColorCatalog catalog = BlockColorCatalogs.get();
             ColorFilter filter = filter(tokens);
             Reference from = reference(tokens.require(0, "el bloque o color de inicio"), catalog);
@@ -366,6 +367,7 @@ public final class ColorCommands {
             ShadeLight light = ShadeLight.resolve(tokens.option("l", "sol"), scene(player, selection));
             RegionMasks.Bound mask = RegionMasks.parse(player, tokens.option("m", "*"));
             List<Pattern> palette = null;
+            double[] pivot = {Double.NaN};
             boolean forceRamp = false;
             String paletteLabel;
             switch (source.toLowerCase(Locale.ROOT)) {
@@ -375,14 +377,14 @@ public final class ColorCommands {
                     paletteLabel = "rampa del material principal";
                 }
                 default -> {
-                    palette = explicitPalette(player, catalog, source, rampSize, tokens.flag("k"));
+                    palette = explicitPalette(player, catalog, source, rampSize, tokens.flag("k"), pivot);
                     paletteLabel = source;
                 }
             }
             TextureContext.Settings settings = TextureContext.Settings.at(player.getX(), player.getEyeY(),
                     player.getZ(), SEEDS.nextLong(1L, 1_000_000_000L));
-            ShadeOperation operation = new ShadeOperation(mask, palette, forceRamp, rampSize, light, shading, catalog,
-                    settings, notice(player.getServer(), player.getUuid()));
+            ShadeOperation operation = new ShadeOperation(mask, palette, pivot[0], forceRamp, rampSize, light, shading,
+                    catalog, settings, notice(player.getServer(), player.getUuid()));
             checkVolume(selection, operation.padding());
             RegionOperationService.submit(player, operation.padding(), "Sombreado (" + light.label() + ", paleta "
                     + paletteLabel + ")", operation);
@@ -390,15 +392,20 @@ public final class ColorCommands {
         });
     }
 
-    /** Una paleta escrita, de oscuro a claro (o en su orden con {@code -k}); un solo bloque da su rampa. */
+    /**
+     * Una paleta escrita, de oscuro a claro (o en su orden con {@code -k}); un solo bloque da su rampa.
+     *
+     * @param pivot recibe el sitio del bloque base si sale una rampa
+     */
     private static List<Pattern> explicitPalette(ServerPlayerEntity player, BlockColorCatalog catalog, String input,
-                                                 int rampSize, boolean keepOrder) {
+                                                 int rampSize, boolean keepOrder, double[] pivot) {
         List<String> entries = SavedPalettes.parse(player.getUuid(), input);
         WorldEditService.PlayerContext worldEdit = WorldEditService.context(player);
         if (entries.size() == 1) {
             BlockColor base = catalog.require(BlockSpec.parse(entries.getFirst()).id());
-            entries = ColorGradient.ramp(catalog, base, rampSize, ColorFilter.BUILDING).stream()
-                    .map(BlockColor::shortName).toList();
+            List<BlockColor> ramp = ColorGradient.ramp(catalog, base, rampSize, ColorFilter.BUILDING);
+            pivot[0] = ramp.indexOf(base) / (ramp.size() - 1.0);
+            entries = ramp.stream().map(BlockColor::shortName).toList();
             EzCommandSupport.info(player, "Rampa de " + base.shortName() + ": " + String.join(", ", entries));
         }
         List<Pattern> patterns = new ArrayList<>(entries.size());
@@ -616,7 +623,8 @@ public final class ColorCommands {
     }
 
     private static ColorFilter filter(CommandTokens tokens) {
-        return ColorFilter.of(tokens.flag("c"), tokens.flag("s"), tokens.flag("o"), tokens.flag("u"));
+        return ColorFilter.of(tokens.flag("c"), tokens.flag("s"), tokens.flag("o"), tokens.flag("u"),
+                tokens.flag("x"));
     }
 
     private static Item item(String id) {

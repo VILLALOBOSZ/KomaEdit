@@ -1,6 +1,7 @@
 package com.komainu.moxia.color;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.MapColor;
 import net.minecraft.item.Items;
@@ -16,8 +17,9 @@ import java.util.Map;
 /**
  * Monta el {@link BlockColorCatalog} del juego con todos los bloques registrados: el color de su textura si está en
  * la tabla vanilla y, si no (bloques de mods), su color de mapa. Las banderas de forma salen del estado por defecto
- * de cada bloque. El registro no cambia con el servidor en marcha, así que se monta una vez y vale para el servidor
- * y para el cliente.
+ * de cada bloque; un bloque no es liso si la tabla lo marca, si da luz o si tiene entidad de bloque (cofres,
+ * hornos, colmenas… también los de mods). El registro no cambia con el servidor en marcha, así que se monta una vez
+ * y vale para el servidor y para el cliente.
  */
 public final class BlockColorCatalogs {
     private static volatile BlockColorCatalog catalog;
@@ -79,6 +81,10 @@ public final class BlockColorCatalogs {
             }
             if (block.asItem() != Items.AIR) {
                 flags |= BlockColor.ITEM;
+            }
+            boolean patterned = texture != null && texture.patterned();
+            if (!patterned && state.getLuminance() == 0 && !(block instanceof BlockEntityProvider)) {
+                flags |= BlockColor.PLAIN;
             }
             blocks.add(BlockColor.of(id, rgb, flags, texture != null));
         }

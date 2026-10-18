@@ -18,6 +18,8 @@ import java.util.Arrays;
  * @param shadows         fuerza de las sombras proyectadas, de 0 a 1
  * @param normalRadius    radio para estimar la orientación de cada bloque (más radio, superficie más suave)
  * @param target          bloques que se recolorean; el resto da {@code NaN} y se queda como está
+ * @param pivot           dónde cae la luz mediana (de 0 a 1): el sitio del material base en una rampa, para que siga
+ *                        siendo el que más se ve; {@code NaN} reparte por igual
  */
 public record ShadeField(
         double[] towards,
@@ -26,7 +28,8 @@ public record ShadeField(
         int occlusionRadius,
         double shadows,
         int normalRadius,
-        TextureContext.Filter target
+        TextureContext.Filter target,
+        double pivot
 ) implements TextureField {
     /** Parte de la luz que llega aunque la cara no mire a la luz (el cielo). */
     static final double AMBIENT = 0.3;
@@ -51,16 +54,22 @@ public record ShadeField(
         shadows = Math.clamp(shadows, 0.0, 1.0);
         normalRadius = Math.clamp(normalRadius, 1, 4);
         target = target == null ? TextureContext.Filter.ALL : target;
+        pivot = Double.isNaN(pivot) ? Double.NaN : Math.clamp(pivot, 0.0, 1.0);
     }
 
     public static ShadeField sun(double[] towards, double occlusion, int occlusionRadius, double shadows,
                                  TextureContext.Filter target) {
-        return new ShadeField(towards, null, occlusion, occlusionRadius, shadows, 2, target);
+        return new ShadeField(towards, null, occlusion, occlusionRadius, shadows, 2, target, Double.NaN);
     }
 
     public static ShadeField spot(double[] point, double occlusion, int occlusionRadius, double shadows,
                                   TextureContext.Filter target) {
-        return new ShadeField(null, point, occlusion, occlusionRadius, shadows, 2, target);
+        return new ShadeField(null, point, occlusion, occlusionRadius, shadows, 2, target, Double.NaN);
+    }
+
+    /** La misma luz con la mediana en {@code pivot} ({@code NaN}: sin pivote). */
+    public ShadeField withPivot(double pivot) {
+        return new ShadeField(towards, point, occlusion, occlusionRadius, shadows, normalRadius, target, pivot);
     }
 
     @Override
@@ -71,7 +80,7 @@ public record ShadeField(
     @Override
     public double[] evaluate(TextureContext context) {
         double[] light = brightness(context);
-        return levels(light);
+        return pivot(levels(light), pivot);
     }
 
     /** Luz sin repartir: la directa (0–1) por la ambiental, antes de estirarla a la paleta. */
@@ -156,6 +165,32 @@ public record ShadeField(
         for (int index = 0; index < values.length; index++) {
             double value = values[index];
             result[index] = Double.isNaN(value) ? value : Math.clamp((value - low) / (high - low), 0.0, 1.0);
+        }
+        return result;
+    }
+
+    /**
+     * Lleva la mediana a {@code pivot} estirando por separado lo que queda por debajo y por encima: con una rampa,
+     * la luz más corriente da el material base y las sombras y los brillos se reparten el resto.
+     */
+    static double[] pivot(double[] values, double pivot) {
+        if (Double.isNaN(pivot)) {
+            return values;
+        }
+        double median = percentile(values, 0.5);
+        if (median <= 1.0E-6 || median >= 1.0 - 1.0E-6) {
+            return values;
+        }
+        double[] result = new double[values.length];
+        for (int index = 0; index < values.length; index++) {
+            double value = values[index];
+            if (Double.isNaN(value)) {
+                result[index] = value;
+            } else if (value <= median) {
+                result[index] = value / median * pivot;
+            } else {
+                result[index] = pivot + (value - median) / (1.0 - median) * (1.0 - pivot);
+            }
         }
         return result;
     }

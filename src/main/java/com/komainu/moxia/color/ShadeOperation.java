@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 public final class ShadeOperation implements RegionOperation {
     private final RegionMasks.Bound mask;
     private final List<Pattern> palette;
+    private final double pivot;
     private final boolean forceRamp;
     private final int rampSize;
     private final ShadeLight light;
@@ -44,13 +45,15 @@ public final class ShadeOperation implements RegionOperation {
 
     /**
      * @param palette paleta ya ordenada de oscuro a claro, o {@code null} para sacarla de la selección
+     * @param pivot   sitio del material base si la paleta escrita es una rampa ({@code NaN} si no)
      * @param notice  avisos para el jugador (se llama desde el worker)
      */
-    public ShadeOperation(RegionMasks.Bound mask, List<Pattern> palette, boolean forceRamp, int rampSize,
-                          ShadeLight light, Shading shading, BlockColorCatalog catalog,
+    public ShadeOperation(RegionMasks.Bound mask, List<Pattern> palette, double pivot, boolean forceRamp,
+                          int rampSize, ShadeLight light, Shading shading, BlockColorCatalog catalog,
                           TextureContext.Settings settings, Consumer<String> notice) {
         this.mask = mask;
         this.palette = palette == null ? null : List.copyOf(palette);
+        this.pivot = pivot;
         this.forceRamp = forceRamp;
         this.rampSize = rampSize;
         this.light = light;
@@ -69,18 +72,21 @@ public final class ShadeOperation implements RegionOperation {
     public void apply(RegionSnapshot snapshot, RegionEdits edits) {
         mask.bind(snapshot);
         List<Pattern> chosen = palette;
+        double median = pivot;
         TextureContext.Filter target = (x, y, z) -> recolorable(snapshot, x, y, z);
         if (chosen == null) {
             ShadePalette fromSelection = ShadePalette.fromCounts(count(snapshot, catalog, mask::test,
                     edits::checkCancelled), catalog, rampSize, forceRamp);
             chosen = patterns(fromSelection.ids());
+            median = fromSelection.pivot();
             target = (x, y, z) -> recolorable(snapshot, x, y, z)
                     && fromSelection.targets().contains(catalog.base(snapshot.blockId(x, y, z)));
             notice.accept((fromSelection.ramp() ? "rampa de " : "paleta de la selección: ")
                     + fromSelection.describe() + " (de oscuro a claro)");
         }
         TextureCommandParser.Request request = new TextureCommandParser.Request(TextureCommandParser.Mode.ADVANCED,
-                mask.source(), "", field(target), true, shading.dither(), 0.0, false, 0, settings.seed());
+                mask.source(), "", field(target).withPivot(median), true, shading.dither(), 0.0, false, 0,
+                settings.seed());
         new TextureOperation(request, mask, chosen, settings, notice).apply(snapshot, edits);
     }
 
