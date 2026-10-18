@@ -1,5 +1,6 @@
 package com.komainu.moxia.generator;
 
+import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionSnapshot;
 
 import java.util.ArrayList;
@@ -8,10 +9,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
- * Máscara de los generadores ({@code -m}) evaluada sobre la foto de la región, no sobre el mundo: así se puede
- * usar desde el worker. Es un subconjunto de las máscaras de WorldEdit:
+ * Lista de bloques de la máscara de los generadores ({@code -m}), la de antes de que {@code -m} admitiera cualquier
+ * máscara de WorldEdit. Se evalúa sobre la foto de la región, sin WorldEdit. Admite:
  *
  * <ul>
  *     <li>bloques con o sin espacio de nombres ({@code grass_block}, {@code minecraft:stone}) y, si se quiere, con
@@ -20,9 +22,21 @@ import java.util.Set;
  *     <li>{@code !} delante niega una entrada; las entradas se separan con comas.</li>
  * </ul>
  *
- * <p>Cumple la máscara un bloque que encaja con alguna entrada positiva (si las hay) y con ninguna negada.</p>
+ * <p>Cumple la máscara un bloque que encaja con alguna entrada positiva (si las hay) y con ninguna negada. Todo lo
+ * que no sea una lista así lo lee WorldEdit ({@link #LISTS} devuelve {@code null}).</p>
  */
 public final class SnapshotMask {
+    private static final Set<String> CLASSES = Set.of("#solid", "#existing", "#air", "#liquid");
+
+    /** La lista para {@link RegionMasks#parse}: {@code null} si el texto no es una lista de esta sintaxis. */
+    public static final RegionMasks.ListSyntax LISTS = text -> {
+        if (!RegionMasks.plainList(text, CLASSES)) {
+            return null;
+        }
+        SnapshotMask mask = parse(text);
+        return (Predicate<RegionSnapshot.StateInfo>) mask::test;
+    };
+
     private final List<Entry> positive;
     private final List<Entry> negative;
 

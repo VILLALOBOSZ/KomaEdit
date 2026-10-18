@@ -19,7 +19,7 @@ public final class PetalPainter {
      * @param maxAmount piezas máximas del bloque (4 en los de vanilla)
      * @param seed      orientación de las piezas nuevas
      */
-    public record Settings(String blockId, int maxAmount, double density, BrushNoise noise, BlockFilter ground,
+    public record Settings(String blockId, int maxAmount, double density, BrushNoise noise, BrushMask ground,
                            long seed) {
         public Settings {
             if (maxAmount < 1) {
@@ -70,7 +70,7 @@ public final class PetalPainter {
                     if (!same && world.cell(x, y, z) != BrushWorld.Cell.AIR) {
                         continue;
                     }
-                    if (!settings.ground().matches(world.blockId(x, y - 1, z), world.cell(x, y - 1, z))) {
+                    if (!settings.ground().matches(world, x, y - 1, z)) {
                         continue;
                     }
                     int existing = same ? Math.max(1, world.intProperty(x, y, z, "amount")) : 0;

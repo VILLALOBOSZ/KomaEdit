@@ -7,8 +7,8 @@ import java.util.Map;
 
 /**
  * Catálogo de pruebas con los bloques vanilla de la tabla de colores ({@code colors.txt}): la variante sale del
- * sufijo del nombre, como en el juego ({@code _slab}, {@code _stairs}, {@code _wall}/{@code _fence}, y
- * {@code snow} para las capas).
+ * sufijo del nombre, como en el juego ({@code _slab}, {@code _stairs}, {@code _wall}/{@code _fence},
+ * {@code _pane} y los barrotes, y {@code snow} para las capas).
  */
 public final class VanillaCatalog implements SmoothMaterials.Catalog {
     public static final VanillaCatalog INSTANCE = new VanillaCatalog();
@@ -57,6 +57,9 @@ public final class VanillaCatalog implements SmoothMaterials.Catalog {
         }
         if (id.endsWith("_wall") || id.endsWith("_fence")) {
             return PieceVariant.WALL;
+        }
+        if (id.endsWith("_pane") || id.equals("minecraft:iron_bars")) {
+            return PieceVariant.PANE;
         }
         return id.equals("minecraft:snow") ? PieceVariant.LAYER : null;
     }

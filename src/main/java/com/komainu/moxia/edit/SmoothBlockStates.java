@@ -10,7 +10,9 @@ import com.sk89q.worldedit.world.block.BaseBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.FenceBlock;
+import net.minecraft.block.HorizontalConnectingBlock;
 import net.minecraft.block.MapColor;
+import net.minecraft.block.PaneBlock;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.StairsBlock;
 import net.minecraft.block.WallBlock;
@@ -31,11 +33,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Convierte el bloque que elige el patrón en la losa, escalera, muro o capa de su mismo material.
+ * Convierte el bloque que elige el patrón en la losa, escalera, muro, capa o panel de su mismo material.
  *
  * <p>La pieza se busca con {@link SmoothMaterials}: primero por nombre y, si el bloque no tiene esa pieza
  * (hormigón, lana, basalto…), la del color más parecido. Los bloques que no son cubos opacos (cristal, hojas,
- * entidades de bloque) no se convierten. Un perfil con materiales fijos ({@code Slabs(Slab:acacia)}) usa ese
+ * entidades de bloque) no se convierten, salvo el cristal en paneles ({@code glass} → {@code glass_pane}). Un perfil con materiales fijos ({@code Slabs(Slab:acacia)}) usa ese
  * material para su variante, sea cual sea el bloque. Todo se resuelve una vez por bloque y se guarda.</p>
  */
 public final class SmoothBlockStates {
@@ -82,7 +84,7 @@ public final class SmoothBlockStates {
             // El patrón ya pide piezas: se respeta el bloque y solo se orienta si coincide el tipo.
             return own == variant ? orient(block, piece) : null;
         }
-        if (!convertible(state)) {
+        if (!convertible(state, variant)) {
             return null;
         }
         Block target = family(block).get(variant);
@@ -103,7 +105,7 @@ public final class SmoothBlockStates {
         if (block instanceof StairsBlock) {
             return new Block[]{null, block};
         }
-        if (state.isAir() || !convertible(state)) {
+        if (state.isAir() || !convertible(state, null)) {
             return new Block[]{null, null};
         }
         Map<PieceVariant, Block> family = family(block);
@@ -126,8 +128,9 @@ public final class SmoothBlockStates {
         }
     }
 
-    private static boolean convertible(BlockState state) {
-        return !state.hasBlockEntity() && state.isOpaque()
+    /** Cubos opacos sin entidad de bloque; para los paneles vale también el cristal (cubo entero translúcido). */
+    private static boolean convertible(BlockState state, PieceVariant variant) {
+        return !state.hasBlockEntity() && (state.isOpaque() || variant == PieceVariant.PANE)
                 && state.isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN);
     }
 
@@ -162,6 +165,9 @@ public final class SmoothBlockStates {
         if (block instanceof WallBlock || block instanceof FenceBlock) {
             return PieceVariant.WALL;
         }
+        if (block instanceof PaneBlock) {
+            return PieceVariant.PANE;
+        }
         return block.getDefaultState().contains(Properties.LAYERS) ? PieceVariant.LAYER : null;
     }
 
@@ -178,6 +184,15 @@ public final class SmoothBlockStates {
         }
         if (state.contains(Properties.LAYERS) && SmoothPiece.isLayers(piece)) {
             return state.with(Properties.LAYERS, SmoothPiece.layerCount(piece));
+        }
+        if (block instanceof PaneBlock && SmoothPiece.isPane(piece)) {
+            // Las conexiones ya vienen resueltas con los vecinos de la figura (PieceSolver).
+            int connections = SmoothPiece.paneConnections(piece);
+            return state
+                    .with(HorizontalConnectingBlock.SOUTH, (connections & 1 << SmoothPiece.SOUTH) != 0)
+                    .with(HorizontalConnectingBlock.WEST, (connections & 1 << SmoothPiece.WEST) != 0)
+                    .with(HorizontalConnectingBlock.NORTH, (connections & 1 << SmoothPiece.NORTH) != 0)
+                    .with(HorizontalConnectingBlock.EAST, (connections & 1 << SmoothPiece.EAST) != 0);
         }
         // Muros y vallas: el estado por defecto es el poste solo; Minecraft los une a sus vecinos al colocarlos.
         return state;
