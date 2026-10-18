@@ -133,6 +133,26 @@ class SymmetryGeometryTest {
     }
 
     @Test
+    void looseBlocksAreCopiedOneByOneWithoutDroppingTheRest() {
+        // Una fila que cruza el espejo: solo el bloque que sobresale por un lado tiene copia libre.
+        SymmetryCenter center = SymmetryCenter.block(0, 64, 0);
+        List<Point> row = List.of(new Point(-1, 64, 0), new Point(0, 64, 0), new Point(1, 64, 0), new Point(2, 64, 0));
+        List<SymmetryGeometry.Image> images = SymmetryGeometry.images(SymmetryMode.mirror(true, false, false, 4),
+                center, row);
+        assertEquals(1, images.size());
+        assertEquals(3, images.getFirst().source());
+        assertEquals(new Point(-2, 64, 0), images.getFirst().point());
+        // Como pieza, la misma fila no tendría ninguna copia.
+        assertTrue(SymmetryGeometry.copies(SymmetryMode.mirror(true, false, false, 4), center, row).isEmpty());
+        // Radial de 4: cada bloque fuera del eje sale tres veces más, sin repetir sitio.
+        List<Point> square = List.of(new Point(3, 64, 1), new Point(0, 64, 0));
+        List<SymmetryGeometry.Image> turned = SymmetryGeometry.images(SymmetryMode.radial(4, false), center, square);
+        assertEquals(3, turned.size());
+        assertEquals(3, turned.stream().map(SymmetryGeometry.Image::point).distinct().count());
+        turned.forEach(image -> assertEquals(0, image.source()));
+    }
+
+    @Test
     void modesListTheirTransformsWithTheIdentityFirst() {
         assertEquals(2, SymmetryGeometry.transforms(SymmetryMode.mirror(true, false, false, 4)).size());
         assertEquals(4, SymmetryGeometry.transforms(SymmetryMode.mirror(true, true, false, 4)).size());

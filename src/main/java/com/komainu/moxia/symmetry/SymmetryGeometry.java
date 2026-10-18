@@ -115,4 +115,31 @@ public final class SymmetryGeometry {
         }
         return copies;
     }
+
+    /** Copia de un bloque suelto: de qué bloque de la lista viene, con qué transformación y dónde cae. */
+    public record Image(int source, SymmetryTransform transform, Point point) {
+    }
+
+    /**
+     * Copias de bloques sueltos, para una edición de muchos bloques que no forman una pieza (una cara extruida, un
+     * reemplazo). Cada bloque se copia por su cuenta: una copia se salta si cae sobre un bloque de la edición o sobre
+     * otra copia anterior, sin descartar las demás.
+     */
+    public static List<Image> images(SymmetryMode mode, SymmetryCenter center, List<Point> points) {
+        Set<Point> taken = new HashSet<>(points);
+        List<Image> images = new ArrayList<>();
+        for (SymmetryTransform transform : transforms(mode)) {
+            if (transform.identity()) {
+                continue;
+            }
+            for (int index = 0; index < points.size(); index++) {
+                Point source = points.get(index);
+                Point point = apply(transform, center, source.x(), source.y(), source.z());
+                if (taken.add(point)) {
+                    images.add(new Image(index, transform, point));
+                }
+            }
+        }
+        return images;
+    }
 }

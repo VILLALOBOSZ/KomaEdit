@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 
 /**
@@ -373,6 +374,48 @@ public final class SymmetryService {
                     world.getBlockEntity(pos));
         } finally {
             QUERYING.set(false);
+        }
+    }
+
+    /**
+     * Copias simétricas de una edición a mano que no pasa por la colocación de Minecraft (las capacidades de
+     * construcción rápida, que escriben con su propia edición de WorldEdit). Quien la llama aplica las copias en la
+     * misma operación y con sus propias comprobaciones de dónde se puede construir; aquí solo se saltan las que caen
+     * fuera de la altura del mundo o del borde. Un aire en {@code states} copia una rotura.
+     *
+     * <p>No da nada si la simetría no actúa ahí, o si la opción de WorldEdit ya va a reflejar esa edición
+     * ({@link SymmetryExtent}): así no se copia dos veces.</p>
+     *
+     * @param positions bloques de la edición
+     * @param states    estado que recibe cada uno, en el mismo orden
+     * @param extra     recibe cada copia
+     */
+    public static void mirrorHandEdits(ServerPlayerEntity player, ServerWorld world, List<BlockPos> positions,
+                                       List<BlockState> states, BiConsumer<BlockPos, BlockState> extra) {
+        SymmetrySettings settings = SETTINGS.get(player.getUuid());
+        if (positions.size() != states.size() || settings == null || !settings.appliesIn(dimension(world))
+                || !player.getAbilities().allowModifyWorld || !canUse(player, settings.mode())
+                || settings.worldEdit() && KomaPermissions.can(player, WORLDEDIT)) {
+            return;
+        }
+        List<Point> points = new ArrayList<>(positions.size());
+        for (BlockPos pos : positions) {
+            points.add(new Point(pos.getX(), pos.getY(), pos.getZ()));
+        }
+        long limit = KomaPermissions.can(player, KomaPermissions.LIMIT_UNRESTRICTED)
+                ? Long.MAX_VALUE : KomaEditConfig.settings().maxBlocksPerOperation();
+        long copies = 0;
+        for (SymmetryGeometry.Image image : SymmetryGeometry.images(settings.mode(), settings.center(), points)) {
+            BlockPos target = new BlockPos(image.point().x(), image.point().y(), image.point().z());
+            if (!world.isInBuildLimit(target) || !world.getWorldBorder().contains(target)) {
+                continue;
+            }
+            if (++copies > limit) {
+                player.sendMessage(Text.translatableWithFallback("komaedit.symmetry.limit",
+                        "Simetría · las copias se pararon en %s bloques: es el límite por edición", limit), false);
+                return;
+            }
+            extra.accept(target, SymmetryStates.transform(states.get(image.source()), image.transform()));
         }
     }
 
