@@ -1,5 +1,6 @@
 package com.komainu.moxia.placement;
 
+import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.SmoothBlockStates;
@@ -81,8 +82,13 @@ import java.util.stream.Stream;
 public final class PlacementService {
     public static final int MAX_STRUCTURE_VOLUME = 2_000_000;
     public static final int MAX_SCHEMATICS = 32;
-    /** Radio de búsqueda de superficie de {@code -b}; se recorta si la caja de la trayectoria es muy grande. */
-    public static final int SNAP_RADIUS = 96;
+    /**
+     * Radio de búsqueda de superficie de {@code -b}: {@code arraySnapRadius} de {@code config/komaedit/config.json}
+     * (96 por defecto, como ezEdits). Se recorta si la caja de la trayectoria no cabe en el límite de lectura.
+     */
+    public static int snapRadius() {
+        return KomaEditConfig.settings().arraySnapRadius();
+    }
     private static final long GOLDEN = 0x9E3779B97F4A7C15L;
 
     private PlacementService() {
@@ -465,7 +471,7 @@ public final class PlacementService {
             maxY = Math.max(maxY, point.y());
             maxZ = Math.max(maxZ, point.z());
         }
-        int margin = SNAP_RADIUS;
+        int margin = snapRadius();
         while (margin > 4 && (long) (maxX - minX + 1 + 2 * margin) * (maxY - minY + 1 + 2 * margin)
                 * (maxZ - minZ + 1 + 2 * margin) > RegionOperationService.MAX_CAPTURE_BLOCKS) {
             margin -= 4;
@@ -635,7 +641,7 @@ public final class PlacementService {
                     PlacementPath line = PlacementPath.create(controls, path.closed(), array.tension(), array.bias(),
                             array.continuity(), array.normalMode());
                     ArrayPlanner.SurfaceSnapper snapper = snapshot == null ? null
-                            : ArrayPlanner.snapper(snapshot, SNAP_RADIUS);
+                            : ArrayPlanner.snapper(snapshot, snapRadius());
                     placements.addAll(ArrayPlanner.plan(line, builder, eye, view, snapper));
                 }
             }

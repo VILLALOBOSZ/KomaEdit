@@ -106,6 +106,10 @@ public final class HelpCommands {
             }
             case "generate" -> source.sendFeedback(() -> Text.literal("  Arco y catenaria usan el primer y el último "
                     + "punto (o //pos1 y //pos2 si no hay recorrido). Máximo 32 puntos.").formatted(Formatting.GRAY), false);
+            case "symmetry" -> source.sendFeedback(() -> Text.literal("  Lo que pones y rompes a mano se copia al "
+                    + "momento y no entra en //undo. Las copias nunca pisan bloques, no salen del mundo ni de zonas "
+                    + "donde no puedes construir y se ven con partículas: rojo el espejo X, azul el Z, verde el Y.")
+                    .formatted(Formatting.GRAY), false);
             case "saved" -> source.sendFeedback(() -> Text.literal("  Se guardan por mundo y jugador en "
                     + "komaedit/players/<uuid>/paths. Nombres: letras sin tilde, números, _ y -.")
                     .formatted(Formatting.GRAY), false);

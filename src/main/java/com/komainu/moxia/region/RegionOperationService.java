@@ -10,6 +10,7 @@ import com.komainu.moxia.preview.EditRequests;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.preview.ZoneCheck;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.fabric.FabricAdapter;
@@ -167,8 +168,8 @@ public final class RegionOperationService {
                 RegionSnapshot.builder(minimumX, minimumY, minimumZ, sizeX, sizeY, sizeZ), sizeX, sizeY, sizeZ,
                 minimumX, minimumY, minimumZ, EditRequests.current(), padding, extra));
         double seconds = BuildEstimate.readSeconds(volume);
-        player.sendMessage(message(description + ": leyendo " + ProgressLine.group(volume) + " bloques"
-                + (seconds >= 2.0 ? " (~" + ProgressLine.duration(seconds) + ")" : "") + "…", Formatting.GRAY), false);
+        QuietMode.info(player, message(description + ": leyendo " + ProgressLine.group(volume) + " bloques"
+                + (seconds >= 2.0 ? " (~" + ProgressLine.duration(seconds) + ")" : "") + "…", Formatting.GRAY));
     }
 
     /** Lectura en curso del jugador, para la barra de progreso. */
@@ -233,7 +234,7 @@ public final class RegionOperationService {
         String description = job.description;
         RegionOperation operation = job.operation;
         UUID playerId = player.getUuid();
-        player.sendMessage(message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY), false);
+        QuietMode.info(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
         AsyncEngine.submit(
                 playerId,
                 description,
@@ -259,8 +260,8 @@ public final class RegionOperationService {
                         int queued = PlanPreviews.withExtras(extras,
                                 () -> BatchEditService.submit(current, plan, "air", description));
                         if (!PlanPreviews.holds(playerId, plan)) {
-                            current.sendMessage(message(description + ": " + queued
-                                    + " bloques en cola · //undo para deshacer", Formatting.GREEN), false);
+                            QuietMode.info(current, message(description + ": " + queued
+                                    + " bloques en cola · //undo para deshacer", Formatting.GREEN));
                         }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         current.sendMessage(message(description + ": " + readable(exception), Formatting.RED), false);

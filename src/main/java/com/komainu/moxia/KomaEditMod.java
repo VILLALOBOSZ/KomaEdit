@@ -29,6 +29,7 @@ import com.komainu.moxia.recipe.RecipeActionService;
 import com.komainu.moxia.recipe.RecipeCatalogPayload;
 import com.komainu.moxia.recipe.InstanceCatalogPayload;
 import com.komainu.moxia.sculpt.SnapshotCaptureService;
+import com.komainu.moxia.symmetry.SymmetryService;
 import com.komainu.moxia.ui.QuickBuildPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
@@ -118,6 +119,8 @@ public final class KomaEditMod implements ModInitializer {
             }
         });
         BrushToolInputs.register();
+        SymmetryService.register();
+        com.komainu.moxia.biome.BiomeEditService.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             try {
                 ProjectStorage.bind(handler.player.getUuid(), server);
@@ -156,6 +159,7 @@ public final class KomaEditMod implements ModInitializer {
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
             RegionOperationService.cancel(handler.player.getUuid());
+            com.komainu.moxia.persistence.QuietMode.forget(handler.player.getUuid());
             PlanPreviews.forget(handler.player.getUuid());
             ProgressBars.remove(handler.player);
         });
@@ -184,6 +188,7 @@ public final class KomaEditMod implements ModInitializer {
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
             RegionOperationService.clearAll();
+            com.komainu.moxia.persistence.QuietMode.clearAll();
             PlanPreviews.clearAll();
             ProgressBars.clearAll();
             PreviewDisplays.clearOrphans();

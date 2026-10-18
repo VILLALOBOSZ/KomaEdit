@@ -67,13 +67,13 @@ class SmoothProfilesTest {
                 continue;
             }
             valid++;
-            byte base = (byte) (piece & ~0x40);
+            byte base = (byte) (piece & 0x7F);
             if (seen.add(base) && piece != SmoothPiece.FULL) {
                 assertTrue(SmoothPiece.variant(piece) != null, "pieza sin variante: " + code);
             }
         }
-        // Bloque entero + (2 losas + 40 escaleras + 7 capas + 1 muro) × (normal, añadida).
-        assertEquals(1 + 50 * 2, valid);
+        // Bloque entero + (2 losas + 40 escaleras + 7 capas + 1 muro + 16 paneles) × (normal, añadida).
+        assertEquals(1 + 66 * 2, valid);
     }
 
     // ------------------------------------------------------------------ perfiles
@@ -87,6 +87,7 @@ class SmoothProfilesTest {
         assertEquals(10, SmoothMode.STAIRS.candidates().length, "2 losas + 8 escaleras rectas");
         assertEquals(10, SmoothMode.STAIRS_2D.candidates().length);
         assertEquals(11, SmoothMode.WALLS.candidates().length, "SSW añade el muro");
+        assertEquals(1, SmoothMode.PANES.candidates().length, "el panel se elige sin conexiones");
         assertTrue(SmoothMode.STAIRS.solvesCorners() && SmoothMode.WALLS.solvesCorners());
         assertFalse(SmoothMode.STAIRS_2D.solvesCorners() || SmoothMode.SLABS.solvesCorners());
         for (SmoothMode mode : SmoothMode.values()) {
@@ -105,7 +106,8 @@ class SmoothProfilesTest {
         assertEquals(0, SmoothMode.NONE.ordinal());
         assertEquals(1, SmoothMode.SLABS.ordinal());
         assertEquals(2, SmoothMode.STAIRS.ordinal());
-        assertEquals(SmoothMode.WALLS, SmoothMode.byIndex(SmoothMode.values().length - 1));
+        assertEquals(5, SmoothMode.WALLS.ordinal());
+        assertEquals(SmoothMode.PANES, SmoothMode.byIndex(SmoothMode.values().length - 1));
     }
 
     @Test

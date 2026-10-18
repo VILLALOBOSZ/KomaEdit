@@ -29,6 +29,7 @@ import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.recipe.RecipeExtensions;
 import com.komainu.moxia.recipe.StructureBendService;
 import com.komainu.moxia.region.RegionOperationService;
+import com.komainu.moxia.region.SignWax;
 import com.komainu.moxia.region.TweakOperation;
 import com.komainu.moxia.region.TweakRules;
 import com.komainu.moxia.shape.PathShape;
@@ -252,9 +253,12 @@ public final class MoxiaCommands {
         ImageCommands.register(dispatcher);
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
+        ColorCommands.register(root);
         NoiseCommands.register(root);
         SelectionCommands.register(root);
         AdminCommands.register(root);
+        SymmetryCommands.register(root);
+        BuilderCommands.register(root);
         PreviewCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
@@ -824,6 +828,16 @@ public final class MoxiaCommands {
             }
             RegionOperationService.submit(player, 0, tweak.displayName() + (enable ? "" : " (off)"),
                     new TweakOperation(tweak, enable));
+            if (tweak == TweakRules.Tweak.WAX) {
+                // Los carteles guardan la cera en sus datos: van en una edición aparte, también con //undo.
+                int signs = SignWax.apply(player, enable);
+                if (signs > 0) {
+                    context.getSource().sendFeedback(() -> prefix().append(Text.literal(signs
+                            + (signs == 1 ? " cartel " : " carteles ") + (enable ? "encerado" : "desencerado")
+                            + (signs == 1 ? "" : "s") + " · //undo para deshacerlo").formatted(Formatting.GREEN)),
+                            false);
+                }
+            }
             return 1;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Selecciona primero la zona con //pos1 y //pos2");

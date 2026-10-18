@@ -154,6 +154,112 @@ class TubeBenderTest {
     }
 
     /** Muro a lo largo de X; si {@code marker} es 1, el primer bloque de cada fila usa el índice 1. */
+    @Test
+    void keyframedRadiiScaleTheSectionAlongThePath() {
+        // Aleta vertical de 5 de alto centrada en el eje (radio propio 2,5), estirada en una sola copia de 40.
+        TubeBender.Template fin = new TubeBender.Template();
+        for (int x = 0; x < 4; x++) {
+            for (int y = -2; y <= 2; y++) {
+                fin.add(x, y, 0, 0);
+            }
+        }
+        TubeBender.Section growing = TubeBender.Section.of("2.5,7.5", 2.5, 1.0, 0.0, 0.0, Double.NaN);
+        Long2IntOpenHashMap bent = TubeBender.bend(straight(0, 0, 0, 40, 0, 0), fin, consistent(), growing, LIMIT);
+        int[] start = extent(bent, 1, 4);
+        int[] end = extent(bent, 36, 39);
+        assertTrue(start[0] <= 5 && start[1] == 0, "al principio, a su tamaño: " + start[0] + "×" + start[1]);
+        assertTrue(end[0] >= 11 && end[1] >= 2, "al final, casi el triple: " + end[0] + "×" + end[1]);
+        // Sin radios la sección es la de siempre, punto por punto.
+        Long2IntOpenHashMap plain = TubeBender.bend(straight(0, 0, 0, 40, 0, 0), fin, consistent(), LIMIT);
+        Long2IntOpenHashMap own = TubeBender.bend(straight(0, 0, 0, 40, 0, 0), fin, consistent(),
+                TubeBender.Section.of(null, 2.5, 1.0, 0.0, 0.0, Double.NaN), LIMIT);
+        assertEquals(plain.keySet(), own.keySet());
+    }
+
+    @Test
+    void rollAndTwistTurnTheSectionAroundThePath() {
+        // Tablón horizontal de 5 de ancho: con -r 90 queda de canto.
+        TubeBender.Template plank = new TubeBender.Template();
+        for (int x = 0; x < 4; x++) {
+            for (int z = -2; z <= 2; z++) {
+                plank.add(x, 0, z, 0);
+            }
+        }
+        SampledPath path = straight(0, 0, 0, 40, 0, 0);
+        Long2IntOpenHashMap flat = TubeBender.bend(path, plank, consistent(), LIMIT);
+        int[] lying = extent(flat, 10, 30);
+        assertTrue(lying[0] <= 1 && lying[1] >= 2, "tumbado: " + lying[0] + "×" + lying[1]);
+        Long2IntOpenHashMap rolled = TubeBender.bend(path, plank, consistent(),
+                TubeBender.Section.of(null, 2.5, 1.0, 0.0, 90.0, Double.NaN), LIMIT);
+        int[] standing = extent(rolled, 10, 30);
+        assertTrue(standing[0] >= 2 && standing[1] <= 1, "de canto: " + standing[0] + "×" + standing[1]);
+        // -t 90: un cuarto de vuelta por cada diámetro (5 bloques). Empieza tumbado y a los 5 bloques está de canto.
+        Long2IntOpenHashMap twisted = TubeBender.bend(path, plank, consistent(),
+                TubeBender.Section.of(null, 2.5, 1.0, 90.0, 0.0, Double.NaN), LIMIT);
+        int[] first = extent(twisted, 0, 0);
+        int[] quarter = extent(twisted, 5, 5);
+        int[] half = extent(twisted, 10, 10);
+        assertTrue(first[0] <= 1 && first[1] >= 2, "al empezar: " + first[0] + "×" + first[1]);
+        assertTrue(quarter[0] >= 2 && quarter[1] <= 1, "un cuarto de vuelta: " + quarter[0] + "×" + quarter[1]);
+        assertTrue(half[0] <= 1 && half[1] >= 2, "media vuelta: " + half[0] + "×" + half[1]);
+        // -r inicio,fin reparte el giro a lo largo del recorrido y no cuenta -t.
+        Long2IntOpenHashMap ranged = TubeBender.bend(path, plank, consistent(),
+                TubeBender.Section.of(null, 2.5, 1.0, 90.0, 0.0, 90.0), LIMIT);
+        int[] middle = extent(ranged, 5, 5);
+        assertTrue(middle[0] <= 2, "a un octavo del recorrido apenas ha girado: " + middle[0] + "×" + middle[1]);
+        int[] last = extent(ranged, 39, 39);
+        assertTrue(last[0] >= 2 && last[1] <= 1, "al final, de canto: " + last[0] + "×" + last[1]);
+    }
+
+    @Test
+    void growingRadiusLengthensTheRepeatedCopies() {
+        // Muro de 4 de largo con marca al principio: con el radio creciendo, las copias se alargan con él.
+        TubeBender.Template wall = wall(4, 1, 1);
+        TubeBender.Section growing = TubeBender.Section.of("1,3", 1.0, 1.0, 0.0, 0.0, Double.NaN);
+        Long2IntOpenHashMap bent = TubeBender.bend(straight(0, 0, 0, 80, 0, 0), wall,
+                new TubeBender.Settings(TubeBender.Mode.REPEAT, TubeBender.Axis.X, TubeSettings.NormalMode.CONSISTENT,
+                        0, 0, 0.0, 0.0, 0.0), growing, LIMIT);
+        List<Integer> starts = new ArrayList<>();
+        for (int x = 0; x <= 80; x++) {
+            if (bent.containsKey(PackedBlockPlan.pack(x, 0, 0))
+                    && TubeBender.paletteIndex(bent.get(PackedBlockPlan.pack(x, 0, 0))) == 1
+                    && (starts.isEmpty() || x - starts.getLast() > 1)) {
+                starts.add(x);
+            }
+        }
+        assertTrue(starts.size() >= 4, "copias: " + starts);
+        int firstGap = starts.get(1) - starts.get(0);
+        int lastGap = starts.getLast() - starts.get(starts.size() - 2);
+        assertTrue(lastGap > firstGap + 2, "la última copia es más larga: " + starts);
+    }
+
+    private static TubeBender.Settings consistent() {
+        return new TubeBender.Settings(TubeBender.Mode.STRETCH, TubeBender.Axis.X,
+                TubeSettings.NormalMode.CONSISTENT, 0, 0, 0.0, 0.0, 0.0);
+    }
+
+    /** Diferencia de altura y de anchura (en bloques) de lo colocado entre {@code fromX} y {@code toX}. */
+    private static int[] extent(Long2IntOpenHashMap bent, int fromX, int toX) {
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        int minZ = Integer.MAX_VALUE;
+        int maxZ = Integer.MIN_VALUE;
+        for (long key : bent.keySet()) {
+            int x = PackedBlockPlan.unpackX(key);
+            if (x < fromX || x > toX) {
+                continue;
+            }
+            minY = Math.min(minY, PackedBlockPlan.unpackY(key));
+            maxY = Math.max(maxY, PackedBlockPlan.unpackY(key));
+            minZ = Math.min(minZ, PackedBlockPlan.unpackZ(key));
+            maxZ = Math.max(maxZ, PackedBlockPlan.unpackZ(key));
+        }
+        if (minY == Integer.MAX_VALUE) {
+            return new int[]{0, 0};
+        }
+        return new int[]{maxY - minY, maxZ - minZ};
+    }
+
     private static TubeBender.Template wall(int length, int height, int marker) {
         TubeBender.Template template = new TubeBender.Template();
         for (int x = 0; x < length; x++) {

@@ -12,7 +12,8 @@ public enum EzBrushType {
     PETAL_PAINTER("petalpainter", "Pintor de pétalos", Set.of('p'), Set.of('n', 'z', 'm'), "petalos", "pp"),
     PLACE("place", "Colocar", Set.of('a', 'x', 'p'), Set.of(), "colocar", "pl"),
     SCATTER("scatter", "Dispersar", Set.of(), Set.of(), "dispersar", "sc"),
-    ARRAY("array", "Hilera", Set.of(), Set.of(), "hilera", "ar");
+    ARRAY("array", "Hilera", Set.of(), Set.of(), "hilera", "ar"),
+    BIOME("biome", "Bioma", Set.of('v'), Set.of('m'), "bioma", "bi");
 
     private final String id;
     private final String displayName;
@@ -58,6 +59,6 @@ public enum EzBrushType {
             }
         }
         throw new IllegalArgumentException("Pincel desconocido: " + input
-                + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array)");
+                + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array, biome)");
     }
 }
