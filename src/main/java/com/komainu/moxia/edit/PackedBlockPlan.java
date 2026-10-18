@@ -1,5 +1,6 @@
 package com.komainu.moxia.edit;
 
+import com.komainu.moxia.shape.smooth.PieceMaterials;
 import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -25,6 +26,8 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
     private final byte[] pieces;
     private final int captureSize;
     private final BlockBounds bounds;
+    /** Materiales fijos de las piezas ({@code -w Slabs(Slab:acacia)}); sin ellos salen del bloque del patrón. */
+    private final PieceMaterials pieceMaterials;
 
     private PackedBlockPlan(
             long[] positions,
@@ -33,8 +36,10 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
             int[] captureIndices,
             byte[] pieces,
             int captureSize,
-            BlockBounds bounds
+            BlockBounds bounds,
+            PieceMaterials pieceMaterials
     ) {
+        this.pieceMaterials = pieceMaterials == null ? PieceMaterials.NONE : pieceMaterials;
         this.positions = positions;
         this.overrides = overrides;
         this.expectedStateIds = expectedStateIds;
@@ -101,6 +106,16 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
 
     public boolean hasPieces() {
         return pieces != null;
+    }
+
+    public PieceMaterials pieceMaterials() {
+        return pieceMaterials;
+    }
+
+    /** El mismo plan (comparte los datos) con otros materiales fijos para sus piezas. */
+    public PackedBlockPlan withPieceMaterials(PieceMaterials materials) {
+        return new PackedBlockPlan(positions, overrides, expectedStateIds, captureIndices, pieces, captureSize,
+                bounds, materials);
     }
 
     /** Posiciones que llevan losa o escalera en vez del bloque entero. */
@@ -326,7 +341,8 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
                     finalCaptureIndices,
                     finalPieces,
                     captureSize,
-                    finalBounds
+                    finalBounds,
+                    PieceMaterials.NONE
             );
         }
 

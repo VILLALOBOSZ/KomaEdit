@@ -15,6 +15,8 @@ public final class SmoothPieces {
     private final Long2ByteOpenHashMap pieces;
     private final int slabs;
     private final int stairs;
+    private final int layers;
+    private final int walls;
     private final int added;
 
     /** Toma posesión del mapa: quien lo crea no debe modificarlo después. */
@@ -23,6 +25,8 @@ public final class SmoothPieces {
         pieces.defaultReturnValue(SmoothPiece.FULL);
         int slabCount = 0;
         int stairCount = 0;
+        int layerCount = 0;
+        int wallCount = 0;
         int addedCount = 0;
         ObjectIterator<Long2ByteMap.Entry> entries = pieces.long2ByteEntrySet().fastIterator();
         while (entries.hasNext()) {
@@ -32,8 +36,12 @@ public final class SmoothPieces {
             }
             if (SmoothPiece.isSlab(piece)) {
                 slabCount++;
-            } else {
+            } else if (SmoothPiece.isStairs(piece)) {
                 stairCount++;
+            } else if (SmoothPiece.isLayers(piece)) {
+                layerCount++;
+            } else {
+                wallCount++;
             }
             if (SmoothPiece.isAdded(piece)) {
                 addedCount++;
@@ -41,6 +49,8 @@ public final class SmoothPieces {
         }
         slabs = slabCount;
         stairs = stairCount;
+        layers = layerCount;
+        walls = wallCount;
         added = addedCount;
     }
 
@@ -68,17 +78,38 @@ public final class SmoothPieces {
         return stairs;
     }
 
+    public int layers() {
+        return layers;
+    }
+
+    public int walls() {
+        return walls;
+    }
+
     /** Piezas colocadas donde la figura no tenía bloque. */
     public int added() {
         return added;
     }
 
-    /** Resumen para los mensajes de construcción, p. ej. {@code 120 losas · 85 escaleras}. */
+    /**
+     * Resumen para los mensajes de construcción, p. ej. {@code 120 losas · 85 escaleras}; las capas y los muros
+     * solo aparecen si los hay.
+     */
     public String summary() {
         if (isEmpty()) {
             return "sin piezas";
         }
-        return slabs + (slabs == 1 ? " losa" : " losas") + " · " + stairs
-                + (stairs == 1 ? " escalera" : " escaleras");
+        StringBuilder text = new StringBuilder();
+        if (layers == 0 || slabs + stairs > 0) {
+            text.append(slabs).append(slabs == 1 ? " losa" : " losas").append(" · ").append(stairs)
+                    .append(stairs == 1 ? " escalera" : " escaleras");
+        }
+        if (layers > 0) {
+            text.append(text.isEmpty() ? "" : " · ").append(layers).append(layers == 1 ? " capa" : " capas");
+        }
+        if (walls > 0) {
+            text.append(" · ").append(walls).append(walls == 1 ? " muro" : " muros");
+        }
+        return text.toString();
     }
 }

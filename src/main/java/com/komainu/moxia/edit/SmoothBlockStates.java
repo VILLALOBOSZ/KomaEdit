@@ -1,42 +1,47 @@
 package com.komainu.moxia.edit;
 
+import com.komainu.moxia.deform.SmoothProfile;
+import com.komainu.moxia.shape.smooth.PieceMaterials;
+import com.komainu.moxia.shape.smooth.PieceVariant;
 import com.komainu.moxia.shape.smooth.SmoothMaterials;
 import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.FenceBlock;
 import net.minecraft.block.MapColor;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.StairsBlock;
+import net.minecraft.block.WallBlock;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.block.enums.StairShape;
 import net.minecraft.registry.Registries;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.EmptyBlockView;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Convierte el bloque que elige el patrón en la losa o escalera de su mismo material.
+ * Convierte el bloque que elige el patrón en la losa, escalera, muro o capa de su mismo material.
  *
- * <p>La familia se busca primero por nombre ({@link SmoothMaterials}) y, si el bloque no tiene losas o
- * escaleras propias (hormigón, lana, basalto…), se usa la del color de mapa más parecido siempre que se parezca
- * de verdad. Los bloques que no son cubos opacos (cristal, hojas, entidades de bloque) no se convierten.
- * Las familias se resuelven una vez por bloque y se guardan.</p>
+ * <p>La pieza se busca con {@link SmoothMaterials}: primero por nombre y, si el bloque no tiene esa pieza
+ * (hormigón, lana, basalto…), la del color más parecido. Los bloques que no son cubos opacos (cristal, hojas,
+ * entidades de bloque) no se convierten. Un perfil con materiales fijos ({@code Slabs(Slab:acacia)}) usa ese
+ * material para su variante, sea cual sea el bloque. Todo se resuelve una vez por bloque y se guarda.</p>
  */
 public final class SmoothBlockStates {
-    /** Distancia RGB máxima para aceptar una losa o escalera de otro material por su color. */
-    private static final int MAX_COLOR_DISTANCE_SQUARED = 48 * 48;
-    private static final Map<Block, Family> FAMILIES = new ConcurrentHashMap<>();
-    private static volatile Palette palette;
+    private static final Map<Block, Map<PieceVariant, Block>> FAMILIES = new ConcurrentHashMap<>();
+    private static final Map<String, Block> OVERRIDES = new ConcurrentHashMap<>();
+    private static volatile RegistryCatalog catalog;
 
     private SmoothBlockStates() {
     }
@@ -45,26 +50,42 @@ public final class SmoothBlockStates {
      * @return la pieza en el material de {@code base}, o {@code null} si ese material no admite piezas
      */
     public static com.sk89q.worldedit.world.block.BlockState shape(BaseBlock base, byte piece) {
+        return shape(base, piece, PieceMaterials.NONE);
+    }
+
+    /** Como {@link #shape(BaseBlock, byte)}, con los materiales fijos del perfil. */
+    public static com.sk89q.worldedit.world.block.BlockState shape(
+            BaseBlock base,
+            byte piece,
+            PieceMaterials materials
+    ) {
         if (piece == SmoothPiece.FULL || piece == SmoothPiece.EMPTY) {
             return null;
         }
         BlockState state = FabricAdapter.adapt(base.toImmutableState());
-        BlockState shaped = shape(state, piece);
+        BlockState shaped = shape(state, piece, materials);
         return shaped == null ? null : FabricAdapter.adapt(shaped);
     }
 
-    static BlockState shape(BlockState state, byte piece) {
-        Block block = state.getBlock();
-        if (block instanceof SlabBlock || block instanceof StairsBlock) {
-            // El patrón ya pide piezas: se respeta el bloque y solo se orienta si coincide el tipo.
-            return SmoothPiece.isSlab(piece) == block instanceof SlabBlock ? orient(block, piece) : null;
-        }
-        if (state.isAir() || state.hasBlockEntity() || !state.isOpaque()
-                || !state.isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN)) {
+    static BlockState shape(BlockState state, byte piece, PieceMaterials materials) {
+        if (state.isAir()) {
             return null;
         }
-        Family family = FAMILIES.computeIfAbsent(block, SmoothBlockStates::resolve);
-        Block target = SmoothPiece.isSlab(piece) ? family.slab() : family.stairs();
+        PieceVariant variant = SmoothPiece.variant(piece);
+        String override = materials == null ? null : materials.get(variant);
+        if (override != null) {
+            return orient(override(variant, override), piece);
+        }
+        Block block = state.getBlock();
+        PieceVariant own = variantOf(block);
+        if (own != null) {
+            // El patrón ya pide piezas: se respeta el bloque y solo se orienta si coincide el tipo.
+            return own == variant ? orient(block, piece) : null;
+        }
+        if (!convertible(state)) {
+            return null;
+        }
+        Block target = family(block).get(variant);
         return target == null ? null : orient(target, piece);
     }
 
@@ -82,12 +103,66 @@ public final class SmoothBlockStates {
         if (block instanceof StairsBlock) {
             return new Block[]{null, block};
         }
-        if (state.isAir() || state.hasBlockEntity() || !state.isOpaque()
-                || !state.isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN)) {
+        if (state.isAir() || !convertible(state)) {
             return new Block[]{null, null};
         }
-        Family family = FAMILIES.computeIfAbsent(block, SmoothBlockStates::resolve);
-        return new Block[]{family.slab(), family.stairs()};
+        Map<PieceVariant, Block> family = family(block);
+        return new Block[]{family.get(PieceVariant.SLAB), family.get(PieceVariant.STAIR)};
+    }
+
+    /**
+     * Comprueba, en el hilo del comando, que los materiales fijos del perfil existen; así el error sale al
+     * escribir la orden y no a media construcción.
+     */
+    public static void validate(SmoothProfile profile) {
+        if (profile != null) {
+            validate(profile.materials());
+        }
+    }
+
+    public static void validate(PieceMaterials materials) {
+        if (materials != null) {
+            materials.asMap().forEach(SmoothBlockStates::override);
+        }
+    }
+
+    private static boolean convertible(BlockState state) {
+        return !state.hasBlockEntity() && state.isOpaque()
+                && state.isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN);
+    }
+
+    private static Map<PieceVariant, Block> family(Block block) {
+        return FAMILIES.computeIfAbsent(block, SmoothBlockStates::resolve);
+    }
+
+    private static Map<PieceVariant, Block> resolve(Block block) {
+        String id = Registries.BLOCK.getId(block).toString();
+        Map<PieceVariant, Block> family = new EnumMap<>(PieceVariant.class);
+        for (PieceVariant variant : PieceVariant.values()) {
+            String target = SmoothMaterials.resolve(id, variant, catalog());
+            if (target != null) {
+                family.put(variant, Registries.BLOCK.get(Identifier.of(target)));
+            }
+        }
+        return family;
+    }
+
+    private static Block override(PieceVariant variant, String text) {
+        return OVERRIDES.computeIfAbsent(variant.name() + "|" + text,
+                ignored -> Registries.BLOCK.get(Identifier.of(SmoothMaterials.override(text, variant, catalog()))));
+    }
+
+    private static PieceVariant variantOf(Block block) {
+        if (block instanceof SlabBlock) {
+            return PieceVariant.SLAB;
+        }
+        if (block instanceof StairsBlock) {
+            return PieceVariant.STAIR;
+        }
+        if (block instanceof WallBlock || block instanceof FenceBlock) {
+            return PieceVariant.WALL;
+        }
+        return block.getDefaultState().contains(Properties.LAYERS) ? PieceVariant.LAYER : null;
     }
 
     private static BlockState orient(Block block, byte piece) {
@@ -95,99 +170,86 @@ public final class SmoothBlockStates {
         if (block instanceof SlabBlock) {
             return state.with(SlabBlock.TYPE, SmoothPiece.isTop(piece) ? SlabType.TOP : SlabType.BOTTOM);
         }
-        return state
-                .with(StairsBlock.FACING, Direction.fromHorizontal(SmoothPiece.facing(piece)))
-                .with(StairsBlock.HALF, SmoothPiece.isTop(piece) ? BlockHalf.TOP : BlockHalf.BOTTOM)
-                .with(StairsBlock.SHAPE, StairShape.values()[SmoothPiece.shape(piece)]);
-    }
-
-    private static Family resolve(Block block) {
-        String id = Registries.BLOCK.getId(block).toString();
-        int color = color(block);
-        Block slab = byName(SmoothMaterials.slabIds(id), SlabBlock.class)
-                .orElseGet(() -> palette().nearest(palette().slabs(), color));
-        Block stairs = byName(SmoothMaterials.stairsIds(id), StairsBlock.class)
-                .orElseGet(() -> palette().nearest(palette().stairs(), color));
-        return new Family(slab, stairs);
-    }
-
-    private static Optional<Block> byName(List<String> ids, Class<? extends Block> type) {
-        for (String id : ids) {
-            Identifier identifier = Identifier.tryParse(id);
-            if (identifier != null && Registries.BLOCK.containsId(identifier)) {
-                Block candidate = Registries.BLOCK.get(identifier);
-                if (type.isInstance(candidate)) {
-                    return Optional.of(candidate);
-                }
-            }
+        if (block instanceof StairsBlock) {
+            return state
+                    .with(StairsBlock.FACING, Direction.fromHorizontal(SmoothPiece.facing(piece)))
+                    .with(StairsBlock.HALF, SmoothPiece.isTop(piece) ? BlockHalf.TOP : BlockHalf.BOTTOM)
+                    .with(StairsBlock.SHAPE, StairShape.values()[SmoothPiece.shape(piece)]);
         }
-        return Optional.empty();
+        if (state.contains(Properties.LAYERS) && SmoothPiece.isLayers(piece)) {
+            return state.with(Properties.LAYERS, SmoothPiece.layerCount(piece));
+        }
+        // Muros y vallas: el estado por defecto es el poste solo; Minecraft los une a sus vecinos al colocarlos.
+        return state;
     }
 
-    private static int color(Block block) {
-        MapColor mapColor = block.getDefaultState().getMapColor(EmptyBlockView.INSTANCE, BlockPos.ORIGIN);
-        return mapColor == null || mapColor == MapColor.CLEAR ? -1 : mapColor.color;
-    }
-
-    private static Palette palette() {
-        Palette current = palette;
+    private static RegistryCatalog catalog() {
+        RegistryCatalog current = catalog;
         if (current == null) {
-            current = Palette.scan();
-            palette = current;
+            current = RegistryCatalog.scan();
+            catalog = current;
         }
         return current;
     }
 
-    private record Family(Block slab, Block stairs) {
-    }
-
-    private record Swatch(Block block, int color) {
-    }
-
-    /** Todas las losas y escaleras registradas (vanilla y mods) con su color de mapa. */
-    private record Palette(List<Swatch> slabs, List<Swatch> stairs) {
-        private static Palette scan() {
-            List<Swatch> slabs = new ArrayList<>();
-            List<Swatch> stairs = new ArrayList<>();
+    /** Lo registrado (vanilla y mods), con el color de textura de la tabla o, si no está, el de mapa. */
+    private record RegistryCatalog(Map<PieceVariant, List<String>> pieces, Map<String, Integer> colors)
+            implements SmoothMaterials.Catalog {
+        private static RegistryCatalog scan() {
+            Map<String, Integer> textures = SmoothMaterials.textureColors();
+            Map<PieceVariant, List<String>> pieces = new EnumMap<>(PieceVariant.class);
+            for (PieceVariant variant : PieceVariant.values()) {
+                pieces.put(variant, new ArrayList<>());
+            }
+            Map<String, Integer> colors = new java.util.HashMap<>();
             for (Block block : Registries.BLOCK) {
-                // La losa de roble petrificado es una reliquia que no se puede fabricar.
-                if (Registries.BLOCK.getId(block).getPath().startsWith("petrified_")) {
+                Identifier identifier = Registries.BLOCK.getId(block);
+                String id = identifier.toString();
+                int color = textures.getOrDefault(id, mapColor(block));
+                if (color >= 0) {
+                    colors.put(id, color);
+                }
+                // La losa de roble petrificado es una reliquia que no se puede fabricar; las vallas, solo por nombre.
+                // El cobre encerado tiene el mismo color que el normal: por color se elige siempre el normal.
+                if (identifier.getPath().startsWith("petrified_") || identifier.getPath().startsWith("waxed_")
+                        || block instanceof FenceBlock) {
                     continue;
                 }
-                int color = color(block);
-                if (color < 0) {
-                    continue;
-                }
-                if (block instanceof SlabBlock) {
-                    slabs.add(new Swatch(block, color));
-                } else if (block instanceof StairsBlock) {
-                    stairs.add(new Swatch(block, color));
+                PieceVariant variant = variantOf(block);
+                if (variant != null) {
+                    pieces.get(variant).add(id);
                 }
             }
-            return new Palette(List.copyOf(slabs), List.copyOf(stairs));
+            pieces.replaceAll((variant, ids) -> List.copyOf(ids));
+            return new RegistryCatalog(pieces, Map.copyOf(colors));
         }
 
-        private Block nearest(List<Swatch> swatches, int color) {
-            if (color < 0) {
-                return null;
-            }
-            Block best = null;
-            int bestDistance = MAX_COLOR_DISTANCE_SQUARED + 1;
-            for (Swatch swatch : swatches) {
-                int distance = distanceSquared(color, swatch.color());
-                if (distance < bestDistance) {
-                    best = swatch.block();
-                    bestDistance = distance;
-                }
-            }
-            return best;
+        @Override
+        public boolean exists(String id) {
+            Identifier identifier = Identifier.tryParse(id);
+            return identifier != null && Registries.BLOCK.containsId(identifier);
         }
 
-        private static int distanceSquared(int first, int second) {
-            int red = (first >> 16 & 0xFF) - (second >> 16 & 0xFF);
-            int green = (first >> 8 & 0xFF) - (second >> 8 & 0xFF);
-            int blue = (first & 0xFF) - (second & 0xFF);
-            return red * red + green * green + blue * blue;
+        @Override
+        public boolean is(String id, PieceVariant variant) {
+            Identifier identifier = Identifier.tryParse(id);
+            return identifier != null && Registries.BLOCK.containsId(identifier)
+                    && variantOf(Registries.BLOCK.get(identifier)) == variant;
+        }
+
+        @Override
+        public List<String> pieces(PieceVariant variant) {
+            return pieces.get(variant);
+        }
+
+        @Override
+        public int color(String id) {
+            return colors.getOrDefault(id, -1);
+        }
+
+        private static int mapColor(Block block) {
+            MapColor mapColor = block.getDefaultState().getMapColor(EmptyBlockView.INSTANCE, BlockPos.ORIGIN);
+            return mapColor == null || mapColor == MapColor.CLEAR ? -1 : mapColor.color;
         }
     }
 }

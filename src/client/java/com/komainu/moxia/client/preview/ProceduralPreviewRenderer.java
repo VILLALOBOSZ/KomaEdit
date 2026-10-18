@@ -52,6 +52,9 @@ public final class ProceduralPreviewRenderer {
     /** Bit del octante en el eje de cada dirección (x = 1, y = 2, z = 4), en el orden de {@code OFFSETS_*}. */
     private static final int[] AXIS_BITS = {1, 1, 2, 2, 4, 4};
     private static final int OCTANT_FACE = 1 << 18;
+    /** Cara de una pieza que no se dibuja por octantes (capas y muros); su caja va en {@link #BOX_SHIFT}. */
+    private static final int BOX_FACE = 1 << 19;
+    private static final int BOX_SHIFT = 20;
     private static final AtomicLong GENERATIONS = new AtomicLong();
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor(new PreviewThreadFactory());
 
@@ -249,8 +252,15 @@ public final class ProceduralPreviewRenderer {
             int localZ = Math.floorMod(block.z(), 16);
             SectionKey key = new SectionKey(sectionX, sectionY, sectionZ);
             IntArrayList sectionFaces = null;
-            int mask = SmoothPiece.mask(pieces.at(block.x(), block.y(), block.z()));
+            byte piece = pieces.at(block.x(), block.y(), block.z());
+            int mask = SmoothPiece.mask(piece);
             int local = localX | localY << 4 | localZ << 8;
+            int boxCode = boxCode(piece);
+            if (boxCode != 0) {
+                IntArrayList boxFaces = grouped.computeIfAbsent(key, ignored -> new IntArrayList());
+                faces += boxFaces(boxFaces, local, block, piece, boxCode, occupancy, pieces);
+                continue;
+            }
             for (int direction = 0; direction < 6; direction++) {
                 int neighborX = block.x() + OFFSETS_X[direction];
                 int neighborY = block.y() + OFFSETS_Y[direction];
@@ -276,6 +286,54 @@ public final class ProceduralPreviewRenderer {
                 .map(entry -> new SectionData(entry.getKey(), entry.getValue().toIntArray()))
                 .toList();
         return new PreparedPreview(sections, blocks.size(), faces, pieces.isEmpty() ? "" : tr("gui.komaedit.hologram.pieces", pieces.slabs(), pieces.stairs()));
+    }
+
+    /** 1 a 7 para las capas de nieve, 8 para el muro, 0 para las piezas que se dibujan por octantes. */
+    private static int boxCode(byte piece) {
+        if (SmoothPiece.isLayers(piece)) {
+            return SmoothPiece.layerCount(piece);
+        }
+        return SmoothPiece.isWall(piece) ? 8 : 0;
+    }
+
+    private static int[] box(int code) {
+        return SmoothPiece.box(code == 8 ? SmoothPiece.wall() : SmoothPiece.layers(code));
+    }
+
+    /**
+     * Caras de una capa o un muro: las seis de su caja, salvo las que tocan el borde del bloque y quedan tapadas
+     * por un vecino lleno por ese lado.
+     */
+    private static int boxFaces(
+            IntArrayList faces,
+            int local,
+            BlockVector3 block,
+            byte piece,
+            int code,
+            LongOpenHashSet occupancy,
+            SmoothPieces pieces
+    ) {
+        int[] box = box(code);
+        int added = 0;
+        for (int direction = 0; direction < 6; direction++) {
+            int axis = direction >> 1;
+            boolean positive = (direction & 1) == 1;
+            boolean onBoundary = positive ? box[axis + 3] == 16 : box[axis] == 0;
+            if (onBoundary) {
+                int neighborX = block.x() + OFFSETS_X[direction];
+                int neighborY = block.y() + OFFSETS_Y[direction];
+                int neighborZ = block.z() + OFFSETS_Z[direction];
+                boolean occupied = neighborY >= -2048 && neighborY <= 2047
+                        && occupancy.contains(pack(neighborX, neighborY, neighborZ));
+                if (occupied && SmoothPiece.mask(pieces.at(neighborX, neighborY, neighborZ))
+                        == SmoothPiece.FULL_MASK) {
+                    continue;
+                }
+            }
+            faces.add(local | direction << 12 | BOX_FACE | code << BOX_SHIFT);
+            added++;
+        }
+        return added;
     }
 
     /**
@@ -611,19 +669,32 @@ public final class ProceduralPreviewRenderer {
             float cellX = x + (octantFace ? (octant & 1) * 0.5F : 0.0F);
             float cellY = y + (octantFace ? (octant >> 1 & 1) * 0.5F : 0.0F);
             float cellZ = z + (octantFace ? (octant >> 2 & 1) * 0.5F : 0.0F);
+            float sizeX = size;
+            float sizeY = size;
+            float sizeZ = size;
+            if ((packed & BOX_FACE) != 0) {
+                // Capas y muros: su caja en dieciseisavos.
+                int[] box = box(packed >>> BOX_SHIFT & 15);
+                cellX = x + box[0] / 16.0F;
+                cellY = y + box[1] / 16.0F;
+                cellZ = z + box[2] / 16.0F;
+                sizeX = (box[3] - box[0]) / 16.0F;
+                sizeY = (box[4] - box[1]) / 16.0F;
+                sizeZ = (box[5] - box[2]) / 16.0F;
+            }
             float inset = 0.035F;
             float minimumX = cellX + (cellX == x ? inset : 0.0F);
             float minimumY = cellY + (cellY == y ? inset : 0.0F);
             float minimumZ = cellZ + (cellZ == z ? inset : 0.0F);
-            float maximumX = cellX + size - (cellX + size == x + 1.0F ? inset : 0.0F);
-            float maximumY = cellY + size - (cellY + size == y + 1.0F ? inset : 0.0F);
-            float maximumZ = cellZ + size - (cellZ + size == z + 1.0F ? inset : 0.0F);
+            float maximumX = cellX + sizeX - (cellX + sizeX == x + 1.0F ? inset : 0.0F);
+            float maximumY = cellY + sizeY - (cellY + sizeY == y + 1.0F ? inset : 0.0F);
+            float maximumZ = cellZ + sizeZ - (cellZ + sizeZ == z + 1.0F ? inset : 0.0F);
             float west = cellX - 0.012F;
-            float east = cellX + size + 0.012F;
+            float east = cellX + sizeX + 0.012F;
             float down = cellY - 0.012F;
-            float up = cellY + size + 0.012F;
+            float up = cellY + sizeY + 0.012F;
             float north = cellZ - 0.012F;
-            float south = cellZ + size + 0.012F;
+            float south = cellZ + sizeZ + 0.012F;
             int brightness = switch (direction) {
                 case 2 -> 145;
                 case 3 -> 245;

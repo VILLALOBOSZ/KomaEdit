@@ -4,6 +4,7 @@ import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.shape.smooth.PieceMaterials;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -54,6 +55,7 @@ public final class EzSpline {
      * @param indexed {@code -o}: la salida de la expresión cuenta entradas de paleta (1…P) en vez de ir de 0 a 1
      * @param structure estructura y su doblado (solo en {@link Kind#STRUCTURE})
      * @param help líneas de ayuda (solo en {@link Kind#HELP})
+     * @param materials materiales fijos de las piezas de {@code -w} (perfiles con {@code Slab:}, {@code Stair:}…)
      */
     public record Request(
             Kind kind,
@@ -62,8 +64,22 @@ public final class EzSpline {
             String material,
             boolean indexed,
             Structure structure,
-            List<String> help
+            List<String> help,
+            PieceMaterials materials
     ) {
+        public Request {
+            materials = materials == null ? PieceMaterials.NONE : materials;
+        }
+
+        Request(Kind kind, String subcommand, ShapeParameters parameters, String material, boolean indexed,
+                Structure structure, List<String> help) {
+            this(kind, subcommand, parameters, material, indexed, structure, help, PieceMaterials.NONE);
+        }
+
+        Request withMaterials(PieceMaterials pieces) {
+            return new Request(kind, subcommand, parameters, material, indexed, structure, help, pieces);
+        }
+
         /** Fija cuántas entradas tiene la paleta para la salida entera de {@code -o}. */
         public Request withPaletteSize(int size) {
             if (!indexed || parameters == null) {
@@ -72,7 +88,8 @@ public final class EzSpline {
             Map<String, Double> options = new LinkedHashMap<>(parameters.options().values());
             options.put("paletteentries", (double) Math.max(1, size));
             return new Request(kind, subcommand, parameters.withOptions(
-                    new ShapeOptions(options, parameters.options().formula())), material, true, structure, help);
+                    new ShapeOptions(options, parameters.options().formula())), material, true, structure, help,
+                    materials);
         }
 
         public String describe() {
@@ -167,9 +184,10 @@ public final class EzSpline {
         }
         String material = positional.get(expected - 2);
         String radii = positional.get(expected - 1);
-        ShapeParameters parameters = tube(PathShape.SWEEP, radii, arguments, options, "");
+        TubeCommandParser.Result tube = tube(PathShape.SWEEP, radii, arguments, options, "");
+        ShapeParameters parameters = tube.parameters();
         return new Request(Kind.PATTERN, preset == null ? "2d " + shape.displayName : name, parameters, material,
-                false, null, List.of());
+                false, null, List.of()).withMaterials(tube.materials());
     }
 
     private static Request threeDimensional(List<Token> tokens, Shape3D preset) {
@@ -192,9 +210,10 @@ public final class EzSpline {
         Shape3D shape = Shape3D.find(spec.name());
         Map<String, Double> options = new LinkedHashMap<>();
         PathShape figure = shape.translate(spec.values(shape.parameters, shape.displayName), options);
-        ShapeParameters parameters = tube(figure, positional.get(2), arguments, options, "");
+        TubeCommandParser.Result tube = tube(figure, positional.get(2), arguments, options, "");
+        ShapeParameters parameters = tube.parameters();
         return new Request(Kind.PATTERN, "3d " + shape.displayName, parameters, positional.get(1), false, null,
-                List.of());
+                List.of()).withMaterials(tube.materials());
     }
 
     private static Request noise(List<Token> tokens, Function<String, String> savedNoises) {
@@ -240,8 +259,9 @@ public final class EzSpline {
         Map<String, Double> options = new LinkedHashMap<>();
         options.put(EzShapes.FORM, EzShapes.Form.NOISE.option());
         options.put("noisedepth", depth);
-        ShapeParameters parameters = tube(PathShape.SWEEP, positional.get(1), arguments, options, packed);
-        return new Request(Kind.PALETTE, "noise", parameters, positional.getFirst(), false, null, List.of());
+        TubeCommandParser.Result tube = tube(PathShape.SWEEP, positional.get(1), arguments, options, packed);
+        ShapeParameters parameters = tube.parameters();
+        return new Request(Kind.PALETTE, "noise", parameters, positional.getFirst(), false, null, List.of()).withMaterials(tube.materials());
     }
 
     private static Request expression(String input, List<Token> tokens) {
@@ -289,9 +309,10 @@ public final class EzSpline {
         if (arguments.has("-z")) {
             options.put("znormal", 1.0);
         }
-        ShapeParameters parameters = tube(PathShape.EXPRESSION, positional.get(1), arguments, options, expression);
+        TubeCommandParser.Result tube = tube(PathShape.EXPRESSION, positional.get(1), arguments, options, expression);
+        ShapeParameters parameters = tube.parameters();
         return new Request(Kind.PALETTE, "expression", parameters, positional.getFirst(), arguments.has("-o"), null,
-                List.of());
+                List.of()).withMaterials(tube.materials());
     }
 
     private static Request structure(List<Token> tokens) {
@@ -344,7 +365,7 @@ public final class EzSpline {
     }
 
     /** Pasa radios y banderas comunes por el mismo lector que {@code /komaedit sweep} y añade la forma. */
-    private static ShapeParameters tube(PathShape shape, String radii, Arguments arguments,
+    private static TubeCommandParser.Result tube(PathShape shape, String radii, Arguments arguments,
                                         Map<String, Double> shapeOptions, String formula) {
         TubeCommandParser.Result parsed = TubeCommandParser.parse(shape, null, radii, arguments.tubeFlags(), "stone");
         Map<String, Double> options = new LinkedHashMap<>(parsed.parameters().options().values());
@@ -358,7 +379,8 @@ public final class EzSpline {
             throw new IllegalArgumentException("Demasiados parámetros a la vez (máximo " + ShapeOptions.MAX_ENTRIES
                     + ")");
         }
-        return parsed.parameters().withOptions(new ShapeOptions(options, formula));
+        return new TubeCommandParser.Result(parsed.parameters().withOptions(new ShapeOptions(options, formula)),
+                parsed.pattern(), parsed.materials());
     }
 
     // ---------------------------------------------------------------- Formas

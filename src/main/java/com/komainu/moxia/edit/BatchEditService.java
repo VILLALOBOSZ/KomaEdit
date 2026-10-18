@@ -400,7 +400,7 @@ public final class BatchEditService {
             return true;
         }
         BaseBlock base = pattern.applyBlock(position);
-        BlockState shaped = SmoothBlockStates.shape(base, piece);
+        BlockState shaped = SmoothBlockStates.shape(base, piece, job.plan.pieceMaterials());
         if (shaped != null) {
             job.editSession.setBlock(position, shaped);
             return true;

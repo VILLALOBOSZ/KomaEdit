@@ -5,6 +5,7 @@ import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
@@ -64,7 +65,7 @@ final class EzSplineCommands {
             return switch (request.kind()) {
                 case HELP -> help(player, request);
                 case PATTERN -> MoxiaCommands.enqueueShape(context, player, true, request.material(),
-                        request.parameters());
+                        request.parameters(), request.materials());
                 case PALETTE -> palette(player, request);
                 case STRUCTURE -> structure(player, request);
             };
@@ -87,6 +88,7 @@ final class EzSplineCommands {
     private static int palette(ServerPlayerEntity player, EzSpline.Request parsed) throws IncompleteRegionException {
         GeneratorCommands.Palette palette = GeneratorCommands.Palette.resolve(player, parsed.material());
         EzSpline.Request request = parsed.withPaletteSize(palette.size());
+        SmoothBlockStates.validate(request.materials());
         KomaPermissions.requireBuild(player, request.parameters().shape().id());
         PathSnapshot path = WorldEditService.resolvePath(player);
         UUID playerId = player.getUuid();
@@ -98,7 +100,8 @@ final class EzSplineCommands {
                 playerId,
                 () -> {
                     SampledPath sampled = SampledPath.createSmooth(path.points(), path.closed());
-                    PackedBlockPlan plan = ShapeGenerator.generatePlan(sampled, request.parameters());
+                    PackedBlockPlan plan = ShapeGenerator.generatePlan(sampled, request.parameters())
+                            .withPieceMaterials(request.materials());
                     TubeFigures.MaterialProbe probe = TubeFigures.materialProbe(sampled, request.parameters(),
                             TubeCurve.NONE);
                     Long2IntOpenHashMap indices = new Long2IntOpenHashMap(plan.size());

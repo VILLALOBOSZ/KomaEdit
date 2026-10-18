@@ -182,6 +182,12 @@ class EzSplineParserTest {
         assertEquals(TubeSettings.Quality.BALANCED, settings("beads clay 10").quality());
         assertEquals(TubeSettings.NormalMode.CONSISTENT, settings("rope clay 10").normalMode());
         assertEquals(TubeSettings.EndMode.FLAT, settings("rope clay 10").endMode());
+        // Los perfiles de -w llegan con sus materiales hasta la colocación.
+        EzSpline.Request pieces = EzSpline.parse("3d Cubes clay 8 -w Slabs(Slab:oak_slab)", null);
+        assertTrue(TubeSettings.from(pieces.parameters()).smoothMode() != com.komainu.moxia.shape.smooth.SmoothMode.NONE);
+        assertFalse(pieces.materials() == com.komainu.moxia.shape.smooth.PieceMaterials.NONE);
+        assertTrue(EzSpline.parse("3d Cubes clay 8", null).materials()
+                == com.komainu.moxia.shape.smooth.PieceMaterials.NONE);
     }
 
     @Test

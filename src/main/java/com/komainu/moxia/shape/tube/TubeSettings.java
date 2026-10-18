@@ -98,7 +98,8 @@ public record TubeSettings(
                 frequency,
                 (long) options.get("seed", 0.0),
                 RadiusProgression.fromOptions(options),
-                SmoothMode.byIndex((int) Math.round(Math.clamp(options.get("smooth", 0.0), 0.0, 2.0))),
+                SmoothMode.byIndex((int) Math.round(Math.clamp(options.get("smooth", 0.0), 0.0,
+                        SmoothMode.values().length - 1.0))),
                 Math.clamp(options.get("coverage", PieceFit.DEFAULT_COVERAGE), 0.0, 1.0),
                 shape == PathShape.EXPRESSION ? resolveFormula(options) : null
         );

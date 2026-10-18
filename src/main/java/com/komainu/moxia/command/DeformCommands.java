@@ -8,10 +8,12 @@ import com.komainu.moxia.deform.Projection;
 import com.komainu.moxia.deform.SmoothProfile;
 import com.komainu.moxia.deform.SmoothingOps;
 import com.komainu.moxia.deform.SurfaceOps;
+import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.region.RegionOperationService;
+import com.komainu.moxia.shape.smooth.SmoothMode;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -185,7 +187,7 @@ public final class DeformCommands {
                         : new double[]{(selection[0] + selection[3] + 1) / 2.0, (selection[1] + selection[4] + 1) / 2.0,
                         (selection[2] + selection[5] + 1) / 2.0};
                 int[] box = Deformations.rotatedBounds(selection, axis, angle, center);
-                SmoothProfile profile = SmoothProfile.parse(args.value("w"));
+                SmoothProfile profile = smoothProfile(args.value("w"));
                 RegionOperationService.submit(player, 1, box, "Girar " + format(angle) + "°",
                         new DeformOperation((volume, cancel) -> new DeformOperation.Plan(
                                 Deformations.rotate(volume, axis, angle, center), box), profile));
@@ -269,7 +271,7 @@ public final class DeformCommands {
                 primary, secondary, args.has('a'), args.has('f'), args.has('s'), args.has('t'), anchor),
                 selectionBounds(player), player.getServerWorld().getTopY());
         int[] box = projection.box();
-        SmoothProfile profile = SmoothProfile.parse(args.value("w"));
+        SmoothProfile profile = smoothProfile(args.value("w"));
         double[] figureRadii = projection.radii();
         String radiusText = sphere
                 ? "radio " + format(figureRadii[0]) + (figureRadii[0] == figureRadii[1] && figureRadii[1] == figureRadii[2]
@@ -341,7 +343,7 @@ public final class DeformCommands {
                 DeformCommands::tagIds));
         SurfaceOps.Settings settings = new SurfaceOps.Settings(radius, displacement, smoothRadius, smoothIterations,
                 args.has('c'), args.has('e'), mask, args.has('t'));
-        SmoothProfile profile = SmoothProfile.parse(args.value("w"));
+        SmoothProfile profile = smoothProfile(args.value("w"));
         RegionOperationService.submit(player, settings.padding(), "Superficie · " + mode.id(),
                 new DeformOperation(DeformOperation.inSelection(
                         (volume, cancel) -> SurfaceOps.apply(volume, settings, cancel)), profile));
@@ -356,7 +358,7 @@ public final class DeformCommands {
         double[] radii = SmoothingOps.parseRadii(args.text(0) == null ? "2" : args.text(0), 16.0);
         int iterations = (int) args.number(1, 1.0, 1.0, 32.0, "Las iteraciones");
         double bias = args.number(2, 0.0, -1.0, 1.0, "El sesgo");
-        SmoothProfile profile = SmoothProfile.parse(args.value("w"));
+        SmoothProfile profile = smoothProfile(args.value("w"));
         RegionOperationService.submit(player, SmoothingOps.padding(radii, iterations), "Suavizar",
                 new DeformOperation(DeformOperation.inSelection(
                         (volume, cancel) -> SmoothingOps.smooth(volume, radii, iterations, bias, cancel)), profile));
@@ -372,7 +374,7 @@ public final class DeformCommands {
                     + " 2 o 2,1,2");
         }
         double[] radii = SmoothingOps.parseRadii(args.text(0), 30.0);
-        SmoothProfile profile = SmoothProfile.parse(args.value("w"));
+        SmoothProfile profile = smoothProfile(args.value("w"));
         RegionOperationService.submit(player, SmoothingOps.padding(radii, 1) / 2 + 2, grow ? "Inflar" : "Desinflar",
                 new DeformOperation(DeformOperation.inSelection((volume, cancel) -> grow
                         ? SmoothingOps.inflate(volume, radii, cancel)
@@ -387,9 +389,9 @@ public final class DeformCommands {
         if (profileText == null) {
             throw new IllegalArgumentException("Falta el perfil, por ejemplo smoothblocks SlabsAndStairs 2 0");
         }
-        SmoothProfile profile = SmoothProfile.parse(profileText);
+        SmoothProfile profile = smoothProfile(profileText);
         if (!profile.active()) {
-            throw new IllegalArgumentException("smoothblocks necesita un perfil con piezas (Slabs o SlabsAndStairs)");
+            throw new IllegalArgumentException("smoothblocks necesita un perfil con piezas (" + SmoothMode.names() + ")");
         }
         double radius = args.number(1, 2.0, 0.0, 16.0, "El radio");
         double bias = args.number(2, 0.0, -1.0, 1.0, "El sesgo");
@@ -409,7 +411,7 @@ public final class DeformCommands {
             java.util.function.BiFunction<com.komainu.moxia.deform.Volume, Runnable,
                     com.komainu.moxia.deform.DeformField> field
     ) throws IncompleteRegionException {
-        SmoothProfile profile = SmoothProfile.parse(args.value("w"));
+        SmoothProfile profile = smoothProfile(args.value("w"));
         RegionOperationService.submit(player, padding, description,
                 new DeformOperation(DeformOperation.inSelection(field), profile));
     }
@@ -499,5 +501,12 @@ public final class DeformCommands {
         source.sendError(prefix().append(Text.literal(message == null || message.isBlank()
                 ? "Operación inválida" : message).formatted(Formatting.RED)));
         return 0;
+    }
+
+    /** Perfil de {@code -w} con sus materiales fijos ya comprobados, para que un error salga al escribir la orden. */
+    private static SmoothProfile smoothProfile(String text) {
+        SmoothProfile profile = SmoothProfile.parse(text);
+        SmoothBlockStates.validate(profile);
+        return profile;
     }
 }

@@ -156,7 +156,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| Perfiles, materiales y Coverage de `-w` y `//ezsmoothblocks` | `-w Slabs|SlabsAndStairs(C:…)` (`deform/SmoothProfile`) | En curso (`agent/ez-smoothblocks`) |
+| Perfiles `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW`; Coverage `C:`; materiales por variante (`Slab:`, `Stair:`…); color más cercano | `-w <perfil>(C:…,Slab:…)` (`deform/SmoothProfile`, `shape/smooth/PieceFit`, `PieceSolver`, `SmoothMaterials`) | Completo |
 
 ## Deformation
 
@@ -204,7 +204,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
 | `//ezplace`, `//ezscatter`, `//ezarray` y sus pinceles | `/komaedit place`, `scatter`, `array` (`PlacementCommands`, `PlacementService`) y `/komaedit pincel place\|scatter\|array` | Completo |
-| `-w <smoothblocks>` en las tres | `-w slabs\|stairs[:cobertura]` | En curso (perfiles completos en `agent/ez-smoothblocks`) |
+| `-w <smoothblocks>` en las tres | `-w <perfil>(C:…,Slab:…)` | Completo |
 | `//ezspline structure` | `/komaedit ezspline structure` (`EzSplineCommands`, `StructureBendService.fromPlacement`) | Parcial (sin `-t`/`-r` ni radios por fotogramas) |
 
 ## Available Structures
@@ -265,7 +265,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | --- | --- | --- |
 | `//ezsmooth <radios> <iteraciones> <sesgo> [-w]` | `/komaedit smooth` (`deform/SmoothingOps`) | Completo |
 | `//ezinflate`, `//ezdeflate <radios> [-w]` | `/komaedit inflate\|deflate` | Completo |
-| `//ezsmoothblocks <perfil> <radio> <sesgo>` | `/komaedit smoothblocks` | En curso (`agent/ez-smoothblocks`) |
+| `//ezsmoothblocks <perfil> <radio> <sesgo>` | `/komaedit smoothblocks` | Completo |
 
 ## Spline (y Common Parameters, 2D, 3D y Advanced Spline Shapes)
 
@@ -273,7 +273,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | --- | --- | --- |
 | `//ezspline` (`//ezsp`) con la sintaxis exacta de subcomandos, formas y parámetros largos y abreviados | `/komaedit ezspline` (alias `ezsp`, `spline`; `EzSpline`, `EzSplineCommands`) sobre las figuras de espacio de tubo | Completo |
 | Parámetros comunes `<radii>`, `-p`, `-q FAST\|BALANCED\|HIGH\|EXACT` (y el `-q <muestras>` antiguo), `-r a[,b]`, `-s`, `-t`, `-n`, `-e`, `-h` | Los mismos (`TubeCommandParser`; `-q EXACT` mide el volumen con 64 muestras) | Completo |
-| `-w <smoothblocks>` | Modos de piezas de KomaEdit (`none`, `slabs`, `stairs`) | Parcial (perfiles completos en `agent/ez-smoothblocks`) |
+| `-w <smoothblocks>` | Los perfiles de `-w` de KomaEdit (`SmoothProfile`) | Completo (salvo `Panes`, que no existe en KomaEdit) |
 | 2D: Circle, Square, Diamond, RoundedSquare, SuperCircle, CirclesCircle, Strands, Pipe, Polygon, Rectangle, Star, Flower; `basic` y `rope` | Perfiles de `sweep` con sus parámetros (`TubeShapes.Profile`) | Completo |
 | 3D: Beads, Cubes, Chainlink, Fishnet, Honeycomb, Oscillate, Rings, Scales, Noodles | Formas implícitas propias (`EzShapes`) | Completo |
 | 3D: Braids | Trenza de KomaEdit (`braid`) con `Thickness` | Parcial (la trenza es la de KomaEdit) |

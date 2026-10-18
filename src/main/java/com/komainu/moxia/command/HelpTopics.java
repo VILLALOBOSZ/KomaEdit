@@ -135,7 +135,7 @@ public final class HelpTopics {
                             new Entry("/komaedit smooth <radios> [iteraciones] [sesgo]", "Suaviza la selección (alias suavizar)"),
                             new Entry("/komaedit inflate|deflate <radios>", "Engorda o adelgaza (alias inflar, desinflar)"),
                             new Entry("/komaedit smoothblocks <perfil> [radio] [sesgo]",
-                                    "Suaviza con losas y escaleras; todas admiten -w Slabs|SlabsAndStairs")
+                                    "Suaviza con piezas; todas admiten -w Slabs|SlabsAndStairs|SlabsAndStairs2D|Layers|SSW")
                     )),
             new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass"), List.of(
                     new Entry("/komaedit texture ambient|curvature <máscara> <paleta> [radio] [brillo] [contraste] [-w]",

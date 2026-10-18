@@ -1,8 +1,10 @@
 package com.komainu.moxia.shape.tube;
 
+import com.komainu.moxia.deform.SmoothProfile;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.shape.smooth.PieceMaterials;
 import com.komainu.moxia.shape.smooth.SmoothMode;
 
 import java.util.LinkedHashMap;
@@ -14,8 +16,9 @@ import java.util.regex.Pattern;
  * Traduce la forma corta de los comandos de tubo a {@link ShapeParameters}:
  * {@code <perfil> <radios> [patrón] [-e extremo] [-n normales] [-t torsión] [-r giro[,giroFinal]]
  * [-p tensión:sesgo:continuidad] [-q calidad] [-s estiramiento] [-hollow pared] [-d profundidad]
- * [-a aspecto] [-x exponente] [-k hebras] [-f frecuencia] [-seed semilla] [-fill] [-w slabs|stairs]
- * [-c cobertura]}. {@code -c} sin {@code -w} activa losas y escaleras. La de {@code expr} es
+ * [-a aspecto] [-x exponente] [-k hebras] [-f frecuencia] [-seed semilla] [-fill] [-w perfil]
+ * [-c cobertura]}. {@code -w} admite el perfil completo de smoothblocks ({@link SmoothProfile}:
+ * {@code SlabsAndStairs(C:0.7,Slab:oak)}); {@code -c} sin {@code -w} activa losas y escaleras. La de {@code expr} es
  * {@code <radios> [banderas] [patrón] <fórmula…>}.
  */
 public final class TubeCommandParser {
@@ -51,6 +54,7 @@ public final class TubeCommandParser {
         }
 
         String pattern = null;
+        PieceMaterials materials = PieceMaterials.NONE;
         String[] tokens = rest == null || rest.isBlank() ? new String[0] : rest.trim().split("\\s+");
         for (int index = 0; index < tokens.length; index++) {
             String token = tokens[index];
@@ -70,6 +74,12 @@ public final class TubeCommandParser {
                 throw new IllegalArgumentException("Falta el valor de " + token);
             }
             String value = tokens[++index];
+            if (flag.equals("-w")) {
+                int extra = SmoothProfile.extraWords(tokens, index);
+                for (int join = 0; join < extra; join++) {
+                    value += tokens[++index];
+                }
+            }
             switch (flag) {
                 case "-e" -> options.put("end", (double) TubeSettings.EndMode.byId(value).ordinal());
                 case "-n" -> options.put("normal", (double) TubeSettings.NormalMode.byId(value).ordinal());
@@ -82,7 +92,14 @@ public final class TubeCommandParser {
                 case "-k" -> options.put("strands", number(value, 2.0, 8.0, token));
                 case "-f" -> options.put("frequency", number(value, 0.05, 8.0, token));
                 case "-seed", "-semilla" -> options.put("seed", number(value, -1.0E9, 1.0E9, token));
-                case "-w" -> options.put("smooth", (double) SmoothMode.byId(value).ordinal());
+                case "-w" -> {
+                    SmoothProfile profile = SmoothProfile.parse(value);
+                    options.put("smooth", (double) profile.mode().ordinal());
+                    if (SmoothProfile.statesCoverage(value)) {
+                        options.put("coverage", profile.coverage());
+                    }
+                    materials = profile.materials();
+                }
                 case "-c" -> options.put("coverage", number(value, 0.0, 1.0, token));
                 case "-hollow", "-hueco" -> {
                     options.put("hollow", 1.0);
@@ -125,7 +142,7 @@ public final class TubeCommandParser {
                 roll,
                 new ShapeOptions(options)
         );
-        return new Result(parameters, pattern == null ? defaultPattern : pattern);
+        return new Result(parameters, pattern == null ? defaultPattern : pattern, materials);
     }
 
     /**
@@ -202,7 +219,7 @@ public final class TubeCommandParser {
             throw new IllegalArgumentException("Demasiados parámetros a la vez (máximo " + ShapeOptions.MAX_ENTRIES + ")");
         }
         ShapeParameters parameters = parsed.parameters().withOptions(new ShapeOptions(options, source));
-        return new Result(parameters, parsed.pattern());
+        return new Result(parameters, parsed.pattern(), parsed.materials());
     }
 
     /** Fórmula de serie (con su {@code n} si lo lleva pegado) o fórmula propia ya comprobada. */
@@ -285,6 +302,17 @@ public final class TubeCommandParser {
         return value == Math.rint(value) ? Long.toString((long) value) : Double.toString(value);
     }
 
-    public record Result(ShapeParameters parameters, String pattern) {
+    /**
+     * @param materials materiales fijos de las piezas de {@code -w}; no se guardan en la figura, solo valen para
+     *                  la construcción de este comando
+     */
+    public record Result(ShapeParameters parameters, String pattern, PieceMaterials materials) {
+        public Result {
+            materials = materials == null ? PieceMaterials.NONE : materials;
+        }
+
+        public Result(ShapeParameters parameters, String pattern) {
+            this(parameters, pattern, PieceMaterials.NONE);
+        }
     }
 }
