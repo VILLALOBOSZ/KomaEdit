@@ -32,7 +32,7 @@ public final class DeformArguments {
         List<String> positional = new ArrayList<>();
         Map<String, String> values = new LinkedHashMap<>();
         Set<Character> switches = new HashSet<>();
-        String[] tokens = text == null || text.isBlank() ? new String[0] : text.trim().split("\\s+");
+        String[] tokens = joinQuoted(text == null || text.isBlank() ? new String[0] : text.trim().split("\\s+"));
         for (int index = 0; index < tokens.length; index++) {
             String token = tokens[index];
             if (!token.startsWith("-") || token.length() == 1 || isNumber(token)) {
@@ -66,6 +66,37 @@ public final class DeformArguments {
             }
         }
         return new DeformArguments(List.copyOf(positional), values, switches);
+    }
+
+    /**
+     * Junta las palabras entre comillas dobles en un solo valor sin comillas: así una máscara de WorldEdit con
+     * espacios cabe en {@code -m "#solid !sand"}.
+     */
+    static String[] joinQuoted(String[] words) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder quoted = null;
+        for (String word : words) {
+            if (quoted == null && word.startsWith("\"")) {
+                if (word.length() > 1 && word.endsWith("\"")) {
+                    tokens.add(word.substring(1, word.length() - 1));
+                    continue;
+                }
+                quoted = new StringBuilder(word.substring(1));
+            } else if (quoted != null) {
+                boolean closes = word.endsWith("\"");
+                quoted.append(' ').append(closes ? word.substring(0, word.length() - 1) : word);
+                if (closes) {
+                    tokens.add(quoted.toString());
+                    quoted = null;
+                }
+            } else {
+                tokens.add(word);
+            }
+        }
+        if (quoted != null) {
+            throw new IllegalArgumentException("Faltan las comillas de cierre en «\"" + quoted + "»");
+        }
+        return tokens.toArray(String[]::new);
     }
 
     public int count() {

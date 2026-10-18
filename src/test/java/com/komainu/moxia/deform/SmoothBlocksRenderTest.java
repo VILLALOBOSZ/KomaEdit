@@ -38,7 +38,7 @@ class SmoothBlocksRenderTest {
     void renderProfilesOnASpline() throws IOException {
         List<BufferedImage> images = new ArrayList<>();
         List<String> labels = new ArrayList<>();
-        for (String profile : List.of("", "Slabs", "SlabsAndStairs", "SlabsAndStairs2D", "Layers", "SSW")) {
+        for (String profile : List.of("", "Slabs", "SlabsAndStairs", "SlabsAndStairs2D", "Layers", "SSW", "Panes")) {
             TubeCommandParser.Result parsed = TubeCommandParser.parse(PathShape.SWEEP, "circle", "5",
                     profile.isEmpty() ? "" : "-w " + profile, "minecraft:smooth_sandstone");
             PackedBlockPlan plan = ShapeGenerator.generatePlan(spline(), parsed.parameters());
@@ -111,6 +111,40 @@ class SmoothBlocksRenderTest {
             labels.add("-w " + profile + " · " + corners + " esquinas");
         }
         write(PieceRender.sheet(images, labels, 2), "smoothblocks_esquinas.png");
+    }
+
+    @Test
+    void renderPanes() throws IOException {
+        // Vidrio con -w Panes: un tubo macizo y cintas finas de pie, con cobertura 0,5 y 1. Los paneles van en azul
+        // para distinguirlos del vidrio entero.
+        List<BufferedImage> images = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        String glass = "minecraft:light_gray_stained_glass";
+        record Variant(String profile, String radius, String flags) {
+        }
+        for (Variant variant : List.of(
+                new Variant("circle", "5", "-w Panes"),
+                new Variant("circle", "5", "-w Panes(C:1)"),
+                new Variant("rectangle", "6", "-a 0.12 -r 90 -w Panes"),
+                new Variant("rectangle", "6", "-a 0.2 -r 90 -w Panes(C:1)"),
+                new Variant("rectangle", "6", "-a 0.12 -r 90 -t 60 -w Panes(Pane:iron_bars)"),
+                new Variant("rectangle", "6", "-a 0.12 -r 90"))) {
+            TubeCommandParser.Result parsed = TubeCommandParser.parse(PathShape.SWEEP, variant.profile(),
+                    variant.radius(), variant.flags(), glass);
+            PackedBlockPlan plan = ShapeGenerator.generatePlan(spline(), parsed.parameters());
+            Long2ObjectOpenHashMap<PieceRender.Cell> cells = cells(plan, glass, parsed.materials());
+            int panes = 0;
+            for (var entry : cells.long2ObjectEntrySet()) {
+                if (SmoothPiece.isPane(entry.getValue().piece())) {
+                    panes++;
+                    entry.setValue(new PieceRender.Cell(entry.getValue().piece(), 0x2E86C1));
+                }
+            }
+            images.add(PieceRender.render(cells, 9));
+            labels.add(variant.profile() + " " + variant.radius() + " " + variant.flags() + " · " + panes
+                    + " paneles");
+        }
+        write(PieceRender.sheet(images, labels, 2), "smoothblocks_paneles.png");
     }
 
     @Test

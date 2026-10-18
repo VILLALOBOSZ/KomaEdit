@@ -57,7 +57,7 @@ class PackedBlockPlanTest {
         assertEquals(stairs, plan.piece(37));
         assertEquals(SmoothPiece.FULL, plan.piece(36));
         assertThrows(IndexOutOfBoundsException.class, () -> builder.setPiece(40, SmoothPiece.slab(false)));
-        assertThrows(IllegalArgumentException.class, () -> builder.setPiece(0, (byte) 51));
+        assertThrows(IllegalArgumentException.class, () -> builder.setPiece(0, (byte) 100));
     }
 
     private static void assertRoundTrip(int x, int y, int z) {

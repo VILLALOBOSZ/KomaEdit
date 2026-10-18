@@ -134,8 +134,14 @@ public final class StructureBendService {
     }
 
     public static PackedBlockPlan plan(Captured captured, PathSnapshot path, TubeBender.Settings settings) {
+        return plan(captured, path, settings, TubeBender.Section.NONE);
+    }
+
+    /** Con la sección variable de {@code //ezspline structure} (radios por fotogramas, {@code -t}, {@code -r}). */
+    public static PackedBlockPlan plan(Captured captured, PathSnapshot path, TubeBender.Settings settings,
+                                       TubeBender.Section section) {
         PackedBlockPlan.Builder builder = PackedBlockPlan.builder(Math.max(16, captured.template().size() * 4));
-        append(builder, captured, path, settings);
+        append(builder, captured, path, settings, section);
         return builder.build();
     }
 
@@ -145,8 +151,19 @@ public final class StructureBendService {
             PathSnapshot path,
             TubeBender.Settings settings
     ) {
+        return append(builder, captured, path, settings, TubeBender.Section.NONE);
+    }
+
+    public static int append(
+            PackedBlockPlan.Builder builder,
+            Captured captured,
+            PathSnapshot path,
+            TubeBender.Settings settings,
+            TubeBender.Section section
+    ) {
         SampledPath sampled = SampledPath.createSmooth(path.points(), path.closed());
-        Long2IntOpenHashMap bent = TubeBender.bend(sampled, captured.template(), settings, MAX_RESULT_BLOCKS);
+        Long2IntOpenHashMap bent = TubeBender.bend(sampled, captured.template(), settings, section,
+                MAX_RESULT_BLOCKS);
         BlockState[][] rotated = new BlockState[captured.palette().size()][4];
         for (Long2IntMap.Entry entry : Long2IntMaps.fastIterable(bent)) {
             long packed = entry.getLongKey();

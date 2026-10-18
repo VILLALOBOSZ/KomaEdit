@@ -141,6 +141,7 @@ public final class KomaEditMod implements ModInitializer {
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
             RegionOperationService.cancel(handler.player.getUuid());
+            com.komainu.moxia.persistence.QuietMode.forget(handler.player.getUuid());
         });
         ServerTickEvents.END_SERVER_TICK.register(BatchEditService::tick);
         ServerTickEvents.END_SERVER_TICK.register(FastPaintService::tick);
@@ -157,6 +158,7 @@ public final class KomaEditMod implements ModInitializer {
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
             RegionOperationService.clearAll();
+            com.komainu.moxia.persistence.QuietMode.clearAll();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");
     }

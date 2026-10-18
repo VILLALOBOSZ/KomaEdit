@@ -17,6 +17,7 @@ public final class SmoothPieces {
     private final int stairs;
     private final int layers;
     private final int walls;
+    private final int panes;
     private final int added;
 
     /** Toma posesión del mapa: quien lo crea no debe modificarlo después. */
@@ -27,6 +28,7 @@ public final class SmoothPieces {
         int stairCount = 0;
         int layerCount = 0;
         int wallCount = 0;
+        int paneCount = 0;
         int addedCount = 0;
         ObjectIterator<Long2ByteMap.Entry> entries = pieces.long2ByteEntrySet().fastIterator();
         while (entries.hasNext()) {
@@ -40,6 +42,8 @@ public final class SmoothPieces {
                 stairCount++;
             } else if (SmoothPiece.isLayers(piece)) {
                 layerCount++;
+            } else if (SmoothPiece.isPane(piece)) {
+                paneCount++;
             } else {
                 wallCount++;
             }
@@ -51,6 +55,7 @@ public final class SmoothPieces {
         stairs = stairCount;
         layers = layerCount;
         walls = wallCount;
+        panes = paneCount;
         added = addedCount;
     }
 
@@ -86,21 +91,25 @@ public final class SmoothPieces {
         return walls;
     }
 
+    public int panes() {
+        return panes;
+    }
+
     /** Piezas colocadas donde la figura no tenía bloque. */
     public int added() {
         return added;
     }
 
     /**
-     * Resumen para los mensajes de construcción, p. ej. {@code 120 losas · 85 escaleras}; las capas y los muros
-     * solo aparecen si los hay.
+     * Resumen para los mensajes de construcción, p. ej. {@code 120 losas · 85 escaleras}; las capas, los muros y
+     * los paneles solo aparecen si los hay.
      */
     public String summary() {
         if (isEmpty()) {
             return "sin piezas";
         }
         StringBuilder text = new StringBuilder();
-        if (layers == 0 || slabs + stairs > 0) {
+        if ((layers == 0 && panes == 0) || slabs + stairs > 0) {
             text.append(slabs).append(slabs == 1 ? " losa" : " losas").append(" · ").append(stairs)
                     .append(stairs == 1 ? " escalera" : " escaleras");
         }
@@ -109,6 +118,9 @@ public final class SmoothPieces {
         }
         if (walls > 0) {
             text.append(" · ").append(walls).append(walls == 1 ? " muro" : " muros");
+        }
+        if (panes > 0) {
+            text.append(text.isEmpty() ? "" : " · ").append(panes).append(panes == 1 ? " panel" : " paneles");
         }
         return text.toString();
     }

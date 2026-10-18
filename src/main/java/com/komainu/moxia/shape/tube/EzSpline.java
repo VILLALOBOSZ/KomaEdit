@@ -98,12 +98,22 @@ public final class EzSpline {
     }
 
     /**
-     * @param source estructura en la notación de colocación ({@code Clipboard}, {@code Schematic(...)}, {@code TS(...)})
-     * @param radius radio al que se escala la sección de la estructura; {@code NaN} para su tamaño propio
-     * @param stretch {@code -s}: estira (o encoge) la estructura a lo largo del recorrido
-     * @param bend modo (repetir o, con {@code -z}, una sola copia estirada), normales y curva
+     * @param source    estructura en la notación de colocación ({@code Clipboard}, {@code Schematic(...)},
+     *                  {@code TS(...)})
+     * @param radii     radios por fotogramas a los que se escala la sección ({@code 12}, {@code 4,12,4},
+     *                  {@code 0:4,0.3:12,1:4}); {@code null} para su tamaño propio
+     * @param stretch   {@code -s}: estira (o encoge) la estructura a lo largo del recorrido
+     * @param twist     {@code -t}: grados de torsión por diámetro recorrido
+     * @param startRoll {@code -r}: giro inicial de la sección alrededor del eje, en grados
+     * @param endRoll   giro final de {@code -r inicio,fin}, o {@code NaN}; con él {@code -t} no cuenta
+     * @param bend      modo (repetir o, con {@code -z}, una sola copia estirada), normales y curva
      */
-    public record Structure(String source, double radius, double stretch, TubeBender.Settings bend) {
+    public record Structure(String source, String radii, double stretch, double twist, double startRoll,
+                            double endRoll, TubeBender.Settings bend) {
+        /** La sección variable para {@link TubeBender}, con el radio propio de la estructura ya medido. */
+        public TubeBender.Section section(double inherentRadius) {
+            return TubeBender.Section.of(radii, inherentRadius, stretch, twist, startRoll, endRoll);
+        }
     }
 
     /**
@@ -320,32 +330,40 @@ public final class EzSpline {
         if (arguments.has("-h")) {
             return help("structure");
         }
-        for (String unsupported : List.of("-t", "-r", "-e", "-w", "-c")) {
+        for (String unsupported : List.of("-e", "-w", "-c")) {
             if (arguments.has(unsupported)) {
                 throw new IllegalArgumentException("La bandera " + unsupported + " no se aplica a //ezspline "
-                        + "structure: la estructura se dobla bloque a bloque y conserva su forma");
+                        + "structure: la estructura se dobla bloque a bloque y conserva sus bloques");
             }
         }
         List<String> positional = arguments.positional();
         if (positional.isEmpty()) {
-            throw new IllegalArgumentException("Uso: //ezspline structure <estructura> [radio] [-z] [-s] [-n] [-p]");
+            throw new IllegalArgumentException("Uso: //ezspline structure <estructura> [radios] [-z] [-s] [-t] [-r]"
+                    + " [-n] [-p]");
         }
         if (positional.size() > 2) {
             throw new IllegalArgumentException("Sobra el texto «" + positional.get(2) + "»");
         }
-        double radius = Double.NaN;
+        String radii = null;
         if (positional.size() == 2) {
-            String text = positional.get(1);
-            if (text.matches(".*[,_/;].*")) {
-                throw new IllegalArgumentException("//ezspline structure admite un solo radio (" + text + ")");
-            }
-            Double value = parseNumber(text.contains(":") ? text.substring(text.indexOf(':') + 1) : text);
-            if (value == null || !(value > 0.0) || value > 128.0) {
-                throw new IllegalArgumentException("El radio de la estructura debe estar entre 0 y 128: " + text);
-            }
-            radius = value;
+            radii = positional.get(1);
+            // Misma sintaxis que los radios de los tubos: falla aquí, al escribir la orden.
+            TubeSettings.RadiusProgression.parse(radii);
         }
         double stretch = arguments.has("-s") ? number(arguments.value("-s"), 0.1, 10.0, "-s") : 1.0;
+        double twist = arguments.has("-t") ? number(arguments.value("-t"), -3_600.0, 3_600.0, "-t") : 0.0;
+        double startRoll = 0.0;
+        double endRoll = Double.NaN;
+        if (arguments.has("-r")) {
+            String[] angles = arguments.value("-r").split(",");
+            if (angles.length > 2) {
+                throw new IllegalArgumentException("-r admite un giro inicial y, si acaso, uno final: -r 0,180");
+            }
+            startRoll = number(angles[0], -3_600.0, 3_600.0, "-r");
+            if (angles.length == 2) {
+                endRoll = number(angles[1], -3_600.0, 3_600.0, "-r");
+            }
+        }
         TubeSettings.NormalMode normal = arguments.has("-n")
                 ? TubeSettings.NormalMode.byId(arguments.value("-n"))
                 : TubeSettings.NormalMode.CONSISTENT;
@@ -361,7 +379,7 @@ public final class EzSpline {
                 flow[2]
         );
         return new Request(Kind.STRUCTURE, "structure", null, null, false,
-                new Structure(positional.getFirst(), radius, stretch, bend), List.of());
+                new Structure(positional.getFirst(), radii, stretch, twist, startRoll, endRoll, bend), List.of());
     }
 
     /** Pasa radios y banderas comunes por el mismo lector que {@code /komaedit sweep} y añade la forma. */
@@ -866,8 +884,9 @@ public final class EzSpline {
                 lines.add("x, y de -1 a 1; z en radios (o de -1 a 1 con -z); -o: la salida cuenta entradas de paleta");
             }
             case "structure" -> {
-                lines.add("//ezspline structure <estructura> [radio] [-z] [-s] [-n] [-p]");
-                lines.add("Clipboard, Schematic(…), Shape(…), TS(…)… · sin radio, a su tamaño · -z: una sola copia");
+                lines.add("//ezspline structure <estructura> [radios] [-z] [-s] [-t] [-r] [-n] [-p]");
+                lines.add("Clipboard, Schematic(…), Shape(…), TS(…)… · sin radio, a su tamaño · 4,12,4 o 0:4,0.3:12,1:4:"
+                        + " radio por fotogramas · -t torsión · -r giro · -z: una sola copia");
             }
             default -> {
                 lines.add("//ezspline (también ezsp y spline) a lo largo de la trayectoria o de la selección");
