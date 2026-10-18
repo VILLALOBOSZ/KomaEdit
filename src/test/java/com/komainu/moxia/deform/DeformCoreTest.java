@@ -84,6 +84,9 @@ class DeformCoreTest {
         assertEquals(7L, DeformArguments.parse("-s -1", Set.of("s"), "").seed("s", 7L));
         assertThrows(IllegalArgumentException.class, () -> DeformArguments.parse("-q", Set.of(), "a"));
         assertThrows(IllegalArgumentException.class, () -> DeformArguments.parse("-w", Set.of("w"), ""));
+        assertEquals("SlabsAndStairs(Slab:oak,Stair:spruce)",
+                DeformArguments.parse("3 -w SlabsAndStairs(Slab:oak, Stair:spruce) 2", Set.of("w"), "").value("w"),
+                "un perfil con espacios tras las comas es un solo valor");
         assertThrows(IllegalArgumentException.class, () -> args.number(0, 0, 0, 5, "El tamaño"));
         assertThrows(IllegalArgumentException.class, () -> args.expectAtMost(1, "uso"));
     }
@@ -97,9 +100,11 @@ class DeformCoreTest {
         assertEquals(SmoothMode.STAIRS, SmoothProfile.parse("sas").mode());
         assertEquals(SmoothMode.STAIRS, SmoothProfile.parse("escaleras").mode());
         assertFalse(SmoothProfile.parse(null).active());
-        assertThrows(IllegalArgumentException.class, () -> SmoothProfile.parse("Layers"));
-        assertThrows(IllegalArgumentException.class, () -> SmoothProfile.parse("Slabs(Slab:acacia)"));
+        assertEquals(SmoothMode.LAYERS, SmoothProfile.parse("Layers").mode());
+        assertEquals("acacia", SmoothProfile.parse("Slabs(Slab:acacia)").materials().get(
+                com.komainu.moxia.shape.smooth.PieceVariant.SLAB));
         assertThrows(IllegalArgumentException.class, () -> SmoothProfile.parse("Slabs(C:0.5"));
+        assertThrows(IllegalArgumentException.class, () -> SmoothProfile.parse("Slabs(Stair:oak)"));
     }
 
     @Test

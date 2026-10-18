@@ -3,11 +3,10 @@ package com.komainu.moxia.shape.tube;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.shape.GeometryLimitException;
 import com.komainu.moxia.shape.smooth.PieceFit;
+import com.komainu.moxia.shape.smooth.PieceSolver;
 import com.komainu.moxia.shape.smooth.SmoothMode;
 import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.komainu.moxia.shape.smooth.SmoothPieces;
-import com.komainu.moxia.shape.smooth.StairShapes;
-import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -16,7 +15,8 @@ import java.util.concurrent.CancellationException;
 
 /**
  * Losas y escaleras en la superficie ("smoothblocks"): cada bloque del borde, y cada hueco vacío pegado a él,
- * se mide por octantes con la misma función implícita que decidió la figura y {@link PieceFit} elige la pieza.
+ * se mide por octantes con la misma función implícita que decidió la figura y {@link PieceFit} elige la pieza del
+ * perfil; {@link PieceSolver} ajusta las esquinas de las escaleras en los perfiles 3D.
  *
  * <p>Solo se tocan bloques que la propia figura coloca: los que añade otro paso (acento de ritmo, cierre de
  * huecos) se quedan enteros. En tubos huecos la capa que toca el interior tampoco cambia, así una losa nunca
@@ -94,7 +94,7 @@ final class TubeSmoother {
     }
 
     private SmoothPieces run(LongOpenHashSet blocks, int limit) {
-        Long2ByteOpenHashMap pieces = new Long2ByteOpenHashMap();
+        PieceSolver solver = new PieceSolver(settings.smoothMode(), settings.coverage());
         LongOpenHashSet candidates = new LongOpenHashSet();
         boolean hollow = settings.hollow();
         LongIterator iterator = blocks.iterator();
@@ -111,12 +111,12 @@ final class TubeSmoother {
                 collectEmptyNeighbors(blocks, candidates, x, y, z);
             }
             measure(x, y, z, true);
-            byte piece = PieceFit.choose(occupancy, true, settings.smoothMode(), settings.coverage());
+            byte piece = solver.choose(occupancy, true);
             // Las comprobaciones caras solo cuando el bloque cambia: que sea de la figura y no abra una tubería.
             if (piece != SmoothPiece.FULL
                     && evaluator.place(x + 0.5, y + 0.5, z + 0.5)
                     && !(hollow && touchesCavity(blocks, x, y, z))) {
-                pieces.put(packed, piece);
+                solver.put(packed, piece, occupancy);
             }
         }
 
@@ -131,10 +131,10 @@ final class TubeSmoother {
             if (!measure(x, y, z, false)) {
                 continue;
             }
-            byte piece = PieceFit.choose(occupancy, false, settings.smoothMode(), settings.coverage());
+            byte piece = solver.choose(occupancy, false);
             // Si la figura sí quería un bloque aquí y otro paso lo quitó (islas sueltas), se respeta.
             if (piece != SmoothPiece.EMPTY && !evaluator.place(x + 0.5, y + 0.5, z + 0.5)) {
-                pieces.put(packed, piece);
+                solver.put(packed, piece, occupancy);
                 additions.add(packed);
             }
         }
@@ -142,8 +142,9 @@ final class TubeSmoother {
             throw new GeometryLimitException(limit);
         }
         blocks.addAll(additions);
-        StairShapes.resolve(pieces);
-        return new SmoothPieces(pieces);
+        SmoothPieces pieces = new SmoothPieces(solver.finish(blocks::contains));
+        blocks.removeAll(solver.dropped());
+        return pieces;
     }
 
     /**

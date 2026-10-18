@@ -55,7 +55,7 @@ public record BuildEstimate(
         StringBuilder builder = new StringBuilder();
         builder.append(group(blocks)).append(" bloques");
         if (pieces > 0) {
-            builder.append(" (").append(group(pieces)).append(" losas/escaleras)");
+            builder.append(" (").append(group(pieces)).append(" piezas)");
         }
         builder.append(" · ").append(group(chunks)).append(chunks == 1 ? " chunk" : " chunks");
         if (bounds != null) {

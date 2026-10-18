@@ -34,7 +34,7 @@ class BuildEstimateTest {
     void summaryReadsNaturally() {
         BuildEstimate estimate = BuildEstimate.of(1_234_567, 890, 42,
                 new BlockBounds(0, 60, 0, 59, 83, 87));
-        assertEquals("1 234 567 bloques (890 losas/escaleras) · 42 chunks · caja 60×24×88 · ~47 MB · ~21 s",
+        assertEquals("1 234 567 bloques (890 piezas) · 42 chunks · caja 60×24×88 · ~47 MB · ~21 s",
                 estimate.summary());
     }
 

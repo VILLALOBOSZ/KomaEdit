@@ -59,7 +59,7 @@ public final class DeformOperation implements RegionOperation {
                 long key = (long) rawId << 8 | (piece & 0xFF);
                 BlockState shaped = shapes.get(key);
                 if (shaped == null && !shapes.containsKey(key)) {
-                    shaped = SmoothBlockStates.shape(state.toBaseBlock(), piece);
+                    shaped = SmoothBlockStates.shape(state.toBaseBlock(), piece, profile.materials());
                     shapes.put(key, shaped);
                 }
                 if (shaped != null) {

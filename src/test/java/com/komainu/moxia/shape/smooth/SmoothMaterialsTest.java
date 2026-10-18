@@ -67,8 +67,10 @@ class SmoothMaterialsTest {
     @Test
     void blocksWithoutAnyFamilyAreLeftToTheColorFallback() {
         assertNull(slab("minecraft:white_concrete"));
-        assertNull(stairs("minecraft:smooth_basalt"));
-        assertEquals(List.of("smooth_basalt", "basalt"), SmoothMaterials.stems("smooth_basalt"));
+        assertNull(stairs("minecraft:basalt"));
+        assertEquals(List.of("basalt"), SmoothMaterials.stems("basalt"));
+        // El basalto liso se parece a la pizarra pulida: la tabla lo manda a su familia.
+        assertEquals("minecraft:cobbled_deepslate_stairs", stairs("minecraft:smooth_basalt"));
     }
 
     private static String slab(String id) {

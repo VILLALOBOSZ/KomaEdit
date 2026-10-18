@@ -5,6 +5,8 @@ import com.komainu.moxia.brush.BrushSettings;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.edit.SmoothBlockStates;
+import com.komainu.moxia.shape.smooth.PieceMaterials;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.gradient.GradientAxis;
 import com.komainu.moxia.gradient.GradientPalette;
@@ -112,8 +114,8 @@ public final class MoxiaCommands {
         int lastSpace = remaining.lastIndexOf(' ');
         var tail = builder.createOffset(builder.getStart() + lastSpace + 1);
         for (String flag : new String[]{"-e round", "-e spike", "-e soft", "-e cube", "-n horizontal",
-                "-n upright", "-t 90", "-r 0,180", "-p 0:0:0", "-q high", "-hollow 1", "-s 2", "-w stairs",
-                "-w slabs", "-c 0.5"}) {
+                "-n upright", "-t 90", "-r 0,180", "-p 0:0:0", "-q high", "-hollow 1", "-s 2", "-w SlabsAndStairs",
+                "-w Slabs(C:0.7)", "-w Layers", "-w SSW", "-w SlabsAndStairs2D", "-c 0.5"}) {
             tail.suggest(flag);
         }
         return tail.buildFuture();
@@ -146,7 +148,7 @@ public final class MoxiaCommands {
         }
         tail.suggest("r<1&&abs(sin(a*3+z))>0.4");
         for (String flag : new String[]{"-e round", "-e spike", "-n horizontal", "-n upright", "-t 90",
-                "-q high", "-hollow 1", "-s 2", "-seed 7", "-w stairs", "-w slabs"}) {
+                "-q high", "-hollow 1", "-s 2", "-seed 7", "-w SlabsAndStairs", "-w Slabs", "-w Layers"}) {
             tail.suggest(flag);
         }
         return tail.buildFuture();
@@ -609,7 +611,7 @@ public final class MoxiaCommands {
                     options,
                     defaultPattern
             );
-            return enqueueShape(context, player, true, parsed.pattern(), parsed.parameters());
+            return enqueueShape(context, player, true, parsed.pattern(), parsed.parameters(), parsed.materials());
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
         } catch (InputParseException | IllegalArgumentException exception) {
@@ -768,7 +770,7 @@ public final class MoxiaCommands {
                     expression,
                     "stone"
             );
-            return enqueueShape(context, player, true, parsed.pattern(), parsed.parameters());
+            return enqueueShape(context, player, true, parsed.pattern(), parsed.parameters(), parsed.materials());
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Marca al menos dos puntos con P o completa //pos1 y //pos2");
         } catch (InputParseException | IllegalArgumentException exception) {
@@ -1879,6 +1881,19 @@ public final class MoxiaCommands {
             String pattern,
             ShapeParameters requestedParameters
     ) throws IncompleteRegionException, InputParseException {
+        return enqueueShape(context, player, buildNow, pattern, requestedParameters, PieceMaterials.NONE);
+    }
+
+    /** @param pieceMaterials materiales fijos de las piezas de {@code -w} ({@code Slabs(Slab:acacia)}) */
+    private static int enqueueShape(
+            CommandContext<ServerCommandSource> context,
+            ServerPlayerEntity player,
+            boolean buildNow,
+            String pattern,
+            ShapeParameters requestedParameters,
+            PieceMaterials pieceMaterials
+    ) throws IncompleteRegionException, InputParseException {
+        SmoothBlockStates.validate(pieceMaterials);
         // buildNow = false es /komaedit estimate: calcula la misma geometría y solo informa.
         boolean estimateOnly = !buildNow;
         KomaPermissions.requireBuild(player, requestedParameters.shape().id());
@@ -1900,7 +1915,8 @@ public final class MoxiaCommands {
                     SampledPath sampledPath = legacyScalePath
                             ? SampledPath.create(pathSnapshot.points(), pathSnapshot.closed())
                             : SampledPath.createSmooth(pathSnapshot.points(), pathSnapshot.closed());
-                    return ShapeGenerator.generatePlan(sampledPath, requestedParameters);
+                    return ShapeGenerator.generatePlan(sampledPath, requestedParameters)
+                            .withPieceMaterials(pieceMaterials);
                 },
                 plan -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
@@ -1925,7 +1941,7 @@ public final class MoxiaCommands {
                                             requestedParameters.shape().displayName() + " en cola: " + changed
                                                     + " bloques" + (pieces == 0
                                                     ? " · espaciado " + requestedParameters.spacing()
-                                                    : " · " + pieces + " losas/escaleras")
+                                                    : " · " + pieces + " piezas")
                                                     + " · /komaedit job status"
                                     ).formatted(Formatting.GREEN)),
                                     false

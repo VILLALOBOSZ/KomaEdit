@@ -44,7 +44,15 @@ public final class DeformArguments {
                 if (index + 1 >= tokens.length) {
                     throw new IllegalArgumentException("Falta el valor de " + token);
                 }
-                if (values.put(canonical(flag), tokens[++index]) != null) {
+                String value = tokens[++index];
+                if (flag.equals("w")) {
+                    // Un perfil con espacios tras las comas: SlabsAndStairs(Slab:oak, Stair:spruce).
+                    int extra = SmoothProfile.extraWords(tokens, index);
+                    for (int join = 0; join < extra; join++) {
+                        value += tokens[++index];
+                    }
+                }
+                if (values.put(canonical(flag), value) != null) {
                     throw new IllegalArgumentException("La bandera " + token + " está repetida");
                 }
                 continue;

@@ -6,7 +6,7 @@ import com.komainu.moxia.shape.Vec3;
 import com.komainu.moxia.shape.smooth.PieceFit;
 import com.komainu.moxia.shape.smooth.SmoothMode;
 import com.komainu.moxia.shape.smooth.SmoothPiece;
-import com.komainu.moxia.shape.smooth.StairShapes;
+import com.komainu.moxia.shape.smooth.PieceSolver;
 import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMaps;
@@ -158,7 +158,7 @@ public final class PlacementVoxelizer {
         }
         Long2ByteOpenHashMap pieces = new Long2ByteOpenHashMap();
         if (options.smoothMode() != SmoothMode.NONE && options.coverage() > 0.0) {
-            smooth(placements, samplers, cells, pieces, options);
+            pieces = smooth(placements, samplers, cells, options);
         }
         return new Result(cells, pieces);
     }
@@ -215,17 +215,17 @@ public final class PlacementVoxelizer {
     }
 
     /**
-     * Losas y escaleras ({@code -w}): cada bloque del borde y cada hueco pegado a él se mide por octantes con la
-     * estructura que lo puso y {@link PieceFit} elige la pieza; las esquinas de las escaleras se resuelven como en
-     * Minecraft.
+     * Piezas del perfil {@code -w}: cada bloque del borde y cada hueco pegado a él se mide por octantes con la
+     * estructura que lo puso y {@link PieceFit} elige la pieza; {@link PieceSolver} ajusta las esquinas de las
+     * escaleras en los perfiles 3D y las deja como en Minecraft.
      */
-    private static void smooth(
+    private static Long2ByteOpenHashMap smooth(
             List<Placement> placements,
             Structure.Sampler[] samplers,
             Long2LongOpenHashMap cells,
-            Long2ByteOpenHashMap pieces,
             Options options
     ) {
+        PieceSolver solver = new PieceSolver(options.smoothMode(), options.coverage());
         double[] occupancy = new double[8];
         Long2LongOpenHashMap additions = new Long2LongOpenHashMap();
         int checks = 0;
@@ -258,9 +258,9 @@ public final class PlacementVoxelizer {
                 if (!additions.containsKey(neighbor)
                         && (options.clip() == null || options.clip().allows(nx, ny, nz))) {
                     measure(placements.get(owner), samplers[owner], nx, ny, nz, occupancy);
-                    byte piece = PieceFit.choose(occupancy, false, options.smoothMode(), options.coverage());
+                    byte piece = solver.choose(occupancy, false);
                     if (piece != SmoothPiece.EMPTY) {
-                        pieces.put(neighbor, piece);
+                        solver.put(neighbor, piece, occupancy);
                         additions.put(neighbor, code);
                     } else {
                         additions.put(neighbor, Long.MIN_VALUE);
@@ -271,10 +271,8 @@ public final class PlacementVoxelizer {
                 continue;
             }
             measure(placements.get(owner), samplers[owner], x, y, z, occupancy);
-            byte piece = PieceFit.choose(occupancy, true, options.smoothMode(), options.coverage());
-            if (piece != SmoothPiece.FULL) {
-                pieces.put(key, piece);
-            }
+            byte piece = solver.choose(occupancy, true);
+            solver.put(key, piece, occupancy);
         }
         for (Long2LongMap.Entry entry : Long2LongMaps.fastIterable(additions)) {
             if (entry.getLongValue() != Long.MIN_VALUE) {
@@ -284,7 +282,9 @@ public final class PlacementVoxelizer {
         if (cells.size() > options.maxBlocks()) {
             throw new GeometryLimitException(options.maxBlocks());
         }
-        StairShapes.resolve(pieces);
+        Long2ByteOpenHashMap pieces = solver.finish(key -> solid(cells, key));
+        solver.dropped().forEach(cells::remove);
+        return pieces;
     }
 
     private static boolean solid(Long2LongOpenHashMap cells, long key) {
