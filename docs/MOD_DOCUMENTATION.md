@@ -610,7 +610,7 @@ Ejemplos:
 
 ### Objetivo y acceso
 
-Convierte una construcción terminada en una ruina creíble. No es ruido al azar: el desgaste sigue la exposición a la intemperie, lo que pierde el apoyo se cae y forma montones de escombro, y la vida crece donde tiene sentido. Ningún otro editor hace esto sobre lo que ya está construido.
+Convierte una construcción terminada en una ruina creíble. No es ruido al azar: trabaja por elementos como el tiempo (los muros pierden altura por el centro de los lienzos y junto a los huecos mientras esquinas y pilares quedan en pie, los tejados y forjados se hunden por el centro de la luz, la madera y el vidrio se van antes que la piedra), lo que pierde el apoyo se cae y forma montones al pie de los muros, y la vida crece donde tiene sentido. Ningún otro editor hace esto sobre lo que ya está construido.
 
 - Selecciona la obra con WorldEdit (`//pos1`, `//pos2`; vale cualquier forma de selección) y escribe:
 
@@ -624,28 +624,30 @@ Convierte una construcción terminada en una ruina creíble. No es ruido al azar
 
 ### Comportamiento
 
-El cálculo imita el orden en que trabaja el tiempo:
+El cálculo trabaja por elementos y en el orden en que trabaja el tiempo:
 
-1. **Desgaste por exposición.** Cada bloque mide sus caras y sus 26 vecinos al aire, ponderados por la intemperie de ese aire: 1 bajo el cielo abierto, 0,6 y 0,3 a uno y dos pasos de él (una ventana, bajo un alero) y 0,1 en el aire cerrado de una habitación o de un tejado hueco. Así las aristas, esquinas y almenas se pierden antes que una cara lisa, lo alto antes que lo bajo, y lo que está bajo techo apenas se gasta mientras el tejado aguante. Un ruido suave por semilla agrupa el daño en mordiscos de unos 4 bloques en vez de agujeros sueltos. Se hacen de una a cuatro pasadas según la intensidad, recalculando la exposición, de modo que el daño entra desde los bordes. El vidrio y la lana se van antes que la piedra, la madera algo antes, y la pizarra profunda, la piedra negra y el cobre aguantan más.
-2. **Derrumbe.** Se mide, capa a capa desde el suelo, la distancia en horizontal de cada bloque a una columna que baje hasta algo firme, como el andamio de Minecraft. El apoyo baja en vertical sin coste y en diagonal (arista con arista) con coste uno, que es como descansan los tejados de escaleras y los escalonados. Si la distancia supera el vano que aguanta el material, el bloque cae: con derrumbe 50 la piedra vuela 5 bloques, con 100 solo 2; la madera y el metal aguantan 2 más y la pizarra 1 más. Lo que queda suelto del todo cae siempre (salvo con derrumbe 0, que desactiva esta fase). Sostienen la obra el terreno, los bloques protegidos y lo que está fuera de la selección.
-3. **Escombro.** Lo que cae y parte de lo desgastado baja en vertical (con un pequeño desvío), resbala si el montón queda dos bloques más alto que el hueco de al lado y se amontona con su propio material: adoquín, grava y andesita bajo la piedra, adoquín de pizarra bajo la pizarra, ladrillo bajo el ladrillo, tablones bajo la madera. La cara de arriba del montón se cubre de losas y de escaleras apoyadas contra lo que tienen al lado. Una parte se pulveriza (todo el vidrio, el 45 % de la piedra).
-4. **Variantes envejecidas.** Conservan las propiedades del original (una escalera musgosa mira hacia el mismo lado):
+1. **Lectura de la obra.** Cada columna de bloques se parte en tramos verticales de material de obra (el vidrio y los paneles cuentan, así una ventana no corta el muro). Lo que tiene tres o más de alto es **muro**; un tramo más bajo que apoya en el terreno es **base** (suelos y zócalos, que solo envejecen), y lo demás es **pieza horizontal**: tejados, forjados, vigas y dinteles sueltos. El vidrio, los paneles y las rejas son **relleno**.
+2. **Perfil de los muros.** Cada columna de muro recibe una altura arruinada y pierde todo lo que tiene encima (y lo que descansaba sobre ella, como el alero o la cumbrera). La debilidad de la columna sube en el centro de los lienzos, en los extremos sueltos y junto a puertas y ventanas, y baja en esquinas, encuentros de muros, pilares y muros gruesos: la esquina se reconoce porque el muro de alrededor (unas 3 columnas) se extiende en dos direcciones. Un ruido suave a lo largo del muro reparte las brechas. El borde roto no baja más deprisa de lo que admite el material (2 bloques por columna la piedra, 3 la pizarra profunda, 1 la madera), así las brechas salen en V y las ventanas se abren hacia arriba; una de cada pocas columnas pierde un bloque más y el remate queda dentado. Nunca se abre un agujero con muro entero encima: el muro solo baja desde arriba. A intensidad 100 el centro de un lienzo conserva alrededor de un tercio de su altura y las esquinas, casi toda.
+3. **Tejados, forjados y vidrio.** Cada pieza horizontal mide su distancia de apoyo: 0 si descansa en algo firme, sin coste en vertical y uno por cada paso en diagonal (como un tejado de escaleras) o en horizontal; si el muro de debajo ha caído, la distancia crece. Se hunde a manchas grandes (ruido de unos 3,5 bloques), primero lo más lejano al apoyo (el centro de la luz y la cumbrera) y antes según el material: la lana y el vidrio enseguida, la madera pronto (a 30 quedan trozos de tejado junto a los hastiales, a 100 no queda madera en alto), la piedra tarde y la pizarra la última. Del vidrio quedan restos de panel, sobre todo abajo de cada ventana.
+4. **Derrumbe.** Lo que estaba unido al suelo y se ha quedado sin unión cae siempre, también con derrumbe 0: nada se queda flotando. Con derrumbe se mide además, capa a capa desde el suelo, la distancia en horizontal de cada bloque a una columna que baje hasta algo firme, como el andamio de Minecraft (en vertical sin coste y en diagonal con coste uno). Si supera el vano que aguanta el material, cae: con derrumbe 50 la piedra vuela 5 bloques, con 100 solo 2; la madera y el metal aguantan 2 más y la pizarra 1 más. Sostienen la obra el terreno, los bloques protegidos y lo que está fuera de la selección.
+5. **Escombro.** Lo que cae de un muro sale a uno de sus lados (dentro o fuera) y queda casi siempre pegado a su pie; lo de tejados y forjados cae debajo. Cada trozo resbala mientras el hueco de al lado esté dos bloques más bajo, así que los montones respetan el ángulo de reposo y se acumulan contra los muros y en los rincones. Se amontona con su propio material: adoquín, grava y andesita bajo la piedra, adoquín de pizarra bajo la pizarra, ladrillo bajo el ladrillo, tablones bajo la madera, y la cara de arriba se cubre de losas y de escaleras apoyadas contra lo que tienen al lado. Se pulveriza el 30 % de la piedra y todo el vidrio; la madera caída además se pudre con los años (a 100 queda poca).
+6. **Variantes envejecidas.** Conservan las propiedades del original (una escalera musgosa mira hacia el mismo lado). Ninguna se tira bloque a bloque: cada una tiene un gradiente con sentido (dónde le toca) que se multiplica por un ruido de baja frecuencia, de modo que salen en manchas de 3 a 5 bloques con el borde deshilachado y crecen con la intensidad:
 
 | Envejecimiento | Bloques | Dónde |
 | --- | --- | --- |
-| Musgo | adoquín y ladrillo de piedra, con sus escaleras, losas y muros | abajo, en caras norte, a la sombra y cerca del suelo, en manchas |
-| Grieta | ladrillo de piedra (y cincelado), ladrillo y baldosa de pizarra profunda, ladrillo del Nether, ladrillo de piedra negra pulida | lo más expuesto y alto; más con helada (nevado) |
+| Musgo | adoquín y ladrillo de piedra, con sus escaleras, losas y muros | sube desde el suelo y baja con la altura; más en las caras norte, a la sombra y en churretes bajo ventanas, cornisas y aleros |
+| Grieta | ladrillo de piedra (y cincelado), ladrillo y baldosa de pizarra profunda, ladrillo del Nether, ladrillo de piedra negra pulida | cerca de lo roto (a menos de cinco bloques de una brecha o de escombro), lo expuesto y lo alto; más con helada (nevado) |
 | Desgaste | lo pulido o tallado pierde el acabado: andesita, diorita, granito, pizarra, piedra negra y toba pulidas, piedra lisa, arenisca cortada, lisa y cincelada, cuarzo; la escalera y la losa de piedra pasan a adoquín | según exposición; en el desierto el ladrillo pasa a terracota |
-| Óxido | cobre en bloque, cortado, escaleras, losas, cincelado, rejilla, puerta, trampilla y lámpara: de normal a expuesto, erosionado y oxidado, hasta tres pasos según la intensidad | todo lo que se ve; **el cobre encerado no cambia** |
-| Corteza | troncos, madera, tallos e hifas pasan a descortezados | más en el desierto |
-| Podrido | los tablones quedan en media losa de la misma madera | según exposición |
+| Óxido | cobre en bloque, cortado, escaleras, losas, cincelado, rejilla, puerta, trampilla y lámpara: de normal a expuesto, erosionado y oxidado, hasta tres pasos según la intensidad | más pasos cuanto más a la intemperie; **el cobre encerado no cambia** |
+| Corteza | troncos, madera, tallos e hifas pasan a descortezados | en lo expuesto, a manchas: nada a intensidad baja y menos de la mitad a 100; más en el desierto |
+| Podrido | los tablones quedan en media losa de la misma madera | en lo húmedo y junto a lo roto |
 
-5. **Vida**, según el clima:
-   - `templado` (por defecto): hierba y helechos sobre tierra, musgo en alfombra y algún bloque de musgo con hierba en lo alto, enredaderas que cuelgan de lo alto de los muros al sol (más en las caras norte), telarañas en rincones oscuros con techo y dos paredes, y raíces colgantes bajo techo.
+7. **Vida**, según el clima. Sigue a la luz y al daño: donde hay brecha y escombro al cielo crece mucho más que bajo un techo entero, y todo sale en manchas.
+   - `templado` (por defecto): hierba y helechos sobre tierra, musgo en alfombra (poco bajo techo), bloques de musgo con hierba encima de los montones de escombro y alguno en lo alto de los muros, hiedra que cuelga de lo alto de los muros al sol (más en las caras norte) y que sube desde el suelo a matas por las caras húmedas (al norte, a la sombra o junto a lo roto), telarañas en rincones oscuros con techo y dos paredes, y raíces colgantes bajo techo.
    - `desierto`: arena acumulada contra los muros y en las esquinas, sobre todo abajo; arbustos secos sobre arena y terracota; el escombro lleva arena y terracota; sin musgo.
    - `nevado`: capas de nieve sobre todo lo que mira al cielo (más gruesas contra las paredes); los charcos son hielo; poco musgo y más grietas.
    - `hundido`: el aire de la selección se vuelve agua y lo que admite agua queda anegado; crecen algas, kelp de 2 a 6 bloques y pepinos de mar; más musgo. Pensado para ruinas bajo el mar o para seleccionar hasta el nivel del agua.
-6. **Agua estancada** (`-agua`): rellena con agua (hielo en el clima nevado) los huecos pequeños del suelo cerrados por todos los lados, de una capa y hasta 40 bloques.
+8. **Agua estancada** (`-agua`): rellena con agua (hielo en el clima nevado) los huecos pequeños del suelo cerrados por todos los lados, de una capa y hasta 40 bloques.
 
 Antorchas, faroles, velas, alfombras y estandartes desaparecen con la intensidad (nadie los repuso) y lo pequeño que se queda sin nada que lo sujete se cae.
 
@@ -653,9 +655,9 @@ Antorchas, faroles, velas, alfombras y estandartes desaparecen con la intensidad
 
 | Parámetro | Efecto |
 | --- | --- |
-| `intensidad` (0–100, 50 por defecto) | Cuánto tiempo ha pasado. Con 0 no cambia nada; hacia 50 la obra está vieja pero en pie; desde 80 se hunden tejados y suelos. |
+| `intensidad` (0–100, 50 por defecto) | Cuánto tiempo ha pasado. Con 0 no cambia nada; hacia 30 los muros pierden el remate y el tejado de madera se hunde dejando trozos junto a los hastiales; hacia 60 los muros tienen brechas en V sobre puertas y ventanas y apenas queda madera en alto; a 100 quedan esquinas y pilares en pie, lienzos de un tercio de su altura y montones de escombro. |
 | `clima` | `templado`, `desierto`, `nevado` o `hundido` (también en inglés: `temperate`, `desert`, `snowy`, `sunken`). |
-| `-d <0–100>` | Derrumbe (50 por defecto): lo que vuela cada material sin apoyo. 0 no tumba nada. |
+| `-d <0–100>` | Derrumbe (50 por defecto): lo que vuela cada material sin apoyo. Con 0 no se tumba nada por el vano, pero lo que se queda suelto del todo cae igualmente. |
 | `-v <0–100>` | Vida (50 por defecto): cuánta vegetación, nieve, arena o algas; escala también con la intensidad. |
 | `-seed <n>` | Semilla. Con la misma semilla y la misma obra el resultado es idéntico. Sin ella se elige una al azar y el chat la dice para poder repetirla. |
 | `-agua` | Charcos de agua estancada. |
@@ -685,6 +687,8 @@ Ejemplos:
 - Si alguien cambia un bloque de la selección entre la captura y la colocación, ese bloque se respeta y el chat lo cuenta como protegido.
 - Las plantas se escriben con su estado completo sin comprobar que puedan vivir ahí: Minecraft puede romper alguna si se actualiza un vecino. Por eso la hierba solo sale sobre tierra o musgo, y sobre piedra se pone alfombra de musgo.
 - `hundido` llena de agua todo el aire de la selección: en tierra firme queda un bloque de agua con la forma de la selección.
+- Los muros se reconocen por columnas: una obra con muros inclinados, cúpulas o volúmenes macizos muy grandes se trata como columnas altas (muro) y sus voladizos como piezas horizontales. Los macizos gruesos pierden poco, como en una ruina de verdad.
+- Renders de comprobación (casa, torre y muro con almenas, antes y después a 30, 60 y 100) con `KOMAEDIT_WEATHER_RENDER=<carpeta>` al lanzar las pruebas; `KOMAEDIT_WEATHER_STYLE` elige el clima.
 - No hay holograma previo: para probar, envejece, mira y usa `//undo`, o cambia de semilla.
 
 ## Figura Expresión
