@@ -23,6 +23,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `generator` | Generadores de ezEdits (formas, noisegen, flowfield, flowline): lógica pura sobre `Volume` y `GeneratedBlocks` |
 | `persistence` | Proyecto por mundo, migraciones, journal, backups y escritura atómica |
 | `permission` | Permisos granulares y excepciones de cuota |
+| `symmetry` | Modo simetría: geometría pura (centros, espejos, radial, estados), copias a mano y extensión de WorldEdit |
 | `config` | Límites del servidor y política de compatibilidad |
 | `worldedit` | Adaptación de jugador, sesión, selección y patrones |
 | `command` | API Brigadier y validación de entrada |
