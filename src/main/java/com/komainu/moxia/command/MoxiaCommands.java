@@ -223,6 +223,9 @@ public final class MoxiaCommands {
                 .then(tubeCommand("erosion", PathShape.NOISE_TUBE))
                 .then(expressionCommand("expr"))
                 .then(expressionCommand("expresion"))
+                .then(EzSplineCommands.command("ezspline"))
+                .then(EzSplineCommands.command("ezsp"))
+                .then(EzSplineCommands.command("spline"))
                 .then(ivyCommand("ivy"))
                 .then(ivyCommand("hiedra"))
                 .then(BrushCommands.brush("pincel"))
@@ -1864,7 +1867,7 @@ public final class MoxiaCommands {
         }
     }
 
-    private static int enqueueShape(
+    static int enqueueShape(
             CommandContext<ServerCommandSource> context,
             ServerPlayerEntity player,
             boolean buildNow,

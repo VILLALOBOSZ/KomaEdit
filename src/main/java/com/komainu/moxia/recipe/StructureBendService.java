@@ -1,5 +1,6 @@
 package com.komainu.moxia.recipe;
 
+import com.komainu.moxia.brush.place.PlacementTemplate;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.shape.SampledPath;
@@ -60,6 +61,76 @@ public final class StructureBendService {
             builder.add(voxel.x(), voxel.y(), voxel.z(), voxel.block());
         }
         return builder.build();
+    }
+
+    /**
+     * Captura una estructura de colocación ({@code Clipboard}, {@code Schematic(...)}, {@code TS(...)}…) para
+     * doblarla, escalada por vecino más cercano: {@code scale} en la sección y {@code alongScale} a lo largo de su
+     * eje +x, que es el que avanza con el recorrido.
+     */
+    public static Captured fromPlacement(PlacementTemplate template, double scale, double alongScale) {
+        Long2IntOpenHashMap cells = new Long2IntOpenHashMap();
+        Builder source = new Builder();
+        int[] bounds = {Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE,
+                Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE};
+        template.forEach((x, y, z, state) -> {
+            if (state.getBlockType().getMaterial().isAir()) {
+                return;
+            }
+            source.add(x, y, z, state);
+            cells.put(PackedBlockPlan.pack(x, y, z), (int) source.indices.get(state));
+            bounds[0] = Math.min(bounds[0], x);
+            bounds[1] = Math.min(bounds[1], y);
+            bounds[2] = Math.min(bounds[2], z);
+            bounds[3] = Math.max(bounds[3], x);
+            bounds[4] = Math.max(bounds[4], y);
+            bounds[5] = Math.max(bounds[5], z);
+        });
+        if (cells.isEmpty()) {
+            throw new IllegalArgumentException("La estructura no contiene bloques sólidos");
+        }
+        if (cells.size() > MAX_TEMPLATE_BLOCKS) {
+            throw new IllegalArgumentException("La estructura supera 100 000 bloques; usa una más pequeña");
+        }
+        if (Math.abs(scale - 1.0) < 1.0E-9 && Math.abs(alongScale - 1.0) < 1.0E-9) {
+            return source.build();
+        }
+        int minimumX = (int) Math.floor(bounds[0] * alongScale);
+        int maximumX = (int) Math.ceil((bounds[3] + 1) * alongScale) - 1;
+        int minimumY = (int) Math.floor(bounds[1] * scale);
+        int maximumY = (int) Math.ceil((bounds[4] + 1) * scale) - 1;
+        int minimumZ = (int) Math.floor(bounds[2] * scale);
+        int maximumZ = (int) Math.ceil((bounds[5] + 1) * scale) - 1;
+        long volume = (long) (maximumX - minimumX + 1) * (maximumY - minimumY + 1) * (maximumZ - minimumZ + 1);
+        if (volume > 8_000_000L) {
+            throw new IllegalArgumentException("La estructura escalada sería demasiado grande; reduce el radio o -s");
+        }
+        Builder scaled = new Builder();
+        for (int x = minimumX; x <= maximumX; x++) {
+            int sourceX = (int) Math.floor((x + 0.5) / alongScale);
+            for (int y = minimumY; y <= maximumY; y++) {
+                int sourceY = (int) Math.floor((y + 0.5) / scale);
+                for (int z = minimumZ; z <= maximumZ; z++) {
+                    int sourceZ = (int) Math.floor((z + 0.5) / scale);
+                    long key = PackedBlockPlan.pack(sourceX, sourceY, sourceZ);
+                    if (cells.containsKey(key)) {
+                        scaled.add(x, y, z, source.palette.get(cells.get(key)));
+                    }
+                }
+            }
+        }
+        return scaled.build();
+    }
+
+    /** Radio propio de una estructura: lo que se aleja de su eje +x (el que seguirá el recorrido) en la sección. */
+    public static double inherentRadius(PlacementTemplate template) {
+        double[] radius = {0.5};
+        template.forEach((x, y, z, state) -> {
+            if (!state.getBlockType().getMaterial().isAir()) {
+                radius[0] = Math.max(radius[0], Math.hypot(y, z) + 0.5);
+            }
+        });
+        return radius[0];
     }
 
     public static PackedBlockPlan plan(Captured captured, PathSnapshot path, TubeBender.Settings settings) {
