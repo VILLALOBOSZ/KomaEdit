@@ -249,6 +249,7 @@ public final class MoxiaCommands {
         DeformCommands.register(root);
         PlacementCommands.register(root);
         TextureCommands.register(dispatcher);
+        ImageCommands.register(dispatcher);
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
         NoiseCommands.register(root);

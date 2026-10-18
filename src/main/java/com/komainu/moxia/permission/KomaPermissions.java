@@ -24,6 +24,8 @@ public final class KomaPermissions {
     public static final String PROJECT_BACKUP = "komaedit.project.backup";
     public static final String LIMIT_UNRESTRICTED = "komaedit.limit.unrestricted";
     public static final String ADMIN_RELOAD = "komaedit.admin.reload";
+    /** Imágenes por URL en {@code /komaedit image} cuando {@code urlsRequireAdmin} está activo. */
+    public static final String ADMIN_IMAGE_URL = "komaedit.admin.image.url";
 
     private KomaPermissions() {
     }
