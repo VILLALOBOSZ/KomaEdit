@@ -103,7 +103,8 @@ public abstract sealed class EzBrush {
                 double density = options.decimal(2, 0.3, 0.0, 1.0, "La densidad");
                 double scale = options.flagDecimal('z', 0.03, 0.0001, 1000.0, "La escala del ruido");
                 NoiseSpec noise = options.has('n') ? SavedNoises.parse(player.getUuid(), options.flag('n')) : null;
-                BlockFilter mask = options.has('m') ? BlockFilter.parse(options.flag('m')) : BlockFilter.FULL_BLOCK;
+                String mask = options.has('m') ? options.flag('m') : null;
+                BrushMasks.parse(player, mask);
                 int maxAmount = maxAmount(block);
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
@@ -325,10 +326,11 @@ public abstract sealed class EzBrush {
         private final double density;
         private final NoiseSpec noise;
         private final double scale;
-        private final BlockFilter mask;
+        /** Texto de {@code -m} o {@code null}; se vuelve a leer en cada clic. */
+        private final String mask;
         private final int maxAmount;
 
-        Petals(BlockType block, int radius, double density, NoiseSpec noise, double scale, BlockFilter mask,
+        Petals(BlockType block, int radius, double density, NoiseSpec noise, double scale, String mask,
                int maxAmount, boolean preview) {
             super(EzBrushType.PETAL_PAINTER, radius, preview);
             this.block = block;
@@ -352,8 +354,8 @@ public abstract sealed class EzBrush {
             // El ruido blanco cambia en cada clic para que repasar espese; un ruido con forma se mantiene.
             long seed = ThreadLocalRandom.current().nextLong();
             BrushNoise field = noise == null ? BrushNoise.white(seed) : BrushNoise.of(noise, scale, 0x5045_54A1L);
-            PetalPainter.Settings settings = new PetalPainter.Settings(block.id(), maxAmount, density, field, mask,
-                    seed);
+            PetalPainter.Settings settings = new PetalPainter.Settings(block.id(), maxAmount, density, field,
+                    BrushMasks.parse(session.player(), mask), seed);
             BlockVector3 center = session.target().add(0, 1, 0);
             session.run(new PaintOperations.Petals(block, settings, center, radius(), input.left()));
         }

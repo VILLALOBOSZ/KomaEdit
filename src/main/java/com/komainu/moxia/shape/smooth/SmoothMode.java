@@ -33,7 +33,13 @@ public enum SmoothMode {
     /** Losas, escaleras y muros: los muros toman las columnas finas que no llenan ni media pieza. */
     WALLS("ssw", "SSW", "Losas, escaleras y muros", "Muros",
             EnumSet.of(PieceVariant.SLAB, PieceVariant.STAIR, PieceVariant.WALL), true,
-            "slabsstairswalls", "slabsandstairsandwalls", "sasw", "walls", "muros", "losasescalerasymuros");
+            "slabsstairswalls", "slabsandstairsandwalls", "sasw", "walls", "muros", "losasescalerasymuros"),
+    /**
+     * Paneles de vidrio o barrotes: las partes finas de la superficie se vuelven láminas unidas entre sí y a los
+     * bloques enteros de al lado.
+     */
+    PANES("panes", "Panes", "Paneles", "Paneles", EnumSet.of(PieceVariant.PANE), false,
+            "pane", "paneles", "panel", "glasspanes", "glasspane", "bars", "barrotes", "cristales");
 
     private final String id;
     private final String ezName;
@@ -151,6 +157,9 @@ public enum SmoothMode {
         }
         if (variants.contains(PieceVariant.WALL)) {
             pieces.add(SmoothPiece.wall());
+        }
+        if (variants.contains(PieceVariant.PANE)) {
+            pieces.add(SmoothPiece.pane(0));
         }
         byte[] result = new byte[pieces.size()];
         for (int index = 0; index < result.length; index++) {

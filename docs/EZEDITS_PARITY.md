@@ -26,7 +26,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
 | Permpacks `ezedits.permpack.*` (Basic, Intermediate, Advanced, Experimental, Admin) | `komaedit.permpack.basic`, `intermediate`, `advanced` (acumulativos) y `admin` | Completo (Experimental no hace falta: no hay funciones experimentales) |
-| `ezedits.general.wiki`, `info`, `quiet` | `/komaedit info` (sin permiso propio, como la ayuda) | Parcial: falta `quiet` (silenciar mensajes) y `wiki` (la ayuda es `/komaedit help`) |
+| `ezedits.general.wiki`, `info`, `quiet` | `/komaedit info`, `/komaedit quiet [on\|off]` (alias `silencio`; se guarda por jugador entre sesiones, `persistence/QuietMode`) y `/komaedit wiki` (lleva a `/komaedit help`); sin permiso propio, como la ayuda | Completo |
 | `ezedits.admin.reload`, `ezedits.admin.debug` | `komaedit.admin.reload` → `/komaedit reload` | Parcial: falta `debugprint` |
 | `ezedits.brush.*` | `komaedit.build.brush.<tipo>` | Completo |
 | `ezedits.deform.*` | `komaedit.build.deform.<modo>` | Completo |
@@ -118,7 +118,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| `petalpainter <tipo> [radio=8] [densidad=0.3] [-n White()] [-z 0.03] [-m #fullblock]` | `PetalPainter`, `PaintOperations.Petals` | Parcial: `wildflowers` y `leaf_litter` necesitan Minecraft 1.21.5 (el mod está en 1.21.1); `-m` es una lista de bloques, no una máscara de WorldEdit |
+| `petalpainter <tipo> [radio=8] [densidad=0.3] [-n White()] [-z 0.03] [-m #fullblock]` | `PetalPainter`, `PaintOperations.Petals`; `-m` con cualquier máscara de WorldEdit (`BrushMasks`) | Parcial: `wildflowers` y `leaf_litter` necesitan Minecraft 1.21.5 (el mod está en 1.21.1) |
 
 ## Palette Shift Brush
 
@@ -156,7 +156,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| Perfiles `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW`; Coverage `C:`; materiales por variante (`Slab:`, `Stair:`…); color más cercano | `-w <perfil>(C:…,Slab:…)` (`deform/SmoothProfile`, `shape/smooth/PieceFit`, `PieceSolver`, `SmoothMaterials`) | Completo |
+| Perfiles `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW`, `Panes`; Coverage `C:`; materiales por variante (`Slab:`, `Stair:`, `Pane:`…); color más cercano | `-w <perfil>(C:…,Slab:…)` (`deform/SmoothProfile`, `shape/smooth/PieceFit`, `PieceSolver`, `SmoothMaterials`) | Completo (`Panes` solo sale en un ejemplo de la wiki: paneles de vidrio y barrotes unidos como en Minecraft) |
 
 ## Deformation
 
@@ -179,14 +179,14 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| `//ezflowfield <paleta> <líneas\|n%> [32] [1] [1.0] [Perlin()] [-m] [-h] [-i] [-g] [-j] [-b] [-x/-y/-z] [-p 1:1] [-s] [-c] [-f] [-t]` | `/komaedit flowfield` (`generator/FlowField`) | Parcial: `-m` es una lista de bloques y estados, no la sintaxis completa de máscaras |
+| `//ezflowfield <paleta> <líneas\|n%> [32] [1] [1.0] [Perlin()] [-m] [-h] [-i] [-g] [-j] [-b] [-x/-y/-z] [-p 1:1] [-s] [-c] [-f] [-t]` | `/komaedit flowfield` (`generator/FlowField`; `-m` con `region/RegionMasks`) | Completo |
 | `//ezflowline <patrón> <largo> [-1] [Perlin()] [-i] [-c] [-l 1] [-r 50] [-s]` | `/komaedit flowline` (`generator/FlowLine`) | Completo |
 
 ## Noisegen
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| `heightmap <paleta> <ruido> [0] [-z] [-s] [-o] [-m] [-cty]` | `/komaedit noisegen heightmap` (`generator/NoiseGenerator`) | Parcial: `-m` es un subconjunto de máscaras |
+| `heightmap <paleta> <ruido> [0] [-z] [-s] [-o] [-m] [-cty]` | `/komaedit noisegen heightmap` (`generator/NoiseGenerator`; `-m` con `region/RegionMasks`) | Completo |
 | `terrain … [0] [1,0.5,0] [-z] [-s] [-l] [-o] [-c]` | `/komaedit noisegen terrain` | Completo |
 | `advanced … [0] [0.5] [-chnty]` con umbrales como expresión | `/komaedit noisegen advanced` | Completo (las fórmulas usan el compilador de KomaEdit, no el de WorldEdit) |
 
@@ -205,7 +205,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | --- | --- | --- |
 | `//ezplace`, `//ezscatter`, `//ezarray` y sus pinceles | `/komaedit place`, `scatter`, `array` (`PlacementCommands`, `PlacementService`) y `/komaedit pincel place\|scatter\|array` | Completo |
 | `-w <smoothblocks>` en las tres | `-w <perfil>(C:…,Slab:…)` | Completo |
-| `//ezspline structure` | `/komaedit ezspline structure` (`EzSplineCommands`, `StructureBendService.fromPlacement`) | Parcial (sin `-t`/`-r` ni radios por fotogramas) |
+| `//ezspline structure` | `/komaedit ezspline structure` (`EzSplineCommands`, `TubeBender.Section`): radios por fotogramas, `-t` y `-r` | Completo |
 
 ## Available Structures
 
@@ -242,7 +242,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
 | `-g 0`, `-y`, `-q`, `-p t:b:c`, `-n CONSISTENT\|HORIZONTAL\|UPRIGHT` | `ArrayPlanner`, `PlacementPath` | Completo |
-| `-b` hasta 96 bloques (configurable en ezEdits) | `-b` hasta 96 bloques (`PlacementService.SNAP_RADIUS`), menos si la caja no cabe en el límite de lectura | Parcial: el alcance no se puede cambiar en la configuración |
+| `-b` hasta 96 bloques (configurable en ezEdits) | `-b` hasta `arraySnapRadius` bloques de `config.json` (96 por defecto, 1–256; `PlacementService.snapRadius`), menos si la caja no cabe en el límite de lectura | Completo |
 
 ## Selections
 
@@ -273,7 +273,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | --- | --- | --- |
 | `//ezspline` (`//ezsp`) con la sintaxis exacta de subcomandos, formas y parámetros largos y abreviados | `/komaedit ezspline` (alias `ezsp`, `spline`; `EzSpline`, `EzSplineCommands`) sobre las figuras de espacio de tubo | Completo |
 | Parámetros comunes `<radii>`, `-p`, `-q FAST\|BALANCED\|HIGH\|EXACT` (y el `-q <muestras>` antiguo), `-r a[,b]`, `-s`, `-t`, `-n`, `-e`, `-h` | Los mismos (`TubeCommandParser`; `-q EXACT` mide el volumen con 64 muestras) | Completo |
-| `-w <smoothblocks>` | Los perfiles de `-w` de KomaEdit (`SmoothProfile`) | Completo (salvo `Panes`, que no existe en KomaEdit) |
+| `-w <smoothblocks>` | Los perfiles de `-w` de KomaEdit (`SmoothProfile`), `Panes` incluido | Completo |
 | 2D: Circle, Square, Diamond, RoundedSquare, SuperCircle, CirclesCircle, Strands, Pipe, Polygon, Rectangle, Star, Flower; `basic` y `rope` | Perfiles de `sweep` con sus parámetros (`TubeShapes.Profile`) | Completo |
 | 3D: Beads, Cubes, Chainlink, Fishnet, Honeycomb, Oscillate, Rings, Scales, Noodles | Formas implícitas propias (`EzShapes`) | Completo |
 | 3D: Braids | Trenza de KomaEdit (`braid`) con `Thickness` | Parcial (la trenza es la de KomaEdit) |
@@ -292,13 +292,13 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
 | `fuzzify`, `rockify [10] [1] [1] [4]`, `voronoify [12]`, `noisify <ruido> [1] [1] [4]` con `-c`, `-e`, `-t`, `-w` | `/komaedit surface …` (`deform/SurfaceOps`) | Completo |
-| `-m <máscara>` | Lista de bloques y etiquetas con `!` | Parcial: no admite la sintaxis completa de máscaras de WorldEdit |
+| `-m <máscara>` | Cualquier máscara de WorldEdit sobre la foto (`region/RegionMasks`); la lista de bloques y etiquetas con `!` de antes sigue valiendo | Completo |
 
 ## Tweak (Survival)
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| `//eztweak` (`//eztw`, antes `//ezsurvival`) `deinfest`, `persist [ON\|OFF]`, `waterlog [True\|False]`, `wax [ON\|OFF]` | `/komaedit tweak …` (alias `retocar` y `survival`; `region/TweakOperation`, `TweakRules`) | Parcial: `wax` no encera carteles (lo guardan en sus datos, no en el estado) |
+| `//eztweak` (`//eztw`, antes `//ezsurvival`) `deinfest`, `persist [ON\|OFF]`, `waterlog [True\|False]`, `wax [ON\|OFF]` | `/komaedit tweak …` (alias `retocar` y `survival`; `region/TweakOperation`, `TweakRules`; los carteles, con sus datos en `region/SignWax`) | Completo |
 
 ## Texturing
 
@@ -310,9 +310,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 ## Lo que queda fuera
 
 - **Simetría** (`//ezsymmetry reflectional|rotational|translational|update`) y **vidriera de imagen** (`//stainedglassimage`): las dos son experimentales en ezEdits y piden un sistema propio (reflejar cada edición en tiempo real; leer y cuantizar imágenes). Son trabajos grandes para ramas aparte.
-- **`/ezedits quiet`, `debugprint`, `wiki` y `//ezdebug`**: KomaEdit no tiene barras de progreso ni entidades de visualización que limpiar, y su ayuda está en `/komaedit help`.
+- **`debugprint` y `//ezdebug`**: KomaEdit no tiene barras de progreso ni entidades de visualización que limpiar.
 - **Visualizador de alineación** de los pinceles de colocación (BlockDisplay por jugador).
 - **`#savedselection`** como máscara.
-- **Máscaras completas** en `surface -m`, `noisegen -m`, `flowfield -m` y `petalpainter -m`: hoy son listas de bloques.
 - **Código de `palette encode`** compatible con el de ezEdits (no está documentado).
-- **Carteles en `tweak wax`**.

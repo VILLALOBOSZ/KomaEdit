@@ -96,7 +96,8 @@ public final class HelpTopics {
                             "Cilindro mordido por un ruido"),
                     new Entry("/komaedit ezsp expression <paleta> <radios> [-z] [-o] <expresión>",
                             "Figura por expresión con paleta"),
-                    new Entry("/komaedit ezsp structure <estructura> [radio] [-z]", "Estructura doblada por el recorrido"),
+                    new Entry("/komaedit ezsp structure <estructura> [radios] [-z] [-t grados] [-r inicio[,fin]]",
+                            "Estructura doblada; 4,12,4 la escala por fotogramas, -t la retuerce y -r la gira"),
                     new Entry("/komaedit ezsp 3d Chainlink(M:99,N:99,E:0.6) clay 10 -q EXACT",
                             "Banderas: -p -q -r -s -t -n -e -w -h, como en ezEdits")
             )),
@@ -114,7 +115,8 @@ public final class HelpTopics {
                             new Entry("/komaedit weather [intensidad 0–100] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]",
                                     "Envejece la selección (alias envejecer)"),
                             new Entry("/komaedit envejecer 70 nevado -d 40", "Ejemplo: ruina nevada con derrumbe"),
-                            new Entry("/komaedit tweak deinfest|persist|waterlog|wax", "Retoques sobre la selección (alias retocar)"),
+                            new Entry("/komaedit tweak deinfest|persist|waterlog|wax [on|off]",
+                                    "Retoques sobre la selección (alias retocar); wax encera cobre y carteles"),
                             new Entry("/komaedit vines <máscara> <patrón> [porcentaje] [mínimo] [máximo] [-s semilla]",
                                     "Cuelga enredaderas bajo los bloques (alias enredaderas)"),
                             new Entry("/komaedit moss <patrón> [cantidad] [radios] [iteraciones] [-s semilla]",
@@ -135,7 +137,7 @@ public final class HelpTopics {
                             new Entry("/komaedit smooth <radios> [iteraciones] [sesgo]", "Suaviza la selección (alias suavizar)"),
                             new Entry("/komaedit inflate|deflate <radios>", "Engorda o adelgaza (alias inflar, desinflar)"),
                             new Entry("/komaedit smoothblocks <perfil> [radio] [sesgo]",
-                                    "Suaviza con piezas; todas admiten -w Slabs|SlabsAndStairs|SlabsAndStairs2D|Layers|SSW")
+                                    "Suaviza con piezas; todas admiten -w Slabs|SlabsAndStairs|SlabsAndStairs2D|Layers|SSW|Panes")
                     )),
             new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass"), List.of(
                     new Entry("/komaedit texture ambient|curvature <máscara> <paleta> [radio] [brillo] [contraste] [-w]",
@@ -168,7 +170,9 @@ public final class HelpTopics {
                     new Entry("/komaedit flowfield <paleta> <líneas|n%> [iteraciones] [velocidad] [escala] [ruido] …",
                             "Campo de flujo en la selección (alias flujo)"),
                     new Entry("/komaedit flowline <patrón> <longitud> [gravedad] [ruido] [-l líneas] [-s]",
-                            "Línea de flujo hacia donde miras (alias lineaflujo)")
+                            "Línea de flujo hacia donde miras (alias lineaflujo)"),
+                    new Entry("/komaedit noisegen heightmap sand,grass_block,stone -m \"#existing !#near[water][3]\"",
+                            "-m admite cualquier máscara de WorldEdit (entre comillas si lleva espacios)")
             )),
             new Topic("placement", "Colocación", List.of("colocar", "colocacion", "place", "array", "hilera",
                     "scatter", "dispersar", "estructuras"), List.of(
@@ -229,6 +233,8 @@ public final class HelpTopics {
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),
                     new Entry("/komaedit menu", "Paleta rápida (tecla K)"),
                     new Entry("/komaedit info", "Versión del mod y paletas y ruidos de serie"),
+                    new Entry("/komaedit quiet [on|off]", "Silencia los mensajes informativos (se guarda; alias silencio)"),
+                    new Entry("/komaedit wiki", "Dónde está la ayuda"),
                     new Entry("/komaedit permisos [paquete]", "Qué nodos y paquetes de permisos tienes"),
                     new Entry("/komaedit reload", "Recarga la configuración y las paletas del servidor (admin)")
             ))

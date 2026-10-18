@@ -3,6 +3,7 @@ package com.komainu.moxia.region;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.fabric.FabricAdapter;
@@ -152,7 +153,7 @@ public final class RegionOperationService {
         JOBS.put(playerId, new CaptureJob(playerId, world, selection, description, operation, onCaptured,
                 RegionSnapshot.builder(minimumX, minimumY, minimumZ, sizeX, sizeY, sizeZ), sizeX, sizeY, sizeZ,
                 minimumX, minimumY, minimumZ));
-        player.sendMessage(message(description + ": leyendo " + volume + " bloques…", Formatting.GRAY), false);
+        QuietMode.info(player, message(description + ": leyendo " + volume + " bloques…", Formatting.GRAY));
     }
 
     public static boolean cancel(UUID playerId) {
@@ -202,7 +203,7 @@ public final class RegionOperationService {
             RegionSnapshot snapshot
     ) {
         UUID playerId = player.getUuid();
-        player.sendMessage(message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY), false);
+        QuietMode.info(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
         AsyncEngine.submit(
                 playerId,
                 () -> {
@@ -222,8 +223,8 @@ public final class RegionOperationService {
                     }
                     try {
                         int queued = BatchEditService.submit(current, edits.plan(), "air", description);
-                        current.sendMessage(message(description + ": " + queued
-                                + " bloques en cola · //undo para deshacer", Formatting.GREEN), false);
+                        QuietMode.info(current, message(description + ": " + queued
+                                + " bloques en cola · //undo para deshacer", Formatting.GREEN));
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         current.sendMessage(message(description + ": " + readable(exception), Formatting.RED), false);
                     }

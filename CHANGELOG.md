@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Máscaras completas en `-m`.** `noisegen`, `flowfield`, `surface` y el pincel `petalpainter` aceptan cualquier máscara de WorldEdit (`#surface`, `>stone`, `%50`, `=y>64`, `##minecraft:logs`…) con las de ezEdits que registra KomaEdit (`#near`, `#fullblock`, `#eznoisemask`, `#palette`…), entre comillas si lleva espacios. Se parsean con el `MaskFactory` de WorldEdit en el hilo del servidor y se evalúan en el worker sobre la foto, nunca sobre el mundo. La lista de bloques que admitía cada orden sigue valiendo con el mismo significado.
+- Las máscaras de las operaciones de región ven el mundo real mientras se parsean (`#aim` acierta el bloque mirado) y rechazan `#current` con un mensaje claro, porque la máscara global está atada al mundo y el worker no puede leerla.
+- **Perfil `Panes`** de smoothblocks: las partes finas de la superficie pasan a paneles de vidrio o barrotes de hierro, unidos entre sí y a los bloques enteros de al lado como los dejaría Minecraft (las conexiones ya van en el plan). El vidrio se convierte en su panel, `iron_block` en `iron_bars` y el resto en el panel del color más parecido; `Panes(Pane:iron_bars)` fija uno. Funciona en todos los comandos con `-w`, y el holograma lo dibuja con su poste y sus brazos.
+- **`//ezspline structure` completo:** radios por fotogramas (`4,12,4`, `0:4,0.3:12,1:4`) que escalan la sección a lo largo del recorrido, `-t` para retorcerla y `-r inicio[,fin]` para girarla, como en los tubos.
+- `-b` de `array` lee su alcance de `arraySnapRadius` en `config/komaedit/config.json` (96 por defecto, de 1 a 256).
+- Añade **`/komaedit quiet [on|off]`** (alias `silencio`), como `/ezedits quiet`: silencia los mensajes informativos de cada jugador y se guarda entre sesiones. Añade `/komaedit wiki`, que indica dónde está la ayuda.
+- `tweak wax` encera y desencera también los carteles (normales y colgantes), como ezEdits; van en su propia edición de `//undo`.
+- `surface`, `deform` y el suavizado admiten valores entre comillas en sus banderas.
+- Añade pruebas JUnit de las máscaras (listas de antes frente a WorldEdit, `#current`, comillas), de los paneles (codificación, encaje, conexiones y materiales) y de la sección variable de `structure` (radios, giro y torsión), y renders de comprobación de paneles y de `structure`.
+
 ## 1.4.0 (estable, 2026-10-19)
 
 - Añade **`/komaedit ezspline`** (alias `ezsp`, `spline`) con la sintaxis de `//ezspline` de ezEdits: `2d`, `3d`, `basic`, `rope`, `noise`, `expression` y `structure`, las formas con sus parámetros largos y abreviados (`Chainlink(E:0.2,T:1,G:0,M:3,N:3,P:BOTH)` o `Ch(...)`) y las banderas comunes `-p -q -r -s -t -n -e -w -h`, en cualquier orden. También las formas antiguas como `//ezsp polygon clay 10 4`. Los ejemplos de la wiki funcionan tal cual, con los perfiles de `-w` (salvo `Panes`, que KomaEdit no tiene).
