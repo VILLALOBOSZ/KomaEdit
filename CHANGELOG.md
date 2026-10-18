@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- **Rediseño del Procedural Studio.** Todo vive en un único panel opaco a la derecha (barra de herramientas, etapas con icono y nombre, contenido desplazable y un pie fijo con figura, material, estimación, estado y Construir); el mundo queda libre, el chat se ve y el marcador del servidor ya no se transparenta. Fuera la barra inferior, la cabecera sobre el mundo, el lema, la tarjeta de nodos duplicada, el segundo botón «Añadir puntos» y la tarjeta de navegación fija.
+- Jerarquía nueva: título de etapa en negrita, secciones en color de acento con una línea, etiquetas en gris y valores en acento; Construir es la única acción con relleno. Sin mayúsculas forzadas, filas de 20 píxeles en lugar de 25–30 e interruptores con pulsador para las opciones de sí o no.
+- La etapa Trayectoria enseña la lista de nodos (un clic elige el nodo para moverlo) y el estado abierto o cerrado; el nombre de la receta y Guardar pasan a la etapa Recetas.
+- Todo el Studio, el HUD de captura y los estados del holograma salen en el idioma del cliente: nombres de figuras, modos, fórmulas, climas, etiquetas que cambian con la figura y todos los mensajes, en `es_es.json` y `en_us.json`. El buscador de figuras también reconoce el nombre traducido.
+- Corrige los `%` sin escapar de varias ayudas, que Minecraft mostraba mal.
+- Código: `StudioLayout`, `Column` y `Rect` (lógica pura con pruebas a varias resoluciones y escalas de GUI) reparten la pantalla, y `StudioUi` dibuja cada control y registra en el mismo paso qué hace al pulsarlo, con la rueda o con clic derecho: desaparecen los métodos de clic que repetían las coordenadas del dibujo. Se elimina `LiveBuildScreen`, que no se usaba. Una prueba impide volver a escribir frases a fuego en las clases del Studio.
+- Añade `docs/EZEDITS_PARITY.md`: la wiki de ezEdits página a página frente a KomaEdit (orden, clase y estado: completo, parcial, falta o en curso).
+- Añade los **pinceles de colocación** `scatter` (alias `dispersar`, `sc`) y `array` (alias `hilera`, `ar`), y el pincel `place` pasa al motor de `/komaedit place`: todas las estructuras, alineaciones (también `ViewDiff`, con un segundo clic) y banderas. `scatter` reparte por defecto en una caja de 40³ centrada en el clic; `array` coloca a lo largo de un trazo marcado con el clic izquierdo. Con `-p` el pincel `place` sigue usando la colocación con holograma de antes.
+- Añade a los ruidos el tipo `Shard` (con nitidez `h`), las distancias celulares `m1`, `m4`, `m99` (Minkowski) y `r` (redondeada), los retornos `rounded` y `noiseLookup` (`cN`, `cF`) y las distorsiones de dominio `Flow` y `Turbulence`, con implementación propia.
+- Añade la máscara y el patrón `#hotbar` (los bloques de la barra rápida).
+- Añade `/komaedit sel catenary <puntos> [comba] [dirección]` (alias `catenaria`): una selección convexa colgando como una cadena entre el principio y el final de la selección, con la comba relativa al vano como `//selcatenary`.
+- Añade las **paletas de serie del servidor** en `config/komaedit/palettes.json`, que todos usan con `##nombre` y que salen en `/komaedit palette list default`.
+- Añade **permisos finos** por orden y modo (`komaedit.build.deform.noise`, `komaedit.palette.save`, `komaedit.select.catenary`…) y los paquetes `komaedit.permpack.basic`, `intermediate`, `advanced` y `admin`, como la página de permisos de ezEdits. Los permisos amplios de siempre siguen funcionando igual; `/komaedit permisos` muestra cuáles tienes.
+- Añade `/komaedit info` y `/komaedit reload` (permiso `komaedit.admin.reload`), que recarga `config.json` y las paletas del servidor sin reiniciar.
+- Añade los alias `/komaedit pincel none` y `/komaedit survival` (como `tweak`).
+- `-b` de `array` busca la superficie hasta 96 bloques, como ezEdits (antes 48).
+- Los avisos de permiso salen en español («Te falta el permiso …»).
+
 ## 1.3.0 (estable, 2026-10-18)
 
 - Añade la **colocación de estructuras** de ezEdits: `/komaedit place` (alias `colocar`), `/komaedit array` (alias `hilera`) y `/komaedit scatter` (alias `dispersar`), con la forma `<estructura> [<primaria>] [<secundaria>] [banderas]` y la cadena dimensiones → escala aleatoria → orientación → simetrías → giros de 90° → alineación. Se calcula en un worker, se coloca de abajo arriba en una sola edición deshacible con //undo y, donde se lee el mundo, sin pisar lo que cambie mientras tanto.

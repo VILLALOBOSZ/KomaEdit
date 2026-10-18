@@ -61,21 +61,22 @@ public final class TextureCommands {
         dispatcher.register(literal("komaedit")
                 .then(textureCommand("texture"))
                 .then(textureCommand("textura"))
-                .then(simple("vines", TextureCommands::vines))
-                .then(simple("enredaderas", TextureCommands::vines))
-                .then(simple("moss", TextureCommands::moss))
-                .then(simple("musgo", TextureCommands::moss))
-                .then(simple("slabmerge", TextureCommands::slabMerge))
-                .then(simple("unirlosas", TextureCommands::slabMerge))
-                .then(simple("statecycle", TextureCommands::stateCycle))
-                .then(simple("ciclarestado", TextureCommands::stateCycle))
-                .then(simple("glassgradient", TextureCommands::glassGradient))
-                .then(simple("vidriera", TextureCommands::glassGradient)));
+                .then(simple("vines", "vines", TextureCommands::vines))
+                .then(simple("enredaderas", "vines", TextureCommands::vines))
+                .then(simple("moss", "moss", TextureCommands::moss))
+                .then(simple("musgo", "moss", TextureCommands::moss))
+                .then(simple("slabmerge", "slabmerge", TextureCommands::slabMerge))
+                .then(simple("unirlosas", "slabmerge", TextureCommands::slabMerge))
+                .then(simple("statecycle", "statecycle", TextureCommands::stateCycle))
+                .then(simple("ciclarestado", "statecycle", TextureCommands::stateCycle))
+                .then(simple("glassgradient", "glassgradient", TextureCommands::glassGradient))
+                .then(simple("vidriera", "glassgradient", TextureCommands::glassGradient)));
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> textureCommand(String name) {
         return literal(name)
-                .requires(TextureCommands::canBuild)
+                .requires(source -> source.getEntity() instanceof ServerPlayerEntity player
+                        && KomaPermissions.canAny(player, KomaPermissions.BUILD + ".texture"))
                 .executes(TextureCommands::textureHelp)
                 .then(argument("texture_mode", StringArgumentType.word())
                         .suggests((context, builder) -> {
@@ -90,9 +91,10 @@ public final class TextureCommands {
                                         StringArgumentType.getString(context, "texture_arguments")))));
     }
 
-    private static LiteralArgumentBuilder<ServerCommandSource> simple(String name, Action action) {
+    private static LiteralArgumentBuilder<ServerCommandSource> simple(String name, String node, Action action) {
         return literal(name)
-                .requires(TextureCommands::canBuild)
+                .requires(source -> source.getEntity() instanceof ServerPlayerEntity player
+                        && KomaPermissions.canBuild(player, node))
                 .executes(context -> run(context, action, ""))
                 .then(argument("region_arguments", StringArgumentType.greedyString())
                         .executes(context -> run(context, action,
@@ -106,6 +108,7 @@ public final class TextureCommands {
             TextureCommandParser.Request request = TextureCommandParser.parse(
                     StringArgumentType.getString(context, "texture_mode"), rest, fallbackSeed,
                     SavedNoises.resolver(player.getUuid()));
+            KomaPermissions.requireBuild(player, "texture." + request.mode().id());
             RegionMasks.Bound mask = request.mode().usesMask() ? RegionMasks.parse(player, request.mask()) : null;
             List<Pattern> palette = palette(player, request.palette());
             TextureContext.Settings settings = TextureContext.Settings.at(player.getX(), player.getEyeY(),
@@ -251,12 +254,6 @@ public final class TextureCommands {
             context.getSource().sendFeedback(() -> Text.literal(line).formatted(Formatting.GRAY), false);
         }
         return 1;
-    }
-
-    private static boolean canBuild(ServerCommandSource source) {
-        return source.getEntity() instanceof ServerPlayerEntity player
-                && KomaPermissions.canAccess(player)
-                && KomaPermissions.can(player, KomaPermissions.BUILD);
     }
 
     private static MutableText prefix() {

@@ -8,6 +8,7 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.editor.EditorActionPayload;
 import com.komainu.moxia.editor.EditorActionService;
 import com.komainu.moxia.editor.FastPaintService;
+import com.komainu.moxia.gradient.ServerPalettes;
 import com.komainu.moxia.ivy.IvyService;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramPayload;
@@ -44,6 +45,7 @@ public final class KomaEditMod implements ModInitializer {
     @Override
     public void onInitialize() {
         KomaEditConfig.load();
+        ServerPalettes.load(KomaEditConfig.palettesFile());
         PayloadTypeRegistry.playS2C().register(PathHologramPayload.ID, PathHologramPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(QuickBuildPayload.ID, QuickBuildPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RecipeCatalogPayload.ID, RecipeCatalogPayload.CODEC);

@@ -6,6 +6,7 @@ import com.komainu.moxia.gradient.PaletteCodec;
 import com.komainu.moxia.gradient.PaletteSpec;
 import com.komainu.moxia.gradient.PaletteSwap;
 import com.komainu.moxia.gradient.SavedPalettes;
+import com.komainu.moxia.gradient.ServerPalettes;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.NamedDefinitions;
 import com.komainu.moxia.region.PaletteSwapOperation;
@@ -64,14 +65,16 @@ public final class PaletteCommands {
     private static LiteralArgumentBuilder<ServerCommandSource> command(String name) {
         return literal(name)
                 .executes(context -> list(context, "all"))
-                .then(literal("list")
+                .then(literal("list").requires(EzCommandSupport.node("komaedit.palette.list"))
                         .executes(context -> list(context, "all"))
                         .then(argument("set", StringArgumentType.word())
                                 .suggests(EzCommandSupport.words(List.of("all", "default", "mine")))
                                 .executes(context -> list(context, StringArgumentType.getString(context, "set")))))
-                .then(literal("save").then(argument("args", StringArgumentType.greedyString())
+                .then(literal("save").requires(EzCommandSupport.node("komaedit.palette.save"))
+                        .then(argument("args", StringArgumentType.greedyString())
                         .executes(PaletteCommands::save)))
-                .then(literal("delete").then(argument("name", StringArgumentType.word())
+                .then(literal("delete").requires(EzCommandSupport.node("komaedit.palette.delete"))
+                        .then(argument("name", StringArgumentType.word())
                         .suggests((context, builder) -> {
                             ServerPlayerEntity player = context.getSource().getPlayer();
                             if (player != null) {
@@ -84,20 +87,24 @@ public final class PaletteCommands {
                             return builder.buildFuture();
                         })
                         .executes(PaletteCommands::delete)))
-                .then(literal("fetch").then(argument("args", StringArgumentType.greedyString())
+                .then(literal("fetch").requires(EzCommandSupport.node("komaedit.palette.fetch"))
+                        .then(argument("args", StringArgumentType.greedyString())
                         .suggests(EzCommandSupport.words(List.of("world", "selection", "hotbar")))
                         .executes(PaletteCommands::fetch)))
                 .then(literal("place")
-                        .requires(source -> EzCommandSupport.can(source, KomaPermissions.BUILD))
+                        .requires(EzCommandSupport.node(KomaPermissions.BUILD + ".palette.place"))
                         .then(argument("args", StringArgumentType.greedyString()).executes(PaletteCommands::place)))
                 .then(literal("swap")
-                        .requires(source -> EzCommandSupport.can(source, KomaPermissions.BUILD))
+                        .requires(EzCommandSupport.node(KomaPermissions.BUILD + ".palette.swap"))
                         .then(argument("args", StringArgumentType.greedyString()).executes(PaletteCommands::swap)))
-                .then(literal("print").then(argument("args", StringArgumentType.greedyString())
+                .then(literal("print").requires(EzCommandSupport.node("komaedit.palette.print"))
+                        .then(argument("args", StringArgumentType.greedyString())
                         .executes(PaletteCommands::print)))
-                .then(literal("encode").then(argument("palette", StringArgumentType.greedyString())
+                .then(literal("encode").requires(EzCommandSupport.node("komaedit.palette.encode"))
+                        .then(argument("palette", StringArgumentType.greedyString())
                         .executes(PaletteCommands::encode)))
-                .then(literal("decode").then(argument("code", StringArgumentType.greedyString())
+                .then(literal("decode").requires(EzCommandSupport.node("komaedit.palette.decode"))
+                        .then(argument("code", StringArgumentType.greedyString())
                         .executes(PaletteCommands::decode)));
     }
 
@@ -121,6 +128,19 @@ public final class PaletteCommands {
                             "/komaedit palette print ##" + palette.displayName(), Formatting.WHITE));
                 }
                 EzCommandSupport.send(player, line);
+                if (!ServerPalettes.all().isEmpty()) {
+                    MutableText server = Text.literal("Del servidor: ").formatted(Formatting.YELLOW);
+                    boolean firstServer = true;
+                    for (String name : ServerPalettes.all().keySet()) {
+                        if (!firstServer) {
+                            server.append(Text.literal(", ").formatted(Formatting.DARK_GRAY));
+                        }
+                        firstServer = false;
+                        server.append(EzCommandSupport.button("##" + name, "/komaedit palette print ##" + name,
+                                Formatting.WHITE));
+                    }
+                    EzCommandSupport.send(player, server);
+                }
             }
             if (mine) {
                 Map<String, String> saved = SavedPalettes.store(player.getUuid()).all();

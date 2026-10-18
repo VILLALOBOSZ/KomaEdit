@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.path.PathGenerators;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.NamedDefinitions;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -67,22 +68,25 @@ public final class SelectionCommands {
             return builder.buildFuture();
         };
         return literal(name)
-                .requires(source -> EzCommandSupport.can(source, KomaPermissions.SELECT))
+                .requires(source -> EzCommandSupport.canAny(source, KomaPermissions.SELECT))
                 .executes(context -> list(context, ""))
-                .then(literal("list")
+                .then(literal("list").requires(selection("list"))
                         .executes(context -> list(context, ""))
                         .then(argument("flags", StringArgumentType.greedyString())
                                 .suggests(EzCommandSupport.words(List.of("-g")))
                                 .executes(context -> list(context, StringArgumentType.getString(context, "flags")))))
-                .then(literal("save").then(argument("args", StringArgumentType.greedyString())
+                .then(literal("save").requires(selection("save"))
+                        .then(argument("args", StringArgumentType.greedyString())
                         .executes(SelectionCommands::save)))
-                .then(literal("load").then(argument("args", StringArgumentType.greedyString())
+                .then(literal("load").requires(selection("load"))
+                        .then(argument("args", StringArgumentType.greedyString())
                         .suggests(saved)
                         .executes(SelectionCommands::load)))
-                .then(literal("delete").then(argument("name", StringArgumentType.word())
+                .then(literal("delete").requires(selection("delete"))
+                        .then(argument("name", StringArgumentType.word())
                         .suggests(saved)
                         .executes(SelectionCommands::delete)))
-                .then(literal("next")
+                .then(literal("next").requires(selection("next"))
                         .executes(context -> next(context, "me", 0))
                         .then(argument("direction", StringArgumentType.word())
                                 .suggests(EzCommandSupport.words(List.of("me", "up", "down", "north", "south", "east",
@@ -94,29 +98,82 @@ public final class SelectionCommands {
                                                 IntegerArgumentType.getInteger(context, "gap"))))))
                 .then(hereCommand("here"))
                 .then(hereCommand("tome"))
-                .then(literal("invert").executes(SelectionCommands::invert))
-                .then(literal("delpos2").executes(SelectionCommands::deleteLastPoint))
+                .then(literal("invert").requires(selection("invert")).executes(SelectionCommands::invert))
+                .then(literal("delpos2").requires(selection("delpos2"))
+                        .executes(SelectionCommands::deleteLastPoint))
                 .then(encapsulateCommand("encapsulate"))
                 .then(encapsulateCommand("enc"))
                 .then(encapsulateNearCommand("encapsulatenear"))
-                .then(encapsulateNearCommand("encnear"));
+                .then(encapsulateNearCommand("encnear"))
+                .then(catenaryCommand("catenary"))
+                .then(catenaryCommand("catenaria"));
+    }
+
+    private static java.util.function.Predicate<ServerCommandSource> selection(String sub) {
+        return EzCommandSupport.node(KomaPermissions.SELECT + "." + sub);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> hereCommand(String name) {
         return literal(name)
+                .requires(selection("here"))
                 .executes(context -> here(context, "pos1"))
                 .then(argument("point", StringArgumentType.word())
                         .suggests(EzCommandSupport.words(List.of("pos1", "pos2", "center")))
                         .executes(context -> here(context, StringArgumentType.getString(context, "point"))));
     }
 
+    private static LiteralArgumentBuilder<ServerCommandSource> catenaryCommand(String name) {
+        return literal(name).requires(selection("catenary"))
+                .then(argument("args", StringArgumentType.greedyString())
+                        .suggests(EzCommandSupport.words(List.of("16", "0.1", "0.3", "down", "up", "left", "right")))
+                        .executes(SelectionCommands::catenary));
+    }
+
+    /**
+     * {@code catenary <puntos> [comba=0,1] [dirección=down]}: cambia la selección por una convexa a lo largo de una
+     * catenaria entre su principio y su final, como {@code //selcatenary} de ezEdits.
+     */
+    private static int catenary(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        return EzCommandSupport.run(context, player -> {
+            String[] words = StringArgumentType.getString(context, "args").trim().split("\\s+");
+            if (words.length > 3) {
+                throw new IllegalArgumentException("Uso: sel catenary <puntos> [comba] [down|up|left|right]");
+            }
+            int points;
+            double sag;
+            try {
+                points = Integer.parseInt(words[0]);
+                sag = words.length > 1 ? Double.parseDouble(words[1].replace(',', '.')) : 0.1;
+            } catch (NumberFormatException exception) {
+                throw new IllegalArgumentException("Uso: sel catenary <puntos> [comba] [down|up|left|right]");
+            }
+            if (points < 3 || points > 256) {
+                throw new IllegalArgumentException("Los puntos van de 3 a 256");
+            }
+            PathGenerators.Bulge bulge = PathGenerators.Bulge.byId(words.length > 2 ? words[2] : "down");
+            SelectionShape shape = SelectionBridge.current(player);
+            if (shape.kind().isRound()) {
+                throw new IllegalArgumentException("Una selección " + shape.kind().id()
+                        + " no tiene principio ni final; usa cuboid, poly o convex");
+            }
+            List<BlockVector3> curve = PathGenerators.catenarySelection(shape.points().getFirst(),
+                    shape.points().getLast(), sag, bulge, points);
+            SelectionBridge.apply(player, new SelectionShape(SelectionShape.Kind.CONVEX, curve, 0, 0, 0, 0, 0,
+                    shape.world()));
+            EzCommandSupport.ok(player, "Selección convexa de " + curve.size() + " puntos a lo largo de la catenaria");
+            return 1;
+        });
+    }
+
     private static LiteralArgumentBuilder<ServerCommandSource> encapsulateCommand(String name) {
-        return literal(name).then(argument("mask", StringArgumentType.greedyString())
+        return literal(name).requires(selection("encapsulate"))
+                .then(argument("mask", StringArgumentType.greedyString())
                 .executes(context -> encapsulate(context, StringArgumentType.getString(context, "mask"), -1)));
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> encapsulateNearCommand(String name) {
-        return literal(name).then(argument("radius", IntegerArgumentType.integer(1, MAX_NEAR_RADIUS))
+        return literal(name).requires(selection("encapsulatenear"))
+                .then(argument("radius", IntegerArgumentType.integer(1, MAX_NEAR_RADIUS))
                 .then(argument("mask", StringArgumentType.greedyString())
                         .executes(context -> encapsulate(context, StringArgumentType.getString(context, "mask"),
                                 IntegerArgumentType.getInteger(context, "radius")))));

@@ -22,6 +22,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 
@@ -66,7 +67,8 @@ public final class ProceduralPreviewRenderer {
     private static int failureCount;
     private static long retryNotBefore;
     private static RenderState state = RenderState.empty();
-    private static String status = "Holograma esperando puntos";
+    /** Vacío hasta el primer cambio: se traduce al pedirlo, cuando el idioma ya está cargado. */
+    private static String status = "";
     /** Oculto desde el Studio (tecla H): se sigue calculando para el recuento, pero no se dibuja. */
     private static boolean hidden;
 
@@ -77,7 +79,7 @@ public final class ProceduralPreviewRenderer {
         int minimum = closed ? 3 : 2;
         if (points.size() < minimum) {
             if (requestedKey != null || !state.sections().isEmpty()) {
-                clearPreview("Holograma esperando " + minimum + " puntos");
+                clearPreview(tr("gui.komaedit.hologram.waiting", minimum));
             }
             return;
         }
@@ -105,7 +107,7 @@ public final class ProceduralPreviewRenderer {
         if (running != null) {
             running.cancel(true);
         }
-        status = "Holograma actualizando…";
+        status = tr("gui.komaedit.hologram.updating");
     }
 
     public static void tick(MinecraftClient client) {
@@ -118,12 +120,12 @@ public final class ProceduralPreviewRenderer {
         PreviewRequest request = pending;
         pending = null;
         runningGeneration = request.generation();
-        status = "Calculando holograma exacto…";
+        status = tr("gui.komaedit.hologram.computing");
         running = EXECUTOR.submit(() -> generate(client, request));
     }
 
     public static String status() {
-        return status;
+        return status.isEmpty() ? tr("gui.komaedit.hologram.waiting", 2) : status;
     }
 
     public static boolean hidden() {
@@ -146,7 +148,7 @@ public final class ProceduralPreviewRenderer {
     }
 
     public static void clear() {
-        clearPreview("Holograma desactivado");
+        clearPreview(tr("gui.komaedit.hologram.disabled"));
     }
 
     public static void render(WorldRenderContext context) {
@@ -184,14 +186,15 @@ public final class ProceduralPreviewRenderer {
         RenderSystem.disableBlend();
 
         if (current.uploadedSections() < current.sections().size()) {
-            status = "Holograma " + current.blockCount() + " bloques · GPU "
-                    + current.uploadedSections() + "/" + current.sections().size() + " secciones";
+            status = tr("gui.komaedit.hologram.uploading", current.blockCount(), current.uploadedSections(),
+                    current.sections().size());
         } else if (current.serverAdjusted()) {
-            status = "Holograma base · adaptación ambiental/servidor se completa al construir";
+            status = tr("gui.komaedit.hologram.server_adjusted");
         } else {
-            status = "Holograma exacto · " + current.blockCount() + " bloques · "
-                    + (current.pieceSummary().isEmpty() ? "" : current.pieceSummary() + " · ")
-                    + current.faceCount() + " caras visibles";
+            status = current.pieceSummary().isEmpty()
+                    ? tr("gui.komaedit.hologram.exact", current.blockCount(), current.faceCount())
+                    : tr("gui.komaedit.hologram.exact_pieces", current.blockCount(), current.pieceSummary(),
+                            current.faceCount());
         }
     }
 
@@ -200,7 +203,7 @@ public final class ProceduralPreviewRenderer {
             var result = RecipeGeometryEngine.generate(request.path(), request.recipe());
             checkCancelled(request);
             if (result.blocks().isEmpty()) {
-                throw new IllegalStateException("La geometría resultó vacía");
+                throw new IllegalStateException(tr("gui.komaedit.hologram.empty"));
             }
             PreparedPreview prepared = prepare(result.blocks(), result.pieces(), request);
             checkCancelled(request);
@@ -211,12 +214,11 @@ public final class ProceduralPreviewRenderer {
             client.execute(() -> {
                 if (request.generation() == GENERATIONS.get()) {
                     if (exception instanceof IllegalArgumentException) {
-                        status = "Holograma pendiente · " + readable(exception);
+                        status = tr("gui.komaedit.hologram.pending", readable(exception));
                     } else {
                         recordFailure(request.key());
                         requestedKey = null;
-                        status = "Holograma recuperándose · " + readable(exception)
-                                + " · reintento " + failureCount;
+                        status = tr("gui.komaedit.hologram.recovering", readable(exception), failureCount);
                     }
                 }
                 finish(request);
@@ -283,7 +285,7 @@ public final class ProceduralPreviewRenderer {
         List<SectionData> sections = grouped.entrySet().stream()
                 .map(entry -> new SectionData(entry.getKey(), entry.getValue().toIntArray()))
                 .toList();
-        return new PreparedPreview(sections, blocks.size(), faces, pieces.isEmpty() ? "" : pieces.summary());
+        return new PreparedPreview(sections, blocks.size(), faces, pieces.isEmpty() ? "" : tr("gui.komaedit.hologram.pieces", pieces.slabs(), pieces.stairs()));
     }
 
     /** 1 a 7 para las capas de nieve, 8 para el muro, 0 para las piezas que se dibujan por octantes. */
@@ -373,7 +375,7 @@ public final class ProceduralPreviewRenderer {
                 prepared.pieceSummary()
         );
         clearFailure(request.key());
-        status = "Holograma preparado · " + prepared.blockCount() + " bloques · cargando GPU…";
+        status = tr("gui.komaedit.hologram.prepared", prepared.blockCount());
         finish(request);
     }
 
@@ -467,6 +469,10 @@ public final class ProceduralPreviewRenderer {
 
     private static long pack(int x, int y, int z) {
         return PackedBlockPlan.pack(x, y, z);
+    }
+
+    private static String tr(String key, Object... arguments) {
+        return Text.translatable(key, arguments).getString();
     }
 
     private static String readable(Throwable throwable) {

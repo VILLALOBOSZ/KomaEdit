@@ -55,8 +55,14 @@ public final class BrushCommands {
                         "-w", "-x", "-n", "-z", "-p"};
                 case PETAL_PAINTER -> new String[]{"petals", "wildflowers", "leaves", "8", "0.3", "-n",
                         "Perlin(F:0.05)", "-z", "-m", "#fullblock", "grass_block,moss_block", "-p"};
-                case PLACE -> new String[]{"Clipboard", "Cl(O:C)", "Cl(R:90)", "Constant", "SurfaceNormal", "Aim",
-                        "Random", "C(D:east)", "-a", "-x", "-p"};
+                case PLACE -> new String[]{"Clipboard", "Cl(O:C)", "Cl(R:90)", "Sh(S:Cone,P:stone)", "Constant",
+                        "SurfaceNormal", "Aim", "Random", "ViewDiff", "C(D:east)", "-s", "-o", "-j", "-a", "-x", "-w",
+                        "-p"};
+                case SCATTER -> new String[]{"Clipboard", "Sc(N:arbol_.*)", "Ic(P:stone,R:0.6)", "Constant", "Random",
+                        "SurfaceNormal", "-h", "Box(D:\"30,20,30\")", "-n", "-d", "up", "-e", "-m", "-u", "-s", "-o",
+                        "-t"};
+                case ARRAY -> new String[]{"Clipboard", "Sh(S:Cylinder,P:stone)", "Tangential", "Orthogonal",
+                        "Constant", "-g", "-q", "-y", "-b", "-n", "-p", "-s"};
             };
         } catch (IllegalArgumentException exception) {
             examples = new String[0];
@@ -82,7 +88,8 @@ public final class BrushCommands {
 
     public static LiteralArgumentBuilder<ServerCommandSource> brush(String name) {
         return literal(name)
-                .requires(source -> can(source, KomaPermissions.BUILD))
+                .requires(source -> source.getEntity() instanceof ServerPlayerEntity player
+                        && KomaPermissions.canAny(player, KomaPermissions.BUILD + ".brush"))
                 .executes(BrushCommands::status)
                 .then(argument("pincel_tipo", StringArgumentType.word())
                         .suggests(TYPES)
@@ -95,7 +102,7 @@ public final class BrushCommands {
 
     public static LiteralArgumentBuilder<ServerCommandSource> superwand(String name) {
         return literal(name)
-                .requires(source -> can(source, KomaPermissions.SELECT))
+                .requires(source -> can(source, KomaPermissions.SELECT + ".superwand"))
                 .executes(context -> superwand(context, ""))
                 .then(argument("superwand_opciones", StringArgumentType.greedyString())
                         .suggests(WAND_OPTIONS)
@@ -122,7 +129,7 @@ public final class BrushCommands {
                     feedback(context, Text.literal("Vista previa descartada").formatted(Formatting.YELLOW));
                     return 1;
                 }
-                case "quitar", "off" -> {
+                case "quitar", "off", "none", "ninguno" -> {
                     String id = BrushTool.unbind(player);
                     if (id == null || !EzBrushManager.unbind(player.getUuid(), id)) {
                         return fail(context, "El objeto de tu mano no tiene ningún pincel");
@@ -137,6 +144,7 @@ public final class BrushCommands {
                 }
             }
             EzBrushType type = EzBrushType.byId(action);
+            KomaPermissions.requireBuild(player, "brush." + type.id());
             EzBrush brush = EzBrush.create(player, type, options);
             String toolId = BrushTool.bind(player, BrushTool.Kind.BRUSH, Items.FEATHER, "Pincel de KomaEdit");
             EzBrushManager.bind(player, toolId, brush);
@@ -160,8 +168,9 @@ public final class BrushCommands {
         String id = BrushTool.id(player.getMainHandStack());
         var brush = id == null ? java.util.Optional.<EzBrush>empty() : EzBrushManager.brush(player.getUuid(), id);
         if (brush.isEmpty()) {
-            feedback(context, Text.literal("Pinceles: paletteshift, gradient, gradientstroke, petalpainter, place."
-                    + " Ejemplo: /komaedit pincel gradient ##Magma 8 tapered 0.6").formatted(Formatting.GRAY));
+            feedback(context, Text.literal("Pinceles: paletteshift, gradient, gradientstroke, petalpainter, place,"
+                    + " scatter, array. Ejemplo: /komaedit pincel gradient ##Magma 8 tapered 0.6")
+                    .formatted(Formatting.GRAY));
             return 1;
         }
         EzBrush current = brush.get();

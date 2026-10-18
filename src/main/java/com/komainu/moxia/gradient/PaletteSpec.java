@@ -10,7 +10,8 @@ import java.util.function.Function;
  * Paletas ordenadas con la notación de ezEdits, compatible con las listas {@code a;b;c} que ya usaba KomaEdit.
  *
  * <ul>
- *     <li>{@code ##Nombre}: paleta de serie ({@link GradientPalette}); {@code #nombre}: paleta guardada del jugador.</li>
+ *     <li>{@code ##Nombre}: paleta de serie ({@link GradientPalette} o del servidor, {@link ServerPalettes});
+ *     {@code #nombre}: paleta guardada del jugador.</li>
  *     <li>{@code ,} o {@code ;}: concatena. {@code -X}: invierte. {@code X(a:b)}: tramo de la posición a a la b, con
  *     las dos incluidas y contando desde 1. {@code X*n}: repite n veces. {@code [ ... ]}: agrupa.</li>
  *     <li>Cualquier otra cosa es un bloque o patrón de WorldEdit, incluidos estados como
@@ -187,6 +188,10 @@ public final class PaletteSpec {
             try {
                 return List.of(GradientPalette.byId(name).patterns().split(";"));
             } catch (IllegalArgumentException exception) {
+                List<String> server = ServerPalettes.get(name);
+                if (server != null) {
+                    return server;
+                }
                 throw new IllegalArgumentException("No existe la paleta de serie ##" + name);
             }
         }
