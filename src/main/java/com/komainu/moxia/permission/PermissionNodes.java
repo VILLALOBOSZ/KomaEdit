@@ -147,6 +147,10 @@ public final class PermissionNodes {
         add(build + ".flowfield", Pack.INTERMEDIATE, build, "ezedits.flow.flowfield", "/komaedit flowfield");
         add(build + ".flowline", Pack.INTERMEDIATE, build, "ezedits.flow.flowline", "/komaedit flowline");
         add(build + ".place", Pack.INTERMEDIATE, build, "ezedits.place", "/komaedit place");
+        add(build + ".symmetry.reflectional", Pack.INTERMEDIATE, build, "ezedits.symmetry.reflectional",
+                "/komaedit symmetry con espejos en X, Z e Y");
+        add(build + ".symmetry.rotational", Pack.INTERMEDIATE, build, "ezedits.symmetry.rotational",
+                "/komaedit symmetry radial");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
@@ -156,6 +160,8 @@ public final class PermissionNodes {
         add(build + ".brush.array", Pack.ADVANCED, build, "ezedits.brush.array", "/komaedit pincel array");
         add(build + ".brush.scatter", Pack.ADVANCED, build, "ezedits.brush.scatter", "/komaedit pincel scatter");
         add(build + ".smoothblocks", Pack.ADVANCED, build, "ezedits.smooth.smoothblocks", "/komaedit smoothblocks");
+        add(build + ".symmetry.worldedit", Pack.ADVANCED, build, null,
+                "/komaedit symmetry worldedit: refleja también las ediciones de WorldEdit y KomaEdit");
         add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
 
         // Administración.

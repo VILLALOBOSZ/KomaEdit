@@ -22,6 +22,7 @@ class HelpTopicsTest {
     void findsTopicsByIdAliasOrTypo() {
         assertEquals("path", HelpTopics.find("ruta").orElseThrow().id());
         assertEquals("generate", HelpTopics.find("Catenaria").orElseThrow().id());
+        assertEquals("symmetry", HelpTopics.find("Simetría").orElseThrow().id());
         assertEquals(Optional.of("tubes"), HelpTopics.closest("tbos"));
         assertTrue(HelpTopics.find("nada").isEmpty());
     }

@@ -193,6 +193,20 @@ public final class HelpTopics {
                     new Entry("/komaedit pincel place Cl SurfaceNormal ViewDiff",
                             "ViewDiff: clic derecho dónde y clic izquierdo hacia dónde")
             )),
+            new Topic("symmetry", "Simetría", List.of("simetria", "sym", "espejo", "radial", "ezsymmetry"), List.of(
+                    new Entry("/komaedit symmetry on [modo]",
+                            "Copia lo que pones y rompes; sin centro, lo fija donde estás (alias simetria, sym)"),
+                    new Entry("/komaedit symmetry off", "Deja de copiar"),
+                    new Entry("/komaedit symmetry mode x|z|xz|y|xzy|radial [brazos] [y]",
+                            "Espejos en cualquier combinación, o radial alrededor de un eje vertical"),
+                    new Entry("/komaedit symmetry center [here|selection|<x> <y> <z>] [half [ejes]]",
+                            "Centro en tu bloque, en la selección o en un punto; half lo pone entre bloques"),
+                    new Entry("/komaedit symmetry arms <2-16>", "Brazos del radial"),
+                    new Entry("/komaedit symmetry worldedit [on|off]",
+                            "Refleja también tus ediciones de WorldEdit y KomaEdit, en el mismo //undo"),
+                    new Entry("/komaedit symmetry info", "Estado, centro y botones"),
+                    new Entry("/komaedit sym on radial 8 y", "Ejemplo: rosetón de 8 brazos reflejado arriba y abajo")
+            )),
             new Topic("palette", "Paletas guardadas", List.of("paleta", "paletas", "palettes"), List.of(
                     new Entry("/komaedit palette list [all|default|mine]", "Paletas de serie y tuyas; pulsa una para verla"),
                     new Entry("/komaedit palette save <nombre> <paleta> [-f]", "Guarda una paleta para usarla con #nombre"),
