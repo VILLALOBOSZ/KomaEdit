@@ -21,6 +21,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `preview` | Estado de preview y generación de hologramas de trayectoria |
 | `gradient` | Paletas y selección streaming por eje |
 | `generator` | Generadores de ezEdits (formas, noisegen, flowfield, flowline): lógica pura sobre `Volume` y `GeneratedBlocks` |
+| `image` | Imagen en bloques (`/komaedit image`): lectura y descarga con límites, reescalado, cuantización en CIELAB y tramado, probados sin Minecraft; `ImageService` lo une al mundo y a la cola de edición |
 | `persistence` | Proyecto por mundo, migraciones, journal, backups y escritura atómica |
 | `permission` | Permisos granulares y excepciones de cuota |
 | `config` | Límites del servidor y política de compatibilidad |
