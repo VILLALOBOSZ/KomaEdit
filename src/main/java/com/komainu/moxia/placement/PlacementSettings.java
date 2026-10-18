@@ -1,7 +1,7 @@
 package com.komainu.moxia.placement;
 
+import com.komainu.moxia.deform.SmoothProfile;
 import com.komainu.moxia.shape.Vec3;
-import com.komainu.moxia.shape.smooth.PieceFit;
 import com.komainu.moxia.shape.smooth.SmoothMode;
 import com.komainu.moxia.shape.tube.TubeSettings;
 
@@ -16,7 +16,8 @@ import java.util.Locale;
  *
  * <p>Comunes: {@code -s} dimensiones, {@code -o} escala aleatoria, {@code -c}/{@code -k} orientación,
  * {@code -f} simetrías aleatorias, {@code -r} giros de 90° aleatorios, {@code -a} colocar aire, {@code -j} ajuste
- * de direcciones, {@code -x} perturbar la secundaria, {@code -w} losas y escaleras e {@code -i} semilla.</p>
+ * de direcciones, {@code -x} perturbar la secundaria, {@code -w} perfil de smoothblocks ({@link SmoothProfile}) e {@code -i}
+ * semilla.</p>
  */
 public record PlacementSettings(
         Kind kind,
@@ -33,8 +34,7 @@ public record PlacementSettings(
         boolean placeAir,
         AlignmentFrame.Snap snap,
         boolean perturb,
-        SmoothMode smoothMode,
-        double coverage,
+        SmoothProfile smooth,
         long seed,
         boolean randomSeed,
         Scatter scatter,
@@ -52,6 +52,16 @@ public record PlacementSettings(
         public String id() {
             return id;
         }
+    }
+
+    /** Perfil de piezas de {@code -w}; atajo para quien solo mira el tipo. */
+    public SmoothMode smoothMode() {
+        return smooth.mode();
+    }
+
+    /** Cobertura del perfil de {@code -w}. */
+    public double coverage() {
+        return smooth.coverage();
     }
 
     /** Parámetros de {@code scatter}. */
@@ -88,6 +98,14 @@ public record PlacementSettings(
     }
 
     public static PlacementSettings parse(Kind kind, String input) {
+        return parse(kind, input, false);
+    }
+
+    /**
+     * @param brush si es para un pincel ({@code /komaedit pincel place|scatter|array}): el de colocación admite
+     *              {@code ViewDiff}, la dirección que marca un segundo clic
+     */
+    public static PlacementSettings parse(Kind kind, String input, boolean brush) {
         List<String> words = ParamText.words(input);
         if (words.isEmpty()) {
             throw new IllegalArgumentException("Falta la estructura: Clipboard, Schematic(N:…), Shape(S:…,P:…), "
@@ -109,8 +127,7 @@ public record PlacementSettings(
         boolean placeAir = false;
         AlignmentFrame.Snap snap = AlignmentFrame.Snap.NONE;
         boolean perturb = false;
-        SmoothMode smoothMode = SmoothMode.NONE;
-        double coverage = PieceFit.DEFAULT_COVERAGE;
+        SmoothProfile smooth = SmoothProfile.NONE;
         long seed = -1;
         Scatter scatter = Scatter.defaults();
         Array array = Array.defaults();
@@ -183,13 +200,7 @@ public record PlacementSettings(
                 case "-f" -> flips = flips(value);
                 case "-r" -> rotationAxis = axisIndex(value);
                 case "-j" -> snap = AlignmentFrame.Snap.byId(value);
-                case "-w" -> {
-                    int colon = value.indexOf(':');
-                    smoothMode = SmoothMode.byId(colon < 0 ? value : value.substring(0, colon));
-                    if (colon >= 0) {
-                        coverage = ParamText.number(value.substring(colon + 1), 0.0, 1.0, "la cobertura de -w");
-                    }
-                }
+                case "-w" -> smooth = SmoothProfile.parse(value);
                 case "-i", "-seed", "-semilla" -> seed = (long) ParamText.number(value, -1, 9.0E15, "-i");
                 case "-h" -> {
                     only(kind, Kind.SCATTER, flag);
@@ -257,12 +268,15 @@ public record PlacementSettings(
         if (kind != Kind.ARRAY && (resolvedPrimary.needsPath() || resolvedSecondary.needsPath())) {
             throw new IllegalArgumentException("Tangential y Orthogonal solo funcionan en array");
         }
-        if (resolvedPrimary.needsViewDiff() || resolvedSecondary.needsViewDiff()) {
-            throw new IllegalArgumentException("ViewDiff solo funciona con un pincel (el segundo clic marca la dirección)");
+        if ((resolvedPrimary.needsViewDiff() || resolvedSecondary.needsViewDiff())
+                && (!brush || kind != Kind.PLACE)) {
+            throw new IllegalArgumentException(brush
+                    ? "ViewDiff solo funciona en el pincel de colocación (place)"
+                    : "ViewDiff solo funciona con un pincel (el segundo clic marca la dirección)");
         }
         boolean randomSeed = seed == -1;
         return new PlacementSettings(kind, structure, resolvedPrimary, resolvedSecondary, dimensions, minimumScale,
-                maximumScale, axis, angle, flips, rotationAxis, placeAir, snap, perturb, smoothMode, coverage,
+                maximumScale, axis, angle, flips, rotationAxis, placeAir, snap, perturb, smooth,
                 randomSeed ? 0 : seed, randomSeed,
                 new Scatter(region, List.copyOf(directions), threshold, mask, density, iterations, cover, trim),
                 new Array(gap, maxOffset, progression, tension, bias, continuity, normalMode, snapSurface));
@@ -271,12 +285,16 @@ public record PlacementSettings(
     /** Fija la semilla si se pidió al azar ({@code -i -1}), para que el cálculo sea reproducible a partir de aquí. */
     public PlacementSettings withSeed(long value) {
         return new PlacementSettings(kind, structure, primary, secondary, dimensions, minimumScale, maximumScale,
-                orientationAxis, orientationAngle, flips, rotationAxis, placeAir, snap, perturb, smoothMode, coverage,
+                orientationAxis, orientationAngle, flips, rotationAxis, placeAir, snap, perturb, smooth,
                 value, false, scatter, array);
     }
 
     public boolean needsNormal() {
         return primary.needsNormal() || secondary.needsNormal();
+    }
+
+    public boolean needsViewDiff() {
+        return primary.needsViewDiff() || secondary.needsViewDiff();
     }
 
     private static void only(Kind kind, Kind expected, String flag) {

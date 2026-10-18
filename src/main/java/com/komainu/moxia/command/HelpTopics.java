@@ -86,6 +86,20 @@ public final class HelpTopics {
                     new Entry("/komaedit sweep circle 2_6_2 stone -e round -w stairs",
                             "Ejemplo: radios con fotogramas, extremos redondos y escaleras")
             )),
+            new Topic("spline", "Spline de ezEdits", List.of("ezspline", "ezsp", "splines"), List.of(
+                    new Entry("/komaedit ezsp 2d <forma(parámetros)> <patrón> <radios> [banderas]",
+                            "Perfil 2D: Circle, Square, SuperCircle, CirclesCircle, Pipe, Polygon, Rectangle, Star…"),
+                    new Entry("/komaedit ezsp 3d <forma(parámetros)> <patrón> <radios> [banderas]",
+                            "Beads, Cubes, Braids, Chainlink, Fishnet, Honeycomb, Oscillate, Rings, Scales, Noodles"),
+                    new Entry("/komaedit ezsp basic|rope <patrón> <radios>", "Cilindro o cuerda"),
+                    new Entry("/komaedit ezsp noise <paleta> <radios> [ruido] [profundidad] [-i expresión]",
+                            "Cilindro mordido por un ruido"),
+                    new Entry("/komaedit ezsp expression <paleta> <radios> [-z] [-o] <expresión>",
+                            "Figura por expresión con paleta"),
+                    new Entry("/komaedit ezsp structure <estructura> [radio] [-z]", "Estructura doblada por el recorrido"),
+                    new Entry("/komaedit ezsp 3d Chainlink(M:99,N:99,E:0.6) clay 10 -q EXACT",
+                            "Banderas: -p -q -r -s -t -n -e -w -h, como en ezEdits")
+            )),
             new Topic("edit", "Editar estructuras", List.of("editar", "doblar", "bend", "degradado", "gradient"), List.of(
                     new Entry("/komaedit bend [repeat|stretch] [-n upright|horizontal]", "Dobla el portapapeles por la trayectoria"),
                     new Entry("/komaedit gradient preset <paleta>", "Degradado de paleta sobre la selección"),
@@ -121,7 +135,7 @@ public final class HelpTopics {
                             new Entry("/komaedit smooth <radios> [iteraciones] [sesgo]", "Suaviza la selección (alias suavizar)"),
                             new Entry("/komaedit inflate|deflate <radios>", "Engorda o adelgaza (alias inflar, desinflar)"),
                             new Entry("/komaedit smoothblocks <perfil> [radio] [sesgo]",
-                                    "Suaviza con losas y escaleras; todas admiten -w Slabs|SlabsAndStairs")
+                                    "Suaviza con piezas; todas admiten -w Slabs|SlabsAndStairs|SlabsAndStairs2D|Layers|SSW")
                     )),
             new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass"), List.of(
                     new Entry("/komaedit texture ambient|curvature <máscara> <paleta> [radio] [brillo] [contraste] [-w]",
@@ -170,7 +184,11 @@ public final class HelpTopics {
                             "Alineaciones: Constant, Random, Noise, Aim, Upward, PlayerRelative, SurfaceNormal, "
                                     + "Expression, Tangential, Orthogonal y mezclas 10%C,2%R"),
                     new Entry("/komaedit scatter Cl C R -n 0.5 -d up -e 0.7 -o 0.8,1.3",
-                            "Ejemplo: árboles del portapapeles en lo llano, girados y con tamaños distintos")
+                            "Ejemplo: árboles del portapapeles en lo llano, girados y con tamaños distintos"),
+                    new Entry("/komaedit pincel place|scatter|array <estructura> [primaria] [secundaria] [banderas]",
+                            "Los mismos como pinceles: en el clic, alrededor del clic o por un trazo"),
+                    new Entry("/komaedit pincel place Cl SurfaceNormal ViewDiff",
+                            "ViewDiff: clic derecho dónde y clic izquierdo hacia dónde")
             )),
             new Topic("palette", "Paletas guardadas", List.of("paleta", "paletas", "palettes"), List.of(
                     new Entry("/komaedit palette list [all|default|mine]", "Paletas de serie y tuyas; pulsa una para verla"),
@@ -202,12 +220,17 @@ public final class HelpTopics {
                     new Entry("/komaedit sel delpos2", "Quita el último punto de una selección convex o poly"),
                     new Entry("/komaedit sel encapsulate <máscara>", "Ajusta la selección a los bloques de la máscara"),
                     new Entry("/komaedit sel encapsulatenear <radio> <máscara>",
-                            "Selecciona los bloques de la máscara que hay cerca")
+                            "Selecciona los bloques de la máscara que hay cerca"),
+                    new Entry("/komaedit sel catenary <puntos> [comba] [down|up|left|right]",
+                            "Selección convexa colgando como una cadena entre el principio y el final")
             )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),
-                    new Entry("/komaedit menu", "Paleta rápida (tecla K)")
+                    new Entry("/komaedit menu", "Paleta rápida (tecla K)"),
+                    new Entry("/komaedit info", "Versión del mod y paletas y ruidos de serie"),
+                    new Entry("/komaedit permisos [paquete]", "Qué nodos y paquetes de permisos tienes"),
+                    new Entry("/komaedit reload", "Recarga la configuración y las paletas del servidor (admin)")
             ))
     );
 

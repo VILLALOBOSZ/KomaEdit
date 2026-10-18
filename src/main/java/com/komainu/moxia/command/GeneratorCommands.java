@@ -80,9 +80,8 @@ public final class GeneratorCommands {
         dispatcher.register(root);
     }
 
-    private static boolean canBuild(ServerCommandSource source) {
-        return source.getEntity() instanceof ServerPlayerEntity player
-                && KomaPermissions.can(player, KomaPermissions.BUILD);
+    private static boolean canBuild(ServerCommandSource source, String node) {
+        return source.getEntity() instanceof ServerPlayerEntity player && KomaPermissions.canBuild(player, node);
     }
 
     private static RequiredArgumentBuilder<ServerCommandSource, String> rest(Runner runner) {
@@ -113,18 +112,23 @@ public final class GeneratorCommands {
     // ── shape ────────────────────────────────────────────────────────────────────────────────────────────
 
     private static LiteralArgumentBuilder<ServerCommandSource> shapeCommand(String name) {
-        LiteralArgumentBuilder<ServerCommandSource> command = literal(name).requires(GeneratorCommands::canBuild);
+        LiteralArgumentBuilder<ServerCommandSource> command = literal(name)
+                .requires(source -> source.getEntity() instanceof ServerPlayerEntity player
+                        && KomaPermissions.canAny(player, KomaPermissions.BUILD + ".shape"));
         for (ShapeRequest.Form form : ShapeRequest.Form.values()) {
             Runner runner = (player, args) -> shape(player, form, args);
-            command.then(literal(form.id()).then(rest(runner)));
-            command.then(literal(form.alias()).then(rest(runner)));
+            java.util.function.Predicate<ServerCommandSource> allowed = source ->
+                    source.getEntity() instanceof ServerPlayerEntity player
+                            && KomaPermissions.canBuild(player, "shape." + form.id());
+            command.then(literal(form.id()).requires(allowed).then(rest(runner)));
+            command.then(literal(form.alias()).requires(allowed).then(rest(runner)));
         }
         return command;
     }
 
     private static void shape(ServerPlayerEntity player, ShapeRequest.Form form, String args) throws Exception {
         ShapeRequest request = ShapeRequest.parse(form, args);
-        KomaPermissions.requireBuild(player, "shape");
+        KomaPermissions.requireBuild(player, "shape." + form.id());
         WorldEditService.validatePattern(player, request.pattern());
         if (request.vertexPattern() != null) {
             WorldEditService.validatePattern(player, request.vertexPattern());
@@ -201,7 +205,8 @@ public final class GeneratorCommands {
     // ── noisegen ─────────────────────────────────────────────────────────────────────────────────────────
 
     private static LiteralArgumentBuilder<ServerCommandSource> noiseCommand(String name) {
-        LiteralArgumentBuilder<ServerCommandSource> command = literal(name).requires(GeneratorCommands::canBuild);
+        LiteralArgumentBuilder<ServerCommandSource> command = literal(name).requires(source -> canBuild(source,
+                "noisegen"));
         for (NoiseGenerator.Mode mode : NoiseGenerator.Mode.values()) {
             Runner runner = (player, args) -> noise(player, mode, args);
             command.then(literal(mode.id()).then(rest(runner)));
@@ -245,7 +250,8 @@ public final class GeneratorCommands {
     // ── flowfield ────────────────────────────────────────────────────────────────────────────────────────
 
     private static LiteralArgumentBuilder<ServerCommandSource> flowFieldCommand(String name) {
-        return literal(name).requires(GeneratorCommands::canBuild).then(rest(GeneratorCommands::flowField));
+        return literal(name).requires(source -> canBuild(source, "flowfield"))
+                .then(rest(GeneratorCommands::flowField));
     }
 
     private static void flowField(ServerPlayerEntity player, String args) throws Exception {
@@ -280,7 +286,8 @@ public final class GeneratorCommands {
     // ── flowline ─────────────────────────────────────────────────────────────────────────────────────────
 
     private static LiteralArgumentBuilder<ServerCommandSource> flowLineCommand(String name) {
-        return literal(name).requires(GeneratorCommands::canBuild).then(rest(GeneratorCommands::flowLine));
+        return literal(name).requires(source -> canBuild(source, "flowline"))
+                .then(rest(GeneratorCommands::flowLine));
     }
 
     /** Pocos miles de bloques: se calcula en el hilo del servidor y lee el mundo para pegarse a las superficies. */
@@ -420,7 +427,7 @@ public final class GeneratorCommands {
      * Paleta resuelta en el hilo del servidor: cada entrada tiene que ser un bloque (con o sin estado), porque el
      * worker escribe estados fijos. Las capas de nieve del modo suave se preparan aquí.
      */
-    private record Palette(List<BlockState> states, PaletteTraits traits, BlockState[][] snowLayers) {
+    record Palette(List<BlockState> states, PaletteTraits traits, BlockState[][] snowLayers) {
         static Palette resolve(ServerPlayerEntity player, String text) {
             List<String> entries = SavedPalettes.parse(player.getUuid(), text);
             WorldEditService.PlayerContext context = WorldEditService.context(player);

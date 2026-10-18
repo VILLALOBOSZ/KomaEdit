@@ -41,28 +41,50 @@ public final class AgingTable {
         BUILDING
     }
 
-    /** Cómo se comporta el material: cuánto sufre (fragilidad) y cuánto vuela sin apoyo (vano). */
+    /**
+     * Cómo se comporta el material con los años: lo pronto que se pierde (ritmo y retraso), lo que debilita un muro,
+     * el talud de su borde roto, cuánto vuela sin apoyo (vano) y qué parte de lo que cae no deja escombro.
+     */
     public enum Material {
-        STONE(1.0, 0, 0.45),
-        HARD(0.6, 1, 0.35),
-        WOOD(1.3, 2, 0.65),
-        GLASS(2.4, -1, 1.0),
-        SOFT(1.7, -1, 0.9),
-        METAL(0.7, 2, 0.3);
+        STONE(0.8, 0.19, 0.0, 2, 0, 0.3),
+        HARD(0.7, 0.3, -0.25, 3, 1, 0.25),
+        WOOD(0.95, -0.05, 0.45, 1, 2, 0.55),
+        GLASS(1.5, 0.0, 0.5, 1, -1, 1.0),
+        SOFT(2.2, 0.0, 0.8, 1, -1, 0.95),
+        METAL(0.8, 0.25, -0.1, 2, 2, 0.4);
 
-        private final double fragility;
+        private final double rate;
+        private final double delay;
+        private final double weakness;
+        private final int slope;
         private final int span;
         private final double shatter;
 
-        Material(double fragility, int span, double shatter) {
-            this.fragility = fragility;
+        Material(double rate, double delay, double weakness, int slope, int span, double shatter) {
+            this.rate = rate;
+            this.delay = delay;
+            this.weakness = weakness;
+            this.slope = slope;
             this.span = span;
             this.shatter = shatter;
         }
 
-        /** Multiplica lo que se pierde por exposición (el vidrio y la lana se van antes que la pizarra). */
-        public double fragility() {
-            return fragility;
+        /**
+         * Cuánto se ha perdido de las piezas sueltas (tejados, forjados, vidrio) a esta intensidad, de 0 a 1: la
+         * lana y el vidrio se van enseguida, la madera pronto, la piedra tarde y la pizarra la última.
+         */
+        public double decay(double intensity) {
+            return Math.clamp((intensity - delay) * rate, 0.0, 1.0);
+        }
+
+        /** Lo que suma a la debilidad de un muro hecho de este material (la madera se pudre, la pizarra aguanta). */
+        public double wallWeakness() {
+            return weakness;
+        }
+
+        /** Bloques que puede bajar el borde roto de un muro de una columna a la siguiente. */
+        public int slope() {
+            return slope;
         }
 
         /** Bloques de vano extra que aguanta sin apoyo respecto a la piedra. */

@@ -176,6 +176,41 @@ public final class PathGenerators {
         return withEnds(result, start, end);
     }
 
+    /** Comba relativa máxima de {@link #catenarySelection}, como en {@code //selcatenary} de ezEdits. */
+    public static final double MAX_RELATIVE_SAG = 5.0;
+    /** La cadena nunca cuelga más de esto por debajo de la cuerda. */
+    public static final double MAX_HANG = 512.0;
+
+    /**
+     * Puntos de una catenaria para una selección convexa ({@code /komaedit sel catenary}). La comba es relativa a
+     * la distancia entre los extremos (0,1 = una décima del vano) y 0 da una recta. Los puntos repetidos se quitan.
+     */
+    public static List<BlockVector3> catenarySelection(BlockVector3 start, BlockVector3 end, double relativeSag,
+                                                       Bulge bulge, int points) {
+        if (points < 3) {
+            throw new IllegalArgumentException("Hacen falta al menos 3 puntos");
+        }
+        if (relativeSag < 0 || relativeSag > MAX_RELATIVE_SAG) {
+            throw new IllegalArgumentException("La comba va de 0 a " + (int) MAX_RELATIVE_SAG);
+        }
+        double span = Math.sqrt(start.distanceSq(end));
+        if (span < 1.0) {
+            throw new IllegalArgumentException("El principio y el final de la selección coinciden");
+        }
+        if (relativeSag == 0.0) {
+            List<BlockVector3> line = new ArrayList<>(points);
+            for (int index = 0; index < points; index++) {
+                double t = (double) index / (points - 1);
+                line.add(BlockVector3.at(
+                        Math.round(start.x() + (end.x() - start.x()) * t),
+                        Math.round(start.y() + (end.y() - start.y()) * t),
+                        Math.round(start.z() + (end.z() - start.z()) * t)));
+            }
+            return withEnds(line, start, end);
+        }
+        return catenary(start, end, Math.min(relativeSag * span, MAX_HANG), bulge, points);
+    }
+
     private static List<BlockVector3> withEnds(List<BlockVector3> points, BlockVector3 start, BlockVector3 end) {
         List<BlockVector3> result = new ArrayList<>(points);
         result.set(0, start);

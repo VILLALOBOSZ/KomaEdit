@@ -63,6 +63,9 @@ public final class TubeFigures {
         if (settings.shape() == PathShape.NOISE_TUBE) {
             // El ruido deja islas sueltas en la corteza; solo se conserva la pieza unida al núcleo.
             blocks = largestComponent(blocks);
+        } else if (EzShapes.handles(parameters)) {
+            // Juntas más estrechas que un bloque (escamas, cuentas que se tocan) dejan bolsas de aire encerradas.
+            fillPockets(blocks, POCKET);
         }
         return toBlocks(blocks);
     }
@@ -159,6 +162,87 @@ public final class TubeFigures {
         value = (value ^ (value >>> 33)) * 0xFF51AFD7ED558CCDL;
         value = (value ^ (value >>> 33)) * 0xC4CEB9FE1A85EC53L;
         return value ^ (value >>> 33);
+    }
+
+    /** Tamaño máximo, en bloques, de una bolsa de aire encerrada que se rellena. */
+    static final int POCKET = 24;
+
+    /**
+     * Rellena las bolsas de aire de hasta {@code maximum} bloques encerradas por la figura (unidas por cara). Solo se
+     * exploran los huecos pegados a la figura y cada búsqueda se corta en cuanto la bolsa crece más de la cuenta,
+     * así que no se recorre el aire de fuera.
+     */
+    static void fillPockets(LongOpenHashSet blocks, int maximum) {
+        LongOpenHashSet open = new LongOpenHashSet();
+        LongOpenHashSet pocket = new LongOpenHashSet();
+        LongArrayList queue = new LongArrayList();
+        LongArrayList found = new LongArrayList();
+        int processed = 0;
+        LongIterator iterator = blocks.iterator();
+        LongArrayList seeds = new LongArrayList();
+        while (iterator.hasNext()) {
+            long block = iterator.nextLong();
+            int x = PackedBlockPlan.unpackX(block);
+            int y = PackedBlockPlan.unpackY(block);
+            int z = PackedBlockPlan.unpackZ(block);
+            for (int axis = 0; axis < 6; axis++) {
+                long neighbor = neighbor(x, y, z, axis);
+                if (neighbor != Long.MIN_VALUE && !blocks.contains(neighbor)) {
+                    seeds.add(neighbor);
+                }
+            }
+        }
+        for (int index = 0; index < seeds.size(); index++) {
+            long seed = seeds.getLong(index);
+            if (blocks.contains(seed) || open.contains(seed)) {
+                continue;
+            }
+            pocket.clear();
+            queue.clear();
+            queue.add(seed);
+            pocket.add(seed);
+            boolean escaped = false;
+            for (int head = 0; head < queue.size() && !escaped; head++) {
+                if ((processed++ & 4_095) == 0 && Thread.currentThread().isInterrupted()) {
+                    throw new CancellationException();
+                }
+                long current = queue.getLong(head);
+                int x = PackedBlockPlan.unpackX(current);
+                int y = PackedBlockPlan.unpackY(current);
+                int z = PackedBlockPlan.unpackZ(current);
+                for (int axis = 0; axis < 6; axis++) {
+                    long next = neighbor(x, y, z, axis);
+                    if (next == Long.MIN_VALUE || open.contains(next)) {
+                        escaped = true;
+                        break;
+                    }
+                    if (!blocks.contains(next) && pocket.add(next)) {
+                        if (pocket.size() > maximum) {
+                            escaped = true;
+                            break;
+                        }
+                        queue.add(next);
+                    }
+                }
+            }
+            if (escaped) {
+                open.addAll(pocket);
+            } else {
+                found.addAll(pocket);
+            }
+        }
+        for (int index = 0; index < found.size(); index++) {
+            blocks.add(found.getLong(index));
+        }
+    }
+
+    private static long neighbor(int x, int y, int z, int axis) {
+        int sign = (axis & 1) == 0 ? 1 : -1;
+        int nextY = axis >> 1 == 1 ? y + sign : y;
+        if (nextY < -2048 || nextY > 2047) {
+            return Long.MIN_VALUE;
+        }
+        return PackedBlockPlan.pack(axis >> 1 == 0 ? x + sign : x, nextY, axis >> 1 == 2 ? z + sign : z);
     }
 
     static LongOpenHashSet largestComponent(LongOpenHashSet blocks) {

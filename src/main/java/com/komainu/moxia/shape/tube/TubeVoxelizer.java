@@ -19,6 +19,9 @@ final class TubeVoxelizer {
     static final long MAX_CANDIDATES = 64_000_000L;
     private static final double BALANCED_OFFSET = 0.3;
     private static final double[] HIGH_OFFSETS = {-1.0 / 3.0, 0.0, 1.0 / 3.0};
+    /** Centros de una rejilla de 4³ dentro del bloque: cada muestra representa 1/64 de su volumen. */
+    private static final double[] EXACT_OFFSETS = {-0.375, -0.125, 0.125, 0.375};
+    private static final double CORNER = 0.499;
     /**
      * Holgura (en bloques) a partir de la cual el supermuestreo no puede rescatar el bloque: el doble del mayor
      * desplazamiento de muestra, para cubrir las aproximaciones de distancia de las figuras.
@@ -204,6 +207,9 @@ final class TubeVoxelizer {
             if (settings.hollow()) {
                 return shell(x, y, z);
             }
+            if (settings.quality() == TubeSettings.Quality.EXACT) {
+                return exact(x, y, z);
+            }
             double center = sample(x, y, z, false);
             if (center >= 0.0) {
                 return true;
@@ -213,7 +219,55 @@ final class TubeVoxelizer {
                 case FAST -> false;
                 case BALANCED -> center > -1.0 - BALANCED_CLEARANCE && balanced(x, y, z);
                 case HIGH -> center > -1.0 - HIGH_CLEARANCE && high(x, y, z);
+                case EXACT -> throw new IllegalStateException();
             };
+        }
+
+        /**
+         * Calidad exacta: el bloque se coloca si la figura ocupa al menos la mitad de su volumen, medido con 64
+         * muestras. Para no pagar 64 muestras por bloque, primero se miran el centro y las ocho esquinas: si todos
+         * caen dentro el bloque está lleno, y si todos caen fuera (y el centro queda lejos) está vacío. Solo los
+         * bloques que cruza la superficie se miden enteros.
+         */
+        private boolean exact(double x, double y, double z) {
+            double center = sample(x, y, z, false);
+            if (center < -1.0 - HIGH_CLEARANCE) {
+                return false;
+            }
+            if (center < 0.0 && point.distanceSquared > square(point.radius * reach + 1.0) && point.beyond <= 0.0) {
+                return false;
+            }
+            int corners = 0;
+            for (int corner = 0; corner < 8; corner++) {
+                double cornerX = (corner & 1) == 0 ? x - CORNER : x + CORNER;
+                double cornerY = (corner & 2) == 0 ? y - CORNER : y + CORNER;
+                double cornerZ = (corner & 4) == 0 ? z - CORNER : z + CORNER;
+                if (sample(cornerX, cornerY, cornerZ, false) >= 0.0) {
+                    corners++;
+                }
+            }
+            if (corners == 8 && center >= 0.0) {
+                return true;
+            }
+            if (corners == 0 && center < 0.0) {
+                return false;
+            }
+            int inside = 0;
+            int remaining = 64;
+            for (double offsetX : EXACT_OFFSETS) {
+                for (double offsetY : EXACT_OFFSETS) {
+                    for (double offsetZ : EXACT_OFFSETS) {
+                        remaining--;
+                        if (sample(x + offsetX, y + offsetY, z + offsetZ, false) >= 0.0 && ++inside >= 32) {
+                            return true;
+                        }
+                        if (inside + remaining < 32) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         /**

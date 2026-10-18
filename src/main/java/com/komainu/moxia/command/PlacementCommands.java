@@ -37,7 +37,7 @@ public final class PlacementCommands {
     private static final List<String> ALIGNMENTS = List.of("Constant", "C(D:aim)", "Random", "Noise", "Aim",
             "Upward", "PlayerRelative", "SurfaceNormal", "Expression(E:\"=rx=z;rz=-x\",S:N)", "10%C,2%R");
     private static final List<String> COMMON_FLAGS = List.of("-s 20,20,20", "-o 0.5,2", "-c 90", "-k x", "-f XZ",
-            "-r Y", "-a", "-j MULTIPLES_90", "-x", "-w stairs", "-i 7");
+            "-r Y", "-a", "-j MULTIPLES_90", "-x", "-w Slabs", "-w SlabsAndStairs(C:0.7)", "-i 7");
     private static final List<String> SCATTER_FLAGS = List.of("-n 2", "-u 15", "-d up", "-e 0.5", "-m grass_block",
             "-l pink_wool", "-t", "-h Box(D:\"40,40,40\")", "-h Ellipsoid", "-h Cylinder");
     private static final List<String> ARRAY_FLAGS = List.of("-g 0", "-g 4", "-y 1", "-q 0.5,2", "-p 0:0:0",

@@ -25,10 +25,13 @@ final class TubeShapes {
 
     static TubeShape create(TubeSettings settings, ShapeParameters parameters, TubeCenterline line, long pathSeed) {
         return switch (settings.shape()) {
-            case SWEEP -> new Profile(settings);
+            case SWEEP -> EzShapes.handles(parameters)
+                    ? EzShapes.create(settings, parameters, line, pathSeed)
+                    : new Profile(settings, parameters.options());
             case BRAID -> new Braid(settings);
             case NOISE_TUBE -> new Erosion(settings, settings.seed() != 0L ? settings.seed() : pathSeed);
-            case EXPRESSION -> new Formula(settings, settings.seed() != 0L ? settings.seed() : pathSeed);
+            case EXPRESSION -> new Formula(settings, parameters.options(),
+                    settings.seed() != 0L ? settings.seed() : pathSeed);
             case BEADS -> new Beads(parameters, line);
             case RINGS -> new Rings(parameters, line);
             case CHAINLINK -> new Chainlink(parameters, line);
@@ -104,12 +107,22 @@ final class TubeShapes {
         private final double starNumerator;
         private final double ropeRadius;
         private final double ropeOrbit;
+        /** Hueco central del círculo (la tubería {@code Pipe} de ezEdits), en radios; 0 sin hueco. */
+        private final double inner;
+        /** Rectángulo por dos esquinas ({@code Rectangle(X1,Y1,X2,Y2)}): centro y semilados, o NaN con aspecto. */
+        private final double rectangleX;
+        private final double rectangleY;
+        private final double rectangleWidth;
+        private final double rectangleHeight;
         private final double extent;
 
-        Profile(TubeSettings settings) {
+        Profile(TubeSettings settings, ShapeOptions options) {
             profile = settings.profile();
-            int minimumSides = profile == TubeSettings.TubeProfile.POLYGON
-                    || profile == TubeSettings.TubeProfile.STAR ? 3 : 2;
+            int minimumSides = switch (profile) {
+                case POLYGON, STAR -> 3;
+                case ROPE -> 1;
+                default -> 2;
+            };
             sides = Math.max(minimumSides, settings.sides());
             depth = settings.depth();
             aspect = settings.aspect();
@@ -120,12 +133,36 @@ final class TubeShapes {
             starInner = 1.0 - Math.clamp(depth, 0.05, 0.95);
             starNumerator = starInner * Math.sin(halfSector);
             double sine = Math.sin(Math.PI / sides);
-            ropeRadius = sine / (1.0 + sine);
+            // Hebras tangentes entre sí y al borde; con «strandsize» (Strands de ezEdits) más finas, sin dejar
+            // de tocar el borde exterior.
+            double tangent = sides == 1 ? 1.0 : sine / (1.0 + sine);
+            ropeRadius = tangent * Math.clamp(options.get("strandsize", 1.0), 0.05, 1.0);
             ropeOrbit = 1.0 - ropeRadius;
+            inner = profile == TubeSettings.TubeProfile.CIRCLE ? Math.clamp(options.get("inner", 0.0), 0.0, 0.98)
+                    : 0.0;
+            boolean corners = profile == TubeSettings.TubeProfile.RECTANGLE && (options.has("x1")
+                    || options.has("y1") || options.has("x2") || options.has("y2"));
+            if (corners) {
+                double x1 = Math.clamp(options.get("x1", -1.0), -1.0, 1.0);
+                double x2 = Math.clamp(options.get("x2", 1.0), -1.0, 1.0);
+                double y1 = Math.clamp(options.get("y1", -1.0), -1.0, 1.0);
+                double y2 = Math.clamp(options.get("y2", 1.0), -1.0, 1.0);
+                rectangleX = (x1 + x2) * 0.5;
+                rectangleY = (y1 + y2) * 0.5;
+                rectangleWidth = Math.max(1.0E-3, Math.abs(x2 - x1) * 0.5);
+                rectangleHeight = Math.max(1.0E-3, Math.abs(y2 - y1) * 0.5);
+            } else {
+                rectangleX = Double.NaN;
+                rectangleY = Double.NaN;
+                rectangleWidth = Double.NaN;
+                rectangleHeight = Double.NaN;
+            }
             // Las esquinas de los perfiles cuadrados quedan a √2 del eje.
             extent = switch (profile) {
                 case SQUARE, ROUNDED -> Math.sqrt(2.0);
-                case RECTANGLE -> Math.sqrt(1.0 + aspect * aspect);
+                case RECTANGLE -> corners
+                        ? Math.hypot(Math.abs(rectangleX) + rectangleWidth, Math.abs(rectangleY) + rectangleHeight)
+                        : Math.sqrt(1.0 + aspect * aspect);
                 default -> 1.0;
             };
         }
@@ -144,6 +181,20 @@ final class TubeShapes {
             return gauge <= 1.0 ? gauge : -1.0;
         }
 
+        @Override
+        public double sample(double x, double y, double z, double progress, double blocks, double stretch) {
+            if (inner <= 0.0) {
+                return sample(x, y, z);
+            }
+            // La pared de la tubería nunca baja de un bloque, para que no se abra en diagonal.
+            double hole = Math.min(inner, 1.0 - 1.0 / Math.max(1.0, blocks));
+            double radial = Math.sqrt(x * x + y * y);
+            if (radial > 1.0 || radial < hole) {
+                return -1.0;
+            }
+            return 0.999 * (radial - hole) / (1.0 - hole);
+        }
+
         private double gauge(double x, double y) {
             double absoluteX = Math.abs(x);
             double absoluteY = Math.abs(y);
@@ -154,7 +205,9 @@ final class TubeShapes {
                 case ROUNDED -> Math.pow(Math.pow(absoluteX, exponent) + Math.pow(absoluteY, exponent),
                         1.0 / exponent);
                 case ELLIPSE -> Math.sqrt(x * x + (y / aspect) * (y / aspect));
-                case RECTANGLE -> Math.max(absoluteX, absoluteY / aspect);
+                case RECTANGLE -> Double.isNaN(rectangleX)
+                        ? Math.max(absoluteX, absoluteY / aspect)
+                        : Math.max(Math.abs(x - rectangleX) / rectangleWidth, Math.abs(y - rectangleY) / rectangleHeight);
                 case POLYGON -> polygon(x, y);
                 case STAR -> star(x, y);
                 case FLOWER -> flower(x, y);
@@ -315,10 +368,16 @@ final class TubeShapes {
     static final class Formula implements TubeShape {
         private final TubeFormula.Runner runner;
         private final double extent;
+        /** {@code -z} de ezEdits: z va de -1 al principio a 1 al final en vez de avanzar en radios. */
+        private final boolean normalizedZ;
+        /** {@code -o} de ezEdits: la salida cuenta entradas de paleta (1…P) en vez de ir de 0 a 1; 0 si no. */
+        private final double paletteEntries;
 
-        Formula(TubeSettings settings, long seed) {
+        Formula(TubeSettings settings, ShapeOptions options, long seed) {
             runner = settings.formula().runner(seed, settings.sides());
             extent = settings.formula().radialBound();
+            normalizedZ = options.get("znormal", 0.0) >= 0.5;
+            paletteEntries = Math.max(0.0, Math.rint(options.get("paletteentries", 0.0)));
         }
 
         @Override
@@ -336,9 +395,12 @@ final class TubeShapes {
             if (Math.abs(x) > 1.0 || Math.abs(y) > 1.0) {
                 return -1.0;
             }
-            double value = runner.evaluate(x, y, z, progress);
+            double value = runner.evaluate(x, y, normalizedZ ? 2.0 * progress - 1.0 : z, progress);
             // NaN también queda fuera: la comparación es falsa.
-            return value > 0.0 ? Math.min(value, 1.0) : -1.0;
+            if (!(value > 0.0)) {
+                return -1.0;
+            }
+            return paletteEntries >= 1.0 ? Math.min(value, paletteEntries) / paletteEntries : Math.min(value, 1.0);
         }
     }
 
@@ -480,8 +542,25 @@ final class TubeShapes {
             return new Stations(step, count, false, total - last > step * 0.35 ? total : Double.NaN);
         }
 
+        /**
+         * Como {@link #along}, pero en recorridos abiertos sin el motivo de más del final: los motivos quedan a un
+         * paso exacto unos de otros (cuentas que se tocan, eslabones enganchados) desde el principio.
+         */
+        static Stations regular(TubeCenterline line, double pitch, boolean even) {
+            Stations stations = along(line, pitch, even);
+            return stations.closed ? stations : new Stations(stations.pitch, stations.count, false, Double.NaN);
+        }
+
         double pitch() {
             return pitch;
+        }
+
+        int count() {
+            return count;
+        }
+
+        boolean closed() {
+            return closed;
         }
 
         /** Primera estación cuyo centro puede estar a {@code reach} o menos de {@code z}. */

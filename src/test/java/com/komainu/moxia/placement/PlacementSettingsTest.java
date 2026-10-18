@@ -148,4 +148,34 @@ class PlacementSettingsTest {
         assertEquals("x,y", call.get("p"));
         assertThrows(IllegalArgumentException.class, () -> ParamText.words("Sh(P:\"open"));
     }
+
+    @Test
+    void smoothBlocksProfileUsesTheSharedNotation() {
+        PlacementSettings settings = PlacementSettings.parse(PlacementSettings.Kind.SCATTER,
+                "Clipboard -w SSW(C:0.3,Wall:cobblestone,Slab:oak)");
+        assertEquals(SmoothMode.WALLS, settings.smoothMode());
+        assertEquals(0.3, settings.coverage());
+        assertEquals("cobblestone", settings.smooth().materials().get(
+                com.komainu.moxia.shape.smooth.PieceVariant.WALL));
+        assertEquals(SmoothMode.LAYERS, PlacementSettings.parse(PlacementSettings.Kind.ARRAY, "Clipboard -w Layers")
+                .smoothMode());
+        assertEquals(SmoothMode.NONE, PlacementSettings.parse(PlacementSettings.Kind.PLACE, "Clipboard").smoothMode());
+        assertThrows(IllegalArgumentException.class,
+                () -> PlacementSettings.parse(PlacementSettings.Kind.PLACE, "Clipboard -w Layers(Slab:oak)"));
+    }
+
+    @Test
+    void viewDiffOnlyWorksInThePlacementBrush() {
+        PlacementSettings brush = PlacementSettings.parse(PlacementSettings.Kind.PLACE, "Cl SurfaceNormal ViewDiff",
+                true);
+        assertTrue(brush.needsViewDiff());
+        assertTrue(brush.needsNormal());
+        assertThrows(IllegalArgumentException.class,
+                () -> PlacementSettings.parse(PlacementSettings.Kind.SCATTER, "Cl C ViewDiff", true));
+        assertThrows(IllegalArgumentException.class,
+                () -> PlacementSettings.parse(PlacementSettings.Kind.ARRAY, "Cl V C", true));
+        PlacementSettings scatter = PlacementSettings.parse(PlacementSettings.Kind.SCATTER,
+                "Sh(S:Cone,P:stone) S R -h Ellipsoid(D:\"20,10,20\") -n 3", true);
+        assertEquals("Ellipsoid(D:\"20,10,20\")", scatter.scatter().region());
+    }
 }
