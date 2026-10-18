@@ -2,6 +2,8 @@ package com.komainu.moxia;
 
 import com.komainu.moxia.brush.BrushManager;
 import com.komainu.moxia.brush.BrushToolInputs;
+import com.komainu.moxia.capability.CapabilityConfig;
+import com.komainu.moxia.capability.CapabilityService;
 import com.komainu.moxia.command.MoxiaCommands;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
@@ -101,6 +103,8 @@ public final class KomaEditMod implements ModInitializer {
             }
         });
         BrushToolInputs.register();
+        CapabilityConfig.load();
+        CapabilityService.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             try {
                 ProjectStorage.bind(handler.player.getUuid(), server);

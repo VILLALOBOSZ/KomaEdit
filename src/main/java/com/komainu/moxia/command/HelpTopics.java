@@ -224,6 +224,20 @@ public final class HelpTopics {
                     new Entry("/komaedit sel catenary <puntos> [comba] [down|up|left|right]",
                             "Selección convexa colgando como una cadena entre el principio y el final")
             )),
+            new Topic("capability", "Construir a mano", List.of("capacidad", "capacidades", "capabilities",
+                    "axiom", "builder"), List.of(
+                    new Entry("/komaedit capability", "Qué capacidades tienes activas (menú rápido: mantén Z)"),
+                    new Entry("/komaedit capability <capacidad> [on|off]",
+                            "replace, tweak, extrude, smear, angel, reach, fastplace o noupdates"),
+                    new Entry("/komaedit capability angel|reach <bloques>",
+                            "Distancia de colocar en el aire o del alcance largo"),
+                    new Entry("/komaedit capability extrude <bloques>", "Bloques como mucho por capa al extruir"),
+                    new Entry("/komaedit capability option family on|off",
+                            "Reemplazar familia: con planchas de abeto, la escalera de roble pasa a ser de abeto"),
+                    new Entry("/komaedit capability option match type|state",
+                            "La capa de extruir sigue el mismo tipo de bloque o el mismo estado exacto"),
+                    new Entry("/komaedit capability option flyspeed <x>", "Velocidad de vuelo (1 normal, 2.5…)")
+            )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),

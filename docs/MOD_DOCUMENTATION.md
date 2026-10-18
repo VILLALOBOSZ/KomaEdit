@@ -1666,6 +1666,159 @@ Ejemplos:
 - La selección convexa de `-c` necesita al menos cuatro puntos que no estén en un mismo plano para tener volumen.
 - No hay holograma previo; los dos se deshacen con //undo.
 
+## Construir a mano: capacidades
+
+### Objetivo y acceso
+
+Las capacidades aceleran la construcción bloque a bloque en creativo, como el modo Builder de Axiom: reemplazar con un clic, retocar estados, extruir capas, estirar filas, colocar en el aire, llegar lejos, colocar sin espera y colocar sin actualizar a los vecinos. Cada una se activa por separado y se recuerda por jugador y mundo (`<mundo>/komaedit/players/<uuid>/capabilities/settings.json`).
+
+- **Menú rápido:** mantén `Z` (Controles → KomaEdit → «Menú de capacidades»). Es un círculo con las ocho capacidades; debajo, la velocidad de vuelo y el modo de juego si tienes permiso para ellos.
+  - Clic izquierdo activa o desactiva; clic derecho cambia su opción (familia de Reemplazar, tipo o estado de Extruir, soltar el origen de Arrastrar) y la rueda ajusta su número (distancia de Colocar en el aire, alcance, bloques por capa; con `Mayús` va más deprisa).
+  - Al soltar la tecla se cierra. Si no has pulsado nada y el ratón apunta a una capacidad, la alterna: mantener, apuntar y soltar es el gesto rápido.
+  - Pulsada y soltada en seguida, el menú se queda abierto hasta `Esc` o volver a pulsarla.
+  - Arriba se ve el nombre, qué hace, si falta permiso o hace falta creativo, la opción actual y su atajo.
+- **Atajos sueltos:** cada capacidad tiene su tecla en Controles → KomaEdit («Capacidad: …»), sin asignar de serie.
+- **Orden:** `/komaedit capability` (alias `capacidad`) lista las capacidades con casillas que se pulsan en el chat.
+
+```text
+/komaedit capability
+/komaedit capability <capacidad> [on|off|toggle]
+/komaedit capability angel 8
+/komaedit capability reach 32
+/komaedit capability extrude 512
+/komaedit capability option family on
+/komaedit capability option match state
+/komaedit capability option flyspeed 2.5
+```
+
+Las capacidades activas salen en pequeño a la derecha de la barra rápida. Si el servidor no tiene KomaEdit, el cliente no ofrece nada: el menú no se abre y los clics son los de siempre. Sin KomaEdit en el cliente funcionan el alcance largo y la velocidad de vuelo (con la orden), porque solo dependen del servidor.
+
+### Capacidades
+
+| Capacidad | Id (alias) | Qué hace |
+| --- | --- | --- |
+| Reemplazar | `replace` (`reemplazar`) | Clic derecho con un bloque cambia el bloque apuntado por el de la mano. Conserva cada propiedad que compartan: escalera por escalera mantiene `facing`, `half` y `shape`; losa por losa, `type`; tronco por tronco, `axis`; cualquier anegable, `waterlogged`. Lo que no comparten sale de la colocación normal (hacia dónde miras, mitad pulsada). |
+| Retocar | `tweak` (`retocar`) | Clic derecho con la mano vacía pasa la propiedad elegida al valor siguiente; con `Mayús`, al anterior. `F` con las dos manos vacías elige la propiedad siguiente (`Mayús+F`, la anterior). |
+| Extruir | `extrude` (`extruir`) | Con el mismo bloque que el apuntado en la mano: clic derecho en una cara copia hacia fuera la capa conectada; clic izquierdo la encoge. |
+| Arrastrar | `smear` (`arrastrar`) | El primer clic derecho fija el origen (con `Mayús`, la fila entera) y el eje; el segundo lo estira hasta donde miras. Clic izquierdo cancela. |
+| Colocar en el aire | `angel` (`aire`) | Clic derecho mirando al aire coloca el bloque (o el agua o la lava del cubo) a la distancia elegida, sin apoyo. |
+| Alcance largo | `reach` (`alcance`) | Llegas a los bloques desde más lejos: todo lo que haces con la mano, también romper y colocar normal. |
+| Colocación rápida | `fastplace` (`rapida`) | Sin la espera de 4 ticks entre bloques al mantener el clic derecho (uno por tick). |
+| Sin actualizaciones | `noupdates` (`sinactualizar`) | Coloca y rompe sin avisar a los vecinos: la arena no cae, el agua y la lava se quedan quietas, las escaleras no recalculan su forma. |
+
+### Qué hace cada clic
+
+Si varias capacidades podrían usar el mismo clic, gana la primera de la lista. Lo que no recoge ninguna sigue haciendo lo de Minecraft. Los pinceles y la supervarita conservan siempre sus clics.
+
+| Clic | Condición | Acción |
+| --- | --- | --- |
+| Derecho | Arrastrar activo | Fija el origen o, si ya hay uno, lo estira |
+| Derecho sobre un bloque | Mano vacía y Retocar | Retoca la propiedad elegida |
+| Derecho sobre una cara | El mismo bloque en la mano y Extruir | Extruye la capa |
+| Derecho sobre un bloque | Otro bloque en la mano y Reemplazar | Reemplaza |
+| Derecho sobre una cara | Bloque o cubo en la mano y Sin actualizaciones | Coloca sin actualizar |
+| Derecho mirando al aire | Bloque o cubo en la mano y Colocar en el aire | Coloca a la distancia elegida |
+| Izquierdo | Arrastre a medias | Lo cancela |
+| Izquierdo sobre una cara | El mismo bloque en la mano y Extruir | Encoge la capa |
+| Izquierdo sobre un bloque | Sin actualizaciones | Rompe sin actualizar (cada 5 ticks si se mantiene, como en creativo) |
+| `F` | Retocar, las dos manos vacías y un bloque delante | Cambia la propiedad que se retoca |
+
+Retocar, Extruir y Arrastrar actúan una vez por pulsación; Reemplazar, colocar y romper se repiten al mantener el botón (cada tick con Colocación rápida).
+
+### Retocar
+
+- Las propiedades se recorren en este orden: `facing`, `half`, `type`, `shape`, `axis`, `rotation`, `open`, `hinge`, `face`, `attachment`, `hanging`, `north`, `east`, `south`, `west`, `up`, `down`, `layers`, `waterlogged`, `lit`, `persistent`… y después las demás del bloque.
+- La propiedad elegida se recuerda; si el bloque apuntado no la tiene, se usa la primera suya. El mensaje de la barra dice cuál es y cuántas tiene el bloque (`propiedad 2/4: half = top`).
+- No se retocan las mitades de los bloques de dos partes (`half` de puertas y plantas altas, `part` de camas): cambiar una sola dejaría la otra huérfana.
+- Con actualizaciones, un vecino puede volver a corregir el bloque (por ejemplo la forma de una escalera); con Sin actualizaciones se queda como lo dejes.
+
+### Reemplazar
+
+- Opción **Reemplazar familia** (clic derecho en el menú, o `option family on`): cambia el material y conserva la forma según las familias de Minecraft. Con planchas de abeto en la mano, una escalera de roble pasa a escalera de abeto, una losa a losa y las planchas a planchas; con andesita pulida apuntada y granito en la mano sale granito pulido. Si la familia de la mano no tiene esa pieza (abeto no tiene la valla de otra madera, o el bloque no es de ninguna familia), se reemplaza por el bloque de la mano tal cual.
+- Con el mismo bloque que el apuntado no se reemplaza (sale la colocación normal o, con Extruir, la extrusión).
+- Los bloques de dos partes (puertas, camas, plantas altas) ni se reemplazan ni se colocan con capacidades; con ellos en la mano los clics son los de siempre.
+
+### Extruir
+
+- La capa son los bloques iguales al pulsado que se tocan por un lado en el plano de la cara y tienen esa cara al descubierto (aire, agua, hierba u otro bloque reemplazable delante).
+- «Iguales» es el mismo tipo de bloque (de serie) o el mismo estado exacto (`option match state`): con tipo, una pared de escaleras en varias orientaciones se extruye entera y cada copia conserva la suya.
+- Como mucho los bloques por capa elegidos (`/komaedit capability extrude <n>` o la rueda; 256 de serie) y nunca más que `maxLayerBlocks` del servidor. Si la capa era mayor, el mensaje lo dice.
+- Encoger quita la capa al descubierto; un bloque anegado deja su agua.
+- Una copia anegada solo queda anegada si va a parar a agua.
+- Cada extrusión o encogido es un solo `//undo`. Se copia el estado del bloque, no su contenido: un cofre o un cartel salen vacíos.
+
+### Arrastrar
+
+- El eje es el de la cara pulsada en el primer clic. Con `Mayús` el origen es la tira recta más larga de bloques iguales (con el mismo criterio que Extruir) que cruza el bloque en el plano de esa cara.
+- El final es el punto del eje más cercano a la línea de tu mirada, así que se puede estirar hacia el aire o hacia atrás, a través del propio origen. Si miras casi a lo largo del eje se usa la distancia al bloque mirado (o tu alcance).
+- Mientras el origen está fijado se ve en amarillo y lo que ocupará el estirado, en azul. La barra recuerda «Arrastre: elige el final».
+- Las copias solo van a posiciones libres; lo que haya en medio se respeta. Como mucho `maxSmearLength` bloques de largo y `maxLayerBlocks` en total; el final tiene que estar a menos de `maxReach` de tus ojos.
+- Cada arrastre es un solo `//undo`. Cambiar de dimensión, desactivar Arrastrar o el clic izquierdo sueltan el origen.
+
+### Colocar en el aire y alcance largo
+
+- Colocar en el aire usa la distancia elegida (4 de serie), con un bloque o un cubo de agua o lava. Se ve una caja blanca donde caerá. El bloque se coloca como si se pulsara la cara de arriba; lo que necesita apoyo (antorchas, flores) se queda en el aire con Sin actualizaciones y se cae sin ellas.
+- Alcance largo suma al alcance de Minecraft lo necesario para llegar a la distancia elegida (24 de serie, `/komaedit capability reach <n>`) con un modificador del atributo `block_interaction_range`. Minecraft lo sincroniza con el cliente y el servidor lo comprueba como siempre, así que también sirve para romper, usar y colocar con normalidad, y para clientes sin KomaEdit.
+- Las dos se limitan a `maxReach` del servidor (64 de serie, el tope de Minecraft).
+
+### Sin actualizaciones
+
+Coloca y rompe con una `EditSession` de WorldEdit sin los efectos «vecinos» ni «al colocarse» (los de `//perf`): la arena y la grava flotan, el agua y la lava del cubo se quedan quietas, las vallas no se conectan y las plantas no se rompen sin suelo. La luz sí se actualiza. Afecta también a lo que hacen Reemplazar, Retocar, Extruir, Arrastrar y Colocar en el aire mientras está activa. Romper deja el agua de un bloque anegado.
+
+### Velocidad de vuelo y modo de juego
+
+- La velocidad de vuelo va de ×0,5 a ×20 en el menú (botones o rueda sobre la fila) o con `option flyspeed <x>`; el servidor la limita con `maxFlySpeed`. Se guarda y se vuelve a aplicar al entrar; si ya no tienes el permiso, vuelve a la normal.
+- Los botones de modo de juego cambian entre supervivencia, creativo, aventura y espectador.
+
+### Permisos y comprobaciones del servidor
+
+Todo lo decide el servidor: el cliente solo manda qué ha pulsado y dónde. Para cada acción el servidor comprueba:
+
+- El permiso de la capacidad (`komaedit.capability.<id>`) y que estés en creativo o tengas `komaedit.admin.anymode`. Fuera de creativo, sin ese permiso, las capacidades no hacen nada (el menú lo avisa) y el alcance largo se retira.
+- Que la capacidad siga activa (un cliente con un estado viejo recibe el bueno).
+- La distancia: el bloque pulsado tiene que estar al alcance del jugador (con el alcance largo incluido); la celda de Colocar en el aire, a la distancia elegida; el final de un arrastre, a menos de `maxReach`.
+- Que puedas construir en cada posición: dentro de los límites del mundo y cargada, fuera de la protección del spawn y dentro del borde del mundo, sin modo aventura, sin entidades estorbando el bloque nuevo, solo operadores para bloques de comandos y estructuras, y la aprobación del evento de Fabric `PlayerBlockBreakEvents.BEFORE`, que escuchan la mayoría de mods de protección. Las posiciones que no pasan se saltan y el mensaje dice cuántas y por qué.
+- Un freno por jugador: `actionsPerTick` acciones de un bloque por tick y una acción de varios bloques cada 4 ticks.
+
+Nodos y paquetes:
+
+| Nodo | Paquete |
+| --- | --- |
+| `komaedit.capability.replace`, `.tweak`, `.angel`, `.fastplace`, `.flyspeed` | básico |
+| `komaedit.capability.extrude`, `.smear`, `.noupdates`, `.reach` | intermedio |
+| `komaedit.admin.gamemode` (modo de juego desde el menú), `komaedit.admin.anymode` (capacidades fuera de creativo) | admin |
+
+`komaedit.build` sigue dando todas las `komaedit.capability.*`, como el resto de funciones de construcción, y `komaedit.capability` da la familia entera.
+
+### Historial
+
+Las acciones de más de un bloque (extruir, encoger, arrastrar y cualquiera que otro mod amplíe, como la simetría) son una sola operación de `//undo`. Las de un bloque (reemplazar, retocar, colocar, romper) no entran en el historial, igual que la colocación normal, para no echar del historial de WorldEdit las operaciones grandes.
+
+### Configuración de las capacidades
+
+`config/komaedit/capabilities.json` se crea al arrancar con:
+
+- `maxReach`: `64`; rango `5–64`. Alcance largo y Colocar en el aire.
+- `maxLayerBlocks`: `4096`; rango `1–65536`. Bloques por extrusión, encogido o arrastre.
+- `maxSmearLength`: `64`; rango `1–256`. Largo del arrastre y de la fila de origen.
+- `maxFlySpeed`: `100` (×10); rango `10–200`, en décimas de la velocidad normal.
+- `actionsPerTick`: `4`; rango `1–20`.
+
+Un valor fuera de rango invalida el archivo y se usan los de serie. Se recarga con `/komaedit reload`, que vuelve a mandar el estado a los jugadores.
+
+### Para otros mods
+
+Las capacidades no pasan por `BlockItem.place` ni por el paquete de uso de bloque: un gancho sobre la colocación vanilla no las ve. Antes de aplicar cada acción se lanza el evento `com.komainu.moxia.capability.HandEditEvents.COLLECT` con los bloques previstos (`HandEdit`: posición y estado de Minecraft). Lo que un oyente añada entra en la misma operación: misma `EditSession` y `//undo`, mismo modo sin actualizaciones y las mismas comprobaciones de que el jugador puede construir ahí (todas salvo la de distancia). Así se replica, por ejemplo, en simetría.
+
+### Rendimiento y limitaciones
+
+- Cada clic es una edición pequeña en el hilo del servidor; las capas grandes de Extruir se buscan en el momento (4 096 bloques son unos pocos milisegundos). La vista previa de la capa en el cliente se recalcula solo cuando cambia el bloque, la cara o la opción, y con más de 256 celdas se dibuja como una caja.
+- Las ediciones pasan por WorldEdit: respetan su máscara global (`//gmask`) y su límite de bloques, y los registros que no ven WorldEdit (Ledger, CoreProtect) tampoco las ven.
+- Con Arrastrar activo, todos los clics derechos son suyos: desactívalo para colocar normal.
+- Mientras capturas una trayectoria con `P`, Reemplazar o Retocar se quedan los clics derechos sobre bloques.
+- La celda de Colocar en el aire y el final del arrastre los calcula el cliente con su mirada (para que coincidan con la vista previa); el servidor comprueba la distancia, no que se vea.
+- La colocación rápida la decide el cliente cuando el servidor dice que está activa; Minecraft no limita el ritmo de colocación en el servidor.
+
 ## Pinceles
 
 ### Objetivo y acceso
@@ -2485,14 +2638,15 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`.
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…) y `komaedit.select.superwand`.
+   - `komaedit.capability.<capacidad>` y `komaedit.capability.flyspeed` (ver [Construir a mano: capacidades](#construir-a-mano-capacidades)); los da también `komaedit.build`.
 3. **Paquetes** (`permpack` de ezEdits):
 
 | Paquete | Incluye |
 | --- | --- |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, supervarita y selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`). |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles y recetas. |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, copias del proyecto y sin límite de volumen. Va aparte: no incluye los otros. |
+| `komaedit.permpack.admin` | `reload`, copias del proyecto, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
@@ -2510,6 +2664,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
 
 Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
+
+`config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
 
 `config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
 
