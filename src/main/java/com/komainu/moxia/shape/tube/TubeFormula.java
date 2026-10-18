@@ -33,6 +33,8 @@ public final class TubeFormula {
     static final int MAX_LOCALS = 16;
 
     private static final Set<String> RESERVED = Set.of("x", "y", "z", "t", "pi", "e");
+    /** En la expresión de corte del spline de ruido {@code t} no es una entrada y se puede definir. */
+    private static final Set<String> CUT_RESERVED = Set.of("x", "y", "z", "pi", "e");
     /** Variables propias que una definición sí puede tapar (como {@code r=0.1;} en las fórmulas de ezEdits). */
     private static final Set<String> BUILT_IN = Set.of("r", "a", "n");
     private static final Set<String> LOOPS = Set.of("while", "for", "do", "loop", "repeat", "until", "goto");
@@ -67,7 +69,24 @@ public final class TubeFormula {
             throw new FormulaException(MAX_LENGTH, "La fórmula es demasiado larga (" + trimmed.length()
                     + " caracteres; máximo " + MAX_LENGTH + ")");
         }
-        return new Parser(trimmed).parse();
+        return new Parser(trimmed, false).parse();
+    }
+
+    /**
+     * Compila una expresión de corte para el spline de ruido ({@code //ezspline noise … -i}): además de las
+     * variables de siempre, {@code n} es el valor del ruido en el punto y {@code d} la profundidad pedida, y
+     * {@code t} se puede redefinir como en las expresiones de ezEdits.
+     */
+    public static TubeFormula compileNoiseCut(String source) {
+        if (source == null || source.isBlank()) {
+            throw new FormulaException(-1, "La expresión de corte está vacía");
+        }
+        String trimmed = source.trim();
+        if (trimmed.length() > MAX_LENGTH) {
+            throw new FormulaException(MAX_LENGTH, "La expresión de corte es demasiado larga (" + trimmed.length()
+                    + " caracteres; máximo " + MAX_LENGTH + ")");
+        }
+        return new Parser(trimmed, true).parse();
     }
 
     /** Comprueba la fórmula sin guardarla; devuelve el mensaje de error o {@code null} si es válida. */
@@ -125,6 +144,13 @@ public final class TubeFormula {
             frame = new Frame(formula.definitions.length, noise, repeat);
         }
 
+        /** Evalúa una expresión de corte: {@code n} es el ruido en el punto y {@code d} la profundidad. */
+        public double evaluate(double x, double y, double z, double t, double noise, double depth) {
+            frame.n = noise;
+            frame.d = depth;
+            return evaluate(x, y, z, t);
+        }
+
         /**
          * @param x lateral en radios (-1 a 1)
          * @param y vertical en radios (-1 a 1)
@@ -158,7 +184,8 @@ public final class TubeFormula {
         double t;
         double r;
         double a;
-        final double n;
+        double n;
+        double d;
         final double[] locals;
         final TubeShapes.Noise noise;
 
@@ -173,6 +200,7 @@ public final class TubeFormula {
 
     private static final class Parser {
         private final String text;
+        private final boolean cut;
         private final Map<String, Integer> locals = new HashMap<>();
         private final List<Node> definitions = new ArrayList<>();
         private int position;
@@ -181,8 +209,9 @@ public final class TubeFormula {
         private boolean usesRadial;
         private boolean usesAngle;
 
-        Parser(String text) {
+        Parser(String text, boolean cut) {
             this.text = text;
+            this.cut = cut;
         }
 
         TubeFormula parse() {
@@ -231,7 +260,7 @@ public final class TubeFormula {
         }
 
         private void defineLocal(String name, int start) {
-            if (RESERVED.contains(name) || Functions.exists(name)) {
+            if ((cut ? CUT_RESERVED : RESERVED).contains(name) || Functions.exists(name)) {
                 throw error(start, "No se puede redefinir «" + name + "»");
             }
             if (locals.size() >= MAX_LOCALS && !locals.containsKey(name)) {
@@ -449,6 +478,13 @@ public final class TubeFormula {
                     yield node(new Variable(Variable.A));
                 }
                 case "n" -> node(new Variable(Variable.N));
+                case "d" -> {
+                    if (!cut) {
+                        throw error(start, "Variable desconocida «d»: usa x, y, z, t, r, a, n, pi, e o "
+                                + "defínela al principio con «d = valor;»");
+                    }
+                    yield node(new Variable(Variable.D));
+                }
                 case "pi" -> node(new Constant(Math.PI));
                 case "e" -> node(new Constant(Math.E));
                 default -> {
@@ -460,8 +496,8 @@ public final class TubeFormula {
                         throw error(start, "Variable desconocida «" + name + "»: las mayúsculas cuentan, "
                                 + "escribe «" + lower + "»");
                     }
-                    throw error(start, "Variable desconocida «" + name + "»: usa x, y, z, t, r, a, n, pi, e o "
-                            + "defínela al principio con «" + name + " = valor;»");
+                    throw error(start, "Variable desconocida «" + name + "»: usa x, y, z, t, r, a, n, "
+                            + (cut ? "d, " : "") + "pi, e o defínela al principio con «" + name + " = valor;»");
                 }
             };
         }
@@ -742,6 +778,7 @@ public final class TubeFormula {
         static final int R = 4;
         static final int A = 5;
         static final int N = 6;
+        static final int D = 7;
         private final int which;
 
         Variable(int which) {
@@ -757,6 +794,7 @@ public final class TubeFormula {
                 case T -> frame.t;
                 case R -> frame.r;
                 case A -> frame.a;
+                case D -> frame.d;
                 default -> frame.n;
             };
         }

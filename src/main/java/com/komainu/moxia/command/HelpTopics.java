@@ -86,6 +86,20 @@ public final class HelpTopics {
                     new Entry("/komaedit sweep circle 2_6_2 stone -e round -w stairs",
                             "Ejemplo: radios con fotogramas, extremos redondos y escaleras")
             )),
+            new Topic("spline", "Spline de ezEdits", List.of("ezspline", "ezsp", "splines"), List.of(
+                    new Entry("/komaedit ezsp 2d <forma(parámetros)> <patrón> <radios> [banderas]",
+                            "Perfil 2D: Circle, Square, SuperCircle, CirclesCircle, Pipe, Polygon, Rectangle, Star…"),
+                    new Entry("/komaedit ezsp 3d <forma(parámetros)> <patrón> <radios> [banderas]",
+                            "Beads, Cubes, Braids, Chainlink, Fishnet, Honeycomb, Oscillate, Rings, Scales, Noodles"),
+                    new Entry("/komaedit ezsp basic|rope <patrón> <radios>", "Cilindro o cuerda"),
+                    new Entry("/komaedit ezsp noise <paleta> <radios> [ruido] [profundidad] [-i expresión]",
+                            "Cilindro mordido por un ruido"),
+                    new Entry("/komaedit ezsp expression <paleta> <radios> [-z] [-o] <expresión>",
+                            "Figura por expresión con paleta"),
+                    new Entry("/komaedit ezsp structure <estructura> [radio] [-z]", "Estructura doblada por el recorrido"),
+                    new Entry("/komaedit ezsp 3d Chainlink(M:99,N:99,E:0.6) clay 10 -q EXACT",
+                            "Banderas: -p -q -r -s -t -n -e -w -h, como en ezEdits")
+            )),
             new Topic("edit", "Editar estructuras", List.of("editar", "doblar", "bend", "degradado", "gradient"), List.of(
                     new Entry("/komaedit bend [repeat|stretch] [-n upright|horizontal]", "Dobla el portapapeles por la trayectoria"),
                     new Entry("/komaedit gradient preset <paleta>", "Degradado de paleta sobre la selección"),

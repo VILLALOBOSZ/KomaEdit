@@ -53,7 +53,7 @@ public record TubeSettings(
         PathShape shape = parameters.shape();
         TubeProfile profile = TubeProfile.byIndex((int) Math.round(options.get("profile", 0.0)));
         int sides = options.has("sides")
-                ? (int) Math.round(Math.clamp(options.get("sides", 6.0), 2.0, 32.0))
+                ? (int) Math.round(Math.clamp(options.get("sides", 6.0), 1.0, 32.0))
                 : parameters.spacing();
         double depth = shape == PathShape.NOISE_TUBE
                 ? Math.clamp(options.get("depthmultiplier", 0.15 + parameters.thickness() * 0.15), 0.05, 1.0)
@@ -76,7 +76,7 @@ public record TubeSettings(
                 sides,
                 depth,
                 Math.clamp(options.get("aspect", 0.5), 0.1, 1.0),
-                Math.clamp(options.get("exponent", 4.0), 1.0, 24.0),
+                Math.clamp(options.get("exponent", 4.0), 0.1, 200.0),
                 // Las cuentas hacen su propia cáscara; en ellas `hollow:false` solo las rellena.
                 shape != PathShape.BEADS && options.get("hollow", 0.0) >= 0.5,
                 (int) Math.round(Math.clamp(options.get("wall", parameters.thickness()), 1.0, 16.0)),
@@ -266,7 +266,8 @@ public record TubeSettings(
     public enum Quality {
         FAST("fast", 0.0, "rapida", "rapido"),
         BALANCED("balanced", 1.0, "equilibrada", "normal"),
-        HIGH("high", 2.0, "alta", "exact", "exacta");
+        HIGH("high", 2.0, "alta"),
+        EXACT("exact", 3.0, "exacta", "exacto");
 
         private final String id;
         private final double value;
@@ -290,7 +291,10 @@ public record TubeSettings(
             if (value < 0.75) {
                 return FAST;
             }
-            return value < 1.75 ? BALANCED : HIGH;
+            if (value < 1.75) {
+                return BALANCED;
+            }
+            return value < 2.5 ? HIGH : EXACT;
         }
 
         public static Quality byId(String input) {
@@ -300,7 +304,7 @@ public record TubeSettings(
                     return quality;
                 }
             }
-            throw new IllegalArgumentException("Calidad desconocida: " + input + " (fast, balanced, high)");
+            throw new IllegalArgumentException("Calidad desconocida: " + input + " (fast, balanced, high, exact)");
         }
     }
 
@@ -309,7 +313,7 @@ public record TubeSettings(
      * base. Interpola con Hermite monótono para que el grosor cambie con suavidad y sin sobrepasar los valores.
      */
     public record RadiusProgression(double[] positions, double[] factors) {
-        public static final int MAX_KEYS = 6;
+        public static final int MAX_KEYS = 8;
         public static final RadiusProgression CONSTANT = new RadiusProgression(new double[]{0.0, 1.0},
                 new double[]{1.0, 1.0});
 
@@ -367,7 +371,7 @@ public record TubeSettings(
         }
 
         /**
-         * Lee {@code k0..k5} (porcentaje del radio) y {@code p1..p4} (posición 0–1 de los intermedios).
+         * Lee {@code k0..k7} (porcentaje del radio) y {@code p1..p6} (posición 0–1 de los intermedios).
          */
         static RadiusProgression fromOptions(ShapeOptions options) {
             List<Double> factors = new ArrayList<>();
@@ -431,6 +435,12 @@ public record TubeSettings(
             }
             int baseRadius = Math.clamp((int) Math.ceil(maximum), 1, 128);
             java.util.Map<String, Double> options = new java.util.LinkedHashMap<>();
+            if (entries.length == 1 && radii[0] != baseRadius) {
+                // Un radio con decimales (6.9) se guarda como dos fotogramas iguales sobre el radio entero.
+                double factor = Math.max(5.0, radii[0] / baseRadius * 100.0);
+                options.put("k0", factor);
+                options.put("k1", factor);
+            }
             if (entries.length > 1) {
                 boolean anyExplicit = false;
                 for (int index = 1; index < last; index++) {

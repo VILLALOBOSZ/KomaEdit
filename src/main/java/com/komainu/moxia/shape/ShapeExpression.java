@@ -105,7 +105,7 @@ public record ShapeExpression(PathShape shape, ShapeOptions options) {
             case "coverage", "cobertura" -> "coverage";
             case "preset", "serie", "formula" -> "preset";
             case "engine", "motor" -> "engine";
-            case "k0", "k1", "k2", "k3", "k4", "k5", "p1", "p2", "p3", "p4" -> name;
+            case "k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7", "p1", "p2", "p3", "p4", "p5", "p6" -> name;
             default -> throw new IllegalArgumentException("Parámetro de figura desconocido: " + input.trim());
         };
     }

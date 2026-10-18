@@ -439,7 +439,7 @@ También está disponible con el comando general:
 
 | Control / bandera | Opción de receta | Efecto |
 | --- | --- | --- |
-| Radio / `<radios>` | radio + `k0`…`k5`, `p1`…`p4` | Radio base. Con varios valores (`2,10,2`) el grosor sigue esos fotogramas con interpolación monótona; `2,0.3:12,2` fija la posición del intermedio. Sin comillas: `2_10_2`. |
+| Radio / `<radios>` | radio + `k0`…`k5`, `p1`…`p4` | Radio base. Con varios valores (`2,10,2`, hasta 8) el grosor sigue esos fotogramas con interpolación monótona; `2,0.3:12,2` fija la posición del intermedio. Sin comillas: `2_10_2`. |
 | Lados / puntas | `sides` | Lados del polígono, puntas de la estrella, pétalos de la flor o hebras de la cuerda (Studio 2–8, comando hasta 32 con `star12`). |
 | Pared (hueco), `-hollow <n>` | `hollow`, `wall` | Grosor de pared en bloques cuando el relleno es **Hueco**. |
 | Giro, `-r <a>[,<b>]` | `angle`, `rollend` | Giro inicial de la sección; con dos valores gira de `a` a `b` a lo largo del recorrido. |
@@ -447,7 +447,7 @@ También está disponible con el comando general:
 | `-e <modo>` / Extremos | `end` | `flat`, `soft`, `spike`, `round`, `cube`. |
 | `-n <modo>` / Normales | `normal` | `consistent`, `horizontal`, `upright`. |
 | `-p t:b:c` | `tension`, `bias`, `continuity` | Kochanek–Bartels, cada valor entre `-1` y `1`. |
-| `-q <calidad>` | `quality` | `fast` (centro del bloque), `balanced` (rescata detalles finos con seis muestras), `high` (27 muestras, cobertura ≥ 25 %). |
+| `-q <calidad>` | `quality` | `fast` (centro del bloque), `balanced` (rescata detalles finos con seis muestras), `high` (27 muestras, cobertura ≥ 25 %), `exact` (el bloque se coloca si la figura llena al menos la mitad de su volumen, medido con 64 muestras). |
 | `-s <factor>` | `stretch` | Estira o comprime el patrón a lo largo del recorrido. |
 | `-d <0–1>` | `depthmultiplier` | Profundidad de las estrellas y flores, o de la erosión. |
 | `-a <0.1–1>` | `aspect` | Proporción de elipse y rectángulo. |
@@ -763,6 +763,154 @@ La fórmula propia se guarda como texto en la receta (campo `formula`, formato d
 - No se usa el motor de expresiones de WorldEdit: en 7.3.8 cada evaluación consulta el reloj, busca variables en un mapa y crea objetos (150–335 ns por punto medidos, frente a 12–63 ns aquí con las mismas fórmulas), y su lenguaje permite bucles y búferes globales.
 - Las piezas muy finas (menos de un bloque en el radio elegido) pueden perder continuidad; sube el radio o usa `-q high`.
 - `x` e `y` se miden en radios: con radios por fotogramas la figura entera escala con el tubo.
+
+## Spline de ezEdits (`ezspline`)
+
+### Objetivo y acceso
+
+Quien venga de ezEdits puede escribir sus órdenes de `//ezspline` tal cual, con toda su lista de formas y parámetros. KomaEdit las traduce a las [figuras de espacio de tubo](#figuras-de-espacio-de-tubo): la misma curva Kochanek–Bartels, los mismos marcos, extremos, radios por fotogramas, torsión, calidad y losas y escaleras de `sweep`, así que el resultado es estanco por construcción.
+
+```text
+/komaedit ezspline <subcomando> …
+/komaedit ezsp <subcomando> …
+/komaedit spline <subcomando> …
+```
+
+- El recorrido son los puntos marcados con **P** o, si no hay, la selección de WorldEdit: `//sel convex` da un punto por vértice y un cuboide va de `//pos1` a `//pos2`, como en ezEdits.
+- Sin argumentos, o con `-h` detrás de un subcomando, el chat muestra la ayuda.
+- Se calcula en un worker y se coloca como una edición por lotes: **//undo** la quita entera y `/komaedit job status|cancel` funciona igual que con el resto de figuras.
+- Permisos: los de cada figura (`komaedit.build` o `komaedit.build.sweep`, `.braid`, `.expression`); `structure` usa los de `bend` y, con el portapapeles o un esquemático, también el de portapapeles.
+
+| Subcomando | Sintaxis |
+| --- | --- |
+| `2d` | `2d <forma(parámetros)> <patrón> <radios> [banderas]` |
+| `3d` | `3d <forma(parámetros)> <patrón> <radios> [banderas]` |
+| `basic` | `basic <patrón> <radios>`: igual que `2d Circle` |
+| `rope` | `rope <patrón> <radios>`: igual que `2d CirclesCircle -t 90` |
+| `noise` | `noise <paleta> <radios> [ruido] [profundidad] [-i expresión]` |
+| `expression` | `expression <paleta> <radios> [-z] [-o] <expresión…>` (también `expr`) |
+| `structure` | `structure <estructura> [radio] [-z]` |
+
+También se aceptan las formas antiguas en las que la figura es el subcomando: `polygon clay 10 4` (polígono de 4 lados), `rope ice 15 6` (cuerda de 6 hebras) o `beads clay 10`.
+
+### Banderas comunes
+
+Pueden ir en cualquier sitio de la orden (`2d CirclesCircle -t 90 clay 10` vale); en `expression`, antes de la expresión. Los nombres no distinguen mayúsculas.
+
+| Bandera | Efecto |
+| --- | --- |
+| `<radios>` | Uno o varios radios separados por comas (hasta 8), con posición opcional: `1,12,1`, `1,0.1:12,1`, `2,10,2,12,2,10,2`. El primero está en la posición 0 y el último en la 1; las posiciones deben crecer. Un radio con decimales (`6.9`) se respeta. |
+| `-p t:b:c` | Tensión, sesgo y continuidad de la curva, cada una entre `-1` y `1` (por defecto `0:0:0`). |
+| `-q <calidad>` | `FAST`, `BALANCED` (por defecto), `HIGH` o `EXACT`. También el número de muestras de ezEdits 0.12 y anteriores: hasta 1 es `FAST`, hasta 2,5 `BALANCED`, hasta 4,5 `HIGH` y más `EXACT`. |
+| `-r <a>` / `-r <a>,<b>` | Giro inicial de la sección en grados; con dos valores gira de `a` a `b` a lo largo del recorrido e ignora `-t`. |
+| `-s <factor>` | Estira (más de 1) o comprime la figura a lo largo del recorrido (0,1 a 10). En `expression -z` y `structure -z` no hace falta. |
+| `-t <grados>` | Torsión: grados que gira la sección por cada diámetro recorrido. `rope` usa 90 por defecto. |
+| `-n <modo>` | `CONSISTENT` (por defecto), `HORIZONTAL` o `UPRIGHT`. |
+| `-e <modo>` | `FLAT` (por defecto), `SOFT`, `SPIKE`, `ROUND` o `CUBE`. |
+| `-w <perfil>` | Losas, escaleras, capas o muros en la superficie con los perfiles de [Smoothblocks](#smoothblocks-perfiles-de--w): `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW`, con sus parámetros y materiales (`-w Slabs(Slab:oak_slab)`). Con `-c <0–1>` se ajusta la cobertura. |
+| `-h` | Ayuda en el chat. |
+
+**`-q EXACT`**: un bloque se coloca si la figura ocupa al menos la mitad de su volumen, medido con 64 muestras. Para no pagarlas en todos, primero se miran el centro y las ocho esquinas: si todos caen dentro el bloque está lleno y si todos caen fuera está vacío; solo los bloques que cruza la superficie se miden enteros. Es el volumen más fiel; para detalles de menos de medio bloque es mejor `HIGH`, que da por buenos los bloques ocupados en un 25 %. También vale en `sweep` y en las demás figuras de tubo (`-q exact`).
+
+### Formas 2D
+
+Perfiles barridos a lo largo del recorrido (`x` e `y` de la sección van de `-1` a `1`). Cada parámetro tiene nombre largo y abreviatura: `SuperCircle(Exponent:0.5)` es `SC(E:0.5)`.
+
+| Forma | Parámetros (por defecto) |
+| --- | --- |
+| `Circle` (`Ci`) | — |
+| `Square` (`Sq`) | — |
+| `Diamond` (`Di`) | — |
+| `RoundedSquare` (`RS`) | — (superelipse de exponente 4) |
+| `SuperCircle` (`SC`) | `Exponent` (`E`, 2): por debajo de 1 estrellas, 1 rombo, 2 círculo y más de 2 hacia el cuadrado (0,1–200). |
+| `CirclesCircle` (`CC`) | `Count` (`C`, 3, de 1 a 12) círculos tangentes; `Filled` (`F`, false) rellena el centro. |
+| `Strands` (`Sr`) | `Count` (`C`, 2, de 1 a 12) hebras; `Size` (`S`, 0,5) su tamaño relativo; tocan el borde y el centro queda vacío. |
+| `Pipe` (`Pi`) | `Inner` (`I`, 0,8) tamaño del hueco; 0 es un cilindro macizo. La pared nunca baja de un bloque. |
+| `Polygon` (`Po`) | `Sides` (`S`, 5, al menos 3); `Depth` (`D`, 0) hunde el centro de cada lado. |
+| `Rectangle` (`Re`) | Dos esquinas `X1`, `Y1` (-1) y `X2`, `Y2` (1), cada una de -1 a 1. |
+| `Star` (`St`) | `Sides` (`S`, 5); `Depth` (`D`, 0,5) cuánto entran los pliegues (0 es el polígono). |
+| `Flower` (`Fl`) | `Count` (`C` o `S`, 5) pétalos; `Depth` (`D`, 0,5) cuánto entran los valles. |
+
+### Formas 3D
+
+Figuras propias en espacio de tubo, escritas como funciones implícitas: cada bloque mide su distancia a la cuenta, al eslabón o al hilo, así que no quedan huecos aunque el recorrido vaya en diagonal. Los hilos nunca bajan de 1,7 bloques de grosor (0,87 de radio, como el motor exacto de las figuras clásicas) ni las tiras de la red y el panal de 1,8. Las medidas van en radios de la sección y crecen con los radios por fotogramas.
+
+| Forma | Parámetros (por defecto) | Qué hace |
+| --- | --- | --- |
+| `Beads` (`Be`) | — | Esferas de un radio que se tocan, una por diámetro. Es `Rings(E:0,T:1,G:0,M:2,N:2)`. |
+| `Cubes` (`Cu`) | `Gap` (`G`, 0,5) | Cubos de un diámetro que se doblan con la curva, separados `Gap` veces su tamaño; con 0 forman un tubo cuadrado. |
+| `Braids` (`Br`) | `Thickness` (`T`, 0,5), `Gap` (`G`, 0) | La [trenza](#figuras-de-espacio-de-tubo) de tres hebras; `T` da su grosor relativo y `G` abre los cruces. |
+| `Chainlink` (`Ch`) | `Extrusion` (`E`, 0,2), `Thickness` (`T`, 1), `Gap` (`G`, 0), `MajorExponent` (`M`, 3), `MinorExponent` (`N`, 3), `Place` (`P`, `BOTH`) | Eslabones alternados 90° y enganchados: llegan al borde del tubo, `E` los alarga, `T` engorda el alambre (un cuarto de radio por unidad), `G` los separa en largos de eslabón, `M` da su contorno (2 elipse, 99 rectángulo, 1 rombo) y `N` la sección del alambre. `P:FIRST` o `P:SECOND` dejan solo una mitad (para pintar cada una con su bloque). |
+| `Fishnet` (`Fi`) | `Spacing` (`S`, 1), `Depth` (`D`, 0,2), `Width` (`W`, 0,2) | Dos familias de hilos a ±45° sobre la piel, separados `S` radios (ajustado para cerrar la vuelta), de ancho `W` y que entran `D` hacia el eje. |
+| `Honeycomb` (`Ho`) | `CellSize` (`C`, 0,25), `WireWidth` (`W`, 0,06), `Depth` (`D`, 0,2) | Rejilla de hexágonos sobre la piel; las columnas se ajustan para cerrar la vuelta y, en lazos cerrados, las filas para empalmar. |
+| `Oscillate` (`Os`) | `Depth` (`D`, 0,2), `Interval` (`I`, 0,5) | Grosor que ondula: el radio baja `D` cada `I` radios de recorrido. |
+| `Rings` (`Ri`) | `Extrusion` (`E`, 0,2), `Thickness` (`T`, 0,15), `Gap` (`G`, 0), `MajorExponent` (`M`, 2), `MinorExponent` (`N`, 2) | Supertoros repetidos: `T` grosor (1 los cierra en superesferas), `E` alarga cada anillo, `G` hueco en tamaños de anillo (negativo los solapa), `M` contorno y `N` sección. |
+| `Scales` (`Sc`) | `Columns` (`C`, 8), `HorizontalOffset` (`H`, 1,05), `VerticalOffset` (`V`, 1,2), `MajorExponent` (`M`, 1,4), `MinorExponent` (`N`, 14), `Angle` (`A`, 14°), `DepthMultiplier` (`D`, 1) | Escamas en filas desplazadas media columna: `C` por vuelta, `H` y `V` las separan de lado y a lo largo, `M` da su contorno, `N` cómo caen hacia el borde, `A` cuánto se levanta el borde de detrás y `D` hunde (más de 1) o rellena (menos de 1) las juntas. |
+| `Noodles` (`No`) | `Amount` (`A`, 12), `Density` (`D`, 70 %), `Frequency` (`F`, 0,5), `Tangle` (`T`, 3), `Width` (`W`, 0,8), `Seed` (`S`, -1) | Fideos que se enredan sin cortarse: sus ejes siguen un flujo plano sin divergencia (el rotacional de un ruido de Perlin), cuyas trayectorias nunca se cruzan, y una relajación por pasos mantiene la distancia de choque. `D` es la parte de la sección que llenan (`60%` o `0.6`), `T` cuánto se mueven, `F` lo menudo de sus curvas, `W` el grosor con que se colocan respecto al de choque (menos de 1 deja aire entre ellos) y `S` la semilla (`-1`: derivada de los puntos). |
+
+### Spline de ruido (`noise`)
+
+Un cilindro cuya corteza muerde un [ruido](#ruido-configurable) evaluado en espacio de tubo, así que las vetas siguen la curva.
+
+- `[ruido]`: cualquier ruido de la notación de ezEdits, uno de serie o uno guardado. Por defecto `Perlin(Freq:2,z:0.5)`. Las coordenadas van en radios, así que las frecuencias son las de ezEdits (`F:1.5` son vetas de unos dos tercios de radio).
+- `[profundidad]` (0,7): hasta dónde entra el ruido, en radios. Cerca de 0 queda el cilindro, 0,5 llega a medio radio y 1 al centro; más de 1 da un aspecto astillado.
+- Un bloque se queda donde el ruido supera la recta que va de 0 a esa profundidad a 1 en la superficie; lo que está más hondo es macizo. Con **Patrón figura** la paleta va de la profundidad (primera entrada) a la superficie (última).
+- `-i <expresión>`: decide ella, con las mismas variables que [Expresión](#figura-expresión) más `n` (el ruido en el punto) y `d` (la profundidad); aquí `t` se puede redefinir, como en las expresiones de ezEdits. Por ejemplo `-i r=sqrt(x*x+y*y);(r<1&&n>0.5)*max(n,0.01)` limita el ruido a un cilindro. Va en una sola palabra, sin espacios.
+- La paleta (`##Grayscale`, `-##Magma`, `##GrayWarm(3:11)`, `stone,andesite`…) sigue las [paletas con nombre](#paletas-con-nombre); cada entrada tiene que ser un bloque. El valor de la figura en `(0, 1]` elige el tramo de la paleta que lo contiene.
+
+### Spline de expresión (`expression`)
+
+La [figura Expresión](#figura-expresión) con la sintaxis de ezEdits: `x` e `y` de -1 a 1 y `z` en radios desde el principio.
+
+- `-z`: `z` va de `-1` al principio a `1` al final (una sola figura estirada por todo el recorrido).
+- `-o`: la salida cuenta entradas de la paleta, de 1 a P, en vez de ir de 0 a 1 (`(0, 1]` → primera; `(1, 2]` → segunda…).
+- La expresión ocupa el resto de la orden y puede llevar espacios.
+
+### Spline de estructura (`structure`)
+
+Dobla una [estructura de colocación](#colocación) (`Clipboard`, `Schematic(...)`, `Shape(...)`, `TS(...)`, `Icosphere(...)`…) a lo largo del recorrido con el mismo motor que [`bend`](#doblar-estructuras-del-portapapeles). Su eje +x avanza con el recorrido y su origen lo sigue.
+
+- Sin radio sale a su tamaño; con radio se escala (por vecino más cercano) para que su sección mida eso.
+- Sin `-z` se repite tantas veces como quepa entera; con `-z` una sola copia se estira por todo el recorrido.
+- `-s` la estira o encoge a lo largo, `-n` y `-p` funcionan como en el resto (normales `CONSISTENT` por defecto).
+- `-t`, `-r`, `-e` y `-w` no se aplican: la estructura se dobla bloque a bloque, girando escaleras y troncos en cuartos de vuelta. Admite un solo radio.
+
+### Ejemplos
+
+```text
+/komaedit ezsp rope clay 1,12,1
+/komaedit ezsp rope clay 2,10,2,12,2,10,2
+/komaedit ezsp 2d Re(Y1:-0.2,Y2:0.2) clay 10 -r 0,180
+/komaedit ezsp 2d SuperCircle(Exponent:0.5) clay 15
+/komaedit ezsp 2d CC(Count:5,Filled:true) clay 15 -t 90
+/komaedit ezsp 2d Polygon(S:4) clay 10 -t 90
+/komaedit ezsp 3d Cu(G:2.0) clay 7
+/komaedit ezsp 3d Chainlink(M:99,N:99,Extrusion:0.6) clay 10
+/komaedit ezsp 3d Chainlink(P:FIRST) red_terracotta 10
+/komaedit ezsp 3d Fi(S:2.0,D:0.5,W:0.5) clay 10
+/komaedit ezsp 3d Os(D:0.2,I:1.5) clay 10
+/komaedit ezsp 3d Sc(c:8,d:1.2) clay 22,9
+/komaedit ezsp 3d Noodles(Amount:8,Density:60%,Tangle:2) clay 12 -q HIGH
+/komaedit ezspline noise ##Grayscale 10
+/komaedit ezspline noise -##Magma 5,25 Ce(F:1.5,fO:1,cR:sub,M:OR,U:-.6) 0.6 -t 90
+/komaedit ezspline noise -w slabs ##GrayCold(4:11),waxed_weathered_cut_copper 20 Ce(f:1.5,cr:sub,m:or,u:-0.85,l:-.5,y:0.3) -n UPRIGHT -i (x*x+n+y*y<1&&y<0)*(y+0.97)
+/komaedit ezspline expression clay 10 -t 90 R=0.2;r=0.1;w=0.7;s=0.5;sqrt((abs(x)-w)^2+y^2)<R||sqrt(((z+1)%s-r)^2+y^2)<r&&abs(x)<w
+/komaedit ezspline expression black,red,blue,white,yellow 5 -o -n HORIZONTAL ((z%2)>1.5?5:2*(x>0)+(y>0))+0.001
+/komaedit ezsp structure TS(P:##GlowPurple,S:Heart,T:=(z+y)*.4+.5) 12
+```
+
+### Rendimiento y limitaciones
+
+- Se mide igual que el resto de figuras de tubo. En un recorrido curvo de unos 100 bloques, con radios de 6 a 12, cada forma tarda entre 0,05 y 0,35 s en un worker (de 1 000 a 26 000 bloques): perfiles 2D 0,05–0,15 s, formas 3D 0,07–0,15 s, ruido 0,1–0,25 s. `-q EXACT` cuesta entre 2 y 4 veces `BALANCED`.
+- `Noodles` calcula antes las trayectorias de sus fideos: unos 20 000 pasos como mucho, lo que en recorridos muy largos los hace algo más bastos.
+- Como en cualquier barrido, si la curva se cierra más que el radio el lado interior se pliega y los motivos de esa zona (hilos de la red o del panal, escamas) se cortan: separa más los puntos o reduce el radio.
+- Las juntas más estrechas que un bloque (escamas, cuentas que se tocan) podían dejar bolsas de aire encerradas; las formas de `ezspline` rellenan las de hasta 24 bloques.
+
+- `-w` acepta los perfiles de [Smoothblocks](#smoothblocks-perfiles-de--w); `Panes`, que KomaEdit aún no tiene, da un error claro. El perfil va en una sola palabra.
+- `Noodles` y `Honeycomb` no empalman los fideos en lazos cerrados; el resto de formas ajusta su paso para cerrar sin costura.
+- `Braids` usa la trenza de KomaEdit (tres hebras en ocho), no la de ezEdits.
+- En `structure` no hay torsión ni giro y la estructura no sigue los radios por fotogramas.
+- Las formas son implementaciones propias a partir de la descripción pública de la wiki de ezEdits: las proporciones son las mismas, pero un bloque concreto puede caer distinto.
 
 ## Hiedra viva
 

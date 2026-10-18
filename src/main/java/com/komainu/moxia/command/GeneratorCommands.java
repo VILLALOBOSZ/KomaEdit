@@ -427,7 +427,7 @@ public final class GeneratorCommands {
      * Paleta resuelta en el hilo del servidor: cada entrada tiene que ser un bloque (con o sin estado), porque el
      * worker escribe estados fijos. Las capas de nieve del modo suave se preparan aquí.
      */
-    private record Palette(List<BlockState> states, PaletteTraits traits, BlockState[][] snowLayers) {
+    record Palette(List<BlockState> states, PaletteTraits traits, BlockState[][] snowLayers) {
         static Palette resolve(ServerPlayerEntity player, String text) {
             List<String> entries = SavedPalettes.parse(player.getUuid(), text);
             WorldEditService.PlayerContext context = WorldEditService.context(player);
