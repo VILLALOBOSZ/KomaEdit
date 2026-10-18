@@ -13,9 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class PathCaptureHud {
-    private static final int BACKGROUND = 0xE314080B;
+    private static final int BACKGROUND = 0xFF14080B;
     private static final int BORDER = 0xFFE0445E;
-    private static final int STATUS_BACKGROUND = 0xE3220B11;
+    private static final int STATUS_BACKGROUND = 0xFF220B11;
     private static final int STATUS_ACTIVE = 0xFFFF6B82;
     private static final int[] POINT_COLORS = {
             0xFFFF5C78,
@@ -57,13 +57,13 @@ public final class PathCaptureHud {
                     POINT_COLORS[index % POINT_COLORS.length]
             ));
         }
-        String status = "P PATH · ACTIVO · " + payload.points().size() + " PUNTOS"
-                + (payload.closed() ? " · CERRADO" : "");
+        int count = payload.points().size();
         state = new State(
                 true,
-                Text.literal(status),
-                Text.literal(payload.closed() ? "TRAYECTORIA CERRADA" : "TRAYECTORIA ABIERTA"),
-                Text.literal("K herramientas  ·  P terminar captura  ·  /ke path points"),
+                Text.translatable(payload.closed() ? "hud.komaedit.path.status.closed" : "hud.komaedit.path.status",
+                        count),
+                Text.translatable(payload.closed() ? "hud.komaedit.path.closed" : "hud.komaedit.path.open"),
+                Text.translatable("hud.komaedit.path.hint"),
                 List.copyOf(lines),
                 lines.size() > 16 ? 2 : 1
         );
@@ -80,8 +80,8 @@ public final class PathCaptureHud {
             return;
         }
 
-        if (client.currentScreen instanceof ProceduralStudioScreen studio) {
-            renderStudioDock(context, client, current, studio);
+        if (client.currentScreen instanceof ProceduralStudioScreen) {
+            // El Studio enseña los nodos en su etapa Trayectoria: aquí solo taparía el mundo.
             return;
         }
 
@@ -99,7 +99,7 @@ public final class PathCaptureHud {
         int cardHeight = 36 + rows * 11 + 17;
         context.fill(7, 7, 7 + cardWidth, 7 + cardHeight, BORDER);
         context.fill(8, 8, 6 + cardWidth, 6 + cardHeight, BACKGROUND);
-        context.drawTextWithShadow(client.textRenderer, Text.literal("KOMAEDIT · P PATH"), 14, 13, 0xFFFF6B82);
+        context.drawTextWithShadow(client.textRenderer, Text.translatable("hud.komaedit.path.title"), 14, 13, 0xFFFF6B82);
         context.drawTextWithShadow(client.textRenderer, current.pathType(), 14, 25, 0xFFD3A1AA);
 
         for (int index = 0; index < current.lines().size(); index++) {
@@ -121,68 +121,6 @@ public final class PathCaptureHud {
                 42 + rows * 11 + 3,
                 0xFFB98992
         );
-    }
-
-    private static void renderStudioDock(
-            DrawContext context,
-            MinecraftClient client,
-            State current,
-            ProceduralStudioScreen studio
-    ) {
-        int left = 76;
-        int top = 53;
-        int availableWidth = studio.worldContentRight() - left - 8;
-        if (availableWidth < 132) {
-            return;
-        }
-
-        int cardWidth = Math.min(246, availableWidth);
-        int maximumLines = Math.clamp((client.getWindow().getScaledHeight() - 150) / 11, 3, 7);
-        int visibleLines = Math.min(maximumLines, current.lines().size());
-        int hiddenLines = current.lines().size() - visibleLines;
-        int firstVisible = Math.max(0, current.lines().size() - visibleLines);
-        int noticeHeight = hiddenLines > 0 ? 12 : 0;
-        int cardHeight = 31 + visibleLines * 11 + noticeHeight;
-
-        context.fill(left, top, left + cardWidth, top + cardHeight, 0xFF7D2438);
-        context.fill(left + 1, top + 1, left + cardWidth - 1, top + cardHeight - 1, 0xE80C0D12);
-        context.fill(left + 1, top + 1, left + 4, top + cardHeight - 1, 0xFFE24B6A);
-
-        String title = "PATH · " + current.lines().size() + " NODOS";
-        context.drawText(client.textRenderer, Text.literal(title), left + 11, top + 7, STATUS_ACTIVE, false);
-        context.drawText(
-                client.textRenderer,
-                current.pathType(),
-                left + 11,
-                top + 18,
-                0xFFAAA5AE,
-                false
-        );
-
-        int lineTop = top + 31;
-        if (hiddenLines > 0) {
-            context.drawText(
-                    client.textRenderer,
-                    Text.literal("… " + hiddenLines + " nodos anteriores"),
-                    left + 11,
-                    lineTop,
-                    0xFF7E7983,
-                    false
-            );
-            lineTop += 12;
-        }
-        for (int index = firstVisible; index < current.lines().size(); index++) {
-            HudLine line = current.lines().get(index);
-            String fitted = client.textRenderer.trimToWidth(line.text().getString(), cardWidth - 22);
-            context.drawText(
-                    client.textRenderer,
-                    fitted,
-                    left + 11,
-                    lineTop + (index - firstVisible) * 11,
-                    line.color(),
-                    false
-            );
-        }
     }
 
     private record HudLine(Text text, int color) {
