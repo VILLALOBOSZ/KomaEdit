@@ -5,6 +5,7 @@ import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.path.PathSnapshot;
@@ -129,8 +130,11 @@ final class EzSplineCommands {
                             return palette.state(index, 0);
                         }, description);
                         int pieces = planned.plan().pieceCount();
-                        EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
-                                + (pieces > 0 ? " · " + pieces + " losas/escaleras" : "") + " · //undo para deshacer");
+                        if (!PlanPreviews.holds(playerId, planned.plan())) {
+                            EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
+                                    + (pieces > 0 ? " · " + pieces + " losas/escaleras" : "")
+                                    + " · //undo para deshacer");
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         EzCommandSupport.fail(current.getCommandSource(), readable(exception));
                     }
@@ -182,8 +186,10 @@ final class EzSplineCommands {
                     }
                     try {
                         int queued = BatchEditService.submit(current, plan, "air", description);
-                        EzCommandSupport.ok(current, description + " en cola: " + queued
-                                + " bloques · //undo para deshacer");
+                        if (!PlanPreviews.holds(playerId, plan)) {
+                            EzCommandSupport.ok(current, description + " en cola: " + queued
+                                    + " bloques · //undo para deshacer");
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         EzCommandSupport.fail(current.getCommandSource(), readable(exception));
                     }

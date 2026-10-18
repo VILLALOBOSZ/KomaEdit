@@ -219,6 +219,7 @@ Las figuras centradas usan tu posición como centro; el arco y la catenaria van 
 /komaedit help region              hiedra, envejecer y retocar
 /komaedit help symmetry            modo simetría
 /komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
+/komaedit help preview             vista previa, progreso y cancelación
 /komaedit help project             proyecto y menús
 ```
 
@@ -241,6 +242,7 @@ Como `/ezedits quiet`, cada jugador puede silenciar los mensajes informativos de
 - Silencia los mensajes grises de progreso («leyendo N bloques…», «calculando fuera del hilo del servidor…»), la semilla que usan los generadores y el aviso intermedio de «N bloques en cola».
 - Siguen saliendo los errores, los avisos (por ejemplo «no había nada que cambiar»), las respuestas a órdenes directas (guardar una paleta, cambiar de pincel…) y el mensaje final de cada edición (`completada: N bloques · //undo`).
 - Se guarda en el proyecto del mundo de cada jugador (`komaedit/players/<uuid>/settings/chat.json`), así que dura entre sesiones. No pide permiso: solo afecta a tu chat.
+- Alias: `/ke`, `/mx` y `/moxia` para `/komaedit`; `ruta` para `path`; `ayuda` para `help`; `estimar` para `estimate`; `confirmar` para `confirm`; `cancelar` para `cancel`; `vistaprevia` para `preview`.
 
 ## Diagnóstico antes de construir
 
@@ -266,7 +268,83 @@ Cuando un Build supera `confirmBuildAboveBlocks` bloques (250 000 por defecto) n
 /komaedit confirm cancel     lo descarta
 ```
 
-La geometría ya está calculada, así que se construye exactamente lo estimado. La espera caduca a los dos minutos, al desconectarse o al pedir otro Build. Con `confirmBuildAboveBlocks` a `0` no se pregunta nunca.
+La geometría ya está calculada, así que se construye exactamente lo estimado. La espera caduca a los dos minutos, al desconectarse o al pedir otro Build. Con `confirmBuildAboveBlocks` a `0` no se pregunta nunca. En los Build por orden, con `-v` o con «previsualizar siempre» no sale esta pregunta: la [vista previa](#vista-previa-progreso-y-cancelación) enseña el Build con displays y espera a `/komaedit confirm` (`confirm` aplica antes la vista previa, si la hay). Construir y Actualizar del Studio la siguen pidiendo.
+
+## Vista previa, progreso y cancelación
+
+### Objetivo y acceso
+
+Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y pararlas a medias. La vista previa vale para cualquier orden que calcule un plan de bloques con el motor común: figuras y tubos (`build`, `sweep`, `braid`, `expr`…), `ezspline`, `bend`, colocación (`place`, `array`, `scatter`), `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `texture` y sus modos (`vines`, `moss`, `slabmerge`…), la vidriera, `image`, los generadores (`shape`, `noisegen`, `flowfield`, `flowline`), `weather`, `ivy`, `tweak` y `palette swap`.
+
+```text
+/komaedit <orden> … -v                  calcula y enseña sin colocar nada (también --preview)
+/komaedit confirm                       aplica exactamente lo que ves (alias confirmar)
+/komaedit cancel                        descarta la vista previa o para lo que esté en marcha (alias cancelar)
+/komaedit confirm cancel                descarta la vista previa o el Build en espera
+/komaedit preview                       tu preferencia y si tienes una vista previa esperando (alias vistaprevia)
+/komaedit preview always <bloques>      previsualizar siempre a partir de N bloques (alias siempre)
+/komaedit preview off                   vista previa solo con -v (alias nunca)
+```
+
+Ejemplos:
+
+```text
+/komaedit texture rockify stone,andesite,cobblestone -v
+/komaedit deform rotate 45 -v
+/komaedit deform noise Perlin(F:0.05) 3 -v --preview
+/komaedit build coil stone 8 -v
+/komaedit scatter Cl -n 3 -v
+/komaedit preview always 50000
+```
+
+### La bandera `-v`
+
+- En las órdenes de argumentos fijos va al final (`build coil stone 8 -v`); en las de texto libre al estilo de ezEdits, en cualquier sitio después del modo (`texture rockify -v stone`).
+- Donde ezEdits ya usa `-v` con otro sentido se mantiene el suyo y la vista previa es `--preview`: `deform noise` y `deform voxelize` (vertical), `texture blend` y `texture blocklight` (variación), `weather` / `envejecer` (`-v <vida>`), `shape polydome` (`-v <patrón>` de las aristas), `pincel gradient` (sin marcadores) y `palette print` (detallado).
+- Con `preview always <bloques>`, cualquier orden cuyo plan llegue a ese número de bloques pasa por la vista previa aunque no lleve `-v`. La preferencia es por jugador y mundo (`komaedit/players/<uuid>/preview`).
+- Los pinceles, la supervarita, el estampado de figuras del pincel `brush` y la vista previa propia de las brochas no la usan nunca: van clic a clic.
+- Con vista previa, un Build grande por orden no pide además la confirmación de texto de `confirmBuildAboveBlocks`: la vista previa ya espera a `/komaedit confirm`.
+
+### Cómo se ve
+
+- Solo la ve quien edita. Son block displays enviados a su cliente por paquetes; no existen en el mundo del servidor, así que nadie más los ve y no hace falta el mod en el cliente.
+- **Lo que se pone:** el bloque nuevo con contorno verde, un poco más pequeño si va en un hueco (para distinguirlo de lo construido) y envolviendo al viejo si lo sustituye, de modo que se ve el resultado.
+- **Lo que se quita:** cubierto de cristal rojo con contorno rojo.
+- **La caja** de la operación, con aristas amarillas.
+- Los block displays de vanilla no admiten transparencia: el bloque nuevo se ve opaco; el cristal rojo sí se transparenta.
+- Como mucho `previewMaxDisplays` displays (1 500 de serie). Si hay más cambios se enseña la superficie (los cambios con alguna cara hacia fuera: una esfera maciza se ve como su cáscara); si tampoco cabe, una muestra repartida por toda la zona, más la caja. El chat dice cuántos se ven y de cuántos. Con `0`, solo la caja.
+- El chat resume la vista previa: cambios, cuántos se ponen o cambian y cuántos se quitan, tamaño de la caja y lo que tardará en colocarse, con los botones **[Aplicar]** y **[Descartar]** y el plazo. Si supera tu `//limit` de WorldEdit, lo avisa.
+
+### Confirmar
+
+- **Se aplica lo que se ve, sin recalcular.** Al preparar la vista previa se resuelve el bloque final de cada posición con su patrón (también los aleatorios, como `50%stone,50%andesite`) y se guarda ese plan; confirmar lo manda a la cola tal cual.
+- **Si el mundo cambió, se recalcula.** Antes de colocar se comprueba la zona: las posiciones que van a cambiar y, en las operaciones sobre la selección de hasta 2 000 000 de bloques, toda la selección (un bloque puesto dentro también cuenta, aunque la operación no fuera a tocarlo; el margen alrededor no se vigila). Si algo cambió, el chat dice dónde, la operación se recalcula (sobre la misma selección, o repitiendo la orden) y la vista previa nueva espera otra confirmación.
+- La comprobación avanza unos 60 000 bloques por tick; la barra de progreso la enseña.
+- Si confirmas mientras se coloca otra edición tuya, te lo dice y la vista previa sigue esperando.
+- Con bloques con datos (NBT, por ejemplo un portapapeles con cofres) el plan no se puede congelar: al aplicar se vuelve a evaluar el patrón, y el chat lo avisa.
+- **Caducidad y limpieza:** caduca a los `previewTimeoutSeconds` segundos (90 de serie) sin cambiar nada. Se descarta también con `/komaedit cancel`, al lanzar otra vista previa, al salir, al cambiar de dimensión, al reaparecer y al parar el servidor. Los displays nunca se guardan con el mundo; aun así, cualquier entidad con la etiqueta `komaedit_preview` que llegue a cargarse se borra en el siguiente tick.
+
+### Progreso y cancelación
+
+- Una bossbar enseña la fase de la operación: **leyendo** la selección, **calculando**, **preparando la vista previa**, **vista previa** (con la cuenta atrás), **comprobando la zona** y **colocando**, con porcentaje, bloques por segundo y tiempo restante. Aparece cuando la operación dura más de un segundo; la vista previa, al momento.
+- Un cálculo que no sabe cuánto le falta enseña el tiempo que lleva, y la barra va y viene.
+- `/komaedit cancel` para todo lo tuyo que esté en marcha: lectura, cálculo y colocación, y descarta la vista previa y el Build en espera. Lo ya colocado queda en una sola entrada de **//undo**: la colocación se corta siempre entre dos bloques, nunca a medias, y el chat dice cuántos bloques llegó a poner. `/komaedit job cancel` sigue parando solo la colocación.
+
+### Estimación antes de empezar
+
+- Las operaciones sobre la selección dicen al empezar cuántos bloques van a leer y, si pasa de dos segundos, cuánto tardarán.
+- Una colocación de más de tres segundos avisa de cuánto durará y de que `/komaedit cancel` la para.
+- Si un plan supera el `//limit` de tu sesión de WorldEdit, se avisa antes de empezar: la edición se parará al llegar y lo colocado quedará en //undo; súbelo con `//limit` para hacerla entera.
+- `/komaedit estimate` de las trayectorias sigue igual.
+
+### Rendimiento y limitaciones
+
+- Preparar la vista previa lee el mundo y el patrón de cada bloque en el hilo del servidor, unos 4 ms por tick: un plan de un millón de bloques tarda unos segundos (la barra lo enseña). La elección de displays se hace en un hilo aparte y los displays se envían a 128 por tick.
+- Mientras espera, el plan congelado ocupa unos 40 bytes por bloque.
+- Sin vista previa: los degradados de `gradient`, el editor y Construir del Studio (que tiene su holograma y su confirmación), los pinceles y la supervarita.
+- Recalcular repitiendo la orden usa tu posición y mirada de ese momento (afecta a `place` y `array` sin selección).
+- Si un plan escribe dos veces en la misma posición, gana la última, igual que sin vista previa.
+- La vista previa y la barra se basan en `BatchEditService`, `RegionOperationService` y `AsyncEngine`: una orden nueva que los use las tiene sin hacer nada (ver `docs/ARCHITECTURE.md`).
 
 ## Figuras procedurales
 
@@ -3011,6 +3089,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - `backupRetention`: `5` de forma predeterminada; rango válido `1–50`.
 - `confirmBuildAboveBlocks`: `250000` de forma predeterminada; rango válido `0–10000000`. Por encima, un Build pide confirmación; `0` lo desactiva. Si falta en un `config.json` anterior se usa el valor por defecto.
 - `arraySnapRadius`: `96` de forma predeterminada (como ezEdits); rango válido `1–256`. Hasta dónde busca superficie `-b` en `array` y su pincel. Si falta en un `config.json` anterior se usa el valor por defecto.
+- `previewTimeoutSeconds`: `90` de forma predeterminada; rango válido `10–3600`. Segundos que una [vista previa](#vista-previa-progreso-y-cancelación) espera a `/komaedit confirm` antes de caducar.
+- `previewMaxDisplays`: `1500` de forma predeterminada; rango válido `0–10000`. Block displays como mucho por vista previa; por encima se enseña la superficie o una muestra, y con `0` solo la caja.
 - `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
 
 Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
@@ -3026,6 +3106,8 @@ Una configuración inválida se rechaza completa y el servidor utiliza límites 
 - Las figuras de espacio de tubo recorren solo los ladrillos de 8³ bloques cercanos al eje y localizan el eje con un árbol de esferas.
 - El límite de volumen y la cuota global de jobs se aplican antes de abrir una sesión de edición.
 - Cada job persistente registra avance con frecuencia limitada y su finalización o cancelación.
+- Las operaciones largas enseñan su progreso en una bossbar y se paran con `/komaedit cancel`; lo colocado queda en //undo.
+- La vista previa prepara el plan repartido entre ticks y lo aplica sin recalcularlo si la zona no ha cambiado.
 
 ## Versiones descargables
 
