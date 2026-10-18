@@ -15,7 +15,9 @@ import java.util.function.Function;
  *
  * <p>Los tipos de ruido, los fractales y la distorsión de dominio los resuelve {@link FastNoiseLite}; los tipos
  * {@code White} y {@code Gabor}, las variantes de distancia celular derivadas y el mapeo de valores se calculan
- * aquí. Por defecto el resultado va de 0 a 1.</p>
+ * aquí, y {@link ExtendedNoise} añade {@code Shard}, las distancias de Minkowski y redondeada, los retornos
+ * {@code Rounded} y {@code NoiseLookup} y las distorsiones {@code Flow} y {@code Turbulence}. Por defecto el
+ * resultado va de 0 a 1.</p>
  */
 public final class NoiseSpec {
     private static final Map<String, String> KEYS = keys();
@@ -179,8 +181,10 @@ public final class NoiseSpec {
                     number("gaborfrequency", 1.0), number("gaborspread", 0.0), vector("gabororientation"),
                     number("gaborjitter", 0.0), (int) Math.clamp(number("gaborimpulses", 4), 1, 8),
                     number("gabormagnitude", 1.0));
-            case SHARD -> throw new IllegalArgumentException(
-                    "El ruido Shard todavía no está disponible; usa Cellular con cR:edge para un efecto parecido");
+            case SHARD -> {
+                double sharpness = Math.clamp(number("sharpness", 0.5), 0.0, 1.0);
+                yield ownFractal(layer -> new ExtendedNoise.Shard(layer, frequency, sharpness), seed);
+            }
             default -> fastNoise(seed, frequency);
         };
         RawField warped = warp(raw, seed, frequency);
@@ -188,6 +192,13 @@ public final class NoiseSpec {
     }
 
     private RawField fastNoise(int seed, double frequency) {
+        if (type == Type.CELLULAR) {
+            String distance = normalize(text("celldistance", "euclideansq"));
+            String returnType = normalize(text("cellreturn", "distance"));
+            if (ExtendedNoise.needsOwnCellular(distance, returnType)) {
+                return ownCellular(seed, frequency, distance, returnType);
+            }
+        }
         FastNoiseLite noise = configured(seed, frequency);
         if (type != Type.CELLULAR) {
             return noise::GetNoise;
@@ -213,6 +224,43 @@ public final class NoiseSpec {
         return derivedCellular(noise, second, returnType);
     }
 
+    /**
+     * Celular propio ({@link ExtendedNoise.Cellular}) para lo que FastNoiseLite no trae: distancias de Minkowski
+     * ({@code m1}, {@code m4}, {@code m99}) y redondeada ({@code r}) y los retornos {@code rounded} y
+     * {@code noiseLookup}.
+     */
+    private RawField ownCellular(int seed, double frequency, String distanceName, String returnType) {
+        ExtendedNoise.Distance distance = ExtendedNoise.Distance.byName(distanceName);
+        if (distance == null) {
+            throw new IllegalArgumentException("Distancia celular no disponible: " + distanceName
+                    + " (euclidean, euclideansq, manhattan, hybrid, m1, m4, m99, rounded)");
+        }
+        double exponent = ExtendedNoise.Distance.exponent(distanceName);
+        double jitter = number("celljitter", 1.0);
+        RawField lookup = null;
+        double lookupFrequency = number("celllookupfrequency", 0.1);
+        if (returnType.equals("noiselookup") || returnType.equals("n")) {
+            String lookupType = text("celllookup", "Perlin");
+            Type parsed = Type.byName(lookupType);
+            if (parsed == Type.SHARD || parsed == Type.GABOR) {
+                throw new IllegalArgumentException("cN admite Perlin, OpenSimplex2, OpenSimplex2S, Value, ValueCubic,"
+                        + " White o Cellular");
+            }
+            NoiseField field = parseDefinition(parsed.displayName() + "(F:1)").build(seed + 7919L);
+            lookup = (x, y, z) -> field.sample(x, y, z) * 2.0 - 1.0;
+        }
+        RawField cellLookup = lookup;
+        return ownFractal(layer -> new ExtendedNoise.Cellular(layer, frequency, jitter, distance, exponent,
+                returnType, cellLookup, lookupFrequency), seed);
+    }
+
+    /** Fractal sobre un campo propio (los de FastNoiseLite lo traen dentro). */
+    private RawField ownFractal(java.util.function.IntFunction<RawField> layers, int seed) {
+        return ExtendedNoise.fractal(layers, seed, normalize(text("fractaltype", "none")),
+                (int) Math.clamp(number("fractaloctaves", 3), 1, 12), number("fractallacunarity", 2.0),
+                number("fractalgain", 0.5), number("fractalweighted", 0.0), number("fractalpingpong", 2.0));
+    }
+
     /** Generador de FastNoiseLite con el tipo, el fractal y los ajustes celulares del ruido. */
     private FastNoiseLite configured(int seed, double frequency) {
         FastNoiseLite noise = new FastNoiseLite(seed);
@@ -235,7 +283,8 @@ public final class NoiseSpec {
                 case "manhattan", "man" -> FastNoiseLite.CellularDistanceFunction.Manhattan;
                 case "hybrid", "h" -> FastNoiseLite.CellularDistanceFunction.Hybrid;
                 default -> throw new IllegalArgumentException("Distancia celular no disponible: "
-                        + text("celldistance", "") + " (euclidean, euclideansq, manhattan, hybrid)");
+                        + text("celldistance", "") + " (euclidean, euclideansq, manhattan, hybrid, m1, m4, m99,"
+                        + " rounded)");
             });
         }
         return noise;
@@ -263,7 +312,8 @@ public final class NoiseSpec {
                 return 1.0 - 2.0 * Math.clamp(gap * 4.0, 0.0, 1.0);
             };
             default -> throw new IllegalArgumentException("Tipo de retorno celular no disponible: " + returnType
-                    + " (cell, distance, distance2, add, sub, mul, div, sq, inv, log, exp, 2sq, 2inv, 2log, 2exp, edge)");
+                    + " (cell, distance, distance2, add, sub, mul, div, sq, inv, log, exp, 2sq, 2inv, 2log, 2exp, edge,"
+                    + " rounded, noiseLookup)");
         };
     }
 
@@ -296,13 +346,18 @@ public final class NoiseSpec {
 
     private RawField warp(RawField field, int seed, double frequency) {
         String type = normalize(text("warptype", "none"));
+        if (type.equals("flow") || type.equals("f") || type.equals("turbulence") || type.equals("t")) {
+            return ExtendedNoise.warp(field, type.startsWith("f"), seed, number("warpfrequency", frequency),
+                    number("warpamplitude", 30.0), (int) Math.clamp(number("warpoctaves", 1), 1, 8),
+                    number("warpgain", 0.5), number("warplacunarity", 2.0));
+        }
         FastNoiseLite.DomainWarpType warpType = switch (type) {
             case "none", "n" -> null;
             case "basicgrid", "g" -> FastNoiseLite.DomainWarpType.BasicGrid;
             case "opensimplex2", "s" -> FastNoiseLite.DomainWarpType.OpenSimplex2;
             case "opensimplex2reduced", "r" -> FastNoiseLite.DomainWarpType.OpenSimplex2Reduced;
             default -> throw new IllegalArgumentException("Distorsión de dominio no disponible: " + type
-                    + " (basicgrid, opensimplex2, opensimplex2reduced)");
+                    + " (basicgrid, opensimplex2, opensimplex2reduced, flow, turbulence)");
         };
         if (warpType == null) {
             return field;
@@ -387,6 +442,8 @@ public final class NoiseSpec {
         alias(keys, "celljitter", "cellularjittermodifier", "cellularjitter", "cj");
         alias(keys, "celldistance", "cellulardistancefunction", "cellulardistance", "cd");
         alias(keys, "cellreturn", "cellularreturntype", "cellularreturn", "cr");
+        alias(keys, "celllookup", "cellularnoiselookup", "noiselookup", "cn");
+        alias(keys, "celllookupfrequency", "cellularnoiselookupfrequency", "noiselookupfrequency", "cf");
         alias(keys, "fractaltype", "fractaltype", "ft");
         alias(keys, "fractalpingpong", "pingpongstrength", "fp");
         alias(keys, "fractaloctaves", "octaves", "fractaloctaves", "fo");
@@ -462,7 +519,7 @@ public final class NoiseSpec {
                 }
             }
             throw new IllegalArgumentException("Tipo de ruido desconocido: " + input
-                    + " (Perlin, OpenSimplex2, OpenSimplex2S, Value, ValueCubic, White, Cellular, Gabor)");
+                    + " (Perlin, OpenSimplex2, OpenSimplex2S, Value, ValueCubic, White, Cellular, Shard, Gabor)");
         }
     }
 
@@ -490,7 +547,7 @@ public final class NoiseSpec {
     }
 
     @FunctionalInterface
-    private interface RawField {
+    interface RawField {
         double raw(double x, double y, double z);
     }
 

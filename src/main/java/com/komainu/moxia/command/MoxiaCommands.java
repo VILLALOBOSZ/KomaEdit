@@ -235,8 +235,9 @@ public final class MoxiaCommands {
                 .then(jobCommand())
                 .then(projectCommand())
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
-                .then(tweakCommand("tweak").requires(source -> can(source, KomaPermissions.BUILD)))
-                .then(tweakCommand("retocar").requires(source -> can(source, KomaPermissions.BUILD)))
+                .then(tweakCommand("tweak").requires(MoxiaCommands::canTweak))
+                .then(tweakCommand("retocar").requires(MoxiaCommands::canTweak))
+                .then(tweakCommand("survival").requires(MoxiaCommands::canTweak))
                 .then(HelpCommands.command("help"))
                 .then(HelpCommands.command("ayuda"))
                 .executes(MoxiaCommands::openHudMenu));
@@ -247,6 +248,7 @@ public final class MoxiaCommands {
         PaletteCommands.register(root);
         NoiseCommands.register(root);
         SelectionCommands.register(root);
+        AdminCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
                 .requires(source -> can(source, KomaPermissions.PATH))
@@ -793,11 +795,17 @@ public final class MoxiaCommands {
         return literal(name).then(tweak);
     }
 
+    private static boolean canTweak(ServerCommandSource source) {
+        return source.getEntity() instanceof ServerPlayerEntity player
+                && KomaPermissions.canAny(player, KomaPermissions.BUILD + ".tweak");
+    }
+
     private static int runTweak(CommandContext<ServerCommandSource> context, String state)
             throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
             TweakRules.Tweak tweak = TweakRules.Tweak.byId(StringArgumentType.getString(context, "tweak"));
+            KomaPermissions.requireBuild(player, "tweak." + tweak.id());
             boolean enable = TweakRules.enabled(state);
             if (tweak == TweakRules.Tweak.DEINFEST && !enable) {
                 throw new IllegalArgumentException("Quitar la infestación no tiene modo off");

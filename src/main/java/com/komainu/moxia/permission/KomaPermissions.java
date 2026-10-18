@@ -4,8 +4,15 @@ import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.worldedit.WorldEditService;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+/**
+ * Permisos de KomaEdit. Los operadores lo pueden todo; los demás jugadores se consultan a través del actor de
+ * WorldEdit (así valen LuckPerms y cualquier gestor que WorldEdit entienda). Los nodos finos y los paquetes están
+ * en {@link PermissionNodes}.
+ */
 public final class KomaPermissions {
     public static final String USE = "komaedit.use";
+    /** Nombre antiguo de {@link #USE}. */
+    public static final String LEGACY_USE = "moxia.use";
     public static final String PATH = "komaedit.path";
     public static final String BUILD = "komaedit.build";
     public static final String INSTANCE = "komaedit.instance";
@@ -16,33 +23,48 @@ public final class KomaPermissions {
     public static final String HISTORY = "komaedit.history";
     public static final String PROJECT_BACKUP = "komaedit.project.backup";
     public static final String LIMIT_UNRESTRICTED = "komaedit.limit.unrestricted";
+    public static final String ADMIN_RELOAD = "komaedit.admin.reload";
 
     private KomaPermissions() {
     }
 
     public static boolean canAccess(ServerPlayerEntity player) {
-        return operator(player) || permission(player, USE) || permission(player, "moxia.use");
+        return operator(player) || permission(player, USE) || permission(player, LEGACY_USE)
+                || PermissionNodes.anyPack(node -> permission(player, node));
     }
 
+    /** ¿Puede usar la función del nodo? Ver {@link PermissionNodes#allows}. */
     public static boolean can(ServerPlayerEntity player, String permission) {
+        if (operator(player)) {
+            return true;
+        }
+        if (permission.equals(USE)) {
+            return canAccess(player);
+        }
+        return PermissionNodes.allows(permission, node -> permission(player, node))
+                || KomaEditConfig.settings().rootPermissionGrantsAll() && canAccess(player);
+    }
+
+    /** ¿Puede usar alguna función de la familia? Sirve para mostrar u ocultar una orden con varios modos. */
+    public static boolean canAny(ServerPlayerEntity player, String prefix) {
         return operator(player)
-                || permission(player, permission)
+                || PermissionNodes.allowsAny(prefix, node -> permission(player, node))
                 || KomaEditConfig.settings().rootPermissionGrantsAll() && canAccess(player);
     }
 
     public static boolean canBuild(ServerPlayerEntity player, String shapeId) {
-        return can(player, BUILD) || permission(player, BUILD + "." + shapeId);
+        return can(player, BUILD + "." + shapeId);
     }
 
     public static void require(ServerPlayerEntity player, String permission) {
         if (!can(player, permission)) {
-            throw new IllegalArgumentException("Missing permission: " + permission);
+            throw new IllegalArgumentException("Te falta el permiso " + permission);
         }
     }
 
     public static void requireBuild(ServerPlayerEntity player, String shapeId) {
         if (!canBuild(player, shapeId)) {
-            throw new IllegalArgumentException("Missing permission: " + BUILD + "." + shapeId);
+            throw new IllegalArgumentException("Te falta el permiso " + BUILD + "." + shapeId);
         }
     }
 

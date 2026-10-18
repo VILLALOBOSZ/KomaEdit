@@ -99,8 +99,8 @@ public final class BrushToolInputs {
         if (kind == null) {
             return;
         }
-        if (!KomaPermissions.can(player, kind == BrushTool.Kind.SUPERWAND ? KomaPermissions.SELECT
-                : KomaPermissions.BUILD)) {
+        if (kind == BrushTool.Kind.SUPERWAND ? !KomaPermissions.can(player, KomaPermissions.SELECT + ".superwand")
+                : !KomaPermissions.canAny(player, KomaPermissions.BUILD + ".brush")) {
             player.sendMessage(Text.literal("KomaEdit · No tienes permiso para usar esta herramienta"), true);
             return;
         }

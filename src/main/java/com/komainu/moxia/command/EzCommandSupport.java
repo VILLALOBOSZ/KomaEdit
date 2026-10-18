@@ -47,6 +47,16 @@ final class EzCommandSupport {
         return player == null ? source.hasPermissionLevel(2) : KomaPermissions.can(player, permission);
     }
 
+    /** ¿Puede usar alguna orden de la familia? Para mostrar u ocultar una orden con subcomandos. */
+    static boolean canAny(ServerCommandSource source, String prefix) {
+        ServerPlayerEntity player = source.getPlayer();
+        return player == null ? source.hasPermissionLevel(2) : KomaPermissions.canAny(player, prefix);
+    }
+
+    static java.util.function.Predicate<ServerCommandSource> node(String permission) {
+        return source -> can(source, permission);
+    }
+
     static MutableText prefix() {
         return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
     }

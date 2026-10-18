@@ -38,14 +38,16 @@ public final class NoiseCommands {
     private static LiteralArgumentBuilder<ServerCommandSource> command(String name) {
         return literal(name)
                 .executes(context -> list(context, "all"))
-                .then(literal("list")
+                .then(literal("list").requires(EzCommandSupport.node("komaedit.noise.list"))
                         .executes(context -> list(context, "all"))
                         .then(argument("set", StringArgumentType.word())
                                 .suggests(EzCommandSupport.words(List.of("all", "default", "mine")))
                                 .executes(context -> list(context, StringArgumentType.getString(context, "set")))))
-                .then(literal("save").then(argument("args", StringArgumentType.greedyString())
+                .then(literal("save").requires(EzCommandSupport.node("komaedit.noise.save"))
+                        .then(argument("args", StringArgumentType.greedyString())
                         .executes(NoiseCommands::save)))
-                .then(literal("delete").then(argument("name", StringArgumentType.word())
+                .then(literal("delete").requires(EzCommandSupport.node("komaedit.noise.delete"))
+                        .then(argument("name", StringArgumentType.word())
                         .suggests((context, builder) -> {
                             ServerPlayerEntity player = context.getSource().getPlayer();
                             if (player != null) {
@@ -58,7 +60,8 @@ public final class NoiseCommands {
                             return builder.buildFuture();
                         })
                         .executes(NoiseCommands::delete)))
-                .then(literal("print").then(argument("noise", StringArgumentType.greedyString())
+                .then(literal("print").requires(EzCommandSupport.node("komaedit.noise.print"))
+                        .then(argument("noise", StringArgumentType.greedyString())
                         .suggests(EzCommandSupport.words(NoiseSpec.PRESETS.keySet()))
                         .executes(NoiseCommands::print)));
     }
