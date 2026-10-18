@@ -7,7 +7,7 @@ import org.joml.Vector3f;
 
 import java.util.List;
 
-/** Marcas de partículas que solo ve el jugador: puntos de un degradado, del trazo o de la supervarita. */
+/** Marcas de partículas que solo ve el jugador: puntos de un degradado, del trazo, de la supervarita o de la simetría. */
 public final class BrushMarkers {
     public static final int START = 0x66BB6A;
     public static final int END = 0xEF5350;
@@ -36,6 +36,11 @@ public final class BrushMarkers {
                     from.x() + 0.5 + dx * amount, from.y() + 0.5 + dy * amount, from.z() + 0.5 + dz * amount,
                     1, 0.0, 0.0, 0.0, 0.0);
         }
+    }
+
+    /** Un punto suelto en una posición exacta, como los de la línea. */
+    public static void dot(ServerPlayerEntity player, double x, double y, double z, int color) {
+        player.getServerWorld().spawnParticles(player, dust(color, 0.8F), true, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
     }
 
     public static void path(ServerPlayerEntity player, List<BlockVector3> points, int color) {

@@ -37,8 +37,8 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `ezedits.place`, `ezedits.array`, `ezedits.scatter` | `komaedit.build.place`, `.array`, `.scatter` | Completo |
 | `ezedits.mask.*`, `ezedits.pattern.*` | Las máscaras y patrones no piden permiso propio: se usan dentro de órdenes de WorldEdit, que ya tienen los suyos | Parcial |
 | `ezedits.debug`, `ezedits.debug.loadingbar` (`//ezdebug …`) | No hay barras de progreso ni entidades de visualización que limpiar | Falta (no aplica) |
-| `ezedits.symmetry.*` (`//ezsymmetry`, experimental) | — | Falta (grande, fuera de esta rama) |
-| `ezedits.stainedglass.image` (`//stainedglassimage`, experimental) | — | Falta (grande, fuera de esta rama) |
+| `ezedits.symmetry.reflectional`, `ezedits.symmetry.rotational` (`//ezsymmetry`, experimental) | `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` → `/komaedit symmetry` | Parcial: faltan `translational` y `update` (ver [Symmetry](#symmetry-solo-en-la-página-de-permisos)) |
+| `ezedits.stainedglass.image` (`//stainedglassimage`, experimental) | `komaedit.build.image` (paquete avanzado); las URL, además, con `komaedit.admin.image.url` si el admin lo pide | Completo |
 
 ## Palettes Explained
 
@@ -285,7 +285,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
 | `//ezstainedglassgradient <inicio> [fin] <capas> [1] [6] [dirección] [-c #000000] [-b] [-s]` | `/komaedit glassgradient` (`glass/GlassGradientSolver`) | Completo |
-| `//stainedglassimage` (experimental, solo en permisos) | — | Falta |
+| `//stainedglassimage` (experimental, solo en permisos: «genera una imagen con capas de cristal tintado») | `/komaedit image` (alias `imagen`, `stainedglassimage`; `image/ImageService`, `ImageConverter`, `ImageQuantizer`): archivo de `config/komaedit/images/` o URL `https` permitida; PNG, JPG y GIF; en el plano que miras o ajustada a la selección; vidrio, paneles, lana, hormigón, terracota, bloques enteros o `##Nombre`; color en CIELAB; tramado Floyd–Steinberg u ordenado | Completo, con parámetros propios (la wiki no los documenta). Una capa de vidrio por píxel: no apila capas como `glassgradient` |
 
 ## Surface
 
@@ -307,8 +307,23 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `ambient`, `axisgradient`, `blend`, `blocklight`, `cells`, `curvature`, `flow`, `noise`, `pointlight`, `shift`, `sunlight` con sus valores por defecto | `/komaedit texture …` (`texture/TextureFields`, `TextureOperation`) | Completo |
 | `advanced` con `Add`, `Subtract`, `Multiply`, `Divide`, `WeightedAverage`, `Darken`, `Lighten`, `Difference`, `Screen`, `Adjust`, `Invert`, `Blend` y `@@ruido(…)` | `texture/TextureSpec` | Completo |
 
+## Symmetry (solo en la página de permisos)
+
+La wiki solo nombra `//ezsymmetry` y sus cuatro permisos, sin parámetros ni comportamiento; el modo de KomaEdit tiene un diseño propio.
+
+| ezEdits | KomaEdit | Estado |
+| --- | --- | --- |
+| `//ezsymmetry reflectional` y `reflectional3d` | `/komaedit symmetry mode x\|z\|xz\|y\|xzy…` (alias `simetria`, `sym`; `symmetry/SymmetryGeometry`, `SymmetryService`): espejos en cualquier combinación de ejes, centro en bloque o entre bloques, en tu posición, en un punto o en el centro de la selección | Completo (diseño propio) |
+| `//ezsymmetry rotational` | `/komaedit symmetry mode radial <2-16> [y]` alrededor de un eje vertical | Completo (diseño propio) |
+| — | Estados girados y reflejados (`StateTransform`), copias de lo que se pone y rompe a mano, partículas en los planos y `worldedit on` para reflejar ediciones de WorldEdit y KomaEdit en un solo `//undo` (`SymmetryExtent`) | Propio |
+| `//ezsymmetry translational` | — | Falta |
+| `//ezsymmetry update` («actualiza los bloques según la simetría») | — | Falta |
+
 ## Lo que queda fuera
 
+- **Simetría traslacional y `update`** (`//ezsymmetry translational|update`): la wiki no dice qué hacen más allá del nombre.
+- **Capas apiladas en la vidriera de imagen**: `/komaedit image` pone una capa de vidrio por píxel; mezclar varias capas tintadas por píxel, como hace `glassgradient`, queda para más adelante.
+- **`/ezedits quiet`, `debugprint`, `wiki` y `//ezdebug`**: KomaEdit no tiene barras de progreso ni entidades de visualización que limpiar, y su ayuda está en `/komaedit help`.
 - **Simetría** (`//ezsymmetry reflectional|rotational|translational|update`) y **vidriera de imagen** (`//stainedglassimage`): las dos son experimentales en ezEdits y piden un sistema propio (reflejar cada edición en tiempo real; leer y cuantizar imágenes). Son trabajos grandes para ramas aparte.
 - **`debugprint` y `//ezdebug`**: KomaEdit no tiene barras de progreso ni entidades de visualización que limpiar.
 - **Visualizador de alineación** de los pinceles de colocación (BlockDisplay por jugador).

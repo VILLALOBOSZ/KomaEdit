@@ -23,6 +23,7 @@
     ]
   },
   "mixins": [
+    "komaedit.mixins.json",
     "komaedit.client.mixins.json"
   ],
   "depends": {

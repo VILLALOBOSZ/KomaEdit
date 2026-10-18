@@ -24,6 +24,7 @@ import com.komainu.moxia.recipe.RecipeActionService;
 import com.komainu.moxia.recipe.RecipeCatalogPayload;
 import com.komainu.moxia.recipe.InstanceCatalogPayload;
 import com.komainu.moxia.sculpt.SnapshotCaptureService;
+import com.komainu.moxia.symmetry.SymmetryService;
 import com.komainu.moxia.ui.QuickBuildPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -101,6 +102,7 @@ public final class KomaEditMod implements ModInitializer {
             }
         });
         BrushToolInputs.register();
+        SymmetryService.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             try {
                 ProjectStorage.bind(handler.player.getUuid(), server);

@@ -247,11 +247,13 @@ public final class MoxiaCommands {
         DeformCommands.register(root);
         PlacementCommands.register(root);
         TextureCommands.register(dispatcher);
+        ImageCommands.register(dispatcher);
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
         NoiseCommands.register(root);
         SelectionCommands.register(root);
         AdminCommands.register(root);
+        SymmetryCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
                 .requires(source -> can(source, KomaPermissions.PATH))
