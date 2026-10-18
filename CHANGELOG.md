@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.4.0 (estable, 2026-10-19)
+
 - Añade **`/komaedit ezspline`** (alias `ezsp`, `spline`) con la sintaxis de `//ezspline` de ezEdits: `2d`, `3d`, `basic`, `rope`, `noise`, `expression` y `structure`, las formas con sus parámetros largos y abreviados (`Chainlink(E:0.2,T:1,G:0,M:3,N:3,P:BOTH)` o `Ch(...)`) y las banderas comunes `-p -q -r -s -t -n -e -w -h`, en cualquier orden. También las formas antiguas como `//ezsp polygon clay 10 4`. Los ejemplos de la wiki funcionan tal cual, con los perfiles de `-w` (salvo `Panes`, que KomaEdit no tiene).
 - Formas 2D nuevas o completadas: `SuperCircle(Exponent)` (también por debajo de 1), `CirclesCircle(Count,Filled)` de 1 a 12, `Strands(Count,Size)`, `Pipe(Inner)`, `Polygon(Sides,Depth)`, `Rectangle(X1,Y1,X2,Y2)` por esquinas, `Star(Sides,Depth)` y `Flower(Count,Depth)`.
 - Formas 3D propias en espacio de tubo, sin huecos: `Beads`, `Cubes(Gap)`, `Chainlink` con extrusión, grosor, hueco, exponentes y `Place`, `Fishnet(Spacing,Depth,Width)`, `Honeycomb(CellSize,WireWidth,Depth)`, `Oscillate(Depth,Interval)`, `Rings`, `Scales` (columnas, desplazamientos, exponentes, ángulo y profundidad) y `Noodles` (fideos que se enredan sin cortarse, con cantidad, densidad, frecuencia, enredo, ancho y semilla). `Braids(Thickness)` usa la trenza.
