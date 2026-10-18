@@ -22,6 +22,10 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `gradient` | Paletas y selección streaming por eje |
 | `generator` | Generadores de ezEdits (formas, noisegen, flowfield, flowline): lógica pura sobre `Volume` y `GeneratedBlocks` |
 | `image` | Imagen en bloques (`/komaedit image`): lectura y descarga con límites, reescalado, cuantización en CIELAB y tramado, probados sin Minecraft; `ImageService` lo une al mundo y a la cola de edición |
+| `text` | Texto en bloques (`/komaedit text`): fuentes TrueType (de serie con OFL y propias), rasterizado en muestras, borde por distancia exacta y colocación según la mirada; `TextModel` es un `DeformField` para las piezas de `-w` |
+| `analysis` | Lista de materiales (`/komaedit analyze`): recuento sobre la foto y coste en survival (`SurvivalCost`, lógica pura con un registro inyectado), pilas, cofres y CSV |
+| `utility` | Gravedad, nieve, drenar e inundar: motores puros sobre `RegionSnapshot` con `BlockKinds` (las reglas de Minecraft en `MinecraftKinds`) y sus `RegionOperation` en `UtilityOperations` |
+| `biome` | Pintar biomas: celdas de 4×4×4 (`BiomeCells`, pura) y una cola por ticks con `EditSession.setBiome` para el //undo y el reenvío de chunks de WorldEdit |
 | `persistence` | Proyecto por mundo, migraciones, journal, backups y escritura atómica |
 | `permission` | Permisos granulares y excepciones de cuota |
 | `config` | Límites del servidor y política de compatibilidad |
@@ -93,6 +97,8 @@ Base común de las operaciones sobre la selección de WorldEdit (texturizar, def
 3. `RegionEdits` produce un `PackedBlockPlan` de escrituras condicionales: cada cambio lleva el id del estado leído y `BatchEditService` lo descarta si el bloque cambió mientras tanto. El plan entra en el historial de WorldEdit.
 
 Si la operación tiene que escribir fuera de lo leído (la dispersión de estructuras, que asoma de la región), `RegionOperationService.capture(jugador, región, margen, descripción, alTerminar)` solo lee y entrega la foto en el hilo del servidor; la operación monta su propio `PackedBlockPlan`, condicional dentro de la foto. Así funcionan `place`, `array` y `scatter` (paquete `placement`).
+
+Si el resultado no son cambios de bloque sueltos (un plan con patrones y piezas, un informe, celdas de bioma), `SnapshotJobs.run(jugador, región, margen, descripción, cálculo, aplicar)` lee la región, ejecuta el cálculo en un worker y entrega el resultado en el hilo del servidor; `SnapshotJobs.compute` hace lo mismo sin leer el mundo. Así funcionan `text`, `analyze` y `biome`.
 
 Para una operación nueva: escribe la lógica sobre `RegionSnapshot` (se puede montar a mano en tests con `RegionSnapshot.builder`), implementa `RegionOperation` y lánzala desde un comando con `RegionOperationService.submit`. `TweakOperation` es el ejemplo más pequeño. `weathering.WeatheringService` (Envejecer) adapta la foto a texto para `WeatheringEngine`, que es Java puro y se prueba con un mundo falso de texto.
 
