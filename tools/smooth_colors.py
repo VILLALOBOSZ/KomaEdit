@@ -6,6 +6,10 @@ El jar de cliente de la 1.21.1 está en la caché de Loom (~/.gradle/caches/fabr
 Por cada bloque se lee su blockstate, el primer modelo y sus texturas (siguiendo los padres). El color es la media
 de sus caras con textura distinta (arriba, abajo, lado…), ponderada por la opacidad de cada píxel. Las texturas
 grises que Minecraft tiñe por bioma (césped, hojas…) se multiplican por el tinte de las llanuras.
+
+La quinta columna, opcional, lleva banderas: «u» si el modelo es un cubo entero con la misma textura en las seis
+caras (piedra, lana, hormigón…; no los troncos, la arenisca ni el césped). La usa /komaedit color para el filtro de
+textura uniforme; el resto de banderas (cubo entero, sólido, opaco) se miran en el juego.
 """
 import io
 import json
@@ -56,6 +60,30 @@ def main(jar_path: str) -> None:
             textures.update(model_textures(data["parent"], depth + 1))
         textures.update(data.get("textures", {}))
         return textures
+
+    def model_elements(model_id, depth=0):
+        if depth > 16:
+            return None
+        data = load_json(f"assets/minecraft/models/{model_id.split(':')[-1]}.json")
+        if data is None:
+            return None
+        if "elements" in data:
+            return data["elements"]
+        return model_elements(data["parent"], depth + 1) if "parent" in data else None
+
+    def uniform(model_id, textures):
+        """Un solo elemento de 0 a 16 con sus seis caras y todas con la misma textura."""
+        elements = model_elements(model_id)
+        if not elements or len(elements) != 1:
+            return False
+        element = elements[0]
+        if element.get("from") != [0, 0, 0] or element.get("to") != [16, 16, 16]:
+            return False
+        faces = element.get("faces", {})
+        if set(faces) != {"north", "south", "east", "west", "up", "down"}:
+            return False
+        used = {resolve(textures, face.get("texture")) for face in faces.values()}
+        return len(used) == 1 and isinstance(next(iter(used)), str)
 
     def resolve(textures, value, depth=0):
         while isinstance(value, str) and value.startswith("#") and depth < 16:
@@ -130,7 +158,8 @@ def main(jar_path: str) -> None:
         if not colors:
             continue
         mean = [round(sum(color[i] for color in colors) / len(colors)) for i in range(3)]
-        rows.append(f"minecraft:{block} {mean[0]} {mean[1]} {mean[2]}")
+        flags = " u" if uniform(model, textures) else ""
+        rows.append(f"minecraft:{block} {mean[0]} {mean[1]} {mean[2]}{flags}")
 
     output = Path(__file__).resolve().parent.parent / "src/main/resources/assets/komaedit/smooth/colors.txt"
     output.parent.mkdir(parents=True, exist_ok=True)

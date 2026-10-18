@@ -203,6 +203,21 @@ public final class HelpTopics {
                     new Entry("/komaedit palette decode <código>", "Convierte un código kp1:… en bloques"),
                     new Entry("/komaedit palette delete <nombre>", "Borra una paleta guardada")
             )),
+            new Topic("color", "Color y sombreado", List.of("colores", "colour", "parecidos", "shade",
+                    "sombrear", "sombreado"), List.of(
+                    new Entry("/komaedit color similar [bloque|#hex] [n] [-c] [-s] [-o] [-u]",
+                            "Los n bloques de color más parecido; sin bloque, el de la mano o el que miras"),
+                    new Entry("/komaedit color gradient <A> <B> [pasos] [-c] [-s] [-o] [-u] [-v variante] [-p nombre]",
+                            "Degradado en OKLab sin repetir bloques; [otra] da alternativas (alias degradado)"),
+                    new Entry("/komaedit color palette <selection|hotbar|paleta> [nombre] [-f]",
+                            "Paleta de la selección, la barra rápida o una paleta, de oscuro a claro"),
+                    new Entry("/komaedit color hotbar <bloques|undo>", "Lleva bloques a la barra rápida (creativo)"),
+                    new Entry("/komaedit shade [selection|rampa|paleta] [-l luz] [-a 0–1] [-o 0–1] [-d 0–1] [-m máscara]",
+                            "Sombrea la superficie según la luz, con oclusión y sombras (alias sombrear)"),
+                    new Entry("/komaedit shade -l ne -d 0.5", "Ejemplo: luz del noreste con tramado"),
+                    new Entry("/komaedit color gradient deepslate calcite 7 -c -o",
+                            "Ejemplo: de oscuro a claro solo con cubos opacos")
+            )),
             new Topic("noise", "Ruidos guardados", List.of("ruido", "ruidos", "noises"), List.of(
                     new Entry("/komaedit noise list [all|default|mine]", "Ruidos de serie y tuyos"),
                     new Entry("/komaedit noise save <nombre> <ruido> [-f]", "Guarda un ruido para usarlo por su nombre"),

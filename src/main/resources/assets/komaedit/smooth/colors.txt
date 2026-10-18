@@ -5,9 +5,9 @@ minecraft:acacia_door 168 95 61
 minecraft:acacia_fence 168 90 50
 minecraft:acacia_fence_gate 168 90 50
 minecraft:acacia_hanging_sign 175 93 60
-minecraft:acacia_leaves 70 100 27
+minecraft:acacia_leaves 70 100 27 u
 minecraft:acacia_log 127 93 71
-minecraft:acacia_planks 168 90 50
+minecraft:acacia_planks 168 90 50 u
 minecraft:acacia_pressure_plate 168 90 50
 minecraft:acacia_sapling 119 118 24
 minecraft:acacia_sign 168 90 50
@@ -16,13 +16,13 @@ minecraft:acacia_stairs 168 90 50
 minecraft:acacia_trapdoor 157 87 51
 minecraft:acacia_wall_hanging_sign 175 93 60
 minecraft:acacia_wall_sign 168 90 50
-minecraft:acacia_wood 103 97 87
+minecraft:acacia_wood 103 97 87 u
 minecraft:activator_rail 115 87 74
 minecraft:allium 159 137 184
-minecraft:amethyst_block 134 98 191
+minecraft:amethyst_block 134 98 191 u
 minecraft:amethyst_cluster 164 127 207
 minecraft:ancient_debris 95 65 57
-minecraft:andesite 136 136 137
+minecraft:andesite 136 136 137 u
 minecraft:andesite_slab 136 136 137
 minecraft:andesite_stairs 136 136 137
 minecraft:andesite_wall 136 136 137
@@ -30,7 +30,7 @@ minecraft:anvil 73 73 73
 minecraft:attached_melon_stem 154 154 154
 minecraft:attached_pumpkin_stem 154 154 154
 minecraft:azalea 98 121 46
-minecraft:azalea_leaves 90 115 44
+minecraft:azalea_leaves 90 115 44 u
 minecraft:azure_bluet 169 205 127
 minecraft:bamboo 94 144 20
 minecraft:bamboo_block 133 143 60
@@ -39,10 +39,10 @@ minecraft:bamboo_door 191 171 81
 minecraft:bamboo_fence 207 186 89
 minecraft:bamboo_fence_gate 206 186 87
 minecraft:bamboo_hanging_sign 193 173 80
-minecraft:bamboo_mosaic 190 170 78
+minecraft:bamboo_mosaic 190 170 78 u
 minecraft:bamboo_mosaic_slab 190 170 78
 minecraft:bamboo_mosaic_stairs 190 170 78
-minecraft:bamboo_planks 193 173 80
+minecraft:bamboo_planks 193 173 80 u
 minecraft:bamboo_pressure_plate 193 173 80
 minecraft:bamboo_sapling 92 89 36
 minecraft:bamboo_sign 193 173 80
@@ -55,7 +55,7 @@ minecraft:barrel 125 93 54
 minecraft:barrier 213 0 0
 minecraft:basalt 77 77 82
 minecraft:beacon 176 214 219
-minecraft:bedrock 85 85 85
+minecraft:bedrock 85 85 85 u
 minecraft:bee_nest 186 145 79
 minecraft:beehive 166 134 81
 minecraft:beetroots 66 138 41
@@ -67,9 +67,9 @@ minecraft:birch_door 220 210 176
 minecraft:birch_fence 192 175 121
 minecraft:birch_fence_gate 192 175 121
 minecraft:birch_hanging_sign 197 176 118
-minecraft:birch_leaves 66 85 43
+minecraft:birch_leaves 66 85 43 u
 minecraft:birch_log 205 197 173
-minecraft:birch_planks 192 175 121
+minecraft:birch_planks 192 175 121 u
 minecraft:birch_pressure_plate 192 175 121
 minecraft:birch_sapling 128 161 80
 minecraft:birch_sign 192 175 121
@@ -78,21 +78,21 @@ minecraft:birch_stairs 192 175 121
 minecraft:birch_trapdoor 207 194 157
 minecraft:birch_wall_hanging_sign 197 176 118
 minecraft:birch_wall_sign 192 175 121
-minecraft:birch_wood 217 215 210
+minecraft:birch_wood 217 215 210 u
 minecraft:black_banner 162 131 79
 minecraft:black_bed 162 131 79
 minecraft:black_candle 38 37 58
 minecraft:black_candle_cake 191 143 123
 minecraft:black_carpet 21 21 26
-minecraft:black_concrete 8 10 15
-minecraft:black_concrete_powder 25 27 32
-minecraft:black_glazed_terracotta 68 30 32
+minecraft:black_concrete 8 10 15 u
+minecraft:black_concrete_powder 25 27 32 u
+minecraft:black_glazed_terracotta 68 30 32 u
 minecraft:black_shulker_box 25 25 30
-minecraft:black_stained_glass 25 25 25
+minecraft:black_stained_glass 25 25 25 u
 minecraft:black_stained_glass_pane 25 25 25
-minecraft:black_terracotta 37 23 16
+minecraft:black_terracotta 37 23 16 u
 minecraft:black_wall_banner 162 131 79
-minecraft:black_wool 21 21 26
+minecraft:black_wool 21 21 26 u
 minecraft:blackstone 42 36 41
 minecraft:blackstone_slab 42 36 42
 minecraft:blackstone_stairs 42 36 42
@@ -103,53 +103,53 @@ minecraft:blue_bed 162 131 79
 minecraft:blue_candle 57 76 161
 minecraft:blue_candle_cake 191 143 123
 minecraft:blue_carpet 53 57 157
-minecraft:blue_concrete 45 47 143
-minecraft:blue_concrete_powder 70 73 167
-minecraft:blue_glazed_terracotta 47 65 139
-minecraft:blue_ice 116 168 253
+minecraft:blue_concrete 45 47 143 u
+minecraft:blue_concrete_powder 70 73 167 u
+minecraft:blue_glazed_terracotta 47 65 139 u
+minecraft:blue_ice 116 168 253 u
 minecraft:blue_orchid 47 162 168
 minecraft:blue_shulker_box 44 46 140
-minecraft:blue_stained_glass 51 76 178
+minecraft:blue_stained_glass 51 76 178 u
 minecraft:blue_stained_glass_pane 51 76 178
-minecraft:blue_terracotta 74 60 91
+minecraft:blue_terracotta 74 60 91 u
 minecraft:blue_wall_banner 162 131 79
-minecraft:blue_wool 53 57 157
+minecraft:blue_wool 53 57 157 u
 minecraft:bone_block 220 216 194
 minecraft:bookshelf 140 113 69
 minecraft:brain_coral 198 85 152
-minecraft:brain_coral_block 207 91 159
+minecraft:brain_coral_block 207 91 159 u
 minecraft:brain_coral_fan 203 84 154
 minecraft:brain_coral_wall_fan 203 84 154
 minecraft:brewing_stand 122 101 81
 minecraft:brick_slab 151 98 83
 minecraft:brick_stairs 151 98 83
 minecraft:brick_wall 151 98 83
-minecraft:bricks 151 98 83
+minecraft:bricks 151 98 83 u
 minecraft:brown_banner 162 131 79
 minecraft:brown_bed 162 131 79
 minecraft:brown_candle 112 70 41
 minecraft:brown_candle_cake 191 143 123
 minecraft:brown_carpet 114 72 41
-minecraft:brown_concrete 96 60 32
-minecraft:brown_concrete_powder 126 85 54
-minecraft:brown_glazed_terracotta 120 106 86
+minecraft:brown_concrete 96 60 32 u
+minecraft:brown_concrete_powder 126 85 54 u
+minecraft:brown_glazed_terracotta 120 106 86 u
 minecraft:brown_mushroom 154 117 92
 minecraft:brown_mushroom_block 149 112 81
 minecraft:brown_shulker_box 106 66 36
-minecraft:brown_stained_glass 102 76 51
+minecraft:brown_stained_glass 102 76 51 u
 minecraft:brown_stained_glass_pane 102 76 51
-minecraft:brown_terracotta 77 51 36
+minecraft:brown_terracotta 77 51 36 u
 minecraft:brown_wall_banner 162 131 79
-minecraft:brown_wool 114 72 41
+minecraft:brown_wool 114 72 41 u
 minecraft:bubble_column 177 177 177
 minecraft:bubble_coral 161 24 160
-minecraft:bubble_coral_block 165 26 162
+minecraft:bubble_coral_block 165 26 162 u
 minecraft:bubble_coral_fan 160 33 159
 minecraft:bubble_coral_wall_fan 160 33 159
-minecraft:budding_amethyst 132 96 187
+minecraft:budding_amethyst 132 96 187 u
 minecraft:cactus 115 149 65
 minecraft:cake 191 143 123
-minecraft:calcite 223 224 221
+minecraft:calcite 223 224 221 u
 minecraft:calibrated_sculk_sensor 17 49 61
 minecraft:campfire 79 75 68
 minecraft:candle 232 201 153
@@ -167,9 +167,9 @@ minecraft:cherry_door 223 171 165
 minecraft:cherry_fence 227 179 173
 minecraft:cherry_fence_gate 227 179 173
 minecraft:cherry_hanging_sign 215 145 149
-minecraft:cherry_leaves 229 173 194
+minecraft:cherry_leaves 229 173 194 u
 minecraft:cherry_log 120 87 91
-minecraft:cherry_planks 227 179 173
+minecraft:cherry_planks 227 179 173 u
 minecraft:cherry_pressure_plate 227 179 173
 minecraft:cherry_sapling 164 118 143
 minecraft:cherry_sign 227 179 173
@@ -178,31 +178,31 @@ minecraft:cherry_stairs 227 179 173
 minecraft:cherry_trapdoor 226 179 172
 minecraft:cherry_wall_hanging_sign 215 145 149
 minecraft:cherry_wall_sign 227 179 173
-minecraft:cherry_wood 55 33 44
+minecraft:cherry_wood 55 33 44 u
 minecraft:chest 162 131 79
 minecraft:chipped_anvil 73 73 73
 minecraft:chiseled_bookshelf 177 143 88
-minecraft:chiseled_copper 184 101 74
-minecraft:chiseled_deepslate 54 54 55
-minecraft:chiseled_nether_bricks 47 24 28
-minecraft:chiseled_polished_blackstone 54 49 57
+minecraft:chiseled_copper 184 101 74 u
+minecraft:chiseled_deepslate 54 54 55 u
+minecraft:chiseled_nether_bricks 47 24 28 u
+minecraft:chiseled_polished_blackstone 54 49 57 u
 minecraft:chiseled_quartz_block 232 227 218
 minecraft:chiseled_red_sandstone 182 97 29
 minecraft:chiseled_sandstone 220 209 163
-minecraft:chiseled_stone_bricks 120 119 120
+minecraft:chiseled_stone_bricks 120 119 120 u
 minecraft:chiseled_tuff 91 96 89
 minecraft:chiseled_tuff_bricks 105 109 101
 minecraft:chorus_flower 94 57 94
 minecraft:chorus_plant 94 57 94
-minecraft:clay 161 166 179
-minecraft:coal_block 16 16 16
-minecraft:coal_ore 106 106 105
-minecraft:coarse_dirt 119 86 59
-minecraft:cobbled_deepslate 77 77 81
+minecraft:clay 161 166 179 u
+minecraft:coal_block 16 16 16 u
+minecraft:coal_ore 106 106 105 u
+minecraft:coarse_dirt 119 86 59 u
+minecraft:cobbled_deepslate 77 77 81 u
 minecraft:cobbled_deepslate_slab 77 77 81
 minecraft:cobbled_deepslate_stairs 77 77 81
 minecraft:cobbled_deepslate_wall 77 77 81
-minecraft:cobblestone 128 127 128
+minecraft:cobblestone 128 127 128 u
 minecraft:cobblestone_slab 128 127 128
 minecraft:cobblestone_stairs 128 127 128
 minecraft:cobblestone_wall 128 127 128
@@ -212,18 +212,18 @@ minecraft:command_block 179 135 108
 minecraft:comparator 166 162 160
 minecraft:composter 135 85 42
 minecraft:conduit 160 140 113
-minecraft:copper_block 192 108 80
-minecraft:copper_bulb 156 87 57
+minecraft:copper_block 192 108 80 u
+minecraft:copper_bulb 156 87 57 u
 minecraft:copper_door 193 109 83
-minecraft:copper_grate 192 108 79
-minecraft:copper_ore 125 126 120
+minecraft:copper_grate 192 108 79 u
+minecraft:copper_ore 125 126 120 u
 minecraft:copper_trapdoor 191 106 80
 minecraft:cornflower 80 121 147
-minecraft:cracked_deepslate_bricks 65 65 65
-minecraft:cracked_deepslate_tiles 53 53 53
-minecraft:cracked_nether_bricks 40 20 24
-minecraft:cracked_polished_blackstone_bricks 44 38 44
-minecraft:cracked_stone_bricks 118 118 118
+minecraft:cracked_deepslate_bricks 65 65 65 u
+minecraft:cracked_deepslate_tiles 53 53 53 u
+minecraft:cracked_nether_bricks 40 20 24 u
+minecraft:cracked_polished_blackstone_bricks 44 38 44 u
+minecraft:cracked_stone_bricks 118 118 118 u
 minecraft:crafter 95 89 89
 minecraft:crafting_table 129 106 70
 minecraft:creeper_head 81 62 51
@@ -234,9 +234,9 @@ minecraft:crimson_fence 101 49 71
 minecraft:crimson_fence_gate 101 49 71
 minecraft:crimson_fungus 141 44 30
 minecraft:crimson_hanging_sign 137 57 90
-minecraft:crimson_hyphae 93 26 30
+minecraft:crimson_hyphae 93 26 30 u
 minecraft:crimson_nylium 114 35 35
-minecraft:crimson_planks 101 49 71
+minecraft:crimson_planks 101 49 71 u
 minecraft:crimson_pressure_plate 101 49 71
 minecraft:crimson_roots 126 8 42
 minecraft:crimson_sign 101 49 71
@@ -246,8 +246,8 @@ minecraft:crimson_stem 103 38 50
 minecraft:crimson_trapdoor 104 51 72
 minecraft:crimson_wall_hanging_sign 137 57 90
 minecraft:crimson_wall_sign 101 49 71
-minecraft:crying_obsidian 33 10 60
-minecraft:cut_copper 191 107 81
+minecraft:crying_obsidian 33 10 60 u
+minecraft:cut_copper 191 107 81 u
 minecraft:cut_copper_slab 191 107 81
 minecraft:cut_copper_stairs 191 107 81
 minecraft:cut_red_sandstone 185 100 32
@@ -259,15 +259,15 @@ minecraft:cyan_bed 162 131 79
 minecraft:cyan_candle 17 124 124
 minecraft:cyan_candle_cake 191 143 123
 minecraft:cyan_carpet 21 138 145
-minecraft:cyan_concrete 21 119 136
-minecraft:cyan_concrete_powder 37 148 157
-minecraft:cyan_glazed_terracotta 52 119 125
+minecraft:cyan_concrete 21 119 136 u
+minecraft:cyan_concrete_powder 37 148 157 u
+minecraft:cyan_glazed_terracotta 52 119 125 u
 minecraft:cyan_shulker_box 20 121 135
-minecraft:cyan_stained_glass 76 127 153
+minecraft:cyan_stained_glass 76 127 153 u
 minecraft:cyan_stained_glass_pane 76 127 153
-minecraft:cyan_terracotta 87 91 91
+minecraft:cyan_terracotta 87 91 91 u
 minecraft:cyan_wall_banner 162 131 79
-minecraft:cyan_wool 21 138 145
+minecraft:cyan_wool 21 138 145 u
 minecraft:damaged_anvil 72 72 72
 minecraft:dandelion 148 172 43
 minecraft:dark_oak_button 67 43 20
@@ -275,9 +275,9 @@ minecraft:dark_oak_door 77 52 25
 minecraft:dark_oak_fence 67 43 20
 minecraft:dark_oak_fence_gate 67 43 20
 minecraft:dark_oak_hanging_sign 73 57 36
-minecraft:dark_oak_leaves 70 101 28
+minecraft:dark_oak_leaves 70 101 28 u
 minecraft:dark_oak_log 64 46 24
-minecraft:dark_oak_planks 67 43 20
+minecraft:dark_oak_planks 67 43 20 u
 minecraft:dark_oak_pressure_plate 67 43 20
 minecraft:dark_oak_sapling 61 91 31
 minecraft:dark_oak_sign 67 43 20
@@ -286,30 +286,30 @@ minecraft:dark_oak_stairs 67 43 20
 minecraft:dark_oak_trapdoor 75 50 23
 minecraft:dark_oak_wall_hanging_sign 73 57 36
 minecraft:dark_oak_wall_sign 67 43 20
-minecraft:dark_oak_wood 60 47 26
-minecraft:dark_prismarine 52 92 76
+minecraft:dark_oak_wood 60 47 26 u
+minecraft:dark_prismarine 52 92 76 u
 minecraft:dark_prismarine_slab 52 92 76
 minecraft:dark_prismarine_stairs 52 92 76
 minecraft:daylight_detector 99 86 65
 minecraft:dead_brain_coral 134 125 121
-minecraft:dead_brain_coral_block 124 118 114
+minecraft:dead_brain_coral_block 124 118 114 u
 minecraft:dead_brain_coral_fan 133 125 121
 minecraft:dead_brain_coral_wall_fan 133 125 121
 minecraft:dead_bubble_coral 133 125 121
-minecraft:dead_bubble_coral_block 132 124 119
+minecraft:dead_bubble_coral_block 132 124 119 u
 minecraft:dead_bubble_coral_fan 141 135 130
 minecraft:dead_bubble_coral_wall_fan 141 135 130
 minecraft:dead_bush 107 79 41
 minecraft:dead_fire_coral 137 128 124
-minecraft:dead_fire_coral_block 132 124 120
+minecraft:dead_fire_coral_block 132 124 120 u
 minecraft:dead_fire_coral_fan 125 118 115
 minecraft:dead_fire_coral_wall_fan 125 118 115
 minecraft:dead_horn_coral 143 135 130
-minecraft:dead_horn_coral_block 134 126 122
+minecraft:dead_horn_coral_block 134 126 122 u
 minecraft:dead_horn_coral_fan 134 126 121
 minecraft:dead_horn_coral_wall_fan 134 126 121
 minecraft:dead_tube_coral 118 111 108
-minecraft:dead_tube_coral_block 130 123 120
+minecraft:dead_tube_coral_block 130 123 120 u
 minecraft:dead_tube_coral_fan 128 122 118
 minecraft:dead_tube_coral_wall_fan 128 122 118
 minecraft:decorated_pot 152 94 68
@@ -317,137 +317,137 @@ minecraft:deepslate 84 84 86
 minecraft:deepslate_brick_slab 71 71 71
 minecraft:deepslate_brick_stairs 71 71 71
 minecraft:deepslate_brick_wall 71 71 71
-minecraft:deepslate_bricks 71 71 71
-minecraft:deepslate_coal_ore 74 74 76
-minecraft:deepslate_copper_ore 92 93 89
-minecraft:deepslate_diamond_ore 83 106 107
-minecraft:deepslate_emerald_ore 78 104 88
-minecraft:deepslate_gold_ore 115 103 78
-minecraft:deepslate_iron_ore 107 100 95
-minecraft:deepslate_lapis_ore 80 91 115
-minecraft:deepslate_redstone_ore 105 73 75
+minecraft:deepslate_bricks 71 71 71 u
+minecraft:deepslate_coal_ore 74 74 76 u
+minecraft:deepslate_copper_ore 92 93 89 u
+minecraft:deepslate_diamond_ore 83 106 107 u
+minecraft:deepslate_emerald_ore 78 104 88 u
+minecraft:deepslate_gold_ore 115 103 78 u
+minecraft:deepslate_iron_ore 107 100 95 u
+minecraft:deepslate_lapis_ore 80 91 115 u
+minecraft:deepslate_redstone_ore 105 73 75 u
 minecraft:deepslate_tile_slab 55 55 55
 minecraft:deepslate_tile_stairs 55 55 55
 minecraft:deepslate_tile_wall 55 55 55
-minecraft:deepslate_tiles 55 55 55
+minecraft:deepslate_tiles 55 55 55 u
 minecraft:detector_rail 123 105 90
-minecraft:diamond_block 98 237 228
-minecraft:diamond_ore 121 141 141
-minecraft:diorite 189 188 189
+minecraft:diamond_block 98 237 228 u
+minecraft:diamond_ore 121 141 141 u
+minecraft:diorite 189 188 189 u
 minecraft:diorite_slab 189 188 189
 minecraft:diorite_stairs 189 188 189
 minecraft:diorite_wall 189 188 189
-minecraft:dirt 134 96 67
+minecraft:dirt 134 96 67 u
 minecraft:dirt_path 140 106 66
 minecraft:dispenser 104 104 104
 minecraft:dragon_egg 13 9 16
 minecraft:dragon_head 81 62 51
 minecraft:dragon_wall_head 81 62 51
 minecraft:dried_kelp_block 38 49 30
-minecraft:dripstone_block 134 108 93
+minecraft:dripstone_block 134 108 93 u
 minecraft:dropper 104 103 103
-minecraft:emerald_block 42 203 88
-minecraft:emerald_ore 108 136 116
+minecraft:emerald_block 42 203 88 u
+minecraft:emerald_ore 108 136 116 u
 minecraft:enchanting_table 65 44 56
 minecraft:end_gateway 15 11 25
 minecraft:end_portal 15 11 25
 minecraft:end_portal_frame 155 172 128
 minecraft:end_rod 208 198 187
-minecraft:end_stone 220 223 158
+minecraft:end_stone 220 223 158 u
 minecraft:end_stone_brick_slab 218 224 162
 minecraft:end_stone_brick_stairs 218 224 162
 minecraft:end_stone_brick_wall 218 224 162
-minecraft:end_stone_bricks 218 224 162
+minecraft:end_stone_bricks 218 224 162 u
 minecraft:ender_chest 15 11 25
-minecraft:exposed_chiseled_copper 155 119 101
-minecraft:exposed_copper 161 126 104
-minecraft:exposed_copper_bulb 135 108 90
+minecraft:exposed_chiseled_copper 155 119 101 u
+minecraft:exposed_copper 161 126 104 u
+minecraft:exposed_copper_bulb 135 108 90 u
 minecraft:exposed_copper_door 164 123 106
-minecraft:exposed_copper_grate 162 126 105
+minecraft:exposed_copper_grate 162 126 105 u
 minecraft:exposed_copper_trapdoor 161 125 105
-minecraft:exposed_cut_copper 155 122 101
+minecraft:exposed_cut_copper 155 122 101 u
 minecraft:exposed_cut_copper_slab 155 122 101
 minecraft:exposed_cut_copper_stairs 155 122 101
 minecraft:farmland 143 103 71
 minecraft:fern 71 92 43
 minecraft:fire 213 142 53
 minecraft:fire_coral 167 38 47
-minecraft:fire_coral_block 164 35 47
+minecraft:fire_coral_block 164 35 47 u
 minecraft:fire_coral_fan 159 35 46
 minecraft:fire_coral_wall_fan 159 35 46
 minecraft:fletching_table 173 155 111
 minecraft:flower_pot 124 69 53
 minecraft:flowering_azalea 112 118 69
-minecraft:flowering_azalea_leaves 100 111 61
+minecraft:flowering_azalea_leaves 100 111 61 u
 minecraft:frogspawn 106 91 82
-minecraft:frosted_ice 140 181 253
+minecraft:frosted_ice 140 181 253 u
 minecraft:furnace 115 115 115
-minecraft:gilded_blackstone 56 43 38
-minecraft:glass 176 214 219
+minecraft:gilded_blackstone 56 43 38 u
+minecraft:glass 176 214 219 u
 minecraft:glass_pane 176 214 219
 minecraft:glow_item_frame 192 175 121
 minecraft:glow_lichen 112 131 122
-minecraft:glowstone 172 131 84
-minecraft:gold_block 246 208 62
-minecraft:gold_ore 145 134 107
-minecraft:granite 149 103 86
+minecraft:glowstone 172 131 84 u
+minecraft:gold_block 246 208 62 u
+minecraft:gold_ore 145 134 107 u
+minecraft:granite 149 103 86 u
 minecraft:granite_slab 149 103 86
 minecraft:granite_stairs 149 103 86
 minecraft:granite_wall 149 103 86
 minecraft:grass_block 115 104 61
-minecraft:gravel 132 127 127
+minecraft:gravel 132 127 127 u
 minecraft:gray_banner 162 131 79
 minecraft:gray_bed 162 131 79
 minecraft:gray_candle 80 94 97
 minecraft:gray_candle_cake 191 143 123
 minecraft:gray_carpet 63 68 72
-minecraft:gray_concrete 55 58 62
-minecraft:gray_concrete_powder 77 81 85
-minecraft:gray_glazed_terracotta 83 90 94
+minecraft:gray_concrete 55 58 62 u
+minecraft:gray_concrete_powder 77 81 85 u
+minecraft:gray_glazed_terracotta 83 90 94 u
 minecraft:gray_shulker_box 55 59 62
-minecraft:gray_stained_glass 76 76 76
+minecraft:gray_stained_glass 76 76 76 u
 minecraft:gray_stained_glass_pane 76 76 76
-minecraft:gray_terracotta 58 42 36
+minecraft:gray_terracotta 58 42 36 u
 minecraft:gray_wall_banner 162 131 79
-minecraft:gray_wool 63 68 72
+minecraft:gray_wool 63 68 72 u
 minecraft:green_banner 162 131 79
 minecraft:green_bed 162 131 79
 minecraft:green_candle 73 96 21
 minecraft:green_candle_cake 191 143 123
 minecraft:green_carpet 85 110 28
-minecraft:green_concrete 73 91 36
-minecraft:green_concrete_powder 97 119 45
-minecraft:green_glazed_terracotta 117 142 67
+minecraft:green_concrete 73 91 36 u
+minecraft:green_concrete_powder 97 119 45 u
+minecraft:green_glazed_terracotta 117 142 67 u
 minecraft:green_shulker_box 79 101 32
-minecraft:green_stained_glass 102 127 51
+minecraft:green_stained_glass 102 127 51 u
 minecraft:green_stained_glass_pane 102 127 51
-minecraft:green_terracotta 76 83 42
+minecraft:green_terracotta 76 83 42 u
 minecraft:green_wall_banner 162 131 79
-minecraft:green_wool 85 110 28
+minecraft:green_wool 85 110 28 u
 minecraft:grindstone 140 140 140
 minecraft:hanging_roots 161 115 92
 minecraft:hay_block 166 138 25
 minecraft:heavy_core 82 86 94
 minecraft:heavy_weighted_pressure_plate 220 220 220
 minecraft:honey_block 251 188 58
-minecraft:honeycomb_block 229 148 30
+minecraft:honeycomb_block 229 148 30 u
 minecraft:hopper 76 74 76
 minecraft:horn_coral 209 186 63
-minecraft:horn_coral_block 216 200 66
+minecraft:horn_coral_block 216 200 66 u
 minecraft:horn_coral_fan 206 183 61
 minecraft:horn_coral_wall_fan 206 183 61
-minecraft:ice 146 184 254
-minecraft:infested_chiseled_stone_bricks 120 119 120
-minecraft:infested_cobblestone 128 127 128
-minecraft:infested_cracked_stone_bricks 118 118 118
+minecraft:ice 146 184 254 u
+minecraft:infested_chiseled_stone_bricks 120 119 120 u
+minecraft:infested_cobblestone 128 127 128 u
+minecraft:infested_cracked_stone_bricks 118 118 118 u
 minecraft:infested_deepslate 84 84 86
-minecraft:infested_mossy_stone_bricks 115 121 105
-minecraft:infested_stone 126 126 126
-minecraft:infested_stone_bricks 122 122 122
+minecraft:infested_mossy_stone_bricks 115 121 105 u
+minecraft:infested_stone 126 126 126 u
+minecraft:infested_stone_bricks 122 122 122 u
 minecraft:iron_bars 137 139 136
-minecraft:iron_block 220 220 220
+minecraft:iron_block 220 220 220 u
 minecraft:iron_door 194 193 193
-minecraft:iron_ore 136 129 123
+minecraft:iron_ore 136 129 123 u
 minecraft:iron_trapdoor 203 202 202
 minecraft:item_frame 192 175 121
 minecraft:jack_o_lantern 197 117 24
@@ -458,9 +458,9 @@ minecraft:jungle_door 164 120 85
 minecraft:jungle_fence 160 115 81
 minecraft:jungle_fence_gate 160 115 81
 minecraft:jungle_hanging_sign 171 133 85
-minecraft:jungle_leaves 73 103 26
+minecraft:jungle_leaves 73 103 26 u
 minecraft:jungle_log 117 89 48
-minecraft:jungle_planks 160 115 81
+minecraft:jungle_planks 160 115 81 u
 minecraft:jungle_pressure_plate 160 115 81
 minecraft:jungle_sapling 48 81 17
 minecraft:jungle_sign 160 115 81
@@ -469,13 +469,13 @@ minecraft:jungle_stairs 160 115 81
 minecraft:jungle_trapdoor 153 110 77
 minecraft:jungle_wall_hanging_sign 171 133 85
 minecraft:jungle_wall_sign 160 115 81
-minecraft:jungle_wood 85 68 25
+minecraft:jungle_wood 85 68 25 u
 minecraft:kelp 88 142 45
 minecraft:kelp_plant 87 131 43
 minecraft:ladder 125 97 55
 minecraft:lantern 107 92 85
-minecraft:lapis_block 31 67 140
-minecraft:lapis_ore 107 118 141
+minecraft:lapis_block 31 67 140 u
+minecraft:lapis_ore 107 118 141 u
 minecraft:large_amethyst_bud 161 126 203
 minecraft:large_fern 132 132 132
 minecraft:lava 217 105 26
@@ -488,29 +488,29 @@ minecraft:light_blue_bed 162 131 79
 minecraft:light_blue_candle 35 138 197
 minecraft:light_blue_candle_cake 191 143 123
 minecraft:light_blue_carpet 58 175 217
-minecraft:light_blue_concrete 36 137 199
-minecraft:light_blue_concrete_powder 74 181 213
-minecraft:light_blue_glazed_terracotta 95 165 209
+minecraft:light_blue_concrete 36 137 199 u
+minecraft:light_blue_concrete_powder 74 181 213 u
+minecraft:light_blue_glazed_terracotta 95 165 209 u
 minecraft:light_blue_shulker_box 49 164 212
-minecraft:light_blue_stained_glass 102 153 216
+minecraft:light_blue_stained_glass 102 153 216 u
 minecraft:light_blue_stained_glass_pane 102 153 216
-minecraft:light_blue_terracotta 113 109 138
+minecraft:light_blue_terracotta 113 109 138 u
 minecraft:light_blue_wall_banner 162 131 79
-minecraft:light_blue_wool 58 175 217
+minecraft:light_blue_wool 58 175 217 u
 minecraft:light_gray_banner 162 131 79
 minecraft:light_gray_bed 162 131 79
 minecraft:light_gray_candle 118 121 112
 minecraft:light_gray_candle_cake 191 143 123
 minecraft:light_gray_carpet 142 142 135
-minecraft:light_gray_concrete 125 125 115
-minecraft:light_gray_concrete_powder 155 155 148
-minecraft:light_gray_glazed_terracotta 144 166 168
+minecraft:light_gray_concrete 125 125 115 u
+minecraft:light_gray_concrete_powder 155 155 148 u
+minecraft:light_gray_glazed_terracotta 144 166 168 u
 minecraft:light_gray_shulker_box 124 124 115
-minecraft:light_gray_stained_glass 153 153 153
+minecraft:light_gray_stained_glass 153 153 153 u
 minecraft:light_gray_stained_glass_pane 153 153 153
-minecraft:light_gray_terracotta 135 107 98
+minecraft:light_gray_terracotta 135 107 98 u
 minecraft:light_gray_wall_banner 162 131 79
-minecraft:light_gray_wool 142 142 135
+minecraft:light_gray_wool 142 142 135 u
 minecraft:light_weighted_pressure_plate 246 208 62
 minecraft:lightning_rod 197 111 83
 minecraft:lilac 137 124 127
@@ -521,15 +521,15 @@ minecraft:lime_bed 162 131 79
 minecraft:lime_candle 98 172 23
 minecraft:lime_candle_cake 191 143 123
 minecraft:lime_carpet 112 185 26
-minecraft:lime_concrete 94 169 24
-minecraft:lime_concrete_powder 125 189 42
-minecraft:lime_glazed_terracotta 163 198 55
+minecraft:lime_concrete 94 169 24 u
+minecraft:lime_concrete_powder 125 189 42 u
+minecraft:lime_glazed_terracotta 163 198 55 u
 minecraft:lime_shulker_box 100 173 23
-minecraft:lime_stained_glass 127 204 25
+minecraft:lime_stained_glass 127 204 25 u
 minecraft:lime_stained_glass_pane 127 204 25
-minecraft:lime_terracotta 104 118 53
+minecraft:lime_terracotta 104 118 53 u
 minecraft:lime_wall_banner 162 131 79
-minecraft:lime_wool 112 185 26
+minecraft:lime_wool 112 185 26 u
 minecraft:lodestone 133 135 138
 minecraft:loom 121 94 67
 minecraft:magenta_banner 162 131 79
@@ -537,24 +537,24 @@ minecraft:magenta_bed 162 131 79
 minecraft:magenta_candle 161 46 153
 minecraft:magenta_candle_cake 191 143 123
 minecraft:magenta_carpet 190 69 180
-minecraft:magenta_concrete 169 48 159
-minecraft:magenta_concrete_powder 193 84 185
-minecraft:magenta_glazed_terracotta 208 100 192
+minecraft:magenta_concrete 169 48 159 u
+minecraft:magenta_concrete_powder 193 84 185 u
+minecraft:magenta_glazed_terracotta 208 100 192 u
 minecraft:magenta_shulker_box 174 54 164
-minecraft:magenta_stained_glass 178 76 216
+minecraft:magenta_stained_glass 178 76 216 u
 minecraft:magenta_stained_glass_pane 178 76 216
-minecraft:magenta_terracotta 150 88 109
+minecraft:magenta_terracotta 150 88 109 u
 minecraft:magenta_wall_banner 162 131 79
-minecraft:magenta_wool 190 69 180
-minecraft:magma_block 142 63 31
+minecraft:magenta_wool 190 69 180 u
+minecraft:magma_block 142 63 31 u
 minecraft:mangrove_button 118 54 49
 minecraft:mangrove_door 113 49 47
 minecraft:mangrove_fence 118 54 49
 minecraft:mangrove_fence_gate 118 54 49
 minecraft:mangrove_hanging_sign 120 54 48
-minecraft:mangrove_leaves 74 98 26
+minecraft:mangrove_leaves 74 98 26 u
 minecraft:mangrove_log 93 58 42
-minecraft:mangrove_planks 118 54 49
+minecraft:mangrove_planks 118 54 49 u
 minecraft:mangrove_pressure_plate 118 54 49
 minecraft:mangrove_propagule 96 175 84
 minecraft:mangrove_roots 75 60 39
@@ -564,26 +564,26 @@ minecraft:mangrove_stairs 118 54 49
 minecraft:mangrove_trapdoor 111 47 42
 minecraft:mangrove_wall_hanging_sign 120 54 48
 minecraft:mangrove_wall_sign 118 54 49
-minecraft:mangrove_wood 84 67 41
+minecraft:mangrove_wood 84 67 41 u
 minecraft:medium_amethyst_bud 158 120 202
 minecraft:melon 113 145 30
 minecraft:melon_stem 154 154 154
-minecraft:moss_block 89 110 45
+minecraft:moss_block 89 110 45 u
 minecraft:moss_carpet 89 110 45
-minecraft:mossy_cobblestone 110 118 95
+minecraft:mossy_cobblestone 110 118 95 u
 minecraft:mossy_cobblestone_slab 110 118 95
 minecraft:mossy_cobblestone_stairs 110 118 95
 minecraft:mossy_cobblestone_wall 110 118 95
 minecraft:mossy_stone_brick_slab 115 121 105
 minecraft:mossy_stone_brick_stairs 115 121 105
 minecraft:mossy_stone_brick_wall 115 121 105
-minecraft:mossy_stone_bricks 115 121 105
+minecraft:mossy_stone_bricks 115 121 105 u
 minecraft:moving_piston 110 105 97
-minecraft:mud 60 57 61
+minecraft:mud 60 57 61 u
 minecraft:mud_brick_slab 137 104 79
 minecraft:mud_brick_stairs 137 104 79
 minecraft:mud_brick_wall 137 104 79
-minecraft:mud_bricks 137 104 79
+minecraft:mud_bricks 137 104 79 u
 minecraft:muddy_mangrove_roots 69 59 47
 minecraft:mushroom_stem 203 197 186
 minecraft:mycelium 123 97 84
@@ -591,24 +591,24 @@ minecraft:nether_brick_fence 44 22 26
 minecraft:nether_brick_slab 44 22 26
 minecraft:nether_brick_stairs 44 22 26
 minecraft:nether_brick_wall 44 22 26
-minecraft:nether_bricks 44 22 26
-minecraft:nether_gold_ore 115 55 42
+minecraft:nether_bricks 44 22 26 u
+minecraft:nether_gold_ore 115 55 42 u
 minecraft:nether_portal 92 13 194
-minecraft:nether_quartz_ore 118 66 62
+minecraft:nether_quartz_ore 118 66 62 u
 minecraft:nether_sprouts 20 151 133
 minecraft:nether_wart 118 19 22
-minecraft:nether_wart_block 115 3 2
-minecraft:netherite_block 67 61 64
-minecraft:netherrack 98 38 38
-minecraft:note_block 89 59 41
+minecraft:nether_wart_block 115 3 2 u
+minecraft:netherite_block 67 61 64 u
+minecraft:netherrack 98 38 38 u
+minecraft:note_block 89 59 41 u
 minecraft:oak_button 162 131 79
 minecraft:oak_door 141 111 66
 minecraft:oak_fence 162 131 79
 minecraft:oak_fence_gate 162 131 79
 minecraft:oak_hanging_sign 177 144 86
-minecraft:oak_leaves 67 97 27
+minecraft:oak_leaves 67 97 27 u
 minecraft:oak_log 130 103 62
-minecraft:oak_planks 162 131 79
+minecraft:oak_planks 162 131 79 u
 minecraft:oak_pressure_plate 162 131 79
 minecraft:oak_sapling 78 107 41
 minecraft:oak_sign 162 131 79
@@ -617,37 +617,37 @@ minecraft:oak_stairs 162 131 79
 minecraft:oak_trapdoor 125 99 57
 minecraft:oak_wall_hanging_sign 177 144 86
 minecraft:oak_wall_sign 162 131 79
-minecraft:oak_wood 109 85 51
+minecraft:oak_wood 109 85 51 u
 minecraft:observer 80 79 79
-minecraft:obsidian 15 11 25
+minecraft:obsidian 15 11 25 u
 minecraft:ochre_froglight 248 239 194
 minecraft:orange_banner 162 131 79
 minecraft:orange_bed 162 131 79
 minecraft:orange_candle 219 100 9
 minecraft:orange_candle_cake 191 143 123
 minecraft:orange_carpet 241 118 20
-minecraft:orange_concrete 224 97 1
-minecraft:orange_concrete_powder 227 132 32
-minecraft:orange_glazed_terracotta 155 147 92
+minecraft:orange_concrete 224 97 1 u
+minecraft:orange_concrete_powder 227 132 32 u
+minecraft:orange_glazed_terracotta 155 147 92 u
 minecraft:orange_shulker_box 234 106 9
-minecraft:orange_stained_glass 216 127 51
+minecraft:orange_stained_glass 216 127 51 u
 minecraft:orange_stained_glass_pane 216 127 51
-minecraft:orange_terracotta 162 84 38
+minecraft:orange_terracotta 162 84 38 u
 minecraft:orange_tulip 93 142 31
 minecraft:orange_wall_banner 162 131 79
-minecraft:orange_wool 241 118 20
+minecraft:orange_wool 241 118 20 u
 minecraft:oxeye_daisy 179 202 143
-minecraft:oxidized_chiseled_copper 84 162 132
-minecraft:oxidized_copper 82 163 133
-minecraft:oxidized_copper_bulb 70 132 109
+minecraft:oxidized_chiseled_copper 84 162 132 u
+minecraft:oxidized_copper 82 163 133 u
+minecraft:oxidized_copper_bulb 70 132 109 u
 minecraft:oxidized_copper_door 82 160 133
-minecraft:oxidized_copper_grate 82 161 131
+minecraft:oxidized_copper_grate 82 161 131 u
 minecraft:oxidized_copper_trapdoor 84 161 132
-minecraft:oxidized_cut_copper 80 154 126
+minecraft:oxidized_cut_copper 80 154 126 u
 minecraft:oxidized_cut_copper_slab 80 154 126
 minecraft:oxidized_cut_copper_stairs 80 154 126
-minecraft:packed_ice 142 180 250
-minecraft:packed_mud 142 107 80
+minecraft:packed_ice 142 180 250 u
+minecraft:packed_mud 142 107 80 u
 minecraft:pearlescent_froglight 241 233 234
 minecraft:peony 87 101 94
 minecraft:petrified_oak_slab 162 131 79
@@ -658,17 +658,17 @@ minecraft:pink_bed 162 131 79
 minecraft:pink_candle 208 102 142
 minecraft:pink_candle_cake 191 143 123
 minecraft:pink_carpet 238 141 172
-minecraft:pink_concrete 214 101 143
-minecraft:pink_concrete_powder 229 153 181
-minecraft:pink_glazed_terracotta 235 155 182
+minecraft:pink_concrete 214 101 143 u
+minecraft:pink_concrete_powder 229 153 181 u
+minecraft:pink_glazed_terracotta 235 155 182 u
 minecraft:pink_petals 247 181 219
 minecraft:pink_shulker_box 230 122 158
-minecraft:pink_stained_glass 242 127 165
+minecraft:pink_stained_glass 242 127 165 u
 minecraft:pink_stained_glass_pane 242 127 165
-minecraft:pink_terracotta 162 78 79
+minecraft:pink_terracotta 162 78 79 u
 minecraft:pink_tulip 99 157 78
 minecraft:pink_wall_banner 162 131 79
-minecraft:pink_wool 238 141 172
+minecraft:pink_wool 238 141 172 u
 minecraft:piston 97 97 97
 minecraft:piston_head 110 105 97
 minecraft:pitcher_crop 194 166 103
@@ -677,31 +677,31 @@ minecraft:player_head 81 62 51
 minecraft:player_wall_head 81 62 51
 minecraft:podzol 113 80 46
 minecraft:pointed_dripstone 129 103 90
-minecraft:polished_andesite 132 135 134
+minecraft:polished_andesite 132 135 134 u
 minecraft:polished_andesite_slab 132 135 134
 minecraft:polished_andesite_stairs 132 135 134
 minecraft:polished_basalt 94 93 96
-minecraft:polished_blackstone 53 49 57
+minecraft:polished_blackstone 53 49 57 u
 minecraft:polished_blackstone_brick_slab 48 43 50
 minecraft:polished_blackstone_brick_stairs 48 43 50
 minecraft:polished_blackstone_brick_wall 48 43 50
-minecraft:polished_blackstone_bricks 48 43 50
+minecraft:polished_blackstone_bricks 48 43 50 u
 minecraft:polished_blackstone_button 53 49 57
 minecraft:polished_blackstone_pressure_plate 53 49 57
 minecraft:polished_blackstone_slab 53 49 57
 minecraft:polished_blackstone_stairs 53 49 57
 minecraft:polished_blackstone_wall 53 49 57
-minecraft:polished_deepslate 72 73 73
+minecraft:polished_deepslate 72 73 73 u
 minecraft:polished_deepslate_slab 72 73 73
 minecraft:polished_deepslate_stairs 72 73 73
 minecraft:polished_deepslate_wall 72 73 73
-minecraft:polished_diorite 193 193 195
+minecraft:polished_diorite 193 193 195 u
 minecraft:polished_diorite_slab 193 193 195
 minecraft:polished_diorite_stairs 193 193 195
-minecraft:polished_granite 154 107 89
+minecraft:polished_granite 154 107 89 u
 minecraft:polished_granite_slab 154 107 89
 minecraft:polished_granite_stairs 154 107 89
-minecraft:polished_tuff 98 104 100
+minecraft:polished_tuff 98 104 100 u
 minecraft:polished_tuff_slab 98 104 100
 minecraft:polished_tuff_stairs 98 104 100
 minecraft:polished_tuff_wall 98 104 100
@@ -744,10 +744,10 @@ minecraft:potted_wither_rose 124 69 53
 minecraft:powder_snow 248 253 253
 minecraft:powder_snow_cauldron 57 57 59
 minecraft:powered_rail 138 110 74
-minecraft:prismarine 98 162 146
+minecraft:prismarine 98 162 146 u
 minecraft:prismarine_brick_slab 99 172 158
 minecraft:prismarine_brick_stairs 99 172 158
-minecraft:prismarine_bricks 99 172 158
+minecraft:prismarine_bricks 99 172 158 u
 minecraft:prismarine_slab 98 162 146
 minecraft:prismarine_stairs 98 162 146
 minecraft:prismarine_wall 98 162 146
@@ -758,57 +758,57 @@ minecraft:purple_bed 162 131 79
 minecraft:purple_candle 105 34 159
 minecraft:purple_candle_cake 191 143 123
 minecraft:purple_carpet 122 42 173
-minecraft:purple_concrete 100 32 156
-minecraft:purple_concrete_powder 132 56 178
-minecraft:purple_glazed_terracotta 110 48 152
+minecraft:purple_concrete 100 32 156 u
+minecraft:purple_concrete_powder 132 56 178 u
+minecraft:purple_glazed_terracotta 110 48 152 u
 minecraft:purple_shulker_box 103 32 156
-minecraft:purple_stained_glass 127 63 178
+minecraft:purple_stained_glass 127 63 178 u
 minecraft:purple_stained_glass_pane 127 63 178
-minecraft:purple_terracotta 118 70 86
+minecraft:purple_terracotta 118 70 86 u
 minecraft:purple_wall_banner 162 131 79
-minecraft:purple_wool 122 42 173
-minecraft:purpur_block 170 126 170
+minecraft:purple_wool 122 42 173 u
+minecraft:purpur_block 170 126 170 u
 minecraft:purpur_pillar 172 129 172
 minecraft:purpur_slab 170 126 170
 minecraft:purpur_stairs 170 126 170
 minecraft:quartz_block 236 230 223
-minecraft:quartz_bricks 235 229 222
+minecraft:quartz_bricks 235 229 222 u
 minecraft:quartz_pillar 235 230 223
 minecraft:quartz_slab 236 230 223
 minecraft:quartz_stairs 236 230 223
 minecraft:rail 126 112 89
-minecraft:raw_copper_block 154 106 79
-minecraft:raw_gold_block 222 169 47
-minecraft:raw_iron_block 166 136 107
+minecraft:raw_copper_block 154 106 79 u
+minecraft:raw_gold_block 222 169 47 u
+minecraft:raw_iron_block 166 136 107 u
 minecraft:red_banner 162 131 79
 minecraft:red_bed 162 131 79
 minecraft:red_candle 153 39 36
 minecraft:red_candle_cake 191 143 123
 minecraft:red_carpet 161 39 35
-minecraft:red_concrete 142 33 33
-minecraft:red_concrete_powder 168 54 51
-minecraft:red_glazed_terracotta 182 60 53
+minecraft:red_concrete 142 33 33 u
+minecraft:red_concrete_powder 168 54 51 u
+minecraft:red_glazed_terracotta 182 60 53 u
 minecraft:red_mushroom 217 75 68
 minecraft:red_mushroom_block 200 47 45
 minecraft:red_nether_brick_slab 70 7 9
 minecraft:red_nether_brick_stairs 70 7 9
 minecraft:red_nether_brick_wall 70 7 9
-minecraft:red_nether_bricks 70 7 9
-minecraft:red_sand 191 103 33
+minecraft:red_nether_bricks 70 7 9 u
+minecraft:red_sand 191 103 33 u
 minecraft:red_sandstone 183 98 30
 minecraft:red_sandstone_slab 183 98 30
 minecraft:red_sandstone_stairs 183 98 30
 minecraft:red_sandstone_wall 187 99 29
 minecraft:red_shulker_box 140 31 30
-minecraft:red_stained_glass 153 51 51
+minecraft:red_stained_glass 153 51 51 u
 minecraft:red_stained_glass_pane 153 51 51
-minecraft:red_terracotta 143 61 47
+minecraft:red_terracotta 143 61 47 u
 minecraft:red_tulip 90 129 33
 minecraft:red_wall_banner 162 131 79
-minecraft:red_wool 161 39 35
-minecraft:redstone_block 176 25 5
-minecraft:redstone_lamp 95 55 30
-minecraft:redstone_ore 140 110 110
+minecraft:red_wool 161 39 35 u
+minecraft:redstone_block 176 25 5 u
+minecraft:redstone_lamp 95 55 30 u
+minecraft:redstone_ore 140 110 110 u
 minecraft:redstone_torch 101 70 44
 minecraft:redstone_wall_torch 101 70 44
 minecraft:redstone_wire 240 240 240
@@ -816,24 +816,24 @@ minecraft:reinforced_deepslate 80 83 79
 minecraft:repeater 160 157 156
 minecraft:repeating_command_block 129 111 174
 minecraft:respawn_anchor 33 16 56
-minecraft:rooted_dirt 144 104 77
+minecraft:rooted_dirt 144 104 77 u
 minecraft:rose_bush 98 84 38
-minecraft:sand 219 207 163
+minecraft:sand 219 207 163 u
 minecraft:sandstone 220 208 162
 minecraft:sandstone_slab 220 208 162
 minecraft:sandstone_stairs 220 208 162
 minecraft:sandstone_wall 216 203 156
 minecraft:scaffolding 185 158 77
-minecraft:sculk 13 28 34
+minecraft:sculk 13 28 34 u
 minecraft:sculk_catalyst 52 71 74
 minecraft:sculk_sensor 10 46 55
 minecraft:sculk_shrieker 96 111 100
 minecraft:sculk_vein 8 49 59
-minecraft:sea_lantern 172 200 191
+minecraft:sea_lantern 172 200 191 u
 minecraft:sea_pickle 90 97 40
 minecraft:seagrass 51 126 9
 minecraft:short_grass 83 108 51
-minecraft:shroomlight 241 147 71
+minecraft:shroomlight 241 147 71 u
 minecraft:shulker_box 139 97 139
 minecraft:skeleton_skull 81 62 51
 minecraft:skeleton_wall_skull 81 62 51
@@ -842,39 +842,39 @@ minecraft:small_amethyst_bud 132 99 192
 minecraft:small_dripleaf 91 115 46
 minecraft:smithing_table 57 37 39
 minecraft:smoker 99 94 87
-minecraft:smooth_basalt 73 72 78
-minecraft:smooth_quartz 237 230 224
+minecraft:smooth_basalt 73 72 78 u
+minecraft:smooth_quartz 237 230 224 u
 minecraft:smooth_quartz_slab 237 230 224
 minecraft:smooth_quartz_stairs 237 230 224
-minecraft:smooth_red_sandstone 181 98 31
+minecraft:smooth_red_sandstone 181 98 31 u
 minecraft:smooth_red_sandstone_slab 181 98 31
 minecraft:smooth_red_sandstone_stairs 181 98 31
-minecraft:smooth_sandstone 224 214 170
+minecraft:smooth_sandstone 224 214 170 u
 minecraft:smooth_sandstone_slab 224 214 170
 minecraft:smooth_sandstone_stairs 224 214 170
-minecraft:smooth_stone 159 159 159
+minecraft:smooth_stone 159 159 159 u
 minecraft:smooth_stone_slab 159 159 159
 minecraft:sniffer_egg 104 65 47
 minecraft:snow 249 254 254
-minecraft:snow_block 249 254 254
+minecraft:snow_block 249 254 254 u
 minecraft:soul_campfire 79 75 68
 minecraft:soul_fire 56 204 209
 minecraft:soul_lantern 71 99 114
-minecraft:soul_sand 81 62 51
-minecraft:soul_soil 76 58 47
+minecraft:soul_sand 81 62 51 u
+minecraft:soul_soil 76 58 47 u
 minecraft:soul_torch 109 115 90
 minecraft:soul_wall_torch 109 115 90
 minecraft:spawner 36 46 63
-minecraft:sponge 196 192 75
+minecraft:sponge 196 192 75 u
 minecraft:spore_blossom 207 97 159
 minecraft:spruce_button 115 85 49
 minecraft:spruce_door 106 80 49
 minecraft:spruce_fence 115 85 49
 minecraft:spruce_fence_gate 115 85 49
 minecraft:spruce_hanging_sign 116 90 52
-minecraft:spruce_leaves 48 76 48
+minecraft:spruce_leaves 48 76 48 u
 minecraft:spruce_log 84 59 32
-minecraft:spruce_planks 115 85 49
+minecraft:spruce_planks 115 85 49 u
 minecraft:spruce_pressure_plate 115 85 49
 minecraft:spruce_sapling 45 60 37
 minecraft:spruce_sign 115 85 49
@@ -883,51 +883,51 @@ minecraft:spruce_stairs 115 85 49
 minecraft:spruce_trapdoor 104 79 48
 minecraft:spruce_wall_hanging_sign 116 90 52
 minecraft:spruce_wall_sign 115 85 49
-minecraft:spruce_wood 59 38 17
+minecraft:spruce_wood 59 38 17 u
 minecraft:sticky_piston 97 97 97
-minecraft:stone 126 126 126
+minecraft:stone 126 126 126 u
 minecraft:stone_brick_slab 122 122 122
 minecraft:stone_brick_stairs 122 122 122
 minecraft:stone_brick_wall 122 122 122
-minecraft:stone_bricks 122 122 122
+minecraft:stone_bricks 122 122 122 u
 minecraft:stone_button 126 126 126
 minecraft:stone_pressure_plate 126 126 126
 minecraft:stone_slab 126 126 126
 minecraft:stone_stairs 126 126 126
 minecraft:stonecutter 116 109 102
 minecraft:stripped_acacia_log 170 92 56
-minecraft:stripped_acacia_wood 175 93 60
+minecraft:stripped_acacia_wood 175 93 60 u
 minecraft:stripped_bamboo_block 186 166 77
 minecraft:stripped_birch_log 194 174 117
-minecraft:stripped_birch_wood 197 176 118
+minecraft:stripped_birch_wood 197 176 118 u
 minecraft:stripped_cherry_log 218 155 153
-minecraft:stripped_cherry_wood 215 145 149
-minecraft:stripped_crimson_hyphae 137 57 90
+minecraft:stripped_cherry_wood 215 145 149 u
+minecraft:stripped_crimson_hyphae 137 57 90 u
 minecraft:stripped_crimson_stem 130 57 86
 minecraft:stripped_dark_oak_log 69 51 29
-minecraft:stripped_dark_oak_wood 73 57 36
+minecraft:stripped_dark_oak_wood 73 57 36 u
 minecraft:stripped_jungle_log 169 128 83
-minecraft:stripped_jungle_wood 171 133 85
+minecraft:stripped_jungle_wood 171 133 85 u
 minecraft:stripped_mangrove_log 114 49 46
-minecraft:stripped_mangrove_wood 120 54 48
+minecraft:stripped_mangrove_wood 120 54 48 u
 minecraft:stripped_oak_log 169 137 82
-minecraft:stripped_oak_wood 177 144 86
+minecraft:stripped_oak_wood 177 144 86 u
 minecraft:stripped_spruce_log 111 85 50
-minecraft:stripped_spruce_wood 116 90 52
-minecraft:stripped_warped_hyphae 58 151 148
+minecraft:stripped_spruce_wood 116 90 52 u
+minecraft:stripped_warped_hyphae 58 151 148 u
 minecraft:stripped_warped_stem 55 140 136
-minecraft:structure_block 68 58 70
+minecraft:structure_block 68 58 70 u
 minecraft:structure_void 25 87 93
 minecraft:sugar_cane 149 193 101
 minecraft:sunflower 57 135 31
-minecraft:suspicious_gravel 130 125 124
-minecraft:suspicious_sand 218 204 159
+minecraft:suspicious_gravel 130 125 124 u
+minecraft:suspicious_sand 218 204 159 u
 minecraft:sweet_berry_bush 43 90 56
 minecraft:tall_grass 128 128 128
 minecraft:tall_seagrass 46 118 4
 minecraft:target 228 173 163
-minecraft:terracotta 152 94 68
-minecraft:tinted_glass 44 38 47
+minecraft:terracotta 152 94 68 u
+minecraft:tinted_glass 44 38 47 u
 minecraft:tnt 155 64 54
 minecraft:torch 139 113 64
 minecraft:torchflower 101 101 77
@@ -937,14 +937,14 @@ minecraft:trial_spawner 52 70 84
 minecraft:tripwire 129 129 129
 minecraft:tripwire_hook 162 131 79
 minecraft:tube_coral 48 83 197
-minecraft:tube_coral_block 49 87 207
+minecraft:tube_coral_block 49 87 207 u
 minecraft:tube_coral_fan 51 92 209
 minecraft:tube_coral_wall_fan 51 92 209
-minecraft:tuff 108 109 103
+minecraft:tuff 108 109 103 u
 minecraft:tuff_brick_slab 98 103 95
 minecraft:tuff_brick_stairs 98 103 95
 minecraft:tuff_brick_wall 98 103 95
-minecraft:tuff_bricks 98 103 95
+minecraft:tuff_bricks 98 103 95 u
 minecraft:tuff_slab 108 109 103
 minecraft:tuff_stairs 108 109 103
 minecraft:tuff_wall 108 109 103
@@ -961,9 +961,9 @@ minecraft:warped_fence 43 105 99
 minecraft:warped_fence_gate 43 105 99
 minecraft:warped_fungus 74 109 88
 minecraft:warped_hanging_sign 58 151 148
-minecraft:warped_hyphae 58 59 78
+minecraft:warped_hyphae 58 59 78 u
 minecraft:warped_nylium 70 76 70
-minecraft:warped_planks 43 105 99
+minecraft:warped_planks 43 105 99 u
 minecraft:warped_pressure_plate 43 105 99
 minecraft:warped_roots 20 138 124
 minecraft:warped_sign 43 105 99
@@ -973,73 +973,73 @@ minecraft:warped_stem 56 85 94
 minecraft:warped_trapdoor 47 120 112
 minecraft:warped_wall_hanging_sign 58 151 148
 minecraft:warped_wall_sign 43 105 99
-minecraft:warped_wart_block 23 120 121
+minecraft:warped_wart_block 23 120 121 u
 minecraft:water 177 177 177
 minecraft:water_cauldron 57 57 59
-minecraft:waxed_chiseled_copper 184 101 74
-minecraft:waxed_copper_block 192 108 80
-minecraft:waxed_copper_bulb 156 87 57
+minecraft:waxed_chiseled_copper 184 101 74 u
+minecraft:waxed_copper_block 192 108 80 u
+minecraft:waxed_copper_bulb 156 87 57 u
 minecraft:waxed_copper_door 193 109 83
-minecraft:waxed_copper_grate 192 108 79
+minecraft:waxed_copper_grate 192 108 79 u
 minecraft:waxed_copper_trapdoor 191 106 80
-minecraft:waxed_cut_copper 191 107 81
+minecraft:waxed_cut_copper 191 107 81 u
 minecraft:waxed_cut_copper_slab 191 107 81
 minecraft:waxed_cut_copper_stairs 191 107 81
-minecraft:waxed_exposed_chiseled_copper 155 119 101
-minecraft:waxed_exposed_copper 161 126 104
-minecraft:waxed_exposed_copper_bulb 135 108 90
+minecraft:waxed_exposed_chiseled_copper 155 119 101 u
+minecraft:waxed_exposed_copper 161 126 104 u
+minecraft:waxed_exposed_copper_bulb 135 108 90 u
 minecraft:waxed_exposed_copper_door 164 123 106
-minecraft:waxed_exposed_copper_grate 162 126 105
+minecraft:waxed_exposed_copper_grate 162 126 105 u
 minecraft:waxed_exposed_copper_trapdoor 161 125 105
-minecraft:waxed_exposed_cut_copper 155 122 101
+minecraft:waxed_exposed_cut_copper 155 122 101 u
 minecraft:waxed_exposed_cut_copper_slab 155 122 101
 minecraft:waxed_exposed_cut_copper_stairs 155 122 101
-minecraft:waxed_oxidized_chiseled_copper 84 162 132
-minecraft:waxed_oxidized_copper 82 163 133
-minecraft:waxed_oxidized_copper_bulb 70 132 109
+minecraft:waxed_oxidized_chiseled_copper 84 162 132 u
+minecraft:waxed_oxidized_copper 82 163 133 u
+minecraft:waxed_oxidized_copper_bulb 70 132 109 u
 minecraft:waxed_oxidized_copper_door 82 160 133
-minecraft:waxed_oxidized_copper_grate 82 161 131
+minecraft:waxed_oxidized_copper_grate 82 161 131 u
 minecraft:waxed_oxidized_copper_trapdoor 84 161 132
-minecraft:waxed_oxidized_cut_copper 80 154 126
+minecraft:waxed_oxidized_cut_copper 80 154 126 u
 minecraft:waxed_oxidized_cut_copper_slab 80 154 126
 minecraft:waxed_oxidized_cut_copper_stairs 80 154 126
-minecraft:waxed_weathered_chiseled_copper 105 151 111
-minecraft:waxed_weathered_copper 108 153 110
-minecraft:waxed_weathered_copper_bulb 92 127 99
+minecraft:waxed_weathered_chiseled_copper 105 151 111 u
+minecraft:waxed_weathered_copper 108 153 110 u
+minecraft:waxed_weathered_copper_bulb 92 127 99 u
 minecraft:waxed_weathered_copper_door 110 151 110
-minecraft:waxed_weathered_copper_grate 106 153 111
+minecraft:waxed_weathered_copper_grate 106 153 111 u
 minecraft:waxed_weathered_copper_trapdoor 109 153 110
-minecraft:waxed_weathered_cut_copper 109 145 108
+minecraft:waxed_weathered_cut_copper 109 145 108 u
 minecraft:waxed_weathered_cut_copper_slab 109 145 108
 minecraft:waxed_weathered_cut_copper_stairs 109 145 108
-minecraft:weathered_chiseled_copper 105 151 111
-minecraft:weathered_copper 108 153 110
-minecraft:weathered_copper_bulb 92 127 99
+minecraft:weathered_chiseled_copper 105 151 111 u
+minecraft:weathered_copper 108 153 110 u
+minecraft:weathered_copper_bulb 92 127 99 u
 minecraft:weathered_copper_door 110 151 110
-minecraft:weathered_copper_grate 106 153 111
+minecraft:weathered_copper_grate 106 153 111 u
 minecraft:weathered_copper_trapdoor 109 153 110
-minecraft:weathered_cut_copper 109 145 108
+minecraft:weathered_cut_copper 109 145 108 u
 minecraft:weathered_cut_copper_slab 109 145 108
 minecraft:weathered_cut_copper_stairs 109 145 108
 minecraft:weeping_vines 105 1 0
 minecraft:weeping_vines_plant 133 16 12
-minecraft:wet_sponge 171 181 70
+minecraft:wet_sponge 171 181 70 u
 minecraft:wheat 9 128 16
 minecraft:white_banner 162 131 79
 minecraft:white_bed 162 131 79
 minecraft:white_candle 210 217 218
 minecraft:white_candle_cake 191 143 123
 minecraft:white_carpet 234 236 237
-minecraft:white_concrete 207 213 214
-minecraft:white_concrete_powder 226 227 228
-minecraft:white_glazed_terracotta 188 212 203
+minecraft:white_concrete 207 213 214 u
+minecraft:white_concrete_powder 226 227 228 u
+minecraft:white_glazed_terracotta 188 212 203 u
 minecraft:white_shulker_box 216 221 221
-minecraft:white_stained_glass 255 255 255
+minecraft:white_stained_glass 255 255 255 u
 minecraft:white_stained_glass_pane 255 255 255
-minecraft:white_terracotta 210 178 161
+minecraft:white_terracotta 210 178 161 u
 minecraft:white_tulip 94 165 71
 minecraft:white_wall_banner 162 131 79
-minecraft:white_wool 234 236 237
+minecraft:white_wool 234 236 237 u
 minecraft:wither_rose 41 45 23
 minecraft:wither_skeleton_skull 81 62 51
 minecraft:wither_skeleton_wall_skull 81 62 51
@@ -1048,14 +1048,14 @@ minecraft:yellow_bed 162 131 79
 minecraft:yellow_candle 209 165 50
 minecraft:yellow_candle_cake 191 143 123
 minecraft:yellow_carpet 249 198 40
-minecraft:yellow_concrete 241 175 21
-minecraft:yellow_concrete_powder 233 199 55
-minecraft:yellow_glazed_terracotta 234 192 89
+minecraft:yellow_concrete 241 175 21 u
+minecraft:yellow_concrete_powder 233 199 55 u
+minecraft:yellow_glazed_terracotta 234 192 89 u
 minecraft:yellow_shulker_box 248 189 29
-minecraft:yellow_stained_glass 229 229 51
+minecraft:yellow_stained_glass 229 229 51 u
 minecraft:yellow_stained_glass_pane 229 229 51
-minecraft:yellow_terracotta 186 133 35
+minecraft:yellow_terracotta 186 133 35 u
 minecraft:yellow_wall_banner 162 131 79
-minecraft:yellow_wool 249 198 40
+minecraft:yellow_wool 249 198 40 u
 minecraft:zombie_head 81 62 51
 minecraft:zombie_wall_head 81 62 51

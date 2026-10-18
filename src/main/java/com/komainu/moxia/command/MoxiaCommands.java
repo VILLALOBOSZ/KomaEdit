@@ -248,6 +248,7 @@ public final class MoxiaCommands {
         TextureCommands.register(dispatcher);
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
+        ColorCommands.register(root);
         NoiseCommands.register(root);
         SelectionCommands.register(root);
         AdminCommands.register(root);

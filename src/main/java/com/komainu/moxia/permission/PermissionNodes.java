@@ -94,6 +94,9 @@ public final class PermissionNodes {
         add(build + ".inflate", Pack.BASIC, build, "ezedits.smooth.inflate", "/komaedit inflate");
         add(build + ".deflate", Pack.BASIC, build, "ezedits.smooth.deflate", "/komaedit deflate");
         add(select + ".superwand", Pack.BASIC, select, "ezedits.tools.superwand", "/komaedit superwand");
+        for (String color : List.of("similar", "gradient", "palette", "hotbar")) {
+            add("komaedit.color." + color, Pack.BASIC, use, null, "/komaedit color " + color);
+        }
         for (String[] entry : new String[][]{{"next", "next"}, {"here", "here"}, {"invert", "invert"},
                 {"delpos2", "delpos"}, {"encapsulate", "encapsulate"}, {"encapsulatenear", "encapsulatenear"},
                 {"catenary", "catenary"}}) {
@@ -147,6 +150,7 @@ public final class PermissionNodes {
         add(build + ".flowfield", Pack.INTERMEDIATE, build, "ezedits.flow.flowfield", "/komaedit flowfield");
         add(build + ".flowline", Pack.INTERMEDIATE, build, "ezedits.flow.flowline", "/komaedit flowline");
         add(build + ".place", Pack.INTERMEDIATE, build, "ezedits.place", "/komaedit place");
+        add(build + ".shade", Pack.INTERMEDIATE, build, null, "/komaedit shade");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
