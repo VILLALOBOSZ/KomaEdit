@@ -162,10 +162,13 @@ public final class PermissionNodes {
         add(build + ".smoothblocks", Pack.ADVANCED, build, "ezedits.smooth.smoothblocks", "/komaedit smoothblocks");
         add(build + ".symmetry.worldedit", Pack.ADVANCED, build, null,
                 "/komaedit symmetry worldedit: refleja también las ediciones de WorldEdit y KomaEdit");
+        add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
 
         // Administración.
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
         add(KomaPermissions.PROJECT_BACKUP, Pack.ADMIN, null, null, "/komaedit project backup");
+        add(KomaPermissions.ADMIN_IMAGE_URL, Pack.ADMIN, null, null,
+                "Imágenes por URL en /komaedit image (si urlsRequireAdmin está activo)");
         add(KomaPermissions.LIMIT_UNRESTRICTED, Pack.ADMIN, null, null, "Sin límite de bloques por operación");
     }
 
