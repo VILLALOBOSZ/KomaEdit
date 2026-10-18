@@ -16,7 +16,7 @@ Procedural Studio se abre con `K` y permite construir mientras el mundo continú
 Todo el Studio vive en un único panel opaco pegado a la derecha; el resto de la pantalla es el mundo, sin nada encima, así que el chat de abajo a la izquierda queda a la vista y el marcador del servidor no se transparenta por detrás del panel.
 
 - **Barra de herramientas** (arriba): KomaEdit y los botones con icono de deshacer y rehacer ajustes, mostrar u ocultar el holograma, chuleta de atajos y cerrar. Cada uno explica su atajo al pasar el ratón.
-- **Etapas** (columna izquierda del panel): Trayectoria, Figuras, Estructuras, Modificadores, Material, Envejecer, Instancias y Recetas, con icono y nombre; la elegida se resalta con una barra de acento. El tooltip dice su número de atajo (`1` – `8`) y para qué sirve.
+- **Etapas** (columna izquierda del panel): Trayectoria, Figuras, Estructuras, Modificadores, Material, Envejecer, Instancias, Recetas y Color, con icono y nombre; la elegida se resalta con una barra de acento. El tooltip dice su número de atajo (`1` – `9`) y para qué sirve. La etapa **Color** (degradados, bloques parecidos y sombreado de la selección) se explica en [Color y sombreado](#color-y-sombreado).
 - **Contenido**: título y subtítulo de la etapa y, debajo, sus secciones desplazables con la rueda (una barra fina a la derecha indica cuánto queda).
 - **Pie** (abajo, siempre visible): figura y material, la estimación **≈ N bloques**, el último mensaje (unos segundos) o el estado del holograma, y el botón **Construir**. Sin puntos suficientes el botón se ve apagado y dice cuántos faltan; al pulsarlo lleva a Trayectoria.
 - El borde izquierdo del panel se arrastra para cambiar su ancho (entre 300 y 470 píxeles de GUI, sin pasar de media pantalla); el ancho se recuerda.
@@ -75,7 +75,7 @@ El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 
 | Tecla | Acción |
 | --- | --- |
-| `1` – `8` | Ir a una etapa, en el orden de la columna de etapas |
+| `1` – `9` | Ir a una etapa, en el orden de la columna de etapas |
 | `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
 | `Ctrl+F` o `/` | Buscar figura |
 | `B` | Construir (las obras grandes piden confirmar) |
@@ -91,12 +91,12 @@ El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 
 ### Pantallas pequeñas
 
-- Las etapas encogen su alto (hasta 14 píxeles) para que las ocho quepan sin desplazarse con cualquier escala de GUI.
+- Las etapas encogen su alto (hasta 14 píxeles) para que las nueve quepan sin desplazarse con cualquier escala de GUI.
 - Con menos de 600 píxeles de ancho escalado (GUI 4 en 1080p, la escala automática) el panel mide 230 píxeles y las etapas se quedan en iconos con su nombre en el tooltip, para dejar al mundo al menos la mitad de la pantalla. Ahí el chat vanilla (320 píxeles) puede quedar en parte bajo el panel.
 - Los textos que no caben se recortan con «…»; el estado completo sale en un tooltip sobre el pie.
 - Con menos de 330 píxeles de alto la chuleta se muestra en dos columnas.
 - Lo que queda desplazado bajo la cabecera o el pie del panel no responde a clics.
-- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las ocho etapas caben y el panel no pisa el chat cuando hay sitio.
+- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las nueve etapas caben y el panel no pisa el chat cuando hay sitio.
 
 ## Trayectorias y hologramas
 
@@ -1190,6 +1190,8 @@ Pinta una paleta sobre lo que ya hay construido en la selección de WorldEdit se
 
 Alias: `/komaedit textura`. `/komaedit texture` sin modo muestra la ayuda. Requiere el permiso de construir (`komaedit.build`).
 
+Para sombrear según la luz sin montar la paleta ni combinar modos (luz, sombras y oclusión juntas, paleta sacada de la selección y escaleras que cambian de material dentro de su familia), está `/komaedit shade`: ver [Color y sombreado](#color-y-sombreado).
+
 Los argumentos van por posición y las banderas en cualquier sitio. Un argumento con espacios va entre comillas; los paréntesis y corchetes agrupan solos, así que `Ambient(Radius:2, Contrast:0.3)` es un solo argumento.
 
 ### Comportamiento
@@ -1332,6 +1334,131 @@ Ejemplos:
 - `-t` es más lento: comprueba cada cambio con sus 26 vecinos, en dos pasadas.
 - `-m` usa una lista de bloques y etiquetas, no la sintaxis completa de máscaras de WorldEdit. La máscara global (`//gmask`) se respeta al escribir.
 - Radio de 0 a 32; suavizado de radio 0–8 y 0–16 iteraciones.
+
+## Color y sombreado
+
+### Objetivo y acceso
+
+Ayuda a elegir bloques por su color y a sombrear lo construido, como el Colour Picker, el Gradient Helper y el Autoshade de Axiom:
+
+```text
+/komaedit color similar [bloque|#hex] [n=8] [-c] [-s] [-o] [-u] [-x]
+/komaedit color gradient <A> <B> [pasos=7] [-c] [-s] [-o] [-u] [-x] [-v variante] [-p nombre] [-f]
+/komaedit color palette <selection|hotbar|paleta> [nombre] [-f]
+/komaedit color hotbar <bloques|undo>
+/komaedit shade [selection|rampa|paleta] [-l luz] [-a 0–1] [-r radio] [-o 0–1] [-d 0–1] [-m máscara] [-n tamaño] [-k]
+```
+
+Alias: `colour`; `similar` → `parecidos`, `gradient` → `degradado`, `palette` → `paleta`, `hotbar` → `barra`; `shade` → `sombrear`. Permisos: `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da `komaedit.use`; paquete básico) y `komaedit.build.shade` (los da `komaedit.build`; paquete intermedio). En el Studio están en la etapa **Color** (tecla `9`).
+
+### Colores de los bloques
+
+- Cada bloque tiene un color: la media de su textura en los bloques vanilla (la misma tabla que usa smoothblocks, `assets/komaedit/smooth/colors.txt`, generada desde el jar de 1.21.1 con `tools/smooth_colors.py`) y, en los de mods, su color de mapa, que es más aproximado. Se comparan e interpolan en **OKLab**: una misma distancia se ve como el mismo salto de color en toda la gama y un degradado en línea recta no se ensucia de gris a mitad. En el chat la distancia sale como `Δ` (OKLab × 100): por debajo de 2 casi no se nota; a partir de 10 ya es otro color.
+- De los bloques con exactamente el mismo color (los tablones, su losa, su escalera y su valla) solo se propone uno, el entero.
+- **Materiales lisos.** Por defecto no se proponen menas ni bloques de mineral en bruto, terracota esmaltada, bloques cincelados, coral vivo (se muere fuera del agua), máquinas con cara delantera (horno, dispensador, observador, colmena…), bloques de función (mesa de trabajo, librería, TNT, bloque musical…), texturas con mucho dibujo (más de 0,15 de desviación media en OKLab en alguna cara), bloques que dan luz ni bloques con entidad de bloque (cofres, barriles, arena sospechosa…; también los de mods). Su color medio engaña: una mena de oro tiene el color medio de una piedra amarillenta, pero se ve a motas. `-x` los deja entrar.
+- Nunca se proponen bloques técnicos (barrera, luz, bloques de comandos, de estructura…), piedra infestada ni la losa de roble petrificada, ni bloques sin objeto (no se pueden llevar en la mano).
+
+Filtros comunes (se pueden juntar):
+
+| Bandera | Deja solo |
+| --- | --- |
+| `-c` | Cubos enteros (sin losas, escaleras, vallas, plantas…). |
+| `-s` | Bloques sólidos, con colisión. |
+| `-o` | Bloques opacos (sin cristal, hojas, hielo…). |
+| `-u` | Cubos con la misma textura en las seis caras (piedra, lana, hormigón; no troncos, arenisca ni césped). En bloques de mods no se sabe y no pasan. |
+| `-x` | No es un filtro: deja entrar también los materiales que no son lisos. |
+
+### Bloques parecidos
+
+- `color similar` lista los `n` bloques (hasta 32) de color más parecido a un bloque o a un color `#RRGGBB`. Sin argumento usa el bloque de la mano y, si no llevas ninguno, el que miras.
+- Cada línea lleva la **muestra de color** (`██` del color del bloque; al pasar el ratón dice su nombre, su color en hexadecimal, su luminosidad y qué es) y botones: **[barra]** lo pone en la mano, **[parecidos]** busca a partir de él y **[degradado]** hace el degradado del bloque de referencia hasta él. Pulsar el nombre lo copia. **[todo a la barra]** llena la barra rápida con los resultados.
+
+```text
+/komaedit color similar stone 12 -c -o
+/komaedit color similar #8B5A2B
+/komaedit color parecidos
+```
+
+### Degradado entre bloques
+
+- `color gradient` reparte los pasos en línea recta en OKLab entre los dos extremos y elige un bloque para cada paso, **sin repetir**. Los extremos pueden ser bloques (van tal cual en las puntas) o colores `#hex` (se elige el bloque más cercano). De 2 a 32 pasos, contando los extremos.
+- No elige el más cercano a cada paso por separado: eso repite bloques y a veces da un paso atrás. Resuelve la fila entera (programación dinámica) con dos reglas: cada bloque avanza a lo largo del degradado más que el anterior y, si los extremos tienen distinta luminosidad, la luminosidad no da marcha atrás. Si no hay ninguna fila que las cumpla (dos extremos casi iguales, un filtro muy estricto), se queda con los más cercanos y los ordena por luminosidad.
+- El resultado sale como una tira de muestras (cada una se puede pulsar para llevarla a la mano), la lista copiable y los botones **[a la barra]**, **[guardar]** (escribe `/komaedit palette save nombre …` para que pongas el nombre), **[copiar]**, **[otra]** y **[más pasos]**.
+- **Alternativas:** `-v 1`, `-v 2`… (o **[otra]**) penalizan los bloques que ya salieron en las variantes anteriores; cada una prueba otros bloques sin alejarse del color y con las mismas reglas. Es determinista: la misma variante da siempre lo mismo.
+- `-p nombre` lo guarda directamente como paleta `#nombre` (con `-f` sustituye una que ya exista).
+
+```text
+/komaedit color gradient deepslate calcite 9 -c -o
+/komaedit color gradient dark_oak_planks birch_planks 7 -c -o -v 1
+/komaedit color gradient #2B1B3A #F2C14E 9 -c -o -u -p atardecer
+```
+
+### Paleta ordenada por luminosidad
+
+- `color palette selection [nombre]` lee la selección de WorldEdit (cualquier forma y tamaño, repartido entre ticks) y saca sus materiales, los más abundantes primero (hasta 256); las escaleras, losas y muros cuentan como su bloque entero. `color palette hotbar` usa la barra rápida y `color palette <paleta>` cualquier paleta (`##Grayscale`, `#mía`, `stone,andesite…`).
+- La enseña **de oscuro a claro** con sus muestras y los mismos botones que el degradado; con `nombre` la guarda como `#nombre`. Lo que no tiene color conocido se avisa y queda fuera.
+- `palette fetch` sigue leyendo filas de 1×1×N o la barra rápida en su orden.
+
+### Barra rápida
+
+- `color hotbar <bloques>` pone los bloques (lista separada por comas o cualquier paleta) en la barra rápida: uno solo va a la casilla que tienes elegida; varios, desde la primera casilla. Si son más de 9 se reparten 9 por igual, con el primero y el último. Las entradas sin objeto se avisan y se saltan.
+- Solo en **creativo** (en supervivencia sería sacar bloques de la nada). `color hotbar undo` devuelve la barra que había antes del último cambio.
+
+### Sombrear la selección
+
+`/komaedit shade` recolorea la **superficie** de la selección según la luz que recibe, como el Autoshade de Axiom:
+
+- **Luz directa:** cuánto mira cada cara a la luz (ley de Lambert, con la orientación media de los bloques de alrededor, así una ladera escalonada se ve como una pendiente), apagada en las **sombras que proyecta** el propio volumen.
+- **Oclusión ambiental:** rincones, grietas, huecos y el pie de los muros ven menos cielo y quedan más oscuros.
+- La luz de cada bloque elige su sitio en una **paleta de oscuro a claro**. El 2 % más oscuro va al primer bloque y el 2 % más claro al último; si la luz apenas cambia (una pared lisa), no se estira a toda la paleta.
+- **Formas:** solo cambian los bloques enteros sólidos y las piezas con forma. Escaleras, losas, muros, vallas, trampillas, botones y placas conservan su forma, orientación y mitad y pasan a la pieza del material nuevo; si ese material no la tiene, toman la del más cercano de la paleta que sí la tenga, y si ninguno la tiene se quedan como están. El cristal, las hojas, las flores, las antorchas y lo demás no se tocan.
+- Todo es una edición: `//undo` la deshace. El chat dice qué paleta se usó.
+
+Paleta (primer argumento):
+
+| Valor | Paleta |
+| --- | --- |
+| `selection` (por defecto) | Los materiales de la superficie de la selección, de oscuro a claro. Solo entran los que cubren al menos el 2 % de la superficie (como mucho 16): los detalles sueltos (ojos de piedra luminosa, un ribete de oro) no se reparten por la luz y se quedan. Si queda uno solo, se usa su rampa. |
+| `rampa` | Una rampa de 7 bloques (`-n` de 3 a 16) con el tono del material principal: baja más hacia las sombras de lo que sube hacia los brillos, prefiere el mismo tono antes que la luminosidad exacta (en la arenisca: tablones, madera descortezada, arenisca, arenisca cortada y lisa) y solo usa cubos opacos y lisos. Solo se recolorea ese material, y la luz más corriente le cae a él: sigue siendo el que más se ve. |
+| una paleta | `##Grayscale`, `#mía`, `deepslate,tuff,stone,andesite,calcite`…: se ordena de oscuro a claro (con `-k` se respeta su orden: el primero es la sombra). Recolorea todos los bloques enteros sólidos y piezas de la superficie. Un solo bloque (`/komaedit shade sandstone`) da su rampa. |
+
+Opciones:
+
+| Bandera | Qué hace |
+| --- | --- |
+| `-l <luz>` | De dónde viene la luz. `sol` (por defecto): el sol según la hora del mundo, que en Minecraft sale por el este y se pone por el oeste; su altura se limita entre 20° y 65° (ni rasante ni a plomo, que aplanan el relieve) y de noche alumbra la luna. `jugador`: desde donde estás hacia el centro de la selección. `mirada`: la luz va hacia donde miras. `foco`: luz puntual en tus ojos. `arriba`. Un rumbo (`n`, `ne`, `e`, `se`, `s`, `so`/`sw`, `o`/`w`, `no`/`nw`): viene de ahí a 45°. O `x;y;z`: hacia dónde va la luz, como en `texture sunlight -l`. |
+| `-a <0–1>` | Fuerza de la oclusión ambiental (por defecto `0.6`). |
+| `-r <radio>` | Alcance de la oclusión en bloques (1–8, por defecto 3). |
+| `-o <0–1>` | Fuerza de las sombras proyectadas (por defecto `0.8`; `0` sin sombras). |
+| `-d <0–1>` | Tramado: en el paso entre dos bloques de la paleta los mezcla con un umbral por posición para que no salgan franjas (por defecto `0`). |
+| `-m <máscara>` | Solo los bloques que pasan la máscara de WorldEdit (`-m stone,andesite`, `-m #existing`…). |
+| `-n <tamaño>` | Bloques de la rampa (3–16, por defecto 7). |
+| `-k` | Con una paleta escrita, respeta su orden en lugar de ordenarla por luminosidad. |
+
+```text
+/komaedit shade
+/komaedit shade -l ne -d 0.5
+/komaedit shade rampa -l jugador -o 0.6
+/komaedit shade deepslate,tuff,stone,andesite,calcite -l so -a 0.8
+/komaedit shade ##Grayscale -l arriba -m #existing
+```
+
+Los renders de `docs/renders/color/` (de `ColorRenderTest`, con las texturas de 1.21.1) enseñan degradados con su alternativa, las rampas, una colina y un busto con escaleras y losas antes y después de sombrear.
+
+### Etapa Color del Studio
+
+- **Degradado:** dos tarjetas (Desde y Hasta) que abren el catálogo de bloques, los pasos (2–16), «Solo cubos opacos» y «También menas, máquinas y luces». Debajo, la tira de muestras: al pasar el ratón dice el bloque y su color; un clic lo lleva a la mano. **A la barra** pone todo el degradado en la barra rápida, **Otra** prueba la variante siguiente y **Al chat** lo escribe en el chat con los botones para guardarlo.
+- **Parecidos** al bloque de Desde: ocho muestras; un clic lleva el bloque a la mano.
+- **Sombrear la selección:** luz (sol, desde donde estás, hacia donde miras, desde arriba o un rumbo), paleta (la de la selección, la rampa del material o el degradado de arriba) y tramado; **Sombrear selección** lanza `/komaedit shade` con eso.
+- Calcula en el cliente con el mismo catálogo que el servidor y guarda sus ajustes al cerrar y abrir el Studio; las órdenes las comprueba el servidor como siempre (permisos y creativo).
+
+### Rendimiento y limitaciones
+
+- El catálogo se monta una vez (unos 1 060 bloques vanilla más los de mods) y las búsquedas recorren la lista entera: son instantáneas. Un degradado de 32 pasos prueba como mucho 400 candidatos por paso.
+- `shade` lee la selección más un margen de `2·radio + 2` bloques (8 con el radio 3) repartido entre ticks, calcula en un worker y escribe con `//undo`, como `texture`; el volumen con margen no puede pasar de 8 000 000 de bloques. Las sombras solo las proyecta lo que está dentro de lo leído: amplía la selección si una torre de fuera debería dar sombra. En los renders, una colina de 52×52 con 4 700 bloques de superficie tarda menos de 150 ms.
+- El color medio no dice todo: dos bloques con el mismo color pueden tener texturas muy distintas. Los filtros y la bandera de materiales lisos quitan lo peor; el resto lo decide quien construye. Los colores de mapa de los bloques de mods son mucho más toscos que los medidos.
+- Los bloques que cambian solos (cobre que se oxida, coral fuera del agua) se proponen por su color de ahora; para que no cambien, usa su versión encerada.
+- La luz del sol de Minecraft no tiene inclinación norte-sur: con `-l sol` las caras norte y sur reciben la misma luz. Para dar relieve en esa dirección usa un rumbo o `-l jugador`.
 
 ## Suavizado
 
@@ -2068,6 +2195,7 @@ Alias: `/komaedit paleta`.
 - `swap` cambia, dentro de la selección, el bloque n del origen por el n del destino. `-a` no toca el aire del origen, `-s` estira el destino para cubrir todo el origen (sin él, lo que sobra del origen se queda igual), `-f` encaja el origen solo por tipo y `-b` copia las propiedades del bloque original sobre el nuevo cuando las admite. Va por el motor de operaciones sobre la selección: lectura repartida, cálculo en un worker y un solo `//undo`.
 - `print` muestra la paleta (`-v` con id completo y estados); al pulsarla se copia.
 - `encode` da un código `kp1:…` que se copia al pulsarlo; `decode` lo convierte otra vez en bloques. El formato es propio de KomaEdit (no es el de ezEdits) y admite bloques de mods.
+- Para sacar los materiales de una selección de cualquier forma, de la barra rápida o de otra paleta **ordenados de oscuro a claro**, usa `/komaedit color palette <selection|hotbar|paleta> [nombre]`; para crear una paleta de degradado entre dos bloques, `/komaedit color gradient … -p nombre` (ver [Color y sombreado](#color-y-sombreado)).
 
 ### Paletas de serie
 
@@ -2484,13 +2612,14 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`.
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
+   - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
    - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…) y `komaedit.select.superwand`.
 3. **Paquetes** (`permpack` de ezEdits):
 
 | Paquete | Incluye |
 | --- | --- |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, supervarita y selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`). |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles y recetas. |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), supervarita y selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`). |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles y recetas. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
 | `komaedit.permpack.admin` | `reload`, copias del proyecto y sin límite de volumen. Va aparte: no incluye los otros. |
 

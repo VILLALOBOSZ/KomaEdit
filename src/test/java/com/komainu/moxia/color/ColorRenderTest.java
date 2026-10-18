@@ -96,7 +96,7 @@ class ColorRenderTest {
     private static BufferedImage gradientRow(String label, List<double[]> targets, List<BlockColor> blocks,
                                              List<BlockColor> alternative, BlockTextures textures) {
         int steps = blocks.size();
-        int width = Math.max(steps * (TILE + 8) + 16, 640);
+        int width = Math.max(steps * (TILE + 8) + 16 + (alternative == null ? 0 : 130), 640);
         int height = 22 + 14 + TILE + 30 + (alternative == null ? 0 : TILE + 30);
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = canvas(image);

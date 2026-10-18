@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Añade **`/komaedit color`** (alias `colour`) para elegir bloques por su color, como el Colour Picker y el Gradient Helper de Axiom. Todos los bloques tienen color en OKLab: la media de su textura en los vanilla y el color de mapa en los de mods.
+  - `color similar [bloque|#hex] [n]` (alias `parecidos`): los n bloques de color más parecido, cada uno con su muestra de color en el chat y botones para llevarlo a la mano, buscar a partir de él o hacer un degradado. Sin argumento usa el bloque de la mano o el que miras.
+  - `color gradient <A> <B> [pasos]` (alias `degradado`): degradado en OKLab que no repite bloques ni da marcha atrás en luminosidad; `[otra]` o `-v n` dan alternativas, `-p nombre` lo guarda como paleta y `[a la barra]` lo pone en la barra rápida.
+  - `color palette <selection|hotbar|paleta> [nombre]`: los materiales de una selección de cualquier forma, de la barra rápida o de una paleta, de oscuro a claro.
+  - `color hotbar <bloques|undo>`: lleva bloques a la barra rápida (solo en creativo) y la recupera.
+  - Filtros `-c` cubo entero, `-s` sólido, `-o` opaco y `-u` misma textura en todas las caras. Por defecto no se proponen menas, terracota esmaltada, cincelados, coral vivo, máquinas, bloques de función, texturas con mucho dibujo, bloques que dan luz ni bloques con entidad de bloque; `-x` los deja entrar.
+- Añade **`/komaedit shade`** (alias `sombrear`), como el Autoshade de Axiom: recolorea la superficie de la selección por la luz que recibe (Lambert con sombras proyectadas y oclusión ambiental), desde el sol según la hora del mundo, el jugador, la mirada, un foco, arriba, un rumbo o un vector. La paleta sale de la selección (los materiales de más del 2 % de la superficie, de oscuro a claro; los detalles sueltos se quedan), de una rampa del material principal (`rampa`, que conserva el material como el más visto) o de cualquier paleta. Tramado opcional (`-d`), máscara (`-m`) y fuerzas de oclusión y sombras. Escaleras, losas, muros y demás piezas conservan su forma y pasan a la pieza del material nuevo; si no la hay, se quedan.
+- Añade la etapa **Color** al Procedural Studio (tecla `9`): degradado entre dos bloques elegidos en el catálogo, con sus muestras, **A la barra**, **Otra** y **Al chat**; los parecidos al primero; y sombrear la selección eligiendo luz, paleta y tramado.
+- La tabla de colores de texturas (`assets/komaedit/smooth/colors.txt`) lleva una columna de banderas: `u` (la misma textura en las seis caras) y `p` (no es un material liso). Smoothblocks y `/komaedit color` leen la misma tabla y los colores no cambian.
+- Permisos nuevos: `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (paquete básico; los da `komaedit.use`) y `komaedit.build.shade` (paquete intermedio).
+- Añade pruebas JUnit (OKLab y CIELAB con valores de referencia, filtros, degradados que no repiten y suben en luminosidad, alternativas, rampas, luz según su dirección, sombras, oclusión, paleta de la selección y familias de piezas) y renders de comprobación con `KOMAEDIT_COLOR_RENDER` (y `KOMAEDIT_MC_JAR` para las texturas); los de degradados y del antes y después de una colina y un busto están en `docs/renders/color/`.
+
 ## 1.4.0 (estable, 2026-10-19)
 
 - Añade **`/komaedit ezspline`** (alias `ezsp`, `spline`) con la sintaxis de `//ezspline` de ezEdits: `2d`, `3d`, `basic`, `rope`, `noise`, `expression` y `structure`, las formas con sus parámetros largos y abreviados (`Chainlink(E:0.2,T:1,G:0,M:3,N:3,P:BOTH)` o `Ch(...)`) y las banderas comunes `-p -q -r -s -t -n -e -w -h`, en cualquier orden. También las formas antiguas como `//ezsp polygon clay 10 4`. Los ejemplos de la wiki funcionan tal cual, con los perfiles de `-w` (salvo `Panes`, que KomaEdit no tiene).
