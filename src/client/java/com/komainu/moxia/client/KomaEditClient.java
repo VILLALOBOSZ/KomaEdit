@@ -1,6 +1,7 @@
 package com.komainu.moxia.client;
 
 import com.komainu.moxia.client.brush.BrushToolControls;
+import com.komainu.moxia.client.capability.CapabilityControls;
 import com.komainu.moxia.client.hud.PathCaptureHud;
 import com.komainu.moxia.client.gui.ProceduralStudioScreen;
 import com.komainu.moxia.client.preview.PathHologramRenderer;
@@ -80,6 +81,7 @@ public final class KomaEditClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_P,
                 "category.komaedit"
         ));
+        CapabilityControls.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openEditor.wasPressed()) {
                 openEditor(client);

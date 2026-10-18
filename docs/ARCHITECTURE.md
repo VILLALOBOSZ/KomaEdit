@@ -34,6 +34,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `config` | Límites del servidor y política de compatibilidad |
 | `worldedit` | Adaptación de jugador, sesión, selección y patrones |
 | `command` | API Brigadier y validación de entrada |
+| `capability` | Capacidades de construcción a mano: reglas puras, red, servidor y aplicación con WorldEdit |
 | `client.gui` | Pantalla no bloqueante y controles del editor |
 
 ## Flujo de una brocha
@@ -49,6 +50,17 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 Los pinceles de `/komaedit pincel` (paquete `brush.ez`, `brush.place`) siguen el mismo camino con `SculptManager.run(jugador, operación, vistaPrevia)`. Cada clic crea una `BrushOperation` inmutable: dice qué zona capturar (`capture()`, o `null` si no lee el mundo) y calcula el plan sobre la foto en el worker (`plan(snapshot)`). Paletas, ruido y portapapeles se resuelven antes, en el hilo del servidor. La lógica de cada pincel (`PaletteShift`, `GradientPainter`, `PetalPainter`, `Alignment`) trabaja sobre `BrushWorld`, una vista mínima de la foto, y se prueba sin Minecraft.
 
 Las herramientas (pinceles y supervarita) se marcan en el `custom_data` del objeto. El cliente intercepta con ellas el clic izquierdo, el derecho y la tecla de cambiar de mano y los manda como `BrushToolPayload`; el servidor apunta con su propio rayo. Para clientes sin el mod quedan los eventos de uso y ataque de Fabric en el servidor.
+
+## Capacidades de construcción a mano
+
+Paquete `capability` (y `client.capability`). La lógica pura no toca Minecraft y tiene pruebas: `ClickRouting` decide qué capacidad se queda cada clic, `PropertyCycle` recorre las propiedades de «Retocar», `StateTransfer` y `BlockFamilyIndex` calculan el reemplazo, `LayerFinder` busca la capa de «Extruir», `SmearPlanner` la fila, el eje y el final de «Arrastrar», y `CapabilityRules` y `CapabilitySettings` guardan las reglas del servidor y lo que tiene activado cada jugador. `BlockStates` traduce entre los estados de Minecraft y esas clases (propiedades en texto, familias de `BlockFamilies`).
+
+1. El servidor manda `CapabilityStatePayload` al entrar y en cada cambio (y lo recomprueba cada 2 s por si cambian el modo de juego o los permisos). Sin ese estado el cliente no intercepta nada.
+2. El cliente intercepta el clic derecho con un mixin en `MinecraftClient.doItemUse`, el izquierdo con `ClientPreAttackCallback` y la `F` al empezar el tick, y manda la intención (`CapabilityActionPayload`) con el bloque, la cara y el punto pulsados, como el paquete de uso de Minecraft.
+3. `CapabilityService` comprueba permiso, modo de juego, que la capacidad esté activa, distancia y freno, y convierte la intención en una lista de `HandEdit`.
+4. `HandEditApplier` deja que `HandEditEvents.COLLECT` añada bloques (simetría), descarta las posiciones donde el jugador no puede construir y escribe con una `EditSession` (sin los efectos `NEIGHBORS` y `UPDATE` con «Sin actualizaciones»). Si cambia más de un bloque, la sesión va al historial de WorldEdit.
+
+«Alcance largo» es un modificador temporal del atributo `block_interaction_range`, y la velocidad de vuelo, las habilidades del jugador: los dos los sincroniza Minecraft y no necesitan el mod en el cliente.
 
 Los pinceles de colocación (`place`, `scatter`, `array`) no usan `BrushOperation`: cada clic llama a `PlacementService.startBrush` con un `BrushTarget` (bloque mirado, normal de la cara, trazo y dirección de `ViewDiff`) y siguen el camino de `/komaedit place`. Solo `place -p` usa aún la colocación de 90° con holograma, que pide sus estructuras a `StructureSources` y las gira con la base de `brush.place.Alignment`.
 

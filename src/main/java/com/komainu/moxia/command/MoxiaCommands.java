@@ -257,6 +257,7 @@ public final class MoxiaCommands {
         NoiseCommands.register(root);
         SelectionCommands.register(root);
         AdminCommands.register(root);
+        CapabilityCommands.register(root);
         SymmetryCommands.register(root);
         BuilderCommands.register(root);
         PreviewCommands.register(root);

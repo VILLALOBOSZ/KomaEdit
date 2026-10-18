@@ -1,6 +1,8 @@
 package com.komainu.moxia.command;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.capability.CapabilityConfig;
+import com.komainu.moxia.capability.CapabilityService;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.gradient.ServerPalettes;
@@ -115,6 +117,8 @@ public final class AdminCommands {
                 .requires(source -> EzCommandSupport.can(source, KomaPermissions.ADMIN_RELOAD))
                 .executes(context -> {
                     KomaEditConfig.load();
+                    CapabilityConfig.load();
+                    CapabilityService.resyncAll(context.getSource().getServer());
                     int palettes = ServerPalettes.load(KomaEditConfig.palettesFile());
                     KomaEditConfig.Settings settings = KomaEditConfig.settings();
                     context.getSource().sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal(

@@ -2,6 +2,8 @@ package com.komainu.moxia;
 
 import com.komainu.moxia.brush.BrushManager;
 import com.komainu.moxia.brush.BrushToolInputs;
+import com.komainu.moxia.capability.CapabilityConfig;
+import com.komainu.moxia.capability.CapabilityService;
 import com.komainu.moxia.command.MoxiaCommands;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
@@ -119,6 +121,14 @@ public final class KomaEditMod implements ModInitializer {
             }
         });
         BrushToolInputs.register();
+        CapabilityConfig.load();
+        CapabilityService.register();
+        // Lo que se coloca a mano con las capacidades (reemplazar, extruir…) también se replica en simetría.
+        com.komainu.moxia.capability.HandEditEvents.COLLECT.register((player, world, planned, extra) ->
+                SymmetryService.mirrorHandEdits(player, world,
+                        planned.stream().map(com.komainu.moxia.capability.HandEdit::pos).toList(),
+                        planned.stream().map(com.komainu.moxia.capability.HandEdit::state).toList(),
+                        (pos, state) -> extra.accept(new com.komainu.moxia.capability.HandEdit(pos, state))));
         SymmetryService.register();
         com.komainu.moxia.biome.BiomeEditService.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {

@@ -1,5 +1,7 @@
 package com.komainu.moxia.permission;
 
+import com.komainu.moxia.capability.BuildCapability;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -176,7 +178,19 @@ public final class PermissionNodes {
                 "/komaedit symmetry worldedit: refleja también las ediciones de WorldEdit y KomaEdit");
         add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
 
+        // Capacidades de construcción a mano (menú rápido y /komaedit capability).
+        for (BuildCapability capability : BuildCapability.values()) {
+            Pack pack = switch (capability) {
+                case EXTRUDE, SMEAR, NO_UPDATES, REACH -> Pack.INTERMEDIATE;
+                default -> Pack.BASIC;
+            };
+            add(capability.permission(), pack, build, null, "Capacidad «" + capability.displayName() + "»");
+        }
+        add(BuildCapability.FLY_SPEED_PERMISSION, Pack.BASIC, build, null, "Velocidad de vuelo del menú rápido");
+
         // Administración.
+        add(BuildCapability.GAMEMODE_PERMISSION, Pack.ADMIN, null, null, "Cambiar el modo de juego desde el menú rápido");
+        add(BuildCapability.ANY_MODE_PERMISSION, Pack.ADMIN, null, null, "Usar las capacidades fuera de creativo");
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
         add(KomaPermissions.PROJECT_BACKUP, Pack.ADMIN, null, null, "/komaedit project backup");
         add(KomaPermissions.ADMIN_IMAGE_URL, Pack.ADMIN, null, null,
