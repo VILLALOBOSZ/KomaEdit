@@ -245,6 +245,28 @@ public final class HelpTopics {
                     new Entry("/komaedit sel catenary <puntos> [comba] [down|up|left|right]",
                             "Selección convexa colgando como una cadena entre el principio y el final")
             )),
+            new Topic("utilidades", "Utilidades de obra", List.of("utilities", "texto", "text", "materiales",
+                    "analyze", "gravedad", "gravity", "nieve", "snow", "agua", "drain", "biomas", "biome"), List.of(
+                    new Entry("/komaedit text \"<texto>\" [material] [-f fuente] [-s tamaño] [-d grosor] [-b borde]"
+                            + " [-o material del borde]", "Texto en bloques donde miras (alias texto)"),
+                    new Entry("/komaedit text \"Año Nuevo\" ##Magma -s 12 -b 1 -o black_concrete -w SlabsAndStairs",
+                            "Ejemplo: degradado, borde negro y losas y escaleras"),
+                    new Entry("/komaedit text fonts", "Fuentes de serie y las de config/komaedit/fonts"),
+                    new Entry("/komaedit analyze [-m máscara] [-n líneas]",
+                            "Lista de materiales: coste en survival, pilas y cofres, CSV (alias materiales)"),
+                    new Entry("/komaedit gravity [-a] [-m máscara]",
+                            "Deja caer los bloques por columnas; -a solo lo que no se apoya (alias gravedad)"),
+                    new Entry("/komaedit snow [capas] [-r radio] [-s sombra] [-h altura] [-p] [-m máscara]",
+                            "Nieve en capas que sigue la pendiente (alias nieve)"),
+                    new Entry("/komaedit drain [water|lava|all] [-k] [-m máscara]",
+                            "Quita el agua o la lava y desanega (alias drenar)"),
+                    new Entry("/komaedit waterlog [nivel|~] [-b] [-m máscara]",
+                            "Inunda y anega por debajo de un nivel (alias inundar)"),
+                    new Entry("/komaedit biome <bioma> [-v] [-m máscara]",
+                            "Pinta el bioma de la selección (alias bioma)"),
+                    new Entry("/komaedit pincel biome <bioma> [radio] [-v] [-m máscara]",
+                            "Pincel de biomas; el clic izquierdo toma el bioma del bloque")
+            )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),

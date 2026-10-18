@@ -103,6 +103,7 @@ public final class KomaEditMod implements ModInitializer {
         });
         BrushToolInputs.register();
         SymmetryService.register();
+        com.komainu.moxia.biome.BiomeEditService.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             try {
                 ProjectStorage.bind(handler.player.getUuid(), server);

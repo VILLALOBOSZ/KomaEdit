@@ -94,6 +94,11 @@ public final class PermissionNodes {
         add(build + ".inflate", Pack.BASIC, build, "ezedits.smooth.inflate", "/komaedit inflate");
         add(build + ".deflate", Pack.BASIC, build, "ezedits.smooth.deflate", "/komaedit deflate");
         add(select + ".superwand", Pack.BASIC, select, "ezedits.tools.superwand", "/komaedit superwand");
+        add("komaedit.analyze", Pack.BASIC, use, null, "/komaedit analyze (lista de materiales)");
+        add(build + ".gravity", Pack.BASIC, build, null, "/komaedit gravity");
+        add(build + ".snow", Pack.BASIC, build, null, "/komaedit snow");
+        add(build + ".drain", Pack.BASIC, build, null, "/komaedit drain");
+        add(build + ".waterlog", Pack.BASIC, build, null, "/komaedit waterlog");
         for (String[] entry : new String[][]{{"next", "next"}, {"here", "here"}, {"invert", "invert"},
                 {"delpos2", "delpos"}, {"encapsulate", "encapsulate"}, {"encapsulatenear", "encapsulatenear"},
                 {"catenary", "catenary"}}) {
@@ -151,6 +156,9 @@ public final class PermissionNodes {
                 "/komaedit symmetry con espejos en X, Z e Y");
         add(build + ".symmetry.rotational", Pack.INTERMEDIATE, build, "ezedits.symmetry.rotational",
                 "/komaedit symmetry radial");
+        add(build + ".text", Pack.INTERMEDIATE, build, null, "/komaedit text");
+        add(build + ".biome", Pack.INTERMEDIATE, build, null, "/komaedit biome");
+        add(build + ".brush.biome", Pack.INTERMEDIATE, build, null, "/komaedit pincel biome");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
