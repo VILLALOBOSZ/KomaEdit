@@ -20,10 +20,11 @@ final class EzShapes {
     /** Opción que elige la forma: el ordinal de {@link Form} más uno (0 o ausente: perfil 2D normal). */
     static final String FORM = "ezform";
     /**
-     * Medio grosor mínimo, en bloques, de los hilos planos de la red y del panal: con medio bloque en diagonal
-     * (√3/2) de margen, el alma de cada hilo siempre cae en un bloque colocado.
+     * Medio grosor mínimo, en bloques, de los hilos planos de la red y del panal: más que medio bloque en diagonal
+     * (√3/2), con holgura para lo que la curva encoge el lado interior, así el alma de cada hilo siempre cae en un
+     * bloque colocado.
      */
-    static final double STRIP = 0.9;
+    static final double STRIP = 1.0;
 
     private EzShapes() {
     }
