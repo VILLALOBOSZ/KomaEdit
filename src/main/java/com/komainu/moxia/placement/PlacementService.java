@@ -89,6 +89,7 @@ public final class PlacementService {
     public static String start(ServerPlayerEntity player, PlacementSettings.Kind kind, String input)
             throws IncompleteRegionException {
         PlacementSettings parsed = PlacementSettings.parse(kind, input);
+        SmoothBlockStates.validate(parsed.smooth());
         PlacementSettings settings = parsed.randomSeed()
                 ? parsed.withSeed(new SplittableRandom().nextLong() & Long.MAX_VALUE)
                 : parsed;
@@ -669,7 +670,8 @@ public final class PlacementService {
                         rotated.put(cacheKey, state);
                     }
                     if (piece != SmoothPiece.FULL) {
-                        BlockState shaped = SmoothBlockStates.shape(state.toBaseBlock(), piece);
+                        BlockState shaped = SmoothBlockStates.shape(state.toBaseBlock(), piece,
+                                settings.smooth().materials());
                         if (shaped != null) {
                             state = shaped;
                         } else if (SmoothPiece.isAdded(piece)) {
@@ -702,7 +704,8 @@ public final class PlacementService {
                     patterned = true;
                 }
             }
-            return new Output(builder.build(), cover, placements.size(), written, patterned);
+            return new Output(builder.build().withPieceMaterials(settings.smooth().materials()), cover,
+                    placements.size(), written, patterned);
         }
 
         private void submit(Output output) {

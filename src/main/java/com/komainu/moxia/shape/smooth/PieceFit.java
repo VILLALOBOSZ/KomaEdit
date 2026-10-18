@@ -4,8 +4,9 @@ package com.komainu.moxia.shape.smooth;
  * Elige la pieza que mejor encaja con la ocupación de un bloque de superficie.
  *
  * <p>La ocupación llega como la fracción de cada octante que queda dentro de la figura. El error de una pieza
- * es la suma de diferencias entre su máscara y esa ocupación, en octantes (0 = encaje perfecto, 8 = nada en
- * común). Una pieza sustituye al bloque entero, o rellena un hueco vacío, cuando reduce el error en más que el
+ * es la suma de diferencias entre lo que llena la pieza en cada octante ({@link SmoothPiece#fill}) y esa
+ * ocupación, en octantes (0 = encaje perfecto, 8 = nada en común). Las piezas que se prueban son las del perfil
+ * ({@link SmoothMode}). Una pieza sustituye al bloque entero, o rellena un hueco vacío, cuando reduce el error en más que el
  * umbral de la cobertura.</p>
  */
 public final class PieceFit {
@@ -13,19 +14,11 @@ public final class PieceFit {
     private static final double EPSILON = 1.0E-9;
     /** Mucho menor que la resolución de la medida (1/5 de octante), así solo decide entre empates. */
     private static final double TIE_BREAK = 1.0E-3;
-    private static final byte[] SLABS = {SmoothPiece.slab(false), SmoothPiece.slab(true)};
-    /** Losas primero: ante un empate gana la pieza más sencilla. Las escaleras se eligen rectas. */
-    private static final byte[] SLABS_AND_STAIRS = {
-            SmoothPiece.slab(false), SmoothPiece.slab(true),
-            SmoothPiece.stairs(SmoothPiece.NORTH, false, SmoothPiece.STRAIGHT),
-            SmoothPiece.stairs(SmoothPiece.EAST, false, SmoothPiece.STRAIGHT),
-            SmoothPiece.stairs(SmoothPiece.SOUTH, false, SmoothPiece.STRAIGHT),
-            SmoothPiece.stairs(SmoothPiece.WEST, false, SmoothPiece.STRAIGHT),
-            SmoothPiece.stairs(SmoothPiece.NORTH, true, SmoothPiece.STRAIGHT),
-            SmoothPiece.stairs(SmoothPiece.EAST, true, SmoothPiece.STRAIGHT),
-            SmoothPiece.stairs(SmoothPiece.SOUTH, true, SmoothPiece.STRAIGHT),
-            SmoothPiece.stairs(SmoothPiece.WEST, true, SmoothPiece.STRAIGHT)
-    };
+    /**
+     * Con cobertura alta se aceptan piezas peores que el bloque original, pero solo en la superficie de verdad: si
+     * el original falla por menos de medio octante (una esquina rozada, un bloque casi lleno) se queda como está.
+     */
+    private static final double MIN_SURFACE_ERROR = 0.5;
 
     private PieceFit() {
     }
@@ -45,12 +38,22 @@ public final class PieceFit {
         if (mode == SmoothMode.NONE || !(coverage > 0.0)) {
             return original;
         }
-        double originalError = error(occupancy, SmoothPiece.mask(original));
+        double originalError = error(occupancy, original);
+        double threshold = threshold(coverage);
+        if (threshold < 0.0 && originalError <= MIN_SURFACE_ERROR) {
+            return original;
+        }
         byte best = original;
         double bestError = Double.POSITIVE_INFINITY;
         double bestRank = Double.POSITIVE_INFINITY;
-        for (byte candidate : mode == SmoothMode.SLABS ? SLABS : SLABS_AND_STAIRS) {
-            double candidateError = error(occupancy, SmoothPiece.mask(candidate));
+        for (byte candidate : mode.candidates()) {
+            double candidateError = error(occupancy, candidate);
+            // Los muros solo entran si encajan mejor que el original: con cobertura alta no se levantan postes
+            // sueltos en cada borde, que es lo que hace la cobertura con losas y escaleras.
+            if (SmoothPiece.isWall(candidate)
+                    && !(originalError - candidateError > Math.max(threshold, 0.0) + EPSILON)) {
+                continue;
+            }
             // En paredes casi verticales la escalera apoyada y la colgada empatan; gana la que apoya su mitad
             // maciza en la mitad más llena. El desempate solo ordena candidatas, no cuenta para el umbral.
             double rank = candidateError - TIE_BREAK * solidHalf(occupancy, candidate);
@@ -60,7 +63,7 @@ public final class PieceFit {
                 bestRank = rank;
             }
         }
-        if (originalError - bestError > threshold(coverage) + EPSILON) {
+        if (originalError - bestError > threshold + EPSILON) {
             return existing ? best : SmoothPiece.added(best);
         }
         return original;
@@ -78,6 +81,9 @@ public final class PieceFit {
     }
 
     private static double solidHalf(double[] occupancy, byte piece) {
+        if (!SmoothPiece.isSlab(piece) && !SmoothPiece.isStairs(piece)) {
+            return 0.0;
+        }
         double total = 0.0;
         int half = SmoothPiece.isTop(piece) ? 1 : 0;
         for (int octant = 0; octant < 8; octant++) {
@@ -88,11 +94,11 @@ public final class PieceFit {
         return total;
     }
 
-    static double error(double[] occupancy, int mask) {
+    /** Error de encaje de una pieza (o de {@link SmoothPiece#FULL}/{@link SmoothPiece#EMPTY}), en octantes. */
+    public static double error(double[] occupancy, byte piece) {
         double total = 0.0;
         for (int octant = 0; octant < 8; octant++) {
-            double target = (mask & 1 << octant) != 0 ? 1.0 : 0.0;
-            total += Math.abs(occupancy[octant] - target);
+            total += Math.abs(occupancy[octant] - SmoothPiece.fill(piece, octant));
         }
         return total;
     }

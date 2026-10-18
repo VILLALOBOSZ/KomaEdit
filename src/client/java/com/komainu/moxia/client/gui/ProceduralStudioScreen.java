@@ -725,6 +725,7 @@ public final class ProceduralStudioScreen extends Screen {
                 case NONE -> "Sin piezas · solo bloques enteros";
                 case SLABS -> "Losas en la superficie · mismo material que el patrón";
                 case STAIRS -> "Losas y escaleras en la superficie · Cobertura decide cuántas";
+                default -> mode.displayName() + " en la superficie · Cobertura decide cuántas";
             };
             return true;
         }

@@ -98,7 +98,7 @@ public final class HelpCommands {
             case "tubes" -> {
                 source.sendFeedback(() -> Text.literal("  Banderas: -e round|spike|soft|cube · -n horizontal|upright · "
                         + "-t torsión · -r giro,giroFinal · -p tensión:sesgo:continuidad · -hollow pared · "
-                        + "-w slabs|stairs · -c cobertura 0–1 · -q fast|balanced|high. Radios con fotogramas: "
+                        + "-w Slabs|SlabsAndStairs|SlabsAndStairs2D|Layers|SSW(C:0.5,Slab:oak) · -c cobertura 0–1 · -q fast|balanced|high. Radios con fotogramas: "
                         + "\"2,0.3:12,2\" o 2_12_2.").formatted(Formatting.GRAY), false);
                 source.sendFeedback(() -> Text.literal("  Fórmula: x e y de -1 a 1 en la sección, z a lo largo, t de 0 a 1, "
                         + "r radio, a ángulo, n repeticiones; > 0 coloca bloque. De serie: " + TubeFormulaPreset.ids()

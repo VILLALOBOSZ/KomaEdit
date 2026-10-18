@@ -98,6 +98,38 @@ class TubeCommandParserTest {
     }
 
     @Test
+    void parsesFullSmoothBlockProfiles() {
+        TubeCommandParser.Result result = TubeCommandParser.parse(PathShape.SWEEP, "circle", "8",
+                "stone -w SlabsAndStairs(C:0.7,Slab:oak)", "stone");
+        TubeSettings settings = TubeSettings.from(result.parameters());
+        assertEquals(SmoothMode.STAIRS, settings.smoothMode());
+        assertEquals(0.7, settings.coverage(), 1.0E-9);
+        assertEquals("oak", result.materials().get(com.komainu.moxia.shape.smooth.PieceVariant.SLAB));
+        assertEquals("stone", result.pattern());
+
+        // Con espacios tras las comas, el perfil sigue siendo una sola bandera.
+        TubeCommandParser.Result spaced = TubeCommandParser.parse(PathShape.SWEEP, "circle", "8",
+                "-w SlabsAndStairs(Slab:oak, Stair:spruce) granite", "stone");
+        assertEquals("granite", spaced.pattern());
+        assertEquals("spruce", spaced.materials().get(com.komainu.moxia.shape.smooth.PieceVariant.STAIR));
+
+        for (SmoothMode mode : SmoothMode.values()) {
+            TubeSettings named = TubeSettings.from(TubeCommandParser.parse(PathShape.SWEEP, "circle", "8",
+                    "-w " + mode.ezName(), "stone").parameters());
+            assertEquals(mode, named.smoothMode(), mode.ezName());
+        }
+        // -c antes de -w no se pierde si el perfil no fija su cobertura.
+        TubeSettings order = TubeSettings.from(TubeCommandParser.parse(PathShape.SWEEP, "circle", "8",
+                "-c 0.9 -w Layers", "stone").parameters());
+        assertEquals(SmoothMode.LAYERS, order.smoothMode());
+        assertEquals(0.9, order.coverage(), 1.0E-9);
+        assertTrue(new TubeCommandParser.Result(result.parameters(), "stone").materials().isEmpty(),
+                "el constructor antiguo de Result sigue valiendo");
+        assertThrows(IllegalArgumentException.class, () -> TubeCommandParser.parse(PathShape.SWEEP, "circle", "8",
+                "-w Slabs(Stair:oak)", "stone"));
+    }
+
+    @Test
     void shapeExpressionsAcceptSymbolicTubeValues() {
         ShapeExpression expression = ShapeExpression.parse("sweep(profile:rope,end:spike,normal:upright,hollow:true)");
         assertEquals(PathShape.SWEEP, expression.shape());

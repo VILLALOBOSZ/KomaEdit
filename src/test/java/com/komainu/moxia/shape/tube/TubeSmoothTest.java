@@ -78,6 +78,57 @@ class TubeSmoothTest {
     }
 
     @Test
+    void everyProfileUsesOnlyItsOwnPieces() {
+        SampledPath path = straight();
+        for (SmoothMode mode : SmoothMode.values()) {
+            if (mode == SmoothMode.NONE) {
+                continue;
+            }
+            ShapeParameters parameters = sweep(6, smooth(mode, 0.5));
+            TubeFigures.Smoothed smoothed = TubeFigures.smooth(path, parameters, TubeCurve.NONE,
+                    TubeFigures.generate(path, parameters, LIMIT), LIMIT);
+            assertFalse(smoothed.pieces().isEmpty(), mode.ezName());
+            for (BlockVector3 block : smoothed.blocks()) {
+                byte piece = smoothed.pieces().at(block.x(), block.y(), block.z());
+                if (piece == SmoothPiece.FULL) {
+                    continue;
+                }
+                assertTrue(mode.uses(SmoothPiece.variant(piece)), mode.ezName() + " puso "
+                        + SmoothPiece.describe(piece) + " en " + block);
+                if (SmoothPiece.isLayers(piece)) {
+                    assertTrue(block.y() >= 0, "las capas van en la mitad de arriba del tubo: " + block);
+                    assertTrue(smoothed.blocks().contains(block.add(0, -1, 0)), "capa sin apoyo en " + block);
+                }
+            }
+        }
+    }
+
+    @Test
+    void solvedCornersNeverFitWorseThanStraightStairs() {
+        // Codo en L: las esquinas de las escaleras importan. El perfil 3D debe dejar el mismo número de bloques y
+        // escaleras con formas que Minecraft conserva.
+        SampledPath elbow = SampledPath.createSmooth(List.of(BlockVector3.at(0, 0, 0), BlockVector3.at(20, 0, 0),
+                BlockVector3.at(20, 0, 20)), false);
+        for (SmoothMode mode : List.of(SmoothMode.STAIRS, SmoothMode.STAIRS_2D)) {
+            ShapeParameters parameters = sweep(6, smooth(mode, 0.5));
+            TubeFigures.Smoothed smoothed = TubeFigures.smooth(elbow, parameters, TubeCurve.NONE,
+                    TubeFigures.generate(elbow, parameters, LIMIT), LIMIT);
+            Map<Long, Byte> pieces = new java.util.TreeMap<>();
+            for (BlockVector3 block : smoothed.blocks()) {
+                byte piece = smoothed.pieces().at(block.x(), block.y(), block.z());
+                if (piece != SmoothPiece.FULL) {
+                    pieces.put(PackedBlockPlan.pack(block.x(), block.y(), block.z()), piece);
+                }
+            }
+            it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap map = new it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap();
+            pieces.forEach(map::put);
+            it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap resolved = map.clone();
+            com.komainu.moxia.shape.smooth.StairShapes.resolve(resolved);
+            assertEquals(map, resolved, mode.ezName() + ": las formas ya son las que pondría Minecraft");
+        }
+    }
+
+    @Test
     void coverageZeroOrNoModeLeavesTheGeometryUntouched() {
         SampledPath path = straight();
         for (Map<String, Double> options : List.of(smooth(SmoothMode.STAIRS, 0.0), Map.<String, Double>of())) {
