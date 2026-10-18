@@ -8,6 +8,17 @@
 - Todo el Studio, el HUD de captura y los estados del holograma salen en el idioma del cliente: nombres de figuras, modos, fórmulas, climas, etiquetas que cambian con la figura y todos los mensajes, en `es_es.json` y `en_us.json`. El buscador de figuras también reconoce el nombre traducido.
 - Corrige los `%` sin escapar de varias ayudas, que Minecraft mostraba mal.
 - Código: `StudioLayout`, `Column` y `Rect` (lógica pura con pruebas a varias resoluciones y escalas de GUI) reparten la pantalla, y `StudioUi` dibuja cada control y registra en el mismo paso qué hace al pulsarlo, con la rueda o con clic derecho: desaparecen los métodos de clic que repetían las coordenadas del dibujo. Se elimina `LiveBuildScreen`, que no se usaba. Una prueba impide volver a escribir frases a fuego en las clases del Studio.
+- Añade `docs/EZEDITS_PARITY.md`: la wiki de ezEdits página a página frente a KomaEdit (orden, clase y estado: completo, parcial, falta o en curso).
+- Añade los **pinceles de colocación** `scatter` (alias `dispersar`, `sc`) y `array` (alias `hilera`, `ar`), y el pincel `place` pasa al motor de `/komaedit place`: todas las estructuras, alineaciones (también `ViewDiff`, con un segundo clic) y banderas. `scatter` reparte por defecto en una caja de 40³ centrada en el clic; `array` coloca a lo largo de un trazo marcado con el clic izquierdo. Con `-p` el pincel `place` sigue usando la colocación con holograma de antes.
+- Añade a los ruidos el tipo `Shard` (con nitidez `h`), las distancias celulares `m1`, `m4`, `m99` (Minkowski) y `r` (redondeada), los retornos `rounded` y `noiseLookup` (`cN`, `cF`) y las distorsiones de dominio `Flow` y `Turbulence`, con implementación propia.
+- Añade la máscara y el patrón `#hotbar` (los bloques de la barra rápida).
+- Añade `/komaedit sel catenary <puntos> [comba] [dirección]` (alias `catenaria`): una selección convexa colgando como una cadena entre el principio y el final de la selección, con la comba relativa al vano como `//selcatenary`.
+- Añade las **paletas de serie del servidor** en `config/komaedit/palettes.json`, que todos usan con `##nombre` y que salen en `/komaedit palette list default`.
+- Añade **permisos finos** por orden y modo (`komaedit.build.deform.noise`, `komaedit.palette.save`, `komaedit.select.catenary`…) y los paquetes `komaedit.permpack.basic`, `intermediate`, `advanced` y `admin`, como la página de permisos de ezEdits. Los permisos amplios de siempre siguen funcionando igual; `/komaedit permisos` muestra cuáles tienes.
+- Añade `/komaedit info` y `/komaedit reload` (permiso `komaedit.admin.reload`), que recarga `config.json` y las paletas del servidor sin reiniciar.
+- Añade los alias `/komaedit pincel none` y `/komaedit survival` (como `tweak`).
+- `-b` de `array` busca la superficie hasta 96 bloques, como ezEdits (antes 48).
+- Los avisos de permiso salen en español («Te falta el permiso …»).
 
 ## 1.3.0 (estable, 2026-10-18)
 

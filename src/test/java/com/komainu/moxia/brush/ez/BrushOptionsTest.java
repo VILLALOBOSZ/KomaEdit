@@ -60,7 +60,7 @@ class BrushOptionsTest {
         assertEquals(EzBrushType.GRADIENT_STROKE, EzBrushType.byId("gradientstroke"));
         assertEquals(EzBrushType.PETAL_PAINTER, EzBrushType.byId("petalos"));
         assertEquals(EzBrushType.PLACE, EzBrushType.byId("pl"));
-        assertThrows(IllegalArgumentException.class, () -> EzBrushType.byId("scatter"));
+        assertThrows(IllegalArgumentException.class, () -> EzBrushType.byId("symmetry"));
         assertFalse(BrushOptions.isNumber("tapered"));
         assertTrue(BrushOptions.isNumber("0,5"));
     }

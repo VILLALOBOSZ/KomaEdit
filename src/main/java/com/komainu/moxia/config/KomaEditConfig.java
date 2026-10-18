@@ -49,6 +49,16 @@ public final class KomaEditConfig {
         }
     }
 
+    /** Carpeta de la configuración de KomaEdit ({@code config/komaedit}). */
+    public static Path directory() {
+        return FILE.getParent();
+    }
+
+    /** Archivo de las paletas de serie del servidor. */
+    public static Path palettesFile() {
+        return directory().resolve("palettes.json");
+    }
+
     public static Settings settings() {
         return settings;
     }

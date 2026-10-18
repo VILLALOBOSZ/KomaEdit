@@ -27,6 +27,7 @@ public final class EzPatternParser extends InputParser<Pattern> {
     public static final long MAX_SELECTION_VOLUME = 262_144;
     static final Map<String, String> NAMES = Map.ofEntries(
             Map.entry("aim", "aim"),
+            Map.entry("hotbar", "hotbar"),
             Map.entry("eznoisepattern", "eznoisepattern"), Map.entry("eznp", "eznoisepattern"),
             Map.entry("ridged", "ridged"), Map.entry("smoothcells", "smoothcells"),
             Map.entry("voronoiedge", "voronoiedge"),
@@ -37,8 +38,9 @@ public final class EzPatternParser extends InputParser<Pattern> {
             Map.entry("vectorgradient", "vectorgradientpattern"),
             Map.entry("selection", "selection"), Map.entry("sel", "selection")
     );
-    private static final List<String> SUGGESTIONS = List.of("#aim", "#eznoisepattern[", "#ridged[", "#smoothcells[",
-            "#voronoiedge[", "#palette[", "#radialgradientpattern[", "#vectorgradientpattern[", "#selection[");
+    private static final List<String> SUGGESTIONS = List.of("#aim", "#hotbar", "#eznoisepattern[", "#ridged[",
+            "#smoothcells[", "#voronoiedge[", "#palette[", "#radialgradientpattern[", "#vectorgradientpattern[",
+            "#selection[");
 
     public EzPatternParser(WorldEdit worldEdit) {
         super(worldEdit);
@@ -88,6 +90,19 @@ public final class EzPatternParser extends InputParser<Pattern> {
                 BaseBlock block = context.requireExtent().getFullBlock(
                         BlockVector3.at(target.getX(), target.getY(), target.getZ()));
                 yield pattern(position -> block);
+            }
+            case "hotbar" -> {
+                arguments.atMost(0);
+                List<com.sk89q.worldedit.world.block.BlockState> states =
+                        EzContext.hotbar(EzContext.player(context, "#hotbar"));
+                if (states.isEmpty()) {
+                    throw EzContext.error("#hotbar: no llevas ningún bloque en la barra rápida");
+                }
+                RandomPattern random = new RandomPattern();
+                for (com.sk89q.worldedit.world.block.BlockState state : states) {
+                    random.add(state, 1.0);
+                }
+                yield random;
             }
             case "palette" -> {
                 arguments.atMost(1);

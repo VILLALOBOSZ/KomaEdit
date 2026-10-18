@@ -8,6 +8,9 @@ import com.komainu.moxia.brush.place.PlacementTemplate;
 import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
 import com.komainu.moxia.noise.NoiseSpec;
+import com.komainu.moxia.placement.PlacementService;
+import com.komainu.moxia.placement.PlacementSettings;
+import com.komainu.moxia.shape.Vec3;
 import com.komainu.moxia.noise.SavedNoises;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockType;
@@ -56,6 +59,14 @@ public abstract sealed class EzBrush {
     abstract void handle(EzBrushManager.Session session, BrushInput input);
 
     public static EzBrush create(ServerPlayerEntity player, EzBrushType type, String input) {
+        if (type.placement() && !(type == EzBrushType.PLACE && legacyPreview(input))) {
+            PlacementSettings.Kind kind = switch (type) {
+                case SCATTER -> PlacementSettings.Kind.SCATTER;
+                case ARRAY -> PlacementSettings.Kind.ARRAY;
+                default -> PlacementSettings.Kind.PLACE;
+            };
+            return new Placing(type, PlacementSettings.parse(kind, input, true));
+        }
         BrushOptions options = type.options(input);
         boolean preview = options.has('p');
         return switch (type) {
@@ -96,6 +107,7 @@ public abstract sealed class EzBrush {
                 int maxAmount = maxAmount(block);
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
+            case SCATTER, ARRAY -> throw new IllegalStateException(type.id());
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -105,6 +117,19 @@ public abstract sealed class EzBrush {
                 yield new Place(source, primary, secondary, options.has('a'), options.has('x'), preview);
             }
         };
+    }
+
+    /**
+     * ¿Pide el pincel de colocación la vista previa ({@code -p})? Entonces usa la colocación por giros de 90° con
+     * holograma; sin ella, el motor de {@code /komaedit place} con todas sus banderas.
+     */
+    static boolean legacyPreview(String input) {
+        for (String word : input.trim().split("\\s+")) {
+            if (word.equalsIgnoreCase("-p")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Bloque del follaje: alias de ezEdits o cualquier bloque con piezas (flower_amount, segment_amount). */
@@ -387,6 +412,134 @@ public abstract sealed class EzBrush {
             basis = Alignment.rotateAroundUp(basis, source.quarterTurns());
             PlacementTemplate template = source.prepare(player, seed);
             session.run(new PlacementOperation(source.describe(), template, basis, target, placeAir));
+        }
+    }
+
+    /**
+     * Pinceles de colocación con el motor de {@code /komaedit place}, {@code scatter} y {@code array}: todas sus
+     * estructuras, alineaciones y banderas. Cada pasada es una edición de //undo.
+     */
+    static final class Placing extends EzBrush {
+        private final PlacementSettings settings;
+        /** En {@code ViewDiff}, la colocación que espera su segundo clic. */
+        private PlacementService.BrushTarget pending;
+
+        Placing(EzBrushType type, PlacementSettings settings) {
+            super(type, 0, false);
+            this.settings = settings;
+        }
+
+        PlacementSettings settings() {
+            return settings;
+        }
+
+        @Override
+        public String controls() {
+            return switch (type()) {
+                case SCATTER -> "clic derecho: dispersa alrededor del bloque que miras";
+                case ARRAY -> "clic izquierdo: añade punto (Mayús: quita el último) · clic derecho: coloca a lo"
+                        + " largo del trazo (Mayús: lo borra) · F: trazo global o de esta herramienta";
+                default -> settings.needsViewDiff()
+                        ? "clic derecho: dónde · clic izquierdo: hacia dónde (ViewDiff) y coloca"
+                        : "clic derecho: coloca donde miras";
+            };
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            switch (type()) {
+                case ARRAY -> stroke(session, input);
+                case SCATTER -> {
+                    if (input.right() && !input.swap()) {
+                        start(session, target(session));
+                    }
+                }
+                default -> place(session, input);
+            }
+        }
+
+        private void place(EzBrushManager.Session session, BrushInput input) {
+            if (input.swap()) {
+                return;
+            }
+            if (!settings.needsViewDiff()) {
+                if (input.right()) {
+                    start(session, target(session));
+                }
+                return;
+            }
+            if (input.right()) {
+                pending = target(session);
+                session.info("Posición marcada; clic izquierdo donde quieras que apunte");
+                BrushMarkers.point(session.player(), pending.surface(), BrushMarkers.START);
+                return;
+            }
+            if (pending == null) {
+                throw new IllegalArgumentException("Primero clic derecho donde va la estructura");
+            }
+            BlockVector3 second = session.target();
+            Vec3 direction = new Vec3(second.x() - pending.surface().x(), second.y() - pending.surface().y(),
+                    second.z() - pending.surface().z());
+            if (direction.length() < 1.0E-6) {
+                throw new IllegalArgumentException("El segundo clic tiene que ir a otro bloque");
+            }
+            PlacementService.BrushTarget first = pending;
+            pending = null;
+            start(session, new PlacementService.BrushTarget(first.anchor(), first.surface(), first.faceNormal(),
+                    List.of(), direction.normalized()));
+        }
+
+        private void stroke(EzBrushManager.Session session, BrushInput input) {
+            List<BlockVector3> points = session.strokePoints();
+            switch (input) {
+                case SWAP, SNEAK_SWAP -> session.toggleScope();
+                case LEFT -> {
+                    if (points.size() >= 256) {
+                        throw new IllegalArgumentException("El trazo admite como mucho 256 puntos");
+                    }
+                    points.add(session.target());
+                    session.info("Trazo: " + points.size() + " punto(s)");
+                    BrushMarkers.path(session.player(), points, BrushMarkers.POINT);
+                }
+                case SNEAK_LEFT -> {
+                    if (!points.isEmpty()) {
+                        points.removeLast();
+                    }
+                    session.info("Trazo: " + points.size() + " punto(s)");
+                    BrushMarkers.path(session.player(), points, BrushMarkers.POINT);
+                }
+                case SNEAK_RIGHT -> {
+                    points.clear();
+                    session.info("Trazo borrado");
+                }
+                case RIGHT -> {
+                    if (points.size() < 2) {
+                        throw new IllegalArgumentException("Marca al menos dos puntos con clic izquierdo");
+                    }
+                    // Los puntos son los bloques mirados; las estructuras van encima, en el aire.
+                    List<BlockVector3> lifted = points.stream().map(point -> point.add(0, 1, 0)).toList();
+                    start(session, new PlacementService.BrushTarget(lifted.getFirst(), points.getFirst(),
+                            new Vec3(0, 1, 0), lifted, null));
+                }
+            }
+        }
+
+        private static PlacementService.BrushTarget target(EzBrushManager.Session session) {
+            BlockHitResult hit = session.hit();
+            var side = hit.getSide();
+            BlockVector3 surface = BlockVector3.at(hit.getBlockPos().getX(), hit.getBlockPos().getY(),
+                    hit.getBlockPos().getZ());
+            BlockVector3 anchor = surface.add(side.getOffsetX(), side.getOffsetY(), side.getOffsetZ());
+            return new PlacementService.BrushTarget(anchor, surface,
+                    new Vec3(side.getOffsetX(), side.getOffsetY(), side.getOffsetZ()), List.of(), null);
+        }
+
+        private void start(EzBrushManager.Session session, PlacementService.BrushTarget target) {
+            try {
+                session.info(PlacementService.startBrush(session.player(), settings, target));
+            } catch (com.sk89q.worldedit.IncompleteRegionException exception) {
+                throw new IllegalArgumentException("-h Active necesita una selección de WorldEdit");
+            }
         }
     }
 

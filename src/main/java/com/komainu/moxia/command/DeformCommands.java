@@ -61,18 +61,20 @@ public final class DeformCommands {
 
     /** Cuelga los comandos de {@code /komaedit} (y así de sus alias {@code /ke}, {@code /mx}…). */
     public static void register(LiteralCommandNode<ServerCommandSource> root) {
-        root.addChild(modeCommand("deform", DEFORM_MODES, DeformCommands::deform).build());
-        root.addChild(modeCommand("deformar", DEFORM_MODES, DeformCommands::deform).build());
-        root.addChild(modeCommand("surface", SURFACE_MODES, DeformCommands::surface).build());
-        root.addChild(modeCommand("superficie", SURFACE_MODES, DeformCommands::surface).build());
-        root.addChild(plainCommand("smooth", DeformCommands::smooth).build());
-        root.addChild(plainCommand("suavizar", DeformCommands::smooth).build());
-        root.addChild(plainCommand("inflate", (player, args) -> volumeChange(player, args, true)).build());
-        root.addChild(plainCommand("inflar", (player, args) -> volumeChange(player, args, true)).build());
-        root.addChild(plainCommand("deflate", (player, args) -> volumeChange(player, args, false)).build());
-        root.addChild(plainCommand("desinflar", (player, args) -> volumeChange(player, args, false)).build());
-        root.addChild(plainCommand("smoothblocks", DeformCommands::smoothBlocks).build());
-        root.addChild(plainCommand("suavizarpiezas", DeformCommands::smoothBlocks).build());
+        root.addChild(modeCommand("deform", "deform", DEFORM_MODES, DeformCommands::deform).build());
+        root.addChild(modeCommand("deformar", "deform", DEFORM_MODES, DeformCommands::deform).build());
+        root.addChild(modeCommand("surface", "surface", SURFACE_MODES, DeformCommands::surface).build());
+        root.addChild(modeCommand("superficie", "surface", SURFACE_MODES, DeformCommands::surface).build());
+        root.addChild(plainCommand("smooth", "smooth", DeformCommands::smooth).build());
+        root.addChild(plainCommand("suavizar", "smooth", DeformCommands::smooth).build());
+        root.addChild(plainCommand("inflate", "inflate", (player, args) -> volumeChange(player, args, true)).build());
+        root.addChild(plainCommand("inflar", "inflate", (player, args) -> volumeChange(player, args, true)).build());
+        root.addChild(plainCommand("deflate", "deflate", (player, args) -> volumeChange(player, args, false))
+                .build());
+        root.addChild(plainCommand("desinflar", "deflate", (player, args) -> volumeChange(player, args, false))
+                .build());
+        root.addChild(plainCommand("smoothblocks", "smoothblocks", DeformCommands::smoothBlocks).build());
+        root.addChild(plainCommand("suavizarpiezas", "smoothblocks", DeformCommands::smoothBlocks).build());
     }
 
     @FunctionalInterface
@@ -87,11 +89,13 @@ public final class DeformCommands {
 
     private static LiteralArgumentBuilder<ServerCommandSource> modeCommand(
             String name,
+            String family,
             List<String> modes,
             ModeAction action
     ) {
         return literal(name)
-                .requires(DeformCommands::canBuild)
+                .requires(source -> source.getEntity() instanceof ServerPlayerEntity player
+                        && KomaPermissions.canAny(player, KomaPermissions.BUILD + "." + family))
                 .then(argument("mode", StringArgumentType.word())
                         .suggests((context, builder) -> {
                             modes.forEach(builder::suggest);
@@ -105,9 +109,11 @@ public final class DeformCommands {
                                         StringArgumentType.getString(context, "arguments"))))));
     }
 
-    private static LiteralArgumentBuilder<ServerCommandSource> plainCommand(String name, PlainAction action) {
+    private static LiteralArgumentBuilder<ServerCommandSource> plainCommand(String name, String node,
+                                                                           PlainAction action) {
         return literal(name)
-                .requires(DeformCommands::canBuild)
+                .requires(source -> source.getEntity() instanceof ServerPlayerEntity player
+                        && KomaPermissions.canBuild(player, node))
                 .executes(context -> execute(context, player -> action.run(player, "")))
                 .then(argument("arguments", StringArgumentType.greedyString())
                         .executes(context -> execute(context, player -> action.run(player,
@@ -140,6 +146,7 @@ public final class DeformCommands {
         long random = ThreadLocalRandom.current().nextLong();
         switch (mode) {
             case "hexagonalize", "hexagonalise", "hexagonos", "hex" -> {
+                KomaPermissions.requireBuild(player, "deform.hexagonalize");
                 DeformArguments args = DeformArguments.parse(text, Set.of("w"), "");
                 args.expectAtMost(5, "deform hexagonalize [tamaño] [hueco] [giroX] [giroZ] [ángulo] [-w perfil]");
                 double size = args.number(0, 12.0, 1.0, 256.0, "El tamaño");
@@ -151,6 +158,7 @@ public final class DeformCommands {
                         (volume, cancel) -> Deformations.hexagonalize(volume, size, gap, xRotation, zRotation, offset));
             }
             case "noise", "ruido" -> {
+                KomaPermissions.requireBuild(player, "deform.noise");
                 DeformArguments args = DeformArguments.parse(text, Set.of("w", "z", "s", "seed", "semilla"), "hv");
                 args.expectAtMost(2, "deform noise <ruido> [fuerza] [-z zoom] [-s semilla] [-h] [-v] [-w perfil]");
                 if (args.text(0) == null) {
@@ -166,6 +174,7 @@ public final class DeformCommands {
                         (volume, cancel) -> Deformations.noise(volume, spec, strength, zoom, seed, horizontal, vertical));
             }
             case "rotate", "girar", "rotar" -> {
+                KomaPermissions.requireBuild(player, "deform.rotate");
                 DeformArguments args = DeformArguments.parse(text, Set.of("w"), "o");
                 args.expectAtMost(1, "deform rotate <ángulo> [-o] [-w perfil]");
                 double angle = args.required(0, -3_600.0, 3_600.0, "el ángulo");
@@ -182,6 +191,7 @@ public final class DeformCommands {
                                 Deformations.rotate(volume, axis, angle, center), box), profile));
             }
             case "voronoialize", "voronoialise", "voronoi" -> {
+                KomaPermissions.requireBuild(player, "deform.voronoialize");
                 DeformArguments args = DeformArguments.parse(text, Set.of("w", "s", "seed", "semilla"), "");
                 args.expectAtMost(2, "deform voronoialize [tamaño] [hueco] [-s semilla] [-w perfil]");
                 double size = args.number(0, 12.0, 2.0, 256.0, "El tamaño");
@@ -191,6 +201,7 @@ public final class DeformCommands {
                         (volume, cancel) -> Deformations.voronoialize(volume, size, gap, seed));
             }
             case "voronoialize2", "voronoialise2", "voronoi2" -> {
+                KomaPermissions.requireBuild(player, "deform.voronoialize2");
                 DeformArguments args = DeformArguments.parse(text, Set.of("w", "s", "seed", "semilla", "r", "n"), "");
                 args.expectAtMost(2, "deform voronoialize2 <cantidad> [hueco] [-s semilla] [-r uniformidad] "
                         + "[-n profundidad] [-w perfil]");
@@ -204,6 +215,7 @@ public final class DeformCommands {
                                 cancel));
             }
             case "voxelize", "voxelise", "vóxeles", "voxeles" -> {
+                KomaPermissions.requireBuild(player, "deform.voxelize");
                 DeformArguments args = DeformArguments.parse(text, Set.of("w", "s", "seed", "semilla", "i", "j"), "hv");
                 args.expectAtMost(3, "deform voxelize [escalas] [hueco] [distorsión] [-i eje] [-j eje] [-s semilla] "
                         + "[-h] [-v] [-w perfil]");
@@ -219,8 +231,14 @@ public final class DeformCommands {
                         (volume, cancel) -> Deformations.voxelize(volume, scales, gap, distortion, primary, secondary,
                                 seed, horizontal, vertical, cancel));
             }
-            case "cylindrify", "cylindrise", "cilindro" -> project(player, text, false);
-            case "spherify", "spherise", "esfera" -> project(player, text, true);
+            case "cylindrify", "cylindrise", "cilindro" -> {
+                KomaPermissions.requireBuild(player, "deform.cylindrify");
+                project(player, text, false);
+            }
+            case "spherify", "spherise", "esfera" -> {
+                KomaPermissions.requireBuild(player, "deform.spherify");
+                project(player, text, true);
+            }
             default -> throw new IllegalArgumentException("Modo de deformación desconocido: " + modeInput + " ("
                     + String.join(", ", DEFORM_MODES) + ")");
         }
@@ -274,6 +292,7 @@ public final class DeformCommands {
     private static void surface(ServerPlayerEntity player, String modeInput, String text)
             throws IncompleteRegionException {
         SurfaceOps.Mode mode = SurfaceOps.Mode.byId(modeInput);
+        KomaPermissions.requireBuild(player, "surface." + mode.id());
         DeformArguments args = DeformArguments.parse(text, Set.of("w", "m", "seed", "semilla"), "cet");
         long seed = args.seed("seed", ThreadLocalRandom.current().nextLong());
         double radius = args.required(0, 0.1, 32.0, "el radio");
@@ -331,6 +350,7 @@ public final class DeformCommands {
     // ---------------------------------------------------------------- smoothing
 
     private static void smooth(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+        KomaPermissions.requireBuild(player, "smooth");
         DeformArguments args = DeformArguments.parse(text, Set.of("w"), "");
         args.expectAtMost(3, "smooth <radios> [iteraciones] [sesgo] [-w perfil]");
         double[] radii = SmoothingOps.parseRadii(args.text(0) == null ? "2" : args.text(0), 16.0);
@@ -344,6 +364,7 @@ public final class DeformCommands {
 
     private static void volumeChange(ServerPlayerEntity player, String text, boolean grow)
             throws IncompleteRegionException {
+        KomaPermissions.requireBuild(player, grow ? "inflate" : "deflate");
         DeformArguments args = DeformArguments.parse(text, Set.of("w"), "");
         args.expectAtMost(1, (grow ? "inflate" : "deflate") + " <radios> [-w perfil]");
         if (args.text(0) == null) {
@@ -359,6 +380,7 @@ public final class DeformCommands {
     }
 
     private static void smoothBlocks(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+        KomaPermissions.requireBuild(player, "smoothblocks");
         DeformArguments args = DeformArguments.parse(text, Set.of("w"), "");
         args.expectAtMost(3, "smoothblocks <perfil> [radio] [sesgo]");
         String profileText = args.text(0) != null ? args.text(0) : args.value("w");
@@ -467,11 +489,6 @@ public final class DeformCommands {
 
     private static String format(double value) {
         return value == Math.rint(value) ? String.valueOf((long) value) : String.format(Locale.ROOT, "%.1f", value);
-    }
-
-    private static boolean canBuild(ServerCommandSource source) {
-        return source.getEntity() instanceof ServerPlayerEntity player
-                && KomaPermissions.can(player, KomaPermissions.BUILD);
     }
 
     private static net.minecraft.text.MutableText prefix() {
