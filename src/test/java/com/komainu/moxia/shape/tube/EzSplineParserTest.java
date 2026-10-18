@@ -9,6 +9,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -286,16 +287,41 @@ class EzSplineParserTest {
         EzSpline.Request request = EzSpline.parse("structure TS(P:##GlowPurple,S:Heart,T:=(z+y)*.4+.5) 12", null);
         assertEquals(EzSpline.Kind.STRUCTURE, request.kind());
         assertEquals("TS(P:##GlowPurple,S:Heart,T:=(z+y)*.4+.5)", request.structure().source());
-        assertEquals(12.0, request.structure().radius());
+        assertEquals("12", request.structure().radii());
         assertEquals(TubeBender.Mode.REPEAT, request.structure().bend().mode());
         EzSpline.Request stretched = EzSpline.parse("structure Clipboard -z -s 2 -n UPRIGHT -p 0:0.5:0", null);
-        assertTrue(Double.isNaN(stretched.structure().radius()), "sin radio, a su tamaño");
+        assertNull(stretched.structure().radii(), "sin radio, a su tamaño");
         assertEquals(TubeBender.Mode.STRETCH, stretched.structure().bend().mode());
         assertEquals(2.0, stretched.structure().stretch());
         assertEquals(TubeSettings.NormalMode.UPRIGHT, stretched.structure().bend().normalMode());
         assertEquals(0.5, stretched.structure().bend().bias());
-        assertThrows(IllegalArgumentException.class, () -> EzSpline.parse("structure Clipboard 4 -t 90", null));
-        assertThrows(IllegalArgumentException.class, () -> EzSpline.parse("structure Clipboard 2,8", null));
+        assertThrows(IllegalArgumentException.class, () -> EzSpline.parse("structure Clipboard 4 -w Slabs", null));
+        assertThrows(IllegalArgumentException.class, () -> EzSpline.parse("structure Clipboard 2,0", null));
+    }
+
+    @Test
+    void structureSplineKeyframesTwistAndRoll() {
+        EzSpline.Structure keyed = EzSpline.parse("structure Clipboard 4,0.3:12,4 -t 90 -r 45", null).structure();
+        assertEquals("4,0.3:12,4", keyed.radii());
+        assertEquals(90.0, keyed.twist());
+        assertEquals(45.0, keyed.startRoll());
+        assertTrue(Double.isNaN(keyed.endRoll()));
+        TubeBender.Section section = keyed.section(6.0);
+        assertEquals(12, section.baseRadius());
+        assertEquals(6.0, section.inherentRadius());
+        assertEquals(90.0, section.options().get("twist"));
+        assertEquals(45.0, section.options().get("angle"));
+        assertEquals(0.3, section.options().get("p1"), 1.0E-12);
+        EzSpline.Structure ranged = EzSpline.parse("structure Clipboard -r 0,180 -t 30", null).structure();
+        assertEquals(180.0, ranged.endRoll());
+        assertEquals(180.0, ranged.section(3.0).options().get("rollend"));
+        // Sin radios, la sección es la de la propia estructura: escala 1 en todo el recorrido.
+        TubeBender.Section own = ranged.section(6.5);
+        assertEquals(7, own.baseRadius());
+        assertEquals(6.5 / 7 * 100, own.options().get("k0"), 1.0E-9);
+        assertThrows(IllegalArgumentException.class, () -> EzSpline.parse("structure Clipboard -r 0,90,180", null));
+        assertThrows(IllegalArgumentException.class, () -> EzSpline.parse("structure Clipboard 0:4,0.5:2,0.9:3",
+                null));
     }
 
     @Test

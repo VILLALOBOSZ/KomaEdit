@@ -14,7 +14,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Qué losa, escalera, muro o capa corresponde a un bloque.
+ * Qué losa, escalera, muro, capa o panel corresponde a un bloque ({@code glass} → {@code glass_pane},
+ * {@code iron_block} → {@code iron_bars}).
  *
  * <ol>
  *     <li><b>Por nombre.</b> Casi todos los bloques siguen la convención de Minecraft ({@code stone} →
@@ -65,7 +66,8 @@ public final class SmoothMaterials {
             PieceVariant.SLAB, new String[]{"_slab"},
             PieceVariant.STAIR, new String[]{"_stairs"},
             PieceVariant.WALL, new String[]{"_wall", "_fence"},
-            PieceVariant.LAYER, new String[]{"", "_layer", "_layers"}
+            PieceVariant.LAYER, new String[]{"", "_layer", "_layers"},
+            PieceVariant.PANE, new String[]{"_pane", "_bars"}
     );
     private static volatile Map<String, Integer> textureColors;
 
@@ -221,6 +223,7 @@ public final class SmoothMaterials {
             case STAIR -> "stone_brick_stairs";
             case WALL -> "cobblestone_wall";
             case LAYER -> "snow";
+            case PANE -> "glass_pane";
         };
     }
 

@@ -43,7 +43,8 @@ public final class KomaEditConfig {
                     integer(root, "maxConcurrentJobs", Settings.DEFAULT.maxConcurrentJobs()),
                     bool(root, "rootPermissionGrantsAll", Settings.DEFAULT.rootPermissionGrantsAll()),
                     integer(root, "backupRetention", Settings.DEFAULT.backupRetention()),
-                    integer(root, "confirmBuildAboveBlocks", Settings.DEFAULT.confirmBuildAboveBlocks())
+                    integer(root, "confirmBuildAboveBlocks", Settings.DEFAULT.confirmBuildAboveBlocks()),
+                    integer(root, "arraySnapRadius", Settings.DEFAULT.arraySnapRadius())
             );
         } catch (IOException | RuntimeException exception) {
             KomaEditMod.LOGGER.error("Could not load KomaEdit config; safe defaults will be used", exception);
@@ -73,6 +74,7 @@ public final class KomaEditConfig {
         root.addProperty("rootPermissionGrantsAll", value.rootPermissionGrantsAll());
         root.addProperty("backupRetention", value.backupRetention());
         root.addProperty("confirmBuildAboveBlocks", value.confirmBuildAboveBlocks());
+        root.addProperty("arraySnapRadius", value.arraySnapRadius());
         AtomicStorage.writeString(FILE, GSON.toJson(root));
     }
 
@@ -84,19 +86,33 @@ public final class KomaEditConfig {
         return root.has(key) ? root.get(key).getAsBoolean() : fallback;
     }
 
+    /**
+     * @param confirmBuildAboveBlocks por encima de estos bloques, un Build pide confirmación antes de encolarse; 0 no
+     *                                pregunta nunca
+     * @param arraySnapRadius         hasta dónde busca superficie la bandera {@code -b} de {@code array}, en bloques
+     */
     public record Settings(
             int maxBlocksPerOperation,
             int maxConcurrentJobs,
             boolean rootPermissionGrantsAll,
             int backupRetention,
-            int confirmBuildAboveBlocks
+            int confirmBuildAboveBlocks,
+            int arraySnapRadius
     ) {
-        /** Por encima de estos bloques, un Build pide confirmación antes de encolarse; 0 no pregunta nunca. */
-        public static final Settings DEFAULT = new Settings(1_500_000, 4, false, 5, 250_000);
+        public static final int DEFAULT_ARRAY_SNAP_RADIUS = 96;
+        public static final int MAX_ARRAY_SNAP_RADIUS = 256;
+        public static final Settings DEFAULT = new Settings(1_500_000, 4, false, 5, 250_000,
+                DEFAULT_ARRAY_SNAP_RADIUS);
 
         public Settings(int maxBlocksPerOperation, int maxConcurrentJobs, boolean rootPermissionGrantsAll,
                         int backupRetention) {
             this(maxBlocksPerOperation, maxConcurrentJobs, rootPermissionGrantsAll, backupRetention, 250_000);
+        }
+
+        public Settings(int maxBlocksPerOperation, int maxConcurrentJobs, boolean rootPermissionGrantsAll,
+                        int backupRetention, int confirmBuildAboveBlocks) {
+            this(maxBlocksPerOperation, maxConcurrentJobs, rootPermissionGrantsAll, backupRetention,
+                    confirmBuildAboveBlocks, DEFAULT_ARRAY_SNAP_RADIUS);
         }
 
         public Settings {
@@ -111,6 +127,9 @@ public final class KomaEditConfig {
             }
             if (confirmBuildAboveBlocks < 0 || confirmBuildAboveBlocks > 10_000_000) {
                 throw new IllegalArgumentException("confirmBuildAboveBlocks must be between 0 and 10000000");
+            }
+            if (arraySnapRadius < 1 || arraySnapRadius > MAX_ARRAY_SNAP_RADIUS) {
+                throw new IllegalArgumentException("arraySnapRadius must be between 1 and " + MAX_ARRAY_SNAP_RADIUS);
             }
         }
     }

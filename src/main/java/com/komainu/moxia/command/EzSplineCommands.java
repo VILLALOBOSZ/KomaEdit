@@ -14,6 +14,7 @@ import com.komainu.moxia.recipe.StructureBendService;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
 import com.komainu.moxia.shape.tube.EzSpline;
+import com.komainu.moxia.shape.tube.TubeBender;
 import com.komainu.moxia.shape.tube.TubeCurve;
 import com.komainu.moxia.shape.tube.TubeFigures;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -162,10 +163,9 @@ final class EzSplineCommands {
         }
         StructureSource source = StructureSources.parse(spline.source());
         PlacementTemplate template = source.prepare(player, ThreadLocalRandom.current().nextLong());
-        double scale = Double.isNaN(spline.radius()) ? 1.0
-                : spline.radius() / StructureBendService.inherentRadius(template);
-        StructureBendService.Captured captured = StructureBendService.fromPlacement(template, scale,
-                scale * spline.stretch());
+        // La escala, el giro y la torsión se aplican al doblar, punto a punto: la plantilla va a su tamaño.
+        TubeBender.Section section = spline.section(StructureBendService.inherentRadius(template));
+        StructureBendService.Captured captured = StructureBendService.fromPlacement(template, 1.0, 1.0);
         PathSnapshot path = WorldEditService.resolvePath(player);
         UUID playerId = player.getUuid();
         var server = player.getServer();
@@ -174,7 +174,7 @@ final class EzSplineCommands {
                 + "recorrido…");
         AsyncEngine.submit(
                 playerId,
-                () -> StructureBendService.plan(captured, path, spline.bend()),
+                () -> StructureBendService.plan(captured, path, spline.bend(), section),
                 plan -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
                     if (current == null) {

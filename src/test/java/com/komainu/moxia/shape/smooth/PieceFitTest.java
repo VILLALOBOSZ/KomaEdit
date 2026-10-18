@@ -37,7 +37,7 @@ class PieceFitTest {
                     byte piece = SmoothPiece.stairs(facing, half == 1, shape);
                     byte added = SmoothPiece.added(piece);
                     for (byte code : new byte[]{piece, added}) {
-                        assertTrue(code > 0 && SmoothPiece.isValid(code));
+                        assertTrue(code != SmoothPiece.FULL && code != SmoothPiece.EMPTY && SmoothPiece.isValid(code));
                         assertTrue(SmoothPiece.isStairs(code));
                         assertFalse(SmoothPiece.isSlab(code));
                         assertEquals(facing, SmoothPiece.facing(code));

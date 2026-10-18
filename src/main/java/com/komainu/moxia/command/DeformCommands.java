@@ -12,6 +12,7 @@ import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.shape.smooth.SmoothMode;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -339,15 +340,35 @@ public final class DeformCommands {
             }
             default -> throw new IllegalStateException();
         }
-        IntPredicate mask = args.value("m") == null ? null : rawIdMask(BlockMatcher.parse(args.value("m"),
-                DeformCommands::tagIds));
+        RegionMasks.Bound mask = args.value("m") == null ? null
+                : RegionMasks.parse(player, args.value("m"), SURFACE_LISTS);
         SurfaceOps.Settings settings = new SurfaceOps.Settings(radius, displacement, smoothRadius, smoothIterations,
-                args.has('c'), args.has('e'), mask, args.has('t'));
+                args.has('c'), args.has('e'), mask == null ? null : mask::test, args.has('t'));
         SmoothProfile profile = smoothProfile(args.value("w"));
-        RegionOperationService.submit(player, settings.padding(), "Superficie · " + mode.id(),
-                new DeformOperation(DeformOperation.inSelection(
-                        (volume, cancel) -> SurfaceOps.apply(volume, settings, cancel)), profile));
+        DeformOperation operation = new DeformOperation(DeformOperation.inSelection(
+                (volume, cancel) -> SurfaceOps.apply(volume, settings, cancel)), profile);
+        int padding = Math.max(settings.padding(), mask == null ? 0 : mask.padding());
+        RegionOperationService.submit(player, padding, "Superficie · " + mode.id(), (snapshot, edits) -> {
+            if (mask != null) {
+                mask.bind(snapshot);
+            }
+            operation.apply(snapshot, edits);
+        });
     }
+
+    /**
+     * La lista de {@code -m} de siempre (ids y etiquetas {@code #minecraft:logs}, con {@code !} delante para
+     * invertirla), resuelta a ids crudos. Si el texto no es una lista válida de esas, lo lee WorldEdit.
+     */
+    private static final RegionMasks.ListSyntax SURFACE_LISTS = text -> {
+        IntPredicate rawIds;
+        try {
+            rawIds = rawIdMask(BlockMatcher.parse(text, DeformCommands::tagIds));
+        } catch (IllegalArgumentException notAList) {
+            return null;
+        }
+        return info -> rawIds.test(info.rawId());
+    };
 
     // ---------------------------------------------------------------- smoothing
 
