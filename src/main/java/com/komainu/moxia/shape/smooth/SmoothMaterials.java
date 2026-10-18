@@ -33,7 +33,8 @@ import java.util.Set;
  */
 public final class SmoothMaterials {
     private static final int MAX_STEMS = 12;
-    private static final String COLORS = "/assets/komaedit/smooth/colors.txt";
+    /** Recurso de la tabla de colores de textura; también la lee {@code color.BlockColorCatalog}. */
+    public static final String COLORS = "/assets/komaedit/smooth/colors.txt";
     /** Bloques cuya familia tiene otro nombre. */
     private static final Map<String, String> TABLE = Map.ofEntries(
             Map.entry("deepslate", "cobbled_deepslate"),
@@ -202,7 +203,8 @@ public final class SmoothMaterials {
         String line;
         while ((line = reader.readLine()) != null) {
             String[] parts = line.trim().split("\\s+");
-            if (parts.length == 4 && !parts[0].startsWith("#")) {
+            // La quinta columna, si la hay, son banderas para /komaedit color.
+            if (parts.length >= 4 && !parts[0].startsWith("#")) {
                 result.put(parts[0], ColorMatch.rgb(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]),
                         Integer.parseInt(parts[3])));
             }

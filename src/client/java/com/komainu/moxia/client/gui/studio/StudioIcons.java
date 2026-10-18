@@ -10,7 +10,7 @@ public final class StudioIcons {
     public static final int SIZE = 12;
 
     public enum Icon {
-        PATH, FIGURE, STRUCTURES, MODIFIERS, MATERIAL, WEATHER, INSTANCES, RECIPES,
+        PATH, FIGURE, STRUCTURES, MODIFIERS, MATERIAL, WEATHER, INSTANCES, RECIPES, COLOR,
         UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE
     }
 
@@ -60,6 +60,12 @@ public final class StudioIcons {
                 box(context, x + 6, y + 7, 2, 3, color);
                 box(context, x + 8, y + 8, 3, 2, color);
                 box(context, x + 6, y + 4, 1, 1, color);
+            }
+            case COLOR -> {
+                // Tres muestras de oscuro a claro, como una paleta.
+                box(context, x, y + 1, 3, 10, color & 0x66FFFFFF);
+                box(context, x + 4, y + 1, 3, 10, color & 0xAAFFFFFF);
+                box(context, x + 8, y + 1, 3, 10, color);
             }
             case INSTANCES -> {
                 outline(context, x, y, 8, 8, color);

@@ -99,6 +99,9 @@ public final class PermissionNodes {
         add(build + ".snow", Pack.BASIC, build, null, "/komaedit snow");
         add(build + ".drain", Pack.BASIC, build, null, "/komaedit drain");
         add(build + ".waterlog", Pack.BASIC, build, null, "/komaedit waterlog");
+        for (String color : List.of("similar", "gradient", "palette", "hotbar")) {
+            add("komaedit.color." + color, Pack.BASIC, use, null, "/komaedit color " + color);
+        }
         for (String[] entry : new String[][]{{"next", "next"}, {"here", "here"}, {"invert", "invert"},
                 {"delpos2", "delpos"}, {"encapsulate", "encapsulate"}, {"encapsulatenear", "encapsulatenear"},
                 {"catenary", "catenary"}}) {
@@ -159,6 +162,7 @@ public final class PermissionNodes {
         add(build + ".text", Pack.INTERMEDIATE, build, null, "/komaedit text");
         add(build + ".biome", Pack.INTERMEDIATE, build, null, "/komaedit biome");
         add(build + ".brush.biome", Pack.INTERMEDIATE, build, null, "/komaedit pincel biome");
+        add(build + ".shade", Pack.INTERMEDIATE, build, null, "/komaedit shade");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");

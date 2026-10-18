@@ -1,5 +1,6 @@
 package com.komainu.moxia.client.gui;
 
+import com.komainu.moxia.client.gui.studio.ColorStage;
 import com.komainu.moxia.client.gui.studio.StudioIcons;
 import com.komainu.moxia.client.gui.studio.StudioUi;
 import com.komainu.moxia.client.gui.studio.StudioUi.Tone;
@@ -72,6 +73,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.SplittableRandom;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 import static com.komainu.moxia.client.gui.studio.StudioTheme.*;
@@ -120,6 +122,8 @@ public final class ProceduralStudioScreen extends Screen {
     private static final ParameterHistory<ProceduralRecipe> HISTORY = new ParameterHistory<>(100);
     private static final SplittableRandom SEEDS = new SplittableRandom();
     private static ShapeCategory rememberedCategory = ShapeCategory.ALL;
+    /** Etapa de color: su degradado y sus ajustes siguen ahí al reabrir el Studio. */
+    private static final ColorStage COLOR_STAGE = new ColorStage();
 
     private ProceduralRecipe draft = rememberedDraft;
     private int weatherIntensity = 50;
@@ -144,6 +148,8 @@ public final class ProceduralStudioScreen extends Screen {
     private BlockPos axisDragOrigin;
     private double axisDragStart;
     private boolean blockCatalog;
+    /** Si el catálogo de bloques se abrió para elegir un bloque de la etapa de color, a quién se lo entrega. */
+    private Consumer<String> blockPicker;
     private boolean editingName;
     private String nameInput = draft.name();
     private boolean editingFormula;
@@ -349,6 +355,7 @@ public final class ProceduralStudioScreen extends Screen {
             case WEATHER -> drawWeatherStage(column);
             case INSTANCES -> drawInstancesStage(column);
             case RECIPES -> drawRecipesStage(column);
+            case COLOR -> COLOR_STAGE.draw(ui, column, colorHost());
         }
         contentHeight = column.height() + 12;
         ui.popClip();
@@ -1118,7 +1125,33 @@ public final class ProceduralStudioScreen extends Screen {
 
     // ── Ventanas modales ────────────────────────────────────────────────────────────────────────────────
 
+    private ColorStage.Host colorHost() {
+        return new ColorStage.Host() {
+            @Override
+            public String tr(String key, Object... arguments) {
+                return ProceduralStudioScreen.tr(key, arguments);
+            }
+
+            @Override
+            public void send(String command) {
+                sendCommand(command);
+            }
+
+            @Override
+            public void pickBlock(Consumer<String> onPick) {
+                openBlockCatalog();
+                blockPicker = onPick;
+            }
+
+            @Override
+            public void status(String text) {
+                status = text;
+            }
+        };
+    }
+
     private void openBlockCatalog() {
+        blockPicker = null;
         blockCatalog = true;
         blockSearch = "";
         blockScroll = 0;
@@ -1175,6 +1208,12 @@ public final class ProceduralStudioScreen extends Screen {
                 hoveredId = choice.pattern();
             }
             ui.register(cell).onClick(() -> {
+                if (blockPicker != null) {
+                    blockPicker.accept(choice.pattern());
+                    blockPicker = null;
+                    blockCatalog = false;
+                    return;
+                }
                 draft = draft.copy(draft.name(), draft.shape(), choice.pattern(), draft.radius(), draft.spacing(),
                         draft.thickness(), draft.rollDegrees(), draft.height(), "", draft.gradientAxis(),
                         draft.dither(), draft.reverse());
@@ -2305,7 +2344,8 @@ public final class ProceduralStudioScreen extends Screen {
         MATERIAL("gui.komaedit.stage.material", StudioIcons.Icon.MATERIAL),
         WEATHER("gui.komaedit.stage.weather", StudioIcons.Icon.WEATHER),
         INSTANCES("gui.komaedit.stage.instances", StudioIcons.Icon.INSTANCES),
-        RECIPES("gui.komaedit.stage.recipes", StudioIcons.Icon.RECIPES);
+        RECIPES("gui.komaedit.stage.recipes", StudioIcons.Icon.RECIPES),
+        COLOR("gui.komaedit.stage.color", StudioIcons.Icon.COLOR);
 
         private final String titleKey;
         private final String subtitleKey;
