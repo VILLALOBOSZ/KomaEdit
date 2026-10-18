@@ -1,5 +1,7 @@
 package com.komainu.moxia.sculpt;
 
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.World;
 import net.minecraft.server.MinecraftServer;
@@ -35,7 +37,8 @@ public final class SnapshotCaptureService {
                 playerId,
                 WorldSnapshot.begin(world, center, horizontalRadius, verticalRadius),
                 success,
-                failure
+                failure,
+                EditRequests.current()
         ));
     }
 
@@ -68,7 +71,8 @@ public final class SnapshotCaptureService {
                 job.capture.step(MAX_BLOCKS_PER_SLICE, deadline);
                 if (job.capture.complete()) {
                     JOBS.remove(job.playerId);
-                    job.success.accept(job.capture.finish());
+                    // La petición de la orden (vista previa…) sigue activa para el cálculo que salga de la foto.
+                    EditRequests.within(job.request, () -> job.success.accept(job.capture.finish()));
                 }
             } catch (RuntimeException exception) {
                 JOBS.remove(job.playerId);
@@ -85,7 +89,8 @@ public final class SnapshotCaptureService {
             UUID playerId,
             WorldSnapshot.Capture capture,
             Consumer<WorldSnapshot> success,
-            Consumer<Throwable> failure
+            Consumer<Throwable> failure,
+            EditRequest request
     ) {
     }
 }

@@ -80,6 +80,20 @@ class PermissionNodesTest {
     }
 
     @Test
+    void symmetryNodesFollowThePacks() {
+        Predicate<String> intermediate = holding("komaedit.permpack.intermediate");
+        assertTrue(PermissionNodes.allows("komaedit.build.symmetry.reflectional", intermediate));
+        assertTrue(PermissionNodes.allows("komaedit.build.symmetry.rotational", intermediate));
+        assertFalse(PermissionNodes.allows("komaedit.build.symmetry.worldedit", intermediate));
+        assertTrue(PermissionNodes.allows("komaedit.build.symmetry.worldedit", holding("komaedit.permpack.advanced")));
+        assertFalse(PermissionNodes.allowsAny("komaedit.build.symmetry", holding("komaedit.permpack.basic")));
+        assertTrue(PermissionNodes.allowsAny("komaedit.build.symmetry", holding("komaedit.build.symmetry.rotational")));
+        assertTrue(PermissionNodes.allows("komaedit.build.symmetry.worldedit", holding("komaedit.build.symmetry")));
+        assertEquals("ezedits.symmetry.reflectional",
+                PermissionNodes.find("komaedit.build.symmetry.reflectional").ezEdits());
+    }
+
+    @Test
     void everyNodeIsUniqueAndDescribed() {
         Set<String> seen = new HashSet<>();
         List<PermissionNodes.Node> nodes = PermissionNodes.all();

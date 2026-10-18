@@ -1,11 +1,15 @@
 package com.komainu.moxia.placement;
 
+import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.shape.Vec3;
@@ -78,8 +82,13 @@ import java.util.stream.Stream;
 public final class PlacementService {
     public static final int MAX_STRUCTURE_VOLUME = 2_000_000;
     public static final int MAX_SCHEMATICS = 32;
-    /** Radio de búsqueda de superficie de {@code -b}; se recorta si la caja de la trayectoria es muy grande. */
-    public static final int SNAP_RADIUS = 96;
+    /**
+     * Radio de búsqueda de superficie de {@code -b}: {@code arraySnapRadius} de {@code config/komaedit/config.json}
+     * (96 por defecto, como ezEdits). Se recorta si la caja de la trayectoria no cabe en el límite de lectura.
+     */
+    public static int snapRadius() {
+        return KomaEditConfig.settings().arraySnapRadius();
+    }
     private static final long GOLDEN = 0x9E3779B97F4A7C15L;
 
     private PlacementService() {
@@ -110,7 +119,24 @@ public final class PlacementService {
      */
     public static String startBrush(ServerPlayerEntity player, PlacementSettings settings, BrushTarget target)
             throws IncompleteRegionException {
-        return start(player, settings.kind(), settings, target);
+        EditRequest previous = EditRequests.current();
+        if (previous != null) {
+            return start(player, settings.kind(), settings, target);
+        }
+        // Clic de pincel: se coloca al momento, sin la vista previa universal.
+        String[] started = new String[1];
+        IncompleteRegionException[] incomplete = new IncompleteRegionException[1];
+        EditRequests.within(EditRequest.TOOL, () -> {
+            try {
+                started[0] = start(player, settings.kind(), settings, target);
+            } catch (IncompleteRegionException exception) {
+                incomplete[0] = exception;
+            }
+        });
+        if (incomplete[0] != null) {
+            throw incomplete[0];
+        }
+        return started[0];
     }
 
     private static String start(ServerPlayerEntity player, PlacementSettings.Kind kind, PlacementSettings parsed,
@@ -445,7 +471,7 @@ public final class PlacementService {
             maxY = Math.max(maxY, point.y());
             maxZ = Math.max(maxZ, point.z());
         }
-        int margin = SNAP_RADIUS;
+        int margin = snapRadius();
         while (margin > 4 && (long) (maxX - minX + 1 + 2 * margin) * (maxY - minY + 1 + 2 * margin)
                 * (maxZ - minZ + 1 + 2 * margin) > RegionOperationService.MAX_CAPTURE_BLOCKS) {
             margin -= 4;
@@ -615,7 +641,7 @@ public final class PlacementService {
                     PlacementPath line = PlacementPath.create(controls, path.closed(), array.tension(), array.bias(),
                             array.continuity(), array.normalMode());
                     ArrayPlanner.SurfaceSnapper snapper = snapshot == null ? null
-                            : ArrayPlanner.snapper(snapshot, SNAP_RADIUS);
+                            : ArrayPlanner.snapper(snapshot, snapRadius());
                     placements.addAll(ArrayPlanner.plan(line, builder, eye, view, snapper));
                 }
             }
@@ -769,6 +795,9 @@ public final class PlacementService {
                                     ? cover : shape, description());
                 } else {
                     queued = BatchEditService.submit(player, output.plan(), "air", description());
+                }
+                if (PlanPreviews.holds(playerId, output.plan())) {
+                    return;
                 }
                 String covered = output.cover().isEmpty() ? "" : " · " + output.cover().size() + " superficies cubiertas";
                 player.sendMessage(message(description() + ": " + output.placements() + " "

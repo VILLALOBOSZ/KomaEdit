@@ -3,6 +3,7 @@ package com.komainu.moxia.ivy;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
@@ -229,7 +230,11 @@ public final class IvyService {
                 int expected = rawIds.get(snapshot.get(block.x(), block.y(), block.z()));
                 builder.addConditionalOverride(block.x(), block.y(), block.z(), expected, state(block));
             }
-            int queued = BatchEditService.submit(player, builder.build(), "air", "Hiedra viva");
+            PackedBlockPlan built = builder.build();
+            int queued = BatchEditService.submit(player, built, "air", "Hiedra viva");
+            if (PlanPreviews.holds(player.getUuid(), built)) {
+                return;
+            }
             StringBuilder text = new StringBuilder("Hiedra viva en cola: " + queued + " bloques · "
                     + settings.style().displayName() + " · semilla " + settings.seed().orElseThrow());
             if (result.seedsSkipped() > 0) {

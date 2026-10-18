@@ -4,6 +4,7 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
@@ -170,13 +171,16 @@ public final class ImageService {
         Runnable submit = () -> {
             try {
                 int queued = BatchEditService.submit(player, built.plan(), "air", description);
+                if (PlanPreviews.holds(player.getUuid(), built.plan())) {
+                    return;
+                }
                 success(player, "Imagen «" + name + "»: " + summary + " · en cola " + queued
                         + " bloques · //undo para deshacer");
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 fail(player, "Imagen «" + name + "»: " + readable(exception));
             }
         };
-        PendingBuilds.submitOrHold(player, description, BuildEstimate.of(built.plan()), submit);
+        PendingBuilds.submitOrHold(player, description, BuildEstimate.of(built.plan()), submit, true);
     }
 
     // ---------------------------------------------------------------- Paleta

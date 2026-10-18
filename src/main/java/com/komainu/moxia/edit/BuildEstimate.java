@@ -34,8 +34,7 @@ public record BuildEstimate(
     }
 
     public static BuildEstimate of(int blocks, int pieces, int chunks, BlockBounds bounds) {
-        double ticks = Math.ceil((double) blocks / BLOCKS_PER_TICK);
-        return new BuildEstimate(blocks, pieces, chunks, bounds, (long) blocks * BYTES_PER_BLOCK, ticks / 20.0);
+        return new BuildEstimate(blocks, pieces, chunks, bounds, (long) blocks * BYTES_PER_BLOCK, placeSeconds(blocks));
     }
 
     public int sizeX() {
@@ -64,6 +63,31 @@ public record BuildEstimate(
         builder.append(" · ~").append(memory(memoryBytes));
         builder.append(" · ~").append(duration(seconds));
         return builder.toString();
+    }
+
+    /** Bloques por tick que lee de media la captura de una región (unos 4 ms por tick). */
+    public static final int READ_BLOCKS_PER_TICK = 50_000;
+
+    /** Segundos aproximados de colocar {@code blocks} bloques con la cola de KomaEdit. */
+    public static double placeSeconds(long blocks) {
+        return Math.ceil((double) Math.max(0L, blocks) / BLOCKS_PER_TICK) / 20.0;
+    }
+
+    /** Segundos aproximados de leer una región de {@code blocks} bloques antes de calcular. */
+    public static double readSeconds(long blocks) {
+        return Math.ceil((double) Math.max(0L, blocks) / READ_BLOCKS_PER_TICK) / 20.0;
+    }
+
+    /**
+     * Aviso si el plan supera el límite de la sesión de WorldEdit ({@code //limit}; negativo = sin límite): la
+     * edición se parará al llegar y lo colocado hasta ahí quedará en //undo.
+     */
+    public static java.util.Optional<String> limitWarning(long blocks, int sessionLimit) {
+        if (sessionLimit < 0 || blocks <= sessionLimit) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of("Supera tu //limit de WorldEdit (" + group(sessionLimit) + " bloques): se parará"
+                + " ahí y lo colocado quedará en //undo; súbelo con //limit si quieres hacerlo entero");
     }
 
     /** Si hay que pedir confirmación antes de construir: umbral 0 = nunca. */

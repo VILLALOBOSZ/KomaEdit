@@ -1,5 +1,6 @@
 package com.komainu.moxia.generator;
 
+import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionSnapshot;
 
 import java.util.Arrays;
@@ -12,7 +13,7 @@ public final class SnapshotTerrain implements Volume, NoiseGenerator.Surface, Fl
     private static final int UNKNOWN = Integer.MAX_VALUE;
 
     private final RegionSnapshot snapshot;
-    private final SnapshotMask mask;
+    private final RegionMasks.Bound mask;
     private final int minimumX;
     private final int minimumY;
     private final int minimumZ;
@@ -22,12 +23,18 @@ public final class SnapshotTerrain implements Volume, NoiseGenerator.Surface, Fl
     private final int[] maskTops;
     private final int[] surfaces;
 
-    /**
-     * @param mask máscara de {@code -m} o {@code null}
-     */
+    /** @param mask lista de bloques de {@code -m} o {@code null} */
     public SnapshotTerrain(RegionSnapshot snapshot, SnapshotMask mask) {
+        this(snapshot, mask == null ? null : RegionMasks.list(mask.toString(), mask::test));
+    }
+
+    /** @param mask máscara de {@code -m} (lista o de WorldEdit) o {@code null}; se conecta aquí a la foto */
+    public SnapshotTerrain(RegionSnapshot snapshot, RegionMasks.Bound mask) {
         this.snapshot = snapshot;
         this.mask = mask;
+        if (mask != null) {
+            mask.bind(snapshot);
+        }
         int[] bounds = selectionBounds(snapshot);
         minimumX = bounds[0];
         minimumY = bounds[1];
@@ -118,7 +125,7 @@ public final class SnapshotTerrain implements Volume, NoiseGenerator.Surface, Fl
         if (maskTops[column] == UNKNOWN) {
             int found = NoiseGenerator.Surface.NONE;
             for (int y = maximumY; y >= minimumY; y--) {
-                if (snapshot.selected(x, y, z) && (mask == null ? ground(x, y, z) : mask.test(snapshot.info(x, y, z)))) {
+                if (snapshot.selected(x, y, z) && (mask == null ? ground(x, y, z) : mask.test(x, y, z))) {
                     found = y;
                     break;
                 }
@@ -149,7 +156,7 @@ public final class SnapshotTerrain implements Volume, NoiseGenerator.Surface, Fl
 
     @Override
     public boolean source(int x, int y, int z) {
-        return mask == null || mask.test(snapshot.info(x, y, z));
+        return mask == null || mask.test(x, y, z);
     }
 
     private boolean ground(int x, int y, int z) {

@@ -66,7 +66,7 @@ class SnapshotTerrainTest {
         assertEquals(2, terrain.top(3, 3), "la máscara busca la piedra más alta");
         assertTrue(terrain.source(1, 1, 1));
         assertFalse(terrain.source(1, 3, 1));
-        SnapshotTerrain plain = new SnapshotTerrain(hills(), null);
+        SnapshotTerrain plain = new SnapshotTerrain(hills(), (SnapshotMask) null);
         assertEquals(3, plain.top(4, 4));
     }
 
