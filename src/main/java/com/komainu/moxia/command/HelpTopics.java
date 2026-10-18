@@ -137,7 +137,8 @@ public final class HelpTopics {
                             new Entry("/komaedit smoothblocks <perfil> [radio] [sesgo]",
                                     "Suaviza con piezas; todas admiten -w Slabs|SlabsAndStairs|SlabsAndStairs2D|Layers|SSW")
                     )),
-            new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass"), List.of(
+            new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass", "image",
+                    "imagen"), List.of(
                     new Entry("/komaedit texture ambient|curvature <máscara> <paleta> [radio] [brillo] [contraste] [-w]",
                             "Oclusión ambiental o curvatura (alias textura)"),
                     new Entry("/komaedit texture axisgradient <máscara> <paleta> [x|y|z] [-r]", "Degradado por eje"),
@@ -154,7 +155,9 @@ public final class HelpTopics {
                     new Entry("/komaedit texture advanced <máscara> <paleta> <textura>",
                             "Combina modos: WeightedAverage(T1:Sun(),T2:Ambient())"),
                     new Entry("/komaedit glassgradient <inicio> [fin] <capas> [longitud] [calidad] [dirección] [-c] [-b] [-s]",
-                            "Vidriera degradada de cristal tintado (alias vidriera)")
+                            "Vidriera degradada de cristal tintado (alias vidriera)"),
+                    new Entry("/komaedit image <archivo|https://…> [ancho] [paleta] [-d none|fs|bayer] [-s] [-o anclaje]",
+                            "Imagen en bloques: vidrio, paneles, lana, hormigón, terracota o tu paleta (alias imagen)")
             )),
             new Topic("generators", "Generadores", List.of("generadores", "forma", "shape", "noisegen", "ruidogen",
                     "flowfield", "flujo", "flowline"), List.of(
