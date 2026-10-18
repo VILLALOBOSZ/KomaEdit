@@ -1,5 +1,6 @@
 package com.komainu.moxia.brush.ez;
 
+import com.komainu.moxia.biome.BiomeService;
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.brush.BrushMarkers;
 import com.komainu.moxia.brush.place.Alignment;
@@ -13,6 +14,7 @@ import com.komainu.moxia.placement.PlacementSettings;
 import com.komainu.moxia.shape.Vec3;
 import com.komainu.moxia.noise.SavedNoises;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.world.biome.BiomeType;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -108,6 +110,12 @@ public abstract sealed class EzBrush {
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
             case SCATTER, ARRAY -> throw new IllegalStateException(type.id());
+            case BIOME -> {
+                BiomeType biome = BiomeService.parse(
+                        options.required(0, "el bioma (cherry_grove, snowy_plains…)"));
+                int radius = options.integer(1, DEFAULT_RADIUS, 1, MAX_RADIUS, "El radio");
+                yield new Biome(biome, radius, options.has('v'), options.has('m') ? options.flag('m') : null);
+            }
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -412,6 +420,44 @@ public abstract sealed class EzBrush {
             basis = Alignment.rotateAroundUp(basis, source.quarterTurns());
             PlacementTemplate template = source.prepare(player, seed);
             session.run(new PlacementOperation(source.describe(), template, basis, target, placeAir));
+        }
+    }
+
+    /**
+     * Pintar biomas: clic derecho pinta una esfera de celdas de 4×4×4 alrededor del bloque mirado; clic izquierdo
+     * toma el bioma de ese bloque (cuentagotas). Cada clic es una edición de //undo.
+     */
+    static final class Biome extends EzBrush {
+        private BiomeType biome;
+        private final boolean vertical;
+        private final String mask;
+
+        Biome(BiomeType biome, int radius, boolean vertical, String mask) {
+            super(EzBrushType.BIOME, radius, false);
+            this.biome = biome;
+            this.vertical = vertical;
+            this.mask = mask;
+        }
+
+        @Override
+        public String controls() {
+            return "clic derecho: pinta " + biome.id() + (vertical ? " en toda la columna" : "")
+                    + " · clic izquierdo: toma el bioma del bloque mirado";
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input.swap()) {
+                return;
+            }
+            if (input.left()) {
+                var hit = session.hit();
+                String picked = BiomeService.biomeAt(session.player().getServerWorld(), hit.getBlockPos());
+                biome = BiomeService.parse(picked);
+                session.info("Bioma del pincel: " + picked);
+                return;
+            }
+            BiomeService.paintSphere(session.player(), biome, session.target(), radius(), vertical, mask);
         }
     }
 
