@@ -156,7 +156,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| Perfiles, materiales y Coverage de `-w` y `//ezsmoothblocks` | `-w Slabs|SlabsAndStairs(C:…)` (`deform/SmoothProfile`) | En curso (`agent/ez-smoothblocks`) |
+| Perfiles `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW`; Coverage `C:`; materiales por variante (`Slab:`, `Stair:`…); color más cercano | `-w <perfil>(C:…,Slab:…)` (`deform/SmoothProfile`, `shape/smooth/PieceFit`, `PieceSolver`, `SmoothMaterials`) | Completo |
 
 ## Deformation
 
@@ -204,7 +204,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
 | `//ezplace`, `//ezscatter`, `//ezarray` y sus pinceles | `/komaedit place`, `scatter`, `array` (`PlacementCommands`, `PlacementService`) y `/komaedit pincel place\|scatter\|array` | Completo |
-| `-w <smoothblocks>` en las tres | `-w slabs\|stairs[:cobertura]` | En curso (perfiles completos en `agent/ez-smoothblocks`) |
+| `-w <smoothblocks>` en las tres | `-w <perfil>(C:…,Slab:…)` | Completo |
 | `//ezspline structure` | — | En curso (`agent/ez-splines`) |
 
 ## Available Structures
@@ -265,7 +265,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | --- | --- | --- |
 | `//ezsmooth <radios> <iteraciones> <sesgo> [-w]` | `/komaedit smooth` (`deform/SmoothingOps`) | Completo |
 | `//ezinflate`, `//ezdeflate <radios> [-w]` | `/komaedit inflate\|deflate` | Completo |
-| `//ezsmoothblocks <perfil> <radio> <sesgo>` | `/komaedit smoothblocks` | En curso (`agent/ez-smoothblocks`) |
+| `//ezsmoothblocks <perfil> <radio> <sesgo>` | `/komaedit smoothblocks` | Completo |
 
 ## Spline (y Common Parameters, 2D, 3D y Advanced Spline Shapes)
 

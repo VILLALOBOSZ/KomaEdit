@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Smoothblocks con los perfiles de ezEdits.** `-w` acepta `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers` (capas de nieve) y `SSW` (losas, escaleras y muros), con la cobertura `C:` de 0 a 1 y materiales fijos por variante: `-w SlabsAndStairs(C:0.7,Slab:oak,Stair:spruce)`. Funciona igual en las figuras de tubo, `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `place`, `array` y `scatter` (también en sus pinceles). Siguen valiendo `slabs`, `stairs`, `stairs:0.7` y `-c`.
+- `SlabsAndStairs` elige ahora las esquinas de las escaleras en 3D, mirando a las vecinas y a la regla de Minecraft; el comportamiento anterior, escaleras rectas una a una, es `SlabsAndStairs2D`.
+- Material por defecto: la pieza del mismo nombre o, si el bloque no la tiene, la del color más parecido según la media de las texturas vanilla (ΔE de CIELAB), en lugar del color de mapa. La tabla de familias cubre más casos (pizarra reforzada, verruga del Nether, basalto liso, cobre cincelado y encerado…); la madera usa su valla como muro.
+- Las capas de nieve solo se colocan con apoyo, y los muros solo donde encajan mejor que el bloque.
+- El holograma dibuja capas y muros, y el Studio recorre los perfiles nuevos en la fila **Piezas**.
 - **Rediseño del Procedural Studio.** Todo vive en un único panel opaco a la derecha (barra de herramientas, etapas con icono y nombre, contenido desplazable y un pie fijo con figura, material, estimación, estado y Construir); el mundo queda libre, el chat se ve y el marcador del servidor ya no se transparenta. Fuera la barra inferior, la cabecera sobre el mundo, el lema, la tarjeta de nodos duplicada, el segundo botón «Añadir puntos» y la tarjeta de navegación fija.
 - Jerarquía nueva: título de etapa en negrita, secciones en color de acento con una línea, etiquetas en gris y valores en acento; Construir es la única acción con relleno. Sin mayúsculas forzadas, filas de 20 píxeles en lugar de 25–30 e interruptores con pulsador para las opciones de sí o no.
 - La etapa Trayectoria enseña la lista de nodos (un clic elige el nodo para moverlo) y el estado abierto o cerrado; el nombre de la receta y Guardar pasan a la etapa Recetas.

@@ -455,8 +455,8 @@ También está disponible con el comando general:
 | `-k <2–8>` | `strands` | Hebras de la trenza. |
 | `-f <frecuencia>` | `frequency` | Tamaño de las vetas del tubo erosionado. |
 | `-fill` | `filled` | Rellena el alma de la cuerda. |
-| `-w <modo>` / Piezas | `smooth` | `none` (bloques enteros), `slabs` (losas) o `stairs` (losas y escaleras). |
-| `-c <0–1>` / Cobertura | `coverage` | Cuánta superficie se cubre con piezas: `0` solo bloques enteros, `0.5` (por defecto) la pieza que mejor encaja, `1` toda la superficie que no esté entera. `-c` sin `-w` activa `stairs`. |
+| `-w <perfil>` / Piezas | `smooth` | Perfil de smoothblocks: `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers` o `SSW`, con cobertura y materiales opcionales (`SlabsAndStairs(C:0.7,Slab:oak)`); ver [Smoothblocks: perfiles de `-w`](#smoothblocks-perfiles-de--w). Siguen valiendo `none`, `slabs` y `stairs`. |
+| `-c <0–1>` / Cobertura | `coverage` | Cuánta superficie se cubre con piezas: `0` solo bloques enteros, `0.5` (por defecto) la pieza que mejor encaja, `1` toda la superficie que no esté entera. `-c` sin `-w` activa `stairs`. Equivale a `C:` dentro del perfil. |
 
 Perfiles: `circle`, `square`, `diamond`, `rounded`, `polygon`, `star`, `flower`, `rope`, `ellipse` y `rectangle` (también en español: `circulo`, `estrella`, `cuerda`…). Un número al final fija los lados: `polygon6`, `star5`, `rope4`.
 
@@ -471,21 +471,20 @@ Ejemplos:
 /komaedit sweep polygon6 10 deepslate_tiles -hollow 2 -n horizontal
 /komaedit braid 7 stripped_birch_wood -k 4
 /komaedit noisetube 2_12_4 60%stone,25%andesite,15%cobblestone -e round
-/komaedit sweep circle 9 stone_bricks -w stairs
-/komaedit sweep ellipse 12 smooth_stone -a 0.4 -n horizontal -w slabs -c 0.7
+/komaedit sweep circle 9 stone_bricks -w SlabsAndStairs
+/komaedit sweep ellipse 12 smooth_stone -a 0.4 -n horizontal -w Slabs(C:0.7)
+/komaedit sweep circle 6 white_wool -w SlabsAndStairs(Slab:birch,Stair:birch)
+/komaedit noisetube 2_12_4 stone -w Layers
 ```
 
 ### Losas y escaleras en la superficie
 
-Los tubos hechos solo con bloques enteros dejan escalones en la superficie. Con **Piezas** (`-w`) los bloques del borde que la figura solo ocupa en parte se sustituyen por losas o escaleras orientadas del mismo material, y los huecos vacíos que la figura casi llena reciben una pieza.
+Los tubos hechos solo con bloques enteros dejan escalones en la superficie. Con **Piezas** (`-w`) los bloques del borde que la figura solo ocupa en parte se sustituyen por las piezas del perfil (losas, escaleras, capas de nieve o muros) orientadas y del mismo material, y los huecos vacíos que la figura casi llena reciben una pieza. Los perfiles, la cobertura y los materiales son los mismos en todos los comandos: [Smoothblocks: perfiles de `-w`](#smoothblocks-perfiles-de--w). Aquí, lo propio de los tubos.
 
 - **Medición:** cada bloque de la superficie, y cada hueco vacío pegado a ella, se divide en 8 octantes. La misma función implícita que decide la figura mide qué fracción de cada octante queda dentro: el centro de cada octante y, si el bloque está a medias, cuatro muestras más en damero (con calidad `fast`, solo el centro). Para no localizar el eje en cada muestra, se localiza el centro del bloque y tres puntos a un cuarto de bloque y el resto se interpola; cerca de los extremos, en la costura de los lazos o donde el eje salta, cada muestra se localiza por separado.
-- **Elección:** las piezas candidatas son las dos losas y, con `stairs`, las escaleras rectas en las cuatro orientaciones, apoyadas o colgadas. Gana la que menos se aleja de la ocupación medida, y sustituye al bloque (o rellena el hueco) si mejora el encaje en más que el umbral de la cobertura. Con `0.5` basta con encajar mejor; hacia `0` hace falta tanta ventaja que no se usa ninguna; con `1` se aceptan piezas hasta dos octantes peores.
-- **Esquinas como en vanilla:** al colocar bloques, Minecraft recalcula la forma de cada escalera según las escaleras de alrededor. El plan ya trae esa forma (esquinas interiores y exteriores) calculada con la misma regla, así el mundo queda igual que el holograma.
-- **Material:** la pieza sale del bloque que elige el patrón en esa posición, también con patrones aleatorios, degradados y **Patrón figura**. La familia se busca por nombre (`stone` → `stone_slab`/`stone_stairs`, `stone_bricks` → `stone_brick_*`, `oak_planks` o `oak_log` → `oak_*`, `quartz_pillar` → `quartz_*`, cobre → cobre cortado) con una tabla para los casos sin convención (`deepslate` → `cobbled_deepslate`, `smooth_stone` → losa propia y escalera de `stone`, `end_stone` → `end_stone_brick`…). Funciona igual con bloques de otros mods que sigan la convención.
-- **Sin familia:** si el bloque no tiene losas o escaleras (hormigón, lana, basalto…), se usa la losa o escalera registrada con el color de mapa más parecido, solo si el color se parece de verdad. Si tampoco hay, el bloque de la figura se queda entero y la pieza que iba en un hueco vacío no se coloca.
-- **No se convierten:** cristal, hojas y demás bloques no opacos, bloques con entidad (cofres, hornos…) y patrones que ya son losas o escaleras (estos solo se orientan).
-- **Holograma:** dibuja las losas y escaleras con su forma real, por medios bloques, y el estado indica cuántas hay.
+- **Elección, esquinas y material:** como en el resto de comandos (ver la sección de perfiles). La pieza sale del bloque que elige el patrón en esa posición, también con patrones aleatorios, degradados y **Patrón figura**.
+- **Materiales fijos:** `-w Slabs(Slab:acacia)` vale para el comando; la receta guardada del Studio recuerda el perfil y la cobertura, pero no los materiales fijos.
+- **Holograma:** dibuja las losas y escaleras con su forma real, por medios bloques, las capas con su altura y los muros como su columna central; el estado indica cuántas piezas hay.
 
 Limitaciones:
 
@@ -1222,13 +1221,76 @@ Alias: `suavizar`, `inflar`, `desinflar` y `suavizarpiezas`.
 - smooth lee un margen de dos veces el radio por iteración (como mucho 32 bloques); inflate y deflate, el radio. Radios de hasta 16 en smooth y smoothblocks y de hasta 30 en inflate y deflate, con 1–32 iteraciones.
 - Al suavizar un terreno, lo que se talla deja a la vista la capa de debajo (tierra o piedra). La hierba no se vuelve a poner encima.
 
-## Losas y escaleras en las operaciones sobre la selección (`-w`)
+## Smoothblocks: perfiles de `-w`
 
-Todos los modos de deform, surface y suavizado admiten `-w <perfil>`, como la bandera de smoothblocks de ezEdits. Cada bloque de la superficie del resultado se mide por octantes y se sustituye por la losa o escalera que mejor encaja, del mismo material (o del más parecido por color si ese material no tiene piezas), con la misma elección que las figuras de tubo.
+Smoothblocks termina las superficies con piezas que no ocupan el bloque entero (losas, escaleras, capas de nieve y muros) para que las curvas y pendientes queden suaves, como el smoothblocks de ezEdits. Se activa con `-w <perfil>` y funciona igual en todos los comandos que lo admiten en ezEdits:
 
-- Perfiles: `Slabs` (losas) y `SlabsAndStairs` o `SAS` (losas y escaleras). También valen los nombres de KomaEdit `slabs`, `stairs`, `losas` y `escaleras`. `SlabsAndStairs2D` y `SSW` se tratan como `SlabsAndStairs`.
-- Cobertura entre paréntesis: `Slabs(C:0.7)`. 0,5 es lo más fiel; hacia 1 se usan piezas en toda la superficie y hacia 0 casi ninguna.
-- Limitaciones: no hay perfil `Layers` (capas de nieve), ni muros, ni materiales a elegir por pieza (`Slabs(Slab:acacia)`). Las piezas salen del bloque original.
+| Comando | Equivale en ezEdits |
+| --- | --- |
+| Figuras de tubo: `sweep`, `braid`, `noisetube`, `expr` (y la fila **Piezas** del Studio) | `//ezspline … -w` |
+| `deform <modo> … -w` | `//ezdeform` |
+| `surface <modo> … -w` | `//ezsurface` |
+| `smooth`, `inflate`, `deflate … -w` y `smoothblocks <perfil> [radio] [sesgo]` | `//ezsmooth`, `//ezinflate`, `//ezdeflate`, `//ezsmoothblocks` |
+| `place`, `array`, `scatter … -w` y sus pinceles | `//ezplace`, `//ezarray`, `//ezscatter` |
+
+### Perfiles
+
+| Perfil | Alias | Piezas | Notas |
+| --- | --- | --- | --- |
+| `Slabs` | `SlabsOnly`, `slabs`, `losas` | losa abajo y arriba | El más rápido. |
+| `SlabsAndStairs` | `SAS`, `stairs`, `escaleras` | losas y escaleras en las 4 orientaciones, apoyadas o colgadas, con esquinas interiores y exteriores | Esquinas en 3D: ver abajo. |
+| `SlabsAndStairs2D` | `SAS2D`, `stairs2d`, `escaleras2d` | las mismas | Cada escalera se elige recta y sola; las esquinas solo salen donde Minecraft las fuerza. Más rápido que el 3D. |
+| `Layers` | `capas`, `nieve`, `snow` | capas de nieve de 1 a 7 | Alturas de 1/8 de bloque, siempre apoyadas en el suelo. |
+| `SSW` | `SlabsStairsWalls`, `muros` | losas, escaleras y muros | Los muros toman las columnas finas que no llenan ni media pieza. |
+
+Las mayúsculas, `_` y `-` no importan. `none` (o no poner `-w`) deja solo bloques enteros.
+
+### Parámetros
+
+Van entre paréntesis tras el nombre, separados por comas, en cualquier orden:
+
+- **Cobertura `C:<0–1>`** (también `coverage:` o `cobertura:`): cuánta superficie se cubre con piezas. `0` coloca solo bloques enteros; `0.5` (por defecto) pone una pieza solo donde encaja mejor que el bloque entero y da los contornos más fieles; `1` pone pieza en cada bloque de superficie que no esté entero, aceptando piezas hasta dos octantes peores (escaleras en cada esquina posible: menos fiel, pero se ve nítido con el sombreado de Minecraft). Los muros nunca se ponen por cobertura: solo donde encajan mejor.
+- **Material por variante** `Slab:`, `Stair:`, `Wall:` y `Layer:` (también `losa:`, `escalera:`, `muro:`, `capa:`): fija el material de esa pieza para todo el comando, sea cual sea el bloque del patrón. Vale la pieza (`acacia_slab`, `minecraft:spruce_stairs`), el nombre corto de su familia (`acacia`, `cobblestone`) o cualquier bloque, que se cambia por su pieza como si lo pusiera el patrón (`oak_planks`, `white_wool`). Solo se admiten las variantes que usa el perfil (`Slabs(Stair:oak)` da error), y un material inexistente se avisa al escribir la orden.
+
+La forma antigua `stairs:0.7` (cobertura tras dos puntos) sigue funcionando. Un perfil con espacios tras las comas también se lee bien en tubos y en deform, surface y suavizado; en `place`, `array` y `scatter` los paréntesis ya agrupan.
+
+```text
+/komaedit sweep circle 6 smooth_sandstone -w SlabsAndStairs
+/komaedit smooth 3 2 0 -w SSW(C:0.5)
+/komaedit deform noise Perlin(F:0.08) 3 -w Layers
+/komaedit surface rockify 3 -w SlabsAndStairs(C:1)
+/komaedit smoothblocks SlabsAndStairs(Slab:acacia,Stair:spruce) 2 0
+/komaedit place Clipboard Aim -w Slabs
+/komaedit scatter Sh(S:Ellipsoid,P:stone) -w SSW(C:0.3,Wall:cobblestone)
+```
+
+### Cómo se elige cada pieza
+
+1. **Medición.** Cada bloque de la superficie, y cada hueco vacío pegado a ella, se divide en 8 octantes y se mide qué fracción de cada uno queda dentro de la forma (con más muestras en los bloques mixtos; con `Layers`, cuatro alturas por octante para acertar el número de capas).
+2. **Encaje.** Cada pieza del perfil sabe cuánto llena de cada octante (losas y escaleras, octantes enteros; una capa, octavos de altura; un muro, la cuarta parte central de cada octante). El error es la suma de diferencias con lo medido. Gana la pieza de menor error, y sustituye al bloque (o rellena el hueco) si mejora al original en más que el umbral de la cobertura. Un bloque que ya encaja casi perfecto (lleno, o una esquina apenas rozada) se queda como está aunque la cobertura sea 1.
+3. **Esquinas en 3D** (`SlabsAndStairs` y `SSW`). Minecraft decide la forma de cada escalera (recta, esquina interior o exterior) por la orientación de las escaleras de alrededor, así que elegirlas una a una no basta. Tras la primera elección se repasan las escaleras con sus vecinas: para cada una se prueban las demás piezas del perfil y se queda la que deja menos error entre ella y sus cuatro vecinas horizontales, ya con las esquinas que pondrá Minecraft. Los bloques que cambian vuelven a la cola de sus vecinos, hasta 4 pasadas. Así salen las esquinas exteriores de una pirámide o las interiores de un valle.
+4. **Esquinas como en vanilla.** El plan trae ya la forma que calcularía Minecraft para cada escalera, así el mundo queda igual que el holograma.
+5. **Apoyo de las capas.** Una capa de nieve necesita debajo un bloque entero o una pieza con la cara de arriba entera (como en vanilla, que si no la rompe al primer aviso de un vecino). Las capas sin apoyo vuelven a ser el bloque entero, o se quitan si iban en un hueco.
+
+### Materiales por defecto
+
+Sin material fijo, cada pieza sale del bloque que hay (o que pone el patrón, la paleta o la estructura) en esa posición:
+
+1. **Por nombre**, si el bloque tiene esa pieza: `stone` → `stone_slab`/`stone_stairs`, `stone_bricks` → `stone_brick_*`, `oak_planks` u `oak_log` → `oak_*`, `quartz_pillar` → `quartz_*`, cobre → cobre cortado del mismo grado (también encerado y cincelado), `snow_block` → capas `snow`. Una tabla resuelve los casos sin convención: `deepslate` → `cobbled_deepslate`, `reinforced_deepslate` y `chiseled_deepslate` → `deepslate_tile`, `end_stone` → `end_stone_brick`, `netherrack` y `magma_block` → `nether_brick`, `nether_wart_block` → `red_nether_brick`, `mud` y `packed_mud` → `mud_brick`, `sand` → `sandstone`, `red_sand` → `red_sandstone`, `quartz_bricks` → `quartz`, `smooth_basalt` → `polished_deepslate`, `dripstone_block` → `tuff`, `powder_snow` → `snow`… La madera, que no tiene muros, usa su valla como muro. Funciona igual con bloques de mods que sigan la convención.
+2. **Por color**, si no tiene esa pieza (hormigón, lana, terracota, basalto…): la pieza registrada del color más parecido. El color de cada bloque es la media de sus texturas vanilla (tabla `assets/komaedit/smooth/colors.txt`, generada desde el jar de cliente con `tools/smooth_colors.py`), y se compara con la ΔE de CIELAB, que se parece a como lo ve el ojo. Los bloques de mods que no están en la tabla usan su color de mapa. Ejemplos: `gray_concrete` → losa de `deepslate_tile`, `white_wool` → `smooth_quartz`, `clay` → `smooth_stone`, `dirt` → `mud_brick`, `obsidian` → `blackstone`, `terracotta` → `brick`, `red_concrete` → `mangrove`. Las capas solo existen en nieve, así que `Layers` es siempre de nieve salvo que un mod añada otras. El cobre encerado y la losa de roble petrificado no se eligen por color.
+3. **No se convierten** el cristal, las hojas y demás bloques no opacos ni los bloques con entidad (cofres, hornos…): se quedan enteros, y la pieza de un hueco no se pone. Si el patrón ya pide una pieza (`oak_slab`), se respeta y solo se orienta cuando coincide el tipo.
+
+### Holograma
+
+El holograma de las figuras dibuja cada pieza con su forma: losas y escaleras por medios bloques, las capas con su altura y los muros como la columna central. Las colocaciones y operaciones sobre la selección no tienen holograma propio y se ven al aplicarse.
+
+### Rendimiento y limitaciones
+
+- Solo se mide la superficie. El repaso 3D de las esquinas cuesta poco (unas decenas de comprobaciones por escalera); `SlabsAndStairs2D` se lo ahorra.
+- Los muros se colocan como poste; Minecraft los une a los muros y bloques vecinos al ponerlos, así que en el mundo pueden quedar más llenos que en el holograma.
+- No hay niveles de agua como pieza.
+- En tubos huecos no se añaden piezas fuera ni se abre la pared; en tubos, los materiales fijos no se guardan en la receta del Studio.
+- Si junto a la obra ya había escaleras en el mundo, Minecraft puede doblar las del borde hacia ellas.
 - Capas de 1 a 16, longitud de 1 a 512 y calidad de 1 a 10. El cálculo va en un worker; los colores repetidos se calculan una vez.
 - Error medio del degradado #E8D44D → #5A2FB2 en 24 pasos sobre negro: 0,163 con una capa, 0,016 con tres y 0,005 con cinco; con tres capas y `-b`, 0,003.
 - El color real depende del brillo, la niebla y el paquete de texturas; se calcula con las texturas de vanilla y la mezcla alfa estándar. Lo que haya en el sitio de la vidriera se sustituye.
@@ -1989,7 +2051,7 @@ Cada colocación pasa por esta cadena, en este orden:
 | `-r <eje>` | Giros aleatorios de 90° alrededor de `X`, `Y` o `Z`. |
 | `-a` | Coloca también el aire de la estructura. |
 | `-j <ajuste>` y `-x` | Ajuste de direcciones y perturbación de la secundaria (ver **Alineación primaria y secundaria**). |
-| `-w <slabs\|stairs>[:cobertura]` | Losas y escaleras en la superficie, como en las figuras de tubo; la cobertura va de 0 a 1 (0,5 por defecto). |
+| `-w <perfil>` | Piezas en la superficie con un perfil de smoothblocks (`Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW`), su cobertura `C:` y materiales fijos (`SlabsAndStairs(C:0.7,Slab:oak)`); ver [Smoothblocks: perfiles de `-w`](#smoothblocks-perfiles-de--w). Con estructuras, la pieza sale de cada bloque de la estructura; los materiales fijos también valen al pegar el portapapeles. |
 | `-i <semilla>` | Semilla de todo lo aleatorio; `-1` (por defecto) elige una nueva. |
 
 Ejemplos:
@@ -2005,7 +2067,7 @@ Ejemplos:
 ### Rendimiento y limitaciones
 
 - Se colocan como mucho 5000 estructuras y 1 500 000 bloques por comando; el cálculo se corta si pasaría de 400 millones de muestras.
-- Medido en un worker: 1311 conos de 5×12×5 dispersos sobre 256×256 bloques de colinas, 110 000 bloques, en unos 20–100 ms, más 200–400 ms si llevan `-w stairs`; una icosfera de 40³ con 4 subdivisiones, 20–55 ms.
+- Medido en un worker: 1311 conos de 5×12×5 dispersos sobre 256×256 bloques de colinas, 110 000 bloques, en unos 20–100 ms, más 200–400 ms si llevan `-w SlabsAndStairs`; una icosfera de 40³ con 4 subdivisiones, 20–55 ms.
 - El portapapeles y los schematics se copian sin NBT: los cofres, carteles o macetas pierden su contenido. Las entidades no se copian.
 - Un portapapeles o schematic admite hasta 2 000 000 de bloques de caja.
 - Con giros libres, los bloques con dirección quedan en la dirección de Minecraft más cercana; una escalera no puede quedar a 30°.
