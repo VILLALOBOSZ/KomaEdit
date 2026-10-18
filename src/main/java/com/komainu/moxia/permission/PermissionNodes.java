@@ -158,6 +158,7 @@ public final class PermissionNodes {
         add(build + ".brush.array", Pack.ADVANCED, build, "ezedits.brush.array", "/komaedit pincel array");
         add(build + ".brush.scatter", Pack.ADVANCED, build, "ezedits.brush.scatter", "/komaedit pincel scatter");
         add(build + ".smoothblocks", Pack.ADVANCED, build, "ezedits.smooth.smoothblocks", "/komaedit smoothblocks");
+        add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
 
         // Capacidades de construcción a mano (menú rápido y /komaedit capability).
         for (BuildCapability capability : BuildCapability.values()) {
@@ -174,6 +175,8 @@ public final class PermissionNodes {
         add(BuildCapability.ANY_MODE_PERMISSION, Pack.ADMIN, null, null, "Usar las capacidades fuera de creativo");
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
         add(KomaPermissions.PROJECT_BACKUP, Pack.ADMIN, null, null, "/komaedit project backup");
+        add(KomaPermissions.ADMIN_IMAGE_URL, Pack.ADMIN, null, null,
+                "Imágenes por URL en /komaedit image (si urlsRequireAdmin está activo)");
         add(KomaPermissions.LIMIT_UNRESTRICTED, Pack.ADMIN, null, null, "Sin límite de bloques por operación");
     }
 

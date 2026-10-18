@@ -1333,6 +1333,116 @@ Ejemplos:
 - `-m` usa una lista de bloques y etiquetas, no la sintaxis completa de máscaras de WorldEdit. La máscara global (`//gmask`) se respeta al escribir.
 - Radio de 0 a 32; suavizado de radio 0–8 y 0–16 iteraciones.
 
+## Imagen en bloques
+
+### Objetivo y acceso
+
+Convierte una imagen en una obra plana de bloques, en vertical o en horizontal, como `//stainedglassimage` de ezEdits. Por defecto sale una vidriera de vidrio tintado; también hay lana, hormigón, terracota, todos los bloques enteros o cualquier paleta de KomaEdit.
+
+```text
+/komaedit image <archivo|https://…> [ancho|anchoxalto] [paleta] [-w ancho] [-h alto] [-p paleta]
+                [-d none|fs|bayer] [-b brillo] [-c contraste] [-a air|keep|bloque] [-u umbral] [-o anclaje] [-s] [-e] [-r]
+```
+
+Alias: `/komaedit imagen` y `/komaedit stainedglassimage`. Permiso `komaedit.build.image` (paquete avanzado; es el `ezedits.stainedglass.image` de ezEdits). Las imágenes por URL dependen además de la [configuración de imágenes](#configuración-de-imágenes). Sin argumentos, la orden muestra su ayuda.
+
+### Origen de la imagen
+
+- **Archivo del servidor:** el nombre es relativo a `config/komaedit/images/`, que se crea al arrancar; se admiten subcarpetas (`vidrieras/rosa.png`) y los nombres con espacios van entre comillas (`"mi foto.png"`). El autocompletado ofrece las imágenes de la carpeta (hasta 100, con un nivel de subcarpetas). El nombre nunca sale de la carpeta: se rechazan `..`, las rutas absolutas, `\` y los enlaces que apunten fuera.
+- **URL `https://`:** solo si el admin las activa. Se aceptan los dominios de su lista, sin usuario ni contraseña y en el puerto 443; el dominio no puede resolver a una dirección interna (bucle local, red privada, enlace local…). Las redirecciones se siguen hasta tres veces y solo dentro del mismo host. La descarga tiene un tamaño y un tiempo máximos y va en un worker, nunca en el hilo del servidor.
+- **Formatos:** PNG (con transparencia), JPG y GIF (de un GIF animado, el primer fotograma). Se reconocen por su contenido, no por la extensión. Antes de decodificar se leen las medidas de la cabecera: una imagen que declare más píxeles de los permitidos (`maxPixels`) o más de 16 384 de lado se rechaza sin cargarla.
+
+### Colocación
+
+- **Mirando una pared** (hasta 128 bloques): la obra queda en vertical delante de la cara que miras, con el centro de su fila de abajo en el bloque de delante; se lee de frente desde donde estás.
+- **Mirando el suelo o el techo:** en horizontal, sobre el suelo o bajo el techo, centrada en el bloque que miras; la parte de arriba de la imagen apunta hacia donde miras.
+- **Sin mirar ningún bloque:** de pie a dos bloques delante de ti, con la base a la altura de tus pies (o en horizontal, dos bloques por encima o por debajo de los ojos, si miras muy arriba o muy abajo).
+- `-r`: sobre la superficie que miras, sustituyendo sus bloques, en lugar de delante.
+- `-s`: ajustada a la selección, que tiene que ser un rectángulo de un bloque de grosor (vertical u horizontal). La imagen cabe entera sin deformarse; `-e` la estira hasta llenarla. Una selección vertical se ve desde tu lado; en una horizontal, la parte de arriba apunta hacia donde miras.
+- **Medida:** `64` o `-w 64` es el ancho en bloques y `-h 40` el alto; la otra medida sale de la proporción de la imagen. `64x40` (o `-w 64 -h 40`) fija las dos y estira. Sin medida, la obra tiene un bloque por píxel hasta 128 bloques en el lado largo. El lado máximo es `maxBlocksPerSide` (512 por defecto).
+- **Anclaje `-o`:** qué punto de la obra cae en el bloque elegido: `center`, `bottom`, `top`, `left`, `right`, `bottomleft`, `bottomright`, `topleft` o `topright` (también `centro`, `abajo`, `arriba`, `izquierda`, `derecha`, `abajoizquierda`…). Por defecto, `bottom` en vertical y `center` en horizontal. Con `-s` dice hacia dónde se arrima la obra si no llena la selección (por defecto, al centro).
+- Lo que cae por encima o por debajo de la altura del mundo no se coloca, y el mensaje final lo dice.
+
+### Paletas
+
+| Paleta | Bloques |
+| --- | --- |
+| `glass` (`vidrio`, `cristal`) | Los 16 vidrios tintados. Por defecto |
+| `panes` (`paneles`) | Los 16 paneles de vidrio tintado; cada panel se une a los bloques de su fila. Solo en vertical |
+| `wool` (`lana`) | Las 16 lanas |
+| `concrete` (`hormigon`) | Los 16 hormigones |
+| `terracotta` (`terracota`) | Las 16 terracotas teñidas y la terracota sin teñir |
+| `solid` (`solidos`, `todos`) | Unos 180 bloques enteros y opacos con la misma textura en todas las caras (piedras, maderas, minerales, hormigón, lana, terracota, cobre…), sin el coral vivo, que muere fuera del agua |
+| `##Nombre`, `#mía`, `a,b,c` | Cualquier paleta de KomaEdit (de serie, del servidor o guardada) o una lista de bloques, con estados (`oak_log[axis=x]`) |
+
+- El color de cada bloque es la media de su textura en Minecraft 1.21.1, la misma tabla que usan los smoothblocks (`assets/komaedit/smooth/colors.txt`). El bloque más parecido se busca en CIELAB (ΔE de 1976), que se acerca más a lo que ve el ojo que la distancia en RGB.
+- En una paleta propia, los bloques que no están en la tabla (los de mods) se ignoran con un aviso; si no queda ninguno, la orden falla.
+- El vidrio tintado se compara por su tinte. A contraluz, con el cielo detrás, se ve más claro (deja pasar algo más de la mitad de la luz); con un interior oscuro detrás, más parecido al tinte.
+
+### Tramado, ajustes y transparencia
+
+- `-d fs` (por defecto): Floyd–Steinberg en serpentina. El error de cada bloque pasa a sus vecinos; es lo mejor para fotos y degradados.
+- `-d bayer` (`ordenado`): tramado ordenado con la matriz de Bayer de 8×8 sobre una mezcla de 16 bloques por color (método de Knoll). La trama es regular y estable, sin los «gusanos» de la difusión.
+- `-d none` (`ninguno`): cada píxel, el bloque más parecido. Zonas planas y bordes limpios, para pixel art y logos.
+- `-b` y `-c`: brillo y contraste de −100 a 100, aplicados antes de elegir los bloques.
+- **Reescalado:** al reducir, cada bloque es la media de los píxeles que cubre, con alfa premultiplicado (un borde transparente no oscurece el color); al ampliar, cada bloque toma el píxel que tiene debajo, así el pixel art sigue nítido.
+- **Transparencia:** un píxel con alfa por debajo de `-u` (50 % por defecto) es un hueco. Con `-a air` (por defecto) el hueco queda en aire y borra lo que hubiera; con `-a keep`, no se toca; con `-a <bloque>`, se rellena con ese bloque. El tramado no reparte error hacia los huecos ni desde ellos, y los paneles no se unen a un hueco.
+- El mensaje final da la imagen original, la medida en bloques, cuántos bloques distintos usa y el ΔE medio «visto de lejos» (entre las medias de 3×3 de la imagen y de los bloques; por debajo de 5 apenas se nota).
+
+### Ejemplos
+
+```text
+/komaedit image roseton.png 48
+/komaedit image foto.jpg 96 concrete -d bayer
+/komaedit image icono.png 32 wool -d none -a keep
+/komaedit image mural.png -s solid -o bottom
+/komaedit image "vidrieras/san jorge.png" -e panes
+/komaedit image mapa.png -p ##Grayscale -c 20 -r
+/komaedit image https://imagenes.ejemplo.com/logo.png 64
+```
+
+Los renders de comprobación (un atardecer generado por código en vidrio tintado, hormigón y bloques enteros, con y sin tramado, y un icono en lana) están en `docs/renders/imagen/`; se regeneran con `KOMAEDIT_IMAGE_RENDER=<carpeta>` y `./gradlew test --tests '*ImageRenderTest'`.
+
+### Configuración de imágenes
+
+`config/komaedit/images.json` se crea al arrancar y se recarga con `/komaedit reload`:
+
+| Clave | Por defecto | Qué hace |
+| --- | --- | --- |
+| `allowUrls` | `false` | Si se aceptan URL `https://`. Desactivado, solo valen los archivos de la carpeta |
+| `urlsRequireAdmin` | `true` | Las URL, solo para quien tenga `komaedit.admin.image.url` (o sea operador) |
+| `allowedHosts` | `[]` | Dominios permitidos: `ejemplo.com` exacto, `*.ejemplo.com` sus subdominios (no el dominio pelado). Vacía, ninguno |
+| `maxImageBytes` | `8388608` (8 MiB) | Tamaño máximo del archivo o de la descarga (de 1 KiB a 64 MiB). La descarga se corta en cuanto lo pasa, lo diga o no la cabecera |
+| `maxPixels` | `4194304` (2048×2048) | Píxeles que puede declarar la imagen (hasta 8192×8192) |
+| `timeoutSeconds` | `10` | Tiempo máximo de la descarga entera, con sus redirecciones (de 1 a 60) |
+| `maxBlocksPerSide` | `512` | Lado máximo de la obra en bloques (de 1 a 4096) |
+
+Un `images.json` inválido se rechaza entero y se usan los valores por defecto (URL desactivadas). Ejemplo para que los admins descarguen de un dominio propio:
+
+```json
+{
+  "format": 1,
+  "allowUrls": true,
+  "urlsRequireAdmin": true,
+  "allowedHosts": ["imagenes.miservidor.net", "*.cdn.miservidor.net"],
+  "maxImageBytes": 8388608,
+  "maxPixels": 4194304,
+  "timeoutSeconds": 10,
+  "maxBlocksPerSide": 512
+}
+```
+
+### Rendimiento y limitaciones
+
+- La lectura o descarga, la decodificación, el reescalado y la elección de bloques van en un worker; el plan se coloca por ticks con la cola común y es una sola edición: `//undo` la deshace entera. Por encima de `confirmBuildAboveBlocks` pide confirmación, y el total cuenta para `maxBlocksPerOperation`.
+- Una foto de 2048×1536 se convierte en unos 40 ms a 128×96 bloques y en 150–250 ms a 512×384, con cualquier paleta y tramado. Si la imagen tiene mucha más resolución de la necesaria, se decodifica saltando píxeles (deja al menos cuatro por bloque), así gasta menos memoria.
+- Una capa de vidrio por píxel: no apila varias capas tintadas para mezclar colores, como hace `glassgradient`.
+- Los colores son los de los bloques vanilla; un bloque de mod en una paleta propia se ignora.
+- Los paneles solo se unen a los vecinos de su fila dentro de la obra; en el mundo, Minecraft puede unirlos además a los bloques que tengan al lado.
+- No hay holograma previo: la obra se coloca directamente (o tras confirmar, si es grande).
+- No se leen JPG en CMYK ni las animaciones de GIF.
+- Las direcciones internas se comprueban al resolver el dominio antes de conectar; la lista de dominios del admin es la barrera principal.
+
 ## Suavizado
 
 ### Objetivo y acceso
@@ -2632,10 +2742,10 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
    - Contenido: `komaedit.recipe`, `komaedit.instance`.
    - Edición: `komaedit.select` (selecciones y supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
-   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`; excepción de volumen: `komaedit.limit.unrestricted`.
+   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
-   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`.
+   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`.
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…) y `komaedit.select.superwand`.
    - `komaedit.capability.<capacidad>` y `komaedit.capability.flyspeed` (ver [Construir a mano: capacidades](#construir-a-mano-capacidades)); los da también `komaedit.build`.
@@ -2645,8 +2755,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 | --- | --- |
 | `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
-| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, copias del proyecto, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `image`, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
+| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
@@ -2667,7 +2777,7 @@ Una configuración inválida se rechaza completa y el servidor utiliza límites 
 
 `config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
 
-`config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
+`config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `config/komaedit/images.json` configura `/komaedit image` (ver [Configuración de imágenes](#configuración-de-imágenes)) y también se recarga. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
 
 ## Rendimiento
 
