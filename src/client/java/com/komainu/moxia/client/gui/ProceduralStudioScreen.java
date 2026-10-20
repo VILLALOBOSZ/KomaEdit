@@ -3,6 +3,8 @@ package com.komainu.moxia.client.gui;
 import com.komainu.moxia.client.gui.studio.BlueprintStage;
 import com.komainu.moxia.client.gui.studio.ColorStage;
 import com.komainu.moxia.client.gui.studio.StudioIcons;
+import com.komainu.moxia.client.gui.studio.StudioToolsUi;
+import com.komainu.moxia.client.gui.studio.ToolClientState;
 import com.komainu.moxia.client.gui.studio.StudioUi;
 import com.komainu.moxia.client.gui.studio.StudioUi.Tone;
 import com.komainu.moxia.client.gui.studio.StudioUi.Widget;
@@ -43,6 +45,12 @@ import com.komainu.moxia.studio.StudioShortcuts;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.layout.StudioLayout;
+import com.komainu.moxia.studio.net.JobStatusPayload;
+import com.komainu.moxia.studio.tools.ToolContext;
+import com.komainu.moxia.studio.tools.ui.JobStrip;
+import com.komainu.moxia.studio.tools.ui.ToolsInfo;
+import com.komainu.moxia.studio.tools.ui.ToolsPanel;
+import com.komainu.moxia.studio.tools.ui.ToolsUi;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Block;
@@ -73,6 +81,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -125,6 +134,8 @@ public final class ProceduralStudioScreen extends Screen {
     private static ShapeCategory rememberedCategory = ShapeCategory.ALL;
     /** Etapa de color: su degradado y sus ajustes siguen ahí al reabrir el Studio. */
     private static final ColorStage COLOR_STAGE = new ColorStage();
+    /** Etapa de herramientas: la tarjeta elegida y sus ajustes siguen ahí al reabrir el Studio. */
+    private static final ToolsPanel TOOLS_PANEL = new ToolsPanel();
     /** Etapa de planos: búsqueda, filtro y plano elegido siguen ahí al reabrir el Studio. */
     private static final BlueprintStage BLUEPRINT_STAGE = new BlueprintStage();
 
@@ -242,6 +253,11 @@ public final class ProceduralStudioScreen extends Screen {
             ProceduralPreviewRenderer.request(draft, PathHologramRenderer.points(), PathHologramRenderer.closed());
             ProceduralPreviewRenderer.tick(client);
         }
+        if (stage == Stage.TOOLS) {
+            TOOLS_PANEL.tick(toolsHost());
+        } else {
+            TOOLS_PANEL.flushOptions(toolsHost(), false);
+        }
     }
 
     @Override
@@ -252,6 +268,8 @@ public final class ProceduralStudioScreen extends Screen {
         previewDraft = draft;
         releaseMovementKeys();
         EditorOverlayRenderer.clear();
+        TOOLS_PANEL.commitField(toolsHost());
+        TOOLS_PANEL.flushOptions(toolsHost(), true);
         sendCommand("komaedit path mode off");
     }
 
@@ -281,6 +299,7 @@ public final class ProceduralStudioScreen extends Screen {
 
     private boolean typing() {
         return editingFormula || editingName || editingSearch || editingControl != null || blockCatalog
+                || TOOLS_PANEL.typing()
                 || BLUEPRINT_STAGE.editing();
     }
 
@@ -302,9 +321,12 @@ public final class ProceduralStudioScreen extends Screen {
         ui.toolButton(frame.toolButton(2), hologram ? StudioIcons.Icon.HOLOGRAM : StudioIcons.Icon.HOLOGRAM_OFF,
                         hologram, true)
                 .onClick(this::toggleHologram).tooltip(tr("gui.komaedit.help.top.hologram"));
-        ui.toolButton(frame.toolButton(3), StudioIcons.Icon.REDO, false, HISTORY.canRedo())
+        boolean tools = stage == Stage.TOOLS;
+        ui.toolButton(frame.toolButton(3), StudioIcons.Icon.REDO, false,
+                        tools ? TOOLS_PANEL.canRedo() : HISTORY.canRedo())
                 .onClick(this::redoParameters).tooltip(tr("gui.komaedit.help.top.redo"));
-        ui.toolButton(frame.toolButton(4), StudioIcons.Icon.UNDO, false, HISTORY.canUndo())
+        ui.toolButton(frame.toolButton(4), StudioIcons.Icon.UNDO, false,
+                        tools ? TOOLS_PANEL.canUndo() : HISTORY.canUndo())
                 .onClick(this::undoParameters).tooltip(tr("gui.komaedit.help.top.undo"));
     }
 
@@ -364,6 +386,7 @@ public final class ProceduralStudioScreen extends Screen {
             case INSTANCES -> drawInstancesStage(column);
             case RECIPES -> drawRecipesStage(column);
             case COLOR -> COLOR_STAGE.draw(ui, column, colorHost());
+            case TOOLS -> TOOLS_PANEL.draw(new StudioToolsUi(ui), column, toolsHost());
             case BLUEPRINTS -> BLUEPRINT_STAGE.draw(ui, column, blueprintHost());
         }
         contentHeight = column.height() + 12;
@@ -382,30 +405,77 @@ public final class ProceduralStudioScreen extends Screen {
         Rect footer = frame.footer();
         ui.fill(footer, SURFACE);
         ui.fill(new Rect(footer.x(), footer.y(), footer.width(), 1), DIVIDER);
+        boolean tools = stage == Stage.TOOLS;
+        ToolsPanel.Host host = toolsHost();
 
         Rect summary = frame.footerSummary();
-        String estimate = estimateLabel();
-        int estimateWidth = estimate.isEmpty() ? 0 : ui.width(estimate) + 8;
-        ui.label(shapeName(draft.shape()) + " · " + materialSummary(draft), summary.x(), summary.y(),
-                summary.width() - estimateWidth, TEXT_SECONDARY);
-        if (!estimate.isEmpty()) {
-            ui.rightAligned(estimate, summary.right(), summary.y(), estimateColor());
+        if (tools) {
+            ui.label(TOOLS_PANEL.footerSummary(host), summary.x(), summary.y(), summary.width(), TEXT_SECONDARY);
+        } else {
+            String estimate = estimateLabel();
+            int estimateWidth = estimate.isEmpty() ? 0 : ui.width(estimate) + 8;
+            ui.label(shapeName(draft.shape()) + " · " + materialSummary(draft), summary.x(), summary.y(),
+                    summary.width() - estimateWidth, TEXT_SECONDARY);
+            if (!estimate.isEmpty()) {
+                ui.rightAligned(estimate, summary.right(), summary.y(), estimateColor());
+            }
         }
+
+        boolean armed = !tools && buildEstimate.armed(System.currentTimeMillis());
+        String label;
+        Tone tone;
+        Runnable build;
+        String help;
+        if (tools) {
+            label = TOOLS_PANEL.buildLabel(host);
+            tone = Tone.valueOf(TOOLS_PANEL.buildTone(host).name());
+            build = () -> TOOLS_PANEL.build(host);
+            help = TOOLS_PANEL.buildHelp(host);
+        } else {
+            tone = !pathReady() ? Tone.DISABLED : armed ? Tone.WARNING : Tone.PRIMARY;
+            label = !pathReady()
+                    ? tr("gui.komaedit.build.missing", requiredPoints() - PathHologramRenderer.points().size())
+                    : armed ? tr("gui.komaedit.build_confirm") : tr("gui.komaedit.build");
+            build = this::performBuild;
+            help = tr("gui.komaedit.help.build");
+        }
+
+        // Con algo en marcha, el pie enseña su progreso y deja confirmar, descartar o cancelar desde aquí.
+        Optional<JobStatusPayload> job = ToolClientState.job();
+        if (job.isPresent()) {
+            JobStrip.draw(new StudioToolsUi(ui), frame, job.get().line(), job.get().changes(),
+                    System.currentTimeMillis(), jobActions(), label, ToolsUi.Tone.valueOf(tone.name()), build, help);
+            return;
+        }
+
         Rect statusLine = frame.footerStatus();
-        boolean armed = buildEstimate.armed(System.currentTimeMillis());
-        String detail = footerDetail();
+        String detail = tools ? status : footerDetail();
         ui.label(detail, statusLine.x(), statusLine.y(), statusLine.width(), armed ? WARNING : MUTED);
         if (ui.textRenderer().getWidth(detail) > statusLine.width()) {
             ui.register(statusLine).tooltip(detail);
         }
-
-        Tone tone = !pathReady() ? Tone.DISABLED : armed ? Tone.WARNING : Tone.PRIMARY;
-        String label = !pathReady()
-                ? tr("gui.komaedit.build.missing", requiredPoints() - PathHologramRenderer.points().size())
-                : armed ? tr("gui.komaedit.build_confirm") : tr("gui.komaedit.build");
         ui.button(frame.buildButton(), label, tone)
-                .onClick(this::performBuild)
-                .tooltip(tr("gui.komaedit.help.build"));
+                .onClick(build)
+                .tooltip(help);
+    }
+
+    private JobStrip.Actions jobActions() {
+        return new JobStrip.Actions() {
+            @Override
+            public String tr(String key, Object... arguments) {
+                return ProceduralStudioScreen.tr(key, arguments);
+            }
+
+            @Override
+            public void send(String command) {
+                sendCommand(command);
+            }
+
+            @Override
+            public void status(String text) {
+                status = text;
+            }
+        };
     }
 
     private void drawResizeHandle(int mouseX, int mouseY) {
@@ -1191,6 +1261,83 @@ public final class ProceduralStudioScreen extends Screen {
         };
     }
 
+    private ToolsPanel.Host toolsHost() {
+        return new ToolsPanel.Host() {
+            @Override
+            public String tr(String key, Object... arguments) {
+                return ProceduralStudioScreen.tr(key, arguments);
+            }
+
+            @Override
+            public void send(String command) {
+                sendCommand(command);
+            }
+
+            @Override
+            public void pickBlock(Consumer<String> onPick) {
+                openBlockCatalog();
+                blockPicker = onPick;
+            }
+
+            @Override
+            public void status(String text) {
+                status = text;
+            }
+
+            @Override
+            public void copy(String text) {
+                if (client != null) {
+                    client.keyboard.setClipboard(text);
+                }
+            }
+
+            @Override
+            public void goToPath() {
+                selectStage(Stage.PATH);
+            }
+
+            @Override
+            public boolean shift() {
+                return hasShiftDown();
+            }
+
+            @Override
+            public double mouseX() {
+                return lastMouseX;
+            }
+
+            @Override
+            public long now() {
+                return System.currentTimeMillis();
+            }
+
+            @Override
+            public ToolContext context() {
+                return ToolClientState.context();
+            }
+
+            @Override
+            public ToolsInfo info() {
+                return ToolClientState.info(client);
+            }
+
+            @Override
+            public void requestState() {
+                ToolClientState.request();
+            }
+
+            @Override
+            public StudioPreferences preferences() {
+                return ProceduralStudioScreen.preferences();
+            }
+
+            @Override
+            public void savePreferences() {
+                ProceduralStudioScreen.savePreferences();
+            }
+        };
+    }
+
     private void openBlockCatalog() {
         blockPicker = null;
         blockCatalog = true;
@@ -1319,9 +1466,11 @@ public final class ProceduralStudioScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         lastMouseX = mouseX;
         ProceduralRecipe before = draft;
+        ToolsPanel.Snapshot toolsBefore = TOOLS_PANEL.snapshot();
         Widget widget = ui.at(mouseX, mouseY);
         boolean handled = handleMouseClicked(mouseX, mouseY, button, widget);
         track(before, widget == null ? null : widget.group());
+        TOOLS_PANEL.track(toolsBefore, widget == null ? null : widget.group(), System.currentTimeMillis());
         return handled;
     }
 
@@ -1339,6 +1488,10 @@ public final class ProceduralStudioScreen extends Screen {
         }
         if (!"search".equals(key)) {
             editingSearch = false;
+        }
+        if (TOOLS_PANEL.typing() && !TOOLS_PANEL.owns(key)) {
+            // Pulsar fuera de un campo de herramientas aplica lo escrito antes de atender el clic.
+            TOOLS_PANEL.commitField(toolsHost());
         }
         if (!BlueprintStage.SEARCH_KEY.equals(key)) {
             BLUEPRINT_STAGE.stopEditing();
@@ -1409,6 +1562,12 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (TOOLS_PANEL.dragging() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            ToolsPanel.Snapshot before = TOOLS_PANEL.snapshot();
+            TOOLS_PANEL.drag(mouseX, toolsHost());
+            TOOLS_PANEL.track(before, TOOLS_PANEL.dragGroup(), System.currentTimeMillis());
+            return true;
+        }
         if (dragControl != null && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             double distance = mouseX - dragStartX;
             if (Math.abs(distance) >= 3) {
@@ -1455,6 +1614,9 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && TOOLS_PANEL.dragging()) {
+            TOOLS_PANEL.release(toolsHost());
+        }
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && dragControl != null) {
             if (!dragMoved) {
                 editingControl = dragControl;
@@ -1496,8 +1658,10 @@ public final class ProceduralStudioScreen extends Screen {
             if (widget != null && widget.scroll() != null && widget.overValue(mouseX, mouseY)
                     && verticalAmount != 0.0 && editingControl == null) {
                 ProceduralRecipe before = draft;
+                ToolsPanel.Snapshot toolsBefore = TOOLS_PANEL.snapshot();
                 widget.scroll().accept(verticalAmount > 0.0 ? 1 : -1);
                 track(before, widget.group());
+                TOOLS_PANEL.track(toolsBefore, widget.group(), System.currentTimeMillis());
                 return true;
             }
             if (frame.viewport().contains(mouseX, mouseY)) {
@@ -1514,8 +1678,10 @@ public final class ProceduralStudioScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         ProceduralRecipe before = draft;
+        ToolsPanel.Snapshot toolsBefore = TOOLS_PANEL.snapshot();
         boolean handled = handleKeyPressed(keyCode, scanCode, modifiers);
         track(before, null);
+        TOOLS_PANEL.track(toolsBefore, null, System.currentTimeMillis());
         return handled;
     }
 
@@ -1523,6 +1689,13 @@ public final class ProceduralStudioScreen extends Screen {
         boolean control = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
         // Con un campo abierto las letras se escriben: ningún atajo (ni K) se dispara.
+        if (TOOLS_PANEL.typing()) {
+            if (control && keyCode == GLFW.GLFW_KEY_V && client != null) {
+                TOOLS_PANEL.paste(client.keyboard.getClipboard());
+                return true;
+            }
+            return TOOLS_PANEL.key(toolKey(keyCode), control, toolsHost());
+        }
         if (editingFormula) {
             return formulaKeyPressed(keyCode, control);
         }
@@ -1611,6 +1784,9 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
+        if (TOOLS_PANEL.typing()) {
+            return TOOLS_PANEL.type(chr);
+        }
         if (editingFormula) {
             if (chr >= 32 && chr < 127 && formulaInput.length() < TubeFormula.MAX_LENGTH) {
                 formulaInput += chr;
@@ -1697,6 +1873,11 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private void focusSearch() {
+        if (stage == Stage.TOOLS) {
+            contentScroll = 0;
+            TOOLS_PANEL.focusSearch(toolsHost());
+            return;
+        }
         if (stage != Stage.FIGURE) {
             selectStage(Stage.FIGURE);
         }
@@ -1709,6 +1890,13 @@ public final class ProceduralStudioScreen extends Screen {
     private boolean shortcutPressed(int keyCode, boolean control, boolean shift) {
         if (control) {
             switch (keyCode) {
+                case GLFW.GLFW_KEY_BACKSPACE -> {
+                    if (ToolClientState.job().isEmpty()) {
+                        return false;
+                    }
+                    sendCommand(JobStrip.CANCEL);
+                    status = tr("gui.komaedit.job.cancelled");
+                }
                 case GLFW.GLFW_KEY_F -> focusSearch();
                 case GLFW.GLFW_KEY_S -> saveRecipe();
                 case GLFW.GLFW_KEY_DELETE -> {
@@ -1730,10 +1918,22 @@ public final class ProceduralStudioScreen extends Screen {
             selectStage(Stage.values()[9]);
             return true;
         }
+        if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER)
+                && ToolClientState.previewWaiting()) {
+            sendCommand(JobStrip.CONFIRM);
+            status = tr("gui.komaedit.job.confirmed");
+            return true;
+        }
         switch (keyCode) {
             case GLFW.GLFW_KEY_TAB -> selectStage(Stage.values()[Math.floorMod(
                     stage.ordinal() + (shift ? -1 : 1), Stage.values().length)]);
-            case GLFW.GLFW_KEY_B -> performBuild();
+            case GLFW.GLFW_KEY_B -> {
+                if (stage == Stage.TOOLS) {
+                    TOOLS_PANEL.build(toolsHost());
+                } else {
+                    performBuild();
+                }
+            }
             case GLFW.GLFW_KEY_H -> toggleHologram();
             case GLFW.GLFW_KEY_Z -> {
                 if (shift) {
@@ -1743,7 +1943,13 @@ public final class ProceduralStudioScreen extends Screen {
                 }
             }
             case GLFW.GLFW_KEY_Y -> redoParameters();
-            case GLFW.GLFW_KEY_R -> randomVariant();
+            case GLFW.GLFW_KEY_R -> {
+                if (stage == Stage.TOOLS) {
+                    TOOLS_PANEL.randomSeed(toolsHost());
+                } else {
+                    randomVariant();
+                }
+            }
             case GLFW.GLFW_KEY_F1 -> cheatSheet = !cheatSheet;
             case GLFW.GLFW_KEY_PAGE_UP -> contentScroll = Math.max(0, contentScroll - pageScroll());
             case GLFW.GLFW_KEY_PAGE_DOWN -> contentScroll = Math.min(maximumContentScroll(),
@@ -2171,6 +2377,12 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private void selectStage(Stage next) {
+        if (stage == Stage.TOOLS && next != Stage.TOOLS) {
+            TOOLS_PANEL.commitField(toolsHost());
+        }
+        if (next == Stage.TOOLS) {
+            TOOLS_PANEL.refreshSoon();
+        }
         stage = next;
         contentScroll = 0;
         editingSearch = false;
@@ -2199,10 +2411,18 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private void undoParameters() {
+        if (stage == Stage.TOOLS) {
+            TOOLS_PANEL.undo(toolsHost());
+            return;
+        }
         restoreParameters(HISTORY.undo(draft), "gui.komaedit.history.undone", "gui.komaedit.history.nothing_undo");
     }
 
     private void redoParameters() {
+        if (stage == Stage.TOOLS) {
+            TOOLS_PANEL.redo(toolsHost());
+            return;
+        }
         restoreParameters(HISTORY.redo(draft), "gui.komaedit.history.redone", "gui.komaedit.history.nothing_redo");
     }
 
@@ -2386,6 +2606,15 @@ public final class ProceduralStudioScreen extends Screen {
         return values[0];
     }
 
+    private static ToolsPanel.Key toolKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> ToolsPanel.Key.ENTER;
+            case GLFW.GLFW_KEY_ESCAPE -> ToolsPanel.Key.ESCAPE;
+            case GLFW.GLFW_KEY_BACKSPACE -> ToolsPanel.Key.BACKSPACE;
+            default -> ToolsPanel.Key.OTHER;
+        };
+    }
+
     private static String tr(String key, Object... arguments) {
         return Text.translatable(key, arguments).getString();
     }
@@ -2409,6 +2638,7 @@ public final class ProceduralStudioScreen extends Screen {
         INSTANCES("gui.komaedit.stage.instances", StudioIcons.Icon.INSTANCES),
         RECIPES("gui.komaedit.stage.recipes", StudioIcons.Icon.RECIPES),
         COLOR("gui.komaedit.stage.color", StudioIcons.Icon.COLOR),
+        TOOLS("gui.komaedit.stage.tools", StudioIcons.Icon.TOOLS),
         BLUEPRINTS("gui.komaedit.stage.blueprints", StudioIcons.Icon.BLUEPRINTS);
 
         private final String titleKey;

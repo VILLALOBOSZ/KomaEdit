@@ -242,6 +242,11 @@ public enum TreeSpecies {
         public Architecture architecture() {
             return architecture;
         }
+
+        /** Inclinación de serie en grados (la palmera se inclina sola). */
+        public double defaultLean() {
+            return defaultLean;
+        }
     }
 
     private final String id;

@@ -77,6 +77,8 @@ public final class ProgressBars {
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             UUID id = player.getUuid();
             Optional<ProgressLine> line = current(id);
+            // El pie del Studio enseña lo mismo, sin esperar el segundo de la bossbar.
+            com.komainu.moxia.studio.net.StudioToolsNetwork.sendJobStatus(player, line);
             Bar bar = BARS.get(id);
             if (line.isEmpty()) {
                 if (bar != null) {

@@ -50,6 +50,26 @@ class StudioPreferencesTest {
     }
 
     @Test
+    void toolsKeepTheirOwnFavoritesRecentsAndPreviewChoice() throws Exception {
+        StudioPreferences preferences = new StudioPreferences();
+        assertTrue(preferences.toggleToolFavorite("tree"));
+        preferences.pushToolRecent("roof");
+        preferences.pushToolRecent("tree");
+        preferences.setToolPreview(true);
+        assertFalse(preferences.isFavorite("tree"), "las figuras no comparten favoritas con las herramientas");
+        assertTrue(preferences.recents().isEmpty());
+        Path file = directory.resolve("tools.json");
+        preferences.save(file);
+
+        StudioPreferences loaded = StudioPreferences.load(file);
+        assertTrue(loaded.isToolFavorite("tree"));
+        assertEquals(List.of("tree", "roof"), loaded.toolRecents());
+        assertTrue(loaded.toolPreview());
+        assertFalse(StudioPreferences.fromJson("{\"favorites\": [\"coil\"]}").toolPreview(),
+                "un archivo de antes empieza sin vista previa");
+    }
+
+    @Test
     void brokenOrMissingFilesGiveEmptyPreferences() throws Exception {
         assertTrue(StudioPreferences.load(directory.resolve("missing.json")).favorites().isEmpty());
         Path broken = directory.resolve("broken.json");

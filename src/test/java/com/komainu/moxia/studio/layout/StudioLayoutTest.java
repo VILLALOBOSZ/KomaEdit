@@ -48,6 +48,14 @@ class StudioLayoutTest {
                 assertTrue(frame.footer().encloses(frame.footerStatus()), where);
                 assertFalse(frame.footerStatus().intersects(frame.buildButton()), where);
                 assertFalse(frame.footerSummary().intersects(frame.footerStatus()), where);
+                assertTrue(frame.footer().encloses(frame.footerProgress()), where);
+                assertFalse(frame.footerProgress().intersects(frame.footerStatus()), where);
+                assertFalse(frame.footerProgress().intersects(frame.buildButton()), where);
+                Rect[] split = frame.footerButtons(70);
+                assertTrue(frame.buildButton().encloses(split[0]), where);
+                assertTrue(frame.buildButton().encloses(split[1]), where);
+                assertFalse(split[0].intersects(split[1]), where);
+                assertTrue(split[0].width() >= split[1].width(), "el botón principal no queda más estrecho · " + where);
                 assertEquals(frame.panel().x(), frame.world().right(), where);
             }
         }
@@ -82,6 +90,19 @@ class StudioLayoutTest {
                 }
             }
         }
+    }
+
+    @Test
+    void withRoomTheStagesKeepTheirComfortableRowAndGap() {
+        StudioLayout.Frame nine = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, 9);
+        assertEquals(StudioLayout.NAV_GAP, nine.navGap());
+        StudioLayout.Frame ten = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, STAGES);
+        assertEquals(StudioLayout.NAV_GAP, ten.navGap());
+        assertTrue(ten.navRowHeight() >= StudioLayout.COMFORT_NAV_ROW);
+        // 854×480 con GUI 2: las diez caben quitando hueco entre etapas.
+        StudioLayout.Frame tight = StudioLayout.compute(427, 240, 0, STAGES);
+        assertEquals(StudioLayout.TIGHT_NAV_GAP, tight.navGap());
+        assertTrue(tight.nav().encloses(tight.navItem(STAGES - 1)));
     }
 
     @Test

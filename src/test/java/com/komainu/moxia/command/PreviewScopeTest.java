@@ -50,4 +50,12 @@ class PreviewScopeTest {
         assertFalse(PreviewScope.shortFlagTaken(List.of("shape", "cone")));
         assertFalse(PreviewScope.shortFlagTaken(List.of()));
     }
+
+    @Test
+    void textAndBiomeKeepTheirOwnVerticalFlag() {
+        // En el texto -v es «de pie» y en los biomas el relleno vertical: la vista previa se los comía.
+        for (String family : List.of("text", "texto", "biome", "bioma")) {
+            assertTrue(PreviewScope.shortFlagTaken(List.of(family, "<arguments>")), family);
+        }
+    }
 }

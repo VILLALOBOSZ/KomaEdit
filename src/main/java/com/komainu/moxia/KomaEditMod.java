@@ -64,6 +64,7 @@ public final class KomaEditMod implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(PreviewHologramPayload.ID, PreviewHologramPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(EditorActionPayload.ID, EditorActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RecipeActionPayload.ID, RecipeActionPayload.CODEC);
+        com.komainu.moxia.studio.net.StudioToolsNetwork.register();
         ServerPlayNetworking.registerGlobalReceiver(EditorActionPayload.ID, (payload, context) ->
                 context.server().execute(() -> EditorActionService.handle(context.player(), payload))
         );
@@ -176,6 +177,7 @@ public final class KomaEditMod implements ModInitializer {
             com.komainu.moxia.persistence.QuietMode.forget(handler.player.getUuid());
             PlanPreviews.forget(handler.player.getUuid());
             ProgressBars.remove(handler.player);
+            com.komainu.moxia.studio.net.StudioToolsNetwork.forget(handler.player.getUuid());
             com.komainu.moxia.command.ColorCommands.forget(handler.player.getUuid());
         });
         // La vista previa es solo para quien edita y en su dimensión: se descarta al cambiar de mundo o reaparecer.

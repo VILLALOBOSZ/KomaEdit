@@ -221,6 +221,11 @@ public final class PlanPreviews {
         return PREPARING.containsKey(player) || FLOW.has(player);
     }
 
+    /** Cambios de la vista previa que espera confirmación del jugador, o 0 (el pie del Studio los cuenta). */
+    public static long pendingChanges(UUID player) {
+        return FLOW.plan(player).map(held -> (long) held.frozen.size()).orElse(0L);
+    }
+
     /** Si {@code plan} es el que el jugador tiene ahora en vista previa (o preparándose). */
     public static boolean holds(UUID player, PackedBlockPlan plan) {
         Preparation preparation = PREPARING.get(player);
