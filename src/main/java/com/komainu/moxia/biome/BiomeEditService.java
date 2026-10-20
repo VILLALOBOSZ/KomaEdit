@@ -3,6 +3,7 @@ package com.komainu.moxia.biome;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.SnapshotJobs;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -67,6 +69,16 @@ public final class BiomeEditService {
 
     public static boolean cancel(UUID playerId) {
         return finish(playerId, true);
+    }
+
+    /** Pintado en curso del jugador, para la barra de progreso. */
+    public static Optional<ProgressLine> progress(UUID playerId) {
+        Job job = JOBS.get(playerId);
+        if (job == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new ProgressLine(job.description, ProgressLine.Phase.PLACING, job.index, job.cells.length,
+                System.nanoTime() - job.startedAt, "/komaedit cancel"));
     }
 
     private static void tick(MinecraftServer server) {
@@ -134,6 +146,7 @@ public final class BiomeEditService {
         private final String description;
         private final EditSession session;
         private final WorldEditService.PlayerContext context;
+        private final long startedAt = System.nanoTime();
         private int index;
 
         private Job(UUID playerId, long[] cells, BiomeType biome, String description, EditSession session,

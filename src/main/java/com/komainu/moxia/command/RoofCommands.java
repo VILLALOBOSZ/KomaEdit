@@ -242,7 +242,7 @@ final class RoofCommands {
                 try {
                     int queued = BatchEditService.submitStyled(current, planned.plan(), pattern, description);
                     if (!PlanPreviews.holds(playerId, planned.plan())) {
-                        EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques · "
+                        EzCommandSupport.queued(current, description + " en cola: " + queued + " bloques · "
                                 + result.pieceCount() + " losas y escaleras · " + summary
                                 + " · //undo para deshacer");
                     }
@@ -503,7 +503,7 @@ final class RoofCommands {
                 }
                 int pieces = plan.pieceCount();
                 if (!PlanPreviews.holds(playerId, plan)) {
-                    EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
+                    EzCommandSupport.queued(current, description + " en cola: " + queued + " bloques"
                             + (pieces > 0 ? " · " + pieces + " losas y escaleras" : "") + " · //undo para deshacer");
                 }
             } catch (IllegalArgumentException | IllegalStateException exception) {
