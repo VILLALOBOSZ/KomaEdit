@@ -15,6 +15,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `brush` | Estampado orientado de figuras existentes |
 | `sculpt` | Brochas de volumen/altura, máscaras, perfiles y previews |
 | `noise` | Perlin, fBM, ridged y Worley deterministas |
+| `terrain` | Terraformado sobre mapas de alturas: sellos, rampas, ríos, erosión y paleta de superficie |
 | `placement` | Colocación de estructuras (place, array, scatter): alineación, formas procedurales, dispersión y voxelizado |
 | `edit` | Plan compacto y aplicación WorldEdit por lotes |
 | `performance` | Pool acotado, cancelación, cuotas y aislamiento de cálculos |
@@ -139,6 +140,10 @@ Piezas en `com.komainu.moxia.preview` y `com.komainu.moxia.progress`. Una operac
 6. **Cancelar.** `/komaedit cancel` (`command.PreviewCommands`) corta la captura, el worker y la colocación. `edit.PlanApplication` recorre los planes por tramos y se para siempre en una frontera de entrada, así que la `EditSession` que se cierra y se registra en `LocalSession` cubre exactamente lo colocado.
 
 Para un comando nuevo: si es de gestión (no coloca bloques) o ya usa `-v` con otro sentido, añádelo a `PreviewScope`; si su plan no pasa por `BatchEditService.submit`, no tendrá vista previa. Si después de encolar anuncia «en cola», compruébalo antes con `PlanPreviews.holds`.
+
+## Terraformado
+
+`terrain` trabaja sobre `TerrainView`, una vista mínima de la zona capturada: `TerrainColumns` lee el suelo de cada columna, las herramientas (`StampBrush`, `RampPlanner`, `RiverPlanner`, `HydraulicErosion`, `ThermalErosion`) cambian un `HeightField` de alturas con decimales y `TerrainWriter` lo vuelve a pasar a bloques con `SurfacePalette`. Todo eso es Java puro y se prueba con un mundo de texto. En el juego, `TerrainService` lee con `RegionOperationService.capture`, calcula en `AsyncEngine` sobre `RegionTerrainView`, escribe en `RegionEdits` y pasa por `BuildEstimate` y `PendingBuilds`; el pincel de relieve es una `BrushOperation` (`HeightmapOperation`) sobre `BrushTerrainView`.
 
 ## Máscaras y patrones en WorldEdit
 
