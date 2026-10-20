@@ -245,6 +245,11 @@ public final class ClientStudioHost implements StudioHost {
     }
 
     @Override
+    public Optional<Ghost> ghost() {
+        return com.komainu.moxia.client.gizmo.GhostClient.studioFooter();
+    }
+
+    @Override
     public Optional<JobStatusPayload> job() {
         return ToolClientState.job();
     }

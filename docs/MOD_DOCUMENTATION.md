@@ -4,7 +4,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 ## Índice
 
-- **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación) · [En el mundo: ajustes, teclas y mensajes](#en-el-mundo-ajustes-teclas-y-mensajes)
+- **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación) · [Colocar con gizmo](#colocar-con-gizmo) · [En el mundo: ajustes, teclas y mensajes](#en-el-mundo-ajustes-teclas-y-mensajes)
 - **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Modificadores](#modificadores) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
 - **Sobre lo construido:** [Envejecer](#envejecer) · [Hiedra viva](#hiedra-viva) · [Retoques sobre la selección](#retoques-sobre-la-selección) · [Enredaderas, musgo, losas y estados](#enredaderas-musgo-losas-y-estados) · [Vidriera degradada](#vidriera-degradada)
 - **Edificios y naturaleza:** [Árboles y rocas](#árboles-y-rocas) · [Tejados](#tejados) · [Loft entre curvas](#loft-entre-curvas)
@@ -422,7 +422,7 @@ Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y
 /komaedit repeat [-v]                   repite la última orden que colocó bloques, donde estás (alias repetir)
 ```
 
-Con KomaEdit en el cliente, Intro aplica y Retroceso descarta la vista previa que espera (ver [Teclas](#teclas)).
+Con KomaEdit en el cliente, Intro aplica y Retroceso descarta la vista previa que espera (ver [Teclas](#teclas)). Lo que es un objeto que no depende del sitio (pegar, `place`, planos, figuras, árboles, rocas, tejados, texto…) sale además como fantasma con gizmo para moverlo antes de colocarlo: ver [Colocar con gizmo](#colocar-con-gizmo).
 
 Ejemplos:
 
@@ -499,6 +499,109 @@ En los dos casos, el chat resume la vista previa en una línea: cambios, cuánto
 - Si un plan escribe dos veces en la misma posición, gana la última, igual que sin vista previa.
 - La vista previa y la barra se basan en `BatchEditService`, `RegionOperationService` y `AsyncEngine`: una orden nueva que los use las tiene sin hacer nada (ver `docs/ARCHITECTURE.md`).
 
+## Colocar con gizmo
+
+### Objetivo y acceso
+
+Mover, girar y voltear lo que vas a colocar antes de colocarlo, como en Axiom. Con KomaEdit en el cliente, lo que es un **objeto que no depende del sitio** no se coloca al momento: aparece como un **fantasma** (el mismo dibujo translúcido de la vista previa, en azul) con un **gizmo** encima, lo llevas a donde quieras y lo confirmas. Se calcula una sola vez: moverlo no vuelve a calcular nada.
+
+```text
+/komaedit paste [-a] [-o]     pega el portapapeles de WorldEdit (alias pegar); -a sin aire, -o donde se copió
+Ctrl+V                        lo mismo, desde el mundo (sin escribir nada)
+```
+
+**Qué sale como fantasma** (lo que se calcula de unos parámetros, del portapapeles, de un plano o de la trayectoria que dibujaste, y da igual dónde acabe):
+
+- `paste` / `pegar`: el portapapeles, con su `//rotate` y `//flip` pendientes y sus bloques con datos (cofres, carteles…).
+- `place` / `colocar` y `blueprint place` / `planos colocar`: estructuras, schematics, formas y planos.
+- Figuras y estructuras sobre la trayectoria: `build`, `bridge`, `pillar`, `pillararches`, `torii`, `cloud`, `mandala`, `web`, `noodles`, `lightning`, `braid`, `noisetube`, `expr`, `sweep`, `ezspline`, `loft` y `bend`; y **Construir** de las figuras del Studio (la instancia guarda su trayectoria movida y girada con ella).
+- Árboles y rocas (`tree`, `rock`), tejados (`roof`), texto (`text`) e imágenes (`image`), también desde las herramientas del Studio.
+
+**Qué se queda como estaba** (con su vista previa de siempre, `-v`): lo que lee el terreno o la selección para decidir qué cambia. Terraformar, envejecer, texturizar, deformar, suavizar, esculpir, pintar y sombrear, la gravedad, la nieve, drenar e inundar, los degradados, los biomas, la hiedra (crece sobre lo que hay), `scatter` (busca superficies), `array` (sigue el terreno con `-b`) y los generadores que rellenan la selección. Tampoco los pinceles ni la supervarita: cada clic coloca al momento.
+
+**Cuándo aparece**, en los ajustes del cliente (**Colocar con gizmo**): **Siempre** (de serie: con la orden normal y con `-v`), **Con -v** (solo con `-v`; sin él colocan al momento, como antes) o **Nunca**. Sin el mod en el cliente nada cambia: la orden coloca directamente y `-v` enseña la vista previa de siempre.
+
+Ejemplos:
+
+```text
+//copy, te mueves y /komaedit paste      el fantasma aparece donde lo pegaría //paste; lo arrastras y Intro
+/komaedit tree oak                          el árbol donde miras, para ajustarlo antes de plantarlo
+/komaedit place Sh(S:Cone,P:stone) Aim      el cono, para girarlo y llevarlo a su sitio
+/komaedit paste -a                          sin el aire del portapapeles
+```
+
+### Mover
+
+- **Flechas del gizmo** (roja X, verde Y, azul Z): apunta a una con el punto de mira, mantén el clic izquierdo y gira la cámara; el fantasma sigue al rayo a lo largo de ese eje, de bloque en bloque (medio bloque ya cuenta). Mirando a lo largo de una flecha no se puede arrastrar por ella: usa otra o el teclado.
+- **El cubo del centro**: lo arrastra por el plano del suelo (X y Z a la vez).
+- **Teclado**: las flechas lo mueven adelante, atrás, a izquierda y derecha según hacia dónde miras (al bloque cardinal más parecido); **RePág** y **AvPág**, arriba y abajo. Con **Mayús**, de 5 en 5.
+- **La rueda** lo acerca o lo aleja en la dirección de la mirada (por el eje en el que más miras), de uno en uno o de 5 en 5 con Mayús. Se puede apagar en los ajustes (**Rueda mueve el fantasma**) y entonces cambia de casilla como siempre.
+- **G** («a donde miro»): lo pone contra la cara del bloque que miras, hasta 192 bloques: encima, centrado; debajo, colgando; en una pared, pegado a ella con la base a la altura del bloque mirado.
+
+**El ratón.** En el mundo no se libera: el punto de mira es el puntero, como en el resto de Minecraft y en el modo constructor de Axiom. Así no hay ningún modo que activar para mover el fantasma, y andar, volar y mirar alrededor siguen igual mientras lo tienes. La pieza bajo el punto de mira se resalta en amarillo. En el Studio, que ya suelta el ratón, el puntero es el cursor: con el Studio abierto se arrastra con el ratón sobre el mundo, y el clic derecho sigue girando la cámara.
+
+### Girar y voltear
+
+- **Ctrl+R** gira 90° en Y, de este a sur (en el sentido de las agujas del reloj visto desde arriba); **Ctrl+Mayús+R**, al revés.
+- **Ctrl+Alt+R** lo tumba un cuarto de vuelta sobre el eje horizontal que tienes de lado.
+- **Los anillos del gizmo** (rojo X, verde Y, azul Z): arrastrar uno gira de cuarto en cuarto de vuelta; un clic sin arrastrar gira un cuarto.
+- **Ctrl+F** lo voltea en la dirección en la que miras (en vertical si miras muy arriba o muy abajo).
+- Gira sobre el bloque del centro de su caja, el del gizmo: cuatro giros lo dejan exactamente donde estaba.
+- **Los estados de bloque giran con él** y se colocan así: escaleras (con su esquina), troncos y pilares, puertas y su bisagra, raíles, losas de arriba y de abajo, `facing` de seis lados, carteles de 16 pasos, vallas y cristales, conexiones… Es la misma transformación que la simetría y el escalado del portapapeles.
+- **Tumbarlo** (giros en X o en Z) solo se puede si todo el objeto lo admite: troncos, pilares, dispensadores, setas grandes y bloques sin orientación sí; escaleras, losas de media altura, puertas, vallas, raíles… no tienen versión tumbada, así que el gizmo no enseña esos anillos y Ctrl+Alt+R avisa. Boca abajo (dos cuartos) sí se puede siempre: es un volteo en vertical.
+
+### Opciones
+
+A la vista en la barra de acción, en el pie del Studio (con casillas) y en la línea del chat que sale al aparecer el fantasma (**[Conservar]**, **[Aire]**, **[Suelo]**, con un clic):
+
+| Opción | Atajo | De serie | Qué hace |
+| --- | --- | --- | --- |
+| Apoyar en el suelo | Ctrl+B | No | Al moverlo en horizontal baja (o sube, si está medio enterrado) hasta descansar sobre el terreno; manda la columna con el apoyo más alto, así ninguna se hunde. Moverlo en vertical a mano la apaga. |
+| Conservar lo que hay | Ctrl+E | No | Solo pone bloques donde ahora hay aire: no pisa nada. |
+| Pegar aire | Ctrl+X | Sí | El aire del objeto (el de un portapapeles copiado con aire, el de `place -a`) borra lo que haya en esas posiciones. Solo aparece si el objeto tiene aire. |
+
+### Confirmar o cancelar
+
+- **Intro**, **clic derecho** o **Ctrl+V** lo colocan; **Esc**, **Retroceso** o **Supr** lo quitan sin colocar nada (Esc no abre el menú mientras hay fantasma). `/komaedit confirm` también lo coloca (donde lo tengas) y `/komaedit cancel`, lo quita.
+- **Ctrl+clic derecho** o **Ctrl+Intro** colocan **una copia** y el fantasma sigue para colocar otra, como el Clone de Axiom. Hasta que el servidor responde no sale otra copia.
+- Se coloca **exactamente lo que se ve**: el cliente solo manda la transformación (posición, giro, volteo) y las opciones; el servidor aplica el plan que ya tenía con esa transformación, con los mismos estados girados, sin recalcular.
+- **En un solo //undo** y con la barra de progreso del motor común, como cualquier edición. `/komaedit cancel` la para a medias, como siempre.
+- Mientras lo mueves, **la barra de acción** dice dónde está su centro, cuánto lo has movido, su giro, su tamaño y las opciones encendidas: «KE · 120, 64, -40 (+3, 0, -2) · giro 90° · 7×12×7 · Conservar lo que hay · Intro o clic derecho coloca…». Con el Studio abierto lo dice su **pie**, con **Colocar** y **Cancelar** en el botón. La caja del objeto se dibuja en azul con sus medidas.
+
+**Lo que comprueba el servidor al confirmar** (si algo falla, no coloca nada, lo dice y el fantasma sigue para moverlo):
+
+- Que sigas pudiendo usar KomaEdit y, en las figuras del Studio, construir esa figura.
+- Que quepa en la altura del mundo, dentro del borde, a menos de 512 bloques de ti y en chunks cargados.
+- Que el objeto admita ese giro (por si el cliente se equivoca).
+- **El destino se lee al confirmar**, repartido entre ticks (unos 4 ms por tick): cada escritura lleva la condición de lo que había en ese momento, así que si algo cambia mientras se coloca, esa posición no se pisa. Si alguna posición cae donde no puedes construir (la protección del spawn, el borde), no se coloca nada y te dice dónde.
+- Que no tengas otra edición colocándose (espera o `/komaedit cancel`).
+
+**Cuándo se quita solo:** al lanzar otra orden que coloque algo (otro fantasma o una vista previa), al cambiar de dimensión, al reaparecer, al desconectarte y tras media hora sin usarlo.
+
+### Teclas
+
+Están en **Controles → KomaEdit** («Fantasma: …»). Vienen **sin asignar a propósito**: Minecraft solo atiende una acción por tecla, y asignarlas de serie le quitaría la F a «cambiar de mano» o la R a Cobblemon. Mientras no las cambies valen los atajos de serie de la tabla, y solo con un fantasma en pantalla (salvo Ctrl+V). Si asignas una tecla en Controles, esa tecla sola (sin Ctrl) hace la acción. Aplicar y descartar usan las teclas de la vista previa (Intro y Retroceso de serie).
+
+| Acción | De serie |
+| --- | --- |
+| Mover adelante, atrás, izquierda, derecha | ↑ ↓ ← → (Mayús: de 5 en 5) |
+| Subir, bajar | RePág, AvPág |
+| A donde miro | G |
+| Girar 90° | Ctrl+R (Mayús: al revés; Alt: tumbar) |
+| Voltear | Ctrl+F |
+| Apoyar en el suelo / Conservar lo que hay / Pegar aire | Ctrl+B / Ctrl+E / Ctrl+X |
+| Pegar el portapapeles como fantasma (y, con uno abierto, colocarlo) | Ctrl+V |
+
+### Rendimiento y limitaciones
+
+- Preparar el fantasma resuelve el bloque final de cada posición en el hilo del servidor, unos 4 ms por tick (la barra lo enseña), igual que la vista previa; el cliente recibe solo la superficie (hasta 250 000 bloques) en partes de 32 KiB. Más de 2 000 000 de bloques no se mueven: se colocan (o se previsualizan) como siempre, con un aviso.
+- Moverlo no hace nada en la red ni rehace la malla: se dibuja desplazada. Girarlo o voltearlo rehace la malla en otro hilo con los estados girados; mientras tanto se ve la anterior girada entera.
+- El servidor guarda el objeto entero (unos 12 bytes por bloque) hasta que se coloca o se quita.
+- Las figuras del Studio que se **actualizan** (Actualizar instancia) no se mueven: se rehacen en su sitio.
+- Recalcular no existe: si el objeto dependía de algo del sitio donde se calculó (la normal del suelo con `SurfaceNormal`, las raíces de un árbol), se mueve tal como se calculó.
+- Apoyar en el suelo mira como mucho 2 048 columnas de la huella y 256 bloques hacia abajo; el agua y las plantas no cuentan como suelo.
+- Nada de esto se ha probado aún dentro de Minecraft: las pruebas son JUnit (matemática del gizmo, giros de estados, colocación, servidor y máquina de estados) y renders fuera del juego (`docs/renders/gizmo/`).
+
 ## En el mundo: ajustes, teclas y mensajes
 
 ### Objetivo y acceso
@@ -526,6 +629,8 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 | Radio del pincel | Sí | Con un pincel en la mano, su radio sobre la superficie que miras. |
 | Guías de simetría | Sí | Los planos y el eje de la simetría alrededor de ti, sin partículas. |
 | Sonidos | Sí, 35 % | Un sonido corto al confirmar, al terminar una edición larga y al fallar, con su volumen. |
+| Colocar con gizmo | Siempre | Cuándo sale el fantasma con gizmo: **Siempre**, **Con -v** o **Nunca** (ver [Colocar con gizmo](#colocar-con-gizmo)). Se guarda aparte, en `config/komaedit-gizmo.json`, y el cliente se lo dice al servidor al entrar y al cambiarlo. |
+| Rueda mueve el fantasma | Sí | Con un fantasma en pantalla, la rueda lo acerca o lo aleja en lugar de cambiar de casilla. |
 
 ### Teclas
 
@@ -538,6 +643,7 @@ Todas están en **Controles → KomaEdit** y se pueden cambiar.
 | Repetir la última operación aquí | Sin asignar | `/komaedit repeat`; con Mayús, `/komaedit repeat -v` (con vista previa). |
 | Cuentagotas de bloque | Sin asignar | El bloque que miras, hasta 192 bloques (ver abajo). |
 | Ajustes de KomaEdit en el mundo | Sin asignar | Abre los ajustes. |
+| Fantasma: mover, girar, voltear, opciones, pegar | Sin asignar (atajos de serie) | Ver [Colocar con gizmo · Teclas](#colocar-con-gizmo). Intro y Retroceso también colocan y quitan el fantasma. |
 
 Al llegar una vista previa, la barra de acción recuerda las teclas: «12 300 cambios · Intro aplicar · Retroceso descartar».
 

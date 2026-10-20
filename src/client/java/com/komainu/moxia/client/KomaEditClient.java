@@ -97,6 +97,7 @@ public final class KomaEditClient implements ClientModInitializer {
         CapabilityControls.register();
         com.komainu.moxia.client.gui.studio.ToolClientState.register();
         WorldFeedbackClient.register();
+        com.komainu.moxia.client.gizmo.GhostClient.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openEditor.wasPressed()) {
                 openEditor(client);

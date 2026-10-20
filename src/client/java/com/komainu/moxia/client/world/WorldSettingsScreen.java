@@ -1,6 +1,8 @@
 package com.komainu.moxia.client.world;
 
+import com.komainu.moxia.client.gizmo.ClientGizmoSettings;
 import com.komainu.moxia.feedback.WorldFeedbackSettings;
+import com.komainu.moxia.gizmo.GizmoSettings;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -32,7 +34,7 @@ public final class WorldSettingsScreen extends Screen {
         WorldFeedbackSettings settings = ClientWorldSettings.get();
         int left = width / 2 - BUTTON - 5;
         int right = width / 2 + 5;
-        int top = Math.max(36, height / 2 - 6 * ROW);
+        int top = Math.max(36, height / 2 - 7 * ROW);
         int row = 0;
         addDrawableChild(CyclingButtonWidget.<WorldFeedbackSettings.PreviewStyle>builder(style ->
                         Text.translatable("gui.komaedit.world.style." + style.id()))
@@ -60,9 +62,26 @@ public final class WorldSettingsScreen extends Screen {
         toggle(left, top + row * ROW, "sounds", settings.sounds(), WorldFeedbackSettings::withSounds);
         addDrawableChild(slider(right, top + row * ROW, "gui.komaedit.world.volume", settings.soundVolume(),
                 value -> value, (current, volume) -> current.withSoundVolume(volume)));
+        row++;
+        // El fantasma con gizmo: cuándo sale y si la rueda lo mueve (archivo aparte, komaedit-gizmo.json).
+        GizmoSettings gizmo = ClientGizmoSettings.get();
+        addDrawableChild(CyclingButtonWidget.<GizmoSettings.Mode>builder(mode ->
+                        Text.translatable("gui.komaedit.world.gizmo." + mode.id()))
+                .values(GizmoSettings.Mode.values())
+                .initially(gizmo.mode())
+                .tooltip(mode -> net.minecraft.client.gui.tooltip.Tooltip.of(
+                        Text.translatable("gui.komaedit.world.gizmo.tooltip")))
+                .build(left, top + row * ROW, BUTTON, 20, Text.translatable("gui.komaedit.world.gizmo"),
+                        (button, value) -> ClientGizmoSettings.set(ClientGizmoSettings.get().withMode(value))));
+        addDrawableChild(CyclingButtonWidget.onOffBuilder(gizmo.wheel())
+                .tooltip(ignored -> net.minecraft.client.gui.tooltip.Tooltip.of(
+                        Text.translatable("gui.komaedit.world.gizmo_wheel.tooltip")))
+                .build(right, top + row * ROW, BUTTON, 20, Text.translatable("gui.komaedit.world.gizmo_wheel"),
+                        (button, enabled) -> ClientGizmoSettings.set(ClientGizmoSettings.get().withWheel(enabled))));
         row += 2;
         addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.world.defaults"), button -> {
             ClientWorldSettings.set(ClientWorldSettings.defaults());
+            ClientGizmoSettings.set(GizmoSettings.DEFAULT);
             clearAndInit();
         }).dimensions(left, top + row * ROW, BUTTON, 20).build());
         addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> close())
@@ -105,7 +124,7 @@ public final class WorldSettingsScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, Math.max(14, height / 2 - 6 * ROW - 22),
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, Math.max(14, height / 2 - 7 * ROW - 22),
                 0xFFFFFF);
     }
 

@@ -4,6 +4,7 @@ import com.komainu.moxia.biome.BiomeEditService;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PendingBuilds;
 import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.gizmo.GhostService;
 import com.komainu.moxia.ivy.IvyService;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.preview.LastEdits;
@@ -157,6 +158,10 @@ final class PreviewCommands {
      */
     static Optional<Integer> confirm(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        if (GhostService.requestConfirm(player)) {
+            // El fantasma se coloca donde lo tenga ahora el cliente.
+            return Optional.of(1);
+        }
         return switch (PlanPreviews.confirm(player)) {
             case NONE -> Optional.empty();
             case PREPARING -> Optional.of(EzCommandSupport.fail(context.getSource(),
@@ -175,7 +180,8 @@ final class PreviewCommands {
 
     /** {@code /komaedit confirm cancel}: descarta la vista previa si hay una. */
     static Optional<String> discard(ServerPlayerEntity player) {
-        return PlanPreviews.cancel(player.getUuid());
+        Optional<String> ghost = GhostService.cancel(player);
+        return ghost.isPresent() ? ghost : PlanPreviews.cancel(player.getUuid());
     }
 
     /** {@code /komaedit cancel}: para todo lo que el jugador tenga en marcha. */
@@ -184,6 +190,7 @@ final class PreviewCommands {
         UUID id = player.getUuid();
         List<String> stopped = new ArrayList<>();
         PlanPreviews.cancel(id).ifPresent(description -> stopped.add("vista previa de " + description));
+        GhostService.cancel(player).ifPresent(description -> stopped.add("fantasma de " + description));
         PendingBuilds.cancel(id).ifPresent(description -> stopped.add("Build en espera (" + description + ")"));
         if (RegionOperationService.cancel(id) | SnapshotCaptureService.cancel(id)) {
             stopped.add("lectura del mundo");

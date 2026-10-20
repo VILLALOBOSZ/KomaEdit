@@ -114,7 +114,10 @@ public final class HelpTopics {
                             "Banderas: -p -q -r -s -t -n -e -w -h, como en ezEdits")
             )),
             new Topic("edit", "Editar estructuras", List.of("editar", "doblar", "bend", "degradado", "gradient",
-                    "portapapeles", "clipboard", "escalar", "rotsprite"), List.of(
+                    "portapapeles", "clipboard", "escalar", "rotsprite", "pegar", "paste", "gizmo", "fantasma"),
+                    List.of(
+                    new Entry("/komaedit paste [-a] [-o]",
+                            "Pega el portapapeles; con el mod, como fantasma con gizmo para moverlo (alias pegar)"),
                     new Entry("/komaedit bend [repeat|stretch] [-n upright|horizontal]", "Dobla el portapapeles por la trayectoria"),
                     new Entry("/komaedit clipboard scale <factor> [nearest|scale2x|scale3x|rotsprite]",
                             "Agranda o encoge el portapapeles sin dientes de sierra (alias portapapeles escalar)"),
