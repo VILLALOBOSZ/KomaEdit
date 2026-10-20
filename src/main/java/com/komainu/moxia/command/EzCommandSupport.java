@@ -1,6 +1,7 @@
 package com.komainu.moxia.command;
 
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.persistence.QuietMode;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -69,8 +70,9 @@ final class EzCommandSupport {
         send(player, Text.literal(message).formatted(Formatting.GREEN));
     }
 
+    /** Mensaje informativo: no sale si el jugador activó {@code /komaedit quiet}. */
     static void info(ServerPlayerEntity player, String message) {
-        send(player, Text.literal(message).formatted(Formatting.GRAY));
+        QuietMode.info(player, prefix().append(Text.literal(message).formatted(Formatting.GRAY)));
     }
 
     static int fail(ServerCommandSource source, String message) {

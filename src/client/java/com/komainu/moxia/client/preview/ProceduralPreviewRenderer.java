@@ -255,6 +255,18 @@ public final class ProceduralPreviewRenderer {
             byte piece = pieces.at(block.x(), block.y(), block.z());
             int mask = SmoothPiece.mask(piece);
             int local = localX | localY << 4 | localZ << 8;
+            if (SmoothPiece.isPane(piece)) {
+                IntArrayList boxFaces = grouped.computeIfAbsent(key, ignored -> new IntArrayList());
+                faces += boxFaces(boxFaces, local, block, piece, PANE_POST_CODE, occupancy, pieces);
+                int connections = SmoothPiece.paneConnections(piece);
+                for (int side = 0; side < 4; side++) {
+                    if ((connections & 1 << side) != 0) {
+                        faces += boxFaces(boxFaces, local, block, piece, PANE_POST_CODE + 1 + side, occupancy,
+                                pieces);
+                    }
+                }
+                continue;
+            }
             int boxCode = boxCode(piece);
             if (boxCode != 0) {
                 IntArrayList boxFaces = grouped.computeIfAbsent(key, ignored -> new IntArrayList());
@@ -296,7 +308,13 @@ public final class ProceduralPreviewRenderer {
         return SmoothPiece.isWall(piece) ? 8 : 0;
     }
 
+    /** 9 el poste de un panel y 10 a 13 sus brazos hacia sur, oeste, norte y este. */
+    private static final int PANE_POST_CODE = 9;
+
     private static int[] box(int code) {
+        if (code >= PANE_POST_CODE) {
+            return SmoothPiece.paneBox(code - PANE_POST_CODE);
+        }
         return SmoothPiece.box(code == 8 ? SmoothPiece.wall() : SmoothPiece.layers(code));
     }
 

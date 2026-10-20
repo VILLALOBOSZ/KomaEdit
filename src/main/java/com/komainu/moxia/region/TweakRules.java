@@ -55,7 +55,7 @@ public final class TweakRules {
         DEINFEST("deinfest", "Quitar infestación", "desinfestar"),
         PERSIST("persist", "Hojas persistentes", "persistir", "hojas"),
         WATERLOG("waterlog", "Anegar", "anegar", "agua"),
-        WAX("wax", "Encerar cobre", "encerar", "cera");
+        WAX("wax", "Encerar cobre y carteles", "encerar", "cera");
 
         private final String id;
         private final String displayName;

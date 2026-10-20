@@ -64,10 +64,12 @@ public final class BrushCommands {
                 case ARRAY -> new String[]{"Clipboard", "Sh(S:Cylinder,P:stone)", "Tangential", "Orthogonal",
                         "Constant", "-g", "-q", "-y", "-b", "-n", "-p", "-s"};
                 case TREE -> new String[]{"oak", "spruce", "birch", "jungle", "acacia", "cherry", "willow", "dark_oak",
-                        "dead", "palm", "baobab", "fantasy", "18", "-g", "-b", "-d", "-w", "-i", "-c", "-v", "-t", "-h",
+                        "dead", "palm", "baobab", "fantasy", "18", "-g", "-b", "-d", "-w", "-i", "-c", "-x", "-t", "-h",
                         "-r", "-m", "-s", "-p"};
                 case ROCK -> new String[]{"boulder", "crag", "spire", "5", "-u", "-b", "-a", "-e", "-r", "-g", "-c",
-                        "-h", "-i", "-v", "-m", "-s", "-p"};
+                        "-h", "-i", "-x", "-m", "-s", "-p"};
+                case BIOME -> new String[]{"cherry_grove", "snowy_plains", "desert", "8", "16", "-v", "-m",
+                        "grass_block"};
             };
         } catch (IllegalArgumentException exception) {
             examples = new String[0];
@@ -174,7 +176,8 @@ public final class BrushCommands {
         var brush = id == null ? java.util.Optional.<EzBrush>empty() : EzBrushManager.brush(player.getUuid(), id);
         if (brush.isEmpty()) {
             feedback(context, Text.literal("Pinceles: paletteshift, gradient, gradientstroke, petalpainter, place,"
-                    + " scatter, array, tree, rock. Ejemplo: /komaedit pincel gradient ##Magma 8 tapered 0.6")
+                    + " scatter, array, tree, rock, biome. Ejemplo: /komaedit pincel gradient ##Magma 8 tapered"
+                    + " 0.6")
                     .formatted(Formatting.GRAY));
             return 1;
         }

@@ -14,7 +14,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Render isométrico de pruebas con las piezas tal cual: losas y escaleras por octantes, capas y muros con su caja.
+ * Render isométrico de pruebas con las piezas tal cual: losas y escaleras por octantes; capas, muros y paneles con
+ * sus cajas.
  * Pinta de atrás adelante (pintor) y solo los bloques con alguna cara al aire. Fuera del juego, sin Minecraft.
  */
 public final class PieceRender {
@@ -129,10 +130,12 @@ public final class PieceRender {
 
     private static void addBoxes(List<Box> boxes, int x, int y, int z, Cell cell) {
         byte piece = cell.piece();
-        int[] box = SmoothPiece.box(piece);
-        if (box != null) {
-            boxes.add(new Box(x + box[0] / 16.0, y + box[1] / 16.0, z + box[2] / 16.0, x + box[3] / 16.0,
-                    y + box[4] / 16.0, z + box[5] / 16.0, cell.color()));
+        int[][] parts = SmoothPiece.boxes(piece);
+        if (parts.length > 0) {
+            for (int[] box : parts) {
+                boxes.add(new Box(x + box[0] / 16.0, y + box[1] / 16.0, z + box[2] / 16.0, x + box[3] / 16.0,
+                        y + box[4] / 16.0, z + box[5] / 16.0, cell.color()));
+            }
             return;
         }
         if (piece == SmoothPiece.FULL) {

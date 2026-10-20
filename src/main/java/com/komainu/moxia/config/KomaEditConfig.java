@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.image.ImageConfig;
 import com.komainu.moxia.persistence.AtomicStorage;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -25,6 +26,7 @@ public final class KomaEditConfig {
     }
 
     public static void load() {
+        ImageConfig.load(directory());
         try {
             if (!Files.isRegularFile(FILE)) {
                 save(Settings.DEFAULT);
@@ -41,7 +43,10 @@ public final class KomaEditConfig {
                     integer(root, "maxConcurrentJobs", Settings.DEFAULT.maxConcurrentJobs()),
                     bool(root, "rootPermissionGrantsAll", Settings.DEFAULT.rootPermissionGrantsAll()),
                     integer(root, "backupRetention", Settings.DEFAULT.backupRetention()),
-                    integer(root, "confirmBuildAboveBlocks", Settings.DEFAULT.confirmBuildAboveBlocks())
+                    integer(root, "confirmBuildAboveBlocks", Settings.DEFAULT.confirmBuildAboveBlocks()),
+                    integer(root, "previewTimeoutSeconds", Settings.DEFAULT.previewTimeoutSeconds()),
+                    integer(root, "previewMaxDisplays", Settings.DEFAULT.previewMaxDisplays()),
+                    integer(root, "arraySnapRadius", Settings.DEFAULT.arraySnapRadius())
             );
         } catch (IOException | RuntimeException exception) {
             KomaEditMod.LOGGER.error("Could not load KomaEdit config; safe defaults will be used", exception);
@@ -71,6 +76,9 @@ public final class KomaEditConfig {
         root.addProperty("rootPermissionGrantsAll", value.rootPermissionGrantsAll());
         root.addProperty("backupRetention", value.backupRetention());
         root.addProperty("confirmBuildAboveBlocks", value.confirmBuildAboveBlocks());
+        root.addProperty("previewTimeoutSeconds", value.previewTimeoutSeconds());
+        root.addProperty("previewMaxDisplays", value.previewMaxDisplays());
+        root.addProperty("arraySnapRadius", value.arraySnapRadius());
         AtomicStorage.writeString(FILE, GSON.toJson(root));
     }
 
@@ -82,19 +90,40 @@ public final class KomaEditConfig {
         return root.has(key) ? root.get(key).getAsBoolean() : fallback;
     }
 
+    /**
+     * @param confirmBuildAboveBlocks por encima de estos bloques, un Build pide confirmación antes de encolarse; 0 no
+     *                                pregunta nunca
+     * @param arraySnapRadius         hasta dónde busca superficie la bandera {@code -b} de {@code array}, en bloques
+     */
     public record Settings(
             int maxBlocksPerOperation,
             int maxConcurrentJobs,
             boolean rootPermissionGrantsAll,
             int backupRetention,
-            int confirmBuildAboveBlocks
+            int confirmBuildAboveBlocks,
+            int previewTimeoutSeconds,
+            int previewMaxDisplays,
+            int arraySnapRadius
     ) {
-        /** Por encima de estos bloques, un Build pide confirmación antes de encolarse; 0 no pregunta nunca. */
-        public static final Settings DEFAULT = new Settings(1_500_000, 4, false, 5, 250_000);
+        public static final int DEFAULT_ARRAY_SNAP_RADIUS = 96;
+        public static final int MAX_ARRAY_SNAP_RADIUS = 256;
+        /**
+         * Por encima de {@code confirmBuildAboveBlocks} bloques, un Build pide confirmación antes de encolarse (0 no
+         * pregunta nunca). Una vista previa caduca a los {@code previewTimeoutSeconds} segundos y enseña como mucho
+         * {@code previewMaxDisplays} block displays (0: solo la caja).
+         */
+        public static final Settings DEFAULT = new Settings(1_500_000, 4, false, 5, 250_000, 90, 1_500,
+                DEFAULT_ARRAY_SNAP_RADIUS);
 
         public Settings(int maxBlocksPerOperation, int maxConcurrentJobs, boolean rootPermissionGrantsAll,
                         int backupRetention) {
             this(maxBlocksPerOperation, maxConcurrentJobs, rootPermissionGrantsAll, backupRetention, 250_000);
+        }
+
+        public Settings(int maxBlocksPerOperation, int maxConcurrentJobs, boolean rootPermissionGrantsAll,
+                        int backupRetention, int confirmBuildAboveBlocks) {
+            this(maxBlocksPerOperation, maxConcurrentJobs, rootPermissionGrantsAll, backupRetention,
+                    confirmBuildAboveBlocks, 90, 1_500, DEFAULT_ARRAY_SNAP_RADIUS);
         }
 
         public Settings {
@@ -109,6 +138,15 @@ public final class KomaEditConfig {
             }
             if (confirmBuildAboveBlocks < 0 || confirmBuildAboveBlocks > 10_000_000) {
                 throw new IllegalArgumentException("confirmBuildAboveBlocks must be between 0 and 10000000");
+            }
+            if (previewTimeoutSeconds < 10 || previewTimeoutSeconds > 3_600) {
+                throw new IllegalArgumentException("previewTimeoutSeconds must be between 10 and 3600");
+            }
+            if (previewMaxDisplays < 0 || previewMaxDisplays > 10_000) {
+                throw new IllegalArgumentException("previewMaxDisplays must be between 0 and 10000");
+            }
+            if (arraySnapRadius < 1 || arraySnapRadius > MAX_ARRAY_SNAP_RADIUS) {
+                throw new IllegalArgumentException("arraySnapRadius must be between 1 and " + MAX_ARRAY_SNAP_RADIUS);
             }
         }
     }

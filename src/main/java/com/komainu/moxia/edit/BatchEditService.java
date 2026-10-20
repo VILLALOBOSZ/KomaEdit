@@ -3,6 +3,7 @@ package com.komainu.moxia.edit;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.persistence.OperationLedger;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
@@ -16,6 +17,7 @@ import com.sk89q.worldedit.world.block.BlockState;
 import net.minecraft.block.Block;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
@@ -45,6 +47,11 @@ public final class BatchEditService {
         return submit(player, plan, patternInput, description, null);
     }
 
+    /**
+     * Encola un plan con un patrón. Si la orden pidió vista previa ({@code -v}) o el jugador previsualiza siempre a
+     * partir de N bloques, el plan queda en {@link PlanPreviews} hasta {@code /komaedit confirm} y no se coloca nada
+     * aún (con {@code listener} nunca hay vista previa). Devuelve los bloques del plan en los dos casos.
+     */
     public static int submit(
             ServerPlayerEntity player,
             PackedBlockPlan plan,
@@ -52,17 +59,21 @@ public final class BatchEditService {
             String description,
             JobListener listener
     ) {
-        OperationPolicy.validate(player, plan.size(), JOBS.size());
+        OperationPolicy.validate(player, plan.size(), 0);
         if (plan.size() == 0) {
             throw new IllegalArgumentException("La operación no contiene bloques");
         }
+        WorldEditService.PlayerContext context = WorldEditService.context(player);
+        Pattern pattern = WorldEditService.parsePatternUnchecked(context, patternInput);
+        if (listener == null && PlanPreviews.intercept(player, plan, blocks(plan, pattern, null), description,
+                () -> submit(player, plan, patternInput, description))) {
+            return plan.size();
+        }
+        OperationPolicy.validate(player, plan.size(), JOBS.size());
         UUID playerId = player.getUuid();
         if (JOBS.containsKey(playerId)) {
             throw new IllegalStateException("Ya tienes una edición en curso; usa /komaedit job status");
         }
-
-        WorldEditService.PlayerContext context = WorldEditService.context(player);
-        Pattern pattern = WorldEditService.parsePatternUnchecked(context, patternInput);
         EditSession editSession = context.session().createEditSession(context.actor());
         JOBS.put(playerId, new Job(
                 playerId,
@@ -133,10 +144,15 @@ public final class BatchEditService {
             String description,
             JobListener listener
     ) {
-        OperationPolicy.validate(player, plan.size(), JOBS.size());
+        OperationPolicy.validate(player, plan.size(), 0);
         if (plan.size() == 0) {
             throw new IllegalArgumentException("La operación no contiene bloques");
         }
+        if (listener == null && PlanPreviews.intercept(player, plan, blocks(plan, null, pattern), description,
+                () -> submitStyled(player, plan, pattern, description))) {
+            return plan.size();
+        }
+        OperationPolicy.validate(player, plan.size(), JOBS.size());
         UUID playerId = player.getUuid();
         if (JOBS.containsKey(playerId)) {
             throw new IllegalStateException("Ya tienes una edición en curso; usa /komaedit job status");
@@ -272,7 +288,8 @@ public final class BatchEditService {
             return Optional.empty();
         }
         return Optional.of(new JobStatus(
-                job.id, job.description, job.processed, job.total, job.editSession.size()
+                job.id, job.description, job.processed, job.total, job.editSession.size(),
+                System.nanoTime() - job.startedAt
         ));
     }
 
@@ -316,58 +333,34 @@ public final class BatchEditService {
 
     private static void processSlice(Job job, ServerPlayerEntity player, long globalDeadline) {
         long deadline = Math.min(globalDeadline, System.nanoTime() + MAX_NANOS_PER_SLICE);
-        int processed = 0;
         try {
-            while (job.hasNext()
-                    && processed < MAX_BLOCKS_PER_SLICE
-                    && System.nanoTime() < deadline) {
-                if (job.plan != null) {
-                    int planIndex = (int) job.processed;
-                    BlockVector3 position = job.plan.position(planIndex);
-                    BlockState override = job.plan.override(planIndex);
-                    BlockPos minecraftPosition = new BlockPos(position.x(), position.y(), position.z());
-                    int expectedStateId = job.plan.expectedStateId(planIndex);
-                    boolean allowed = expectedStateId == PackedBlockPlan.NO_EXPECTED_STATE
-                            || Block.getRawIdFromState(player.getServerWorld().getBlockState(minecraftPosition))
-                            == expectedStateId;
-                    if (!allowed) {
-                        job.protectedBlocks++;
+            if (job.application != null) {
+                job.application.step(new WorldTarget(job, player.getServerWorld()), MAX_BLOCKS_PER_SLICE, deadline,
+                        System::nanoTime);
+                job.processed = job.application.processed();
+            } else {
+                int processed = 0;
+                while (job.hasNext()
+                        && processed < MAX_BLOCKS_PER_SLICE
+                        && System.nanoTime() < deadline) {
+                    if (job.clipboard != null) {
+                        BlockVector3 source = job.regionIterator.next();
+                        BlockVector3 destination = source.add(
+                                job.clipboardOffset.x(),
+                                job.clipboardOffset.y(),
+                                job.clipboardOffset.z()
+                        );
+                        job.editSession.setBlock(destination, job.clipboard.getFullBlock(source));
                     } else {
-                        boolean placed = true;
-                        if (override == null && job.positionPattern != null) {
-                            Pattern resolved = job.positionPattern.pattern(position);
-                            if (resolved != null) {
-                                placed = place(job, position, resolved, job.plan.piece(planIndex));
-                            }
-                        } else if (override == null) {
-                            placed = place(job, position, job.defaultPattern, job.plan.piece(planIndex));
-                        } else {
-                            job.editSession.setBlock(position, override);
-                        }
-                        int captureIndex = job.plan.captureIndex(planIndex);
-                        if (placed && captureIndex != PackedBlockPlan.NO_CAPTURE) {
-                            job.capturedStateIds[captureIndex] = Block.getRawIdFromState(
-                                    player.getServerWorld().getBlockState(minecraftPosition)
-                            );
+                        BlockVector3 position = job.regionIterator.next();
+                        Pattern pattern = job.positionPattern.pattern(position);
+                        if (pattern != null) {
+                            job.editSession.setBlock(position, pattern);
                         }
                     }
-                } else if (job.clipboard != null) {
-                    BlockVector3 source = job.regionIterator.next();
-                    BlockVector3 destination = source.add(
-                            job.clipboardOffset.x(),
-                            job.clipboardOffset.y(),
-                            job.clipboardOffset.z()
-                    );
-                    job.editSession.setBlock(destination, job.clipboard.getFullBlock(source));
-                } else {
-                    BlockVector3 position = job.regionIterator.next();
-                    Pattern pattern = job.positionPattern.pattern(position);
-                    if (pattern != null) {
-                        job.editSession.setBlock(position, pattern);
-                    }
+                    job.processed++;
+                    processed++;
                 }
-                job.processed++;
-                processed++;
             }
             if (!job.hasNext()) {
                 JOBS.remove(job.playerId);
@@ -377,10 +370,12 @@ public final class BatchEditService {
             }
         } catch (MaxChangedBlocksException exception) {
             JOBS.remove(job.playerId);
+            job.syncProcessed();
             finish(job, player, true);
             player.sendMessage(message("Se alcanzó el límite de WorldEdit; el cambio parcial puede deshacerse"), false);
         } catch (RuntimeException exception) {
             JOBS.remove(job.playerId);
+            job.syncProcessed();
             finish(job, player, true);
             KomaEditMod.LOGGER.error("Batch edit failed for {}", job.playerId, exception);
             player.sendMessage(message("La edición falló: " + readableMessage(exception)), false);
@@ -388,31 +383,86 @@ public final class BatchEditService {
     }
 
     /**
-     * Coloca el bloque del patrón o, si el plan pide una losa o escalera, la pieza de ese mismo material. Si el
-     * material no tiene piezas, el bloque de la figura se queda entero y las piezas añadidas fuera se omiten.
-     *
-     * @return {@code false} si la posición se dejó sin tocar
+     * Patrón que el plan pone en la entrada: el bloque fijo, el patrón por posición o el general. {@code null} si el
+     * patrón por posición deja esa posición sin tocar.
      */
-    private static boolean place(Job job, BlockVector3 position, Pattern pattern, byte piece)
-            throws MaxChangedBlocksException {
-        if (piece == SmoothPiece.FULL) {
-            job.editSession.setBlock(position, pattern);
-            return true;
+    static Pattern patternFor(
+            PackedBlockPlan plan,
+            int index,
+            BlockVector3 position,
+            Pattern defaultPattern,
+            PositionPattern positionPattern
+    ) {
+        BlockState override = plan.override(index);
+        if (override != null) {
+            return override;
         }
+        return positionPattern != null ? positionPattern.pattern(position) : defaultPattern;
+    }
+
+    /**
+     * Bloque que se coloca con ese patrón: el del patrón o, si el plan pide una losa o escalera, la pieza de ese
+     * mismo material. Si el material no tiene piezas, el bloque de la figura se queda entero y las piezas añadidas
+     * fuera se omiten ({@code null}).
+     */
+    static BaseBlock shapeFor(PackedBlockPlan plan, int index, BlockVector3 position, Pattern pattern) {
         BaseBlock base = pattern.applyBlock(position);
-        BlockState shaped = SmoothBlockStates.shape(base, piece, job.plan.pieceMaterials());
+        byte piece = plan.piece(index);
+        if (piece == SmoothPiece.FULL) {
+            return base;
+        }
+        BlockState shaped = SmoothBlockStates.shape(base, piece, plan.pieceMaterials());
         if (shaped != null) {
-            job.editSession.setBlock(position, shaped);
-            return true;
+            return shaped.toBaseBlock();
         }
-        if (SmoothPiece.isAdded(piece)) {
-            return false;
+        return SmoothPiece.isAdded(piece) ? null : base;
+    }
+
+    /** Lo que colocaría cada entrada, para la vista previa: el mismo cálculo que al aplicar. */
+    private static PlanPreviews.PlanBlocks blocks(
+            PackedBlockPlan plan,
+            Pattern defaultPattern,
+            PositionPattern positionPattern
+    ) {
+        return (index, position) -> {
+            Pattern pattern = patternFor(plan, index, position, defaultPattern, positionPattern);
+            return pattern == null ? null : shapeFor(plan, index, position, pattern);
+        };
+    }
+
+    /** El mundo del jugador y su {@link EditSession} como destino de {@link PlanApplication}. */
+    private record WorldTarget(Job job, ServerWorld world) implements PlanApplication.Target {
+        @Override
+        public int rawIdAt(int x, int y, int z) {
+            return Block.getRawIdFromState(world.getBlockState(new BlockPos(x, y, z)));
         }
-        job.editSession.setBlock(position, base);
-        return true;
+
+        @Override
+        public boolean write(int index, int x, int y, int z) throws MaxChangedBlocksException {
+            BlockVector3 position = BlockVector3.at(x, y, z);
+            Pattern pattern = patternFor(job.plan, index, position, job.defaultPattern, job.positionPattern);
+            boolean placed = true;
+            if (pattern != null) {
+                BaseBlock block = shapeFor(job.plan, index, position, pattern);
+                if (block == null) {
+                    placed = false;
+                } else {
+                    job.editSession.setBlock(position, block);
+                }
+            }
+            int captureIndex = job.plan.captureIndex(index);
+            if (placed && captureIndex != PackedBlockPlan.NO_CAPTURE) {
+                job.capturedStateIds[captureIndex] = rawIdAt(x, y, z);
+            }
+            return placed;
+        }
     }
 
     private static void finish(Job job, ServerPlayerEntity player, boolean cancelled) {
+        if (job.application != null) {
+            job.application.stop();
+            job.protectedBlocks = job.application.protectedBlocks();
+        }
         try {
             job.editSession.close();
         } finally {
@@ -486,7 +536,9 @@ public final class BatchEditService {
         void finished(boolean cancelled, int changedBlocks, int[] capturedStateIds, int protectedBlocks);
     }
 
-    public record JobStatus(String id, String description, long processed, long total, int changed) {
+    /** @param elapsedNanos tiempo desde que la edición entró en la cola */
+    public record JobStatus(String id, String description, long processed, long total, int changed,
+                            long elapsedNanos) {
         public int percentage() {
             return total == 0 ? 100 : (int) Math.min(100L, processed * 100L / total);
         }
@@ -509,6 +561,8 @@ public final class BatchEditService {
         private final JobListener listener;
         private final CapturedJobListener capturedListener;
         private final int[] capturedStateIds;
+        private final PlanApplication application;
+        private final long startedAt = System.nanoTime();
         private long processed;
         private int protectedBlocks;
         private long lastJournalAt;
@@ -547,6 +601,13 @@ public final class BatchEditService {
                     ? new int[0]
                     : new int[plan.captureSize()];
             Arrays.fill(this.capturedStateIds, PackedBlockPlan.NO_EXPECTED_STATE);
+            this.application = plan == null ? null : new PlanApplication(plan);
+        }
+
+        private void syncProcessed() {
+            if (application != null) {
+                processed = application.processed();
+            }
         }
 
         private void persistProgress() {
@@ -560,7 +621,7 @@ public final class BatchEditService {
         }
 
         private boolean hasNext() {
-            return plan != null ? processed < plan.size() : regionIterator.hasNext();
+            return application != null ? !application.done() : regionIterator.hasNext();
         }
     }
 }

@@ -21,6 +21,9 @@ import java.util.function.LongPredicate;
  * horizontales, ya con las esquinas que pondría Minecraft. Los bloques que cambian vuelven a la cola de sus
  * vecinos, hasta {@value #MAX_PASSES} pasadas.</p>
  *
+ * <p>Los paneles se eligen sin conexiones y al terminar se unen, como haría Minecraft, a los paneles vecinos y a los
+ * bloques enteros de la figura que tienen al lado.</p>
+ *
  * <p>Las capas de nieve necesitan apoyo, como en Minecraft (si no, se caen al primer aviso de un vecino): al
  * terminar, de abajo arriba, una capa sin bloque entero debajo (o una pieza con la cara de arriba entera) vuelve a
  * ser bloque entero si lo era, y si era una pieza añadida en un hueco se quita ({@link #dropped}).</p>
@@ -97,8 +100,45 @@ public final class PieceSolver {
         if (solid != null && mode.uses(PieceVariant.LAYER)) {
             supportLayers(solid);
         }
+        if (mode.uses(PieceVariant.PANE)) {
+            connectPanes(solid);
+        }
         StairShapes.resolve(pieces);
         return pieces;
+    }
+
+    /**
+     * Une cada panel a los vecinos horizontales a los que se uniría en Minecraft: otro panel o un bloque entero de la
+     * figura ({@code solid}; sin él, solo a otros paneles).
+     */
+    private void connectPanes(LongPredicate solid) {
+        LongArrayList panes = new LongArrayList();
+        for (Long2ByteMap.Entry entry : pieces.long2ByteEntrySet()) {
+            if (SmoothPiece.isPane(entry.getByteValue())) {
+                panes.add(entry.getLongKey());
+            }
+        }
+        for (int index = 0; index < panes.size(); index++) {
+            long key = panes.getLong(index);
+            int x = PackedBlockPlan.unpackX(key);
+            int y = PackedBlockPlan.unpackY(key);
+            int z = PackedBlockPlan.unpackZ(key);
+            int connections = 0;
+            for (int direction : HORIZONTAL) {
+                long neighbor = PackedBlockPlan.pack(x + SmoothPiece.offsetX(direction), y,
+                        z + SmoothPiece.offsetZ(direction));
+                boolean connects;
+                if (pieces.containsKey(neighbor)) {
+                    connects = SmoothPiece.isPane(pieces.get(neighbor));
+                } else {
+                    connects = solid != null && !dropped.contains(neighbor) && solid.test(neighbor);
+                }
+                if (connects) {
+                    connections |= 1 << direction;
+                }
+            }
+            pieces.put(key, SmoothPiece.withConnections(pieces.get(key), connections));
+        }
     }
 
     /** Piezas añadidas en huecos que {@link #finish} quitó por no tener apoyo; esas posiciones quedan vacías. */

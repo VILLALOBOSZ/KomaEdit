@@ -3,6 +3,8 @@ package com.komainu.moxia.sculpt;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.math.BlockVector3;
 import net.minecraft.item.ItemStack;
@@ -252,7 +254,9 @@ public final class SculptManager {
                         return;
                     }
                     try {
-                        int queued = BatchEditService.submit(current, plan, "air", operation.displayName());
+                        // Un trazo de pincel se aplica al momento: sin la vista previa universal ni su preferencia.
+                        int queued = EditRequests.within(EditRequest.TOOL,
+                                () -> BatchEditService.submit(current, plan, "air", operation.displayName()));
                         current.sendMessage(message(operation.displayName() + ": " + queued
                                 + " bloques · //undo para deshacer"), true);
                     } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -275,12 +279,13 @@ public final class SculptManager {
         if (!player.getWorld().getRegistryKey().equals(preview.world())) {
             throw new IllegalArgumentException("La previsualización pertenece a otro mundo");
         }
-        int scheduled = BatchEditService.submit(
+        // Ya se vio con la vista previa de la brocha: no vuelve a pedir otra.
+        int scheduled = EditRequests.within(EditRequest.CONFIRMED, () -> BatchEditService.submit(
                 player,
                 preview.plan(),
                 preview.pattern(),
                 preview.description()
-        );
+        ));
         SculptPreviewManager.remove(player);
         return scheduled;
     }

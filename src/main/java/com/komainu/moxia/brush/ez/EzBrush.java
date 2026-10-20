@@ -1,5 +1,6 @@
 package com.komainu.moxia.brush.ez;
 
+import com.komainu.moxia.biome.BiomeService;
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.brush.BrushMarkers;
 import com.komainu.moxia.brush.place.Alignment;
@@ -17,6 +18,7 @@ import com.komainu.moxia.placement.PlacementSettings;
 import com.komainu.moxia.shape.Vec3;
 import com.komainu.moxia.noise.SavedNoises;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.world.biome.BiomeType;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -113,11 +115,18 @@ public abstract sealed class EzBrush {
                 double density = options.decimal(2, 0.3, 0.0, 1.0, "La densidad");
                 double scale = options.flagDecimal('z', 0.03, 0.0001, 1000.0, "La escala del ruido");
                 NoiseSpec noise = options.has('n') ? SavedNoises.parse(player.getUuid(), options.flag('n')) : null;
-                BlockFilter mask = options.has('m') ? BlockFilter.parse(options.flag('m')) : BlockFilter.FULL_BLOCK;
+                String mask = options.has('m') ? options.flag('m') : null;
+                BrushMasks.parse(player, mask);
                 int maxAmount = maxAmount(block);
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
             case SCATTER, ARRAY, TREE, ROCK -> throw new IllegalStateException(type.id());
+            case BIOME -> {
+                BiomeType biome = BiomeService.parse(
+                        options.required(0, "el bioma (cherry_grove, snowy_plains…)"));
+                int radius = options.integer(1, DEFAULT_RADIUS, 1, MAX_RADIUS, "El radio");
+                yield new Biome(biome, radius, options.has('v'), options.has('m') ? options.flag('m') : null);
+            }
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -335,10 +344,11 @@ public abstract sealed class EzBrush {
         private final double density;
         private final NoiseSpec noise;
         private final double scale;
-        private final BlockFilter mask;
+        /** Texto de {@code -m} o {@code null}; se vuelve a leer en cada clic. */
+        private final String mask;
         private final int maxAmount;
 
-        Petals(BlockType block, int radius, double density, NoiseSpec noise, double scale, BlockFilter mask,
+        Petals(BlockType block, int radius, double density, NoiseSpec noise, double scale, String mask,
                int maxAmount, boolean preview) {
             super(EzBrushType.PETAL_PAINTER, radius, preview);
             this.block = block;
@@ -362,8 +372,8 @@ public abstract sealed class EzBrush {
             // El ruido blanco cambia en cada clic para que repasar espese; un ruido con forma se mantiene.
             long seed = ThreadLocalRandom.current().nextLong();
             BrushNoise field = noise == null ? BrushNoise.white(seed) : BrushNoise.of(noise, scale, 0x5045_54A1L);
-            PetalPainter.Settings settings = new PetalPainter.Settings(block.id(), maxAmount, density, field, mask,
-                    seed);
+            PetalPainter.Settings settings = new PetalPainter.Settings(block.id(), maxAmount, density, field,
+                    BrushMasks.parse(session.player(), mask), seed);
             BlockVector3 center = session.target().add(0, 1, 0);
             session.run(new PaintOperations.Petals(block, settings, center, radius(), input.left()));
         }
@@ -422,6 +432,44 @@ public abstract sealed class EzBrush {
             basis = Alignment.rotateAroundUp(basis, source.quarterTurns());
             PlacementTemplate template = source.prepare(player, seed);
             session.run(new PlacementOperation(source.describe(), template, basis, target, placeAir));
+        }
+    }
+
+    /**
+     * Pintar biomas: clic derecho pinta una esfera de celdas de 4×4×4 alrededor del bloque mirado; clic izquierdo
+     * toma el bioma de ese bloque (cuentagotas). Cada clic es una edición de //undo.
+     */
+    static final class Biome extends EzBrush {
+        private BiomeType biome;
+        private final boolean vertical;
+        private final String mask;
+
+        Biome(BiomeType biome, int radius, boolean vertical, String mask) {
+            super(EzBrushType.BIOME, radius, false);
+            this.biome = biome;
+            this.vertical = vertical;
+            this.mask = mask;
+        }
+
+        @Override
+        public String controls() {
+            return "clic derecho: pinta " + biome.id() + (vertical ? " en toda la columna" : "")
+                    + " · clic izquierdo: toma el bioma del bloque mirado";
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input.swap()) {
+                return;
+            }
+            if (input.left()) {
+                var hit = session.hit();
+                String picked = BiomeService.biomeAt(session.player().getServerWorld(), hit.getBlockPos());
+                biome = BiomeService.parse(picked);
+                session.info("Bioma del pincel: " + picked);
+                return;
+            }
+            BiomeService.paintSphere(session.player(), biome, session.target(), radius(), vertical, mask);
         }
     }
 
