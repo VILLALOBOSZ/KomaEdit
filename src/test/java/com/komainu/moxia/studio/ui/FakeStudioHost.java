@@ -89,6 +89,8 @@ public final class FakeStudioHost implements StudioHost {
     public int previewBlocks = -1;
     public boolean hologramHidden;
     public JobStatusPayload job;
+    /** El fantasma con gizmo que se está colocando, o {@code null}. */
+    public Ghost ghost;
     public WorldHistory history = WorldHistory.EMPTY;
     public List<String> hotbar = new ArrayList<>();
     public List<ProceduralRecipe> recipes = new ArrayList<>();
@@ -323,6 +325,11 @@ public final class FakeStudioHost implements StudioHost {
     @Override
     public String hologramStatus() {
         return previewBlocks < 0 ? "" : tr("gui.komaedit.estimate", previewBlocks);
+    }
+
+    @Override
+    public Optional<Ghost> ghost() {
+        return Optional.ofNullable(ghost);
     }
 
     @Override

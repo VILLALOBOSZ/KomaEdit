@@ -63,6 +63,11 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
     /** Abre el chat con la orden escrita para completarla. */
     void suggest(String command);
 
+    /** El fantasma con gizmo que se está colocando, o vacío: el pie lo enseña en lugar de Construir. */
+    default Optional<Ghost> ghost() {
+        return Optional.empty();
+    }
+
     void close();
 
     /** La biblioteca de planos del cliente: catálogo, permisos y miniaturas. */
@@ -86,6 +91,21 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
 
         /** Pide las miniaturas que faltan (solo las que se ven). */
         void request(List<String> hashes);
+    }
+
+    /**
+     * El fantasma que se está colocando, ya en texto: qué es, sus medidas y su giro, dónde está, sus opciones y lo que
+     * hacen los botones del pie.
+     *
+     * @param title    qué es («Árbol roble»)
+     * @param summary  giro y medidas («giro 90° · 7×12×7»), de más a menos importante
+     * @param position dónde está y cuánto se ha movido («120, 64, -40 · (+3, 0, -2)»)
+     * @param waiting confirmado: esperando al servidor
+     * @param message por qué no se colocó la última vez, o vacío
+     */
+    record Ghost(String title, String summary, String position, boolean keepExisting, boolean pasteAir,
+                 boolean ground, boolean hasAir, boolean waiting, String message, Runnable place, Runnable copy,
+                 Runnable cancel, Runnable toggleKeep, Runnable toggleAir, Runnable toggleGround) {
     }
 
     /**

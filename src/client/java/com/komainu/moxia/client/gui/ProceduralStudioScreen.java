@@ -1,5 +1,6 @@
 package com.komainu.moxia.client.gui;
 
+import com.komainu.moxia.client.gizmo.GhostClient;
 import com.komainu.moxia.client.gui.studio.ClientStudioHost;
 import com.komainu.moxia.client.gui.studio.DrawContextCanvas;
 import com.komainu.moxia.client.mixin.GameRendererAccessor;
@@ -7,6 +8,7 @@ import com.komainu.moxia.client.preview.EditorOverlayRenderer;
 import com.komainu.moxia.client.preview.PathHologramRenderer;
 import com.komainu.moxia.client.preview.ProceduralPreviewRenderer;
 import com.komainu.moxia.editor.EditorActionPayload;
+import com.komainu.moxia.gizmo.GizmoMath;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.studio.ui.FigureStages;
@@ -34,7 +36,8 @@ import java.util.List;
  * Procedural Studio (tecla K). Todo lo que se ve en el panel (barra, etapas, contenido, pie y ventanas) lo dibuja y
  * lo atiende la vista común {@link StudioView}, la misma que pintan las maquetas y prueban los tests. Esta pantalla
  * solo le pasa el ratón y el teclado y se queda con el mundo: el puntero, los puntos de la trayectoria, sus flechas
- * para moverlos, girar la cámara con clic derecho y andar con WASD mientras no se escribe.
+ * para moverlos, girar la cámara con clic derecho y andar con WASD mientras no se escribe. Con un fantasma del gizmo
+ * en pantalla, el cursor agarra sus flechas, anillos y cubo, la rueda lo acerca o aleja y sus teclas van primero.
  */
 public final class ProceduralStudioScreen extends Screen {
     /** El Studio sigue igual al reabrirlo (etapa, receta, herramienta, ajustes); no al salir del mundo. */
@@ -112,6 +115,9 @@ public final class ProceduralStudioScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         canvas.begin(context);
         updateHover(mouseX, mouseY);
+        if (GhostClient.active() && overWorld(mouseX)) {
+            GhostClient.studioHover(gizmoRay(mouseX, mouseY));
+        }
         view.render(ui, width, height, mouseX, mouseY, host);
     }
 
@@ -120,6 +126,10 @@ public final class ProceduralStudioScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         StudioView.Click click = view.mouseClicked(mouseX, mouseY, studioButton(button), host);
+        if (click == StudioView.Click.WORLD && button == GLFW.GLFW_MOUSE_BUTTON_LEFT
+                && GhostClient.studioPress(gizmoRay(mouseX, mouseY))) {
+            return true;
+        }
         switch (click) {
             case WORLD -> {
                 if (view.stage() == StudioStage.PATH) {
@@ -165,6 +175,10 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (GhostClient.studioDragging() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            GhostClient.studioDrag(gizmoRay(mouseX, mouseY));
+            return true;
+        }
         if (view.mouseDragged(mouseX, mouseY, studioButton(button), host)) {
             return true;
         }
@@ -201,6 +215,7 @@ public final class ProceduralStudioScreen extends Screen {
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         view.mouseReleased(mouseX, mouseY, studioButton(button), host);
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            GhostClient.studioRelease();
             draggingPoint = false;
             draggedPoint = -1;
             draggedAxis = -1;
@@ -218,6 +233,9 @@ public final class ProceduralStudioScreen extends Screen {
         if (view.mouseScrolled(mouseX, mouseY, verticalAmount, host)) {
             return true;
         }
+        if (overWorld(mouseX) && GhostClient.studioScroll(verticalAmount)) {
+            return true;
+        }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
@@ -229,6 +247,11 @@ public final class ProceduralStudioScreen extends Screen {
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
         if (control && keyCode == GLFW.GLFW_KEY_V && view.typing() && client != null) {
             view.paste(client.keyboard.getClipboard(), host);
+            return true;
+        }
+        // Las teclas del fantasma van antes que las del panel (salvo escribiendo en un campo): Intro lo coloca y
+        // Esc lo quita sin cerrar el Studio.
+        if (!view.typing() && !view.modal() && GhostClient.studioKey(keyCode, modifiers)) {
             return true;
         }
         StudioKey key = studioKey(keyCode, control, shift);
@@ -316,6 +339,17 @@ public final class ProceduralStudioScreen extends Screen {
                 gizmoOrigin,
                 draggedAxis
         );
+    }
+
+    private boolean overWorld(double mouseX) {
+        return !view.modal() && (view.frame() == null || mouseX < view.frame().panel().x());
+    }
+
+    /** El rayo del cursor para el gizmo del fantasma. */
+    private GizmoMath.Ray gizmoRay(double mouseX, double mouseY) {
+        Ray ray = rayForMouse(mouseX, mouseY);
+        return new GizmoMath.Ray(new com.komainu.moxia.shape.Vec3(ray.origin().x, ray.origin().y, ray.origin().z),
+                new com.komainu.moxia.shape.Vec3(ray.direction().x, ray.direction().y, ray.direction().z));
     }
 
     private Ray rayForMouse(double mouseX, double mouseY) {

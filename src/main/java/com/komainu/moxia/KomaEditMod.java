@@ -67,6 +67,7 @@ public final class KomaEditMod implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(RecipeActionPayload.ID, RecipeActionPayload.CODEC);
         com.komainu.moxia.studio.net.StudioToolsNetwork.register();
         com.komainu.moxia.feedback.WorldFeedback.register();
+        com.komainu.moxia.gizmo.GhostNetwork.register();
         ServerPlayNetworking.registerGlobalReceiver(EditorActionPayload.ID, (payload, context) ->
                 context.server().execute(() -> EditorActionService.handle(context.player(), payload))
         );

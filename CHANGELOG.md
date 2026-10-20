@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 1.7.0 (estable, 2026-10-20)
+
+### Colocar con gizmo, como en Axiom
+
+- **Lo que se coloca se mueve antes.** Con KomaEdit en el cliente, pegar (`/komaedit paste`, o **Ctrl+V** en el mundo), `place`, los planos, las figuras y estructuras de la trayectoria (también Construir del Studio), los árboles, las rocas, los tejados, el texto y las imágenes salen como **fantasma** translúcido con un **gizmo**: flechas por eje (rojo X, verde Y, azul Z), anillos de giro y un cubo central, del mismo tamaño en pantalla a cualquier distancia y resaltados al pasar el punto de mira. Lo que lee el terreno o la selección (terraformar, envejecer, texturizar, suavizar, hiedra, `scatter`…) sigue con su vista previa de siempre. Sin el mod nada cambia.
+- **Mover:** arrastrando las flechas (de bloque en bloque) o el cubo (por el suelo) con el punto de mira, sin soltar el ratón ni cambiar de modo; con las flechas del teclado y RePág/AvPág (Mayús, de 5 en 5); con la rueda en la dirección de la mirada, y con **G**, a donde miras. En el Studio, con el cursor.
+- **Girar y voltear:** Ctrl+R (90° en Y; Mayús al revés, Alt lo tumba), los anillos y Ctrl+F. Escaleras, troncos, puertas, raíles, `facing` y `axis` giran con él con la transformación de la simetría; tumbarlo solo se ofrece si todo el objeto lo admite.
+- **Opciones a la vista:** apoyar en el suelo (Ctrl+B), conservar lo que hay (Ctrl+E) y pegar el aire (Ctrl+X), en la barra de acción, en el pie del Studio y en botones del chat.
+- **Confirmar:** Intro o clic derecho coloca exactamente lo que se ve, en un solo //undo y con la barra de progreso; **Ctrl+clic** coloca una copia y sigue moviendo; Esc lo quita. El cliente solo manda la transformación: el servidor comprueba permisos, altura, borde, distancia, chunks cargados y dónde puedes construir, y lee el destino al confirmar con escrituras condicionales.
+- **Ajustes:** **Colocar con gizmo** (Siempre, Con -v o Nunca) y **Rueda mueve el fantasma** en `/kegui ajustes`; las teclas, en Controles → KomaEdit (sin asignar de serie para no quitar la F ni la R a nadie; valen los atajos de serie).
+- Nueva orden `/komaedit paste [-a] [-o]` (alias `pegar`), con el `//rotate` pendiente y los bloques con datos.
+- Código: paquete `gizmo` (lógica pura con pruebas, adaptador de estados, red y `GhostService`) y `client.gizmo`; `PlanPreviewRenderer` dibuja también mallas con ancla y giro. Pruebas JUnit de la matemática del gizmo (rayo contra eje y plano, pasos de bloque, tamaño en pantalla, selección de piezas), de las 48 orientaciones y los estados (giros, volteos, combinaciones, idempotencia), de la colocación («lo que se coloca es lo que se veía», en las 48), de la validación del servidor, de la máquina de estados (mover, arrastrar, girar, confirmar, rechazar, cancelar, copias), de apoyar en el suelo, de las teclas y del pie del Studio. Renders fuera del juego en `docs/renders/gizmo/` y maquetas del pie en `docs/renders/studio/`. Nada probado aún dentro de Minecraft.
+
 ## 1.6.0 (estable, 2026-10-20)
 
 ### Procedural Studio: menos texto, más claro

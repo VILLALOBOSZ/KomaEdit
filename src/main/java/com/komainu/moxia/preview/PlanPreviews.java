@@ -8,6 +8,7 @@ import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.feedback.FeedbackEventPayload;
+import com.komainu.moxia.gizmo.GhostService;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -124,7 +125,7 @@ public final class PlanPreviews {
     public static boolean wouldPreview(ServerPlayerEntity player, int blocks) {
         UUID id = player.getUuid();
         EditRequest request = EditRequests.peek(id);
-        return PreviewPolicy.shouldPreview(request, blocks,
+        return GhostService.wouldTake(player, request) || PreviewPolicy.shouldPreview(request, blocks,
                 request.kind() == EditRequest.Kind.DEFAULT ? PreviewPreferences.alwaysAbove(id) : 0);
     }
 
@@ -146,6 +147,11 @@ public final class PlanPreviews {
         UUID id = player.getUuid();
         Extras extras = EXTRAS.get();
         EditRequest request = EditRequests.resolve(id);
+        // Un objeto que se puede mover sale como fantasma con gizmo si el jugador lo tiene activado.
+        if (GhostService.offer(player, plan, blocks, description, request)) {
+            LastEdits.remember(id, request);
+            return true;
+        }
         int threshold = request.kind() == EditRequest.Kind.DEFAULT ? PreviewPreferences.alwaysAbove(id) : 0;
         if (!PreviewPolicy.shouldPreview(request, plan.size(), threshold)) {
             // Lo confirmado ya enseñó su estimación y su aviso de //limit.
@@ -235,6 +241,9 @@ public final class PlanPreviews {
 
     /** Si {@code plan} es el que el jugador tiene ahora en vista previa (o preparándose). */
     public static boolean holds(UUID player, PackedBlockPlan plan) {
+        if (GhostService.holds(player, plan)) {
+            return true;
+        }
         Preparation preparation = PREPARING.get(player);
         if (preparation != null) {
             return preparation.plan == plan;

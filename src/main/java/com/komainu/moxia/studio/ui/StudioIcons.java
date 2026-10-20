@@ -26,7 +26,9 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, PAINT, TEXT, ANALYZE, GRAVITY, SNOW, DRAIN, WATERLOG,
-        BIOME, SYMMETRY, CAPABILITIES
+        BIOME, SYMMETRY, CAPABILITIES,
+        // El fantasma con gizmo.
+        GIZMO
     }
 
     private static final Map<Icon, String[]> MASKS = new EnumMap<>(Icon.class);
@@ -632,6 +634,19 @@ public final class StudioIcons {
                 ".....###....",
                 "....##......",
                 "...#........");
+        mask(Icon.GIZMO,
+                ".....#......",
+                "....###.....",
+                "...#.#.#....",
+                ".....#......",
+                ".....#...#..",
+                ".....#....#.",
+                ".....#######",
+                "....#.....#.",
+                "...#.....#..",
+                "#.#.........",
+                "##..........",
+                "###.........");
     }
 
     private StudioIcons() {

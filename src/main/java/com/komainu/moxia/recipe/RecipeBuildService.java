@@ -5,6 +5,13 @@ import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.PendingBuilds;
 import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.gizmo.GhostModel;
+import com.komainu.moxia.gizmo.GhostService;
+import com.komainu.moxia.gizmo.GhostTransform;
+import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.gradient.GradientService;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.path.PathManager;
@@ -14,13 +21,16 @@ import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.extension.input.InputParseException;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 public final class RecipeBuildService {
@@ -259,6 +269,10 @@ public final class RecipeBuildService {
         if (player == null || !player.getUuid().equals(playerId)) {
             return;
         }
+        // Con el fantasma activado, la figura nueva se mueve antes de colocarse (una actualización no se mueve).
+        if (!update && offerGhost(playerId, player, instanceId, recipe, storedPath, buildPath, bundle)) {
+            return;
+        }
         // Los Build muy grandes esperan a /komaedit confirm; la geometría ya está calculada.
         PendingBuilds.submitOrHold(
                 player,
@@ -266,6 +280,97 @@ public final class RecipeBuildService {
                 BuildEstimate.of(bundle.placementPlan()),
                 () -> enqueue(playerId, player, instanceId, recipe, storedPath, buildPath, bundle, update)
         );
+    }
+
+    /**
+     * La figura como fantasma con gizmo. Al colocarla, la instancia guarda las posiciones y la trayectoria movidas y
+     * giradas con ella; cada copia es una instancia nueva.
+     */
+    private static boolean offerGhost(
+            UUID playerId,
+            ServerPlayerEntity player,
+            String instanceId,
+            ProceduralRecipe recipe,
+            PathSnapshot storedPath,
+            PathSnapshot buildPath,
+            PlanBundle bundle
+    ) {
+        PlanPreviews.PlanBlocks blocks;
+        if (recipe.usesGradient()) {
+            blocks = BatchEditService.blocks(bundle.placementPlan(), null, GradientService.compile(
+                    player,
+                    recipe.gradientAxis(),
+                    recipe.palette().patterns(),
+                    recipe.dither(),
+                    recipe.reverse(),
+                    bundle.instancePlan().bounds(),
+                    recipe.extensions().materialMetric(),
+                    bundle.instancePlan(),
+                    recipe,
+                    buildPath
+            ));
+        } else {
+            blocks = BatchEditService.blocks(bundle.placementPlan(),
+                    WorldEditService.parsePatternUnchecked(WorldEditService.context(player), recipe.pattern()), null);
+        }
+        String[] nextId = {instanceId};
+        String shapeId = recipe.shape().id();
+        return GhostService.offer(player, bundle.placementPlan(), blocks, "Construir " + recipe.name(),
+                (current, placement) -> {
+                    String id = nextId[0];
+                    nextId[0] = UUID.randomUUID().toString();
+                    GhostModel model = placement.model();
+                    GhostTransform transform = placement.transform();
+                    PackedBlockPlan.Builder moved = PackedBlockPlan.builder(bundle.instancePlan().size());
+                    for (int index = 0; index < bundle.instancePlan().size(); index++) {
+                        BlockVector3 position = bundle.instancePlan().position(index);
+                        int[] carried = model.carry(position.x(), position.y(), position.z(), transform);
+                        moved.addPattern(carried[0], carried[1], carried[2]);
+                    }
+                    List<BlockVector3> points = new ArrayList<>();
+                    for (BlockVector3 point : storedPath.points()) {
+                        int[] carried = model.carry(point.x(), point.y(), point.z(), transform);
+                        points.add(BlockVector3.at(carried[0], carried[1], carried[2]));
+                    }
+                    PathSnapshot movedPath = new PathSnapshot(points, storedPath.closed(), storedPath.source());
+                    PlanBundle movedBundle = new PlanBundle(moved.build(), placement.plan(), bundle.report(),
+                            bundle.pieces());
+                    return EditRequests.within(EditRequest.CONFIRMED, () -> BatchEditService.submitCapturing(current,
+                            placement.plan(), "air", placement.description(),
+                            listener(playerId, current, id, recipe, movedPath, movedBundle, false)));
+                },
+                current -> KomaPermissions.canBuild(current, shapeId));
+    }
+
+    private static BatchEditService.CapturedJobListener listener(
+            UUID playerId,
+            ServerPlayerEntity player,
+            String instanceId,
+            ProceduralRecipe recipe,
+            PathSnapshot storedPath,
+            PlanBundle bundle,
+            boolean update
+    ) {
+        return (cancelled, changedBlocks, capturedStateIds, protectedBlocks) -> {
+            if (!cancelled) {
+                OwnershipCapture capture = ownershipCapture(bundle.instancePlan(), capturedStateIds);
+                ProceduralInstanceStore.save(
+                        playerId,
+                        instanceId,
+                        recipe,
+                        storedPath,
+                        capture.plan(),
+                        capture.stateIds()
+                );
+                RecipeActionService.sync(player);
+                player.sendMessage(message(
+                        "Instancia " + (update ? "actualizada" : "creada") + ": " + recipe.name()
+                                + " · " + bundle.report().summary()
+                                + (bundle.pieces().isEmpty() ? "" : " · " + bundle.pieces().summary())
+                                + (protectedBlocks == 0 ? "" : " · cambios manuales conservados")
+                ), false);
+            }
+        };
     }
 
     private static void enqueue(
@@ -279,31 +384,8 @@ public final class RecipeBuildService {
             boolean update
     ) {
         try {
-            BatchEditService.CapturedJobListener listener = (
-                    cancelled,
-                    changedBlocks,
-                    capturedStateIds,
-                    protectedBlocks
-            ) -> {
-                if (!cancelled) {
-                    OwnershipCapture capture = ownershipCapture(bundle.instancePlan(), capturedStateIds);
-                    ProceduralInstanceStore.save(
-                            playerId,
-                            instanceId,
-                            recipe,
-                            storedPath,
-                            capture.plan(),
-                            capture.stateIds()
-                    );
-                    RecipeActionService.sync(player);
-                    player.sendMessage(message(
-                            "Instancia " + (update ? "actualizada" : "creada") + ": " + recipe.name()
-                                    + " · " + bundle.report().summary()
-                                    + (bundle.pieces().isEmpty() ? "" : " · " + bundle.pieces().summary())
-                                    + (protectedBlocks == 0 ? "" : " · cambios manuales conservados")
-                    ), false);
-                }
-            };
+            BatchEditService.CapturedJobListener listener = listener(playerId, player, instanceId, recipe, storedPath,
+                    bundle, update);
             int queued;
             if (recipe.usesGradient()) {
                 queued = BatchEditService.submitStyledCapturing(

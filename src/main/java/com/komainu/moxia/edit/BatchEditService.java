@@ -418,8 +418,8 @@ public final class BatchEditService {
         return SmoothPiece.isAdded(piece) ? null : base;
     }
 
-    /** Lo que colocaría cada entrada, para la vista previa: el mismo cálculo que al aplicar. */
-    private static PlanPreviews.PlanBlocks blocks(
+    /** Lo que colocaría cada entrada, para la vista previa y el fantasma: el mismo cálculo que al aplicar. */
+    public static PlanPreviews.PlanBlocks blocks(
             PackedBlockPlan plan,
             Pattern defaultPattern,
             PositionPattern positionPattern

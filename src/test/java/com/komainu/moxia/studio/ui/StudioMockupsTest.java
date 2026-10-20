@@ -112,6 +112,26 @@ class StudioMockupsTest {
             driver.host.job = JobStatusPayload.of(new ProgressLine("Snow (3 layers)", ProgressLine.Phase.PLACING,
                     41_000, 96_000, 3_000_000_000L, null), 0);
         }));
+        scenes.add(new Scene("1080p_gui3_fantasma_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "tree");
+            driver.host.ghost = GhostFooterTest.ghost("Árbol roble", "giro 90° · 7×12×7",
+                    "120, 64, -40 · (+3, 0, -2)", "", new int[5]);
+        }));
+        scenes.add(new Scene("1080p_gui3_fantasma_rechazado_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "roof");
+            driver.host.ghost = GhostFooterTest.ghost("Tejado a dos aguas", "giro 180° volteado · 12×6×9",
+                    "88, 72, 15", "Se sale de la altura del mundo", new int[5]);
+        }));
+        scenes.add(new Scene("1080p_gui2_fantasma_en.png", 960, 540, 2, "en_us", driver -> {
+            tools(driver, "tree");
+            driver.host.ghost = GhostFooterTest.ghost("Oak tree", "turned 90° · 7×12×7",
+                    "120, 64, -40 · (+3, 0, -2)", "", new int[5]);
+        }));
+        scenes.add(new Scene("854_gui2_fantasma_es.png", 427, 240, 2, "es_es", driver -> {
+            tools(driver, "tree");
+            driver.host.ghost = GhostFooterTest.ghost("Árbol roble", "giro 90° · 7×12×7",
+                    "120, 64, -40 · (+3, 0, -2)", "", new int[5]);
+        }));
         scenes.add(new Scene("1080p_gui3_figuras_es.png", 640, 360, 3, "es_es", driver -> {
             path(driver, 3);
             driver.host.previewBlocks = 12_300;

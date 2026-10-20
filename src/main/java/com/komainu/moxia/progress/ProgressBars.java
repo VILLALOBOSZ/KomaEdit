@@ -60,6 +60,10 @@ public final class ProgressBars {
         if (preview.isPresent()) {
             return preview;
         }
+        Optional<ProgressLine> ghost = com.komainu.moxia.gizmo.GhostService.progress(player);
+        if (ghost.isPresent()) {
+            return ghost;
+        }
         Optional<ProgressLine> reading = RegionOperationService.progress(player);
         if (reading.isPresent()) {
             ProgressLine line = reading.get();

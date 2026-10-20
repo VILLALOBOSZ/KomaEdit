@@ -87,6 +87,16 @@ public final class WorldFeedbackClient {
         ClientTickEvents.END_CLIENT_TICK.register(WorldFeedbackClient::tick);
     }
 
+    /** La tecla de aplicar la vista previa (Intro de serie); también coloca el fantasma del gizmo. */
+    public static KeyBinding confirmKey() {
+        return confirm;
+    }
+
+    /** La de descartarla (Retroceso de serie); también quita el fantasma. */
+    public static KeyBinding discardKey() {
+        return discard;
+    }
+
     private static KeyBinding key(String id, int code) {
         return KeyBindingHelper.registerKeyBinding(new KeyBinding("key.komaedit." + id, InputUtil.Type.KEYSYM, code,
                 "category.komaedit"));

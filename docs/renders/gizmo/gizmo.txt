@@ -1,0 +1,9 @@
+1_al_aparecer: KE · 2, 66, 2 · giro 0° · 5×6×6 · Intro o clic derecho coloca · Ctrl+clic: copia · Esc cancela · flecha de 3.35 bloques a 14.9 de la cámara (≈ 122 px)
+2_flecha_x_resaltada: KE · 2, 66, 2 · giro 0° · 5×6×6 · Intro o clic derecho coloca · Ctrl+clic: copia · Esc cancela · flecha de 3.35 bloques a 14.9 de la cámara (≈ 122 px)
+3_arrastrando_x: KE · 8, 66, 2 (+6, 0, 0) · giro 0° · 5×6×6 · Intro o clic derecho coloca · Ctrl+clic: copia · Esc cancela · flecha de 3.79 bloques a 16.9 de la cámara (≈ 122 px)
+4_anillo_y_girado_90: KE · 2, 66, 2 · giro 90° · 6×6×5 · Intro o clic derecho coloca · Ctrl+clic: copia · Esc cancela · flecha de 3.35 bloques a 14.9 de la cámara (≈ 122 px)
+5_volteado_en_z: KE · 2, 66, 2 · giro 0° volteado · 5×6×6 · Intro o clic derecho coloca · Ctrl+clic: copia · Esc cancela · flecha de 3.35 bloques a 14.9 de la cámara (≈ 122 px)
+6_lejos_mismo_tamano: KE · 2, 66, 2 · giro 0° · 5×6×6 · Intro o clic derecho coloca · Ctrl+clic: copia · Esc cancela · flecha de 10.04 bloques a 44.8 de la cámara (≈ 122 px)
+7_tumbado_anillos_xyz: KE · -2, 67, 0 (-2, 0, 0) · giro 0° tumbado · 5×1×8 · Intro o clic derecho coloca · Ctrl+clic: copia · Esc cancela · flecha de 2.88 bloques a 12.9 de la cámara (≈ 122 px)
+8_apoyado_en_la_loma: KE · 12, 69, -8 (+10, +3, -10) · giro 0° · 5×6×6 · Apoyar en el suelo · Intro o clic derecho coloca · Ctrl+clic: copia · Esc cancela · flecha de 3.87 bloques a 17.3 de la cámara (≈ 122 px)
+Texturas de Minecraft: sí
