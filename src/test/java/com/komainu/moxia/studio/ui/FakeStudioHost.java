@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
+import com.komainu.moxia.studio.BlockNames;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.net.JobStatusPayload;
 import com.komainu.moxia.studio.tools.ToolContext;
@@ -28,12 +29,36 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * El Studio de mentira de las pruebas y las maquetas: traduce con los archivos de idioma del mod (y los nombres de
- * bloque con los del juego), apunta todo lo que se le pide y deja montar cualquier situación (selección, puntos,
- * trabajo en marcha, planos, historial).
+ * El Studio de mentira de las pruebas y las maquetas: traduce con los archivos de idioma del mod, apunta todo lo que
+ * se le pide y deja montar cualquier situación (selección, puntos, trabajo en marcha, planos, historial).
+ *
+ * <p>Los nombres de bloque salen de una tabla fija con los que usan las pruebas ({@link #TEST_NAMES}), igual en
+ * cualquier equipo; los demás, de los idiomas del juego si están a mano (el inglés va en el jar; el español solo en
+ * la caché de Loom, que en el CI no existe). Lo que no tiene traducción sale como en el juego: un nombre legible
+ * sacado del id.</p>
  */
 public final class FakeStudioHost implements StudioHost {
     private static final Map<String, Map<String, String>> LANGS = new HashMap<>();
+    /** Nombres de bloque que las pruebas comprueban, en los dos idiomas (los mismos que da el juego). */
+    static final Map<String, Map<String, String>> TEST_NAMES = Map.of(
+            "es_es", Map.of(
+                    "block.minecraft.spruce_planks", "Tablones de abeto",
+                    "block.minecraft.oak_planks", "Tablones de roble",
+                    "block.minecraft.stone_bricks", "Ladrillos de piedra",
+                    "block.minecraft.deepslate_tiles", "Baldosas de pizarra profunda",
+                    "block.minecraft.torch", "Antorcha",
+                    "block.minecraft.stone", "Piedra",
+                    "block.minecraft.deepslate", "Pizarra profunda",
+                    "block.minecraft.calcite", "Calcita"),
+            "en_us", Map.of(
+                    "block.minecraft.spruce_planks", "Spruce Planks",
+                    "block.minecraft.oak_planks", "Oak Planks",
+                    "block.minecraft.stone_bricks", "Stone Bricks",
+                    "block.minecraft.deepslate_tiles", "Deepslate Tiles",
+                    "block.minecraft.torch", "Torch",
+                    "block.minecraft.stone", "Stone",
+                    "block.minecraft.deepslate", "Deepslate",
+                    "block.minecraft.calcite", "Calcite"));
 
     static {
         // Sin registro de bloques, la etapa Color usa la tabla de colores medidos.
@@ -41,7 +66,8 @@ public final class FakeStudioHost implements StudioHost {
     }
 
     private final Map<String, String> lang;
-    private final Map<String, String> blockNames;
+    /** Traducciones de bloque por clave ({@code block.minecraft.stone}); las pruebas pueden quitar o poner. */
+    public final Map<String, String> blockNames;
     public final List<String> sent = new ArrayList<>();
     public final List<String> copied = new ArrayList<>();
     public final List<Integer> recipeActions = new ArrayList<>();
@@ -71,8 +97,14 @@ public final class FakeStudioHost implements StudioHost {
     public Consumer<String> picker;
 
     public FakeStudioHost(String language) {
+        this(language, true);
+    }
+
+    /** @param gameNames si se usan también los nombres de los idiomas del juego, además de la tabla fija */
+    public FakeStudioHost(String language, boolean gameNames) {
         lang = load(language);
-        blockNames = minecraftNames(language);
+        blockNames = gameNames ? minecraftNames(language) : new HashMap<>();
+        blockNames.putAll(TEST_NAMES.getOrDefault(language, TEST_NAMES.get("en_us")));
     }
 
     public static Map<String, String> load(String language) {
@@ -235,13 +267,7 @@ public final class FakeStudioHost implements StudioHost {
 
     @Override
     public String blockName(String id) {
-        String full = id.contains(":") ? id : "minecraft:" + id;
-        String path = full.substring(full.indexOf(':') + 1);
-        String name = blockNames.get("block.minecraft." + path);
-        if (name == null) {
-            name = blockNames.get("item.minecraft." + path);
-        }
-        return name == null ? path.replace('_', ' ') : name;
+        return BlockNames.name(id, blockNames::get);
     }
 
     @Override

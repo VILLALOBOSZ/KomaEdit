@@ -10,6 +10,7 @@ import com.komainu.moxia.studio.tools.ToolContext;
 import com.komainu.moxia.studio.tools.ToolValues;
 import com.komainu.moxia.studio.tools.TreeCard;
 import com.komainu.moxia.studio.ui.ChoiceThumbnails;
+import com.komainu.moxia.studio.ui.FakeStudioHost;
 import com.komainu.moxia.studio.ui.StudioDriver;
 import com.komainu.moxia.studio.ui.StudioKey;
 import com.komainu.moxia.studio.ui.StudioStage;
@@ -43,8 +44,9 @@ class ToolsPanelTest {
 
     @BeforeEach
     void setUp() {
-        // Alto de sobra: todo se ve sin desplazar y se puede pulsar por lo que dice.
-        studio = new StudioDriver("es_es", 960, 1400);
+        // Alto de sobra: todo se ve sin desplazar y se puede pulsar por lo que dice. Sin los idiomas del juego, como
+        // en el CI: los nombres de bloque que se comprueban vienen de la tabla fija del host.
+        studio = new StudioDriver(new StudioView(), new FakeStudioHost("es_es", false), 960, 1400);
         studio.host.context = ALL;
         studio.host.info = new ToolsInfo(true, new int[]{8, 5, 8}, List.of("cursiva"),
                 Map.of("bosque", "spruce 30 -d 1.4"), Map.of(), ToolsInfo.Symmetry.OFF, null,
@@ -245,6 +247,23 @@ class ToolsPanelTest {
         assertEquals("stone_bricks", values("roof").block("material"));
         studio.reset("Ladrillos de piedra");
         assertEquals("spruce_planks", values("roof").block("material"));
+    }
+
+    @Test
+    void withoutATranslationTheBlockShowsAReadableNameNotItsId() {
+        // Como un bloque de un mod sin traducción, o el juego sin sus idiomas: nunca el id crudo.
+        studio.host.blockNames.clear();
+        select("roof");
+        assertTrue(studio.has("Spruce Planks"), studio.texts().toString());
+        assertFalse(studio.texts().stream().anyMatch(text -> text.contains("spruce_planks")), "ni el id");
+        studio.host.lookedAt = "examplemod:mossy_slate_tiles";
+        studio.click("Usar el bloque que miras");
+        assertEquals("examplemod:mossy_slate_tiles", values("roof").block("material"));
+        assertTrue(studio.has("Mossy Slate Tiles"), studio.texts().toString());
+        assertFalse(studio.texts().stream().anyMatch(text -> text.contains("mossy_slate")), "ni el id del mod");
+        // Con traducción, la traducción.
+        studio.host.blockNames.put("block.examplemod.mossy_slate_tiles", "Pizarra musgosa");
+        assertTrue(studio.has("Pizarra musgosa"), studio.texts().toString());
     }
 
     @Test

@@ -146,6 +146,7 @@ La biblioteca de bloques se abre al pulsar cualquier fila de bloque (material de
 - **Buscar:** basta con escribir; busca por el nombre traducido y por el id (`roble`, `oak_planks`, `minecraft:stone`). `Intro` elige el primero y `Esc` cierra.
 - **Usar el que miras** (cuentagotas), la **barra** (los bloques de tu barra rápida) y los **recientes** (los últimos elegidos, guardados en `studio.json`), encima de la cuadrícula.
 - Cada bloque es su icono del juego; el nombre sale al pasar el ratón.
+- Los nombres son los traducidos del juego. Un bloque sin traducción (pasa con algunos mods) sale con un nombre legible sacado de su id (`examplemod:mossy_slate_tiles` → «Mossy Slate Tiles»), nunca con el id ni con la clave de traducción.
 - El **cuentagotas** de cada fila pone directamente el bloque que miras, sin abrir la biblioteca.
 
 ![Biblioteca de bloques](renders/studio/1080p_gui3_bloques_es.png)

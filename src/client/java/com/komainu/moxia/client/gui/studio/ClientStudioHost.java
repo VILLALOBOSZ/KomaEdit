@@ -10,6 +10,7 @@ import com.komainu.moxia.editor.EditorActionPayload;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeActionPayload;
+import com.komainu.moxia.studio.BlockNames;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.net.JobStatusPayload;
 import com.komainu.moxia.studio.tools.ToolContext;
@@ -28,6 +29,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Language;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -144,20 +146,27 @@ public final class ClientStudioHost implements StudioHost {
         }
     }
 
+    /**
+     * El nombre traducido del bloque (o del objeto); si el juego no tiene traducción, como pasa con bloques de algunos
+     * mods, uno legible sacado del id ({@link BlockNames}), nunca la clave de traducción ni el id crudo.
+     */
     @Override
     public String blockName(String id) {
         return NAMES.computeIfAbsent(id, key -> {
             Identifier identifier = Identifier.tryParse(key.contains(":") ? key : "minecraft:" + key);
             if (identifier == null) {
-                return key;
+                return BlockNames.readable(key);
             }
-            if (Registries.BLOCK.containsId(identifier)) {
-                return Registries.BLOCK.get(identifier).getName().getString();
+            Language language = Language.getInstance();
+            String translationKey = Registries.BLOCK.containsId(identifier)
+                    ? Registries.BLOCK.get(identifier).getTranslationKey()
+                    : Registries.ITEM.containsId(identifier) ? Registries.ITEM.get(identifier).getTranslationKey()
+                    : null;
+            if (translationKey != null && language.hasTranslation(translationKey)) {
+                return language.get(translationKey);
             }
-            if (Registries.ITEM.containsId(identifier)) {
-                return Registries.ITEM.get(identifier).getName().getString();
-            }
-            return key;
+            return BlockNames.name(identifier.toString(),
+                    candidate -> language.hasTranslation(candidate) ? language.get(candidate) : null);
         });
     }
 
