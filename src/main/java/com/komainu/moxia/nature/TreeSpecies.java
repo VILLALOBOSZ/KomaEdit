@@ -44,10 +44,10 @@ public enum TreeSpecies {
             .trunk(0.13, 1.6, 0.8, 0.8).crown(Envelope.DOME, 0.3, 0.46, 0.72, 0.6, 0.27)
             .colonize(8, 0.12, 1.8, 0.06).lobed(0.75).foliage(3.0, 0.62, 0.45).roots(8, 2.0).wander(0.7),
             "robleoscuro", "oscuro", "darkoak"),
-    DEAD("dead", "Árbol muerto", 15, "spruce_log", "no", new Form(Architecture.BROADLEAF)
-            .trunk(0.08, 1.0, 0.6, 0.45).crown(Envelope.ELLIPSOID, 0.26, 0.62, 0.62, 0.46, 0.4)
-            .colonize(6, 0.07, 1.6, 0.22).lobed(0.6).foliage(0.0, 0.7, 0.4).roots(5, 2.4).wander(1.6)
-            .broken(0.25),
+    DEAD("dead", "Árbol muerto", 17, "spruce_log", "no", new Form(Architecture.BROADLEAF)
+            .trunk(0.06, 0.9, 0.6, 0.4).crown(Envelope.ELLIPSOID, 0.3, 0.6, 0.64, 0.52, 0.38)
+            .colonize(6, 0.06, 1.3, 0.25).lobed(0.5).foliage(0.0, 0.7, 0.4).roots(5, 2.4).wander(1.5)
+            .broken(0.2),
             "muerto", "seco", "arbolmuerto", "deadtree", "snag"),
     PALM("palm", "Palmera", 16, "jungle_log", "jungle_leaves", new Form(Architecture.PALM)
             .trunk(0.05, 0.7, 0.75, 0.3).crown(Envelope.ELLIPSOID, 0.9, 1.0, 1.0, 0.55, 0.1)

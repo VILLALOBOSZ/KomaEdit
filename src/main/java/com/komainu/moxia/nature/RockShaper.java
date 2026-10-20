@@ -54,6 +54,7 @@ public final class RockShaper {
         int maxY = (int) Math.floor(body.centerY + body.extent);
         int minZ = (int) Math.floor(body.centerZ - body.extent);
         int maxZ = (int) Math.floor(body.centerZ + body.extent);
+        body.conform(terrain, minX, maxX, minZ, maxZ);
         for (int cx = minX; cx <= maxX; cx++) {
             if (cancelled.getAsBoolean()) {
                 throw new CancellationException();
@@ -234,6 +235,11 @@ public final class RockShaper {
         final FastNoiseLite warp;
         final FastNoiseLite cells;
         final FastNoiseLite detail;
+        /** Por columna, cuánto más bajo (o alto) está el suelo que el apoyo medio; ver {@link #conform}. */
+        private double[] lift;
+        private int liftX;
+        private int liftZ;
+        private int liftWidth;
 
         Body(RockSettings settings, NatureTerrain terrain, int x, int y, int z, long seed) {
             type = settings.type();
@@ -335,7 +341,44 @@ public final class RockShaper {
             extent = Math.max(radiusX, Math.max(radiusY, radiusZ)) * 1.15 + amplitude + crackDepth + 2.0;
         }
 
-        double field(double px, double py, double pz) {
+        /**
+         * La parte baja de la roca sigue al terreno columna a columna: en una ladera baja por el lado de abajo y sube
+         * por el de arriba, así no queda hueco debajo ni se entierra de más. La cima no se mueve.
+         */
+        void conform(NatureTerrain terrain, int minX, int maxX, int minZ, int maxZ) {
+            liftX = minX;
+            liftZ = minZ;
+            liftWidth = maxX - minX + 1;
+            lift = new double[liftWidth * (maxZ - minZ + 1)];
+            int reach = (int) Math.ceil(extent) + 8;
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    int surface = terrain.surface(x, z, groundLevel + reach, groundLevel - reach);
+                    double offset = surface == Integer.MIN_VALUE ? 0.0 : groundLevel - (surface + 1.0);
+                    lift[(z - minZ) * liftWidth + (x - minX)] = Math.clamp(offset, -radiusY, radiusY * 1.5);
+                }
+            }
+        }
+
+        private double lift(double px, double pz) {
+            if (lift == null) {
+                return 0.0;
+            }
+            int x = (int) Math.floor(px) - liftX;
+            int z = (int) Math.floor(pz) - liftZ;
+            if (x < 0 || z < 0 || x >= liftWidth || z * liftWidth + x >= lift.length) {
+                return 0.0;
+            }
+            return lift[z * liftWidth + x];
+        }
+
+        double field(double px, double worldY, double pz) {
+            double offset = lift(px, pz);
+            double py = worldY;
+            if (offset != 0.0) {
+                double base = centerY - radiusY;
+                py += offset * Math.clamp(1.0 - (worldY - base) / (radiusY * 1.6), 0.0, 1.0);
+            }
             double dx = px - centerX;
             double dy = py - centerY;
             double dz = pz - centerZ;

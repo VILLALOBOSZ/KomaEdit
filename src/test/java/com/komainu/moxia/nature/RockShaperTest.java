@@ -119,6 +119,38 @@ class RockShaperTest {
         return false;
     }
 
+    /**
+     * En una ladera la base sigue al terreno: no deja más columnas al aire que la misma roca en llano (donde solo
+     * vuela el bombeo natural de sus costados).
+     */
+    @Test
+    void onASlopeTheBaseFollowsTheGround() {
+        for (String options : new String[]{"crag 9", "boulder 6", "crag 10 -e 2"}) {
+            double flat = airborne(options, FakeTerrain.flat(63));
+            double slope = airborne(options, FakeTerrain.slope(64, 0.6));
+            assertTrue(slope <= flat + 0.08, options + ": " + slope + " en ladera frente a " + flat + " en llano");
+        }
+    }
+
+    /** Parte de las columnas de la roca cuyo bloque más bajo queda a más de dos bloques del suelo. */
+    private static double airborne(String options, FakeTerrain terrain) {
+        NatureVoxels rock = shape(options, terrain, 3L);
+        java.util.Map<Long, Integer> lowest = new java.util.HashMap<>();
+        for (long key : rock.sortedKeys()) {
+            long column = PackedBlockPlan.pack(PackedBlockPlan.unpackX(key), 0, PackedBlockPlan.unpackZ(key));
+            lowest.merge(column, PackedBlockPlan.unpackY(key), Math::min);
+        }
+        int gaps = 0;
+        for (java.util.Map.Entry<Long, Integer> entry : lowest.entrySet()) {
+            int x = PackedBlockPlan.unpackX(entry.getKey());
+            int z = PackedBlockPlan.unpackZ(entry.getKey());
+            if (entry.getValue() - terrain.height(x, z) > 2) {
+                gaps++;
+            }
+        }
+        return gaps / (double) lowest.size();
+    }
+
     @Test
     void sameSeedSameRock() {
         NatureVoxels first = shape("crag 8 -u 0.5", FakeTerrain.slope(64, 0.3), 77L);
