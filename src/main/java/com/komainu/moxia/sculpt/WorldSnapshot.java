@@ -91,6 +91,16 @@ public final class WorldSnapshot {
         return minimumY + sizeY - 1;
     }
 
+    /** Esquina menor de la caja capturada. */
+    public BlockVector3 minimum() {
+        return BlockVector3.at(minimumX, minimumY, minimumZ);
+    }
+
+    /** Esquina mayor de la caja capturada. */
+    public BlockVector3 maximum() {
+        return BlockVector3.at(minimumX + sizeX - 1, minimumY + sizeY - 1, minimumZ + sizeZ - 1);
+    }
+
     public static final class Capture {
         private final World world;
         private final int minimumX;

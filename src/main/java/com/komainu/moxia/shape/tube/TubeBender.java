@@ -23,6 +23,11 @@ import java.util.concurrent.CancellationException;
  * punto de la plantilla cae cada uno y copia ese bloque. Así la estructura no se rompe por fuera de las curvas.
  * Cada bloque colocado lleva cuántos cuartos de vuelta hay que girarlo para que escaleras, troncos o vallas sigan
  * la dirección del recorrido.</p>
+ *
+ * <p>Con una {@link Section} (la de {@code //ezspline structure}) la sección cambia a lo largo del recorrido como en
+ * los tubos: el radio por fotogramas escala la plantilla en cada punto, {@code -r} la gira alrededor del eje y
+ * {@code -t} la retuerce. La plantilla avanza en sus propias unidades, así donde el radio crece las copias también
+ * se alargan y conservan sus proporciones.</p>
  */
 public final class TubeBender {
     /** Peso vertical al buscar el eje en modo vertical: prima la columna sobre la distancia en altura. */
@@ -54,28 +59,38 @@ public final class TubeBender {
      * dividido entre 90.
      */
     public static Long2IntOpenHashMap bend(SampledPath path, Template template, Settings settings, int limit) {
+        return bend(path, template, settings, Section.NONE, limit);
+    }
+
+    /** Como {@link #bend(SampledPath, Template, Settings, int)}, con la sección variable de {@code section}. */
+    public static Long2IntOpenHashMap bend(SampledPath path, Template template, Settings settings, Section section,
+                                           int limit) {
         Grid grid = new Grid(template, settings.axis());
-        double reach = grid.reach(settings.offsetUp());
+        double templateReach = grid.reach(settings.offsetUp());
+        int baseRadius = section.scaled() ? section.baseRadius() : Math.clamp((int) Math.ceil(templateReach), 1, 128);
+        // Radio de la plantilla en bloques del mundo cuando la escala es 1.
+        double inherentRadius = section.scaled() ? section.inherentRadius() : baseRadius;
+        double reach = templateReach * section.maximumRadius(baseRadius) / inherentRadius;
         if (reach > 128.0) {
             throw new IllegalArgumentException("La estructura es demasiado ancha o alta para doblarla: "
-                    + "como mucho 128 bloques desde el punto de copia");
+                    + "como mucho 128 bloques desde el eje del recorrido");
         }
+        Map<String, Double> options = new java.util.LinkedHashMap<>(section.options());
+        options.put("normal", (double) settings.normalMode().ordinal());
+        options.put("tension", settings.tension());
+        options.put("bias", settings.bias());
+        options.put("continuity", settings.continuity());
         TubeSettings tubeSettings = TubeSettings.from(new ShapeParameters(
                 PathShape.SWEEP,
-                Math.clamp((int) Math.ceil(reach), 1, 128),
+                baseRadius,
                 6,
                 1,
                 0,
-                new ShapeOptions(Map.of(
-                        "normal", (double) settings.normalMode().ordinal(),
-                        "tension", settings.tension(),
-                        "bias", settings.bias(),
-                        "continuity", settings.continuity()
-                ))
+                new ShapeOptions(options)
         ));
         TubeCenterline line = TubeCenterline.create(path, tubeSettings, TubeCurve.NONE);
-        Layout layout = Layout.of(line, grid, settings);
-        LongArrayList bricks = markBricks(line, reach);
+        Layout layout = Layout.of(line, section.scaled() ? inherentRadius : Double.NaN, grid, settings);
+        LongArrayList bricks = markBricks(line, templateReach / inherentRadius);
         if ((long) bricks.size() * 512L > MAX_CANDIDATES) {
             throw new IllegalArgumentException("La estructura doblada es demasiado voluminosa; acorta el recorrido");
         }
@@ -112,14 +127,21 @@ public final class TubeBender {
                         if (sample == null) {
                             continue;
                         }
-                        double along = layout.along(sample.distance());
+                        double along = layout.along(section.scaled() ? sample.longitudinal() * inherentRadius
+                                : sample.distance());
                         if (Double.isNaN(along)) {
                             continue;
                         }
+                        // Gira la sección como los perfiles de tubo y la lleva a unidades de la plantilla.
+                        double cosine = Math.cos(sample.roll());
+                        double sine = Math.sin(sample.roll());
+                        double scale = inherentRadius / sample.radius();
+                        double side = (sample.side() * cosine + sample.up() * sine) * scale;
+                        double up = (-sample.side() * sine + sample.up() * cosine) * scale;
                         int cell = grid.cell(
                                 (int) Math.floor(along),
-                                nearestCell(sample.up() - settings.offsetUp()),
-                                nearestCell(sample.side())
+                                nearestCell(up - settings.offsetUp()),
+                                nearestCell(side)
                         );
                         if (cell < 0) {
                             continue;
@@ -148,7 +170,8 @@ public final class TubeBender {
         double amount = point.amount;
         double tangentX = line.tx[segment] + (line.tx[segment + 1] - line.tx[segment]) * amount;
         double tangentZ = line.tz[segment] + (line.tz[segment + 1] - line.tz[segment]) * amount;
-        return new Sample(point.distance, point.localX, point.localY, Math.atan2(tangentZ, tangentX));
+        return new Sample(point.distance, point.localX, point.localY, Math.atan2(tangentZ, tangentX), point.radius,
+                point.longitudinal, point.roll);
     }
 
     /**
@@ -193,7 +216,13 @@ public final class TubeBender {
             return null;
         }
         double base = centerY + shift * tangentY;
-        return new Sample(distance, dx * sideX + dz * sideZ, y - base, Math.atan2(headingZ, headingX));
+        double radius = line.radius[segment] + (line.radius[next] - line.radius[segment]) * amount;
+        double stretch = line.stretch[segment] + (line.stretch[next] - line.stretch[segment]) * amount;
+        double longitudinal = line.longitudinal[segment]
+                + (line.longitudinal[next] - line.longitudinal[segment]) * amount + shift / (radius * stretch);
+        double roll = line.roll[segment] + (line.roll[next] - line.roll[segment]) * amount;
+        return new Sample(distance, dx * sideX + dz * sideZ, y - base, Math.atan2(headingZ, headingX), radius,
+                longitudinal, roll);
     }
 
     private static TubeCenterline.SegmentTree columnTree(TubeCenterline line) {
@@ -204,16 +233,27 @@ public final class TubeBender {
         return new TubeCenterline.SegmentTree(line.px, scaled, line.pz);
     }
 
-    private static LongArrayList markBricks(TubeCenterline line, double reach) {
+    /** @param reachPerRadius alcance de la plantilla por cada bloque de radio del eje */
+    private static LongArrayList markBricks(TubeCenterline line, double reachPerRadius) {
         LongOpenHashSet seen = new LongOpenHashSet();
         LongArrayList ordered = new LongArrayList();
         int stride = Math.max(1, (int) Math.round(1.0 / TubeCenterline.STEP));
-        double radius = reach + 1.0 + stride * TubeCenterline.STEP;
+        double margin = 1.0 + stride * TubeCenterline.STEP;
         for (int index = 0; index < line.count; index += stride) {
-            TubeVoxelizer.markSphere(seen, ordered, line.px[index], line.py[index], line.pz[index], radius);
+            // El radio puede cambiar dentro del tramo: se toma el mayor de las muestras que cubre la esfera.
+            double radius = line.radius[index];
+            for (int inner = 1; inner < stride && index + inner < line.count; inner++) {
+                radius = Math.max(radius, line.radius[index + inner]);
+            }
+            if (index > 0) {
+                radius = Math.max(radius, line.radius[index - 1]);
+            }
+            TubeVoxelizer.markSphere(seen, ordered, line.px[index], line.py[index], line.pz[index],
+                    reachPerRadius * radius + margin);
         }
         int last = line.count - 1;
-        TubeVoxelizer.markSphere(seen, ordered, line.px[last], line.py[last], line.pz[last], radius);
+        TubeVoxelizer.markSphere(seen, ordered, line.px[last], line.py[last], line.pz[last],
+                reachPerRadius * line.radius[last] + margin);
         return ordered;
     }
 
@@ -225,16 +265,26 @@ public final class TubeBender {
         return (int) Math.floor(offset + 0.5 - 1.0E-6);
     }
 
-    private record Sample(double distance, double side, double up, double heading) {
+    /**
+     * Un bloque visto desde el eje: distancia de arco, lado y altura en bloques del mundo, rumbo, radio del eje en ese
+     * punto, avance longitudinal (en radios, como en los tubos) y giro de la sección.
+     */
+    private record Sample(double distance, double side, double up, double heading, double radius, double longitudinal,
+                          double roll) {
     }
 
-    /** Reparte las copias a lo largo del recorrido y traduce distancia de arco a coordenada de la plantilla. */
+    /**
+     * Reparte las copias a lo largo del recorrido y traduce el avance, en unidades de la plantilla, a su coordenada a
+     * lo largo. Sin sección variable una unidad es un bloque de arco.
+     */
     private record Layout(Mode mode, boolean closed, double length, double period, double templateLength,
                           double start, double used, double scale) {
-        static Layout of(TubeCenterline line, Grid grid, Settings settings) {
+        /** @param inherentRadius radio propio de la plantilla con sección variable; {@code NaN} sin ella */
+        static Layout of(TubeCenterline line, double inherentRadius, Grid grid, Settings settings) {
             double templateLength = grid.lengthAlong;
             double period = Math.max(1.0, templateLength + settings.gap());
-            double length = line.length;
+            double length = Double.isNaN(inherentRadius) ? line.length
+                    : line.longitudinal[line.count - 1] * inherentRadius;
             if (settings.mode() == Mode.STRETCH) {
                 return new Layout(Mode.STRETCH, line.closed, length, period, templateLength, 0.0, length,
                         templateLength / length);
@@ -256,6 +306,9 @@ public final class TubeBender {
 
         /** Coordenada a lo largo de la plantilla en [0, longitud) o {@code NaN} si cae en un hueco o fuera. */
         double along(double distance) {
+            if (Double.isNaN(distance)) {
+                return Double.NaN;
+            }
             if (mode == Mode.STRETCH) {
                 return Math.clamp(distance * scale, 0.0, templateLength - 1.0E-9);
             }
@@ -464,6 +517,68 @@ public final class TubeBender {
                 }
             }
             throw new IllegalArgumentException("Eje desconocido: " + input + " (auto, x, z, -x, -z)");
+        }
+    }
+
+    /**
+     * Sección variable de {@code //ezspline structure}: radio por fotogramas, estiramiento a lo largo, giro inicial y
+     * torsión, con las mismas opciones que los tubos ({@code k0…}, {@code p1…}, {@code stretch}, {@code twist},
+     * {@code angle}, {@code rollend}).
+     *
+     * @param baseRadius     radio entero de referencia de los fotogramas (el mayor)
+     * @param inherentRadius radio propio de la plantilla, el que corresponde a escala 1
+     */
+    public record Section(int baseRadius, double inherentRadius, Map<String, Double> options) {
+        /** La plantilla a su tamaño, sin girar ni retorcer. */
+        public static final Section NONE = new Section(0, Double.NaN, Map.of());
+
+        public Section {
+            options = Map.copyOf(options);
+        }
+
+        /**
+         * @param radii     radios en la sintaxis de los tubos ({@code 6}, {@code 2,8,2}, {@code 0:4,0.3:10,1:4});
+         *                  {@code null} para el tamaño propio de la plantilla
+         * @param stretch   {@code -s}: estira la plantilla a lo largo
+         * @param twist     {@code -t}: grados de torsión por diámetro recorrido
+         * @param startRoll {@code -r}: giro inicial en grados
+         * @param endRoll   giro final de {@code -r inicio,fin} ({@code NaN} si no hay); entonces {@code -t} no cuenta
+         */
+        public static Section of(String radii, double inherentRadius, double stretch, double twist, double startRoll,
+                                 double endRoll) {
+            if (!(inherentRadius > 0.0)) {
+                throw new IllegalArgumentException("La estructura no tiene tamaño");
+            }
+            String written = radii != null ? radii : String.format(Locale.ROOT, "%.4f", inherentRadius);
+            TubeSettings.RadiusProgression.Parsed parsed = TubeSettings.RadiusProgression.parse(written);
+            Map<String, Double> options = new java.util.LinkedHashMap<>(parsed.options());
+            options.put("stretch", stretch);
+            if (twist != 0.0) {
+                options.put("twist", twist);
+            }
+            if (startRoll != 0.0) {
+                options.put("angle", startRoll);
+            }
+            if (!Double.isNaN(endRoll)) {
+                options.put("rollend", endRoll);
+            }
+            return new Section(parsed.baseRadius(), inherentRadius, options);
+        }
+
+        boolean scaled() {
+            return baseRadius > 0;
+        }
+
+        /** Radio máximo del eje a lo largo del recorrido. */
+        double maximumRadius(int fallback) {
+            if (!scaled()) {
+                return fallback;
+            }
+            double maximum = 0.0;
+            for (int index = 0; options.containsKey("k" + index); index++) {
+                maximum = Math.max(maximum, options.get("k" + index) / 100.0);
+            }
+            return baseRadius * (maximum > 0.0 ? maximum : 1.0);
         }
     }
 

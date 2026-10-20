@@ -135,6 +135,7 @@ public final class PaintOperations {
             Property<Object> amount = amountProperty(type);
             Property<Object> facing = property(type, "facing");
             BlockState air = Objects.requireNonNull(BlockTypes.AIR).getDefaultState();
+            settings.ground().bind(snapshot);
             PetalPainter.paint(world, center, radius, settings, erase, (x, y, z, pieces, direction) -> {
                 BlockState existing = world.state(x, y, z);
                 if (pieces == 0) {

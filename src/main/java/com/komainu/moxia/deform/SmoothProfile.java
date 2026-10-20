@@ -14,13 +14,13 @@ import java.util.Map;
  * que la admiten (tubos, deform, surface, smooth, inflate, deflate, smoothblocks, place, array y scatter):
  *
  * <ul>
- *     <li>Nombre: {@code Slabs}, {@code SlabsAndStairs}, {@code SlabsAndStairs2D}, {@code Layers}, {@code SSW}
- *     (o sus alias en español, {@link SmoothMode#byId}).</li>
+ *     <li>Nombre: {@code Slabs}, {@code SlabsAndStairs}, {@code SlabsAndStairs2D}, {@code Layers}, {@code SSW},
+ *     {@code Panes} (o sus alias en español, {@link SmoothMode#byId}).</li>
  *     <li>Cobertura entre paréntesis: {@code Slabs(C:0.7)}, de 0 (solo bloques enteros) a 1 (toda la superficie
  *     con piezas); por defecto {@value PieceFit#DEFAULT_COVERAGE}.</li>
  *     <li>Material fijo por variante: {@code Slabs(Slab:acacia)}, {@code SlabsAndStairs(Slab:oak,Stair:spruce)},
- *     {@code Layers(Layer:snow)}, {@code SSW(Wall:cobblestone)}. Se separan con comas y se combinan con la
- *     cobertura.</li>
+ *     {@code Layers(Layer:snow)}, {@code SSW(Wall:cobblestone)}, {@code Panes(Pane:iron_bars)}. Se separan con
+ *     comas y se combinan con la cobertura.</li>
  *     <li>Compatibilidad: la forma antigua {@code stairs:0.7} (cobertura tras dos puntos) sigue valiendo.</li>
  * </ul>
  */
@@ -75,7 +75,7 @@ public record SmoothProfile(SmoothMode mode, double coverage, PieceMaterials mat
                 PieceVariant variant = PieceVariant.find(key);
                 if (variant == null) {
                     throw new IllegalArgumentException("Parámetro de perfil desconocido: «" + pair[0].trim()
-                            + "» (C, Slab, Stair, Wall o Layer)");
+                            + "» (C, Slab, Stair, Wall, Layer o Pane)");
                 }
                 if (materials.put(variant, value) != null) {
                     throw new IllegalArgumentException("El material de " + variant.key() + " está repetido");

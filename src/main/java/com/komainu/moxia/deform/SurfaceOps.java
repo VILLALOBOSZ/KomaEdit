@@ -4,7 +4,6 @@ import com.komainu.moxia.noise.NoiseSpec;
 
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.function.IntPredicate;
 
 /**
  * Retoques de superficie ({@code /komaedit surface}): mueven la superficie hacia dentro o hacia fuera hasta
@@ -111,9 +110,18 @@ public final class SurfaceOps {
     }
 
     /**
+     * Máscara de {@code -m} por posición: la lista de bloques de siempre o cualquier máscara de WorldEdit, ya
+     * conectada a la foto (nunca lee el mundo).
+     */
+    @FunctionalInterface
+    public interface Mask {
+        boolean test(int x, int y, int z);
+    }
+
+    /**
      * @param carveOnly   {@code -c}: solo tallar
      * @param expandOnly  {@code -e}: solo crecer
-     * @param mask        {@code -m}: qué materiales se pueden tallar o desde cuáles se puede crecer (o {@code null})
+     * @param mask        {@code -m}: qué bloques se pueden tallar o desde cuáles se puede crecer (o {@code null})
      * @param topology    {@code -t}: no abrir agujeros ni partir piezas
      */
     public record Settings(
@@ -123,7 +131,7 @@ public final class SurfaceOps {
             int smoothIterations,
             boolean carveOnly,
             boolean expandOnly,
-            IntPredicate mask,
+            Mask mask,
             boolean topology
     ) {
         public Settings {
@@ -162,7 +170,7 @@ public final class SurfaceOps {
         }
         boolean[] result = new boolean[occupancy.length];
         int[] grownMaterial = distance.nearestOccupied;
-        IntPredicate mask = settings.mask();
+        Mask mask = settings.mask();
         for (int index = 0; index < result.length; index++) {
             boolean wanted = field.values[index] > 0.0F;
             boolean before = occupancy[index];
@@ -171,11 +179,12 @@ public final class SurfaceOps {
                 continue;
             }
             if (before) {
-                wanted = settings.expandOnly() || mask != null && !mask.test(volume.material[index]);
+                wanted = settings.expandOnly() || mask != null
+                        && !mask.test(volume.x(index), volume.y(index), volume.z(index));
             } else {
                 int source = grownMaterial[index];
                 wanted = !settings.carveOnly() && source >= 0
-                        && (mask == null || mask.test(volume.material[source]));
+                        && (mask == null || mask.test(volume.x(source), volume.y(source), volume.z(source)));
             }
             result[index] = wanted;
         }
