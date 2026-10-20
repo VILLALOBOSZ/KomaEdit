@@ -1599,9 +1599,9 @@
   "gui.komaedit.tools.stamp.search.help": "Busca en todas las categorías por nombre o descripción: volcán, isla, nieve… Intro elige el primero.",
   "gui.komaedit.tools.stamp.category": "Categoría",
   "gui.komaedit.tools.stamp.category.help": "Qué sellos se ven. Con alguno marcado con la estrella, también «Favoritos».",
-  "gui.komaedit.tools.stamp.favorites": "★ Favoritos",
+  "gui.komaedit.tools.stamp.favorites": "Favoritos",
   "gui.komaedit.tools.stamp.favorite": "Marcar o quitar de favoritos",
-  "gui.komaedit.tools.stamp.tile.help": "Clic: usar este sello. Clic derecho o la estrella: favorito.",
+  "gui.komaedit.tools.stamp.tile.help": "Clic: usar · clic derecho: favorito",
   "gui.komaedit.tools.stamp.no_results": "Ningún sello encaja con lo escrito",
   "gui.komaedit.tools.stamp.no_favorites": "Aún no hay favoritos",
   "gui.komaedit.tools.preset.range": "Cordillera",
@@ -1674,5 +1674,9 @@
   "gui.komaedit.tools.preset.paint_patches": "Manchas",
   "gui.komaedit.tools.preset.paint_patches.help": "Manchas de musgo con ruido.",
   "gui.komaedit.tools.preset.paint_desert": "Desierto",
-  "gui.komaedit.tools.preset.paint_desert.help": "Arena y areniscas por pendiente, con la huella de las dunas."
+  "gui.komaedit.tools.preset.paint_desert.help": "Arena y areniscas por pendiente, con la huella de las dunas.",
+  "gui.komaedit.tools.stamp.footer.seed": "semilla %s",
+  "gui.komaedit.tools.stamp.footer.seed_random": "semilla al azar",
+  "gui.komaedit.tools.stamp.footer.seed_locked": "semilla bloqueada",
+  "gui.komaedit.tools.stamp.footer.seed_locked_number": "semilla %s bloqueada"
 }

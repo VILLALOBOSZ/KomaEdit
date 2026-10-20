@@ -1599,9 +1599,9 @@
   "gui.komaedit.tools.stamp.search.help": "Searches every category by name or description: volcano, island, snow… Enter picks the first one.",
   "gui.komaedit.tools.stamp.category": "Category",
   "gui.komaedit.tools.stamp.category.help": "Which stamps are shown. Once you star one, also \"Favourites\".",
-  "gui.komaedit.tools.stamp.favorites": "★ Favourites",
+  "gui.komaedit.tools.stamp.favorites": "Favourites",
   "gui.komaedit.tools.stamp.favorite": "Add to or remove from favourites",
-  "gui.komaedit.tools.stamp.tile.help": "Click: use this stamp. Right click or the star: favourite.",
+  "gui.komaedit.tools.stamp.tile.help": "Click: use · right click: favourite",
   "gui.komaedit.tools.stamp.no_results": "No stamp matches your search",
   "gui.komaedit.tools.stamp.no_favorites": "No favourites yet",
   "gui.komaedit.tools.preset.range": "Range",
@@ -1674,5 +1674,9 @@
   "gui.komaedit.tools.preset.paint_patches": "Patches",
   "gui.komaedit.tools.preset.paint_patches.help": "Moss patches with noise.",
   "gui.komaedit.tools.preset.paint_desert": "Desert",
-  "gui.komaedit.tools.preset.paint_desert.help": "Sand and sandstones by slope, with the dunes footprint."
+  "gui.komaedit.tools.preset.paint_desert.help": "Sand and sandstones by slope, with the dunes footprint.",
+  "gui.komaedit.tools.stamp.footer.seed": "seed %s",
+  "gui.komaedit.tools.stamp.footer.seed_random": "random seed",
+  "gui.komaedit.tools.stamp.footer.seed_locked": "locked seed",
+  "gui.komaedit.tools.stamp.footer.seed_locked_number": "seed %s locked"
 }

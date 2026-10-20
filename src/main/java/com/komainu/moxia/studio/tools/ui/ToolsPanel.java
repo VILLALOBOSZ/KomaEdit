@@ -10,6 +10,7 @@ import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.tools.CapabilityCard;
 import com.komainu.moxia.studio.tools.SymmetryCard;
+import com.komainu.moxia.studio.tools.TerrainCards;
 import com.komainu.moxia.studio.tools.ToolAction;
 import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
@@ -1171,10 +1172,11 @@ public final class ToolsPanel {
                 StudioImage image = ChoiceThumbnails.get(card.id(), choice.id(), option);
                 String label = host.tr(choice.optionKey(option));
                 List<String> lines = ui.nameLines(label, tile - 4, layout.lines());
-                String help = label + "\n" + host.tr(choice.optionKey(option) + ".help") + "\n"
-                        + host.tr("gui.komaedit.tools.stamp.tile.help");
+                // Nombre y una frase, debajo de la miniatura: qué hacen los clics lo dice el pie.
+                String help = label + "\n" + host.tr(choice.optionKey(option) + ".help");
                 ui.tile(cell, image, icon(card), lines != null ? lines : List.of(ui.fit(label, tile - 4)), chosen)
                         .tooltip(help)
+                        .tooltipBelow(cell)
                         .group("tools:" + choice.id())
                         .onReset(() -> toggleStampFavorite(option, host, choice))
                         .onClick(() -> set(current().with(choice.id(), option).with("custom", "")));
@@ -1183,6 +1185,7 @@ public final class ToolsPanel {
                     ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x() - 1,
                             star.y() - 1, favorite || ui.hovered(star) ? FAVORITE : MUTED);
                     ui.register(star).tooltip(host.tr("gui.komaedit.tools.stamp.favorite") + "\n" + label)
+                            .tooltipBelow(cell)
                             .onClick(() -> toggleStampFavorite(option, host, choice));
                 }
             }
@@ -1671,13 +1674,37 @@ public final class ToolsPanel {
                     : host.tr(info.hasSelection() ? "gui.komaedit.tools.footer.selection_short"
                     : "gui.komaedit.tools.footer.no_selection");
             case LOOK -> clicked(host);
-            case HAND -> host.tr("gui.komaedit.tools.footer.hand");
+            case HAND -> card instanceof TerrainCards.Stamp ? stampTarget(host)
+                    : host.tr("gui.komaedit.tools.footer.hand");
             case MODE -> card instanceof SymmetryCard
                     ? host.tr(info.symmetry().active() ? "gui.komaedit.tools.footer.on"
                     : "gui.komaedit.tools.footer.off")
                     : host.tr("gui.komaedit.tools.footer.active", info.capabilities() == null ? 0
                     : Integer.bitCount(info.capabilities().enabled() & info.capabilities().permitted()));
         };
+    }
+
+    /** «Montaña · Sumar · semilla 4217»: el sello, el modo de mezcla y la semilla que llevará el pincel. */
+    private String stampTarget(Host host) {
+        ToolValues values = values(selected());
+        String custom = values.text("custom").strip();
+        ToolParam.Choice stamp = (ToolParam.Choice) values.param("stamp");
+        ToolParam.Choice mode = (ToolParam.Choice) values.param("mode");
+        String name = custom.isEmpty() ? host.tr(stamp.optionKey(values.choice("stamp"))) : custom;
+        Integer seed = values.number("seed");
+        boolean locked = values.toggle("lock_seed");
+        String seedText = seed == null
+                ? host.tr(locked ? "gui.komaedit.tools.stamp.footer.seed_locked"
+                : "gui.komaedit.tools.stamp.footer.seed_random")
+                : host.tr(locked ? "gui.komaedit.tools.stamp.footer.seed_locked_number"
+                : "gui.komaedit.tools.stamp.footer.seed", seed);
+        return name + " · " + host.tr(mode.optionKey(values.choice("mode"))) + " · " + seedText;
+    }
+
+    /** La línea de ayuda del pie bajo el resumen: en el sello, qué hacen los clics en sus miniaturas. */
+    public String footerHint(Host host) {
+        return !browsing() && selected() instanceof TerrainCards.Stamp
+                ? host.tr("gui.komaedit.tools.stamp.tile.help") : "";
     }
 
     /** «Donde haces clic» o, tras un clic en el mundo, en qué bloque («Clic en 12, 64, -30»). */

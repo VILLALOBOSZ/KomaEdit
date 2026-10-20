@@ -350,7 +350,11 @@ public final class StudioView {
         if (!dragging() && !typing() && !cheatSheet) {
             StudioUi.Widget widget = ui.at(mouseX, mouseY);
             if (widget != null && !widget.tooltip().isEmpty() && !widget.overValue(mouseX, mouseY)) {
-                ui.tooltip(widget.tooltip(), mouseX, mouseY, frame.screen());
+                if (widget.tooltipAnchor() != null) {
+                    ui.tooltip(widget.tooltip(), widget.tooltipAnchor(), frame.panel());
+                } else {
+                    ui.tooltip(widget.tooltip(), mouseX, mouseY, frame.screen());
+                }
             }
         }
     }
@@ -574,7 +578,8 @@ public final class StudioView {
                 target = host.tr(card.nameKey()) + " · " + target;
             }
             return new Footer(tools.targetIcon(host), target, "", MUTED, tools.buildLabel(host),
-                    tools.buildTone(host), () -> buildTool(host), tools.buildHelp(host), card.previewable(), "");
+                    tools.buildTone(host), () -> buildTool(host), tools.buildHelp(host), card.previewable(),
+                    frame.compact() ? "" : tools.footerHint(host));
         }
         ToolsInfo info = host.info();
         String selection = info.hasSelection()
