@@ -57,6 +57,28 @@ class NamedDefinitionsTest {
     }
 
     @Test
+    void whatWasReadIsRememberedUntilTheFileChanges() throws Exception {
+        Path file = directory.resolve("remembered.json");
+        NamedDefinitions first = new NamedDefinitions(file, "paleta");
+        first.put("mia", "stone;andesite", false);
+        // Otra instancia (como en cada clic de un pincel) ve lo guardado sin volver a leer el archivo.
+        NamedDefinitions second = new NamedDefinitions(file, "paleta");
+        assertEquals(Optional.of("stone;andesite"), second.get("mia"));
+        second.all().put("trampa", "x");
+        assertEquals(Optional.empty(), first.get("trampa"), "lo que devuelve es una copia");
+        first.put("mia", "stone;andesite;tuff", true);
+        assertEquals(Optional.of("stone;andesite;tuff"), second.get("mia"), "lo guardado se ve al momento");
+        // Cambiado a mano fuera del juego: otra fecha y otro tamaño, se vuelve a leer.
+        Files.writeString(file, "{\"version\":1,\"entries\":{\"mia\":\"dirt\",\"otra\":\"sand\"}}");
+        Files.setLastModifiedTime(file, java.nio.file.attribute.FileTime.fromMillis(System.currentTimeMillis()
+                + 5_000L));
+        assertEquals(Optional.of("dirt"), second.get("mia"));
+        assertEquals(Optional.of("sand"), new NamedDefinitions(file, "paleta").get("otra"));
+        Files.delete(file);
+        assertTrue(second.all().isEmpty(), "sin archivo, vacío");
+    }
+
+    @Test
     void reportsUnreadableFiles() throws Exception {
         Path file = directory.resolve("broken.json");
         Files.writeString(file, "{not json");

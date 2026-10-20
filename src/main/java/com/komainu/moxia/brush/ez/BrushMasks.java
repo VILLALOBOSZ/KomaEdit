@@ -14,8 +14,9 @@ import java.util.Set;
  * {@code #solid,!sand}) se queda en {@link BlockFilter}, con su significado de siempre; cualquier otra cosa se parsea
  * como máscara de WorldEdit (con las {@code #…} de KomaEdit) y se evalúa sobre la foto de la pasada.
  *
- * <p>Se parsea en el hilo del servidor en cada clic: así lo que la máscara fija al leerse ({@code #aim}, el origen de
- * {@code #radialgradientmask}) es lo del momento del clic, y cada pasada tiene su propio extent.</p>
+ * <p>Una máscara de WorldEdit se parsea en el hilo del servidor en cada clic: así lo que fija al leerse ({@code #aim},
+ * el origen de {@code #radialgradientmask}, la barra de {@code #hotbar}) es lo del momento del clic, y cada pasada
+ * tiene su propio extent. Las listas sencillas no cambian: se leen una vez por pincel ({@link #fixed}).</p>
  */
 public final class BrushMasks {
     private static final Set<String> CLASSES = Set.of("#fullblock", "#full", "#entero", "#solid", "#solido",
@@ -33,6 +34,22 @@ public final class BrushMasks {
             return BlockFilter.parse(text);
         }
         return new WorldEditMask(RegionMasks.worldEdit(player, text));
+    }
+
+    /**
+     * La máscara ya leída si no depende del momento del clic (la de serie o una lista sencilla, que se leen una vez
+     * por pincel), o {@code null} si hay que leerla en cada clic (una de WorldEdit).
+     */
+    public static BrushMask fixed(String text) {
+        if (text == null) {
+            return BlockFilter.FULL_BLOCK;
+        }
+        return RegionMasks.plainList(text, CLASSES) ? BlockFilter.parse(text) : null;
+    }
+
+    /** La máscara de un clic: la ya leída del pincel ({@link #fixed}) o, si no la hay, leída ahora. */
+    public static BrushMask forClick(BrushMask fixed, ServerPlayerEntity player, String text) {
+        return fixed != null ? fixed : parse(player, text);
     }
 
     /** Una máscara de WorldEdit sobre la foto del pincel. */
