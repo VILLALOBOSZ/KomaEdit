@@ -1,49 +1,176 @@
 package com.komainu.moxia.studio.ui;
 
 /**
- * Colores del Studio. Todo lo que se dibuja sobre el mundo es opaco: ni el marcador del servidor ni la lista
- * de jugadores pueden transparentarse por detrás del panel.
+ * Las fichas de color del Studio: cada color que se pinta tiene un nombre por lo que hace (fondo, tarjeta, acento,
+ * texto secundario…), nunca por cómo es. El tema elegido ({@link StudioPalette}) las rellena con {@link #use}, así que
+ * cambiar de tema o retocar un color se hace en un solo sitio. Fuera de aquí y de {@link StudioPalette} no se escribe
+ * ningún color a mano (lo vigila {@code StudioThemeTokensTest}).
  *
- * <p>El acento (rosa) solo marca tres cosas: lo elegido, lo activo y la acción principal. Los títulos y las
- * etiquetas van en grises, para que lo elegido se vea de un vistazo.</p>
+ * <p>Todo lo que se dibuja sobre el mundo es opaco: ni el marcador del servidor ni la lista de jugadores pueden
+ * transparentarse por detrás del panel.</p>
+ *
+ * <p>El acento solo marca tres cosas: lo elegido, lo activo y la acción principal. Los títulos y las etiquetas van en
+ * los tonos del texto, para que lo elegido se vea de un vistazo. Los estados se distinguen también por la forma: lo
+ * elegido lleva relleno tintado y una marca de acento (barra o marco); lo que está bajo el ratón, un relleno más claro
+ * (y borde en botones, pastillas y miniaturas); lo desactivado va hueco, solo con su contorno.</p>
+ *
+ * <p>Las fichas son campos y no constantes para que el tema se cambie en caliente; solo {@link #use} las escribe.</p>
  */
 public final class StudioTheme {
-    /** Fondo del panel. */
-    public static final int PANEL = 0xFF101117;
-    /** Barra de herramientas, navegación y pie: un punto más claros que el contenido. */
-    public static final int SURFACE = 0xFF16171F;
-    public static final int CARD = 0xFF20222B;
-    public static final int CARD_HOVER = 0xFF2B2E39;
-    public static final int CARD_ACTIVE = 0xFF3A1E29;
-    public static final int FIELD = 0xFF0B0C10;
-    public static final int DIVIDER = 0xFF2A2C36;
-    public static final int TRACK = 0xFF2E303B;
-    /** Borde de un control bajo el ratón. */
-    public static final int OUTLINE = 0xFF4A4C58;
+    /** Las fichas, en el orden de la hoja de colores. Cada tema da un valor a todas. */
+    public enum Token {
+        /** Fondo del panel. */
+        PANEL,
+        /** Superficie: barra de arriba, navegación y pie, un punto más claros que el contenido. */
+        SURFACE,
+        /** Superficie elevada: tarjetas, filas y botones. */
+        CARD,
+        /** Tarjeta bajo el ratón. */
+        CARD_HOVER,
+        /** Tarjeta elegida, tintada con el acento. */
+        CARD_ACTIVE,
+        /** Campo de texto. */
+        FIELD,
+        /**
+         * Fondo de las miniaturas: más claro y neutro que la tarjeta, para que se lean los bloques oscuros (abeto,
+         * roble oscuro, pizarra profunda) y las hojas no se pierdan en un fondo de su mismo verde.
+         */
+        THUMBNAIL,
+        /** Borde y líneas finas. */
+        DIVIDER,
+        /** Carril de las barras y del interruptor apagado. */
+        TRACK,
+        /** Borde de lo que está bajo el ratón. */
+        OUTLINE,
+        /** Borde del campo en el que se escribe. */
+        FOCUS,
+        /** Acento: lo elegido, lo activo y la acción principal. */
+        ACCENT,
+        /** La acción principal bajo el ratón. */
+        ACCENT_HOVER,
+        /** El acento como texto o icono sobre una superficie. */
+        ACCENT_TEXT,
+        /** Acento suave: pastilla elegida, barra de un valor sin cambiar, desplazamiento. */
+        ACCENT_DIM,
+        /** Texto e icono sobre un relleno de acento. */
+        ON_ACCENT,
+        /** Títulos y el nombre de lo elegido. */
+        TEXT_STRONG,
+        /** Texto. */
+        TEXT,
+        /** Texto secundario: etiquetas. */
+        TEXT_SECONDARY,
+        /** Notas, pistas y unidades. */
+        MUTED,
+        /** Lo que aún no se puede usar. */
+        DISABLED,
+        /** Éxito: hecho, colocando, simetría activa. */
+        SUCCESS,
+        /** Aviso: obra grande, en espera. */
+        WARNING,
+        /** Fondo de un aviso. */
+        WARNING_DIM,
+        /** Fondo de un aviso bajo el ratón. */
+        WARNING_HOVER,
+        /** Peligro: borrar, cancelar y errores. Nunca hace de acento. */
+        DANGER,
+        /** Fondo de un peligro. */
+        DANGER_DIM,
+        /** Favoritas y presets propios. */
+        FAVORITE,
+        /** Velo bajo las ventanas modales (biblioteca de bloques, paleta de órdenes y chuleta). */
+        SCRIM
+    }
 
-    public static final int ACCENT = 0xFFE24B6A;
-    public static final int ACCENT_HOVER = 0xFFF06684;
-    public static final int ACCENT_DIM = 0xFF7D2438;
-    /** Títulos de sección: el acento aclarado, solo para los avisos de la cabecera de una herramienta. */
-    public static final int SECTION = 0xFFE88EA2;
+    public static int PANEL;
+    public static int SURFACE;
+    public static int CARD;
+    public static int CARD_HOVER;
+    public static int CARD_ACTIVE;
+    public static int FIELD;
+    public static int THUMBNAIL;
+    public static int DIVIDER;
+    public static int TRACK;
+    public static int OUTLINE;
+    public static int FOCUS;
 
-    public static final int TEXT = 0xFFF4F0F3;
-    public static final int TEXT_SECONDARY = 0xFFBDB8C2;
-    public static final int MUTED = 0xFF8B8794;
-    public static final int DISABLED = 0xFF5E5B66;
-    public static final int WHITE = 0xFFFFFFFF;
+    public static int ACCENT;
+    public static int ACCENT_HOVER;
+    public static int ACCENT_TEXT;
+    public static int ACCENT_DIM;
+    public static int ON_ACCENT;
 
-    public static final int SUCCESS = 0xFF67DFA3;
-    public static final int WARNING = 0xFFF4C86A;
-    public static final int WARNING_DIM = 0xFF54421A;
-    public static final int DANGER = 0xFFFF6B6B;
-    public static final int DANGER_DIM = 0xFF4A1F24;
-    public static final int FAVORITE = 0xFFF2C14B;
+    public static int TEXT_STRONG;
+    public static int TEXT;
+    public static int TEXT_SECONDARY;
+    public static int MUTED;
+    public static int DISABLED;
 
-    /** Velo bajo las ventanas modales (biblioteca de bloques, paleta de órdenes y chuleta). */
-    public static final int SCRIM = 0xC0000000;
+    public static int SUCCESS;
+    public static int WARNING;
+    public static int WARNING_DIM;
+    public static int WARNING_HOVER;
+    public static int DANGER;
+    public static int DANGER_DIM;
+    public static int FAVORITE;
+
+    public static int SCRIM;
+
+    /** Pigmentos del icono de la etapa Material: dibujan bloques de colores, así que no cambian con el tema. */
+    public static final int PIGMENT_RED = 0xFFE0503F;
+    public static final int PIGMENT_YELLOW = 0xFFF2C14B;
+    public static final int PIGMENT_BLUE = 0xFF4B9BE2;
+
+    private static StudioPalette current;
+
+    static {
+        use(StudioPalette.DEFAULT);
+    }
 
     private StudioTheme() {
+    }
+
+    /** El tema puesto. */
+    public static StudioPalette current() {
+        return current;
+    }
+
+    /** Pone {@code palette} (el de serie si es {@code null}); lo siguiente que se pinte ya sale con sus colores. */
+    public static void use(StudioPalette palette) {
+        StudioPalette chosen = palette == null ? StudioPalette.DEFAULT : palette;
+        if (chosen == current) {
+            return;
+        }
+        current = chosen;
+        PANEL = chosen.color(Token.PANEL);
+        SURFACE = chosen.color(Token.SURFACE);
+        CARD = chosen.color(Token.CARD);
+        CARD_HOVER = chosen.color(Token.CARD_HOVER);
+        CARD_ACTIVE = chosen.color(Token.CARD_ACTIVE);
+        FIELD = chosen.color(Token.FIELD);
+        THUMBNAIL = chosen.color(Token.THUMBNAIL);
+        DIVIDER = chosen.color(Token.DIVIDER);
+        TRACK = chosen.color(Token.TRACK);
+        OUTLINE = chosen.color(Token.OUTLINE);
+        FOCUS = chosen.color(Token.FOCUS);
+        ACCENT = chosen.color(Token.ACCENT);
+        ACCENT_HOVER = chosen.color(Token.ACCENT_HOVER);
+        ACCENT_TEXT = chosen.color(Token.ACCENT_TEXT);
+        ACCENT_DIM = chosen.color(Token.ACCENT_DIM);
+        ON_ACCENT = chosen.color(Token.ON_ACCENT);
+        TEXT_STRONG = chosen.color(Token.TEXT_STRONG);
+        TEXT = chosen.color(Token.TEXT);
+        TEXT_SECONDARY = chosen.color(Token.TEXT_SECONDARY);
+        MUTED = chosen.color(Token.MUTED);
+        DISABLED = chosen.color(Token.DISABLED);
+        SUCCESS = chosen.color(Token.SUCCESS);
+        WARNING = chosen.color(Token.WARNING);
+        WARNING_DIM = chosen.color(Token.WARNING_DIM);
+        WARNING_HOVER = chosen.color(Token.WARNING_HOVER);
+        DANGER = chosen.color(Token.DANGER);
+        DANGER_DIM = chosen.color(Token.DANGER_DIM);
+        FAVORITE = chosen.color(Token.FAVORITE);
+        SCRIM = chosen.color(Token.SCRIM);
     }
 
     /** {@code argb} con su alfa multiplicado por {@code alpha} (0–1). */

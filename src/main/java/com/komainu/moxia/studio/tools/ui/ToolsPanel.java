@@ -467,13 +467,13 @@ public final class ToolsPanel {
         if (chosen) {
             ui.fill(cell.left(2), ACCENT);
         }
-        int color = locked ? DISABLED : chosen ? ACCENT_HOVER : hovered ? TEXT : TEXT_SECONDARY;
+        int color = locked ? DISABLED : chosen ? ACCENT_TEXT : hovered ? TEXT : TEXT_SECONDARY;
         ui.icon(icon(card), cell.x() + 5, cell.centerY() - 6, color);
         Rect star = cell.rightPart(14);
         boolean favorite = host.preferences().isToolFavorite(card.id());
         // El sitio de la estrella se guarda siempre, para que el nombre no salte de línea al pasar el ratón.
         ui.nameLabel(host.tr(card.nameKey()), cell.x() + 21, cell, cell.width() - TOOL_NAME_INSET - (locked ? 10 : 0),
-                locked ? DISABLED : chosen ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
+                locked ? DISABLED : chosen ? TEXT_STRONG : hovered ? TEXT : TEXT_SECONDARY);
         if (locked) {
             ui.icon(StudioIcons.Icon.LOCK, star.x() - 11, cell.centerY() - 6, DISABLED);
         }
@@ -539,9 +539,9 @@ public final class ToolsPanel {
         boolean hovered = ui.hovered(name);
         ui.fill(name, hovered ? CARD_HOVER : CARD);
         ui.fill(name.left(2), ACCENT);
-        ui.icon(icon(card), name.x() + 6, name.centerY() - 6, ACCENT_HOVER);
+        ui.icon(icon(card), name.x() + 6, name.centerY() - 6, ACCENT_TEXT);
         ui.icon(StudioIcons.Icon.CHEVRON_DOWN, name.right() - 15, name.centerY() - 5, hovered ? TEXT : MUTED);
-        ui.bold(host.tr(card.nameKey()), name.x() + 22, name.centerY() - 4, name.width() - 40, WHITE);
+        ui.bold(host.tr(card.nameKey()), name.x() + 22, name.centerY() - 4, name.width() - 40, TEXT_STRONG);
         ui.register(name)
                 .tooltip(host.tr(card.nameKey()) + "\n" + description(card, host) + "\n"
                         + host.tr("gui.komaedit.tools.change"))
@@ -1094,7 +1094,7 @@ public final class ToolsPanel {
                 ui.fill(row.left(2), ACCENT);
             }
             ui.label(optionLabel(choice, option, host), row.x() + 7, row.y() + 4, row.width() - 14,
-                    chosen ? WHITE : TEXT_SECONDARY);
+                    chosen ? TEXT_STRONG : TEXT_SECONDARY);
             ui.register(row).tooltip(option).group("tools:" + choice.id()).onClick(() -> {
                 set(current().with(choice.id(), option));
                 biomeSearch = "";

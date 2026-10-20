@@ -221,7 +221,7 @@ public final class FigureStages {
         ui.card(card);
         ui.fill(card.left(2), nodes >= minimum ? SUCCESS : WARNING);
         ui.bold(host.tr("gui.komaedit.path.count", nodes, MAX_PATH_POINTS), card.x() + 8, card.y() + 5,
-                card.width() - 70, WHITE);
+                card.width() - 70, TEXT_STRONG);
         ui.rightAligned(host.tr(closed ? "gui.komaedit.path.closed" : "gui.komaedit.path.open"), card.right() - 8,
                 card.y() + 5, TEXT_SECONDARY);
         ui.label(nodes >= minimum ? host.tr("gui.komaedit.path.ready") : host.tr("gui.komaedit.path.minimum",
@@ -289,9 +289,9 @@ public final class FigureStages {
                     ui.fill(row.left(2), ACCENT);
                 }
                 ui.label(String.format(Locale.ROOT, "%02d", index + 1), row.x() + 7, row.y() + 4,
-                        index == nodes - 1 ? ACCENT_HOVER : MUTED);
+                        index == nodes - 1 ? ACCENT_TEXT : MUTED);
                 ui.label(coordinates(points.get(index)), row.x() + 30, row.y() + 4, row.width() - 36,
-                        selected ? WHITE : TEXT_SECONDARY);
+                        selected ? TEXT_STRONG : TEXT_SECONDARY);
                 ui.register(row).onClick(() -> {
                     selectedPoint = point == selectedPoint ? -1 : point;
                     host.status(selectedPoint < 0 ? host.tr("gui.komaedit.status.ready")
@@ -405,9 +405,9 @@ public final class FigureStages {
         boolean hovered = ui.hovered(name);
         ui.fill(name, hovered ? CARD_HOVER : CARD);
         ui.fill(name.left(2), ACCENT);
-        ui.icon(StudioIcons.Icon.FIGURE, name.x() + 6, name.centerY() - 6, ACCENT_HOVER);
+        ui.icon(StudioIcons.Icon.FIGURE, name.x() + 6, name.centerY() - 6, ACCENT_TEXT);
         ui.icon(StudioIcons.Icon.CHEVRON_DOWN, name.right() - 15, name.centerY() - 5, hovered ? TEXT : MUTED);
-        ui.bold(shapeName(host, shape), name.x() + 22, name.centerY() - 4, name.width() - 40, WHITE);
+        ui.bold(shapeName(host, shape), name.x() + 22, name.centerY() - 4, name.width() - 40, TEXT_STRONG);
         ui.register(name)
                 .tooltip(shapeName(host, shape) + "\n" + host.tr(StudioNames.shapeDescription(shape)) + "\n"
                         + host.tr("gui.komaedit.figure.change"))
@@ -505,7 +505,7 @@ public final class FigureStages {
         boolean favorite = host.preferences().isFavorite(shape.id());
         // El sitio de la estrella se guarda siempre, para que el nombre no salte de línea al pasar el ratón.
         ui.nameLabel(shapeName(host, shape), cell.x() + 7, cell, cell.width() - SHAPE_NAME_INSET,
-                selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
+                selected ? TEXT_STRONG : hovered ? TEXT : TEXT_SECONDARY);
         if (favorite || hovered) {
             ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x() + 1, cell.centerY() - 6,
                     favorite || ui.hovered(star) ? FAVORITE : MUTED);

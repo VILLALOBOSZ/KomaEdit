@@ -266,10 +266,10 @@ public final class BlueprintStage {
             // En poco alto, el nombre y el tamaño en una línea; el resto, en el tooltip.
             String size = current.describeSize();
             int sizeWidth = ui.width(size) + 8;
-            ui.bold(current.name(), card.x() + 8, card.y() + 3, card.width() - 16 - sizeWidth, WHITE);
+            ui.bold(current.name(), card.x() + 8, card.y() + 3, card.width() - 16 - sizeWidth, TEXT_STRONG);
             ui.rightAligned(size, card.right() - 6, card.y() + 3, MUTED);
         } else {
-            ui.bold(current.name(), card.x() + 8, card.y() + 4, card.width() - 16, WHITE);
+            ui.bold(current.name(), card.x() + 8, card.y() + 4, card.width() - 16, TEXT_STRONG);
             ui.label(details, card.x() + 8, card.y() + 14, card.width() - 16, MUTED);
         }
         ui.register(new Rect(card.x(), card.y(), card.width(), 22))
@@ -410,7 +410,7 @@ public final class BlueprintStage {
             boolean hovered = ui.hovered(cell);
             ui.fill(cell, chosen ? CARD_ACTIVE : hovered ? CARD_HOVER : CARD);
             Rect image = new Rect(cell.x() + 3, cell.y() + 3, cell.width() - 6, cell.width() - 6);
-            ui.fill(image, FIELD);
+            ui.fill(image, THUMBNAIL);
             StudioImage texture = host.blueprints().thumbnail(blueprint.thumbnail());
             if (texture != null) {
                 ui.image(texture, image);
@@ -429,7 +429,7 @@ public final class BlueprintStage {
             }
             int y = image.bottom() + 3;
             for (String line : nameLines(ui, blueprint.name(), cell.width() - 8)) {
-                ui.label(line, cell.x() + 4, y, cell.width() - 8, chosen ? WHITE : TEXT);
+                ui.label(line, cell.x() + 4, y, cell.width() - 8, chosen ? TEXT_STRONG : TEXT);
                 y += StudioUi.TILE_LINE;
             }
             ui.label(blueprint.describeSize(), cell.x() + 4, y, cell.width() - 8, MUTED);

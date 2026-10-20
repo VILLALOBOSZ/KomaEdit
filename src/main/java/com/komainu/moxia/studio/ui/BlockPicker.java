@@ -106,7 +106,7 @@ public final class BlockPicker {
         int x = modal.x() + 10;
         int width = modal.width() - 20;
         Rect close = new Rect(modal.right() - 22, modal.y() + 4, 18, 18);
-        ui.bold(title.isEmpty() ? host.tr("gui.komaedit.blocks.title") : title, x, modal.y() + 9, width - 24, WHITE);
+        ui.bold(title.isEmpty() ? host.tr("gui.komaedit.blocks.title") : title, x, modal.y() + 9, width - 24, TEXT_STRONG);
         ui.toolButton(close, StudioIcons.Icon.CLOSE, false, true).tooltip(host.tr("gui.komaedit.blocks.close"))
                 .onClick(this::close);
 
@@ -123,7 +123,7 @@ public final class BlockPicker {
         boolean lookedHover = looked != null && ui.hovered(lookedRow);
         ui.fill(lookedRow, lookedHover ? CARD_HOVER : CARD);
         ui.icon(StudioIcons.Icon.EYEDROPPER, lookedRow.x() + 4, lookedRow.centerY() - 6, looked == null ? DISABLED
-                : ACCENT_HOVER);
+                : ACCENT_TEXT);
         if (looked != null) {
             ui.item(looked, lookedRow.x() + 20, lookedRow.y() + 2);
             ui.label(host.tr("gui.komaedit.blocks.looking", host.blockName(looked)), lookedRow.x() + 40,

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Temas de color del Studio (el rojo ya solo es peligro)
+
+- **Cuatro temas, Pizarra de serie.** El acento rosa sobre gris muy oscuro deja paso a **Pizarra** (grises azulados y acento azul lapislázuli). Se pueden elegir también **Prismarina** (azul de mar y turquesa), **Bosque** (musgo y verde salvia) y **Clásico** (claro, con la piedra y el texto del inventario y el morado de los encantamientos). Pizarra va de serie porque el azul no se confunde con ningún estado, se aleja de la madera, la tierra y la hierba del mundo de al lado y es el acento que se espera en un editor.
+- **Se elige en el Studio y en los ajustes.** En la chuleta (`F1` o `?`) hay una fila **Tema** que lo cambia al momento; también desde `Ctrl+K` («tema») y en `/kegui ajustes` → **Tema del Studio**. Se recuerda por jugador en `config/komaedit/studio.json`.
+- **Colores con reglas.** Todo el texto llega a WCAG AA (4,5:1) en los cuatro temas, también la fuente de píxel a GUI 2; las marcas de selección, a 3:1. El rojo queda para peligro (borrar, cancelar, errores), el ámbar para aviso y el verde o turquesa para éxito, lejos del acento. El punto del icono de vista previa en vivo pasa a verde y el holograma oculto se tacha en el color del icono, sin rojo.
+- **Estados por la forma.** Lo elegido lleva su marca de acento (también las pastillas, con una barra debajo); lo que está bajo el ratón, un borde en botones y pastillas; un botón desactivado va hueco, solo con su contorno, en vez de parecer uno normal con el texto gris.
+- **Miniaturas más legibles.** Las de especies, tejados, rocas, sellos y planos van sobre un fondo propio, más claro y neutro que la tarjeta: el abeto ya no se pierde en los temas oscuros.
+- De paso: las teclas de las etapas en la navegación iban en el gris de lo desactivado (no llegaban al contraste); ahora van en el de las notas.
+- Código: los colores del Studio son **fichas** con nombre en `StudioTheme` (fondo, superficie, tarjeta, borde, foco, acento, acento suave, texto sobre el acento, texto, texto secundario, notas, desactivado, éxito, aviso, peligro, fondo de miniatura…), rellenas por el tema elegido (`StudioPalette`) con `StudioTheme.use`. `WHITE` desaparece: `TEXT_STRONG` sobre fondos y `ON_ACCENT` sobre el acento; `ACCENT_TEXT` es el acento como texto o icono. Ningún color se escribe a mano fuera de las fichas: lo vigila `StudioThemeTokensTest` (los colores del mundo de las miniaturas van en constantes con nombre). `StudioThemeContrastTest` mide cada pareja texto/fondo de cada tema y, además, cada texto del Studio pintado de verdad con cada tema en 23 pantallas a 1080p y a 854×480; `StudioThemeSwitchTest` prueba el cambio desde la chuleta, la paleta y las preferencias. Maquetas de Herramientas, Árbol, Tejado y Planos con cada tema, la comparativa y la hoja de fichas en `docs/renders/studio/temas/`; las demás maquetas, regeneradas con Pizarra. Nada probado aún dentro de Minecraft.
+
 ## 1.8.0 (estable, 2026-10-20)
 
 ### Lo que pidió el autor tras probar la 1.7.0: trabajar más deprisa

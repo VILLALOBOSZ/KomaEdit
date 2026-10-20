@@ -91,7 +91,7 @@ public final class JobStrip {
         return switch (phase) {
             case WAITING -> StudioTheme.WARNING;
             case PLACING -> StudioTheme.SUCCESS;
-            default -> StudioTheme.ACCENT_HOVER;
+            default -> StudioTheme.ACCENT_TEXT;
         };
     }
 }

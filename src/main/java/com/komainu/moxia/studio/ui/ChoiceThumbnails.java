@@ -49,6 +49,12 @@ public final class ChoiceThumbnails {
     private static final int FOLIAGE = 0x6AA136;
     private static final int SPRUCE = 0x5E8F5E;
     private static final int BIRCH = 0x80A755;
+    /** Colores del mundo que no salen de la tabla de bloques: el suelo bajo árboles y rocas y el cristal. */
+    private static final int DIRT = 0x7A5A3A;
+    private static final int GRASS = 0x6E9A3E;
+    private static final int GLASS = 0xA9C9D9;
+    /** Un bloque sin color medido. */
+    private static final int UNMEASURED = 0x8A8A8A;
     private static final Set<String> TINTED = Set.of("minecraft:oak_leaves", "minecraft:jungle_leaves",
             "minecraft:acacia_leaves", "minecraft:dark_oak_leaves", "minecraft:mangrove_leaves", "minecraft:vine");
     private static volatile boolean blocking;
@@ -130,7 +136,7 @@ public final class ChoiceThumbnails {
             int rgb = role.foliage() ? shade(leaves, NatureVoxels.shade(voxels.info(key))) : wood;
             box.set(grid, key, rgb, 1);
         }
-        box.ground(grid, 0x7A5A3A);
+        box.ground(grid, DIRT);
         return grid;
     }
 
@@ -175,7 +181,7 @@ public final class ChoiceThumbnails {
                     / 256))));
             box.set(grid, key, rgb, 1);
         }
-        box.ground(grid, 0x6E9A3E);
+        box.ground(grid, GRASS);
         return grid;
     }
 
@@ -194,13 +200,12 @@ public final class ChoiceThumbnails {
         int roofColor = color("minecraft:spruce_planks");
         int ridge = darker(roofColor, 0.82);
         int gable = color("minecraft:oak_planks");
-        int glass = 0xA9C9D9;
         for (int index = 0; index < positions.length; index++) {
             byte material = result.materials()[index];
             int rgb = switch (material) {
                 case RoofResult.RIDGE -> ridge;
                 case RoofResult.WALL -> gable;
-                case RoofResult.WINDOW_X, RoofResult.WINDOW_Z -> glass;
+                case RoofResult.WINDOW_X, RoofResult.WINDOW_Z -> GLASS;
                 default -> roofColor;
             };
             box.set(grid, positions[index], rgb, 0);
@@ -216,7 +221,7 @@ public final class ChoiceThumbnails {
                         && (z == footprint.minZ() || z == footprint.maxZ());
                 for (int y = -wallHeight; y < 0; y++) {
                     boolean window = !corner && y == -2 && (x + z) % 3 == 0;
-                    box.set(grid, x, y, z, corner ? beam : window ? glass : wall);
+                    box.set(grid, x, y, z, corner ? beam : window ? GLASS : wall);
                 }
             }
         }
@@ -237,7 +242,7 @@ public final class ChoiceThumbnails {
     /** Color medio de la textura del bloque (la tabla de colores medidos), o gris si no está. */
     static int color(String id) {
         BlockColorCatalog.Measured measured = BlockColorCatalog.measured().get(id);
-        return measured == null ? 0x8A8A8A : measured.rgb() & 0xFFFFFF;
+        return measured == null ? UNMEASURED : measured.rgb() & 0xFFFFFF;
     }
 
     private static int multiply(int base, int tint) {
