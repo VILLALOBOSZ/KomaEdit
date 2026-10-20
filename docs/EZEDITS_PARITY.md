@@ -323,9 +323,7 @@ La wiki solo nombra `//ezsymmetry` y sus cuatro permisos, sin parámetros ni com
 
 - **Simetría traslacional y `update`** (`//ezsymmetry translational|update`): la wiki no dice qué hacen más allá del nombre.
 - **Capas apiladas en la vidriera de imagen**: `/komaedit image` pone una capa de vidrio por píxel; mezclar varias capas tintadas por píxel, como hace `glassgradient`, queda para más adelante.
-- **`/ezedits quiet`, `debugprint`, `wiki` y `//ezdebug`**: KomaEdit no tiene barras de progreso ni entidades de visualización que limpiar, y su ayuda está en `/komaedit help`.
-- **Simetría** (`//ezsymmetry reflectional|rotational|translational|update`) y **vidriera de imagen** (`//stainedglassimage`): las dos son experimentales en ezEdits y piden un sistema propio (reflejar cada edición en tiempo real; leer y cuantizar imágenes). Son trabajos grandes para ramas aparte.
-- **`debugprint` y `//ezdebug`**: KomaEdit no tiene barras de progreso ni entidades de visualización que limpiar.
+- **`debugprint` y `//ezdebug`**: no hacen falta. La barra de progreso y los block displays de la vista previa solo existen en el cliente de quien edita (no son entidades del mundo) y se retiran con `/komaedit cancel`, al caducar, al cambiar de dimensión y al salir; cualquier display con la etiqueta `komaedit_preview` que llegara a cargarse se borra solo.
 - **Visualizador de alineación** de los pinceles de colocación (BlockDisplay por jugador).
 - **`#savedselection`** como máscara.
 - **Código de `palette encode`** compatible con el de ezEdits (no está documentado).

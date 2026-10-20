@@ -20,6 +20,14 @@ public interface BrushOperation {
         return 0xE7E7E7;
     }
 
+    /**
+     * Patrón de WorldEdit de las entradas del plan sin estado propio ({@code addPattern}); los pinceles que ponen
+     * siempre un estado concreto no lo usan.
+     */
+    default String pattern() {
+        return "air";
+    }
+
     /** Zona a capturar antes de calcular, o {@code null} si el pincel no necesita leer el mundo. */
     Capture capture();
 

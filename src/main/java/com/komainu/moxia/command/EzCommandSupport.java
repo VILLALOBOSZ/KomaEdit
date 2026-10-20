@@ -70,6 +70,14 @@ final class EzCommandSupport {
         send(player, Text.literal(message).formatted(Formatting.GREEN));
     }
 
+    /**
+     * Aviso de «N bloques en cola»: verde, pero como los informativos no sale con {@code /komaedit quiet} (el de
+     * «completada» sale siempre).
+     */
+    static void queued(ServerPlayerEntity player, String message) {
+        QuietMode.info(player, prefix().append(Text.literal(message).formatted(Formatting.GREEN)));
+    }
+
     /** Mensaje informativo: no sale si el jugador activó {@code /komaedit quiet}. */
     static void info(ServerPlayerEntity player, String message) {
         QuietMode.info(player, prefix().append(Text.literal(message).formatted(Formatting.GRAY)));

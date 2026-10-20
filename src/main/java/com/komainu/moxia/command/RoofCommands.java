@@ -43,6 +43,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -188,6 +189,7 @@ final class RoofCommands {
         String description = "Tejado " + settings.type().displayName().toLowerCase(Locale.ROOT);
         UUID playerId = player.getUuid();
         MinecraftServer server = player.getServer();
+        ServerWorld origin = player.getServerWorld();
         RegionOperationService.capture(player, capture, 0, description, snapshot -> {
             SnapshotWorld world = new SnapshotWorld(snapshot);
             EzCommandSupport.info(player, description + ": calculando fuera del hilo del servidor…");
@@ -207,8 +209,8 @@ final class RoofCommands {
                         RoofResult result = RoofGenerator.generate(plan, settings, world);
                         return new PlannedRoof(result, result.plan(world), detected, plan);
                     },
-                    planned -> server.execute(() -> finishRoof(server, playerId, settings, materials, planned,
-                            description)),
+                    planned -> server.execute(() -> finishRoof(server, playerId, origin, settings, materials,
+                            planned, description)),
                     throwable -> report(server, playerId, description, throwable)
             );
         });
@@ -217,10 +219,14 @@ final class RoofCommands {
     private record PlannedRoof(RoofResult result, PackedBlockPlan plan, String detectedWall, Footprint footprint) {
     }
 
-    private static void finishRoof(MinecraftServer server, UUID playerId, RoofSettings settings,
+    private static void finishRoof(MinecraftServer server, UUID playerId, ServerWorld origin, RoofSettings settings,
                                    RoofMaterials materials, PlannedRoof planned, String description) {
         ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
         if (current == null) {
+            return;
+        }
+        if (current.getServerWorld() != origin) {
+            EzCommandSupport.fail(current.getCommandSource(), description + ": " + RegionOperationService.OTHER_WORLD);
             return;
         }
         try {
@@ -242,7 +248,7 @@ final class RoofCommands {
                 try {
                     int queued = BatchEditService.submitStyled(current, planned.plan(), pattern, description);
                     if (!PlanPreviews.holds(playerId, planned.plan())) {
-                        EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques · "
+                        EzCommandSupport.queued(current, description + " en cola: " + queued + " bloques · "
                                 + result.pieceCount() + " losas y escaleras · " + summary
                                 + " · //undo para deshacer");
                     }
@@ -503,7 +509,7 @@ final class RoofCommands {
                 }
                 int pieces = plan.pieceCount();
                 if (!PlanPreviews.holds(playerId, plan)) {
-                    EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
+                    EzCommandSupport.queued(current, description + " en cola: " + queued + " bloques"
                             + (pieces > 0 ? " · " + pieces + " losas y escaleras" : "") + " · //undo para deshacer");
                 }
             } catch (IllegalArgumentException | IllegalStateException exception) {

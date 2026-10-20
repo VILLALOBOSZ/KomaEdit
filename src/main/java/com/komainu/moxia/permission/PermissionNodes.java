@@ -171,6 +171,8 @@ public final class PermissionNodes {
         add(build + ".brush.tree", Pack.INTERMEDIATE, build, null, "/komaedit pincel tree");
         add(build + ".brush.rock", Pack.INTERMEDIATE, build, null, "/komaedit pincel rock");
         add(build + ".brush.heightmap", Pack.INTERMEDIATE, build, null, "/komaedit pincel heightmap");
+        add(build + ".brush.sculpt", Pack.INTERMEDIATE, build, null,
+                "/komaedit pincel sculpt (esculpir, roca, soldar, fundir, rugosidad, grietas)");
         add(build + ".terrain.ramp", Pack.INTERMEDIATE, build, null, "/komaedit terreno rampa");
         add(build + ".terrain.river", Pack.INTERMEDIATE, build, null, "/komaedit terreno rio|arroyo");
         add(build + ".terrain.canyon", Pack.INTERMEDIATE, build, null, "/komaedit terreno canon|barranco");

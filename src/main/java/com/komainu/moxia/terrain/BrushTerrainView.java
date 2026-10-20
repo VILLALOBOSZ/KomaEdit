@@ -1,6 +1,6 @@
 package com.komainu.moxia.terrain;
 
-import com.komainu.moxia.brush.ez.BlockFilter;
+import com.komainu.moxia.brush.ez.BrushMask;
 import com.komainu.moxia.brush.ez.SnapshotWorld;
 import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -19,11 +19,14 @@ public final class BrushTerrainView implements TerrainView {
     private final int maximumX;
     private final int minimumZ;
     private final int maximumZ;
-    private final BlockFilter mask;
+    private final BrushMask mask;
+    private final SnapshotWorld world;
     private final Map<BlockState, TerrainCell> cells = new IdentityHashMap<>();
 
-    public BrushTerrainView(WorldSnapshot snapshot, BlockVector3 center, int horizontalRadius, BlockFilter mask) {
+    /** @param mask la {@code -m} ya conectada a la foto, o {@code null} */
+    public BrushTerrainView(WorldSnapshot snapshot, BlockVector3 center, int horizontalRadius, BrushMask mask) {
         this.snapshot = snapshot;
+        this.world = new SnapshotWorld(snapshot);
         this.minimumX = center.x() - horizontalRadius;
         this.maximumX = center.x() + horizontalRadius;
         this.minimumZ = center.z() - horizontalRadius;
@@ -87,10 +90,6 @@ public final class BrushTerrainView implements TerrainView {
 
     @Override
     public boolean maskAllows(int x, int y, int z) {
-        if (mask == null) {
-            return true;
-        }
-        BlockState state = snapshot.get(x, y, z);
-        return mask.matches(state.getBlockType().id(), SnapshotWorld.classify(state));
+        return mask == null || mask.matches(world, x, y, z);
     }
 }

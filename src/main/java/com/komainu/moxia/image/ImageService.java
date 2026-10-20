@@ -8,6 +8,7 @@ import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.shape.smooth.SmoothMaterials;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
@@ -64,7 +65,7 @@ public final class ImageService {
         }
         ResolvedPalette palette = resolvePalette(player, request.palette());
         if (!palette.missing().isEmpty()) {
-            info(player, "Sin color conocido, no se usan: " + String.join(", ", palette.missing()));
+            warn(player, "Sin color conocido, no se usan: " + String.join(", ", palette.missing()));
         }
         BlockState transparent = switch (request.transparency()) {
             case AIR -> BlockTypes.AIR.getDefaultState();
@@ -174,7 +175,7 @@ public final class ImageService {
                 if (PlanPreviews.holds(player.getUuid(), built.plan())) {
                     return;
                 }
-                success(player, "Imagen «" + name + "»: " + summary + " · en cola " + queued
+                queued(player, "Imagen «" + name + "»: " + summary + " · en cola " + queued
                         + " bloques · //undo para deshacer");
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 fail(player, "Imagen «" + name + "»: " + readable(exception));
@@ -410,12 +411,19 @@ public final class ImageService {
         return message == null || message.isBlank() ? cause.getClass().getSimpleName() : message;
     }
 
+    /** Informativo: no sale con {@code /komaedit quiet}. */
     private static void info(ServerPlayerEntity player, String message) {
-        player.sendMessage(prefix().append(Text.literal(message).formatted(Formatting.GRAY)), false);
+        QuietMode.info(player, prefix().append(Text.literal(message).formatted(Formatting.GRAY)));
     }
 
-    private static void success(ServerPlayerEntity player, String message) {
-        player.sendMessage(prefix().append(Text.literal(message).formatted(Formatting.GREEN)), false);
+    /** Aviso que sale siempre. */
+    private static void warn(ServerPlayerEntity player, String message) {
+        player.sendMessage(prefix().append(Text.literal(message).formatted(Formatting.YELLOW)), false);
+    }
+
+    /** El aviso de bloques en cola: tampoco sale con {@code /komaedit quiet} (el de «completada» sí). */
+    private static void queued(ServerPlayerEntity player, String message) {
+        QuietMode.info(player, prefix().append(Text.literal(message).formatted(Formatting.GREEN)));
     }
 
     private static void fail(ServerPlayerEntity player, String message) {
