@@ -1239,7 +1239,8 @@ public final class StudioView {
     public String worldHint(StudioHost host) {
         WorldAction action = worldAction(host);
         String key = switch (action) {
-            case NONE -> "gui.komaedit.hint.world.none";
+            case NONE -> stage == StudioStage.TOOLS && !tools.browsing() && tools.selected().target() == ToolTarget.HAND
+                    ? "gui.komaedit.hint.world.brush_first" : "gui.komaedit.hint.world.none";
             case GHOST -> "gui.komaedit.hint.world.ghost";
             case POINTS -> "gui.komaedit.hint.world.points";
             case PLACE -> stage == StudioStage.BLUEPRINTS ? "gui.komaedit.hint.world.place_blueprint"
@@ -1248,7 +1249,8 @@ public final class StudioView {
             case PAINT -> "gui.komaedit.hint.world.paint";
         };
         String what = action == WorldAction.PLACE && stage == StudioStage.TOOLS
-                ? host.tr(tools.selected().buildKey()).toLowerCase(java.util.Locale.ROOT) : "";
+                ? host.tr(tools.selected().buildKey()).toLowerCase(java.util.Locale.ROOT)
+                : key.endsWith("brush_first") ? host.tr(tools.selected().buildKey()) : "";
         return host.tr(key, what) + " · " + host.tr("gui.komaedit.hint.world.common");
     }
 

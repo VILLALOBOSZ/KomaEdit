@@ -167,6 +167,35 @@ class StudioMockupsTest {
             scenes.add(new Scene("854_gui2_variaciones_apagadas_" + suffix + ".png", 427, 240, 2, language,
                     driver -> variations(driver, false)));
         }
+        // Lo primero que ve quien abre el Studio: Figuras sin puntos.
+        scenes.add(new Scene("1080p_gui3_primera_vez_es.png", 640, 360, 3, "es_es", driver -> {
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.host.status = "";
+        }));
+        scenes.add(new Scene("854_gui2_primera_vez_en.png", 427, 240, 2, "en_us", driver -> {
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.host.status = "";
+        }));
+        // La biblioteca de la figura: recetas guardadas e instancias construidas.
+        scenes.add(new Scene("1080p_gui3_recetas_es.png", 640, 360, 3, "es_es", driver -> {
+            figure(driver);
+            driver.host.recipes.add(driver.view.figure().draft().withName("trenza_puente"));
+            driver.host.recipes.add(com.komainu.moxia.recipe.ProceduralRecipe.defaults().withName("escamas_muro"));
+            driver.view.selectStage(StudioStage.RECIPES, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_instancias_es.png", 640, 360, 3, "es_es", driver -> {
+            figure(driver);
+            driver.host.instances.add(new com.komainu.moxia.recipe.ProceduralInstanceSummary("a1",
+                    driver.view.figure().draft().withName("trenza_puente"), 3, 12_340, 0L));
+            driver.view.selectStage(StudioStage.INSTANCES, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_sello_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "stamp");
+            driver.mouseX = 200;
+            driver.mouseY = 220;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
+        }));
         scenes.add(new Scene("1080p_gui3_material_es.png", 640, 360, 3, "es_es", driver -> {
             figure(driver);
             scrollTo(driver, "MATERIAL");

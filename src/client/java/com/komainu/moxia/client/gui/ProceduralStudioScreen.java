@@ -548,7 +548,10 @@ public final class ProceduralStudioScreen extends Screen {
         BlockPos overlay = null;
         boolean overWorld = view.frame() == null || mouseX < view.frame().panel().x();
         StudioView.WorldAction action = view.worldAction(host);
-        BlockHitResult hit = overWorld && !view.modal() ? cursorHit(mouseX, mouseY) : null;
+        // Solo se lanza el rayo cuando lo que hay bajo el cursor cambia lo que se ve (el fantasma tiene el suyo).
+        boolean aims = action == StudioView.WorldAction.POINTS || action == StudioView.WorldAction.SELECT
+                || action == StudioView.WorldAction.PAINT;
+        BlockHitResult hit = overWorld && aims ? cursorHit(mouseX, mouseY) : null;
         if (action == StudioView.WorldAction.POINTS && hit != null && !pathDrag.active()) {
             overlay = hit.getBlockPos().offset(hit.getSide()).toImmutable();
         }

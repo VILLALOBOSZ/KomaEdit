@@ -2,6 +2,7 @@ package com.komainu.moxia.studio.ui;
 
 import com.komainu.moxia.gradient.GradientAxis;
 import com.komainu.moxia.gradient.GradientPalette;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.recipe.CurveEasing;
 import com.komainu.moxia.recipe.MaterialMetric;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
@@ -261,6 +262,10 @@ public final class FigureStages {
                 })
                 .tooltip(host.tr("gui.komaedit.help.path.clear"));
 
+        if (nodes == 0 && !compact) {
+            // Sin puntos, lo primero que hay que saber: cómo se pone uno.
+            ui.paragraph(column, host.tr("gui.komaedit.path.first"), TEXT_SECONDARY, 0);
+        }
         if (nodes >= minimum) {
             ui.section(column, host.tr("gui.komaedit.path.use_with"));
             String[] targets = {"figure", "river", "ramp", "tree", "loft"};
@@ -367,6 +372,11 @@ public final class FigureStages {
         }
         drawShapeHeader(ui, column, host);
         PathShape shape = draft.shape();
+        if (!pathReady(host)) {
+            // Lo primero que hay que saber: la figura va por un camino, y sus puntos se ponen con un clic en el mundo.
+            ui.paragraph(column, host.tr("gui.komaedit.figure.need_points", requiredPoints(host)
+                    - host.pathPoints().size()), WARNING, 2);
+        }
         if (!compact) {
             ui.paragraph(column, host.tr(StudioNames.shapeDescription(shape)), MUTED, 2);
             drawPresets(ui, column, host);
@@ -979,6 +989,7 @@ public final class FigureStages {
         }
         List<ProceduralInstanceSummary> instances = host.instances();
         ui.section(column, host.tr("gui.komaedit.instance.list", instances.size()));
+        ui.paragraph(column, host.tr("gui.komaedit.instance.how"), MUTED, 0);
         if (instances.isEmpty()) {
             ui.paragraph(column, host.tr("gui.komaedit.instance.empty"), MUTED, 0);
             return;
@@ -989,8 +1000,9 @@ public final class FigureStages {
                 continue;
             }
             String subtitle = host.tr("gui.komaedit.instance.summary", shapeName(host, instance.recipe().shape()),
-                    instance.blockCount(), instance.pathPoints());
+                    ProgressLine.group(instance.blockCount()), instance.pathPoints());
             ui.listItem(row, instance.recipe().name(), subtitle, instance.id().equals(selectedInstanceId), 0)
+                    .hint(host.tr("gui.komaedit.instance.pick_hint"))
                     .onClick(() -> {
                         selectedInstanceId = instance.id();
                         draft = instance.recipe();
@@ -1028,6 +1040,7 @@ public final class FigureStages {
                     host.status(host.tr("gui.komaedit.status.recipe.import", draft.name()));
                 });
 
+        ui.paragraph(column, host.tr("gui.komaedit.recipe.how"), MUTED, 0);
         List<ProceduralRecipe> recipes = host.recipes();
         ui.section(column, host.tr("gui.komaedit.recipe.saved", recipes.size()));
         if (recipes.isEmpty()) {
@@ -1041,6 +1054,7 @@ public final class FigureStages {
             }
             ui.listItem(item, recipe.name(), shapeName(host, recipe.shape()) + " · " + materialSummary(host, recipe),
                             recipe.name().equals(draft.name()), 22)
+                    .hint(host.tr("gui.komaedit.recipe.load_hint"))
                     .onClick(() -> {
                         draft = recipe;
                         nameInput = recipe.name();

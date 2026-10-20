@@ -70,6 +70,37 @@ class TaskClicksTest {
         assertEquals(2, studio.clicks());
     }
 
+    /**
+     * El tejado sin selección hecha. Antes había que cerrar el Studio y marcar //pos1 y //pos2 (o la varita) y volver;
+     * ahora se arrastra la caja en el mundo con el Studio abierto: un arrastre de esquina a esquina de los muros.
+     */
+    @Test
+    void roofWithoutASelectionYet() {
+        StudioDriver studio = fresh(false, 0);
+        studio.click("Herramientas");
+        studio.click("Tejado");
+        studio.click("Cuatro");
+        assertEquals(StudioView.WorldAction.SELECT, studio.view.worldAction(studio.host), "arrastrar selecciona");
+        // El arrastre en el mundo, como lo hace la pantalla: de una esquina de los muros a la otra.
+        com.komainu.moxia.studio.world.BoxSelect box = new com.komainu.moxia.studio.world.BoxSelect();
+        com.komainu.moxia.shape.Vec3 eye = new com.komainu.moxia.shape.Vec3(-8.5, 80.5, -8.5);
+        box.press(new com.komainu.moxia.gizmo.GizmoMath.Ray(eye, new com.komainu.moxia.shape.Vec3(0.5, 69.5, 0.5)
+                .subtract(eye)), new int[]{0, 64, 0}, 100.0, 0);
+        box.drag(new com.komainu.moxia.gizmo.GizmoMath.Ray(eye, new com.komainu.moxia.shape.Vec3(9.5, 69.5, 11.5)
+                .subtract(eye)), new int[]{9, 69, 11});
+        var selection = box.release(new int[]{9, 69, 11}, 100).box();
+        assertEquals(10, selection.sizeX());
+        assertEquals(6, selection.sizeY());
+        assertEquals(12, selection.sizeZ());
+        // El servidor la recibe y el Studio la ve.
+        studio.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), true, selection.volume(), 0, false);
+        studio.host.info = new ToolsInfo(true, new int[]{selection.sizeX(), selection.sizeY(), selection.sizeZ()},
+                List.of(), Map.of(), Map.of(), ToolsInfo.Symmetry.OFF, null, List.of(), null);
+        studio.click("Construir tejado");
+        assertEquals("komaedit roof hip spruce_planks -v", studio.host.last());
+        assertEquals(4, studio.clicks(), "herramienta, tejado, tipo y construir, más un arrastre en el mundo");
+    }
+
     @Test
     void aRiverAlongAPath() {
         StudioDriver studio = fresh(false, 0);
