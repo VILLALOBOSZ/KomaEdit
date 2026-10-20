@@ -362,9 +362,12 @@ public final class StudioView {
             StudioUi.Widget widget = ui.at(mouseX, mouseY);
             if (widget != null) {
                 // Sobre el número, la ayuda corta (qué cambia y sus extremos): la entera taparía la fila.
-                String text = widget.overValue(mouseX, mouseY) && !widget.brief().isEmpty() ? widget.brief()
-                        : widget.tooltip();
-                if (!text.isEmpty()) {
+                boolean brief = widget.overValue(mouseX, mouseY) && !widget.brief().isEmpty();
+                String text = brief ? widget.brief() : widget.tooltip();
+                if (!text.isEmpty() && !brief && widget.tooltipAnchor() != null) {
+                    // Pegado al control (debajo o encima) y dentro del panel: no tapa la fila del ratón.
+                    ui.tooltip(text, widget.tooltipAnchor(), frame.panel());
+                } else if (!text.isEmpty()) {
                     ui.tooltip(text, mouseX, mouseY, frame.screen());
                 }
             }

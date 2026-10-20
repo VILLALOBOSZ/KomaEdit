@@ -276,6 +276,24 @@ class StudioMockupsTest {
             driver.view.status(driver.host.tr("gui.komaedit.tools.status.brush_synced",
                     driver.host.tr("gui.komaedit.tools.stamp")), driver.host.now());
         }));
+        // La galería de sellos de relieve: por categorías, con buscador y favoritos.
+        scenes.add(new Scene("1080p_gui3_sello_galeria_es.png", 640, 360, 3, "es_es", driver -> {
+            stampGallery(driver);
+            int[] tile = driver.where("Cumbre doble");
+            driver.mouseX = tile[0];
+            driver.mouseY = tile[1];
+        }));
+        scenes.add(new Scene("1080p_gui3_sello_buscar_es.png", 640, 360, 3, "es_es", driver -> {
+            stampGallery(driver);
+            driver.clickKey("tools:stamp_search");
+            driver.type("isla");
+        }));
+        scenes.add(new Scene("1080p_gui2_sello_galeria_en.png", 960, 540, 2, "en_us", driver -> {
+            stampGallery(driver);
+            driver.clickValue("Category");
+            driver.clickValue("Category");
+        }));
+        scenes.add(new Scene("854_gui2_sello_es.png", 427, 240, 2, "es_es", StudioMockupsTest::stampGallery));
         // 1080p con GUI 4 (la automática): compacto.
         scenes.add(new Scene("1080p_gui4_arbol_es.png", 480, 270, 4, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui4_tejado_en.png", 480, 270, 4, "en_us", driver -> tools(driver, "roof")));
@@ -346,6 +364,13 @@ class StudioMockupsTest {
             driver.view.tools().select(ToolCatalog.byId(tool), driver.host);
         }
         driver.host.status = "";
+    }
+
+    /** El pincel de relieve con dos sellos favoritos marcados. */
+    private static void stampGallery(StudioDriver driver) {
+        driver.host.preferences.toggleStampFavorite("volcan");
+        driver.host.preferences.toggleStampFavorite("pico");
+        tools(driver, "stamp");
     }
 
     private static void path(StudioDriver driver, int points) {

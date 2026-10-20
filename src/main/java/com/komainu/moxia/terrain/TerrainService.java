@@ -53,7 +53,7 @@ public final class TerrainService {
         }
     };
 
-    /** Los sellos de {@code config/komaedit/heightmaps}; la primera vez escribe allí los de serie que falten. */
+    /** Los sellos de {@code config/komaedit/heightmaps}; la primera vez crea la carpeta con su explicación. */
     public static StampCatalog catalog() {
         StampCatalog current = catalog;
         if (current == null) {
@@ -62,13 +62,12 @@ public final class TerrainService {
                 if (current == null) {
                     current = new StampCatalog(KomaEditConfig.directory().resolve("heightmaps"));
                     try {
-                        int written = current.writeDefaults();
-                        if (written > 0) {
-                            KomaEditMod.LOGGER.info("KomaEdit: {} sellos de relieve de serie en {}", written,
+                        if (current.writeDefaults() > 0) {
+                            KomaEditMod.LOGGER.info("KomaEdit: carpeta para sellos de relieve propios en {}",
                                     current.directory());
                         }
                     } catch (IOException exception) {
-                        KomaEditMod.LOGGER.warn("KomaEdit: no se pudieron escribir los sellos de serie en {}: {}",
+                        KomaEditMod.LOGGER.warn("KomaEdit: no se pudo preparar la carpeta de sellos {}: {}",
                                 current.directory(), exception.getMessage());
                     }
                     catalog = current;

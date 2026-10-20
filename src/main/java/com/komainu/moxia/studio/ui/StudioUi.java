@@ -845,11 +845,43 @@ public final class StudioUi {
         if (text == null || text.isBlank()) {
             return;
         }
+        Tooltip tip = tooltipLines(text, TOOLTIP_WIDTH);
+        int left = x + 10;
+        int top = y - 6;
+        if (left + tip.width() > screen.right() - 2) {
+            left = Math.max(screen.x() + 2, x - 10 - tip.width());
+        }
+        top = Math.clamp(top, screen.y() + 2, Math.max(screen.y() + 2, screen.bottom() - tip.height() - 2));
+        drawTooltip(tip, left, top);
+    }
+
+    /**
+     * Tooltip pegado a un control y dentro de {@code bounds} (el panel): debajo de {@code anchor} o, si no cabe, encima,
+     * así no tapa la fila donde está el ratón.
+     */
+    public void tooltip(String text, Rect anchor, Rect bounds) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        Tooltip tip = tooltipLines(text, Math.max(60, Math.min(TOOLTIP_WIDTH, bounds.width() - 14)));
+        int left = Math.clamp(anchor.x(), bounds.x() + 2,
+                Math.max(bounds.x() + 2, bounds.right() - tip.width() - 2));
+        int top = anchor.bottom() + 2;
+        if (top + tip.height() > bounds.bottom() - 2) {
+            top = Math.max(bounds.y() + 2, anchor.y() - tip.height() - 2);
+        }
+        drawTooltip(tip, left, top);
+    }
+
+    private record Tooltip(List<String> lines, List<Integer> colors, int width, int height) {
+    }
+
+    private Tooltip tooltipLines(String text, int wrapWidth) {
         List<String> lines = new ArrayList<>();
         List<Integer> colors = new ArrayList<>();
         String[] paragraphs = text.split("\n");
         for (int index = 0; index < paragraphs.length; index++) {
-            for (String line : wrap(paragraphs[index], TOOLTIP_WIDTH)) {
+            for (String line : wrap(paragraphs[index], wrapWidth)) {
                 lines.add(line);
                 colors.add(index == 0 ? TEXT : TEXT_SECONDARY);
             }
@@ -858,21 +890,17 @@ public final class StudioUi {
         for (String line : lines) {
             textWidth = Math.max(textWidth, width(line));
         }
-        int boxWidth = textWidth + 10;
-        int boxHeight = lines.size() * LINE + 7;
-        int left = x + 10;
-        int top = y - 6;
-        if (left + boxWidth > screen.right() - 2) {
-            left = Math.max(screen.x() + 2, x - 10 - boxWidth);
-        }
-        top = Math.clamp(top, screen.y() + 2, Math.max(screen.y() + 2, screen.bottom() - boxHeight - 2));
+        return new Tooltip(lines, colors, textWidth + 10, lines.size() * LINE + 7);
+    }
+
+    private void drawTooltip(Tooltip tip, int left, int top) {
         canvas.beginOverlay();
-        Rect box = new Rect(left, top, boxWidth, boxHeight);
+        Rect box = new Rect(left, top, tip.width(), tip.height());
         fill(box, SURFACE);
         border(box, OUTLINE);
         fill(new Rect(box.x(), box.y(), 2, box.height()), ACCENT);
-        for (int index = 0; index < lines.size(); index++) {
-            label(lines.get(index), box.x() + 6, box.y() + 4 + index * LINE, colors.get(index));
+        for (int index = 0; index < tip.lines().size(); index++) {
+            label(tip.lines().get(index), box.x() + 6, box.y() + 4 + index * LINE, tip.colors().get(index));
         }
         canvas.endOverlay();
     }
@@ -946,6 +974,7 @@ public final class StudioUi {
         private IntConsumer scroll;
         private Runnable reset;
         private String tooltip = "";
+        private Rect tooltipAnchor;
         private String brief = "";
         private String hint = "";
         private String group;
@@ -978,6 +1007,17 @@ public final class StudioUi {
         public Widget tooltip(String text) {
             this.tooltip = text == null ? "" : text;
             return this;
+        }
+
+        /** El tooltip sale pegado a {@code anchor} (debajo o encima) en vez de junto al ratón. */
+        public Widget tooltipBelow(Rect anchor) {
+            this.tooltipAnchor = anchor;
+            return this;
+        }
+
+        /** Dónde se pega el tooltip, o {@code null} para sacarlo junto al ratón. */
+        public Rect tooltipAnchor() {
+            return tooltipAnchor;
         }
 
         /** La ayuda corta que sale sobre el valor (donde la entera taparía lo que se está cambiando). */

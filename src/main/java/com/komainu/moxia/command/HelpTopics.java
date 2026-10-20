@@ -242,11 +242,14 @@ public final class HelpTopics {
             )),
             new Topic("terrain", "Terraformado", List.of("terreno", "terraformar", "rampa", "rio", "canon",
                     "relieve", "sellos", "heightmap"), List.of(
-                    new Entry("/komaedit pincel heightmap <sello> [radio] [altura] [elevar|bajar|aplanar] [paleta] "
-                            + "[-i intensidad] [-r mirada|azar|grados] [-m máscara] [-c neutro] [-p]",
-                            "Pincel de relieve con un sello en grises (alias relieve, sello)"),
-                    new Entry("/komaedit pincel heightmap montana 24 30 natural -r azar",
-                            "Ejemplo: montañas giradas al azar con hierba, piedra y nieve"),
+                    new Entry("/komaedit pincel heightmap <sello> [radio] [altura] [sumar|restar|maximo|aplanar|"
+                            + "suavizar] [paleta|auto] [-i intensidad] [-r mirada|azar|grados] [-x variación] "
+                            + "[-s semilla] [-k] [-m máscara] [-c neutro] [-p]",
+                            "Pincel de relieve: 80 sellos; cada clic varía (Mayús+F: semilla nueva; -k: iguales)"),
+                    new Entry("/komaedit pincel heightmap montana 24 -r azar",
+                            "Ejemplo: montañas a su altura natural, con hierba, roca y nieve arriba"),
+                    new Entry("/komaedit pincel heightmap cordillera 30 maximo",
+                            "Ejemplo: una cordillera larga a varios clics sin que se apilen"),
                     new Entry("/komaedit pincel pintar [paleta] [radio] [huella|altura|pendiente|ruido] [fuerza] "
                             + "[-h huella] [-s semilla] [-k] [-e espaciado] [-u dureza] [-j variación] [-d capas] "
                             + "[-t] [-c] [-x] [-b bloques] [-m máscara] [-y desde..hasta] [-a grados..grados] "
@@ -256,7 +259,8 @@ public final class HelpTopics {
                             "Ejemplo: hierba en lo llano y piedra en lo empinado; mantén el clic derecho y arrastra"),
                     new Entry("/komaedit pincel pintar nevado 12 altura -h montana -k",
                             "Ejemplo: nieve en lo alto con la huella de un sello y la semilla bloqueada"),
-                    new Entry("/komaedit terreno sellos", "Sellos de serie y PNG de config/komaedit/heightmaps"),
+                    new Entry("/komaedit terreno sellos [categoría]",
+                            "Los 80 sellos de serie por categoría y los PNG de config/komaedit/heightmaps"),
                     new Entry("/komaedit terreno rampa [plano|cono] [ancho] [transición] [paleta] [-t talud] [-u] [-e]",
                             "Rampa del primer al último punto de la trayectoria (o //pos1 → //pos2)"),
                     new Entry("/komaedit terreno rio|arroyo|canon|barranco [ancho] [profundidad] [paleta] "

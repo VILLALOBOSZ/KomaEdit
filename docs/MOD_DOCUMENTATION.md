@@ -170,14 +170,14 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 | Modos | Simetría, Capacidades | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Elegir:** sin herramienta elegida, la etapa es una cuadrícula de iconos con su nombre entero (en dos líneas si hace falta), agrupada como en la tabla (con ★ Favoritas arriba si hay) y con un buscador (`Ctrl+F` o `/`) por nombre, orden, alias y descripción, sin tildes. Al elegir una, la cuadrícula se pliega en una fila con su icono y su nombre (pulsarla la vuelve a abrir), sus **recientes** para cambiar de un clic, la ★ y **copiar la orden** al portapapeles.
-- **Miniaturas:** lo que se elige viendo sale como galería de miniaturas con el nombre debajo, dibujadas por el propio generador: las especies de árbol (con `TreeGrower`), los tipos de roca (`RockShaper`), los tipos de tejado sobre una casa de 9×7 (`RoofGenerator`) y los 20 sellos de relieve. Se pintan en segundo plano la primera vez y luego se reutilizan. Bajo cada una, su nombre entero: la galería pone tantas columnas como dejen caber cada nombre en dos líneas como mucho («Cuatro aguas», «Roble oscuro»). Con un panel alto (380 píxeles de contenido o más, como 1080p con GUI 2) se ven todas las opciones a la vez; si no, dos filas (una en compacto) y ‹ › para pasar de página, que empieza siempre por la elegida.
+- **Miniaturas:** lo que se elige viendo sale como galería de miniaturas con el nombre debajo, dibujadas por el propio generador: las especies de árbol (con `TreeGrower`), los tipos de roca (`RockShaper`), los tipos de tejado sobre una casa de 9×7 (`RoofGenerator`) y los 80 sellos de relieve (con los colores de su categoría: nieve en las montañas, arena en las dunas, agua alrededor de las islas). Se pintan en segundo plano la primera vez y luego se reutilizan. Bajo cada una, su nombre entero: la galería pone tantas columnas como dejen caber cada nombre en dos líneas como mucho («Cuatro aguas», «Roble oscuro»). Con un panel alto (380 píxeles de contenido o más, como 1080p con GUI 2) se ven todas las opciones a la vez; si no, dos filas (una en compacto) y ‹ › para pasar de página, que empieza siempre por la elegida.
 - **Ajustes esenciales** a la vista y el resto en **Más ajustes**, plegado, con cuántos hay o cuántos has cambiado («2 cambiados»). Solo salen los ajustes que usa la opción elegida (la altura de la cúpula no sale en un tejado a dos aguas). Los números **auto** no llevan bandera: vale el de la herramienta (la altura de la especie, el radio del tipo de roca…) y se ve en gris junto a «auto».
 - **Presets** (una fila de pastillas: Joven, Viejo, Azotado, Pelado; Empinado, Con buhardillas…; el tooltip dice qué cambian). Cada preset deja la herramienta en un **estado completo y conocido**: lo que no define vuelve al de serie (el de la especie o el tipo), así que nada se queda con lo de un preset anterior («Pelado» y luego «Joven» vuelve a tener copa). Se conservan qué es (la especie, el tipo de roca o de tejado, el sello), los materiales, los textos (el del rótulo, la máscara, la paleta), la semilla y los interruptores de cómo se coloca que ningún preset toca (vista previa en cada clic, reemplazar, raíces). La pastilla del preset que hay puesto sale marcada. **Azar** (`R`) para una semilla nueva y, en árboles y rocas, los **presets guardados** del jugador (`#nombre`). En **Más ajustes**, las acciones: **Al pincel** (árbol, roca, bioma), **Estimar** (tejado, loft y terreno, con `-e`), **Guardar preset** y, en simetría, **Desactivar**, **Centro aquí**, **Entre bloques** y **Centro de la selección**.
 - **Bloques:** cada bloque es una fila con su icono, su nombre traducido y un **cuentagotas** que pone el bloque que miras. Si no hay bloque elegido, la fila dice qué se usará («Como el tejado», «El de los muros», «De la familia del material»). Al pulsar la fila se abre la **biblioteca de bloques** (ver [Elegir bloques](#elegir-bloques)).
 - **Sobre qué trabaja:** el pie dice si usa la selección (con su tamaño), los puntos de la trayectoria o **donde haces clic** (tras un clic, «Clic en 124, 64, -38»; ver [El ratón en el mundo](#el-ratón-en-el-mundo)). Si falta algo, Construir sale apagado y dice qué, y una franja encima de los ajustes lo explica con **Marcar puntos** cuando lo que falta son puntos.
 - **Permisos:** al abrir la etapa (y cada segundo mientras se ve) el Studio pregunta al servidor qué nodos tiene el jugador. Una herramienta sin ningún permiso sale apagada con un candado y su ayuda dice qué nodo falta; dentro, un aviso rojo dice el nodo que pide la opción elegida (el cañón pide `terrain.canyon`, el río `terrain.river`) y Construir queda en «Sin permiso». Es solo para enseñarlo: al construir, el servidor vuelve a comprobarlo todo. Con un servidor que no contesta (sin esta versión de KomaEdit) no se apaga nada.
 - **Validación antes de mandar:** texto vacío o con más de 16 líneas, espacios en máscaras o listas de bloques, caracteres que el chat no admite (`§` o de control: Minecraft echaría al jugador), nombres de sello, recorrido o bioma inválidos, más de 64 gotas en la erosión hidráulica o fuerza térmica de más de 2. Construir queda apagado y dice el motivo.
-- **Sello de relieve:** galería con la miniatura de los 20 sellos de serie (el mapa de alturas pintado con sombreado) y un campo para un PNG propio de `config/komaedit/heightmaps/`. Construir deja el pincel en la mano, y lo que cambies después en la tarjeta le llega solo (ver [El pincel sigue al Studio](#el-pincel-sigue-al-studio)).
+- **Sello de relieve:** la [biblioteca de sellos](#biblioteca-de-sellos) en una galería con buscador (busca en las 14 categorías a la vez por nombre o descripción; Intro elige el primero), la **categoría** a la vista (‹ Montañas › …, y **★ Favoritos** en cuanto marcas alguno) y una estrella en cada miniatura (también clic derecho) para guardarlo en favoritos, que se recuerdan en `studio.json`. Debajo, radio, **altura** (en automático, la natural del sello para ese radio) y **modo**; en **Más ajustes**, la **paleta** (de serie, la de la categoría), la **variación** (60 % de serie), **Bloquear semilla** y la semilla. **Azar** da otra semilla. Al pasar el ratón, el nombre y una frase salen debajo de la miniatura (sin tapar su fila), y el pie dice el sello, el modo y la semilla («Montaña · Sumar · semilla al azar», «semilla 4217 bloqueada») y qué hacen los clics. En modo compacto la galería enseña la categoría y sus páginas, sin el buscador. Un campo para un PNG propio de `config/komaedit/heightmaps/`. Construir deja el pincel en la mano, y lo que cambies después en la tarjeta le llega solo (ver [El pincel sigue al Studio](#el-pincel-sigue-al-studio)).
 - **Pintar terreno:** dos galerías, la paleta con la muestra de su degradado y la huella con su miniatura, y debajo el degradado, el radio, la fuerza y la semilla (el candado, en Más ajustes; ver [Pincel de pintura](#pincel-de-pintura)). Cada número dice qué le pasa al terreno y sus extremos («de suave a de golpe», «de difuminado a cortado»). Las dos galerías van cortas (la de paletas en dos filas y la de huellas en una, con ‹ ›) para que todo eso quepa a la vista.
 - **Texto:** campo de texto (`\n` parte líneas), fuente (las de serie y las del servidor, `config/komaedit/fonts/`) y tamaño a la vista; grosor, borde, orientación, alineación, espaciado, interlineado y losas y escaleras, en Más ajustes.
 - **Materiales:** **Contar** lanza `analyze` y la lista llega a la herramienta: totales (bloques, tipos, objetos, huecos y cofres) y cada objeto con su cantidad y sus pilas, más **Copiar lista** (lo mismo que `[COPIAR]` del chat).
@@ -233,6 +233,10 @@ Con puntos de trayectoria, las herramientas que los usan (árbol, roca, río, ra
 - Con el Studio abierto, el pincel se usa ahí mismo: clic o mantener el botón en el mundo (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
 
 ![El sello de relieve con su pincel al día](renders/studio/1080p_gui3_sello_pincel_es.png)
+
+![La galería de sellos por categorías, con favoritos](renders/studio/1080p_gui3_sello_galeria_es.png)
+
+![Buscando «isla» en todas las categorías](renders/studio/1080p_gui3_sello_buscar_es.png)
 
 ### Elegir bloques
 
@@ -3027,12 +3031,12 @@ Las capacidades no pasan por `BlockItem.place` ni por el paquete de uso de bloqu
 Herramientas de paisaje como las de goBrush, Axiom (Elevation, Slope) o Arceon (`//river`): un pincel de relieve con sellos en escala de grises, rampas, ríos y cañones a lo largo de la trayectoria y erosión física de la selección. Todas trabajan sobre el **mapa de alturas** de la zona (el bloque de suelo más alto de cada columna) y lo vuelven a pasar a bloques con una **paleta de superficie** por pendiente y altura.
 
 ```text
-/komaedit pincel heightmap <sello> [radio] [altura] [elevar|bajar|aplanar] [paleta] [-i intensidad] [-r mirada|azar|grados] [-m máscara] [-c neutro] [-p]
+/komaedit pincel heightmap <sello> [radio] [altura] [sumar|restar|maximo|aplanar|suavizar] [paleta|auto] [-i intensidad] [-r mirada|azar|grados] [-x variación] [-s semilla] [-k] [-m máscara] [-c neutro] [-p]
 /komaedit terreno rampa [plano|cono] [ancho] [transición] [paleta] [-t talud] [-u] [-m máscara] [-e]
 /komaedit terreno rio|arroyo|canon|barranco [ancho] [profundidad] [paleta] [-o orilla] [-w laderas] [-t transición] [-f agua|lava|seco] [-n nivel] [-z suavizado] [-y] [-k] [-m máscara] [-e]
 /komaedit terreno erosion hidraulica|termica|completa [iteraciones] [fuerza] [paleta] [-a ángulo] [-s semilla] [-m máscara] [-e]
 /komaedit terreno pintar [paleta] [-m máscara] [-e]
-/komaedit terreno sellos | paletas
+/komaedit terreno sellos [categoría] | sellos exportar <sello> | paletas
 ```
 
 - Alias: `/komaedit terrain` con `ramp`, `river`, `stream`, `canyon`, `gully`, `erode` (`hydraulic`, `thermal`, `full`), `paint`, `stamps` y `palettes`; el pincel también es `relieve` o `sello` (`hm`), y el de pintura, `pincel paint` o `pintar`. `cañon`, `río` y `erosión` con tilde también valen.
@@ -3057,28 +3061,88 @@ Las columnas que cambian se repintan según su pendiente nueva, su altura y el a
 | `playa` | Arena, con arenisca en lo empinado. |
 | `piedra` | Todo piedra, para texturizar después. |
 | `conservar` | Los mismos bloques que tenía cada columna. |
+| `alpino` | Hierba, roca (piedra, andesita, toba) desde 38° y nieve en el 30 % más alto de lo que se cambia (`cumbre@70%`). |
+| `costa` | Hierba arriba, paredes de piedra, andesita y diorita desde 45° y arena al pie, junto al agua. |
+| `rocoso` | Hierba con tierra gruesa en lo llano y piedra, andesita, roca y toba desde 32°. |
+| `isla` | Hierba, roca en lo empinado y playa de arena de 3 bloques sobre el agua. |
+| `bancal` | Hierba en los bancales y muros de piedra, piedra musgosa y roca en los escalones. |
+| `ceniza` | Para volcanes: toba y andesita en las laderas, basalto desde 36° y piedra negra en el 25 % más alto (`cumbre@75%`); magma en el lecho. |
+| `glaciar` | Nieve y hielo compacto; roca, grava y hielo en las pendientes; hielo azul en el lecho. |
 
-A un preajuste se le pueden cambiar partes con `clave:bloques@valor` separados por comas (sin espacios): `natural,cumbre:powder_snow@170,pendiente:stone|tuff@35`. Claves: `llano`, `pendiente@grados`, `cumbre@Y`, `relleno@capas` (bajo la superficie, 3 por defecto), `fondo`, `lecho` (bajo el agua), `orilla@altura` (sobre el agua) y `estratos` (bandas por altura en las pendientes). También en inglés (`flat`, `steep`, `peak`, `fill`, `deep`, `bed`, `shore`, `strata`). `/komaedit terreno paletas` las lista.
+A un preajuste se le pueden cambiar partes con `clave:bloques@valor` separados por comas (sin espacios): `natural,cumbre:powder_snow@170,pendiente:stone|tuff@35`. Claves: `llano`, `pendiente@grados`, `cumbre@Y` (o `cumbre@70%`: relativa, por encima del 70 % de lo que se cambia; con el pincel de relieve, del 70 % del sello estampado sobre la altura del clic, así una montaña se nieva en su tercio de arriba y un hoyo no; con menos de 6 bloques de desnivel no hay cumbre), `relleno@capas` (bajo la superficie, 3 por defecto), `fondo`, `lecho` (bajo el agua), `orilla@altura` (sobre el agua) y `estratos` (bandas por altura en las pendientes). También en inglés (`flat`, `steep`, `peak`, `fill`, `deep`, `bed`, `shore`, `strata`). `/komaedit terreno paletas` las lista.
 
 ### Pincel de relieve (sellos)
 
-Cada clic estampa un **sello**: una imagen en escala de grises donde el blanco es lo más alto, escalada a un cuadrado de lado `2·radio` alrededor del bloque que miras.
+Cada clic estampa un **sello**: una forma de relieve (una imagen en escala de grises donde el blanco es lo más alto) escalada a un cuadrado de lado `2·radio` alrededor del bloque que miras. Es la manera fácil de hacer terreno sin saber de herramientas: se elige una forma en la [biblioteca](#biblioteca-de-sellos), se pulsa y sale una montaña, un cañón o una isla con su erosión, sus cauces y su paleta.
 
-- **Modos:** `elevar` suma la forma del sello, `bajar` la resta y `aplanar` lleva el terreno hacia la altura del bloque del clic con la fuerza que marca el sello. El clic izquierdo hace lo contrario (bajar ↔ elevar) y la F cambia de modo.
-- **Giro (`-r`):** `mirada` (por defecto: la parte de arriba de la imagen apunta hacia donde miras), `azar` (uno distinto en cada clic) o unos grados fijos (0 = la parte de arriba al norte).
-- **Altura e intensidad:** `[altura]` son los bloques que sube el blanco puro (12 por defecto, hasta 96) e `-i` el porcentaje (100 por defecto); repasar acumula.
-- **Gris neutro (`-c`):** el gris que no cambia nada. Por debajo, el sello hunde aunque el modo sea elevar: así funcionan `crater` (neutro 0,35), `dolina` y `valle` (neutro 1). Se guarda en el propio PNG y `-c` lo cambia.
-- **Sellos de serie:** `montana`, `pico`, `colina`, `loma`, `cordillera`, `macizo`, `volcan`, `crater`, `dolina`, `valle`, `duna`, `dunas`, `mesa`, `terrazas`, `acantilado`, `barrancos`, `aguja`, `domo`, `atolon` y `circo`. Están generados por código con funciones y ruido de semilla fija (no vienen de ninguna imagen ajena) y salen siempre iguales. Los que tienen orientación (loma, cordillera, valle, duna, acantilado, circo) la toman del giro.
-- **Sellos propios:** cualquier imagen en `config/komaedit/heightmaps/` con los formatos de `/komaedit image` (PNG, JPG o GIF; mejor PNG en grises de 16 bits, que no deja escalones; en color se toma el brillo y la transparencia deja el terreno como está), de hasta 1024×1024 y 8 MB. Se usa por su nombre sin `.png`. La primera vez que se usa el pincel, KomaEdit escribe allí los sellos de serie como PNG de 16 bits para que sirvan de plantilla; uno con el mismo nombre sustituye al de serie y un archivo borrado vuelve a salir. `/komaedit terreno sellos` los lista; pulsar uno lo deja escrito en el chat.
-- La paleta va como posicional (`natural` por defecto).
+- **Modos de mezcla:** `sumar` (de serie) añade la forma del sello; `restar` la quita; `maximo` sube el terreno hasta la forma del sello puesta a la altura del clic **sin hundir lo que ya esté más alto** (dos montañas que se pisan no se apilan; repasar no sube más); `aplanar` deja el terreno **a la altura del sello** (puesto a la altura del clic), suba o baje, con la huella fundida en el borde; `suavizar` suaviza lo que hay bajo el sello con su forma como fuerza, para fundir bordes y costuras. El clic izquierdo hace lo contrario (sumar ↔ restar; máximo resta) y la F cambia de modo. Alias: `elevar`/`subir`, `bajar`/`hundir`, `máximo`/`tope`, `llano`/`ajustar`, `alisar`/`fundir`.
+- **Altura:** `[altura]` son los bloques que sube lo más alto del sello (hasta 96). Sin escribirla, la **altura natural** del sello para ese radio: una colina sale con un tercio del radio, un pico casi con el radio entero (la proporción de cada sello está en la [hoja de contacto](#biblioteca-de-sellos)). En un PNG propio, la mitad del radio.
+- **Paleta:** sin paleta o con `auto`, la de la **categoría** del sello (`alpino` en montañas y cordilleras, `pradera` en colinas, `mesa` en mesetas y cañones, `costa` en acantilados, `rocoso` en cráteres y rocas, `ceniza` en volcanes, `desierto` en dunas, `isla`, `bancal`, `glaciar` y `conservar` en los de detalle). Cualquier otra se escribe como siempre.
+- **Variación en cada clic:** como la semilla de Axiom. De la **semilla** del pincel y el número de clic salen a la vez un **giro** de hasta ±25°, una **escala** de ±20 %, un **espejo** (uno de cada dos) y un **ruido fino** de ±30 % que mueve las crestas, todo multiplicado por `-x` (60 % de serie; `-x 0` estampa siempre lo mismo). Así diez clics del mismo sello no dejan diez copias. El ruido fino multiplica el relieve, así que el borde sigue en cero.
+  - `-s semilla` fija la semilla con la que empieza (sin ella, una al azar al coger el pincel); **Mayús+F** con el pincel en la mano da una semilla nueva y vuelve a contar los clics.
+  - `-k` **bloquea la semilla**: todos los clics salen exactamente iguales (los de la semilla y el clic 0), para repetir un sello idéntico.
+  - Con `-r azar`, el giro entero sale de la semilla (cualquier ángulo) y con la semilla bloqueada se repite.
+- **Giro (`-r`):** `mirada` (por defecto: la parte de arriba de la imagen apunta hacia donde miras), `azar` o unos grados fijos (0 = la parte de arriba al norte). Los sellos con orientación (acantilado, cañón ciego, circo, duna, valle…) la toman del giro: «hacia ti» es hacia donde estás al pulsar.
+- **Intensidad (`-i`):** el porcentaje de la forma en cada clic (100 por defecto); con sumar, repasar acumula.
+- **Gris neutro (`-c`):** el gris que no cambia nada. Por debajo, el sello hunde aunque el modo sea sumar: así funcionan los cañones, la dolina o el valle (neutro 1), los cráteres (0,35) y los de detalle (0,5, suben y bajan). Va en el propio PNG y `-c` lo cambia.
+- **Sellos propios:** cualquier imagen en `config/komaedit/heightmaps/` con los formatos de `/komaedit image` (PNG, JPG o GIF; mejor PNG en grises de 16 bits, que no deja escalones; en color se toma el brillo y la transparencia deja el terreno como está), de hasta 1024×1024 y 8 MB. Se usa por su nombre sin `.png`; uno con el nombre de uno de serie lo sustituye. La carpeta se crea con un `LEEME.txt` que lo explica; los de serie ya no se copian allí (van dentro del mod). `/komaedit terreno sellos exportar <sello>` deja allí una copia en 16 bits de uno de serie para retocarlo (permiso de administración `komaedit.admin.stamps.export`; no pisa nada). Las plantillas que escribía la 1.8 con los 20 sellos de entonces, si siguen sin tocar, se ignoran y vale el sello nuevo del mismo nombre; si las retocaste, mandan las tuyas.
+- `/komaedit terreno sellos` lista los de serie por categoría y los PNG propios; `sellos <categoría>` (`montanas`, `cordilleras`, `colinas`, `mesetas`, `acantilados`, `canones`, `crateres`, `volcanes`, `dunas`, `islas`, `terrazas`, `glaciar`, `rocas`, `detalle`) los explica uno por uno. Pulsar uno lo deja escrito en el chat.
 
 ```text
-/komaedit pincel heightmap montana 24 30 -r azar
-/komaedit pincel heightmap crater 16 10 natural
-/komaedit pincel heightmap duna 20 8 desierto
-/komaedit pincel heightmap mesa 28 24 mesa -r 30
+/komaedit pincel heightmap montana 24 -r azar
+/komaedit pincel heightmap cordillera 30 maximo
+/komaedit pincel heightmap lomas 22 maximo pradera -x 80
+/komaedit pincel heightmap canon 26
+/komaedit pincel heightmap mesa 28 24 aplanar mesa -r 30
+/komaedit pincel heightmap colina 16 suavizar -i 50
+/komaedit pincel heightmap pico 20 -s 4217 -k
 /komaedit pincel heightmap mi_isla 32 40 -i 50 -m grass_block,sand
 ```
+
+#### Biblioteca de sellos
+
+80 sellos de serie en 14 categorías, **generados por código**: ruido por capas (un Perlin de 64 direcciones, crestas multifractales y deformación del dominio), formas de base (conos, crestas a lo largo de un trazo, cuencos, escalones, campos de piezas sueltas) y, en casi todos, la **erosión del terraformado horneada** (la hidráulica por gotas y la térmica por talud, con la forma puesta a escala de bloques) para que tengan cauces, crestas afiladas y faldas de derrubios en lugar de conos lisos. Las dunas pasan por la térmica a 33°, el ángulo de reposo de la arena, que pone la cara de sotavento. Nada sale de imágenes de nadie. Cada sello baja suave a su gris neutro antes del borde, para fundirse con lo que haya.
+
+| Categoría | Sellos | Paleta |
+| --- | --- | --- |
+| Montañas y picos | `montana`, `pico`, `macizo`, `cumbre_doble`, `montana_vieja` (sierra vieja de lomos redondeados), `espolon` | `alpino` |
+| Cordilleras | `cordillera`, `sierra` (dentada), `cordillera_curva`, `cordillera_ramificada` (en Y), `cordones` (sierras paralelas) | `alpino` |
+| Colinas suaves | `colina`, `loma`, `lomas`, `cerro` (cima casi llana), `ondulaciones` (sube y baja) | `pradera` |
+| Mesetas y mesas | `mesa`, `meseta`, `cerro_testigo`, `mesa_escalonada`, `mesa_partida` | `mesa` |
+| Acantilados y escarpes | `acantilado`, `ensenada`, `promontorio`, `farallones`, `canchal` | `costa` |
+| Cañones y gargantas (hunden) | `canon`, `garganta`, `valle_fluvial`, `hoz`, `canon_ciego` | `mesa` |
+| Cráteres y calderas | `crater`, `crater_central`, `caldera`, `dolina`, `crateres`, `cuenca` | `rocoso` |
+| Volcanes | `volcan`, `volcan_escudo`, `cono_ceniza`, `volcan_roto`, `volcan_doble`, `colada` | `ceniza` |
+| Dunas | `duna` (barján), `dunas`, `duna_estrella`, `duna_lineal`, `duna_parabolica`, `barjanes` | `desierto` |
+| Islas y atolones | `isla`, `archipielago`, `atolon`, `cayo`, `isla_media_luna`, `tombolo` | `isla` |
+| Terrazas y bancales | `terrazas`, `bancales`, `anfiteatro`, `terrazas_fluviales` | `bancal` |
+| Glaciares y morrenas | `circo`, `valle` (en U), `cuerno`, `morrena`, `drumlins`, `glaciar` | `glaciar` |
+| Rocas y peñascos | `aguja`, `agujas`, `domo`, `penasco`, `tor`, `bloques`, `laja` | `rocoso` |
+| Detalle | `arrugas`, `grietas`, `carcavas`, `arroyo`, `barrancos`, `rizos`, `bultos`, `escalones` | `conservar` |
+
+Los 20 nombres de la 1.8 siguen valiendo (algunos con una forma mejor), así que las órdenes y los presets guardados no se rompen.
+
+![Los 80 sellos de serie](renders/terreno/sellos_de_serie.png)
+
+Cada sello estampado en bloques con radio 30, su altura natural y la paleta de su categoría:
+
+![Los 80 sellos en bloques](renders/terreno/sellos_en_bloques.png)
+
+Tres paisajes hechos **solo estampando** sobre un llano (con la variación de cada clic):
+
+![Cordillera con valle](renders/terreno/escena_cordillera_iso.png)
+
+![Costa con acantilados, con el mar a Y 26](renders/terreno/escena_costa_iso.png)
+
+![Desierto con dunas y mesas](renders/terreno/escena_desierto_iso.png)
+
+![Seis clics del mismo sello: cada uno distinto; con la semilla bloqueada, iguales](renders/terreno/variacion_por_clic_iso.png)
+
+![Los cinco modos con dos clics que se pisan](renders/terreno/modos_de_mezcla_iso.png)
+
+- **Dónde están:** dentro del jar, como PNG de 16 bits de 160×160 (`assets/komaedit/stamps/`, unos 1,6 MB en total, con la altura guardada a 1/4096). Se leen al primer uso de cada uno en unos milisegundos. Generarlos al arrancar costaría unos 12 s de CPU en cada cliente y servidor la primera vez y, como la erosión es caótica, dos Java distintas podrían dar cauces algo distintos: la miniatura del cliente no sería exactamente lo que estampa el servidor. Una prueba comprueba que los PNG del jar son los de las recetas.
+- **Rendimiento:** un clic de radio 32 con erosión horneada cuesta lo mismo que antes (el sello ya viene hecho); muestrear con giro, escala, espejo y ruido fino es una interpolación y una octava de ruido por columna.
+- **Limitaciones:** el sello cubre como mucho un cuadrado de 64×64 bloques con el radio máximo (32), así que una cordillera larga se hace con varios clics (mejor en `maximo`). Las formas son de una sola capa de altura por columna: no hay arcos ni salientes. La nieve de `alpino` sale en lo alto del sello; una paleta con `cumbre` fija (`natural`) sigue usando su Y.
 
 ### Pincel de pintura
 
@@ -4533,7 +4597,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
    - Contenido: `komaedit.recipe`, `komaedit.instance`.
    - Edición: `komaedit.select` (selecciones y supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
-   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo); excepción de volumen: `komaedit.limit.unrestricted`.
+   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.

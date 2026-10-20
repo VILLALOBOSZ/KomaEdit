@@ -215,6 +215,29 @@ Los tipos de `SculptBrushType` de la categoría `MODEL` van por el mismo camino 
 
 `terrain` trabaja sobre `TerrainView`, una vista mínima de la zona capturada: `TerrainColumns` lee el suelo de cada columna, las herramientas (`StampBrush`, `RampPlanner`, `RiverPlanner`, `HydraulicErosion`, `ThermalErosion`) cambian un `HeightField` de alturas con decimales y `TerrainWriter` lo vuelve a pasar a bloques con `SurfacePalette`. Todo eso es Java puro y se prueba con un mundo de texto. En el juego, `TerrainService` lee con `RegionOperationService.capture`, calcula en `AsyncEngine` sobre `RegionTerrainView`, escribe en `RegionEdits` y pasa por `BuildEstimate` y `PendingBuilds`; el pincel de relieve es una `BrushOperation` (`HeightmapOperation`) sobre `BrushTerrainView`.
 
+### Biblioteca de sellos
+
+`terrain.stamp` genera y coloca los sellos de serie; `terrain.StampLibrary` es la fachada.
+
+- **Recetas.** `StampRecipe` (nombre, `StampCategory`, descripción, gris neutro, inicio del borde, forma y `Bake`) genera un sello con una semilla: la forma (`ReliefShapes`, `CarvedShapes` y `SurfaceShapes`, sobre `StampNoise` y `StampMath`), la erosión horneada (`HydraulicErosion` y `ThermalErosion` sobre un `HeightField` a escala de bloques, con una rampa hacia fuera para que los derrubios salgan del círculo y, en los que hunden, el terreno de alrededor protegido), el borde y la normalización. Las formas solo usan `StrictMath` y ruido entero; la erosión es caótica y usa `Math`, que puede variar en el último bit entre Java distintas: por eso los sellos van ya hechos en el jar. `StampRecipes` las junta por categoría.
+- **PNG del jar.** `StampLibrary.get` lee `assets/komaedit/stamps/<nombre>.png` (16 bits con 12 de precisión) la primera vez y lo guarda en memoria; si falta, lo genera. `StampResourcesDump` (prueba con `KOMAEDIT_STAMPS_DIR`) los vuelve a escribir y `StampLibraryTest` comprueba que coinciden con las recetas. `StampCatalog` mira antes `config/komaedit/heightmaps` y no deja que una plantilla de la 1.8 sin tocar tape a un sello nuevo (huella de 8×8).
+- **Colocación.** `StampPlacement` (radio, giro, escala, espejo, semilla y fuerza del ruido fino) da el relieve de un punto (`relief`) y la huella (`footprint`); `StampVariation.place(radio, giro, alAzar, semilla, clic)` la saca de la semilla y el número de clic. `StampBrush.Settings` lleva una colocación y `StampBrush.apply` mezcla (sumar, restar, máximo, aplanar, suavizar) sobre el `HeightField`. `HeightmapBrush` lee la orden y el pincel (`EzBrush.Relief`) cuenta los clics y cambia la semilla con Mayús+F.
+
+**API para otras herramientas** (el pincel de pintura con sellos, por ejemplo):
+
+```java
+List<StampInfo> sellos = StampLibrary.all();               // nombre, categoría, descripción, neutro, altura natural, paleta
+List<StampInfo> dunas = StampLibrary.of(StampCategory.DUNES);
+int[] argb = StampLibrary.thumbnail("volcan", 64);           // miniatura en color con sombreado, por filas
+HeightStamp sello = StampLibrary.get("volcan");              // o TerrainService.catalog().load(nombre) con los PNG propios
+StampPlacement donde = StampVariation.DEFAULT.place(radio, Math.toRadians(yaw + 180), false, semilla, clic);
+double r = donde.relief(sello, dx, dz);                      // -1..1 respecto al neutro; 0 fuera del sello
+double w = donde.footprint(dx, dz);                          // 1 dentro, 0 en el círculo del sello
+int alcance = donde.reach();                                 // bloques desde el centro que puede tocar
+```
+
+`relief` es puro y no guarda estado: se puede llamar desde un worker. Con `StampVariation.NONE` sale el sello tal cual; con la misma semilla y el mismo clic, la misma colocación. `StampThumbnails.argb(sello, categoría, alturaNatural, lado)` pinta también un PNG propio. `StampLibrary.render(nombre, lado, semilla)` genera una variante entera con otra semilla (erosión incluida: centenares de milisegundos, solo para herramientas que lo necesiten).
+
 ## Máscaras y patrones en WorldEdit
 
 `worldedit.EzExtensions` registra `EzMaskParser` y `EzPatternParser` (paquete `worldedit.ez`) en las factorías de WorldEdit al arrancar el servidor, así que valen en cualquier orden de WorldEdit. Cada parser devuelve `null` si la entrada no es suya y deja seguir a los demás.
