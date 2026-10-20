@@ -86,6 +86,33 @@ class TaskClicksTest {
         assertEquals(7, studio.clicks(), "etapa, cuatro puntos, «Usar con: Río» y construir");
     }
 
+    /**
+     * Una trenza sobre tres puntos, retorcida una vuelta y más fina al final. Antes: Trayectoria, tres puntos,
+     * Figuras, elegir la trenza (2), Modificadores, arrastrar la torsión y la escala final y Construir: 9 clics y 2
+     * arrastres. Ahora los puntos se ponen desde Figuras y cada variación se enciende de un clic con un valor que se
+     * ve.
+     */
+    @Test
+    void makeAFigureAndVaryIt() {
+        StudioDriver studio = fresh(false, 0);
+        assertEquals(StudioStage.FIGURE, studio.view.stage(), "el Studio abre en Figuras");
+        for (int index = 0; index < 3; index++) {
+            // En Figuras, un clic en el mundo pone un punto, como en Trayectoria.
+            assertEquals(StudioView.Click.WORLD, studio.clickAt(100 + index * 40, 300));
+            assertEquals(StudioView.WorldAction.POINTS, studio.view.worldAction(studio.host));
+            studio.host.points.add(new int[]{index * 8, 64, 0});
+        }
+        studio.click("Escamas");
+        studio.click("Trenza");
+        studio.click("Retorcer");
+        studio.click("Afinar");
+        studio.click("Construir");
+        var extensions = studio.view.figure().draft().extensions();
+        assertEquals(360, extensions.twistDegrees());
+        assertEquals(40, extensions.endScalePercent());
+        assertEquals(8, studio.clicks(), "tres puntos, figura (2), dos variaciones y construir");
+    }
+
     @Test
     void stampABlueprint() {
         StudioDriver studio = fresh(false, 0);

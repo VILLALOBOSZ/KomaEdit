@@ -4,6 +4,7 @@ import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.gizmo.GhostPlacement;
 import com.komainu.moxia.gizmo.GhostStates;
 import com.komainu.moxia.gizmo.GhostTransform;
+import com.komainu.moxia.gizmo.MeshHandover;
 import com.komainu.moxia.gizmo.Orientation;
 import com.komainu.moxia.preview.PreviewPlanCodec;
 import com.komainu.moxia.preview.PreviewSurface;
@@ -20,7 +21,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * El fantasma del gizmo: la misma malla que la vista previa ({@link PlanPreviewRenderer}), armada en posiciones
  * locales alrededor del pivote y dibujada donde esté ahora. Moverlo no rehace nada (solo cambia el ancla); al girarlo
  * o voltearlo la malla se rehace en otro hilo con los estados girados (escaleras, troncos…) y, mientras tanto, la
- * anterior se dibuja girada entera para que el giro se vea al momento.
+ * anterior se dibuja girada entera para que el giro se vea al momento. Al rehacerse con la vista previa en vivo, la
+ * malla de antes sigue a la vista, quieta donde estaba, hasta que la nueva está armada ({@link MeshHandover}): así no
+ * parpadea.
  */
 public final class GhostRenderer {
     private static final AtomicLong GENERATION = new AtomicLong();
@@ -31,11 +34,19 @@ public final class GhostRenderer {
         return thread;
     });
 
+    /** Una malla armada con la orientación {@code meshed}. */
+    private record Mesh(List<PlanPreviewRenderer.SectionMesh> sections, Orientation meshed) {
+        void close() {
+            sections.forEach(PlanPreviewRenderer.SectionMesh::close);
+        }
+    }
+
+    private static final MeshHandover<Mesh> MESHES = new MeshHandover<>(Mesh::close);
     private static PreviewPlanCodec.Plan source;
-    private static List<PlanPreviewRenderer.SectionMesh> sections = List.of();
-    /** Orientación con la que está armada la malla que se dibuja, y la que se está armando. */
-    private static Orientation meshed;
+    /** Orientación con la que se está armando la malla. */
     private static Orientation building;
+    /** Dónde estaba el fantasma de antes, para dibujar su malla quieta mientras llega la nueva. */
+    private static GhostTransform retiredAt;
     private static boolean broken;
 
     private GhostRenderer() {
@@ -43,7 +54,7 @@ public final class GhostRenderer {
 
     /** Los bloques de un fantasma nuevo (su superficie, en posiciones locales). */
     public static void load(PreviewPlanCodec.Plan plan, Orientation orientation, MinecraftClient client) {
-        clear();
+        GENERATION.incrementAndGet();
         source = plan;
         broken = false;
         rebuild(orientation, client);
@@ -60,18 +71,30 @@ public final class GhostRenderer {
 
     /** Pide la malla de otra orientación si no es la que hay (ni la que se está armando). */
     public static void orient(Orientation orientation, MinecraftClient client) {
-        if (source != null && orientation != building) {
+        Mesh current = MESHES.current();
+        if (source != null && orientation != building && (current == null || current.meshed() != orientation)) {
             rebuild(orientation, client);
         }
     }
 
+    /**
+     * El fantasma se va a rehacer con la vista previa en vivo: su malla sigue a la vista en {@code transform} hasta
+     * que llegue la del nuevo.
+     */
+    public static void retire(GhostTransform transform) {
+        GENERATION.incrementAndGet();
+        MESHES.retire(System.currentTimeMillis());
+        retiredAt = transform;
+        source = null;
+        building = null;
+    }
+
     public static void clear() {
         GENERATION.incrementAndGet();
-        sections.forEach(PlanPreviewRenderer.SectionMesh::close);
-        sections = List.of();
+        MESHES.clear();
         source = null;
-        meshed = null;
         building = null;
+        retiredAt = null;
     }
 
     private static void rebuild(Orientation orientation, MinecraftClient client) {
@@ -84,9 +107,9 @@ public final class GhostRenderer {
                         client);
                 client.execute(() -> {
                     if (generation == GENERATION.get()) {
-                        sections.forEach(PlanPreviewRenderer.SectionMesh::close);
-                        sections = data.stream().map(PlanPreviewRenderer.SectionMesh::new).toList();
-                        meshed = orientation;
+                        MESHES.install(new Mesh(data.stream().map(PlanPreviewRenderer.SectionMesh::new).toList(),
+                                orientation));
+                        building = null;
                     }
                 });
             } catch (RuntimeException exception) {
@@ -108,12 +131,22 @@ public final class GhostRenderer {
     }
 
     public static void render(WorldRenderContext context, GhostTransform transform) {
-        if (sections.isEmpty() || broken || meshed == null) {
+        if (broken) {
+            return;
+        }
+        Mesh mesh = MESHES.current();
+        GhostTransform at = transform;
+        if (mesh == null) {
+            // Mientras se arma la del fantasma nuevo, la de antes donde estaba.
+            mesh = MESHES.previous(System.currentTimeMillis());
+            at = retiredAt;
+        }
+        if (mesh == null || at == null || mesh.sections().isEmpty()) {
             return;
         }
         try {
-            PlanPreviewRenderer.drawSections(context, sections, new PlanPreviewRenderer.Anchor(transform.x(),
-                    transform.y(), transform.z(), rotation(meshed, transform.orientation())));
+            PlanPreviewRenderer.drawSections(context, mesh.sections(), new PlanPreviewRenderer.Anchor(at.x(),
+                    at.y(), at.z(), rotation(mesh.meshed(), at.orientation())));
         } catch (RuntimeException exception) {
             broken = true;
             KomaEditMod.LOGGER.error("KomaEdit ghost rendering failed; hiding it", exception);

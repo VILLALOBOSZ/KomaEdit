@@ -25,6 +25,8 @@ public enum ValueUnit {
     TIMES("gui.komaedit.unit.times", false),
     /** Capas de nieve. */
     LAYERS("gui.komaedit.unit.layers", false),
+    /** Tramos del camino («cada 4 tramos»). */
+    SEGMENTS("gui.komaedit.unit.segments", false),
     /** Un factor sobre lo normal: «×1.5». */
     MULTIPLIER("gui.komaedit.unit.multiplier", false),
     /** Pendiente: bloques que sube por cada bloque, «1.5:1». */

@@ -6,6 +6,8 @@ import com.komainu.moxia.feedback.WorldFeedbackSettings;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeGeometryEngine;
+import com.komainu.moxia.recipe.SurfaceConform;
+import com.komainu.moxia.recipe.SurfaceMode;
 import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -22,6 +24,7 @@ import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.BufferAllocator;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.text.Text;
@@ -88,8 +91,10 @@ public final class ProceduralPreviewRenderer {
         List<BlockVector3> controls = points.stream()
                 .map(point -> BlockVector3.at(point.getX(), point.getY(), point.getZ()))
                 .toList();
-        PathSnapshot path = new PathSnapshot(controls, closed, "preview-client");
-        PreviewKey key = PreviewKey.create(recipe, points, closed);
+        PathSnapshot path = conform(new PathSnapshot(controls, closed, "preview-client"), recipe);
+        List<BlockPos> shown = path.points().stream().map(point -> new BlockPos(point.x(), point.y(), point.z()))
+                .toList();
+        PreviewKey key = PreviewKey.create(recipe, shown, closed);
         if (key.equals(requestedKey)) {
             return;
         }
@@ -100,8 +105,7 @@ public final class ProceduralPreviewRenderer {
                 key,
                 recipe,
                 path,
-                recipe.extensions().surfaceMode() != com.komainu.moxia.recipe.SurfaceMode.NONE
-                        || recipe.extensions().socketsEnabled()
+                recipe.extensions().surfaceMode() == SurfaceMode.NEAREST || recipe.extensions().socketsEnabled()
         );
         long now = System.nanoTime();
         long retryAt = key.equals(failedKey) ? retryNotBefore : 0L;
@@ -110,6 +114,40 @@ public final class ProceduralPreviewRenderer {
             running.cancel(true);
         }
         status = tr("gui.komaedit.hologram.updating");
+    }
+
+    /**
+     * «Pegar al terreno» al suelo o al techo, con el mundo del cliente: así el holograma ya sigue el relieve. «Lo más
+     * cercano» busca en todas direcciones y se deja al servidor (lo dice el holograma).
+     */
+    private static PathSnapshot conform(PathSnapshot path, ProceduralRecipe recipe) {
+        SurfaceMode mode = recipe.extensions().surfaceMode();
+        ClientWorld world = MinecraftClient.getInstance().world;
+        if (world == null || mode != SurfaceMode.FLOOR && mode != SurfaceMode.CEILING) {
+            return path;
+        }
+        try {
+            return SurfaceConform.project(new SurfaceConform.Terrain() {
+                @Override
+                public boolean solid(int x, int y, int z) {
+                    BlockPos position = new BlockPos(x, y, z);
+                    if (!world.isChunkLoaded(position)) {
+                        return false;
+                    }
+                    var state = world.getBlockState(position);
+                    return !state.isAir() && state.getFluidState().isEmpty();
+                }
+
+                @Override
+                public boolean empty(int x, int y, int z) {
+                    BlockPos position = new BlockPos(x, y, z);
+                    return world.isChunkLoaded(position) && world.getBlockState(position).isAir();
+                }
+            }, path, recipe.extensions());
+        } catch (IllegalArgumentException exception) {
+            // Varios puntos en el mismo bloque: el servidor lo dirá al construir; aquí, sin pegar.
+            return path;
+        }
     }
 
     public static void tick(MinecraftClient client) {
