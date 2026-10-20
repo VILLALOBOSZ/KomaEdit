@@ -247,6 +247,7 @@ public final class MoxiaCommands {
                 .then(BrushCommands.superwand("supervarita"))
                 .then(jobCommand())
                 .then(projectCommand())
+                .then(sculptCommand().requires(source -> can(source, "komaedit.build.brush.sculpt")))
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(tweakCommand("tweak").requires(MoxiaCommands::canTweak))
                 .then(tweakCommand("retocar").requires(MoxiaCommands::canTweak))
