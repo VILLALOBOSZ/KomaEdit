@@ -700,7 +700,7 @@ public final class StudioUi {
         label(label, row.x() + 8, row.centerY() - 4, previous.x() - row.x() - 12, hovered ? TEXT : TEXT_SECONDARY);
         stepButton(previous, "‹");
         stepButton(next, "›");
-        centered(value, shown, modified ? WHITE : TEXT);
+        centered(fit(value, shown.width() - 2), shown, modified ? WHITE : TEXT);
         Rect zone = new Rect(previous.x(), row.y(), row.right() - previous.x(), row.height());
         return register(row)
                 .valueZone(zone)
@@ -730,7 +730,7 @@ public final class StudioUi {
         if (modified) {
             fill(new Rect(row.x() + 3, row.centerY() - 1, 2, 2), ACCENT);
         }
-        label(label, row.x() + 8, row.centerY() - 4, track.x() - row.x() - 12, on || hovered ? TEXT : TEXT_SECONDARY);
+        nameLabel(label, row.x() + 8, row, track.x() - row.x() - 12, on || hovered ? TEXT : TEXT_SECONDARY);
         return register(row);
     }
 

@@ -318,7 +318,7 @@
   "gui.komaedit.color.similar": "Similar to %s",
   "gui.komaedit.color.shade": "Shade the selection",
   "gui.komaedit.color.light": "Light",
-  "gui.komaedit.color.light.sol": "Sun (world time)",
+  "gui.komaedit.color.light.sol": "Current sun",
   "gui.komaedit.color.light.jugador": "From where you stand",
   "gui.komaedit.color.light.mirada": "Where you look",
   "gui.komaedit.color.light.arriba": "From above",
