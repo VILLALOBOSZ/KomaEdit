@@ -147,6 +147,8 @@ public final class PermissionNodes {
         add(build + ".flowfield", Pack.INTERMEDIATE, build, "ezedits.flow.flowfield", "/komaedit flowfield");
         add(build + ".flowline", Pack.INTERMEDIATE, build, "ezedits.flow.flowline", "/komaedit flowline");
         add(build + ".place", Pack.INTERMEDIATE, build, "ezedits.place", "/komaedit place");
+        add(build + ".roof", Pack.INTERMEDIATE, build, null, "/komaedit roof (tejados)");
+        add(build + ".loft", Pack.INTERMEDIATE, build, null, "/komaedit loft (superficies entre curvas)");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");

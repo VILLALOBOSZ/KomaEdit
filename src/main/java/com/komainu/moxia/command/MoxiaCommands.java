@@ -230,6 +230,10 @@ public final class MoxiaCommands {
                 .then(EzSplineCommands.command("spline"))
                 .then(ivyCommand("ivy"))
                 .then(ivyCommand("hiedra"))
+                .then(RoofCommands.roof("roof"))
+                .then(RoofCommands.roof("tejado"))
+                .then(RoofCommands.loft("loft"))
+                .then(RoofCommands.loft("lona"))
                 .then(BrushCommands.brush("pincel"))
                 .then(BrushCommands.brush("ezbrush"))
                 .then(BrushCommands.superwand("superwand"))
@@ -1994,7 +1998,7 @@ public final class MoxiaCommands {
         return 1;
     }
 
-    private static void reportEstimate(ServerPlayerEntity player, String description, BuildEstimate estimate) {
+    static void reportEstimate(ServerPlayerEntity player, String description, BuildEstimate estimate) {
         int threshold = KomaEditConfig.settings().confirmBuildAboveBlocks();
         int limit = KomaEditConfig.settings().maxBlocksPerOperation();
         String verdict = estimate.blocks() > limit && !KomaPermissions.can(player, KomaPermissions.LIMIT_UNRESTRICTED)
