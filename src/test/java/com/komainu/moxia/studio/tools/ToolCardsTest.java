@@ -52,8 +52,8 @@ class ToolCardsTest {
             assertFalse(card.command(card.defaults(), false).startsWith("/"), "sin barra: " + card.id());
             assertTrue(card.command(card.defaults(), false).startsWith("komaedit "), card.id());
         }
-        assertEquals(List.of("tree", "rock", "roof", "loft", "stamp", "ramp", "river", "erosion", "paint", "text",
-                "analyze", "gravity", "snow", "drain", "waterlog", "biome", "symmetry", "capabilities"),
+        assertEquals(List.of("tree", "rock", "roof", "loft", "stamp", "paintbrush", "ramp", "river", "erosion", "paint",
+                "text", "analyze", "gravity", "snow", "drain", "waterlog", "biome", "symmetry", "capabilities"),
                 ToolCatalog.ALL.stream().map(ToolCard::id).toList());
         for (ToolFamily family : ToolFamily.values()) {
             assertFalse(ToolCatalog.family(family).isEmpty(), family.id());

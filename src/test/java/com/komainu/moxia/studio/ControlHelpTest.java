@@ -86,12 +86,20 @@ class ControlHelpTest {
         }
     }
 
+    /**
+     * Lo esencial arriba: como mucho cuatro controles a la vista antes de Más ajustes. Lo que se elige viendo (las
+     * galerías de miniaturas y los buscadores) no cuenta: no son líneas ni números que haya que entender.
+     */
     @Test
-    void lessIsInSightEachToolShowsAtMostFourSettingsBeforeMoreSettings() {
+    void lessIsInSightEachToolShowsAtMostFourControlsBeforeMoreSettings() {
         for (ToolCard card : ToolCatalog.ALL) {
             long essentials = card.params().stream()
-                    .filter(param -> card.essential(param) && param.visible(card.defaults())).count();
-            assertTrue(essentials <= 4, card.id() + " enseña " + essentials + " ajustes de entrada");
+                    .filter(param -> card.essential(param) && param.visible(card.defaults()))
+                    .filter(param -> !(param instanceof ToolParam.Choice choice
+                            && (choice.style() == ToolParam.Choice.Style.GALLERY
+                            || choice.style() == ToolParam.Choice.Style.SEARCH)))
+                    .count();
+            assertTrue(essentials <= 4, card.id() + " enseña " + essentials + " controles de entrada");
         }
     }
 }

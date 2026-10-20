@@ -126,6 +126,14 @@ public abstract class ToolCard {
 
     private static final Set<String> ADVANCED = Set.of("mask", "seed", "variation");
 
+    /**
+     * Filas que enseña como mucho la galería de {@code paramId} (las demás, con ‹ ›). Una tarjeta con dos galerías
+     * las acorta para que sus ajustes quepan a la vista; de serie, las que deje la pantalla.
+     */
+    public int galleryRows(String paramId) {
+        return Integer.MAX_VALUE;
+    }
+
     /** Lo que vale un ajuste en automático, para enseñarlo en gris ({@code null} si no se sabe). */
     public String autoHint(String paramId, ToolValues values) {
         return null;

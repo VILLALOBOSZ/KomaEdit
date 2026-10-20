@@ -17,6 +17,7 @@ import com.komainu.moxia.roof.RoofGenerator;
 import com.komainu.moxia.roof.RoofResult;
 import com.komainu.moxia.roof.RoofSettings;
 import com.komainu.moxia.roof.RoofWorld;
+import com.komainu.moxia.studio.tools.ui.PaintPreview;
 import com.komainu.moxia.studio.tools.ui.StampPreview;
 
 import java.awt.image.BufferedImage;
@@ -64,7 +65,8 @@ public final class ChoiceThumbnails {
     /** Si la opción tiene miniatura: árboles, tejados, rocas y sellos. */
     public static boolean supports(String card, String param) {
         return switch (card + "/" + param) {
-            case "tree/species", "roof/type", "rock/type", "stamp/stamp" -> true;
+            case "tree/species", "roof/type", "rock/type", "stamp/stamp", "paintbrush/stamp",
+                 "paintbrush/paint_palette" -> true;
             default -> false;
         };
     }
@@ -75,7 +77,7 @@ public final class ChoiceThumbnails {
             return null;
         }
         String key = "choice/" + card + "/" + param + "/" + option;
-        return cached(key, () -> render(key, card, option));
+        return cached(key, () -> render(key, card, param, option));
     }
 
     /**
@@ -103,14 +105,17 @@ public final class ChoiceThumbnails {
         return null;
     }
 
-    private static StudioImage render(String key, String card, String option) {
+    private static StudioImage render(String key, String card, String param, String option) {
         int[] pixels = switch (card) {
             case "tree" -> voxels(tree(option));
             case "roof" -> voxels(roof(option));
             case "rock" -> voxels(rock(option));
             case "stamp" -> StampPreview.argb(option, SIZE);
+            case "paintbrush" -> param.equals("stamp") ? PaintPreview.footprint(option, SIZE)
+                    : PaintPreview.palette(option, SIZE);
             default -> new int[0];
         };
+
         return StudioImage.of(key, SIZE, SIZE, () -> pixels);
     }
 

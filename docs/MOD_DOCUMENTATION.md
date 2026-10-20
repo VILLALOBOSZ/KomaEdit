@@ -165,7 +165,7 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 | --- | --- | --- |
 | Naturaleza | Árbol, Roca | `tree`, `rock` (y `pincel tree`/`rock`, `tree save`) |
 | Tejados | Tejado, Loft | `roof`, `loft` (y `-e` para estimar) |
-| Terreno | Sello de relieve, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
+| Terreno | Sello de relieve, Pintar terreno, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `pincel paint`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
 | Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`) |
 | Modos | Simetría, Capacidades | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
@@ -178,6 +178,7 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 - **Permisos:** al abrir la etapa (y cada segundo mientras se ve) el Studio pregunta al servidor qué nodos tiene el jugador. Una herramienta sin ningún permiso sale apagada con un candado y su ayuda dice qué nodo falta; dentro, un aviso rojo dice el nodo que pide la opción elegida (el cañón pide `terrain.canyon`, el río `terrain.river`) y Construir queda en «Sin permiso». Es solo para enseñarlo: al construir, el servidor vuelve a comprobarlo todo. Con un servidor que no contesta (sin esta versión de KomaEdit) no se apaga nada.
 - **Validación antes de mandar:** texto vacío o con más de 16 líneas, espacios en máscaras o listas de bloques, caracteres que el chat no admite (`§` o de control: Minecraft echaría al jugador), nombres de sello, recorrido o bioma inválidos, más de 64 gotas en la erosión hidráulica o fuerza térmica de más de 2. Construir queda apagado y dice el motivo.
 - **Sello de relieve:** galería con la miniatura de los 20 sellos de serie (el mapa de alturas pintado con sombreado) y un campo para un PNG propio de `config/komaedit/heightmaps/`. Construir deja el pincel en la mano, y lo que cambies después en la tarjeta le llega solo (ver [El pincel sigue al Studio](#el-pincel-sigue-al-studio)).
+- **Pintar terreno:** dos galerías, la paleta con la muestra de su degradado y la huella con su miniatura, y debajo el degradado, el radio, la fuerza y la semilla (el candado, en Más ajustes; ver [Pincel de pintura](#pincel-de-pintura)). Cada número dice qué le pasa al terreno y sus extremos («de suave a de golpe», «de difuminado a cortado»). Las dos galerías van cortas (la de paletas en dos filas y la de huellas en una, con ‹ ›) para que todo eso quepa a la vista.
 - **Texto:** campo de texto (`\n` parte líneas), fuente (las de serie y las del servidor, `config/komaedit/fonts/`) y tamaño a la vista; grosor, borde, orientación, alineación, espaciado, interlineado y losas y escaleras, en Más ajustes.
 - **Materiales:** **Contar** lanza `analyze` y la lista llega a la herramienta: totales (bloques, tipos, objetos, huecos y cofres) y cada objeto con su cantidad y sus pilas, más **Copiar lista** (lo mismo que `[COPIAR]` del chat).
 - **Bioma:** buscador con todos los biomas del registro del servidor (también de datapacks y mods), relleno vertical y radio del pincel.
@@ -223,7 +224,7 @@ Con puntos de trayectoria, las herramientas que los usan (árbol, roca, río, ra
 
 ### El pincel sigue al Studio
 
-**Al pincel** (árbol, roca, bioma) y el **Sello de relieve** dejan un pincel en la mano. Desde entonces, cualquier cambio en esa tarjeta del Studio llega a ese pincel al momento (0,3 s después de dejar de tocarlo), aunque luego mires otra herramienta: quitar **Vista previa en cada clic** la quita del pincel, cambiar el radio o la especie cambia lo que pinta el siguiente clic.
+**Al pincel** (árbol, roca, bioma), el **Sello de relieve** y **Pintar terreno** dejan un pincel en la mano. Desde entonces, cualquier cambio en esa tarjeta del Studio llega a ese pincel al momento (0,3 s después de dejar de tocarlo), aunque luego mires otra herramienta: quitar **Vista previa en cada clic** la quita del pincel, cambiar el radio o la especie cambia lo que pinta el siguiente clic.
 
 - El Studio manda `/komaedit pincel actualizar <tipo> <ajustes>`, que solo cambia el pincel que ya tienes en la mano y es de ese tipo: nunca marca ni entrega otro objeto, y lo dice en la barra de acción, sin llenar el chat.
 - Si cambias de objeto en la mano, no se manda nada; al volver a coger el pincel le llega lo último.
@@ -3034,9 +3035,9 @@ Herramientas de paisaje como las de goBrush, Axiom (Elevation, Slope) o Arceon (
 /komaedit terreno sellos | paletas
 ```
 
-- Alias: `/komaedit terrain` con `ramp`, `river`, `stream`, `canyon`, `gully`, `erode` (`hydraulic`, `thermal`, `full`), `paint`, `stamps` y `palettes`; el pincel también es `relieve` o `sello` (`hm`). `cañon`, `río` y `erosión` con tilde también valen.
-- Permisos: `komaedit.build` o los finos `komaedit.build.brush.heightmap`, `komaedit.build.terrain.ramp`, `.terrain.river` (río y arroyo), `.terrain.canyon` (cañón y barranco), `.terrain.paint` (paquete intermedio) y `.terrain.erode.hydraulic` y `.terrain.erode.thermal` (avanzado; la completa pide los dos).
-- **En el Studio:** familia Terreno de la etapa [Herramientas](#herramientas): sello de relieve con la galería de miniaturas, rampa, río o cañón, erosión y pintar superficie, con **Estimar** (`-e`).
+- Alias: `/komaedit terrain` con `ramp`, `river`, `stream`, `canyon`, `gully`, `erode` (`hydraulic`, `thermal`, `full`), `paint`, `stamps` y `palettes`; el pincel también es `relieve` o `sello` (`hm`), y el de pintura, `pincel paint` o `pintar`. `cañon`, `río` y `erosión` con tilde también valen.
+- Permisos: `komaedit.build` o los finos `komaedit.build.brush.heightmap`, `komaedit.build.brush.paint`, `komaedit.build.terrain.ramp`, `.terrain.river` (río y arroyo), `.terrain.canyon` (cañón y barranco), `.terrain.paint` (paquete intermedio) y `.terrain.erode.hydraulic` y `.terrain.erode.thermal` (avanzado; la completa pide los dos).
+- **En el Studio:** familia Terreno de la etapa [Herramientas](#herramientas): sello de relieve con la galería de miniaturas, pintar terreno, rampa, río o cañón, erosión y pintar superficie, con **Estimar** (`-e`).
 - **Todo en un worker y un solo //undo:** el pincel va por el camino de los pinceles (captura repartida entre ticks, cálculo fuera del hilo del servidor, `-p` para vista previa) y las órdenes por el motor de las operaciones de región: lectura repartida entre ticks, cálculo en un worker, la estimación de `/komaedit estimate` (bloques, chunks, caja, memoria y tiempo, con la [confirmación de Build grandes](#confirmación-de-build-grandes) por encima del umbral) y escritura por lotes solo donde el bloque no haya cambiado mientras tanto. `-e` solo estima, sin construir.
 - **Máscara `-m`:** decide qué columnas se tocan mirando su **bloque de superficie**. En las órdenes es una máscara de WorldEdit (`grass_block,dirt`, `!stone`, `#existing`…, ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región)); en el pincel, la de los pinceles: una lista (`#fullblock`, `grass_block,sand`, `!sand`) o cualquier máscara de WorldEdit, como en el resto de pinceles. Así se erosiona solo la hierba o se talla un río sin tocar un camino de piedra.
 
@@ -3078,6 +3079,67 @@ Cada clic estampa un **sello**: una imagen en escala de grises donde el blanco e
 /komaedit pincel heightmap mesa 28 24 mesa -r 30
 /komaedit pincel heightmap mi_isla 32 40 -i 50 -m grass_block,sand
 ```
+
+### Pincel de pintura
+
+Recolorea la **superficie** con un degradado de la paleta **sin cambiar ninguna altura**, arrastrando como un pincel de dibujo: lo que hasta ahora solo se podía hacer sobre una selección (texturizado, `shade`, `terreno pintar`) ahora se pinta a mano. Pensado para empezar sin saber nada: `/komaedit pincel pintar` y mantener el clic derecho sobre una ladera pinta hierba en lo llano y piedra en lo empinado.
+
+```text
+/komaedit pincel paint [paleta] [radio] [pendiente|altura|ruido|huella] [fuerza] [-h huella] [-s semilla] [-k] [-e espaciado] [-u dureza] [-j variación] [-d capas] [-t] [-c] [-x] [-b bloques] [-m máscara] [-y desde..hasta] [-a grados..grados] [-n ruido] [-z tamaño] [-p]
+```
+
+- Alias: `pintar` (y `pt`). Los posicionales van en cualquier orden: el primer número es el radio (8 de serie, hasta 32), el segundo la fuerza en % (60), una palabra de degradado el modo (`pendiente` de serie) y lo demás, la paleta.
+- Permiso: `komaedit.build.brush.paint` (paquete intermedio) o `komaedit.build`.
+- **Controles:** clic derecho pinta un toque; **mantenerlo y arrastrar** pinta a lo largo del trazo. Clic izquierdo: un toque con la paleta al revés. **F**: semilla nueva (🎲). **Mayús + F**: bloquea o libera la semilla. La barra de acción dice la semilla.
+- **Paleta:** cualquiera de KomaEdit (`##Nombre`, una guardada con `#nombre` o una lista `stone,andesite,tuff`) ordenada del primer tono al último, o una de serie del pincel:
+
+| Paleta | Tonos | Para |
+| --- | --- | --- |
+| `hierba_piedra` (de serie) | hierba, musgo, tierra gruesa, grava, andesita, piedra | por pendiente: hierba en lo llano, piedra en las paredes |
+| `bosque` | hierba, podzol, tierra gruesa, tierra enraizada, piedra musgosa, toba | por pendiente |
+| `musgo` | hierba, musgo, piedra musgosa, adoquín, piedra | por pendiente o por ruido |
+| `nevado` | nieve, calcita, diorita, andesita, piedra, toba | por pendiente: nieve en lo llano |
+| `cumbres` | hierba, tierra gruesa, piedra, andesita, calcita, nieve | por altura: hierba al pie y nieve arriba |
+| `costa` | arena, grava, tierra gruesa, hierba | por altura: de la orilla a la hierba |
+| `desierto` | arena, arenisca, arena roja, arenisca roja, terracota | por pendiente |
+| `mesa` | arena roja y seis terracotas | por altura: estratos |
+| `volcanico` | toba, pizarra abismal, basalto liso, piedra negra, basalto | por pendiente o por ruido |
+
+- **Huella (`-h`):** la forma del pincel vista desde arriba, como máscara de intensidad: `circulo` (de serie), `cuadrado` o cualquier sello del [pincel de relieve](#pincel-de-relieve-sellos), de serie o propio, donde lo que se aparta del gris neutro pinta más (también lo hundido de una dolina). La **dureza** (`-u`, 30 % de serie) decide el borde: 0 lo difumina desde el centro y 100 lo corta.
+- **Degradado (cómo se reparte la paleta dentro de la pincelada):**
+  - `pendiente` (de serie): lo llano, el primer tono; lo empinado, el último. De serie de 30° (hasta ahí aguanta la hierba; una cuesta de un bloque por bloque son 45°) a 65°; `-a 20..55` lo cambia. La pendiente se mide en la columna con la altura del suelo a dos bloques.
+  - `altura`: lo bajo, el primer tono; lo alto, el último. Sin `-y`, al empezar cada trazo se mide el terreno de alrededor (el mapa de alturas en 64 bloques a la redonda, sin hojas) y la franja va del 5 % al 95 % de esas alturas, con 8 bloques como mínimo: pintar una colina reparte la paleta entre su pie y su cima aunque se empiece por el llano. `-y 60..120` la fija.
+  - `ruido`: manchas con la semilla del pincel, de `-z` bloques (12 de serie); `-n` usa otro ruido (el [ruido configurable](#ruido-configurable) o uno guardado) tal cual.
+  - `huella`: el centro del toque, el primer tono; el borde, el último. Al arrastrar sale un camino con el borde de otro color.
+- **Mezcla tramada:** cada bloque cae entre dos tonos vecinos al azar en la proporción que le toca (un 2,3 da un 70 % del tono 2 y un 30 % del 3), así no hay bandas; la **variación** (`-j`, 15 %) mueve además las fronteras con ruido para que no salgan rectas.
+- **Fuerza y pasadas:** la fuerza es la de un trazo, como la opacidad de un pincel de dibujo. Un bloque que estaba en el tono `p` al empezar el trazo se acerca al que le toca `P` hasta `p + (P - p) · fuerza · intensidad de la huella`: los toques que se solapan al arrastrar no se suman (da igual ir despacio o deprisa) y es **otra pasada** la que empuja un poco más, sin saltar del primero al último. Lo que no es de la paleta (la hierba de alrededor de otro color, la tierra de un corte) se cubre con esa misma probabilidad, así el borde se funde con el terreno.
+- **Semilla, como en Axiom:** el ruido, la trama y el giro de la huella salen de una semilla que se ve (en la barra de acción y en el Studio) y se elige con `-s`. Con la semilla **libre**, cada toque gira la huella al azar y cambia un poco su tamaño (±15 %), distinto en cada clic. **Bloqueada** (`-k`), la huella no gira ni cambia y el mismo trazo sobre el mismo terreno pinta siempre lo mismo. Al cambiar los ajustes desde el Studio sin semilla escrita, el pincel conserva la suya.
+- **Espaciado (`-e`):** distancia entre toques al arrastrar, en % del radio (30 de serie, de 5 a 200).
+- **Qué se pinta:** de serie solo la superficie (los bloques que tocan el aire o algo abierto, como plantas, hojas o nieve en capa) hasta `-d` capas hacia dentro (1); `-t` pinta todo el volumen del pincel. Las **escaleras y losas** se pintan con la escalera o losa del material del tono y conservan su forma y orientación (`-c` las deja como están; si el material no tiene esa pieza, se quedan). Sin máscara solo se toca el terreno natural (tierras, piedras, arenas, terracotas, nieve, hielo, menas, Nether y End) y los bloques de la propia paleta, para no repintar una casa al pasar al lado; `-x` deja pintar cualquier bloque. `-b grass_block,dirt` pinta solo esos bloques y `-m` acepta una máscara de WorldEdit completa (las dos juntas se suman). Hojas, troncos y plantas nunca se pintan.
+- **Alcance:** cada toque mira desde el suelo de la columna del centro hasta `radio + 4` bloques por encima y por debajo (entre 8 y 28).
+- **Vista previa:** con `-p` cada clic es un toque con su holograma y `/komaedit pincel aplicar`, sin arrastrar.
+
+```text
+/komaedit pincel pintar
+/komaedit pincel pintar cumbres 14 altura -h montana
+/komaedit pincel pintar musgo ruido 80 -z 8
+/komaedit pincel pintar ##Grayscale 6 huella -u 70
+/komaedit pincel pintar desierto 12 -h dunas -s 4242 -k
+/komaedit pincel pintar bosque -b grass_block,dirt,coarse_dirt -d 2
+```
+
+- **En el Studio:** tarjeta **Pintar terreno** de la familia Terreno, junto al sello de relieve. A la vista: la paleta con la **muestra de su degradado** (sus bloques en celdas, con la misma trama que pone el pincel; «Propia» deja escribir cualquier paleta), la **huella** con su miniatura (el círculo, el cuadrado y los sellos como mancha de luz), el degradado, el radio, la fuerza, la semilla con **Azar** (`R`). En **Más ajustes**: **Bloquear semilla**, espaciado, dureza, variación, las pendientes o alturas de cada extremo (según el modo), el tamaño de las manchas, capas, solo la superficie, escaleras y losas, cualquier bloque, solo estos bloques, máscara y vista previa en cada clic. Presets: **Ladera** (lo de serie), **Cumbres**, **Manchas** y **Desierto**. **Al pincel** deja el pincel en la mano y [lo sigue](#el-pincel-sigue-al-studio); con el Studio abierto, se pinta ahí mismo manteniendo el clic en el mundo (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
+- **Un trazo, un //undo:** todo lo que se pinta mientras se mantiene el clic es una sola edición del historial de WorldEdit (se cierra al soltar el botón). Lo que cambies a mano mientras tanto no se pisa: cada bloque se escribe solo si sigue como estaba en la foto.
+- **Rendimiento:** la paleta (con sus losas y escaleras y lo que pone sobre cada estado), la huella medida, las máscaras sencillas y los ruidos se preparan una vez al configurar el pincel (o al cambiarlo desde el Studio): ningún clic lee del disco. Minecraft repite el clic derecho cada 4 ticks; entre medias el servidor mira cada tick hacia dónde apuntas y lo confirma con la siguiente repetición, así el trazo es suave y acaba donde sueltas. Los toques se calculan en tandas (hasta 24, o lo que quepa en 1,5 millones de bloques leídos): foto repartida entre ticks (4 ms por tick), cálculo en un worker propio que no cancela ni espera a otros pinceles y escritura con 4 ms por tick; cada tanda empieza cuando la anterior está escrita, para que los toques nuevos vean lo pintado. En el worker, un toque cuesta unos 0,4 ms con radio 8 y unos 2 ms con radio 16 (`PaintStrokeBenchmarkTest`).
+- **Limitaciones:** un trazo pinta como mucho el límite de operación del servidor (al llegar, el chat lo dice y lo pintado se queda); el límite de WorldEdit (`//limit`) también lo para. Con la semilla bloqueada y poca fuerza, repasar puede quedarse a medio camino del tono (la trama es la misma en cada pasada): sube la fuerza o libera la semilla. Los clientes sin KomaEdit también arrastran (el clic derecho se repite igual), pero sin la F.
+
+![Una colina pintada con cada modo](renders/paint/colina_modos.png)
+
+![Pasadas sobre la misma ladera con fuerza 25 %: cada una empuja un poco más hacia la piedra](renders/paint/pasadas.png)
+
+![Un trazo largo con la huella del circo glaciar: con la semilla libre gira y cambia; bloqueada se repite igual](renders/paint/trazo_semillas.png)
+
+![La tarjeta Pintar terreno en el Studio](renders/studio/1080p_gui2_pintar_es.png)
 
 ### Rampa
 
@@ -3179,6 +3241,7 @@ Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit:
 | `heightmap` | `relieve`, `sello`, `hm` | [Pincel de relieve](#pincel-de-relieve-sellos) (propio de KomaEdit) |
 | `sculpt` | `modelar`, `modelado`, `sk` | [Modelado](#pinceles-de-modelado): esculpir, roca, soldar, fundir, rugosidad y grietas (propio de KomaEdit) |
 | `stamp` | `estampar`, `planos`, `st` | [Estampar planos de la biblioteca](#pincel-estampar) (propio de KomaEdit) |
+| `paint` | `pintar`, `pt` | [Pintar el terreno con un degradado, arrastrando](#pincel-de-pintura) (propio de KomaEdit) |
 
 - El pincel se liga al **objeto de la mano principal**, como los de WorldEdit: cada objeto guarda el suyo y se pueden llevar varios a la vez. Con la mano vacía se entrega una pluma llamada «Pincel de KomaEdit». Volver a configurar un objeto que ya tiene pincel lo sustituye.
 - `quitar` (`off`, `none`) suelta el pincel del objeto de la mano; `estado` (`status`) dice qué pincel lleva y sus controles.
@@ -4478,6 +4541,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
    - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
    - `komaedit.build.brush.sculpt` ([Pinceles de modelado](#pinceles-de-modelado)); escalar y girar el portapapeles va con `komaedit.clipboard`.
+   - `komaedit.build.brush.paint` ([Pincel de pintura](#pincel-de-pintura)).
    - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
