@@ -55,9 +55,9 @@ class CommandPaletteTest {
 
     @Test
     void findsStagesWithoutAccents() {
-        open("modificadores");
+        open("trayectória");
         studio.key(StudioKey.of(StudioKey.Code.ENTER));
-        assertEquals(StudioStage.MODIFIERS, studio.view.stage());
+        assertEquals(StudioStage.PATH, studio.view.stage());
         open("biblio planos");
         assertEquals(CommandPalette.Kind.STAGE, studio.view.palette().results().getFirst().kind());
     }

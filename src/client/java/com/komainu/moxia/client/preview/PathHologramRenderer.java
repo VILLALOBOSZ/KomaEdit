@@ -46,6 +46,22 @@ public final class PathHologramRenderer {
         state = new RenderState(payload, sampleCurve(payload));
     }
 
+    /**
+     * Mete un punto en {@code index} en lo que se ve, sin esperar al servidor (al añadir o insertar arrastrando, el
+     * punto nuevo se ve donde está el cursor desde el primer momento). Al llegar la trayectoria del servidor, manda la
+     * suya.
+     */
+    public static void insertLocal(int index, BlockPos position) {
+        RenderState current = state;
+        List<BlockPos> points = new ArrayList<>(current.payload().active() ? current.payload().points() : List.of());
+        if (index < 0 || index > points.size()) {
+            return;
+        }
+        points.add(index, position.toImmutable());
+        PathHologramPayload payload = new PathHologramPayload(true, current.payload().closed(), points);
+        state = new RenderState(payload, sampleCurve(payload));
+    }
+
     public static void clear() {
         state = RenderState.clear();
     }

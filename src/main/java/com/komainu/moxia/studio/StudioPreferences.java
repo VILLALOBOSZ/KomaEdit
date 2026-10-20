@@ -24,7 +24,8 @@ import java.util.Set;
  * Se guardan por id de figura; un id que ya no existe se conserva por si vuelve en otra versión.
  * Las herramientas tienen sus propias favoritas y recientes (por id de tarjeta), recuerdan sus últimos ajustes y
  * por dónde se iba, y la vista previa (ninguna, al construir o en vivo). También se recuerdan la última etapa, los
- * bloques elegidos hace poco, qué secciones plegables se dejaron abiertas y el tema de colores.
+ * bloques elegidos hace poco, qué secciones plegables se dejaron abiertas y el tema de colores. Los sellos de relieve
+ * tienen sus propias favoritas.
  */
 public final class StudioPreferences {
     public static final int MAX_RECENTS = 6;
@@ -67,6 +68,7 @@ public final class StudioPreferences {
     private final Set<String> favorites = new LinkedHashSet<>();
     private final List<String> recents = new ArrayList<>();
     private final Set<String> toolFavorites = new LinkedHashSet<>();
+    private final Set<String> stampFavorites = new LinkedHashSet<>();
     private final List<String> toolRecents = new ArrayList<>();
     private final Map<String, Map<String, Object>> toolValues = new LinkedHashMap<>();
     private final Map<String, Integer> scroll = new LinkedHashMap<>();
@@ -129,6 +131,27 @@ public final class StudioPreferences {
 
     public List<String> toolFavorites() {
         return List.copyOf(toolFavorites);
+    }
+
+    public boolean isStampFavorite(String name) {
+        return stampFavorites.contains(name);
+    }
+
+    /** Marca o desmarca un sello de relieve como favorito; devuelve si queda marcado. */
+    public boolean toggleStampFavorite(String name) {
+        if (stampFavorites.remove(name)) {
+            return false;
+        }
+        if (stampFavorites.size() >= MAX_FAVORITES) {
+            return false;
+        }
+        stampFavorites.add(name);
+        return true;
+    }
+
+    /** Los sellos favoritos, en el orden en que se marcaron. */
+    public List<String> stampFavorites() {
+        return List.copyOf(stampFavorites);
     }
 
     public void pushToolRecent(String id) {
@@ -264,6 +287,7 @@ public final class StudioPreferences {
         root.add("recents", array(recents));
         root.add("toolFavorites", array(toolFavorites));
         root.add("toolRecents", array(toolRecents));
+        root.add("stampFavorites", array(stampFavorites));
         // Las versiones anteriores solo leen este interruptor.
         root.addProperty("toolPreview", previewMode != PreviewMode.OFF);
         root.addProperty("preview", previewMode.id());
@@ -323,6 +347,11 @@ public final class StudioPreferences {
             for (String id : strings(root, "toolFavorites")) {
                 if (preferences.toolFavorites.size() < MAX_FAVORITES) {
                     preferences.toolFavorites.add(id);
+                }
+            }
+            for (String name : strings(root, "stampFavorites")) {
+                if (preferences.stampFavorites.size() < MAX_FAVORITES) {
+                    preferences.stampFavorites.add(name);
                 }
             }
             List<String> tools = strings(root, "toolRecents");

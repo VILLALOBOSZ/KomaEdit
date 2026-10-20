@@ -22,7 +22,9 @@ import java.util.Set;
  * <ul>
  *     <li>{@code llano}: lo de arriba en lo llano.</li>
  *     <li>{@code pendiente@grados}: arriba cuando la pendiente pasa de esos grados.</li>
- *     <li>{@code cumbre@altura}: arriba por encima de esa Y, si no es pendiente.</li>
+ *     <li>{@code cumbre@altura}: arriba por encima de esa Y, si no es pendiente. Con {@code %} ({@code cumbre@70%})
+ *     es relativa a lo que se cambia: por encima del 70 % entre lo más bajo y lo más alto (la nieve de una montaña
+ *     estampada sale en su tercio de arriba, esté a la altura que esté).</li>
  *     <li>{@code relleno@capas}: bajo la superficie, tantas capas.</li>
  *     <li>{@code fondo}: más abajo.</li>
  *     <li>{@code lecho}: bajo el agua.</li>
@@ -32,6 +34,8 @@ import java.util.Set;
  */
 public final class SurfacePalette {
     public static final String DEFAULT = "natural";
+    /** Desnivel mínimo (en bloques) para que una cumbre relativa pinte algo. */
+    public static final int MIN_PEAK_RANGE = 6;
     private static final long SALT = 0x5355_5246_4143_45L;
     private static final Map<String, String> PRESETS = new LinkedHashMap<>();
     private static final Map<String, String> DESCRIPTIONS = new LinkedHashMap<>();
@@ -61,6 +65,27 @@ public final class SurfacePalette {
                         + "fondo:stone,lecho:magma_block|blackstone,orilla:basalt|blackstone@1");
         preset("playa", "Arena con arenisca en lo empinado",
                 "llano:sand,pendiente:sandstone@44,relleno:sand@4,fondo:sandstone,lecho:sand|gravel,orilla:sand@3");
+        preset("alpino", "Hierba, roca en las pendientes y nieve en lo más alto de lo que se cambia",
+                "llano:grass_block,pendiente:stone|stone|andesite|tuff@38,cumbre:snow_block@70%,relleno:dirt@3,"
+                        + "fondo:stone,lecho:gravel|stone,orilla:gravel|sand@0");
+        preset("costa", "Hierba arriba, paredes de roca y arena al pie",
+                "llano:grass_block,pendiente:stone|andesite|diorite|stone@45,relleno:dirt@3,fondo:stone,"
+                        + "lecho:sand|gravel,orilla:sand@2");
+        preset("rocoso", "Piedra, andesita y grava con algo de hierba en lo llano",
+                "llano:grass_block|coarse_dirt|grass_block,pendiente:stone|andesite|cobblestone|tuff@32,"
+                        + "relleno:dirt@2,fondo:stone,lecho:gravel,orilla:gravel@0");
+        preset("isla", "Hierba con playa de arena alrededor y roca en lo empinado",
+                "llano:grass_block,pendiente:stone|andesite@44,relleno:dirt@3,fondo:stone,lecho:sand|sand|gravel,"
+                        + "orilla:sand@3");
+        preset("bancal", "Hierba en los bancales y muros de piedra en los escalones",
+                "llano:grass_block,pendiente:cobblestone|mossy_cobblestone|stone@40,relleno:dirt@3,fondo:stone,"
+                        + "lecho:gravel|clay,orilla:sand@0");
+        preset("ceniza", "Volcán: toba y andesita en las laderas, basalto en lo empinado y piedra negra en la cima",
+                "llano:tuff|tuff|andesite|coarse_dirt,pendiente:basalt|tuff|blackstone@36,cumbre:blackstone|basalt@75%,"
+                        + "relleno:tuff@3,fondo:stone,lecho:magma_block|blackstone,orilla:basalt|tuff@1");
+        preset("glaciar", "Nieve y hielo; roca y grava en las pendientes",
+                "llano:snow_block|snow_block|packed_ice,pendiente:stone|gravel|packed_ice@38,relleno:packed_ice@3,"
+                        + "fondo:stone,lecho:packed_ice|blue_ice,orilla:gravel@0");
         preset("piedra", "Todo de piedra, para texturizarlo después",
                 "llano:stone,pendiente:stone@90,relleno:stone@1,fondo:stone,lecho:stone");
         preset("conservar", "Los mismos bloques que ya tenía cada columna", null);
@@ -73,6 +98,8 @@ public final class SurfacePalette {
     private final double steepAngle;
     private final Materials peak;
     private final int peakY;
+    /** Altura de la cumbre relativa (0 a 1) o NaN si es una Y fija. */
+    private final double peakFraction;
     private final Materials fill;
     private final int fillDepth;
     private final Materials deep;
@@ -89,6 +116,7 @@ public final class SurfacePalette {
         this.steepAngle = builder.steepAngle;
         this.peak = builder.peak;
         this.peakY = builder.peakY;
+        this.peakFraction = builder.peakFraction;
         this.fill = builder.fill;
         this.fillDepth = builder.fillDepth;
         this.deep = builder.deep;
@@ -96,6 +124,43 @@ public final class SurfacePalette {
         this.shore = builder.shore;
         this.shoreHeight = builder.shoreHeight;
         this.strata = builder.strata;
+    }
+
+    private SurfacePalette(SurfacePalette other, int peakY) {
+        this.source = other.source;
+        this.keep = other.keep;
+        this.flat = other.flat;
+        this.steep = other.steep;
+        this.steepAngle = other.steepAngle;
+        this.peak = other.peak;
+        this.peakY = peakY;
+        this.peakFraction = Double.NaN;
+        this.fill = other.fill;
+        this.fillDepth = other.fillDepth;
+        this.deep = other.deep;
+        this.bed = other.bed;
+        this.shore = other.shore;
+        this.shoreHeight = other.shoreHeight;
+        this.strata = other.strata;
+    }
+
+    /** Si la cumbre va en porcentaje de lo que se cambia ({@code cumbre@70%}). */
+    public boolean relativePeak() {
+        return peak != null && !Double.isNaN(peakFraction);
+    }
+
+    /**
+     * La misma paleta con la cumbre relativa ya puesta en una Y, entre lo más bajo y lo más alto de la zona. Con menos
+     * de {@value #MIN_PEAK_RANGE} bloques de desnivel no hay cumbre: un llano o una loma no se nievan.
+     */
+    public SurfacePalette forRange(double lowest, double highest) {
+        if (!relativePeak() || Double.isNaN(lowest) || Double.isNaN(highest)) {
+            return this;
+        }
+        if (highest - lowest < MIN_PEAK_RANGE) {
+            return new SurfacePalette(this, Integer.MAX_VALUE / 2);
+        }
+        return new SurfacePalette(this, (int) Math.round(lowest + (highest - lowest) * peakFraction));
     }
 
     private static void preset(String name, String description, String definition) {
@@ -299,6 +364,7 @@ public final class SurfacePalette {
         private double steepAngle = 50.0;
         private Materials peak;
         private int peakY = 150;
+        private double peakFraction = Double.NaN;
         private Materials fill = Materials.parse("dirt");
         private int fillDepth = 3;
         private Materials deep = Materials.parse("stone");
@@ -326,15 +392,23 @@ public final class SurfacePalette {
             String key = key(token.substring(0, colon));
             String rest = token.substring(colon + 1).strip();
             Double value = null;
+            boolean percent = false;
             int at = rest.lastIndexOf('@');
             if (at >= 0) {
                 String number = rest.substring(at + 1).strip();
+                percent = number.endsWith("%");
+                if (percent) {
+                    number = number.substring(0, number.length() - 1).strip();
+                }
                 try {
                     value = Double.parseDouble(number);
                 } catch (NumberFormatException exception) {
                     throw new IllegalArgumentException("«" + number + "» no es un número en " + token);
                 }
                 rest = rest.substring(0, at);
+            }
+            if (percent && !"cumbre".equals(key)) {
+                throw new IllegalArgumentException("Solo la cumbre admite porcentaje: " + token);
             }
             if (key == null) {
                 throw new IllegalArgumentException("Clave desconocida en la paleta de superficie: " + token);
@@ -357,8 +431,11 @@ public final class SurfacePalette {
                     if (peak == null) {
                         throw new IllegalArgumentException("Falta el bloque en " + token);
                     }
-                    if (value != null) {
+                    if (value != null && percent) {
+                        peakFraction = range(value, 0.0, 100.0, "El porcentaje de la cumbre") / 100.0;
+                    } else if (value != null) {
                         peakY = (int) Math.round(range(value, -2_048.0, 2_048.0, "La altura de la cumbre"));
+                        peakFraction = Double.NaN;
                     }
                 }
                 case "relleno" -> {

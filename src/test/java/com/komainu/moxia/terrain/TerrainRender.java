@@ -28,6 +28,10 @@ final class TerrainRender {
             case "andesite" -> new Color(0x9A9A98);
             case "tuff" -> new Color(0x6E6E63);
             case "mossy_cobblestone" -> new Color(0x6E7F5A);
+            case "cobblestone" -> new Color(0x7A7A7A);
+            case "diorite" -> new Color(0xBDBDBD);
+            case "packed_ice" -> new Color(0x8DB4F4);
+            case "blue_ice" -> new Color(0x74A8F4);
             case "snow_block", "powder_snow" -> new Color(0xF2F6F8);
             case "sand" -> new Color(0xDCCB8E);
             case "red_sand" -> new Color(0xB9622B);

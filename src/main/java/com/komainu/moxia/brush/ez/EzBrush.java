@@ -10,6 +10,9 @@ import com.komainu.moxia.brush.place.PlacementOperation;
 import com.komainu.moxia.brush.place.PlacementTemplate;
 import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
+import com.komainu.moxia.brush.paint.PaintBrush;
+import com.komainu.moxia.brush.paint.PaintOperation;
+import com.komainu.moxia.brush.paint.PaintStrokes;
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.nature.NaturePresets;
 import com.komainu.moxia.nature.NatureService;
@@ -75,6 +78,14 @@ public abstract sealed class EzBrush {
     public abstract String controls();
 
     abstract void handle(EzBrushManager.Session session, BrushInput input);
+
+    /**
+     * El pincel que sustituye a {@code previous} al cambiar los ajustes desde el Studio ({@code pincel actualizar});
+     * cada pincel decide qué conserva del anterior. De serie, nada.
+     */
+    public EzBrush adopt(EzBrush previous) {
+        return this;
+    }
 
     public static EzBrush create(ServerPlayerEntity player, EzBrushType type, String input) {
         if (type == EzBrushType.TREE) {
@@ -151,6 +162,7 @@ public abstract sealed class EzBrush {
                 yield new Relief(config, preview);
             }
             case SCULPT -> Sculpt.parse(player, options);
+            case PAINT -> new Paint(PaintBrush.create(player, options));
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -708,26 +720,40 @@ public abstract sealed class EzBrush {
         return String.format(Locale.ROOT, "%d, %d, %d", point.x(), point.y(), point.z());
     }
 
-    /** Relieve: un sello de alturas en cada clic. Derecho: el modo; izquierdo: el contrario; F: cambia de modo. */
+    /**
+     * Relieve: un sello de alturas en cada clic, cada vez con su variación (giro, escala, espejo y ruido fino según la
+     * semilla y el número de clic). Derecho: el modo; izquierdo: el contrario; F: cambia de modo; Mayús+F: semilla
+     * nueva.
+     */
     static final class Relief extends EzBrush {
         private final HeightmapBrush.Config config;
         private final BrushMask fixedMask;
         private StampBrush.Mode mode;
+        private long seed;
+        private int clicks;
 
         Relief(HeightmapBrush.Config config, boolean preview) {
             super(EzBrushType.HEIGHTMAP, config.radius(), preview);
             this.config = config;
             this.fixedMask = config.mask() == null ? null : BrushMasks.fixed(config.mask());
             this.mode = config.mode();
+            this.seed = config.seed();
         }
 
         @Override
         public String controls() {
-            return HeightmapBrush.controls(config, mode);
+            return HeightmapBrush.controls(config, mode, seed);
         }
 
         @Override
         void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input == BrushInput.SNEAK_SWAP) {
+                seed = ThreadLocalRandom.current().nextInt(1_000_000);
+                clicks = 0;
+                session.info("Relieve: semilla nueva " + seed + (config.locked()
+                        ? " (bloqueada: todos los clics saldrán iguales)" : ""));
+                return;
+            }
             if (input.swap()) {
                 mode = mode.next();
                 session.info("Relieve: " + mode.displayName().toLowerCase(Locale.ROOT) + " con el clic derecho");
@@ -736,8 +762,8 @@ public abstract sealed class EzBrush {
             StampBrush.Mode pass = input.left() ? mode.opposite() : mode;
             BrushMask mask = config.mask() == null ? null
                     : BrushMasks.forClick(fixedMask, session.player(), config.mask());
-            session.run(HeightmapBrush.operation(config, pass, session.target(), session.player().getYaw(),
-                    ThreadLocalRandom.current().nextDouble(), mask));
+            session.run(HeightmapBrush.operation(config, pass, session.target(), session.player().getYaw(), seed,
+                    clicks++, mask));
         }
     }
 
@@ -900,6 +926,53 @@ public abstract sealed class EzBrush {
                     return !solid || parsed.matches(world, x, y, z);
                 }
             };
+        }
+    }
+
+    /**
+     * Pintar: recolorea la superficie con un degradado de la paleta, sin cambiar alturas (paquete
+     * {@code brush.paint}). Clic derecho, o mantenerlo y arrastrar: un trazo, una sola edición de //undo; clic
+     * izquierdo: un toque con la paleta al revés; F: semilla nueva; Mayús + F: bloquea o libera la semilla.
+     */
+    static final class Paint extends EzBrush {
+        private final PaintBrush brush;
+
+        Paint(PaintBrush brush) {
+            super(EzBrushType.PAINT, brush.config().radius(), brush.config().preview());
+            this.brush = brush;
+        }
+
+        @Override
+        public String controls() {
+            return brush.controls();
+        }
+
+        /** Sin semilla escrita, sigue con la del pincel de antes: mover otro ajuste no cambia el dibujo. */
+        @Override
+        public EzBrush adopt(EzBrush previous) {
+            if (previous instanceof Paint old) {
+                brush.adopt(old.brush);
+            }
+            return this;
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            switch (input) {
+                case SWAP -> session.info("Pintar: semilla " + brush.reroll()
+                        + (brush.locked() ? " (bloqueada: cada clic pinta igual)" : ""));
+                case SNEAK_SWAP -> session.info(brush.toggleLock()
+                        ? "Pintar: semilla " + brush.seed() + " bloqueada; cada clic pinta igual"
+                        : "Pintar: semilla " + brush.seed() + " libre; cada clic gira la huella");
+                default -> {
+                    BlockHitResult hit = session.hit();
+                    if (preview()) {
+                        session.run(PaintOperation.single(brush, hit, input.left(), session.player()));
+                        return;
+                    }
+                    PaintStrokes.input(session.player(), brush, hit, input.left());
+                }
+            }
         }
     }
 }

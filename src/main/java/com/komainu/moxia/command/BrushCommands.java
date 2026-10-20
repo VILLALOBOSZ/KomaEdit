@@ -76,6 +76,7 @@ public final class BrushCommands {
                 case HEIGHTMAP -> heightmapExamples();
                 case STAMP -> stampExamples(context.getSource());
                 case SCULPT -> sculptExamples(remaining);
+                case PAINT -> paintExamples(remaining);
             };
         } catch (IllegalArgumentException exception) {
             examples = new String[0];
@@ -122,13 +123,26 @@ public final class BrushCommands {
                 "-p"};
     }
 
+    /** Sugerencias del pincel de pintura: sus paletas y degradados primero; después números, huellas y banderas. */
+    private static String[] paintExamples(String remaining) {
+        java.util.List<String> examples = new java.util.ArrayList<>(
+                com.komainu.moxia.brush.paint.PaintPalettes.descriptions().keySet());
+        examples.addAll(java.util.List.of("##Grayscale", "pendiente", "altura", "ruido", "huella", "8", "12", "60"));
+        if (remaining.contains(" ")) {
+            examples.addAll(java.util.List.of("-h", "-s", "-k", "-e", "-u", "-j", "-d", "-t", "-c", "-x", "-b", "-m",
+                    "-y", "60..120", "-a", "30..65", "-n", "clouds", "-z", "-p"));
+            examples.addAll(com.komainu.moxia.brush.paint.PaintBrush.footprints().names());
+        }
+        return examples.toArray(String[]::new);
+    }
+
     /** Sugerencias del pincel de relieve: los sellos que hay, los modos, las paletas y las banderas. */
     private static String[] heightmapExamples() {
         java.util.List<String> examples = new java.util.ArrayList<>(
                 com.komainu.moxia.terrain.TerrainService.catalog().names());
-        examples.addAll(java.util.List.of("12", "16", "elevar", "bajar", "aplanar"));
+        examples.addAll(java.util.List.of("12", "16", "sumar", "restar", "maximo", "aplanar", "suavizar", "auto"));
         examples.addAll(com.komainu.moxia.terrain.SurfacePalette.presets().keySet());
-        examples.addAll(java.util.List.of("-i", "-r", "mirada", "azar", "-m", "-c", "-p"));
+        examples.addAll(java.util.List.of("-i", "-r", "mirada", "azar", "-x", "60", "-s", "-k", "-m", "-c", "-p"));
         return examples.toArray(String[]::new);
     }
 
@@ -242,7 +256,7 @@ public final class BrushCommands {
             return 0;
         }
         KomaPermissions.requireBuild(player, "brush." + type.id());
-        EzBrush brush = EzBrush.create(player, type, parts.length > 1 ? parts[1] : "");
+        EzBrush brush = EzBrush.create(player, type, parts.length > 1 ? parts[1] : "").adopt(current.get());
         EzBrushManager.bind(player, toolId, brush);
         BrushTool.setRadius(player, brush.radius());
         Feedback.status(player, type.displayName() + " al día" + (brush.radius() > 0 ? " · radio " + brush.radius()
@@ -257,7 +271,7 @@ public final class BrushCommands {
         if (brush.isEmpty()) {
             feedback(context, Text.literal("Pinceles: paletteshift, gradient, gradientstroke, petalpainter, place,"
                     + " scatter, array, tree, rock, biome, heightmap, stamp, sculpt (draw, rock, weld, melt, roughen,"
-                    + " shatter). Ejemplo: /komaedit pincel gradient ##Magma 8 tapered 0.6")
+                    + " shatter), paint (pintar). Ejemplo: /komaedit pincel pintar")
                     .formatted(Formatting.GRAY));
             return 1;
         }

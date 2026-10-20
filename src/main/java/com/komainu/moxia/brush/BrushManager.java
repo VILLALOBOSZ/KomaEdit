@@ -37,7 +37,7 @@ public final class BrushManager {
 
     public static int stampTarget(ServerPlayerEntity player)
             throws InputParseException, MaxChangedBlocksException {
-        HitResult result = player.raycast(160.0, 1.0F, false);
+        HitResult result = com.komainu.moxia.studio.net.StudioAim.target(player, 160.0);
         if (!(result instanceof BlockHitResult hit) || result.getType() != HitResult.Type.BLOCK) {
             throw new IllegalArgumentException("Mira la cara de un bloque para estampar la figura");
         }

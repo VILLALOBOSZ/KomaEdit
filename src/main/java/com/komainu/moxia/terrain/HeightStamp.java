@@ -1,5 +1,7 @@
 package com.komainu.moxia.terrain;
 
+import com.komainu.moxia.terrain.stamp.StampPlacement;
+
 /**
  * Un sello de relieve: una imagen en escala de grises donde el blanco es lo más alto. {@code neutral} es el gris que
  * no cambia nada; por debajo, el sello hunde (cráteres, dolinas). Los valores van de 0 a 1.
@@ -85,13 +87,14 @@ public final class HeightStamp {
      * desde arriba, como la orientación de un jugador.
      */
     public double relief(double dx, double dz, double radius, double angle) {
-        double cos = Math.cos(angle);
-        double sin = Math.sin(angle);
-        // Del mundo al sello: deshacer el giro. Con giro 0, +X del mundo es la derecha y -Z la parte de arriba.
-        double right = dx * cos + dz * sin;
-        double down = -dx * sin + dz * cos;
-        double u = 0.5 + right / (2.0 * radius);
-        double v = 0.5 + down / (2.0 * radius);
+        return StampPlacement.of(radius, angle).relief(this, dx, dz);
+    }
+
+    /**
+     * Relieve en coordenadas de la imagen ({@code u}, {@code v} de 0 a 1, como {@link #sample}): de -1 a 1 respecto
+     * al gris neutro. Fuera de la imagen, 0.
+     */
+    public double reliefAt(double u, double v) {
         double value = sample(u, v) - neutral;
         double span = value >= 0.0 ? 1.0 - neutral : neutral;
         return span <= 0.0 ? 0.0 : value / span;

@@ -37,11 +37,13 @@ class StudioViewTest {
             assertTrue(keys.add(stage.shortcut()), "tecla repetida " + stage.shortcut());
             assertEquals(stage, StudioStage.byShortcut(stage.shortcut()));
         }
-        assertEquals(9, keys.size(), "del 1 al 9: Envejecer salió del Studio");
-        assertEquals(List.of(3, 3, 3), Arrays.stream(StudioStage.groupSizes()).boxed().toList());
+        assertEquals(7, keys.size(), "del 1 al 7: Modificadores y Material viven dentro de Figuras");
+        assertEquals(List.of(3, 1, 3), Arrays.stream(StudioStage.groupSizes()).boxed().toList());
         assertEquals(StudioStage.FIGURE, StudioStage.byId("structures"), "Estructuras vive ahora en Figuras");
+        assertEquals(StudioStage.FIGURE, StudioStage.byId("modifiers"), "quien lo dejó en Modificadores abre Figuras");
+        assertEquals(StudioStage.FIGURE, StudioStage.byId("material"), "y en Material, también");
         assertEquals(null, StudioStage.byId("weather"), "quien lo dejó en Envejecer abre en la de serie");
-        assertEquals('7', StudioStage.BLUEPRINTS.shortcut());
+        assertEquals('5', StudioStage.BLUEPRINTS.shortcut());
         StudioDriver studio = studio();
         for (String group : List.of("CREAR", "AJUSTAR", "BIBLIOTECA")) {
             assertTrue(studio.has(group), group);
@@ -194,8 +196,8 @@ class StudioViewTest {
         StudioDriver studio = new StudioDriver("es_es", 640, 360);
         studio.render();
         assertEquals(StudioLayout.NavMode.ICONS, studio.view.frame().navMode());
-        assertFalse(studio.has("Modificadores"), "sin el ratón encima, solo iconos");
-        com.komainu.moxia.studio.layout.Rect icon = studio.view.frame().navItem(StudioStage.MODIFIERS.ordinal());
+        assertFalse(studio.has("Trayectoria"), "sin el ratón encima, solo iconos");
+        com.komainu.moxia.studio.layout.Rect icon = studio.view.frame().navItem(StudioStage.COLOR.ordinal());
         studio.mouseX = icon.centerX();
         studio.mouseY = icon.centerY();
         for (StudioStage stage : StudioStage.values()) {

@@ -116,10 +116,30 @@ public final class StudioTheme {
 
     public static int SCRIM;
 
-    /** Pigmentos del icono de la etapa Material: dibujan bloques de colores, así que no cambian con el tema. */
+    /** Pigmentos de un icono que dibuja bloques de colores: no cambian con el tema. */
     public static final int PIGMENT_RED = 0xFFE0503F;
     public static final int PIGMENT_YELLOW = 0xFFF2C14B;
     public static final int PIGMENT_BLUE = 0xFF4B9BE2;
+
+    // ── En el mundo ─────────────────────────────────────────────────────────────────────────────────────
+
+    /*
+     * Lo que se dibuja con líneas en el mundo: el contorno de la selección y sus caras al cogerlas con el ratón del
+     * Studio, la caja de la vista previa, el radio del pincel y la simetría. No cambia con el tema, a propósito: el
+     * fondo es el mundo y no el panel, así que valen colores que se lean sobre cielo, agua, hierba y piedra (un acento
+     * turquesa o salvia se perdería), y los ejes son los de siempre, rojo X, verde Y y azul Z. El ámbar de las caras
+     * es el de la caja de la vista previa: en el mundo dice «esto se mueve», no «aviso».
+     */
+    public static final int WORLD_SELECTION = 0xE6F2F2FF;
+    public static final int WORLD_PREVIEW_BOX = 0xF0FFD84A;
+    public static final int WORLD_RETICLE = 0xD9FFFFFF;
+    /** La cara de la selección bajo el ratón del Studio y la que se está arrastrando. */
+    public static final int WORLD_FACE_HOVER = 0xCCFFE082;
+    public static final int WORLD_FACE_GRABBED = 0xFFFFCA28;
+    public static final int WORLD_PLANE_X = 0xEF5350;
+    public static final int WORLD_PLANE_Z = 0x42A5F5;
+    public static final int WORLD_PLANE_Y = 0x66BB6A;
+    public static final int WORLD_AXIS = 0xFFCA28;
 
     private static StudioPalette current;
 

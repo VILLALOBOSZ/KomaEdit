@@ -12,7 +12,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | --- | --- |
 | `shape` | Muestreo Catmull–Rom y voxelización de figuras 3D |
 | `path` | Trayectorias por jugador |
-| `brush` | Estampado orientado de figuras existentes |
+| `brush` | Estampado orientado de figuras existentes; `brush.paint`: el pincel de pintura (huella, degradados, trazo y pasadas en Java puro; `PaintStrokes` lleva cada trazo a una sola edición) |
 | `sculpt` | Brochas de volumen/altura, máscaras, perfiles y previews; `sculpt.model`: pinceles de modelado (esculpir, roca, soldar, fundir, rugosidad, grietas) como lógica pura sobre `ModelGrid` y su `ModelOperation` |
 | `clipboard` | Escalar y girar el portapapeles: Scale2x, Scale3x y RotSprite en 3D sobre `VoxelVolume` (puros) y `ClipboardScaleService`, que lee y sustituye el portapapeles de WorldEdit |
 | `noise` | Perlin, fBM, ridged y Worley deterministas |
@@ -61,6 +61,14 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 Los pinceles de `/komaedit pincel` (paquete `brush.ez`, `brush.place`) siguen el mismo camino con `SculptManager.run(jugador, operación, vistaPrevia)`. Cada clic crea una `BrushOperation` inmutable: dice qué zona capturar (`capture()`, o `null` si no lee el mundo) y calcula el plan sobre la foto en el worker (`plan(snapshot)`). Paletas, ruido y portapapeles se resuelven antes, en el hilo del servidor. La lógica de cada pincel (`PaletteShift`, `GradientPainter`, `PetalPainter`, `Alignment`) trabaja sobre `BrushWorld`, una vista mínima de la foto, y se prueba sin Minecraft.
 
 Las herramientas (pinceles y supervarita) se marcan en el `custom_data` del objeto. El cliente intercepta con ellas el clic izquierdo, el derecho y la tecla de cambiar de mano y los manda como `BrushToolPayload`; el servidor apunta con su propio rayo. Para clientes sin el mod quedan los eventos de uso y ataque de Fabric en el servidor.
+
+## Pincel de pintura
+
+Paquete `brush.paint`. La lógica es pura y se prueba con un mundo falso: `PaintFootprint` (círculo, cuadrado o un sello como máscara de intensidad) sale de `FootprintLibrary`, la única puerta a la biblioteca de sellos; `PaintStroke` convierte los puntos del trazo en toques con espaciado, giro y escala de la semilla; `PaintPainter` pinta una tanda de toques sobre un `PaintWorld` con la `Memory` del trazo (el tono de cada bloque al empezar y el alfa más fuerte que recibió).
+
+1. **Clic.** `EzBrush.Paint` recibe el clic derecho (Minecraft lo repite cada 4 ticks mientras se mantiene) y lo pasa a `PaintStrokes.input`. El pincel (`PaintBrush`) ya tiene resueltas la paleta (`PaintPalette` sobre `ResolvedPalette`), la huella, las máscaras y los ruidos.
+2. **Trazo.** `PaintStrokes` guarda un trazo por jugador: cada tick mira hacia dónde apunta y lo confirma con la siguiente repetición del clic. Los toques pendientes van en tandas: foto con `WorldSnapshot.begin` repartida entre ticks, cálculo en `AsyncEngine` con un dueño propio (no cancela ni lo cancelan los demás pinceles del jugador) y escritura con presupuesto por tick en una `EditSession` que dura todo el trazo y va al historial al cerrarlo (un solo //undo). Cada escritura comprueba que el bloque sigue como en la foto.
+3. **Vista previa.** Con `-p`, `PaintOperation` es una `BrushOperation` de un toque por el camino común (`SculptManager.run`).
 
 ## Capacidades de construcción a mano
 
@@ -206,6 +214,29 @@ Los tipos de `SculptBrushType` de la categoría `MODEL` van por el mismo camino 
 ## Terraformado
 
 `terrain` trabaja sobre `TerrainView`, una vista mínima de la zona capturada: `TerrainColumns` lee el suelo de cada columna, las herramientas (`StampBrush`, `RampPlanner`, `RiverPlanner`, `HydraulicErosion`, `ThermalErosion`) cambian un `HeightField` de alturas con decimales y `TerrainWriter` lo vuelve a pasar a bloques con `SurfacePalette`. Todo eso es Java puro y se prueba con un mundo de texto. En el juego, `TerrainService` lee con `RegionOperationService.capture`, calcula en `AsyncEngine` sobre `RegionTerrainView`, escribe en `RegionEdits` y pasa por `BuildEstimate` y `PendingBuilds`; el pincel de relieve es una `BrushOperation` (`HeightmapOperation`) sobre `BrushTerrainView`.
+
+### Biblioteca de sellos
+
+`terrain.stamp` genera y coloca los sellos de serie; `terrain.StampLibrary` es la fachada.
+
+- **Recetas.** `StampRecipe` (nombre, `StampCategory`, descripción, gris neutro, inicio del borde, forma y `Bake`) genera un sello con una semilla: la forma (`ReliefShapes`, `CarvedShapes` y `SurfaceShapes`, sobre `StampNoise` y `StampMath`), la erosión horneada (`HydraulicErosion` y `ThermalErosion` sobre un `HeightField` a escala de bloques, con una rampa hacia fuera para que los derrubios salgan del círculo y, en los que hunden, el terreno de alrededor protegido), el borde y la normalización. Las formas solo usan `StrictMath` y ruido entero; la erosión es caótica y usa `Math`, que puede variar en el último bit entre Java distintas: por eso los sellos van ya hechos en el jar. `StampRecipes` las junta por categoría.
+- **PNG del jar.** `StampLibrary.get` lee `assets/komaedit/stamps/<nombre>.png` (16 bits con 12 de precisión) la primera vez y lo guarda en memoria; si falta, lo genera. `StampResourcesDump` (prueba con `KOMAEDIT_STAMPS_DIR`) los vuelve a escribir y `StampLibraryTest` comprueba que coinciden con las recetas. `StampCatalog` mira antes `config/komaedit/heightmaps` y no deja que una plantilla de la 1.8 sin tocar tape a un sello nuevo (huella de 8×8).
+- **Colocación.** `StampPlacement` (radio, giro, escala, espejo, semilla y fuerza del ruido fino) da el relieve de un punto (`relief`) y la huella (`footprint`); `StampVariation.place(radio, giro, alAzar, semilla, clic)` la saca de la semilla y el número de clic. `StampBrush.Settings` lleva una colocación y `StampBrush.apply` mezcla (sumar, restar, máximo, aplanar, suavizar) sobre el `HeightField`. `HeightmapBrush` lee la orden y el pincel (`EzBrush.Relief`) cuenta los clics y cambia la semilla con Mayús+F.
+
+**API para otras herramientas** (el pincel de pintura con sellos, por ejemplo):
+
+```java
+List<StampInfo> sellos = StampLibrary.all();               // nombre, categoría, descripción, neutro, altura natural, paleta
+List<StampInfo> dunas = StampLibrary.of(StampCategory.DUNES);
+int[] argb = StampLibrary.thumbnail("volcan", 64);           // miniatura en color con sombreado, por filas
+HeightStamp sello = StampLibrary.get("volcan");              // o TerrainService.catalog().load(nombre) con los PNG propios
+StampPlacement donde = StampVariation.DEFAULT.place(radio, Math.toRadians(yaw + 180), false, semilla, clic);
+double r = donde.relief(sello, dx, dz);                      // -1..1 respecto al neutro; 0 fuera del sello
+double w = donde.footprint(dx, dz);                          // 1 dentro, 0 en el círculo del sello
+int alcance = donde.reach();                                 // bloques desde el centro que puede tocar
+```
+
+`relief` es puro y no guarda estado: se puede llamar desde un worker. Con `StampVariation.NONE` sale el sello tal cual; con la misma semilla y el mismo clic, la misma colocación. `StampThumbnails.argb(sello, categoría, alturaNatural, lado)` pinta también un PNG propio. `StampLibrary.render(nombre, lado, semilla)` genera una variante entera con otra semilla (erosión incluida: centenares de milisegundos, solo para herramientas que lo necesiten).
 
 ## Máscaras y patrones en WorldEdit
 

@@ -337,14 +337,19 @@ class ToolsPanelTest {
     @Test
     void theStampGalleryPagesAndPicksOne() {
         select("stamp");
-        assertTrue(studio.has("‹") && studio.has("›"), "hay más sellos que casillas: se pasa de página");
-        for (int page = 0; page < 10 && !hasTile("Cráter"); page++) {
-            studio.click("›", "tools:stamp:page");
+        // Por categorías: ‹ › en la categoría hasta los cráteres.
+        for (int step = 0; step < 14 && !hasTile("Cráter"); step++) {
+            studio.clickValue("Categoría");
         }
         studio.click("Cráter", "tools:stamp");
         assertEquals("crater", values("stamp").choice("stamp"));
         studio.click("Al pincel");
-        assertEquals("komaedit pincel heightmap crater 12 12 elevar natural", studio.host.last());
+        assertEquals("komaedit pincel heightmap crater 12 5 sumar auto", studio.host.last());
+        // Buscando sale de todas las categorías, por páginas.
+        studio.clickKey("tools:stamp_search");
+        studio.type("a");
+        assertTrue(studio.has("‹") && studio.has("›"), "más sellos que casillas: se pasa de página");
+        studio.click("›", "tools:stamp:page");
     }
 
     @Test

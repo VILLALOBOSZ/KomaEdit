@@ -21,20 +21,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * el color de antes. Busca literales de color ({@code 0xFF…} de 6 u 8 cifras) en el código del Studio.
  */
 class StudioThemeTokensTest {
-    /** El código que pinta el Studio: la vista común, la etapa de herramientas y la pantalla del cliente. */
+    /**
+     * El código que pinta el Studio: la vista común, la etapa de herramientas, la pantalla del cliente y las guías que
+     * el ratón del Studio deja en el mundo (la caja de selección con sus caras).
+     */
     private static final List<Path> FOLDERS = List.of(
             Path.of("src/main/java/com/komainu/moxia/studio/ui"),
             Path.of("src/main/java/com/komainu/moxia/studio/tools/ui"),
-            Path.of("src/client/java/com/komainu/moxia/client/gui"));
+            Path.of("src/client/java/com/komainu/moxia/client/gui"),
+            Path.of("src/client/java/com/komainu/moxia/client/world/WorldOverlayRenderer.java"));
     /** Donde viven los colores. */
     private static final Set<String> THEME = Set.of("StudioTheme.java", "StudioPalette.java");
     /**
-     * Miniaturas que pintan el mundo (hojas, tierra, cristal, el relieve de un sello), no la interfaz: sus colores no
-     * cambian con el tema, pero tienen que ir con nombre, en una constante.
+     * Miniaturas que pintan el mundo (hojas, tierra, cristal, el relieve de un sello, un farol, los bloques de una
+     * paleta), no la interfaz: sus colores no cambian con el tema, pero tienen que ir con nombre, en una constante.
      */
-    private static final Set<String> WORLD_PICTURES = Set.of("ChoiceThumbnails.java", "StampPreview.java");
+    private static final Set<String> WORLD_PICTURES = Set.of("ChoiceThumbnails.java", "StampPreview.java",
+            "VariationThumbnails.java", "PaintPreview.java");
     /** Máscaras de bits: el alfa opaco, los tres canales y el cambio de orden de canales de una textura. */
     private static final Set<String> MASKS = Set.of("0xFF000000", "0xFFFFFF", "0x00FFFFFF", "0xFF00FF00");
+    /** Un alfa solo ({@code 0xF0000000}), que se pone sobre un color con {@code |}: no es un color. */
+    private static final Pattern ALPHA = Pattern.compile("0x[0-9A-F]{2}000000");
     private static final Pattern LITERAL = Pattern.compile("0[xX](?:[0-9A-Fa-f]{8}|[0-9A-Fa-f]{6})(?![0-9A-Fa-fLl])");
     private static final Pattern NAMED = Pattern.compile("^\\s*(?:private |public |protected )?static final int(?:\\[])?\\s+[A-Z_]+\\s*=");
 
@@ -43,7 +50,7 @@ class StudioThemeTokensTest {
         List<String> found = new ArrayList<>();
         int files = 0;
         for (Path folder : FOLDERS) {
-            assertTrue(Files.isDirectory(folder), "no encuentro " + folder.toAbsolutePath());
+            assertTrue(Files.exists(folder), "no encuentro " + folder.toAbsolutePath());
             try (Stream<Path> paths = Files.walk(folder)) {
                 for (Path file : paths.filter(path -> path.toString().endsWith(".java")).toList()) {
                     files++;
@@ -57,13 +64,14 @@ class StudioThemeTokensTest {
                         Matcher matcher = LITERAL.matcher(line);
                         while (matcher.find()) {
                             String literal = matcher.group().toUpperCase().replace("0X", "0x");
-                            if (MASKS.contains(literal)) {
+                            if (MASKS.contains(literal) || ALPHA.matcher(literal).matches()
+                                    && line.indexOf('|', matcher.end()) >= 0) {
                                 continue;
                             }
                             if (WORLD_PICTURES.contains(name) && NAMED.matcher(line).find()) {
                                 continue;
                             }
-                            found.add(folder.relativize(file) + ":" + (index + 1) + "  " + lines.get(index).strip());
+                            found.add(file + ":" + (index + 1) + "  " + lines.get(index).strip());
                         }
                     }
                 }

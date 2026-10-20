@@ -7,6 +7,7 @@ import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.blueprint.BlueprintThumbnail;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.studio.FigureVariation;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.net.JobStatusPayload;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -64,7 +66,7 @@ class StudioMockupsTest {
             // El ratón sobre los iconos: sale la lista con el nombre y la tecla de cada etapa.
             tools(driver, "roof");
             driver.render();
-            var icon = driver.view.frame().navItem(StudioStage.MODIFIERS.ordinal());
+            var icon = driver.view.frame().navItem(StudioStage.COLOR.ordinal());
             driver.mouseX = icon.centerX();
             driver.mouseY = icon.centerY();
         }));
@@ -157,14 +159,95 @@ class StudioMockupsTest {
             driver.mouseX = row[0];
             driver.mouseY = row[1];
         }));
-        scenes.add(new Scene("1080p_gui3_material_es.png", 640, 360, 3, "es_es", driver -> {
-            path(driver, 3);
-            driver.host.lookedAt = "minecraft:mossy_cobblestone";
-            driver.view.selectStage(StudioStage.MATERIAL, driver.host);
+        // Modificadores y Material, dentro de Figuras: el material bajo el tamaño y las variaciones con su dibujo.
+        for (String language : List.of("es_es", "en_us")) {
+            String suffix = language.substring(0, 2);
+            scenes.add(new Scene("1080p_gui3_variaciones_" + suffix + ".png", 640, 360, 3, language,
+                    driver -> variations(driver, true)));
+            scenes.add(new Scene("854_gui2_variaciones_" + suffix + ".png", 427, 240, 2, language,
+                    driver -> variations(driver, true)));
+            scenes.add(new Scene("1080p_gui3_variaciones_apagadas_" + suffix + ".png", 640, 360, 3, language,
+                    driver -> variations(driver, false)));
+            scenes.add(new Scene("854_gui2_variaciones_apagadas_" + suffix + ".png", 427, 240, 2, language,
+                    driver -> variations(driver, false)));
+        }
+        // Lo primero que ve quien abre el Studio: Figuras sin puntos.
+        scenes.add(new Scene("1080p_gui3_primera_vez_es.png", 640, 360, 3, "es_es", driver -> {
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.host.status = "";
         }));
-        scenes.add(new Scene("1080p_gui3_modificadores_en.png", 640, 360, 3, "en_us", driver -> {
+        scenes.add(new Scene("854_gui2_primera_vez_en.png", 427, 240, 2, "en_us", driver -> {
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.host.status = "";
+        }));
+        // La biblioteca de la figura: recetas guardadas e instancias construidas.
+        scenes.add(new Scene("1080p_gui3_recetas_es.png", 640, 360, 3, "es_es", driver -> {
+            figure(driver);
+            driver.host.recipes.add(driver.view.figure().draft().withName("trenza_puente"));
+            driver.host.recipes.add(com.komainu.moxia.recipe.ProceduralRecipe.defaults().withName("escamas_muro"));
+            driver.view.selectStage(StudioStage.RECIPES, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_instancias_es.png", 640, 360, 3, "es_es", driver -> {
+            figure(driver);
+            driver.host.instances.add(new com.komainu.moxia.recipe.ProceduralInstanceSummary("a1",
+                    driver.view.figure().draft().withName("trenza_puente"), 3, 12_340, 0L));
+            driver.view.selectStage(StudioStage.INSTANCES, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_sello_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "stamp");
+            driver.mouseX = 200;
+            driver.mouseY = 220;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
+        }));
+        scenes.add(new Scene("1080p_gui3_material_es.png", 640, 360, 3, "es_es", driver -> {
+            figure(driver);
+            scrollTo(driver, "MATERIAL");
+        }));
+        // Lo que explica cada control: sobre el número, qué cambia y sus extremos; al arrastrarlo, los extremos en
+        // la fila; y en el pie, sus gestos.
+        scenes.add(new Scene("1080p_gui3_ayuda_numero_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "tree");
+            int[] value = driver.valuePoint("Ancho de copa");
+            driver.mouseX = value[0];
+            driver.mouseY = value[1];
+        }));
+        scenes.add(new Scene("1080p_gui3_ayuda_numero_en.png", 640, 360, 3, "en_us", driver -> {
+            tools(driver, "tree");
+            int[] value = driver.valuePoint("Crown width");
+            driver.mouseX = value[0];
+            driver.mouseY = value[1];
+        }));
+        scenes.add(new Scene("1080p_gui3_arrastrar_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "tree");
+            int[] value = driver.valuePoint("Altura");
+            driver.view.mouseClicked(value[0], value[1], 0, driver.host);
+            driver.view.mouseDragged(value[0] + 30, value[1], 0, driver.host);
+            driver.mouseX = value[0] + 30;
+            driver.mouseY = value[1];
+        }));
+        // El ratón sobre el mundo: el pie dice qué hace cada clic en esta etapa.
+        scenes.add(new Scene("1080p_gui3_pie_mundo_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "roof");
+            driver.mouseX = 200;
+            driver.mouseY = 220;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
+        }));
+        scenes.add(new Scene("1080p_gui3_pie_mundo_en.png", 640, 360, 3, "en_us", driver -> {
             path(driver, 3);
-            driver.view.selectStage(StudioStage.MODIFIERS, driver.host);
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.mouseX = 200;
+            driver.mouseY = 220;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
+        }));
+        scenes.add(new Scene("854_gui2_pie_mundo_es.png", 427, 240, 2, "es_es", driver -> {
+            tools(driver, "tree");
+            driver.mouseX = 120;
+            driver.mouseY = 150;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
         }));
         scenes.add(new Scene("1080p_gui3_color_es.png", 640, 360, 3, "es_es", driver ->
                 driver.view.selectStage(StudioStage.COLOR, driver.host)));
@@ -209,6 +292,24 @@ class StudioMockupsTest {
             driver.view.status(driver.host.tr("gui.komaedit.tools.status.brush_synced",
                     driver.host.tr("gui.komaedit.tools.stamp")), driver.host.now());
         }));
+        // La galería de sellos de relieve: por categorías, con buscador y favoritos.
+        scenes.add(new Scene("1080p_gui3_sello_galeria_es.png", 640, 360, 3, "es_es", driver -> {
+            stampGallery(driver);
+            int[] tile = driver.where("Cumbre doble");
+            driver.mouseX = tile[0];
+            driver.mouseY = tile[1];
+        }));
+        scenes.add(new Scene("1080p_gui3_sello_buscar_es.png", 640, 360, 3, "es_es", driver -> {
+            stampGallery(driver);
+            driver.clickKey("tools:stamp_search");
+            driver.type("isla");
+        }));
+        scenes.add(new Scene("1080p_gui2_sello_galeria_en.png", 960, 540, 2, "en_us", driver -> {
+            stampGallery(driver);
+            driver.clickValue("Category");
+            driver.clickValue("Category");
+        }));
+        scenes.add(new Scene("854_gui2_sello_es.png", 427, 240, 2, "es_es", StudioMockupsTest::stampGallery));
         // 1080p con GUI 4 (la automática): compacto.
         scenes.add(new Scene("1080p_gui4_arbol_es.png", 480, 270, 4, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui4_tejado_en.png", 480, 270, 4, "en_us", driver -> tools(driver, "roof")));
@@ -247,35 +348,44 @@ class StudioMockupsTest {
     }
 
     /**
-     * Las pantallas que más se usan (Herramientas, Árbol, Tejado y Planos, a 1080p con GUI 3 y a 854×480 con GUI 2)
-     * con cada tema, el árbol de los cuatro lado a lado con un trozo de mundo y la hoja de fichas.
+     * Las pantallas que más se usan con cada tema, a 1080p con GUI 3 y a 854×480 con GUI 2; de cinco de ellas, una
+     * comparativa con los cuatro temas lado a lado (cada panel con un trozo de mundo), y la hoja de fichas.
      */
     private static void themes(Path folder) throws IOException {
-        List<Scene> scenes = List.of(
-                new Scene("1080p_gui3_herramientas_es.png", 640, 360, 3, "es_es", driver -> tools(driver, null)),
-                new Scene("1080p_gui3_arbol_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "tree")),
-                new Scene("1080p_gui3_tejado_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "roof")),
-                new Scene("1080p_gui3_planos_es.png", 640, 360, 3, "es_es", StudioMockupsTest::blueprints),
-                new Scene("854_gui2_herramientas_es.png", 427, 240, 2, "es_es", driver -> tools(driver, null)),
-                new Scene("854_gui2_arbol_es.png", 427, 240, 2, "es_es", driver -> tools(driver, "tree")),
-                new Scene("854_gui2_tejado_es.png", 427, 240, 2, "es_es", driver -> tools(driver, "roof")),
-                new Scene("854_gui2_planos_es.png", 427, 240, 2, "es_es", StudioMockupsTest::blueprints));
-        List<BufferedImage> trees = new ArrayList<>();
+        Map<String, Consumer<StudioDriver>> screens = new LinkedHashMap<>();
+        screens.put("herramientas", driver -> tools(driver, null));
+        screens.put("arbol", driver -> tools(driver, "tree"));
+        screens.put("tejado", driver -> tools(driver, "roof"));
+        screens.put("planos", StudioMockupsTest::blueprints);
+        screens.put("variaciones", driver -> variations(driver, true));
+        screens.put("sello", StudioMockupsTest::stampGallery);
+        screens.put("pintar", driver -> tools(driver, "paintbrush"));
+        List<String> compared = List.of("herramientas", "arbol", "variaciones", "sello", "pintar");
+        Map<String, List<BufferedImage>> comparisons = new LinkedHashMap<>();
         for (StudioPalette palette : StudioPalette.values()) {
             Path themeFolder = folder.resolve(palette.id());
             Files.createDirectories(themeFolder);
-            for (Scene scene : scenes) {
+            for (Map.Entry<String, Consumer<StudioDriver>> screen : screens.entrySet()) {
+                Scene large = new Scene("1080p_gui3_" + screen.getKey() + "_es.png", 640, 360, 3, "es_es",
+                        screen.getValue());
+                Scene small = new Scene("854_gui2_" + screen.getKey() + "_es.png", 427, 240, 2, "es_es",
+                        screen.getValue());
                 Rect[] panel = new Rect[1];
-                BufferedImage image = paint(scene, palette, rect -> panel[0] = rect);
-                ImageIO.write(image, "png", themeFolder.resolve(scene.file()).toFile());
-                if (scene.file().equals("1080p_gui3_arbol_es.png")) {
+                BufferedImage image = paint(large, palette, rect -> panel[0] = rect);
+                ImageIO.write(image, "png", themeFolder.resolve(large.file()).toFile());
+                ImageIO.write(paint(small, palette, null), "png", themeFolder.resolve(small.file()).toFile());
+                if (compared.contains(screen.getKey())) {
                     // El panel con un poco de mundo a su izquierda: el tema tiene que pegar con lo que hay al lado.
-                    int left = Math.max(0, panel[0].x() - 40) * scene.scale();
-                    trees.add(image.getSubimage(left, 0, image.getWidth() - left, image.getHeight()));
+                    int left = Math.max(0, panel[0].x() - 40) * large.scale();
+                    comparisons.computeIfAbsent(screen.getKey(), key -> new ArrayList<>())
+                            .add(image.getSubimage(left, 0, image.getWidth() - left, image.getHeight()));
                 }
             }
         }
-        ImageIO.write(sideBySide(trees, 12), "png", folder.resolve("comparativa_arbol.png").toFile());
+        for (Map.Entry<String, List<BufferedImage>> comparison : comparisons.entrySet()) {
+            ImageIO.write(sideBySide(comparison.getValue(), 12), "png",
+                    folder.resolve("comparativa_" + comparison.getKey() + ".png").toFile());
+        }
         ImageIO.write(tokenSheet(), "png", folder.resolve("fichas.png").toFile());
     }
 
@@ -377,6 +487,41 @@ class StudioMockupsTest {
         return image;
     }
 
+
+    /** Una trenza sobre tres puntos en Figuras. */
+    static void figure(StudioDriver driver) {
+        path(driver, 3);
+        driver.host.previewBlocks = 12_300;
+        driver.view.figure().selectShape(driver.host, PathShape.BRAID);
+        driver.view.selectStage(StudioStage.FIGURE, driver.host);
+        driver.host.status = "";
+    }
+
+    /** Figuras con la lista de variaciones a la vista; {@code on}: retorcida y afinada al final. */
+    static void variations(StudioDriver driver, boolean on) {
+        figure(driver);
+        if (on) {
+            var extensions = driver.view.figure().draft().extensions();
+            extensions = FigureVariation.TWIST.enable(extensions, PathShape.BRAID);
+            extensions = FigureVariation.TAPER.enable(extensions, PathShape.BRAID);
+            driver.view.figure().setDraft(driver.view.figure().draft().withExtensions(extensions));
+        }
+        scrollTo(driver, driver.host.tr("gui.komaedit.variations").toUpperCase(java.util.Locale.ROOT));
+    }
+
+    /** Desplaza el panel hasta que {@code text} quede arriba (con la rueda sobre una etiqueta, como un jugador). */
+    static void scrollTo(StudioDriver driver, String text) {
+        for (int step = 0; step < 40; step++) {
+            driver.render();
+            var drawn = driver.canvas().texts().stream().filter(item -> item.text().equals(text)).findFirst();
+            if (drawn.isPresent() && drawn.get().y() < driver.view.frame().viewport().y() + 30) {
+                return;
+            }
+            driver.view.mouseScrolled(driver.view.frame().innerLeft() + 2, driver.view.frame().viewport().y() + 2, -1,
+                    driver.host);
+        }
+    }
+
     static ToolsInfo info() {
         return new ToolsInfo(true, new int[]{10, 6, 12}, List.of(), Map.of("bosque", "spruce 30 -d 1.4"), Map.of(),
                 ToolsInfo.Symmetry.OFF, null, List.of("minecraft:plains", "minecraft:cherry_grove"), null);
@@ -391,6 +536,13 @@ class StudioMockupsTest {
             driver.view.tools().select(ToolCatalog.byId(tool), driver.host);
         }
         driver.host.status = "";
+    }
+
+    /** El pincel de relieve con dos sellos favoritos marcados. */
+    static void stampGallery(StudioDriver driver) {
+        driver.host.preferences.toggleStampFavorite("volcan");
+        driver.host.preferences.toggleStampFavorite("pico");
+        tools(driver, "stamp");
     }
 
     static void path(StudioDriver driver, int points) {

@@ -88,6 +88,9 @@ class StudioThemeContrastTest {
             }
             need(failures, palette, FOCUS, FIELD, MARK);
             need(failures, palette, ACCENT, TRACK, 2.0);
+            // El pulsador de un interruptor, encendido sobre el acento y apagado sobre el carril.
+            need(failures, palette, ON_ACCENT, ACCENT, MARK);
+            need(failures, palette, TEXT_SECONDARY, TRACK, MARK);
             // Bajo el ratón: un relleno que se nota y un borde claro.
             need(failures, palette, CARD_HOVER, CARD, 1.12);
             need(failures, palette, OUTLINE, CARD_HOVER, 2.0);
@@ -176,6 +179,20 @@ class StudioThemeContrastTest {
             BufferedImage chipHover = paint(ui -> ui.chip(rect, "", false, StudioTheme.TEXT), 40, 18);
             assertEquals(StudioTheme.ACCENT, pixel(chip, bar), name + "pastilla elegida: barra de acento");
             assertEquals(StudioTheme.OUTLINE, pixel(chipHover, edge), name + "pastilla bajo el ratón: borde");
+
+            // Las tarjetas de variación: encendida, relleno tintado, barra de acento y el pulsador a la derecha.
+            Rect card = new Rect(10, 10, 160, 28);
+            BufferedImage on = paint(ui -> ui.pictureToggle(card, null, "", "", true), -1, -1);
+            BufferedImage off = paint(ui -> ui.pictureToggle(card, null, "", "", false), -1, -1);
+            int[] leftBar = {10, 24};
+            int[] knobOn = {158, 23};
+            int[] knobOff = {148, 23};
+            assertEquals(StudioTheme.ACCENT, pixel(on, leftBar), name + "variación encendida: barra de acento");
+            assertEquals(StudioTheme.CARD, pixel(off, leftBar), name + "variación apagada: sin barra");
+            assertEquals(StudioTheme.ON_ACCENT, pixel(on, knobOn), name + "encendida: pulsador a la derecha");
+            assertEquals(StudioTheme.ACCENT, pixel(on, knobOff), name + "encendida: carril de acento");
+            assertEquals(StudioTheme.TEXT_SECONDARY, pixel(off, knobOff), name + "apagada: pulsador a la izquierda");
+            assertEquals(StudioTheme.TRACK, pixel(off, knobOn), name + "apagada: carril gris");
         }
     }
 
@@ -277,12 +294,50 @@ class StudioThemeContrastTest {
             driver.view.figure().setBrowsing(true);
         });
         scenes.put("material", driver -> {
-            StudioMockupsTest.path(driver, 3);
-            driver.view.selectStage(StudioStage.MATERIAL, driver.host);
+            StudioMockupsTest.figure(driver);
+            StudioMockupsTest.scrollTo(driver, "MATERIAL");
         });
-        scenes.put("modificadores_en", driver -> {
-            StudioMockupsTest.path(driver, 3);
-            driver.view.selectStage(StudioStage.MODIFIERS, driver.host);
+        scenes.put("variaciones_en", driver -> StudioMockupsTest.variations(driver, true));
+        scenes.put("variaciones_apagadas", driver -> StudioMockupsTest.variations(driver, false));
+        scenes.put("primera_vez", driver -> driver.view.selectStage(StudioStage.FIGURE, driver.host));
+        scenes.put("sello_galeria", driver -> {
+            StudioMockupsTest.stampGallery(driver);
+            if (driver.has("Cumbre doble")) {
+                int[] tile = driver.where("Cumbre doble");
+                driver.mouseX = tile[0];
+                driver.mouseY = tile[1];
+            }
+        });
+        scenes.put("sello_buscar", driver -> {
+            StudioMockupsTest.stampGallery(driver);
+            driver.render();
+            // En pantallas pequeñas la galería va por páginas, sin buscador.
+            if (driver.ui().widgets().stream().anyMatch(widget -> "tools:stamp_search".equals(widget.key()))) {
+                driver.clickKey("tools:stamp_search");
+                driver.type("isla");
+            }
+        });
+        scenes.put("pintar", driver -> StudioMockupsTest.tools(driver, "paintbrush"));
+        scenes.put("ayuda_numero", driver -> {
+            StudioMockupsTest.tools(driver, "tree");
+            int[] value = driver.valuePoint("Ancho de copa");
+            driver.mouseX = value[0];
+            driver.mouseY = value[1];
+        });
+        scenes.put("arrastrar", driver -> {
+            StudioMockupsTest.tools(driver, "tree");
+            int[] value = driver.valuePoint("Altura");
+            driver.view.mouseClicked(value[0], value[1], 0, driver.host);
+            driver.view.mouseDragged(value[0] + 30, value[1], 0, driver.host);
+            driver.mouseX = value[0] + 30;
+            driver.mouseY = value[1];
+        });
+        scenes.put("pie_mundo", driver -> {
+            StudioMockupsTest.tools(driver, "roof");
+            driver.mouseX = 60;
+            driver.mouseY = 150;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
         });
         scenes.put("color", driver -> driver.view.selectStage(StudioStage.COLOR, driver.host));
         scenes.put("recetas", driver -> driver.view.selectStage(StudioStage.RECIPES, driver.host));
@@ -290,7 +345,7 @@ class StudioThemeContrastTest {
         scenes.put("navegacion", driver -> {
             StudioMockupsTest.tools(driver, "roof");
             driver.render();
-            Rect icon = driver.view.frame().navItem(StudioStage.MODIFIERS.ordinal());
+            Rect icon = driver.view.frame().navItem(StudioStage.COLOR.ordinal());
             driver.mouseX = icon.centerX();
             driver.mouseY = icon.centerY();
         });
@@ -361,9 +416,9 @@ class StudioThemeContrastTest {
     }
 
     private static BufferedImage paint(Consumer<StudioUi> draw, int mouseX, int mouseY) {
-        BufferedImage image = new BufferedImage(80, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(200, 50, BufferedImage.TYPE_INT_ARGB);
         StudioUi ui = new StudioUi(new ImageCanvas(image, 1));
-        ui.fill(new Rect(0, 0, 80, 40), StudioTheme.PANEL);
+        ui.fill(new Rect(0, 0, 200, 50), StudioTheme.PANEL);
         ui.begin(mouseX, mouseY, true);
         draw.accept(ui);
         return image;
