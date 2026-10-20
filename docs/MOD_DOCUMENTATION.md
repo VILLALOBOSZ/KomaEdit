@@ -2331,6 +2331,138 @@ Las capacidades no pasan por `BlockItem.place` ni por el paquete de uso de bloqu
 - La celda de Colocar en el aire y el final del arrastre los calcula el cliente con su mirada (para que coincidan con la vista previa); el servidor comprueba la distancia, no que se vea.
 - La colocación rápida la decide el cliente cuando el servidor dice que está activa; Minecraft no limita el ritmo de colocación en el servidor.
 
+## Terraformado
+
+### Objetivo y acceso
+
+Herramientas de paisaje como las de goBrush, Axiom (Elevation, Slope) o Arceon (`//river`): un pincel de relieve con sellos en escala de grises, rampas, ríos y cañones a lo largo de la trayectoria y erosión física de la selección. Todas trabajan sobre el **mapa de alturas** de la zona (el bloque de suelo más alto de cada columna) y lo vuelven a pasar a bloques con una **paleta de superficie** por pendiente y altura.
+
+```text
+/komaedit pincel heightmap <sello> [radio] [altura] [elevar|bajar|aplanar] [paleta] [-i intensidad] [-r mirada|azar|grados] [-m máscara] [-c neutro] [-p]
+/komaedit terreno rampa [plano|cono] [ancho] [transición] [paleta] [-t talud] [-u] [-m máscara] [-e]
+/komaedit terreno rio|arroyo|canon|barranco [ancho] [profundidad] [paleta] [-o orilla] [-w laderas] [-t transición] [-f agua|lava|seco] [-n nivel] [-z suavizado] [-y] [-k] [-m máscara] [-e]
+/komaedit terreno erosion hidraulica|termica|completa [iteraciones] [fuerza] [paleta] [-a ángulo] [-s semilla] [-m máscara] [-e]
+/komaedit terreno pintar [paleta] [-m máscara] [-e]
+/komaedit terreno sellos | paletas
+```
+
+- Alias: `/komaedit terrain` con `ramp`, `river`, `stream`, `canyon`, `gully`, `erode` (`hydraulic`, `thermal`, `full`), `paint`, `stamps` y `palettes`; el pincel también es `relieve` o `sello` (`hm`). `cañon`, `río` y `erosión` con tilde también valen.
+- Permisos: `komaedit.build` o los finos `komaedit.build.brush.heightmap`, `komaedit.build.terrain.ramp`, `.terrain.river` (río y arroyo), `.terrain.canyon` (cañón y barranco), `.terrain.paint` (paquete intermedio) y `.terrain.erode.hydraulic` y `.terrain.erode.thermal` (avanzado; la completa pide los dos).
+- **Todo en un worker y un solo //undo:** el pincel va por el camino de los pinceles (captura repartida entre ticks, cálculo fuera del hilo del servidor, `-p` para vista previa) y las órdenes por el motor de las operaciones de región: lectura repartida entre ticks, cálculo en un worker, la estimación de `/komaedit estimate` (bloques, chunks, caja, memoria y tiempo, con la [confirmación de Build grandes](#confirmación-de-build-grandes) por encima del umbral) y escritura por lotes solo donde el bloque no haya cambiado mientras tanto. `-e` solo estima, sin construir.
+- **Máscara `-m`:** decide qué columnas se tocan mirando su **bloque de superficie**. En las órdenes es una máscara de WorldEdit (`grass_block,dirt`, `!stone`, `#existing`…, ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región)); en el pincel, la de los pinceles (`#fullblock`, `grass_block,sand`, `!sand`). Así se erosiona solo la hierba o se talla un río sin tocar un camino de piedra.
+
+### Paleta de superficie
+
+Las columnas que cambian se repintan según su pendiente nueva, su altura y el agua: hierba en lo llano, piedra en las pendientes, nieve en las cumbres, arena en la orilla y grava en el lecho. Las fronteras llevan ruido para que no salgan en línea recta, y varios bloques separados por `|` se mezclan a manchas. Las paredes que quedan al aire (tres bloques o más de caída, como las de un cañón) se pintan como pendiente.
+
+| Preajuste | Superficie |
+| --- | --- |
+| `natural` (por defecto) | Hierba, piedra y andesita desde 50°, nieve por encima de Y 150, tierra debajo, grava, arena y arcilla en el lecho, arena en la orilla. |
+| `pradera` | Hierba hasta en las cuestas; tierra gruesa y piedra solo desde 58°. |
+| `bosque` | Hierba con podzol y tierra gruesa, piedra musgosa en las pendientes, barro en la orilla. |
+| `desierto` | Arena y arenisca. |
+| `mesa` | Arena roja arriba y estratos de terracota por altura en las pendientes, como unas badlands. |
+| `nevado` | Nieve en todo lo llano y piedra en las pendientes. |
+| `volcanico` | Toba, piedra negra y basalto; magma en el lecho (para ríos de lava). |
+| `playa` | Arena, con arenisca en lo empinado. |
+| `piedra` | Todo piedra, para texturizar después. |
+| `conservar` | Los mismos bloques que tenía cada columna. |
+
+A un preajuste se le pueden cambiar partes con `clave:bloques@valor` separados por comas (sin espacios): `natural,cumbre:powder_snow@170,pendiente:stone|tuff@35`. Claves: `llano`, `pendiente@grados`, `cumbre@Y`, `relleno@capas` (bajo la superficie, 3 por defecto), `fondo`, `lecho` (bajo el agua), `orilla@altura` (sobre el agua) y `estratos` (bandas por altura en las pendientes). También en inglés (`flat`, `steep`, `peak`, `fill`, `deep`, `bed`, `shore`, `strata`). `/komaedit terreno paletas` las lista.
+
+### Pincel de relieve (sellos)
+
+Cada clic estampa un **sello**: una imagen en escala de grises donde el blanco es lo más alto, escalada a un cuadrado de lado `2·radio` alrededor del bloque que miras.
+
+- **Modos:** `elevar` suma la forma del sello, `bajar` la resta y `aplanar` lleva el terreno hacia la altura del bloque del clic con la fuerza que marca el sello. El clic izquierdo hace lo contrario (bajar ↔ elevar) y la F cambia de modo.
+- **Giro (`-r`):** `mirada` (por defecto: la parte de arriba de la imagen apunta hacia donde miras), `azar` (uno distinto en cada clic) o unos grados fijos (0 = la parte de arriba al norte).
+- **Altura e intensidad:** `[altura]` son los bloques que sube el blanco puro (12 por defecto, hasta 96) e `-i` el porcentaje (100 por defecto); repasar acumula.
+- **Gris neutro (`-c`):** el gris que no cambia nada. Por debajo, el sello hunde aunque el modo sea elevar: así funcionan `crater` (neutro 0,35), `dolina` y `valle` (neutro 1). Se guarda en el propio PNG y `-c` lo cambia.
+- **Sellos de serie:** `montana`, `pico`, `colina`, `loma`, `cordillera`, `macizo`, `volcan`, `crater`, `dolina`, `valle`, `duna`, `dunas`, `mesa`, `terrazas`, `acantilado`, `barrancos`, `aguja`, `domo`, `atolon` y `circo`. Están generados por código con funciones y ruido de semilla fija (no vienen de ninguna imagen ajena) y salen siempre iguales. Los que tienen orientación (loma, cordillera, valle, duna, acantilado, circo) la toman del giro.
+- **Sellos propios:** cualquier imagen en `config/komaedit/heightmaps/` con los formatos de `/komaedit image` (PNG, JPG o GIF; mejor PNG en grises de 16 bits, que no deja escalones; en color se toma el brillo y la transparencia deja el terreno como está), de hasta 1024×1024 y 8 MB. Se usa por su nombre sin `.png`. La primera vez que se usa el pincel, KomaEdit escribe allí los sellos de serie como PNG de 16 bits para que sirvan de plantilla; uno con el mismo nombre sustituye al de serie y un archivo borrado vuelve a salir. `/komaedit terreno sellos` los lista; pulsar uno lo deja escrito en el chat.
+- La paleta va como posicional (`natural` por defecto).
+
+```text
+/komaedit pincel heightmap montana 24 30 -r azar
+/komaedit pincel heightmap crater 16 10 natural
+/komaedit pincel heightmap duna 20 8 desierto
+/komaedit pincel heightmap mesa 28 24 mesa -r 30
+/komaedit pincel heightmap mi_isla 32 40 -i 50 -m grass_block,sand
+```
+
+### Rampa
+
+Una rampa del **primer al último punto** de la trayectoria (`/komaedit path`), o de `//pos1` a `//pos2` si no hay trayectoria. Los dos extremos son el bloque de la calzada: la rampa empieza y acaba a su altura. Rellena por debajo y recorta por encima (hasta 32 bloques de desnivel con el terreno).
+
+- **`plano`** (por defecto): sección plana de `[ancho]` bloques (5 por defecto) y una franja de `[transición]` bloques a cada lado (6) que la funde con el terreno con una curva suave.
+- **`cono`**: sección de terraplén. Fuera de la calzada el terreno queda entre dos taludes que bajan (relleno) o suben (desmonte) `-t` bloques por bloque (1, unos 45°), así nunca hay paredes y el terraplén acaba donde toca el terreno.
+- Los extremos se redondean. `-u` pone un perfil suave a lo largo: empieza y acaba más tendida.
+- **Sin escalones:** una rampa que sube más de un bloque por bloque (1,5 veces menos con `-u`) daría escalones y se rechaza con un aviso para alejar los puntos. En la calzada y, con un talud de hasta 1, también en los taludes, dos columnas vecinas nunca se separan más de un bloque. En `plano`, la transición solo queda sin escalones si es más ancha que 1,5 veces el desnivel con el terreno.
+
+```text
+/komaedit terreno rampa
+/komaedit terreno rampa cono 7 -t 0.8
+/komaedit terreno rampa plano 4 10 desierto -u
+```
+
+### Ríos y cañones
+
+Tallan un cauce a lo largo de la trayectoria (curva suave por sus puntos; también cerrada, para un foso) o de los puntos de la selección.
+
+- **Sección:** un fondo plano de `[ancho]` bloques, orillas en curva suave de `-o` bloques que suben `[profundidad]` y, por fuera, una ladera con `-w` bloques de subida por bloque a lo largo de `-t` bloques. Donde el terreno es más bajo que esa sección no se toca, y donde es más alto la ladera lo corta hasta encontrarse con él; en el borde se funde con un mínimo suave y una franja de fundido, así no quedan aristas ni muros.
+- **El agua no sube:** el fondo es el terreno del eje menos la profundidad, con el mínimo acumulado en el sentido del agua y una media móvil de `-z` bloques que conserva ese orden; después se recorre el eje y ninguna columna puede quedar más alta que las anteriores. El agua corre hacia el extremo más bajo (el chat avisa si va al revés que los puntos); `-k` respeta el orden de los puntos y `-y` hace que el fondo siga la altura de los puntos menos la profundidad (sin pasar del terreno) en lugar del terreno.
+- **Agua o lava:** `-f agua` (por defecto en río, arroyo y cañón), `-f lava` o `-f seco` (por defecto en el barranco). `-n` es el nivel sobre el fondo (el del preajuste, sin pasar de la profundidad menos uno). El nivel también baja a escalones en el sentido del agua; donde el terreno de al lado queda más bajo que el agua se levanta un ribazo, ataludado hacia fuera, para que no se escape.
+- **Materiales:** el lecho (lo que queda bajo el agua) sale de la clave `lecho` de la paleta, la orilla de `orilla` y las laderas de la regla de pendiente; con `volcanico`, un río de lava lleva magma y piedra negra.
+- Quita la vegetación (troncos, hojas, plantas) que quedaría flotando sobre lo tallado.
+
+| Preajuste | Ancho | Profundidad | Orilla | Laderas | Transición | Líquido |
+| --- | --- | --- | --- | --- | --- | --- |
+| `rio` | 5 | 3 | 4 | 1 | 6 | agua a 2 |
+| `arroyo` | 2 | 2 | 1,5 | 1 | 4 | agua a 1 |
+| `canon` | 5 | 12 | 3 | 3 | 12 | agua a 2 |
+| `barranco` | 1 | 5 | 2 | 1,5 | 8 | seco |
+
+```text
+/komaedit terreno rio
+/komaedit terreno rio 7 4 bosque
+/komaedit terreno canon 6 24 mesa -o 7 -w 2.5
+/komaedit terreno rio 4 3 volcanico -f lava
+/komaedit terreno barranco 2 6 -t 12
+```
+
+### Erosión física
+
+Erosiona la selección de WorldEdit (con su forma: cilindros, polígonos…) sobre su mapa de alturas. Es mucho más realista que el pincel `erosion` de `/komaedit sculpt`, que solo media alturas vecinas y sigue disponible.
+
+- **`hidraulica`:** simulación de gotas. Cada gota cae en un punto al azar, baja por la pendiente con algo de inercia, arranca suelo mientras va deprisa y con poca carga y lo suelta donde frena o sube. Salen cauces que se juntan, crestas afiladas y abanicos de sedimento al pie de las laderas. `[iteraciones]` son las gotas por columna (3 por defecto, de 0,1 a 64) y `[fuerza]` (1 por defecto, de 0,1 a 8) escala lo que arranca y lo que lleva cada gota.
+- **`termica`:** por talud. Donde una columna queda por encima de sus vecinas más de lo que permite el ángulo de reposo `-a` (40° por defecto), el material resbala hacia ellas y al pie de los cortados se forman canchales. La dureza de la roca varía un poco con un ruido fijo, para que queden resaltes en lugar de un cono perfecto. `[iteraciones]` son las pasadas (40 por defecto, hasta 2000) y `[fuerza]` la parte del exceso que se mueve en cada una (1, de 0,1 a 2).
+- **`completa`:** primero las gotas y luego cinco pasadas térmicas con 8° más de ángulo, que solo desmoronan las paredes que dejan las cárcavas.
+- **Masa:** lo que se arranca se deposita en otra parte (al morir, cada gota deja su carga donde está), así que el volumen se conserva salvo el redondeo de cada columna a bloques. Las columnas fijas (fuera de la máscara o con la superficie fuera de la selección) guían a las gotas pero no se tocan.
+- **Determinista:** con la misma semilla `-s` y la misma selección sale lo mismo; sin `-s`, una al azar.
+- Después se pinta con la paleta: lo arrastrado deja piedra al aire y los depósitos se cubren de hierba (o de lo que diga la paleta; `conservar` mantiene los bloques de cada columna).
+- La selección tiene que abarcar todo el relieve, de debajo del suelo a encima de las cumbres: lo que asoma por arriba de la selección no se erosiona.
+
+```text
+/komaedit terreno erosion hidraulica
+/komaedit terreno erosion hidraulica 6 1.5 -s 42
+/komaedit terreno erosion termica 80 1 -a 35
+/komaedit terreno erosion completa 4 1 nevado -m grass_block,snow_block,stone
+```
+
+### Pintar
+
+`/komaedit terreno pintar [paleta]` repinta la superficie de la selección (la de arriba y las capas de relleno) con la paleta de superficie sin cambiar ninguna altura: sirve para dar materiales a un terreno hecho a mano o generado con otra herramienta.
+
+### Rendimiento y limitaciones
+
+- El cálculo va en un worker y no para el servidor: en una zona de 160×160 columnas, cinco sellos tardan unos 150 ms, un río de 200 bloques unos 150 ms, 40 pasadas térmicas unos 150 ms y la erosión hidráulica con 3 gotas por columna (77 000 gotas) medio segundo. Lo que más tarda es leer la zona, repartida entre ticks (unos 4 ms por tick).
+- La rampa y el río leen la caja que los rodea: de largo, su recorrido más el alcance de la sección; de alto, de algo por debajo del fondo a 24–96 bloques por encima del punto más alto. Pasa por el límite de volumen de las operaciones de región (16 millones de bloques leídos y el límite de operación del servidor sobre la caja); para ríos muy largos, por tramos.
+- El pincel lee como mucho 4 millones de bloques por clic (radio 32 y altura 96 caben) y cambia como mucho 1 000 000.
+- El mapa de alturas es de una sola capa: no hay voladizos ni cuevas en el resultado, y las cuevas bajo la superficie ni se rellenan ni se vacían. Lo que no es suelo (hojas, troncos, plantas, cristal, losas) no cuenta como superficie: al bajar una columna se quita lo que quedaría flotando y al subirla se entierra.
+- El agua y la lava se colocan como bloques fuente; en cada escalón del nivel hay un pequeño salto de agua.
+- Las órdenes `terreno` admiten la [vista previa](#vista-previa-progreso-y-cancelación) del motor común con `-v` (o «previsualizar siempre»), con su barra de progreso y `/komaedit cancel`; el pincel tiene la suya con `-p`. `-e` da solo la estimación y todo se deshace con //undo.
+- Renders de antes y después en `docs/renders/terreno/`; se regeneran con `KOMAEDIT_RENDER_DIR=<carpeta> ./gradlew test --tests "*TerrainRenderDump"`.
+
 ## Pinceles
 
 ### Objetivo y acceso
@@ -2352,6 +2484,7 @@ Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit:
 | `place` | `colocar`, `pl` | [Colocación](#pincel-de-colocación) |
 | `scatter` | `dispersar`, `sc` | [Dispersión](#pincel-de-colocación) |
 | `array` | `hilera`, `ar` | [Hilera a lo largo de un trazo](#pincel-de-colocación) |
+| `heightmap` | `relieve`, `sello`, `hm` | [Pincel de relieve](#pincel-de-relieve-sellos) (propio de KomaEdit) |
 
 - El pincel se liga al **objeto de la mano principal**, como los de WorldEdit: cada objeto guarda el suyo y se pueden llevar varios a la vez. Con la mano vacía se entrega una pluma llamada «Pincel de KomaEdit». Volver a configurar un objeto que ya tiene pincel lo sustituye.
 - `quitar` (`off`, `none`) suelta el pincel del objeto de la mano; `estado` (`status`) dice qué pincel lleva y sus controles.
@@ -3370,10 +3503,10 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
-   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`.
-   - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
-   - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)), en el paquete intermedio.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`.
+   - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
+   - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
+   - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
@@ -3383,16 +3516,9 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 
 | Paquete | Incluye |
 | --- | --- |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, supervarita y selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`). |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, simetría (espejos y radial), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles y recetas. |
-| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita y selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`). |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`), deform, surface, smooth, texture, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles y recetas. |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), supervarita y selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`). |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles y recetas. |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
-| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `image`, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
 | `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.

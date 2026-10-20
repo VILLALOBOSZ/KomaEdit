@@ -13,7 +13,9 @@ public enum EzBrushType {
     PLACE("place", "Colocar", Set.of('a', 'x', 'p'), Set.of(), "colocar", "pl"),
     SCATTER("scatter", "Dispersar", Set.of(), Set.of(), "dispersar", "sc"),
     ARRAY("array", "Hilera", Set.of(), Set.of(), "hilera", "ar"),
-    BIOME("biome", "Bioma", Set.of('v'), Set.of('m'), "bioma", "bi");
+    BIOME("biome", "Bioma", Set.of('v'), Set.of('m'), "bioma", "bi"),
+    /** Propio de KomaEdit: sello de relieve en escala de grises (paquete {@code terrain}). */
+    HEIGHTMAP("heightmap", "Relieve", Set.of('p'), Set.of('i', 'r', 'm', 'c'), "relieve", "sello", "hm");
 
     private final String id;
     private final String displayName;
@@ -59,6 +61,6 @@ public enum EzBrushType {
             }
         }
         throw new IllegalArgumentException("Pincel desconocido: " + input
-                + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array, biome)");
+                + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array, biome, heightmap)");
     }
 }
