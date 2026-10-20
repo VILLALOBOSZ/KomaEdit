@@ -1,6 +1,7 @@
 package com.komainu.moxia.nature;
 
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -76,13 +77,16 @@ final class NatureOperation implements BrushOperation {
         NatureTerrain terrain = new SnapshotNatureTerrain(snapshot);
         BooleanSupplier cancelled = () -> Thread.currentThread().isInterrupted();
         NatureVoxels all = new NatureVoxels(limit);
-        for (Site site : sites) {
+        for (int index = 0; index < sites.size(); index++) {
+            AsyncEngine.progress(index, sites.size() + 1L);
+            Site site = sites.get(index);
             Bounds reach = site.reach();
             // La foto recorta la altura al mundo: nada se genera fuera de lo leído.
             Bounds bounds = new Bounds(reach.minX(), Math.max(reach.minY(), snapshot.minimumY()), reach.minZ(),
                     reach.maxX(), Math.min(reach.maxY(), snapshot.maximumY()), reach.maxZ());
             merge(all, site.generator().generate(terrain, bounds, limit, cancelled));
         }
+        AsyncEngine.progress(sites.size(), sites.size() + 1L);
         if (mask != null) {
             mask.bind(snapshot);
         }

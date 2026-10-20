@@ -35,9 +35,9 @@ import static net.minecraft.server.command.CommandManager.literal;
  */
 public final class NatureCommands {
     private static final String[] TREE_FLAGS = {"-g", "-b", "-d", "-w", "-i", "-c", "-s", "-t", "-h", "-r", "-m",
-            "-p"};
+            "-x", "-v"};
     private static final String[] ROCK_FLAGS = {"-t", "-b", "-u", "-a", "-e", "-r", "-g", "-c", "-h", "-i", "-s",
-            "-m", "-p"};
+            "-m", "-x", "-v"};
 
     private NatureCommands() {
     }

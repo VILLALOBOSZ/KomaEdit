@@ -43,7 +43,7 @@ public record RockSettings(
     public static final String DEFAULT_MOSS = "moss_block";
     public static final double MAX_SIZE = 32.0;
     static final Set<Character> SWITCHES = Set.of('p');
-    static final Set<Character> VALUED = Set.of('t', 'b', 'u', 'a', 'e', 'r', 'g', 'c', 'h', 'i', 's', 'm', 'v');
+    static final Set<Character> VALUED = Set.of('t', 'b', 'u', 'a', 'e', 'r', 'g', 'c', 'h', 'i', 's', 'm', 'x');
 
     public static RockSettings parse(String input) {
         return parse(input, name -> null);
@@ -87,7 +87,7 @@ public record RockSettings(
                 moss,
                 mossAmount,
                 blank(args.flag('m')),
-                args.decimal('v', Double.NaN, 0.0, 1.0, "La variación (-v)"),
+                args.decimal('x', Double.NaN, 0.0, 1.0, "La variación (-x)"),
                 args.has('p'),
                 args.presetName()
         );

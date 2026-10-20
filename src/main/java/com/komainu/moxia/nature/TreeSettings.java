@@ -15,7 +15,7 @@ import java.util.function.Function;
  * @param lean       inclinación del tronco en grados ({@code -i grados[,rumbo]})
  * @param azimuth    rumbo de la inclinación en grados (0 = este, 90 = sur), o {@code NaN} para uno al azar
  * @param curvature  cuánto serpentean tronco y ramas ({@code -c})
- * @param variation  variación de cada clic del pincel ({@code -v}), o {@code NaN} para la de serie
+ * @param variation  variación de cada clic del pincel o de cada punto marcado ({@code -x}), o {@code NaN} para la de serie
  */
 public record TreeSettings(
         TreeSpecies species,
@@ -39,7 +39,7 @@ public record TreeSettings(
     public static final int MIN_HEIGHT = 4;
     public static final int MAX_HEIGHT = 96;
     static final Set<Character> SWITCHES = Set.of('p');
-    static final Set<Character> VALUED = Set.of('g', 'b', 'd', 'w', 'i', 'c', 's', 't', 'h', 'r', 'm', 'v');
+    static final Set<Character> VALUED = Set.of('g', 'b', 'd', 'w', 'i', 'c', 's', 't', 'h', 'r', 'm', 'x');
 
     public static TreeSettings parse(String input) {
         return parse(input, name -> null);
@@ -83,7 +83,7 @@ public record TreeSettings(
                 material(args.flag('h')),
                 material(args.flag('r')),
                 material(args.flag('m')),
-                args.decimal('v', Double.NaN, 0.0, 1.0, "La variación (-v)"),
+                args.decimal('x', Double.NaN, 0.0, 1.0, "La variación (-x)"),
                 args.has('p'),
                 args.presetName()
         );

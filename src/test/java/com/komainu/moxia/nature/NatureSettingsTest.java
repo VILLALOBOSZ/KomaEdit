@@ -20,12 +20,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class NatureSettingsTest {
     private static final Function<String, String> PRESETS = Map.of(
             "mio", "birch 18 -g 1.5 -s 9 -h azalea_leaves",
-            "piedra", "spire 4 -a 4 -u 0.3")::get;
+            "piedra", "spire 4 -a 4 -u 0.3",
+            // Los de los ejemplos de la documentación.
+            "bosque", "oak 22 -g 1.2 -h oak_leaves,azalea_leaves",
+            "menhir", "spire 3 -a 5 -u 0.4")::get;
 
     @Test
     void readsSpeciesHeightAndFlags() {
         TreeSettings tree = TreeSettings.parse("dark_oak 20 -g 1.4 -b 0.5 -d 1.2 -w 1.3 -i 15,90 -c 2 -s 77 "
-                + "-t dark_oak_log,stripped_dark_oak_log -h no -r mangrove_roots -m grass_block -v 0.3 -p");
+                + "-t dark_oak_log,stripped_dark_oak_log -h no -r mangrove_roots -m grass_block -x 0.3 -p");
         assertEquals(TreeSpecies.DARK_OAK, tree.species());
         assertEquals(20, tree.height());
         assertEquals(1.4, tree.thickness());
