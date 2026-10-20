@@ -42,6 +42,8 @@ public final class PlacementCommands {
             "-l pink_wool", "-t", "-h Box(D:\"40,40,40\")", "-h Ellipsoid", "-h Cylinder");
     private static final List<String> ARRAY_FLAGS = List.of("-g 0", "-g 4", "-y 1", "-q 0.5,2", "-p 0:0:0",
             "-n consistent", "-n upright", "-n horizontal", "-b");
+    private static final List<String> COPY_FLAGS = List.of("-copias 8", "-desplazar 0,1,0", "-revolver 30",
+            "-pivote 6,0,0", "-torcer 15");
 
     private PlacementCommands() {
     }
@@ -92,7 +94,7 @@ public final class PlacementCommands {
                 }
                 options.addAll(COMMON_FLAGS);
                 options.addAll(kind == PlacementSettings.Kind.SCATTER ? SCATTER_FLAGS
-                        : kind == PlacementSettings.Kind.ARRAY ? ARRAY_FLAGS : List.of());
+                        : kind == PlacementSettings.Kind.ARRAY ? ARRAY_FLAGS : COPY_FLAGS);
             }
             for (String option : options) {
                 if (option.toLowerCase(Locale.ROOT).startsWith(typed)) {

@@ -1,5 +1,7 @@
 package com.komainu.moxia.client;
 
+import com.komainu.moxia.blueprint.BlueprintPayloads;
+import com.komainu.moxia.client.blueprint.ClientBlueprintCatalog;
 import com.komainu.moxia.client.brush.BrushToolControls;
 import com.komainu.moxia.client.capability.CapabilityControls;
 import com.komainu.moxia.client.hud.PathCaptureHud;
@@ -52,6 +54,14 @@ public final class KomaEditClient implements ClientModInitializer {
                 InstanceCatalogPayload.ID,
                 (payload, context) -> context.client().execute(() -> ClientInstanceCatalog.update(payload.instances()))
         );
+        ClientPlayNetworking.registerGlobalReceiver(
+                BlueprintPayloads.Catalog.ID,
+                (payload, context) -> context.client().execute(() -> ClientBlueprintCatalog.update(payload))
+        );
+        ClientPlayNetworking.registerGlobalReceiver(
+                BlueprintPayloads.Thumbnail.ID,
+                (payload, context) -> context.client().execute(() -> ClientBlueprintCatalog.receive(payload.chunk()))
+        );
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             if (client.currentScreen instanceof ProceduralStudioScreen) {
                 client.setScreen(null);
@@ -63,6 +73,7 @@ public final class KomaEditClient implements ClientModInitializer {
             PathCaptureHud.clear();
             ClientRecipeCatalog.clear();
             ClientInstanceCatalog.clear();
+            client.execute(ClientBlueprintCatalog::clear);
         });
         WorldRenderEvents.AFTER_ENTITIES.register(PathHologramRenderer::render);
         WorldRenderEvents.AFTER_ENTITIES.register(EditorOverlayRenderer::render);

@@ -22,6 +22,7 @@ import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.ProjectStorage;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.persistence.SculptPresetStore;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.recipe.ProceduralRecipe;
@@ -49,6 +50,7 @@ import com.komainu.moxia.sculpt.SculptManager;
 import com.komainu.moxia.sculpt.SculptPreviewManager;
 import com.komainu.moxia.sculpt.SculptProfile;
 import com.komainu.moxia.sculpt.SculptSettings;
+import com.komainu.moxia.sculpt.model.ModelMaterial;
 import com.komainu.moxia.weathering.WeatheringService;
 import com.komainu.moxia.weathering.WeatheringSettings;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -191,7 +193,8 @@ public final class MoxiaCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> register(dispatcher));
     }
 
-    private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+    /** Todo el árbol de {@code /komaedit}; también lo montan las pruebas, sin el juego. */
+    static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         var root = dispatcher.register(literal("komaedit")
                 .requires(MoxiaCommands::canUse)
                 .then(literal("menu").executes(MoxiaCommands::openHudMenu))
@@ -244,6 +247,7 @@ public final class MoxiaCommands {
                 .then(BrushCommands.superwand("supervarita"))
                 .then(jobCommand())
                 .then(projectCommand())
+                .then(sculptCommand().requires(source -> can(source, "komaedit.build.brush.sculpt")))
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(tweakCommand("tweak").requires(MoxiaCommands::canTweak))
                 .then(tweakCommand("retocar").requires(MoxiaCommands::canTweak))
@@ -266,6 +270,8 @@ public final class MoxiaCommands {
         CapabilityCommands.register(root);
         SymmetryCommands.register(root);
         BuilderCommands.register(root);
+        BlueprintCommands.register(root);
+        ClipboardCommands.register(root);
         PreviewCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
@@ -681,11 +687,8 @@ public final class MoxiaCommands {
                             if (PlanPreviews.holds(playerId, plan)) {
                                 return;
                             }
-                            current.getCommandSource().sendFeedback(
-                                    () -> prefix().append(Text.literal("Estructura doblada en cola: " + changed
-                                            + " bloques · /komaedit job status").formatted(Formatting.GREEN)),
-                                    false
-                            );
+                            QuietMode.info(current, prefix().append(Text.literal("Estructura doblada en cola: "
+                                    + changed + " bloques · /komaedit job status").formatted(Formatting.GREEN)));
                         } catch (IllegalArgumentException | IllegalStateException exception) {
                             fail(current.getCommandSource(), message(exception));
                         }
@@ -1217,7 +1220,8 @@ public final class MoxiaCommands {
             return previous.get().pattern();
         }
         Optional<SculptProfile> sculpt = SculptManager.profile(player.getUuid());
-        if (sculpt.isPresent() && !sculpt.get().pattern().equalsIgnoreCase("hand")) {
+        if (sculpt.isPresent() && !sculpt.get().pattern().equalsIgnoreCase("hand")
+                && !ModelMaterial.surrounding(sculpt.get().pattern())) {
             return sculpt.get().pattern();
         }
         throw new IllegalArgumentException("Para usar hand, sostén un bloque en la mano principal o secundaria");
@@ -1285,7 +1289,15 @@ public final class MoxiaCommands {
                     player,
                     StringArgumentType.getString(context, "sculpt_pattern")
             );
-            WorldEditService.validatePattern(player, pattern);
+            if (ModelMaterial.surrounding(pattern)) {
+                // «auto»: el material de alrededor; solo lo entienden los pinceles de modelado.
+                if (type.category() != SculptBrushType.Category.MODEL) {
+                    throw new IllegalArgumentException("«auto» (el material de alrededor) solo vale con draw, rock,"
+                            + " weld, melt, roughen y shatter");
+                }
+            } else {
+                WorldEditService.validatePattern(player, pattern);
+            }
             int radius = IntegerArgumentType.getInteger(context, "sculpt_radius");
             SculptSettings defaults = SculptSettings.defaults(type);
             SculptSettings settings = defaults.withGeometry(
@@ -1504,7 +1516,9 @@ public final class MoxiaCommands {
         String name = StringArgumentType.getString(context, "preset_load_name");
         try {
             SculptProfile profile = SculptPresetStore.load(player.getUuid(), name);
-            WorldEditService.validatePattern(player, profile.pattern());
+            if (!ModelMaterial.surrounding(profile.pattern())) {
+                WorldEditService.validatePattern(player, profile.pattern());
+            }
             BrushManager.deactivate(player.getUuid());
             SculptManager.activate(player, profile);
             context.getSource().sendFeedback(
@@ -1702,13 +1716,10 @@ public final class MoxiaCommands {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
             int changed = GradientService.apply(player, axis, palette, dither, reverse);
-            context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal(
-                            "Degradado " + paletteName + " en cola: " + changed + " bloques · eje "
-                                    + axis.id() + " · mezcla " + dither + "% · /komaedit job status"
-                    ).formatted(Formatting.GREEN)),
-                    false
-            );
+            QuietMode.info(player, prefix().append(Text.literal(
+                    "Degradado " + paletteName + " en cola: " + changed + " bloques · eje "
+                            + axis.id() + " · mezcla " + dither + "% · /komaedit job status"
+            ).formatted(Formatting.GREEN)));
             return changed;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Completa la selección de WorldEdit con //pos1 y //pos2");
@@ -1973,16 +1984,13 @@ public final class MoxiaCommands {
                                 return;
                             }
                             int pieces = plan.pieceCount();
-                            current.getCommandSource().sendFeedback(
-                                    () -> prefix().append(Text.literal(
-                                            requestedParameters.shape().displayName() + " en cola: " + changed
-                                                    + " bloques" + (pieces == 0
-                                                    ? " · espaciado " + requestedParameters.spacing()
-                                                    : " · " + pieces + " piezas")
-                                                    + " · /komaedit job status"
-                                    ).formatted(Formatting.GREEN)),
-                                    false
-                            );
+                            QuietMode.info(current, prefix().append(Text.literal(
+                                    requestedParameters.shape().displayName() + " en cola: " + changed
+                                            + " bloques" + (pieces == 0
+                                            ? " · espaciado " + requestedParameters.spacing()
+                                            : " · " + pieces + " piezas")
+                                            + " · /komaedit job status"
+                            ).formatted(Formatting.GREEN)));
                         } catch (IllegalArgumentException | IllegalStateException exception) {
                             fail(current.getCommandSource(), message(exception));
                         }

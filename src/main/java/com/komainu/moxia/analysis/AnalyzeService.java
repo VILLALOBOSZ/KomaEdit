@@ -51,7 +51,7 @@ public final class AnalyzeService {
         RegionMasks.Bound mask = maskInput == null ? null : RegionMasks.parse(player, maskInput);
         String name = player.getGameProfile().getName().replaceAll("[^A-Za-z0-9_]", "_");
         Path directory = exportsDirectory();
-        SnapshotJobs.run(player, region, 0, "Lista de materiales", snapshot -> {
+        SnapshotJobs.read(player, region, 0, "Lista de materiales", snapshot -> {
             if (mask != null) {
                 mask.bind(snapshot);
             }

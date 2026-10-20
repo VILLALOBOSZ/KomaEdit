@@ -1,6 +1,6 @@
 package com.komainu.moxia.terrain;
 
-import com.komainu.moxia.brush.ez.BlockFilter;
+import com.komainu.moxia.brush.ez.BrushMask;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.SculptManager;
@@ -12,7 +12,7 @@ import com.sk89q.worldedit.math.BlockVector3;
  * clic repartida entre ticks, sello en un worker y vista previa o edición por lotes con su //undo.
  */
 public record HeightmapOperation(StampBrush.Settings settings, BlockVector3 center, SurfacePalette palette,
-                                 BlockFilter mask, TerrainBlocks blocks) implements BrushOperation {
+                                 BrushMask mask, TerrainBlocks blocks) implements BrushOperation {
     @Override
     public String displayName() {
         return "Relieve " + settings.stamp().name();
@@ -36,6 +36,9 @@ public record HeightmapOperation(StampBrush.Settings settings, BlockVector3 cent
     @Override
     public PackedBlockPlan plan(WorldSnapshot snapshot) {
         Capture capture = capture();
+        if (mask != null) {
+            mask.bind(snapshot);
+        }
         BrushTerrainView view = new BrushTerrainView(snapshot, center, capture.horizontalRadius(), mask);
         TerrainBlocks.PlanSink sink = blocks.brush(snapshot, (int) Math.min(65_536L,
                 (long) settings.reach() * settings.reach() * 4L));

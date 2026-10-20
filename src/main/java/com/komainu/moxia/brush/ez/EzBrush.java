@@ -1,6 +1,8 @@
 package com.komainu.moxia.brush.ez;
 
 import com.komainu.moxia.biome.BiomeService;
+import com.komainu.moxia.blueprint.BlueprintStamps;
+import com.komainu.moxia.blueprint.StampSettings;
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.brush.BrushMarkers;
 import com.komainu.moxia.brush.place.Alignment;
@@ -15,18 +17,26 @@ import com.komainu.moxia.nature.RockSettings;
 import com.komainu.moxia.nature.TreeSettings;
 import com.komainu.moxia.placement.PlacementService;
 import com.komainu.moxia.placement.PlacementSettings;
+import com.komainu.moxia.sculpt.BrushFalloff;
+import com.komainu.moxia.sculpt.WorldSnapshot;
+import com.komainu.moxia.sculpt.model.ModelMaterial;
+import com.komainu.moxia.sculpt.model.ModelMode;
+import com.komainu.moxia.sculpt.model.ModelOperation;
+import com.komainu.moxia.sculpt.model.ModelSettings;
 import com.komainu.moxia.shape.Vec3;
 import com.komainu.moxia.terrain.HeightmapBrush;
 import com.komainu.moxia.terrain.StampBrush;
 import com.komainu.moxia.noise.SavedNoises;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.biome.BiomeType;
+import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
@@ -72,6 +82,9 @@ public abstract sealed class EzBrush {
         }
         if (type == EzBrushType.ROCK) {
             return new Rock(NaturePresets.rock(player.getUuid(), input));
+        }
+        if (type == EzBrushType.STAMP) {
+            return new Stamp(new BlueprintStamps(player, StampSettings.parse(input)));
         }
         if (type.placement() && !(type == EzBrushType.PLACE && legacyPreview(input))) {
             PlacementSettings.Kind kind = switch (type) {
@@ -122,14 +135,22 @@ public abstract sealed class EzBrush {
                 int maxAmount = maxAmount(block);
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
-            case SCATTER, ARRAY, TREE, ROCK -> throw new IllegalStateException(type.id());
+            case SCATTER, ARRAY, TREE, ROCK, STAMP -> throw new IllegalStateException(type.id());
             case BIOME -> {
                 BiomeType biome = BiomeService.parse(
                         options.required(0, "el bioma (cherry_grove, snowy_plains…)"));
                 int radius = options.integer(1, DEFAULT_RADIUS, 1, MAX_RADIUS, "El radio");
                 yield new Biome(biome, radius, options.has('v'), options.has('m') ? options.flag('m') : null);
             }
-            case HEIGHTMAP -> new Relief(HeightmapBrush.parse(options), preview);
+            case HEIGHTMAP -> {
+                HeightmapBrush.Config config = HeightmapBrush.parse(options);
+                if (config.mask() != null) {
+                    // Que una máscara mal escrita falle al elegir el pincel y no en el primer clic.
+                    BrushMasks.parse(player, config.mask());
+                }
+                yield new Relief(config, preview);
+            }
+            case SCULPT -> Sculpt.parse(player, options);
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -650,6 +671,37 @@ public abstract sealed class EzBrush {
         }
     }
 
+    /**
+     * Estampar: planos de la biblioteca al azar alrededor del clic, girados, volteados y apoyados en el suelo. Clic
+     * izquierdo: olvida dónde estampó, para que la separación vuelva a empezar.
+     */
+    static final class Stamp extends EzBrush {
+        private final BlueprintStamps stamps;
+
+        Stamp(BlueprintStamps stamps) {
+            super(EzBrushType.STAMP, stamps.settings().radius(), stamps.settings().preview());
+            this.stamps = stamps;
+        }
+
+        @Override
+        public String controls() {
+            return stamps.controls();
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input.swap()) {
+                return;
+            }
+            if (input.left()) {
+                stamps.forget();
+                session.info("Estampar: la separación vuelve a empezar");
+                return;
+            }
+            session.run(stamps.operation(session.player(), session.hit()));
+        }
+    }
+
     static String text(BlockVector3 point) {
         return String.format(Locale.ROOT, "%d, %d, %d", point.x(), point.y(), point.z());
     }
@@ -678,8 +730,169 @@ public abstract sealed class EzBrush {
                 return;
             }
             StampBrush.Mode pass = input.left() ? mode.opposite() : mode;
+            BrushMask mask = config.mask() == null ? null : BrushMasks.parse(session.player(), config.mask());
             session.run(HeightmapBrush.operation(config, pass, session.target(), session.player().getYaw(),
-                    ThreadLocalRandom.current().nextDouble()));
+                    ThreadLocalRandom.current().nextDouble(), mask));
+        }
+    }
+
+    /**
+     * Modelado: esculpir, roca, soldar, fundir, rugosidad y grietas ({@code sculpt.model}). Clic derecho: el modo;
+     * clic izquierdo: el contrario (hundir, tallar la roca, fundir en vez de soldar y al revés); {@code -n} los
+     * cambia. Cada clic es una pasada del motor común, con su vista previa ({@code -p}) y su //undo.
+     */
+    static final class Sculpt extends EzBrush {
+        private final ModelSettings settings;
+        private final ModelMaterial material;
+        private final ModelMaterial fill;
+        /** Texto de {@code -m} o {@code null}; se vuelve a leer en cada clic. */
+        private final String mask;
+        private final boolean freshSeed;
+        private final boolean swapClicks;
+
+        private Sculpt(ModelSettings settings, ModelMaterial material, ModelMaterial fill, String mask,
+                       boolean freshSeed, boolean swapClicks, boolean preview) {
+            super(EzBrushType.SCULPT, settings.radius(), preview);
+            this.settings = settings;
+            this.material = material;
+            this.fill = fill;
+            this.mask = mask;
+            this.freshSeed = freshSeed;
+            this.swapClicks = swapClicks;
+        }
+
+        static Sculpt parse(ServerPlayerEntity player, BrushOptions options) {
+            ModelMode mode = ModelMode.byId(options.required(0,
+                    "el modo: draw, rock, weld, melt, roughen o shatter (esculpir, roca, soldar, fundir, rugosidad,"
+                            + " grietas)"));
+            int radius = options.integer(1, mode == ModelMode.SHATTER ? 10 : 6, 1, ModelSettings.MAX_RADIUS,
+                    "El radio");
+            ModelSettings settings = ModelSettings.defaults(mode, 0, 0, 0, radius);
+            settings = switch (mode) {
+                case DRAW -> settings.withStrength(options.decimal(2, 2.0, 0.5, 16.0, "La altura"));
+                case ROCK -> settings.withRoughness(options.decimal(2, settings.roughness(), 0.0, 1.0,
+                        "La rugosidad"));
+                case WELD, MELT -> settings.withThreshold(options.decimal(2, settings.threshold(), 0.01, 0.99,
+                        "El umbral"));
+                case ROUGHEN -> settings.withStrength(options.decimal(2, settings.strength(), 0.5, 8.0,
+                        "La amplitud"));
+                case SHATTER -> settings.withScale(options.decimal(2, settings.scale(), 2.0, 32.0,
+                        "El tamaño de las celdas"));
+            };
+            if (options.has('f')) {
+                settings = settings.withFalloff(BrushFalloff.byId(options.flag('f')));
+            }
+            settings = settings
+                    .withSmoothing((int) options.flagDecimal('s', 0, 0, 4, "El suavizado (-s)"))
+                    .withSigma(options.flagDecimal('g', settings.sigma(), 0.3, 8.0, "El desenfoque (-g)"))
+                    .withBlend(options.flagDecimal('k', settings.blend(), 0.0, 16.0, "El fundido (-k)"))
+                    .withWidth(options.flagDecimal('w', settings.width(), 0.1, 8.0, "El ancho (-w)"))
+                    .withDepth((int) options.flagDecimal('d', settings.depth(), 0, 64, "La profundidad (-d)"));
+            if (options.has('z')) {
+                settings = settings.withScale(options.flagDecimal('z', settings.scale(), 0.5, 64.0,
+                        "La escala del ruido (-z)"));
+            }
+            if (options.has('e')) {
+                settings = settings.withAxis(ModelMode.Axis.byId(options.flag('e')));
+            }
+            // La roca cambia en cada clic salvo con -i; la rugosidad y las grietas siguen el mismo dibujo al
+            // arrastrar.
+            boolean freshSeed = !options.has('i') && mode == ModelMode.ROCK;
+            long seed = options.has('i')
+                    ? (long) options.flagDecimal('i', 0, -9.0E15, 9.0E15, "La semilla (-i)")
+                    : ThreadLocalRandom.current().nextLong();
+            settings = settings.withSeed(seed);
+            String materialText = options.flag('b');
+            ModelMaterial material = ModelMaterial.SURROUNDING;
+            ModelMaterial fill = ModelMaterial.AIR;
+            if (materialText != null && !ModelMaterial.surrounding(materialText)) {
+                ModelMaterial chosen = ModelMaterial.air(materialText) ? ModelMaterial.AIR
+                        : ModelMaterial.palette(states(ResolvedPalette.resolve(player, materialText, 1)));
+                if (mode == ModelMode.SHATTER) {
+                    fill = chosen;
+                } else if (chosen.air()) {
+                    throw new IllegalArgumentException("-b air solo vale con shatter (grietas vacías)");
+                } else {
+                    material = chosen;
+                }
+            }
+            String mask = options.has('m') ? options.flag('m') : null;
+            BrushMasks.parse(player, mask);
+            return new Sculpt(settings, material, fill, mask, freshSeed, options.has('n'), options.has('p'));
+        }
+
+        private static List<BlockState> states(ResolvedPalette palette) {
+            List<BlockState> states = new ArrayList<>(palette.size());
+            for (int index = 0; index < palette.size(); index++) {
+                states.add(palette.place(index, null, PaletteShift.Kind.FULL));
+            }
+            return states;
+        }
+
+        @Override
+        public String controls() {
+            String right = settings.mode().displayName().toLowerCase(Locale.ROOT);
+            String left = switch (settings.mode()) {
+                case DRAW -> "hundir";
+                case ROCK -> "tallar la roca";
+                case WELD -> "fundir";
+                case MELT -> "soldar";
+                case ROUGHEN, SHATTER -> right;
+            };
+            if (swapClicks) {
+                String swap = right;
+                right = left;
+                left = swap;
+            }
+            return "clic derecho: " + right + " · clic izquierdo: " + left + " · material " + material.describe()
+                    + (settings.mode() == ModelMode.SHATTER ? " · relleno " + fill.describe() : "");
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input.swap()) {
+                return;
+            }
+            boolean inverse = input.left() ^ swapClicks;
+            BlockHitResult hit = session.hit();
+            var side = hit.getSide();
+            ModelSettings pass = settings.at(hit.getBlockPos().getX(), hit.getBlockPos().getY(),
+                            hit.getBlockPos().getZ())
+                    .withHint(side.getOffsetX(), side.getOffsetY(), side.getOffsetZ());
+            if (freshSeed) {
+                pass = pass.withSeed(ThreadLocalRandom.current().nextLong());
+            }
+            if (inverse) {
+                pass = switch (settings.mode()) {
+                    case DRAW, ROCK -> pass.withInvert(true);
+                    case WELD -> pass.withMode(ModelMode.MELT).withThreshold(1.0 - settings.threshold());
+                    case MELT -> pass.withMode(ModelMode.WELD).withThreshold(1.0 - settings.threshold());
+                    case ROUGHEN, SHATTER -> pass;
+                };
+            }
+            session.run(new ModelOperation(pass, material, fill, cellMask(session.player())));
+        }
+
+        /** La {@code -m} decide qué bloques se pueden quitar o cambiar; lo libre siempre se puede llenar. */
+        private ModelOperation.CellMask cellMask(ServerPlayerEntity player) {
+            if (mask == null) {
+                return ModelOperation.CellMask.ALL;
+            }
+            BrushMask parsed = BrushMasks.parse(player, mask);
+            return new ModelOperation.CellMask() {
+                private SnapshotWorld world;
+
+                @Override
+                public void bind(WorldSnapshot snapshot) {
+                    parsed.bind(snapshot);
+                    world = new SnapshotWorld(snapshot);
+                }
+
+                @Override
+                public boolean allows(WorldSnapshot snapshot, int x, int y, int z, BlockState state, boolean solid) {
+                    return !solid || parsed.matches(world, x, y, z);
+                }
+            };
         }
     }
 }
