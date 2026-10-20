@@ -248,6 +248,7 @@ public final class MoxiaCommands {
                 .then(HelpCommands.command("ayuda"))
                 .executes(MoxiaCommands::openHudMenu));
         DeformCommands.register(root);
+        TerrainCommands.register(root);
         PlacementCommands.register(root);
         TextureCommands.register(dispatcher);
         ImageCommands.register(dispatcher);
