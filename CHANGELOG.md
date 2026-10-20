@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.6.0 (estable, 2026-10-20)
+
 ### Procedural Studio: menos texto, más claro
 
 - **Etapas en tres grupos:** Crear (`1` Herramientas, `2` Trayectoria, `3` Figuras), Ajustar (`4` Modificadores, `5` Material, `6` Color, `7` Envejecer) y Biblioteca (`8` Planos, `9` Recetas, `0` Instancias). **Cambian las teclas:** Herramientas pasa del `0` al `1`, y Estructuras deja de ser una etapa y es una familia de Figuras. La barra de arriba lleva el nombre de la etapa y los botones; ya no hay cabecera con subtítulo. Con la navegación en iconos, al pasar el ratón sale a su lado la lista con el nombre y la tecla de cada etapa.
