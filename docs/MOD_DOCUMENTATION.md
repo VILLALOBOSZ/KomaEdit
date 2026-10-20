@@ -523,12 +523,10 @@ Ctrl+V                        lo mismo, desde el mundo (sin escribir nada)
 
 Ejemplos:
 
-```text
-//copy, te mueves y /komaedit paste      el fantasma aparece donde lo pegaría //paste; lo arrastras y Intro
-/komaedit tree oak                          el árbol donde miras, para ajustarlo antes de plantarlo
-/komaedit place Sh(S:Cone,P:stone) Aim      el cono, para girarlo y llevarlo a su sitio
-/komaedit paste -a                          sin el aire del portapapeles
-```
+- `//copy`, te mueves y `/komaedit paste`: el fantasma aparece donde lo pegaría `//paste`; lo arrastras y pulsas Intro.
+- `/komaedit tree oak`: el árbol donde miras, para ajustarlo antes de plantarlo.
+- `/komaedit place Sh(S:Cone,P:stone) Aim`: el cono, para girarlo y llevarlo a su sitio.
+- `/komaedit paste -a`: sin el aire del portapapeles.
 
 ### Mover
 
