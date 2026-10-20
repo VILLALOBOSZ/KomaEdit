@@ -26,7 +26,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, PAINT, TEXT, ANALYZE, GRAVITY, SNOW, DRAIN, WATERLOG,
-        BIOME, SYMMETRY, CAPABILITIES,
+        BIOME, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
         // El fantasma con gizmo.
         GIZMO
     }
@@ -634,6 +634,20 @@ public final class StudioIcons {
                 "#.#.........",
                 "##..........",
                 "###.........");
+        // Pincel de pintar terreno: mango en diagonal, la punta cargada y el trazo en el suelo.
+        mask(Icon.PAINT_BRUSH,
+                "..........##",
+                ".........###",
+                "........###.",
+                ".......###..",
+                "......###...",
+                ".....##.....",
+                "...+##......",
+                "..+++#......",
+                ".++++.......",
+                "+++.........",
+                "............",
+                "####++++####");
     }
 
     private StudioIcons() {
