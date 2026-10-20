@@ -213,7 +213,8 @@ public final class RegionOperationService {
             try {
                 if (job.step(deadline)) {
                     JOBS.remove(job.playerId);
-                    if (player.getServerWorld() != job.world) {
+                    // Quien recibe la foto (onCaptured) decide al terminar; las operaciones se descartan ya.
+                    if (job.onCaptured == null && player.getServerWorld() != job.world) {
                         player.sendMessage(message(job.description + ": " + OTHER_WORLD, Formatting.YELLOW), false);
                         continue;
                     }

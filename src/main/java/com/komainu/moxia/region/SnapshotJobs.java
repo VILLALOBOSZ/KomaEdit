@@ -23,8 +23,12 @@ public final class SnapshotJobs {
     }
 
     /**
+     * Para lo que edita el mundo: si el jugador cambia de dimensión antes de que termine, el resultado se descarta
+     * (era de la foto del mundo de antes).
+     *
      * @param compute se ejecuta en un worker: solo puede leer la foto
-     * @param apply   recibe al jugador (si sigue conectado) y el resultado, en el hilo del servidor
+     * @param apply   recibe al jugador (si sigue conectado y en el mismo mundo) y el resultado, en el hilo del
+     *                servidor
      */
     public static <T> void run(
             ServerPlayerEntity player,
@@ -45,6 +49,20 @@ public final class SnapshotJobs {
                             }
                             apply.accept(current, result);
                         }));
+    }
+
+    /** Como {@link #run}, para lo que solo informa (el resultado se entrega aunque el jugador cambie de mundo). */
+    public static <T> void read(
+            ServerPlayerEntity player,
+            Region region,
+            int padding,
+            String description,
+            Function<RegionSnapshot, T> compute,
+            BiConsumer<ServerPlayerEntity, T> apply
+    ) {
+        RegionOperationService.capture(player, region, padding, description,
+                snapshot -> compute(player.getServer(), player.getUuid(), description, () -> compute.apply(snapshot),
+                        apply));
     }
 
     /** Solo el cálculo en un worker y la entrega en el hilo del servidor, sin leer el mundo. */
