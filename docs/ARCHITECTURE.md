@@ -32,6 +32,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `analysis` | Lista de materiales (`/komaedit analyze`): recuento sobre la foto y coste en survival (`SurvivalCost`, lógica pura con un registro inyectado), pilas, cofres y CSV |
 | `utility` | Gravedad, nieve, drenar e inundar: motores puros sobre `RegionSnapshot` con `BlockKinds` (las reglas de Minecraft en `MinecraftKinds`) y sus `RegionOperation` en `UtilityOperations` |
 | `biome` | Pintar biomas: celdas de 4×4×4 (`BiomeCells`, pura) y una cola por ticks con `EditSession.setBiome` para el //undo y el reenvío de chunks de WorldEdit |
+| `blueprint` | Biblioteca de planos: almacén en disco (`BlueprintLibrary`, esquema + JSON + PNG), búsqueda por etiqueta, miniatura isométrica por trazado de vóxeles (`BlueprintThumbnail`), troceado de miniaturas por red (`ThumbnailChunks`) y el pincel estampar (`StampPlanner`), todo probado sin Minecraft; `BlueprintService` lo une a WorldEdit y a la colocación (`Bp(…)`) |
 | `persistence` | Proyecto por mundo, migraciones, journal, backups y escritura atómica |
 | `permission` | Permisos granulares y excepciones de cuota |
 | `symmetry` | Modo simetría: geometría pura (centros, espejos, radial, estados), copias a mano y extensión de WorldEdit |
@@ -69,6 +70,15 @@ Paquete `capability` (y `client.capability`). La lógica pura no toca Minecraft 
 Los pinceles de colocación (`place`, `scatter`, `array`) no usan `BrushOperation`: cada clic llama a `PlacementService.startBrush` con un `BrushTarget` (bloque mirado, normal de la cara, trazo y dirección de `ViewDiff`) y siguen el camino de `/komaedit place`. Solo `place -p` usa aún la colocación de 90° con holograma, que pide sus estructuras a `StructureSources` y las gira con la base de `brush.place.Alignment`.
 
 Los permisos finos y sus paquetes viven en `permission.PermissionNodes`, lógica pura que recibe qué nodos tiene el jugador; `KomaPermissions` le pasa el actor de WorldEdit. Una orden con varios modos se oculta con `KomaPermissions.canAny(familia)` y cada modo se comprueba al ejecutarse con `requireBuild`.
+
+## Biblioteca de planos
+
+Paquete `blueprint` (y `client.blueprint`, `client.gui.studio.BlueprintStage`).
+
+1. **Guardar.** `BlueprintService.save` toma el portapapeles en el hilo del servidor y hace el resto en su propio hilo («KomaEdit planos»), como `//schem save`: aplica el giro del portapapeles, escribe el esquema `sponge.3`, monta la rejilla de colores (`ThumbnailColors` sobre `BlockColorCatalogs`) y pinta la miniatura. `BlueprintLibrary` (Java puro) guarda el esquema, el PNG y el JSON con `AtomicStorage`, el JSON el último, y comprueba los `BlueprintLimits` de `blueprints.json`.
+2. **Usar.** `load` lee el esquema en ese hilo y lo deja en la sesión de WorldEdit desde el hilo del servidor. La colocación trata los planos como una estructura más (`StructureSpec.Type.BLUEPRINT`): `PlacementService.resolve` pide los esquemas a `BlueprintService.structures` (con caché por archivo y fecha) y sigue el camino de `Clipboard` y `Schematic`, así que `place`, `scatter`, `array`, sus pinceles y la vista previa `-v` funcionan sin más.
+3. **Estampar.** `BlueprintStamps` resuelve la lista en cada clic y prepara las `BlueprintTemplate` (bloques con el origen en el centro de la base y su `StampShape`); `StampOperation` es una `BrushOperation`: captura el terreno y, en el worker, `StampPlanner` (puro) elige puntos de Poisson, probabilidad, plano por peso, giro, volteo y altura sobre `BrushWorld`, y escribe con las matrices enteras de `StampPlanner.Stamp` (también para el estado de los bloques).
+4. **Studio.** El cliente pide el catálogo (`BlueprintPayloads.Request`) al entrar en la etapa; el servidor responde con `Catalog` y, para las huellas que el cliente no tiene, manda la miniatura en `Thumbnail` de 4 KiB con un presupuesto por tick (`ThumbnailChunks.Queue`). `ClientBlueprintCatalog` la junta (`ThumbnailChunks.Assembler`, que comprueba el SHA-256) y la registra como textura por su huella.
 
 ## Representación compacta
 
