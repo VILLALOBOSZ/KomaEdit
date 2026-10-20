@@ -67,11 +67,13 @@ class RoofGeneratorTest {
         // dentro (sureste); debajo, escalera colgada interior.
         byte corner = result.pieceAt(-1, BASE - 1, -1);
         assertTrue(SmoothPiece.isStairs(corner), SmoothPiece.describe(corner));
-        assertTrue(SmoothPiece.shape(corner) == SmoothPiece.OUTER_LEFT || SmoothPiece.shape(corner) == SmoothPiece.OUTER_RIGHT);
+        assertTrue(SmoothPiece.shape(corner) == SmoothPiece.OUTER_LEFT
+                || SmoothPiece.shape(corner) == SmoothPiece.OUTER_RIGHT);
         assertEquals(0x33 | 1 << SmoothPiece.octant(1, 1, 1), SmoothPiece.mask(corner));
         byte below = result.pieceAt(-1, BASE - 2, -1);
         assertTrue(SmoothPiece.isTop(below), SmoothPiece.describe(below));
-        assertTrue(SmoothPiece.shape(below) == SmoothPiece.INNER_LEFT || SmoothPiece.shape(below) == SmoothPiece.INNER_RIGHT);
+        assertTrue(SmoothPiece.shape(below) == SmoothPiece.INNER_LEFT
+                || SmoothPiece.shape(below) == SmoothPiece.INNER_RIGHT);
         assertEquals(0xCC | 1 << SmoothPiece.octant(0, 0, 0) | 1 << SmoothPiece.octant(1, 0, 0)
                 | 1 << SmoothPiece.octant(0, 0, 1), SmoothPiece.mask(below));
         // Las cuatro esquinas, iguales salvo el giro.
@@ -300,7 +302,8 @@ class RoofGeneratorTest {
         }
         RoofResult kept = RoofGenerator.generate(HOUSE, RoofSettings.parse("gable"), world);
         for (long key : kept.positions()) {
-            assertTrue(world.air(PackedBlockPlan.unpackX(key), PackedBlockPlan.unpackY(key), PackedBlockPlan.unpackZ(key)));
+            assertTrue(world.air(PackedBlockPlan.unpackX(key), PackedBlockPlan.unpackY(key),
+                    PackedBlockPlan.unpackZ(key)));
         }
         RoofResult replaced = RoofGenerator.generate(HOUSE, RoofSettings.parse("gable -r"), world);
         assertTrue(replaced.size() > kept.size());

@@ -74,7 +74,8 @@ public record LoftSettings(
                     return interpolation;
                 }
             }
-            throw new IllegalArgumentException("Interpolación desconocida: " + input + " (lineal, catmull o catenaria)");
+            throw new IllegalArgumentException("Interpolación desconocida: " + input
+                    + " (lineal, catmull o catenaria)");
         }
     }
 

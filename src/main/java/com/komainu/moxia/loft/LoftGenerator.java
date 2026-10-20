@@ -146,7 +146,7 @@ public final class LoftGenerator {
         if (total > MAX_ROWS) {
             throw new IllegalArgumentException("Las curvas están demasiado separadas para un loft");
         }
-        int rowCount = closed ? total + 1 : total + 1;
+        int rowCount = total + 1;
         Vec3[][] grid = new Vec3[samples][rowCount];
         for (int sample = 0; sample < samples; sample++) {
             Vec3[] row = along[sample];

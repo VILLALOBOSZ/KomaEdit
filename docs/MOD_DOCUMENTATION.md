@@ -219,6 +219,7 @@ Las figuras centradas usan tu posición como centro; el arco y la catenaria van 
 /komaedit help region              hiedra, envejecer y retocar
 /komaedit help symmetry            modo simetría
 /komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
+/komaedit help roof                tejados y lofts (lonas, velas, puentes colgantes)
 /komaedit help preview             vista previa, progreso y cancelación
 /komaedit help project             proyecto y menús
 ```
@@ -274,7 +275,7 @@ La geometría ya está calculada, así que se construye exactamente lo estimado.
 
 ### Objetivo y acceso
 
-Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y pararlas a medias. La vista previa vale para cualquier orden que calcule un plan de bloques con el motor común: figuras y tubos (`build`, `sweep`, `braid`, `expr`…), `ezspline`, `bend`, colocación (`place`, `array`, `scatter`), `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `texture` y sus modos (`vines`, `moss`, `slabmerge`…), la vidriera, `image`, los generadores (`shape`, `noisegen`, `flowfield`, `flowline`), `weather`, `ivy`, `tweak` y `palette swap`.
+Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y pararlas a medias. La vista previa vale para cualquier orden que calcule un plan de bloques con el motor común: figuras y tubos (`build`, `sweep`, `braid`, `expr`…), `ezspline`, `bend`, colocación (`place`, `array`, `scatter`), `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `texture` y sus modos (`vines`, `moss`, `slabmerge`…), la vidriera, `image`, los generadores (`shape`, `noisegen`, `flowfield`, `flowline`), `weather`, `ivy`, `tweak`, `palette swap`, los tejados (`roof`) y los lofts (`loft`).
 
 ```text
 /komaedit <orden> … -v                  calcula y enseña sin colocar nada (también --preview)
@@ -1079,6 +1080,168 @@ Ejemplos:
 - Solo reconoce como apoyo las caras enteras, igual que la enredadera de vanilla: no trepa por el frente de escaleras, losas ni vallas, aunque sí tiende alfombra encima.
 - La enredadera de vanilla se sigue extendiendo sola con los ticks aleatorios del mundo, como cualquier enredadera puesta a mano.
 - No hay holograma previo ni entrada en el Studio: se coloca directamente y se deshace con //undo.
+
+## Tejados
+
+### Objetivo y acceso
+
+Un tejado completo sobre la planta de una casa en una sola orden, con las piezas bien puestas: escaleras mirando al caballete, escaleras colgadas bajo el alero para que no se vean muescas, esquinas exteriores e interiores donde tocan y losas arriba o abajo según la altura. Ahorra la parte más lenta de cada casa y funciona también con plantas en L, T y U.
+
+```text
+/komaedit roof <tipo> [material] [banderas]
+/komaedit tejado <tipo> [material] [banderas]
+```
+
+- **Planta:** la selección de WorldEdit (cuboide, `//sel poly` o cualquier otra; cuenta su huella en planta). Selecciona a la altura de lo alto de los muros: el tejado empieza justo encima de la selección. Con `-d` la planta sale de los muros que hay dentro de la selección (ver más abajo).
+- **Material:** un bloque entero (`spruce_planks`, `deepslate_tiles`…); las escaleras y losas salen de su familia, como en smoothblocks (por nombre o, si no tiene, por color). También vale una escalera o una losa (`dark_oak_stairs`: se usa para las piezas y su bloque entero para el relleno), cualquier patrón de WorldEdit o una paleta `##Nombre`/`#guardada`, que se reparte **en degradado por altura** (la primera entrada abajo, la última en el caballete). Por defecto, `spruce_planks`.
+- Permiso: `komaedit.build` o `komaedit.build.roof` (paquete intermedio).
+- Todo va a una sola edición por lotes: un **//undo** lo quita entero, con la estimación, la confirmación de los Build grandes y la vista previa (`-v`) del motor común.
+
+Ejemplos:
+
+```text
+/komaedit roof gable spruce_planks
+/komaedit roof gable deepslate_tiles -p 1:2 -a 2 -c polished_deepslate
+/komaedit roof hip dark_oak_planks -d -b 2
+/komaedit roof mansard spruce_planks -b 2 -m white_terracotta
+/komaedit roof shed oak_planks -p 1:3 -lado s
+/komaedit roof gablet ##DustyBrown -q 3
+/komaedit roof cone dark_prismarine -p 2:1
+/komaedit roof spire deepslate_tiles -lados 8 -h 12
+/komaedit roof dome copper_block
+/komaedit roof pagoda dark_oak_planks -a 2
+/komaedit roof flat smooth_stone -pretil 1 -m stone_bricks
+/komaedit roof hip spruce_planks -e
+```
+
+### Tipos
+
+| Tipo | Alias | Qué hace | Pendiente por defecto |
+| --- | --- | --- | --- |
+| `gable` | `dosaguas` | A dos aguas: caballete a lo largo del ala, hastiales en los remates. En L, T y U, un hastial al final de cada ala, limatesa en las esquinas de fuera y limahoya en las de dentro. | 1:1 |
+| `hip` | `cuatroaguas`, `pabellon` | A cuatro aguas: todos los bordes son alero; limatesas a 45° y limahoyas en las esquinas de dentro. | 1:1 |
+| `mansard` | `mansarda` | Faldón bajo empinado (2:1 o la pendiente + 1) y faldón alto suave; el alero hace un pequeño quiebro hacia fuera. | 1:2 (el alto) |
+| `shed` | `unagua`, `cobertizo` | A un agua: un solo plano que baja hacia `-lado`; los otros lados se cierran con muro. | 1:2 |
+| `gablet` | `holandes`, `dutch` | Holandés: cuatro aguas abajo y un hastial pequeño arriba en cada remate. | 1:1 |
+| `dome` | `cupula` | Cúpula por anillos, inscrita en la planta; la altura es el radio por la pendiente o `-h`. | 1:1 |
+| `cone` | `cono`, `torreon` | Cono redondo por anillos de escaleras. | 2:1 |
+| `spire` | `aguja`, `chapitel` | Aguja poligonal de `-lados` lados (8 por defecto); con 4 es una pirámide exacta. | 3:1 |
+| `pagoda` | `oriental` | Cuatro aguas con faldones cóncavos (suaves en el alero, empinados arriba) y las puntas del alero levantadas. | 1:1 |
+| `flat` | `plano`, `azotea`, `terraza` | Plano, con pretil de `-pretil` bloques en el borde. | — |
+
+Cúpula, cono y aguja se centran en la caja de la planta; lo que de la planta queda fuera de la figura se cubre con losas, así no queda lo alto de los muros al aire.
+
+### Banderas
+
+| Bandera | Alias | Qué hace |
+| --- | --- | --- |
+| `-p <pendiente>` | `-pendiente`, `-pitch` | Subida:avance (`1:1`, `1:2`, `2:1`, `1:3`) o grados (`30`, `30°`); de 1:10 a 8:1. Las pendientes limpias son 1:1 (escaleras), 1:2 (losa y bloque), 1:3 y 2:1 (escalera sobre bloque); las demás alternan piezas. |
+| `-a <bloques>` | `-alero` | Lo que sale el tejado por fuera de los muros (0 a 8). Por defecto 1, y 0 en `flat` y `dome`. Con 1:1 y alero 1, la escalera del alero queda a la altura de lo alto del muro. |
+| `-g <capas>` | `-grosor` | Grosor del faldón medido en perpendicular (1 a 6). |
+| `-c <material>` | `-caballete` | Material del caballete: la pieza más alta de cada columna que no tiene ninguna vecina más alta (caballete, cúspide y caballetes de las buhardillas). |
+| `-b <n>` | `-buhardillas` | Buhardillas por cada alero recto de 9 bloques o más (0 a 8), en `gable`, `hip`, `mansard`, `shed` y `gablet`. |
+| `-m <material>` | `-muro`, `-hastial` | Material de hastiales, paredes de buhardillas, escalón del holandés y pretil. Sin él se usa el más repetido en lo alto de los muros de debajo y, si no hay muros, el del tejado. |
+| `-abierto` | `-sinhastial` | No cierra los hastiales. |
+| `-ventana <bloque>` | `-window` | Ventana de las buhardillas (`glass_pane` por defecto; los paneles y barrotes se unen a lo largo del muro). |
+| `-lado <n\|s\|e\|o>` | `-bajo` | Lado bajo del tejado a un agua; por defecto, el de la selección más cercano a ti. |
+| `-lados <n>` | `-sides` | Lados de la aguja (3 a 32). |
+| `-h <bloques>` | `-altura` | Altura de cúpula, cono, aguja o pagoda. |
+| `-pretil <bloques>` | `-parapet` | Altura del pretil del tejado plano (0 a 6, 1 por defecto). |
+| `-q <bloques>` | `-quiebro` | Mansarda: hasta dónde llega el faldón empinado (por defecto 1 o 2 bloques, según el fondo). Holandés: hasta dónde llegan las aguas de los remates antes del hastial pequeño (por defecto, la mitad). |
+| `-d` | `-detectar`, `-muros` | La planta sale de los muros, no de la selección. |
+| `-eje <x\|z>` | `-axis` | Dirección del caballete en `gable` y `gablet`; sin ella, en cada ala, a lo largo. |
+| `-escaleras <material>` | `-stairs` | Escaleras de otro material (`dark_oak`, `dark_oak_stairs` o `dark_oak_planks`). |
+| `-losas <material>` | `-slabs` | Losas de otro material. |
+| `-r` | `-reemplazar` | Sustituye también lo que no es aire. Sin ella el tejado no pisa ningún bloque: lo alto de los muros, faroles o lo que haya se respeta. |
+| `-e` | `-estimar` | Solo estima: bloques, piezas, chunks, caja, memoria y tiempo. |
+| `-v` | `--preview` | Vista previa, como en el resto de órdenes. |
+
+### Planta desde los muros (`-d`)
+
+Selecciona la casa entera (o al menos lo alto de los muros, con algo de aire alrededor) y añade `-d`:
+
+- Lo más alto que hay construido en la selección marca la altura: el tejado empieza justo encima.
+- Son muro las columnas con bloque en alguna de las dos capas de arriba (una puerta o una ventana más abajo no cuentan) y la planta es el muro y todo lo que encierra. Así salen plantas en L, T, U o con patio, aunque la selección sea un cuadrado.
+- Si los muros no cierran (falta un trozo arriba), lo dice y no hace nada.
+- El material de los hastiales sale de lo alto de esos muros.
+
+### Comportamiento
+
+- **Faldones.** La altura del tejado se calcula cada medio bloque (las columnas de octantes de las piezas) con la distancia de ajedrez desde el borde de la planta, que en plantas rectilíneas da justo un tejado a cuatro aguas: limatesas a 45° en las esquinas salientes y limahoyas en las entrantes. En los de dos aguas los bordes de hastial no cuentan, y los faldones resbalan a lo largo de ellos. Un borde es hastial si sus dos extremos son esquinas salientes, mide al menos 3 bloques y es más corto que el fondo de planta que tiene detrás (el remate de un ala); en un cuadrado, el caballete va a lo largo del eje x (o el de `-eje`).
+- **Piezas.** Las alturas se redondean a medio bloque y se ajustan dentro de cada bloque para que salga una pieza que existe: arriba losa, bloque o escalera con el escalón alto hacia el caballete; abajo lo mismo boca abajo. Con 1:1 cada fila es una escalera con otra colgada debajo (`half=top`, mirando hacia fuera), así el alero se ve liso desde abajo.
+- **Esquinas.** La forma de cada escalera (recta, interior o exterior) la decide Minecraft según sus vecinas; el tejado elige la orientación de cada escalera para que la forma que pondrá Minecraft sea la que pide la superficie (el mismo repaso del perfil `SlabsAndStairs` de smoothblocks) y la deja ya puesta en el plan. En las limatesas quedan escaleras exteriores y en las limahoyas, interiores.
+- **Hastiales y paredes.** El triángulo bajo cada hastial se rellena desde lo alto del muro hasta el tejado. Lo mismo bajo el escalón del holandés, en las mejillas y el frente de las buhardillas y en los tres lados altos del tejado a un agua.
+- **Buhardillas.** Cinco de ancho: muro delantero de 2 bloques sobre el muro de la casa con ventana de 2 de alto, mejillas a los lados y tejadillo a dos aguas 1:1 que entra en el faldón hasta que este lo tapa. Por dentro quedan abiertas al desván. Se omiten (y se avisa) las que caerían en una limatesa o en un tejado demasiado bajo para que quepan.
+- **Figuras redondas.** Cúpula, cono y agujas de más de 4 lados se hacen por anillos de altura constante, como los construye un constructor: arriba de cada columna una escalera mirando a la cúspide, abajo una colgada hacia fuera y bloques en medio; Minecraft pone las esquinas. Cada columna baja hasta lo alto de sus vecinas, así entre anillos no quedan rendijas.
+- **Nada se pisa.** Sin `-r` el tejado solo va donde hay aire, y la construcción es condicional: si alguien cambia un bloque mientras se coloca, se respeta.
+- Determinista: la misma selección y la misma orden dan siempre el mismo tejado.
+
+### Rendimiento y limitaciones
+
+- La lectura del mundo va repartida entre ticks (la zona del tejado, de unos pocos bloques por debajo del alero a lo más alto que puede llegar) y el cálculo, en un worker; en el hilo del servidor solo se resuelven los materiales.
+- Planta de 512 × 512 bloques como mucho y tejado de 320 bloques de alto como mucho.
+- Las plantas con bordes en diagonal (`//sel poly` inclinado) salen escalonadas: un tejado de Minecraft no tiene faldones en diagonal.
+- Las pendientes que no son 1:1, 1:2, 1:3 o 2:1 alternan escalones de distinto tamaño; es lo más fiel que se puede con bloques.
+- En la pagoda, las puntas levantadas no caben exactas en piezas y llevan algún bloque entero.
+- La cúpula sobre una planta alargada es elíptica; sobre una en L o en U se centra en su caja.
+- No se puede elegir en el Procedural Studio: las figuras del Studio siguen una trayectoria y el tejado necesita una planta y leer el mundo.
+
+Renders de comprobación (fuera del juego, con `KOMAEDIT_ROOF_RENDER=<carpeta>`), en `docs/renders/tejados/`: cada tipo sobre una casa visto desde dos esquinas y desde abajo, plantas en L, T y U, figuras redondas y detalles de buhardillas, holandés, mansarda, a un agua y pagoda.
+
+## Loft entre curvas
+
+### Objetivo y acceso
+
+Una superficie tendida entre 2 y 6 curvas: toldos, velas, lonas, puentes colgantes, cubiertas curvas o paredes que serpentean. Como el «loft» de Arceon o el modelado de Axiom.
+
+```text
+/komaedit loft [curva] [curva] [más curvas…] [material] [banderas]
+/komaedit lona …
+```
+
+- **Curvas:** nombres de recorridos guardados con `/komaedit path save <nombre>`; `actual` es el recorrido de ahora (los puntos marcados con **P**, o la selección de la supervarita o de WorldEdit). Sin nombres, los puntos de ahora se reparten en `-n` curvas seguidas del mismo número de puntos: con 4 puntos marcados alrededor de un hueco salen dos tramos rectos y una lona entre ellos.
+- Cada curva pasa por sus puntos con un Catmull–Rom, como las trayectorias (en el modo `lineal`, en tramos rectos). Si una curva se marcó al revés que la anterior se le da la vuelta, para que la superficie no salga retorcida.
+- **Material:** cualquier patrón de WorldEdit o una paleta `##Nombre`/`#guardada`, que se reparte en degradado de la primera curva a la última. Por defecto, `white_wool`.
+- Permiso: `komaedit.build` o `komaedit.build.loft` (paquete intermedio).
+- Una sola edición por lotes y un **//undo**, con estimación, confirmación de Build grandes y vista previa (`-v`).
+
+Ejemplos:
+
+```text
+/komaedit loft white_wool -i catenaria -comba 2
+/komaedit loft borde1 borde2 red_wool -i catenaria -comba 20%
+/komaedit loft a b c -i catmull -g 2 -w SlabsAndStairs
+/komaedit loft cable1 cable2 spruce_planks -i lineal -w SlabsAndStairs
+/komaedit loft suelo arriba stone_bricks -i catmull
+/komaedit loft aro1 aro2 aro3 aro4 ##FadeOrange -cerrar
+```
+
+### Banderas
+
+| Bandera | Qué hace |
+| --- | --- |
+| `-i lineal\|catmull\|catenaria` | Cómo se pasa de una curva a la siguiente: en recta (superficie reglada), con un Catmull–Rom centrípeto que pasa por todas las curvas (por defecto) o colgando entre cada dos curvas como una catenaria. Alias `linear`, `cr`, `suave`, `catenary`, `cuelga`. |
+| `-comba <bloques\|%>` | Lo que cuelga el centro de cada tramo en la catenaria: en bloques o en tanto por ciento del vano (`20%`). Por defecto, el 15 % del vano. Da por hecha `-i catenaria`. |
+| `-g <bloques>` | Grosor (1 a 8). |
+| `-w <perfil>` | Losas y escaleras en la superficie, con los perfiles de smoothblocks (`SlabsAndStairs`, `Slabs`, `SSW`, `Panes`…). |
+| `-cerrar` | Une la última curva con la primera (con tres o más): tubos y cúpulas abiertas. |
+| `-n <curvas>` | En cuántas curvas se reparten los puntos de ahora (2 a 6, 2 por defecto). |
+| `-e` | Solo estima. |
+| `-v` / `--preview` | Vista previa. |
+
+### Comportamiento
+
+- Las curvas se muestrean cada medio bloque y cada muestra se une con la de la curva siguiente; la malla de triángulos resultante se voxeliza al revés: entra cada bloque cuyo centro queda a menos de medio grosor (y como mínimo medio bloque) de la superficie.
+- **Sin agujeros.** Con medio bloque basta para que la superficie sea estanca: dos bloques que comparten una cara a uno y otro lado de la superficie están a un bloque, así que uno de los dos queda a medio bloque o menos y entra. Ningún camino de caras atraviesa la lona (ni el agua ni las criaturas).
+- La catenaria cuelga en vertical: su forma sale de la comba y la longitud del vano (con combas pequeñas, una parábola).
+- Con `-w`, las mismas distancias miden la ocupación de cada octante y se eligen las piezas como en los tubos; las piezas solo sustituyen o se añaden, nunca quitan bloques de la superficie.
+
+### Rendimiento y limitaciones
+
+- El cálculo va en un worker; no lee el mundo y, como las figuras, sustituye lo que haya donde cae.
+- Como mucho 1 500 000 bloques; curvas de hasta 4 096 bloques de largo.
+- La superficie va siempre de una curva a la siguiente en orden: para una vela con un punto suelto, marca ese punto como una curva corta.
+- Con curvas muy dispares (una larga y otra de dos puntos muy cerca), la malla se aprieta en un lado y la superficie se pliega.
 
 ## Modificadores
 
@@ -3209,6 +3372,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`.
    - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
+   - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)), en el paquete intermedio.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`.
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).

@@ -18,7 +18,8 @@ import java.util.Locale;
  *     <li>{@code -b <n>}: buhardillas por cada lado largo (0 a 8).</li>
  *     <li>{@code -m <material>}: material de los hastiales y paredes; sin él se toma del muro de debajo.</li>
  *     <li>{@code -abierto}: deja los hastiales sin cerrar.</li>
- *     <li>{@code -v <bloque>}: ventana de las buhardillas.</li>
+ *     <li>{@code -ventana <bloque>}: ventana de las buhardillas ({@code -v} es la vista previa, como en todo
+ *     KomaEdit).</li>
  *     <li>{@code -lado <n|s|e|o>}: lado bajo del tejado a un agua.</li>
  *     <li>{@code -lados <n>}: lados de la aguja (3 a 32).</li>
  *     <li>{@code -h <bloques>}: altura de cúpula, cono, aguja y pagoda.</li>
@@ -236,7 +237,7 @@ public record RoofSettings(
                         case "-c", "-caballete", "-ridge" -> ridge = value;
                         case "-b", "-buhardillas", "-buhardilla", "-dormers" -> dormers = integer(value, "buhardillas");
                         case "-m", "-muro", "-wall", "-hastial" -> wall = value;
-                        case "-v", "-ventana", "-window" -> window = value;
+                        case "-ventana", "-window" -> window = value;
                         case "-lado", "-side", "-bajo" -> side = Side.byId(value);
                         case "-lados", "-sides" -> sides = integer(value, "lados");
                         case "-h", "-altura", "-height" -> height = number(value, "altura");
@@ -246,7 +247,7 @@ public record RoofSettings(
                         case "-escaleras", "-escalera", "-stairs" -> stairs = value;
                         case "-losas", "-losa", "-slabs" -> slabs = value;
                         default -> throw new IllegalArgumentException("Bandera desconocida: " + token
-                                + " (-p, -a, -g, -c, -b, -m, -abierto, -v, -lado, -lados, -h, -pretil, -q, -d, "
+                                + " (-p, -a, -g, -c, -b, -m, -abierto, -ventana, -lado, -lados, -h, -pretil, -q, -d, "
                                 + "-eje, -escaleras, -losas, -r, -e)");
                     }
                 }
@@ -317,7 +318,8 @@ public record RoofSettings(
 
     private static int check(String name, int value, int minimum, int maximum) {
         if (value < minimum || value > maximum) {
-            throw new IllegalArgumentException("Valor de " + name + " fuera de rango: va de " + minimum + " a " + maximum);
+            throw new IllegalArgumentException("Valor de " + name + " fuera de rango: va de " + minimum + " a "
+                    + maximum);
         }
         return value;
     }
@@ -333,7 +335,8 @@ public record RoofSettings(
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("Valor de " + name + " no válido (tiene que ser un número entero): " + value);
+            throw new IllegalArgumentException("Valor de " + name + " no válido (tiene que ser un número entero): "
+                    + value);
         }
     }
 

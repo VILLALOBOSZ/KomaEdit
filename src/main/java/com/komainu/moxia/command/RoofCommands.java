@@ -11,6 +11,7 @@ import com.komainu.moxia.loft.LoftSettings;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.PathStore;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.roof.Footprint;
@@ -64,11 +65,11 @@ final class RoofCommands {
     private static final String ROOF_NODE = "roof";
     private static final String LOFT_NODE = "loft";
     private static final List<String> ROOF_FLAGS = List.of("-p 1:2", "-p 1:1", "-p 2:1", "-p 30", "-a 1", "-a 2",
-            "-g 2", "-b 2", "-c dark_oak_planks", "-m stone_bricks", "-abierto", "-v glass_pane", "-lado s",
+            "-g 2", "-b 2", "-c dark_oak_planks", "-m stone_bricks", "-abierto", "-ventana glass_pane", "-lado s",
             "-lados 8", "-h 6", "-pretil 1", "-q 2", "-d", "-eje x", "-eje z", "-escaleras dark_oak", "-losas oak",
-            "-r", "-e");
+            "-r", "-e", "-v");
     private static final List<String> LOFT_FLAGS = List.of("-i lineal", "-i catmull", "-i catenaria", "-comba 3",
-            "-comba 20%", "-g 2", "-w SlabsAndStairs", "-cerrar", "-n 2", "-n 3", "-e", "actual");
+            "-comba 20%", "-g 2", "-w SlabsAndStairs", "-cerrar", "-n 2", "-n 3", "-e", "-v", "actual");
 
     private static final SuggestionProvider<ServerCommandSource> ROOF_SUGGESTIONS = (context, builder) -> {
         String remaining = builder.getRemaining();
@@ -173,7 +174,8 @@ final class RoofCommands {
         int margin = settings.overhang() + 2;
         double slope = Math.max(settings.slope(), 1.0);
         double layer = settings.thickness() * Math.sqrt(1.0 + slope * slope);
-        int rise = (int) Math.ceil(Math.max(3.0, slope + 1.0) * (Math.max(sizeX, sizeZ) / 2.0 + margin) + 2 * layer + 8);
+        int rise = (int) Math.ceil(Math.max(3.0, slope + 1.0) * (Math.max(sizeX, sizeZ) / 2.0 + margin)
+                + 2 * layer + 8);
         if (!Double.isNaN(settings.height())) {
             rise = Math.max(rise, (int) Math.ceil(settings.height() + layer + 4));
         }
@@ -239,13 +241,16 @@ final class RoofCommands {
             Runnable submit = () -> {
                 try {
                     int queued = BatchEditService.submitStyled(current, planned.plan(), pattern, description);
-                    EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques · "
-                            + result.pieceCount() + " losas y escaleras · " + summary + " · //undo para deshacer");
+                    if (!PlanPreviews.holds(playerId, planned.plan())) {
+                        EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques · "
+                                + result.pieceCount() + " losas y escaleras · " + summary
+                                + " · //undo para deshacer");
+                    }
                 } catch (IllegalArgumentException | IllegalStateException exception) {
                     EzCommandSupport.fail(current.getCommandSource(), readable(exception));
                 }
             };
-            PendingBuilds.submitOrHold(current, description, BuildEstimate.of(planned.plan()), submit);
+            PendingBuilds.submitOrHold(current, description, BuildEstimate.of(planned.plan()), submit, true);
         } catch (IllegalArgumentException | IllegalStateException exception) {
             EzCommandSupport.fail(current.getCommandSource(), description + ": " + readable(exception));
         }
@@ -400,7 +405,7 @@ final class RoofCommands {
             return WorldEditService.parsePatternUnchecked(WorldEditService.context(player), text);
         }
 
-        /** Bloque entero de una escalera o losa: {@code oak_stairs} → {@code oak_planks}, {@code stone_brick_slab} → … */
+        /** Bloque entero de una escalera o losa: {@code oak_stairs} → {@code oak_planks}. */
         private static String fullBlock(Identifier piece) {
             String path = piece.getPath();
             String stem = path.endsWith("_stairs") ? path.substring(0, path.length() - "_stairs".length())
@@ -497,13 +502,15 @@ final class RoofCommands {
                     }, description);
                 }
                 int pieces = plan.pieceCount();
-                EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
-                        + (pieces > 0 ? " · " + pieces + " losas y escaleras" : "") + " · //undo para deshacer");
+                if (!PlanPreviews.holds(playerId, plan)) {
+                    EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
+                            + (pieces > 0 ? " · " + pieces + " losas y escaleras" : "") + " · //undo para deshacer");
+                }
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 EzCommandSupport.fail(current.getCommandSource(), readable(exception));
             }
         };
-        PendingBuilds.submitOrHold(current, description, BuildEstimate.of(plan), submit);
+        PendingBuilds.submitOrHold(current, description, BuildEstimate.of(plan), submit, true);
     }
 
     // ---------------------------------------------------------------- comunes

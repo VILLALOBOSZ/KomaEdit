@@ -186,7 +186,7 @@ public final class HelpTopics {
                             "Ejemplo: dos aguas a 45°, alero de 1 y caballete oscuro"),
                     new Entry("/komaedit roof hip deepslate_tiles -d -b 2",
                             "Ejemplo: planta sacada de los muros (L, T, U) y dos buhardillas por lado"),
-                    new Entry("/komaedit roof shed ##Tejado -p 1:2 -lado s",
+                    new Entry("/komaedit roof shed ##DustyBrown -p 1:2 -lado s",
                             "Ejemplo: a un agua con degradado por altura de una paleta"),
                     new Entry("/komaedit roof <tipo> … -e", "Solo estima bloques, chunks y tiempo"),
                     new Entry("/komaedit loft <curva> <curva> [más curvas] [material] [banderas]",

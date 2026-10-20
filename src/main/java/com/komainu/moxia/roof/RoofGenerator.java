@@ -763,7 +763,8 @@ public final class RoofGenerator {
     private static int[] subcells(RoofGrid grid, int cx, int cz) {
         int i = cx * 2;
         int k = cz * 2;
-        return new int[]{k * grid.subX + i, k * grid.subX + i + 1, (k + 1) * grid.subX + i, (k + 1) * grid.subX + i + 1};
+        int row = k * grid.subX + i;
+        return new int[]{row, row + 1, row + grid.subX, row + grid.subX + 1};
     }
 
     // ---------------------------------------------------------------- cuantización y octantes

@@ -61,9 +61,9 @@ class RoofRenderTest {
                     PieceRender.render(cells, SCALE),
                     PieceRender.render(rotate(cells, 2), SCALE),
                     PieceRender.render(flip(cells), SCALE));
-            String label = "/komaedit roof " + entry[1] + " · " + result.size() + " bloques, " + result.pieceCount()
-                    + " piezas" + (result.mismatches() > 0 ? " · " + result.mismatches() + " desajustes" : "");
-            write(PieceRender.sheet(views, List.of(label, "desde el lado contrario", "desde abajo (aleros)"), 3),
+            String stats = result.size() + " bloques · " + result.pieceCount() + " piezas"
+                    + (result.mismatches() > 0 ? " · " + result.mismatches() + " desajustes" : "");
+            write(PieceRender.sheet(views, List.of("roof " + entry[1], stats, "desde abajo (aleros)"), 3),
                     "tejado_" + entry[0] + ".png");
             overview.add(views.getFirst());
             overviewLabels.add(entry[1]);

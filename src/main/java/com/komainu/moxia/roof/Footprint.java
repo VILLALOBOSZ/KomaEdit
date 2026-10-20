@@ -42,7 +42,8 @@ public final class Footprint {
     }
 
     /** Planta con las columnas de la caja que cumplen {@code inside}; se recorta a lo ocupado. */
-    public static Footprint of(int minX, int minZ, int maxX, int maxZ, int baseY, BiPredicate<Integer, Integer> inside) {
+    public static Footprint of(int minX, int minZ, int maxX, int maxZ, int baseY,
+                               BiPredicate<Integer, Integer> inside) {
         int sizeX = maxX - minX + 1;
         int sizeZ = maxZ - minZ + 1;
         if (sizeX <= 0 || sizeZ <= 0) {
