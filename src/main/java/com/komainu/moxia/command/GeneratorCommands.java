@@ -194,7 +194,7 @@ public final class GeneratorCommands {
                                     new BlockPos(bounds[3], Math.min(top, bounds[4]), bounds[5]));
                         }
                         if (!PlanPreviews.holds(playerId, result.plan())) {
-                            success(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                            queued(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
                         }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         fail(current.getCommandSource(), readable(exception));
@@ -336,7 +336,7 @@ public final class GeneratorCommands {
         if (PlanPreviews.holds(player.getUuid(), built)) {
             return;
         }
-        success(player, "Línea de flujo en cola: " + queued + " bloques"
+        queued(player, "Línea de flujo en cola: " + queued + " bloques"
                 + (result.convex().isEmpty() ? "" : " · selección convexa de " + result.convex().size() + " puntos")
                 + " · //undo para deshacer");
     }
@@ -396,7 +396,7 @@ public final class GeneratorCommands {
                     try {
                         int queued = BatchEditService.submit(current, plan, "air", description);
                         if (!PlanPreviews.holds(playerId, plan)) {
-                            success(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                            queued(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
                         }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         fail(current.getCommandSource(), readable(exception));
@@ -506,6 +506,11 @@ public final class GeneratorCommands {
 
     private static void info(ServerPlayerEntity player, String text) {
         QuietMode.info(player, prefix().append(Text.literal(text).formatted(Formatting.GRAY)));
+    }
+
+    /** El aviso de bloques en cola: no sale con {@code /komaedit quiet} (el de «completada» sí). */
+    private static void queued(ServerPlayerEntity player, String text) {
+        QuietMode.info(player, prefix().append(Text.literal(text).formatted(Formatting.GREEN)));
     }
 
     private static void success(ServerPlayerEntity player, String text) {

@@ -17,6 +17,7 @@ import com.komainu.moxia.region.RegionSnapshot;
 import com.sk89q.worldedit.regions.Region;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -85,6 +86,7 @@ public final class TerrainService {
         RegionMasks.Bound mask = maskText == null || maskText.isBlank() ? null : RegionMasks.parse(player, maskText);
         MinecraftServer server = player.getServer();
         UUID playerId = player.getUuid();
+        ServerWorld world = player.getServerWorld();
         Region frozen = region.clone();
         // Si al confirmar una vista previa la zona ha cambiado, se vuelve a leer y calcular entero.
         Runnable recompute = () -> {
@@ -94,16 +96,16 @@ public final class TerrainService {
             }
         };
         RegionOperationService.capture(player, frozen, padding, description,
-                snapshot -> compute(server, playerId, description, snapshot, mask, blocks, estimateOnly, job,
+                snapshot -> compute(server, playerId, world, description, snapshot, mask, blocks, estimateOnly, job,
                         recompute));
     }
 
     private record Outcome(RegionEdits edits, TerrainJobs.Summary summary) {
     }
 
-    private static void compute(MinecraftServer server, UUID playerId, String description, RegionSnapshot snapshot,
-                                RegionMasks.Bound mask, TerrainBlocks blocks, boolean estimateOnly, Job job,
-                                Runnable recompute) {
+    private static void compute(MinecraftServer server, UUID playerId, ServerWorld world, String description,
+                                RegionSnapshot snapshot, RegionMasks.Bound mask, TerrainBlocks blocks,
+                                boolean estimateOnly, Job job, Runnable recompute) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerId);
         if (player == null) {
             return;
@@ -121,7 +123,7 @@ public final class TerrainService {
                     TerrainJobs.Summary summary = job.run(view, blocks.region(edits, snapshot), CANCELLATION);
                     return new Outcome(edits, summary);
                 },
-                outcome -> server.execute(() -> finish(server, playerId, description, estimateOnly, outcome,
+                outcome -> server.execute(() -> finish(server, playerId, world, description, estimateOnly, outcome,
                         recompute)),
                 throwable -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
@@ -132,10 +134,15 @@ public final class TerrainService {
         );
     }
 
-    private static void finish(MinecraftServer server, UUID playerId, String description, boolean estimateOnly,
-                               Outcome outcome, Runnable recompute) {
+    private static void finish(MinecraftServer server, UUID playerId, ServerWorld world, String description,
+                               boolean estimateOnly, Outcome outcome, Runnable recompute) {
         ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
         if (current == null) {
+            return;
+        }
+        if (current.getServerWorld() != world) {
+            current.sendMessage(message(description + ": " + RegionOperationService.OTHER_WORLD, Formatting.YELLOW),
+                    false);
             return;
         }
         String detail = outcome.summary().detail();

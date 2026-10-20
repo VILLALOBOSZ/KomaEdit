@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.biome.BiomeEditService;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PendingBuilds;
 import com.komainu.moxia.ivy.IvyService;
@@ -155,6 +156,9 @@ final class PreviewCommands {
         }
         if (AsyncEngine.cancel(id) | IvyService.cancel(id)) {
             stopped.add("cálculo");
+        }
+        if (BiomeEditService.cancel(id)) {
+            stopped.add("pintado de bioma (lo ya pintado, en //undo)");
         }
         Optional<BatchEditService.JobStatus> job = BatchEditService.status(id);
         if (BatchEditService.cancel(id, true)) {

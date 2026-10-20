@@ -10,6 +10,7 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
 import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.shape.Vec3;
@@ -51,6 +52,7 @@ import it.unimi.dsi.fastutil.longs.LongArrays;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -161,6 +163,7 @@ public final class PlacementService {
                 : BlockVector3.at(player.getBlockX(), player.getBlockY(), player.getBlockZ());
         Job job = new Job(player.getUuid(), player.getServer(), kind, settings, spec, resolved, eye, view, feet);
         job.target = target;
+        job.origin = player.getServerWorld();
         String what = resolved.structures().size() == 1 ? resolved.structures().getFirst().describe()
                 : resolved.structures().size() + " schematics";
         switch (kind) {
@@ -543,6 +546,8 @@ public final class PlacementService {
         private final BlockVector3 feet;
         private PathSnapshot path;
         private BrushTarget target;
+        /** Mundo donde se lanzó: lo calculado sobre su foto no se coloca en otro. */
+        private ServerWorld origin;
 
         Job(UUID playerId, MinecraftServer server, PlacementSettings.Kind kind, PlacementSettings settings,
             StructureSpec spec, Resolved resolved, Vec3 eye, DirectionExpr.Context view, BlockVector3 feet) {
@@ -779,6 +784,11 @@ public final class PlacementService {
             if (player == null) {
                 return;
             }
+            if (origin != null && player.getServerWorld() != origin) {
+                player.sendMessage(message(description() + ": " + RegionOperationService.OTHER_WORLD,
+                        Formatting.YELLOW), false);
+                return;
+            }
             if (output.plan().size() == 0) {
                 player.sendMessage(message(description() + ": no hay nada que cambiar", Formatting.YELLOW), false);
                 return;
@@ -802,9 +812,9 @@ public final class PlacementService {
                     return;
                 }
                 String covered = output.cover().isEmpty() ? "" : " · " + output.cover().size() + " superficies cubiertas";
-                player.sendMessage(message(description() + ": " + output.placements() + " "
+                QuietMode.info(player, message(description() + ": " + output.placements() + " "
                         + (output.placements() == 1 ? "estructura" : "estructuras") + " · " + queued
-                        + " bloques en cola" + covered + " · //undo para deshacer", Formatting.GREEN), false);
+                        + " bloques en cola" + covered + " · //undo para deshacer", Formatting.GREEN));
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 player.sendMessage(message(description() + ": " + readable(exception), Formatting.RED), false);
             }

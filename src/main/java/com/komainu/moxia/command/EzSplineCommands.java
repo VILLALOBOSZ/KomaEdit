@@ -131,7 +131,7 @@ final class EzSplineCommands {
                         }, description);
                         int pieces = planned.plan().pieceCount();
                         if (!PlanPreviews.holds(playerId, planned.plan())) {
-                            EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
+                            EzCommandSupport.queued(current, description + " en cola: " + queued + " bloques"
                                     + (pieces > 0 ? " · " + pieces + " losas/escaleras" : "")
                                     + " · //undo para deshacer");
                         }
@@ -187,7 +187,7 @@ final class EzSplineCommands {
                     try {
                         int queued = BatchEditService.submit(current, plan, "air", description);
                         if (!PlanPreviews.holds(playerId, plan)) {
-                            EzCommandSupport.ok(current, description + " en cola: " + queued
+                            EzCommandSupport.queued(current, description + " en cola: " + queued
                                     + " bloques · //undo para deshacer");
                         }
                     } catch (IllegalArgumentException | IllegalStateException exception) {

@@ -4,6 +4,7 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.sk89q.worldedit.regions.Region;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -22,10 +23,36 @@ public final class SnapshotJobs {
     }
 
     /**
+     * Para lo que edita el mundo: si el jugador cambia de dimensión antes de que termine, el resultado se descarta
+     * (era de la foto del mundo de antes).
+     *
      * @param compute se ejecuta en un worker: solo puede leer la foto
-     * @param apply   recibe al jugador (si sigue conectado) y el resultado, en el hilo del servidor
+     * @param apply   recibe al jugador (si sigue conectado y en el mismo mundo) y el resultado, en el hilo del
+     *                servidor
      */
     public static <T> void run(
+            ServerPlayerEntity player,
+            Region region,
+            int padding,
+            String description,
+            Function<RegionSnapshot, T> compute,
+            BiConsumer<ServerPlayerEntity, T> apply
+    ) {
+        ServerWorld world = player.getServerWorld();
+        RegionOperationService.capture(player, region, padding, description,
+                snapshot -> compute(player.getServer(), player.getUuid(), description, () -> compute.apply(snapshot),
+                        (current, result) -> {
+                            if (current.getServerWorld() != world) {
+                                current.sendMessage(message(description + ": " + RegionOperationService.OTHER_WORLD,
+                                        Formatting.YELLOW), false);
+                                return;
+                            }
+                            apply.accept(current, result);
+                        }));
+    }
+
+    /** Como {@link #run}, para lo que solo informa (el resultado se entrega aunque el jugador cambie de mundo). */
+    public static <T> void read(
             ServerPlayerEntity player,
             Region region,
             int padding,

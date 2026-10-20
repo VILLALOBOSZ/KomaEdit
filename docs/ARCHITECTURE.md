@@ -89,6 +89,8 @@ Un plan de patrón necesita 8 bytes por posición, sin contar el array, frente a
 - Una edición activa no se sustituye silenciosamente; debe terminar o cancelarse.
 - El pool tiene cola finita y rechaza trabajo cuando está saturado.
 - El servidor reparte un presupuesto global entre jugadores con round-robin.
+- Lo calculado sobre la foto de un mundo solo se aplica en ese mundo: si el jugador cambia de dimensión antes de que termine, se descarta con `RegionOperationService.OTHER_WORLD` (lo hacen `RegionOperationService`, `SnapshotJobs.run`, `TerrainService`, los tejados y `PlacementService`; una orden nueva que lea con `capture` y aplique después debe comprobarlo igual).
+- Al desconectarse un jugador se cancelan su captura, su cálculo en `AsyncEngine`, su colocación y su vista previa (`KomaEditMod` y el `register()` de cada servicio).
 
 ## Historial
 
@@ -118,7 +120,7 @@ Base común de las operaciones sobre la selección de WorldEdit (texturizar, def
 
 Si la operación tiene que escribir fuera de lo leído (la dispersión de estructuras, que asoma de la región), `RegionOperationService.capture(jugador, región, margen, descripción, alTerminar)` solo lee y entrega la foto en el hilo del servidor; la operación monta su propio `PackedBlockPlan`, condicional dentro de la foto. Así funcionan `place`, `array` y `scatter` (paquete `placement`).
 
-Si el resultado no son cambios de bloque sueltos (un plan con patrones y piezas, un informe, celdas de bioma), `SnapshotJobs.run(jugador, región, margen, descripción, cálculo, aplicar)` lee la región, ejecuta el cálculo en un worker y entrega el resultado en el hilo del servidor; `SnapshotJobs.compute` hace lo mismo sin leer el mundo. Así funcionan `text`, `analyze` y `biome`.
+Si el resultado no son cambios de bloque sueltos (un plan con patrones y piezas, un informe, celdas de bioma), `SnapshotJobs.run(jugador, región, margen, descripción, cálculo, aplicar)` lee la región, ejecuta el cálculo en un worker y entrega el resultado en el hilo del servidor (si el jugador sigue en el mismo mundo); `SnapshotJobs.read` hace lo mismo para lo que solo informa y `SnapshotJobs.compute`, sin leer el mundo. Así funcionan `text` y `biome` (`run`) y `analyze` (`read`).
 
 Para una operación nueva: escribe la lógica sobre `RegionSnapshot` (se puede montar a mano en tests con `RegionSnapshot.builder`), implementa `RegionOperation` y lánzala desde un comando con `RegionOperationService.submit`. `TweakOperation` es el ejemplo más pequeño. `weathering.WeatheringService` (Envejecer) adapta la foto a texto para `WeatheringEngine`, que es Java puro y se prueba con un mundo falso de texto.
 
@@ -135,14 +137,23 @@ Piezas relacionadas:
 
 Piezas en `com.komainu.moxia.preview` y `com.komainu.moxia.progress`. Una operación nueva que encole con `BatchEditService.submit`/`submitStyled` (directamente o a través de `RegionOperationService`) tiene vista previa, barra de progreso y `/komaedit cancel` sin escribir nada más.
 
-1. **La petición de la orden.** `PreviewFlags.install` (al final de `MoxiaCommands.register`) envuelve cada nodo ejecutable de `/komaedit`: le cuelga los literales `-v`/`--preview` o, en los de `greedyString`, quita la bandera del texto y vuelve a ejecutar la orden sin ella. La orden corre con una `EditRequest` (`DEFAULT`, `PREVIEW`, `CONFIRMED`, `TOOL`) en `EditRequests.current()`. `command.PreviewScope` dice qué familias no la llevan (gestión, ayuda, pinceles) y dónde `-v` ya es de ezEdits.
+1. **La petición de la orden.** `PreviewFlags.install` (al final de `MoxiaCommands.register`) envuelve cada nodo ejecutable de `/komaedit`: le cuelga los literales `-v`/`--preview` o, en los de `greedyString`, quita la bandera del texto y vuelve a ejecutar la orden sin ella. La orden corre con una `EditRequest` (`DEFAULT`, `PREVIEW`, `CONFIRMED`, `TOOL`) en `EditRequests.current()`. `command.PreviewScope` dice qué familias y subórdenes no la llevan (gestión y consultas, ayuda, pinceles, y lo que no pasa por el plan, como `gradient` y `biome`) y dónde `-v` ya significa otra cosa (`deform noise`, `weather`, `text`…).
 2. **El viaje.** `RegionOperationService` y `SnapshotCaptureService` recogen la petición al empezar y la restauran (`EditRequests.within`) al terminar la captura; `AsyncEngine.submit` la recoge al lanzar y la deja en el relevo del jugador (`EditRequests.handOff`) justo antes de entregar el resultado. Si una cadena la pierde, la última orden con `-v` queda armada unos minutos y se usa una vez. Un clic de herramienta envuelve su envío en `EditRequest.TOOL`; una confirmación, en `CONFIRMED`.
 3. **La puerta.** `BatchEditService.submit`/`submitStyled` (sin `JobListener`) llaman a `PlanPreviews.intercept`. Si la petición es `PREVIEW`, o `DEFAULT` y el plan llega al umbral de `PreviewPreferences`, el plan no se encola: se prepara repartido entre ticks (bloque final de cada entrada con `patternFor`/`shapeFor`, los mismos que al aplicar, y estado actual del mundo) en un plan congelado de escrituras condicionales. `DisplaySampler` elige los displays en un hilo aparte y `PreviewDisplays` los manda por paquetes solo a ese jugador. `PlanPreviews.holds(jugador, plan)` dice al llamador si su plan quedó en vista previa, para no anunciar «en cola».
 4. **Confirmar.** `PreviewFlow` (lógica pura, con pruebas) guarda la vista previa, la caduca y, al confirmar, comprueba con `ZoneCheck` las posiciones vigiladas antes de encolar el mismo plan congelado. Si algo cambió, recalcula: con `PlanPreviews.Extras.recompute` si la operación lo dio (`RegionOperationService` relanza la misma selección y vigila también toda ella), si no repitiendo la orden, y si no hay orden, volviendo a preparar el plan. Cada salida pasa una vez por `hide`, que retira los displays.
-5. **Progreso.** `progress.ProgressBars` pregunta cada cinco ticks a `BatchEditService.status`, `PlanPreviews.progress`, `RegionOperationService.progress` y `AsyncEngine.status`, y pinta una bossbar por jugador con `ProgressLine`. Un cálculo puede informar de su avance con `AsyncEngine.progress(hecho, total)` desde el worker; si no, la barra cuenta el tiempo.
-6. **Cancelar.** `/komaedit cancel` (`command.PreviewCommands`) corta la captura, el worker y la colocación. `edit.PlanApplication` recorre los planes por tramos y se para siempre en una frontera de entrada, así que la `EditSession` que se cierra y se registra en `LocalSession` cubre exactamente lo colocado.
+5. **Progreso.** `progress.ProgressBars` pregunta cada cinco ticks a `BatchEditService.status`, `BiomeEditService.progress`, `PlanPreviews.progress`, `RegionOperationService.progress` y `AsyncEngine.status`, y pinta una bossbar por jugador con `ProgressLine`. Un cálculo puede informar de su avance con `AsyncEngine.progress(hecho, total)` desde el worker; si no, la barra cuenta el tiempo.
+6. **Cancelar.** `/komaedit cancel` (`command.PreviewCommands`) corta la captura, el worker, la colocación y el pintado de biomas. `edit.PlanApplication` recorre los planes por tramos y se para siempre en una frontera de entrada, así que la `EditSession` que se cierra y se registra en `LocalSession` cubre exactamente lo colocado.
 
-Para un comando nuevo: si es de gestión (no coloca bloques) o ya usa `-v` con otro sentido, añádelo a `PreviewScope`; si su plan no pasa por `BatchEditService.submit`, no tendrá vista previa. Si después de encolar anuncia «en cola», compruébalo antes con `PlanPreviews.holds`.
+Para un comando nuevo: si es de gestión (no coloca bloques) o ya usa `-v` con otro sentido, añádelo a `PreviewScope`; si su plan no pasa por `BatchEditService.submit`, no tendrá vista previa. Si después de encolar anuncia «en cola», compruébalo antes con `PlanPreviews.holds` y mándalo con `QuietMode.info` (o `EzCommandSupport.queued`), para que `/komaedit quiet` lo silencie.
+
+## Pruebas sin el juego
+
+Todo se prueba con JUnit sin arrancar Minecraft. Dos pruebas de humo vigilan lo que se rompe al fusionar ramas hechas en paralelo:
+
+- `command.CommandTreeSmokeTest` monta el árbol entero con `MoxiaCommands.register(dispatcher)` en un `CommandDispatcher` de Brigadier (no hace falta el servidor: los permisos se miran al ejecutar). Brigadier fusiona en silencio dos hijos con el mismo nombre, así que la prueba apunta cada `addChild` que repite nombre bajo `/komaedit`. Comprueba también los alias `/ke`, `/mx`, `/moxia` y `ruta`, que cada orden tenga su tema en `HelpTopics` (por id, alias o entrada), que la ayuda solo enseñe órdenes que existen y dónde va la bandera `-v`.
+- `config.KomaEditConfigTest` lee `config.json` de serie, uno de la 1.4.0 sin los campos nuevos y uno roto con `KomaEditConfig.load(Path)`.
+
+Una orden nueva necesita, por tanto, su entrada en `HelpTopics` y, si no coloca bloques, su sitio en `PreviewScope`.
 
 ## Pinceles de modelado
 

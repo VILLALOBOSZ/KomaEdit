@@ -22,6 +22,7 @@ import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.ProjectStorage;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.persistence.SculptPresetStore;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.recipe.ProceduralRecipe;
@@ -192,7 +193,8 @@ public final class MoxiaCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> register(dispatcher));
     }
 
-    private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+    /** Todo el árbol de {@code /komaedit}; también lo montan las pruebas, sin el juego. */
+    static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         var root = dispatcher.register(literal("komaedit")
                 .requires(MoxiaCommands::canUse)
                 .then(literal("menu").executes(MoxiaCommands::openHudMenu))
@@ -683,11 +685,8 @@ public final class MoxiaCommands {
                             if (PlanPreviews.holds(playerId, plan)) {
                                 return;
                             }
-                            current.getCommandSource().sendFeedback(
-                                    () -> prefix().append(Text.literal("Estructura doblada en cola: " + changed
-                                            + " bloques · /komaedit job status").formatted(Formatting.GREEN)),
-                                    false
-                            );
+                            QuietMode.info(current, prefix().append(Text.literal("Estructura doblada en cola: "
+                                    + changed + " bloques · /komaedit job status").formatted(Formatting.GREEN)));
                         } catch (IllegalArgumentException | IllegalStateException exception) {
                             fail(current.getCommandSource(), message(exception));
                         }
@@ -1715,13 +1714,10 @@ public final class MoxiaCommands {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
             int changed = GradientService.apply(player, axis, palette, dither, reverse);
-            context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal(
-                            "Degradado " + paletteName + " en cola: " + changed + " bloques · eje "
-                                    + axis.id() + " · mezcla " + dither + "% · /komaedit job status"
-                    ).formatted(Formatting.GREEN)),
-                    false
-            );
+            QuietMode.info(player, prefix().append(Text.literal(
+                    "Degradado " + paletteName + " en cola: " + changed + " bloques · eje "
+                            + axis.id() + " · mezcla " + dither + "% · /komaedit job status"
+            ).formatted(Formatting.GREEN)));
             return changed;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Completa la selección de WorldEdit con //pos1 y //pos2");
@@ -1986,16 +1982,13 @@ public final class MoxiaCommands {
                                 return;
                             }
                             int pieces = plan.pieceCount();
-                            current.getCommandSource().sendFeedback(
-                                    () -> prefix().append(Text.literal(
-                                            requestedParameters.shape().displayName() + " en cola: " + changed
-                                                    + " bloques" + (pieces == 0
-                                                    ? " · espaciado " + requestedParameters.spacing()
-                                                    : " · " + pieces + " piezas")
-                                                    + " · /komaedit job status"
-                                    ).formatted(Formatting.GREEN)),
-                                    false
-                            );
+                            QuietMode.info(current, prefix().append(Text.literal(
+                                    requestedParameters.shape().displayName() + " en cola: " + changed
+                                            + " bloques" + (pieces == 0
+                                            ? " · espaciado " + requestedParameters.spacing()
+                                            : " · " + pieces + " piezas")
+                                            + " · /komaedit job status"
+                            ).formatted(Formatting.GREEN)));
                         } catch (IllegalArgumentException | IllegalStateException exception) {
                             fail(current.getCommandSource(), message(exception));
                         }

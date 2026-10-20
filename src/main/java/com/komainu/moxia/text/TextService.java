@@ -7,6 +7,8 @@ import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.SnapshotJobs;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -123,10 +125,13 @@ public final class TextService {
         int queued = BatchEditService.submitStyled(player, plan,
                 position -> resolved.get(layers.get(PackedBlockPlan.pack(position.x(), position.y(), position.z()))),
                 description);
+        if (PlanPreviews.holds(player.getUuid(), plan)) {
+            return;
+        }
         String pieces = result.slabs() + result.stairs() == 0 ? ""
                 : " (" + result.slabs() + " losas, " + result.stairs() + " escaleras)";
-        player.sendMessage(SnapshotJobs.message(description + ": " + queued + " bloques en cola" + pieces
-                + " · //undo para deshacer", Formatting.GREEN), false);
+        QuietMode.info(player, SnapshotJobs.message(description + ": " + queued + " bloques en cola" + pieces
+                + " · //undo para deshacer", Formatting.GREEN));
     }
 
     /**

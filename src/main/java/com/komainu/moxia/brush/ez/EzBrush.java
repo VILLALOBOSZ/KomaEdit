@@ -137,7 +137,14 @@ public abstract sealed class EzBrush {
                 int radius = options.integer(1, DEFAULT_RADIUS, 1, MAX_RADIUS, "El radio");
                 yield new Biome(biome, radius, options.has('v'), options.has('m') ? options.flag('m') : null);
             }
-            case HEIGHTMAP -> new Relief(HeightmapBrush.parse(options), preview);
+            case HEIGHTMAP -> {
+                HeightmapBrush.Config config = HeightmapBrush.parse(options);
+                if (config.mask() != null) {
+                    // Que una máscara mal escrita falle al elegir el pincel y no en el primer clic.
+                    BrushMasks.parse(player, config.mask());
+                }
+                yield new Relief(config, preview);
+            }
             case SCULPT -> Sculpt.parse(player, options);
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
@@ -687,8 +694,9 @@ public abstract sealed class EzBrush {
                 return;
             }
             StampBrush.Mode pass = input.left() ? mode.opposite() : mode;
+            BrushMask mask = config.mask() == null ? null : BrushMasks.parse(session.player(), config.mask());
             session.run(HeightmapBrush.operation(config, pass, session.target(), session.player().getYaw(),
-                    ThreadLocalRandom.current().nextDouble()));
+                    ThreadLocalRandom.current().nextDouble(), mask));
         }
     }
 

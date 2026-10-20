@@ -1,5 +1,6 @@
 package com.komainu.moxia.progress;
 
+import com.komainu.moxia.biome.BiomeEditService;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.preview.PlanPreviews;
@@ -19,8 +20,8 @@ import java.util.UUID;
  * Bossbar de progreso de cada jugador: lectura de la selección, cálculo, preparación de la vista previa, espera de
  * confirmación y colocación, con porcentaje, bloques por segundo y tiempo restante. No hay que avisarla: cada
  * pocos ticks pregunta a los servicios del motor ({@link RegionOperationService}, {@link AsyncEngine},
- * {@link PlanPreviews}, {@link BatchEditService}) qué está haciendo cada jugador, así que cualquier operación que
- * pase por ellos la tiene. Solo aparece cuando la operación dura más de un segundo (la vista previa, al momento).
+ * {@link PlanPreviews}, {@link BatchEditService} y el pintado de biomas de {@link BiomeEditService}) qué está haciendo
+ * cada jugador, así que cualquier operación que pase por ellos la tiene. Solo aparece cuando la operación dura más de un segundo (la vista previa, al momento).
  */
 public final class ProgressBars {
     private static final int UPDATE_EVERY_TICKS = 5;
@@ -49,6 +50,10 @@ public final class ProgressBars {
             BatchEditService.JobStatus status = job.get();
             return Optional.of(new ProgressLine(status.description(), ProgressLine.Phase.PLACING,
                     status.processed(), status.total(), status.elapsedNanos(), "/komaedit cancel"));
+        }
+        Optional<ProgressLine> biome = BiomeEditService.progress(player);
+        if (biome.isPresent()) {
+            return biome;
         }
         Optional<ProgressLine> preview = PlanPreviews.progress(player);
         if (preview.isPresent()) {
