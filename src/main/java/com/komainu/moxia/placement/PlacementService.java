@@ -10,6 +10,7 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
 import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.shape.Vec3;
@@ -809,9 +810,9 @@ public final class PlacementService {
                     return;
                 }
                 String covered = output.cover().isEmpty() ? "" : " · " + output.cover().size() + " superficies cubiertas";
-                player.sendMessage(message(description() + ": " + output.placements() + " "
+                QuietMode.info(player, message(description() + ": " + output.placements() + " "
                         + (output.placements() == 1 ? "estructura" : "estructuras") + " · " + queued
-                        + " bloques en cola" + covered + " · //undo para deshacer", Formatting.GREEN), false);
+                        + " bloques en cola" + covered + " · //undo para deshacer", Formatting.GREEN));
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 player.sendMessage(message(description() + ": " + readable(exception), Formatting.RED), false);
             }

@@ -110,7 +110,7 @@
 - `/komaedit cancel` para también el pintado de biomas, y la bossbar lo enseña.
 - Lo calculado sobre la foto de un mundo no se aplica en otro: las operaciones de región, el terraformado, los tejados, el texto, los biomas con máscara y la colocación se descartan con aviso si cambias de dimensión antes de que terminen.
 - Al desconectarse se paran también la lectura de los pinceles y el cálculo en marcha.
-- `text` ya no anuncia «en cola» cuando la edición se queda en vista previa, y los avisos de «en cola» de texto, imagen, árboles y rocas, tejados y lofts respetan `/komaedit quiet`.
+- `text` ya no anuncia «en cola» cuando la edición se queda en vista previa, y todos los avisos de «N bloques en cola» (también los de figuras, `bend`, `gradient`, `ezspline`, generadores, colocación, vidriera, hiedra, texto, imagen, árboles y rocas, tejados y lofts) respetan `/komaedit quiet`, como ya decía su documentación.
 - El pincel `heightmap` admite en `-m` cualquier máscara de WorldEdit, como el resto de pinceles.
 - Ayuda: tema nuevo de pinceles (`/komaedit help brushes`), los atajos de figuras (`pillar`, `cloud`, `mandala`, `web`, `lightning`, `noodles`…) y los alias en español que faltaban; `/komaedit help erosion` lleva al tubo erosionado, que es la orden `/komaedit erosion`.
 - Documentación: «Árboles y rocas» había quedado partida dentro de «Loft entre curvas», la tabla de paquetes de permisos tenía la fila intermedia dos veces y la paridad con ezEdits aún daba la simetría, la vidriera de imagen y `quiet` por pendientes. Índice al principio de `docs/MOD_DOCUMENTATION.md`.
