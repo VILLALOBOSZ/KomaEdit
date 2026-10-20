@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.8.0 (estable, 2026-10-20)
+
 ### Lo que pidió el autor tras probar la 1.7.0: trabajar más deprisa
 
 - **Presets que no rompen la copa.** Cada preset (Joven, Viejo, Azotado, Pelado; los de rocas, tejados, sello de relieve, texto y nieve) deja la herramienta en un estado completo y conocido: lo que no define vuelve al de serie de la especie o el tipo. Antes solo tocaban algunos valores y el resto se quedaba con lo del preset anterior: tras «Pelado» la densidad de copa seguía en 0 aunque se eligiera «Joven». Se conservan la especie o el tipo, los materiales, los textos, la semilla y los interruptores de cómo se coloca (vista previa en cada clic, reemplazar…). La pastilla del preset puesto sale marcada, y un preset del sello quita el sello propio escrito (si no, la orden seguía usándolo).
