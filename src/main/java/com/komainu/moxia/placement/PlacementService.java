@@ -17,6 +17,7 @@ import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.shape.Vec3;
+import com.komainu.moxia.studio.net.StudioAim;
 import com.komainu.moxia.shape.smooth.SmoothPiece;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.worldedit.ez.SavedSelections;
@@ -58,6 +59,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Direction;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -87,6 +91,8 @@ import java.util.stream.Stream;
 public final class PlacementService {
     public static final int MAX_STRUCTURE_VOLUME = 2_000_000;
     public static final int MAX_SCHEMATICS = 32;
+    /** Hasta dónde vale un clic del Studio para colocar (lo mismo que los árboles y las rocas). */
+    private static final double STUDIO_REACH = 160.0;
     /**
      * Radio de búsqueda de superficie de {@code -b}: {@code arraySnapRadius} de {@code config/komaedit/config.json}
      * (96 por defecto, como ezEdits). Se recorta si la caja de la trayectoria no cabe en el límite de lectura.
@@ -111,10 +117,33 @@ public final class PlacementService {
         }
     }
 
-    /** @return el texto de la confirmación inicial */
+    /**
+     * Colocar por orden ({@code place}, {@code blueprint place}…): a tus pies o, con el Studio abierto y tras un clic
+     * en el mundo, en el bloque pulsado (como los árboles).
+     *
+     * @return el texto de la confirmación inicial
+     */
     public static String start(ServerPlayerEntity player, PlacementSettings.Kind kind, String input)
             throws IncompleteRegionException {
-        return start(player, kind, PlacementSettings.parse(kind, input), null);
+        return start(player, kind, PlacementSettings.parse(kind, input),
+                kind == PlacementSettings.Kind.PLACE ? studioTarget(player) : null);
+    }
+
+    /** Donde se hizo clic con el Studio abierto, como objetivo de colocación; {@code null} sin clic. */
+    static BrushTarget studioTarget(ServerPlayerEntity player) {
+        if (!StudioAim.clicked(player)) {
+            return null;
+        }
+        HitResult result = StudioAim.target(player, STUDIO_REACH);
+        if (!(result instanceof BlockHitResult hit) || result.getType() != HitResult.Type.BLOCK) {
+            return null;
+        }
+        Direction side = hit.getSide();
+        BlockVector3 surface = BlockVector3.at(hit.getBlockPos().getX(), hit.getBlockPos().getY(),
+                hit.getBlockPos().getZ());
+        BlockVector3 anchor = surface.add(side.getOffsetX(), side.getOffsetY(), side.getOffsetZ());
+        return new BrushTarget(anchor, surface, new Vec3(side.getOffsetX(), side.getOffsetY(), side.getOffsetZ()),
+                List.of(), null);
     }
 
     /**

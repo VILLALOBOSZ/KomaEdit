@@ -50,8 +50,8 @@ class PaintBrushSyncTest {
         assertEquals("komaedit pincel paint hierba_piedra 8 pendiente 60", command);
         PaintConfig config = parse(command);
         assertEquals(PaintConfig.defaults(), config, "lo de serie de la tarjeta es lo de serie del pincel");
-        assertEquals(List.of("paint_palette", "custom_palette", "stamp", "gradient", "radius", "strength", "seed",
-                "lock_seed"), card.essentials(), "a la vista solo lo de empezar");
+        assertEquals(List.of("paint_palette", "custom_palette", "stamp", "gradient", "radius", "strength", "seed"),
+                card.essentials(), "a la vista solo lo de empezar; bloquear la semilla, en Más ajustes");
         assertTrue(card.problems(card.defaults(), ALL).isEmpty());
     }
 

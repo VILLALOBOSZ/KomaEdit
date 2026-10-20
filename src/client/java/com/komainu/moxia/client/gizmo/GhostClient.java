@@ -161,7 +161,11 @@ public final class GhostClient {
                 ? session : null;
         studioUntil = 0L;
         refreshPending = false;
-        close();
+        if (previous != null) {
+            // La malla de antes sigue a la vista, quieta, hasta que llegue la del nuevo: sin parpadeo.
+            GhostRenderer.retire(previous.transform());
+        }
+        close(previous == null);
         GhostOptions options = GhostOptions.fromBits(payload.options()).withGround(false);
         session = new GhostSession(new GhostSession.Info(payload.id(), payload.description(), payload.bounds(),
                 payload.blocks(), payload.air(), GhostTransform.at(payload.pivotX(), payload.pivotY(),
@@ -220,6 +224,11 @@ public final class GhostClient {
     }
 
     private static void close() {
+        close(true);
+    }
+
+    /** Cierra el fantasma; sin {@code mesh}, su malla queda a la vista hasta que la sustituya la del siguiente. */
+    private static void close(boolean mesh) {
         session = null;
         palette = new int[0];
         footprint = null;
@@ -231,7 +240,9 @@ public final class GhostClient {
         terrainDrag = false;
         terrainLast = null;
         ASSEMBLER.clear();
-        GhostRenderer.clear();
+        if (mesh) {
+            GhostRenderer.clear();
+        }
     }
 
     private static void confirm(boolean copy) {

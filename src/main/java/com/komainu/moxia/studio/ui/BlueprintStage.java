@@ -5,6 +5,7 @@ import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.blueprint.BlueprintTags;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
+import com.komainu.moxia.studio.tools.ui.BrushSync;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,6 +37,10 @@ public final class BlueprintStage {
     private int scope;
     private String selected = "";
     private int radius;
+    /** El pincel de estampar que salió de aquí sigue a la etapa: el plano elegido y el radio. */
+    private final BrushSync brush = new BrushSync();
+    /** Lo que se estampó: una referencia de plano o una etiqueta ({@code #ruinas}). */
+    private String stamped;
 
     /** Al entrar en la etapa: catálogo al día. */
     public void opened(StudioHost host) {
@@ -388,8 +393,50 @@ public final class BlueprintStage {
     }
 
     private void stamp(StudioHost host, String what) {
-        host.send("komaedit pincel stamp " + what + (RADII[radius] > 0 ? " " + RADII[radius] : ""));
+        String command = stampCommand(what);
+        host.send(command);
         host.status(host.tr("gui.komaedit.status.blueprint.stamp", what));
+        stamped = what;
+        brush.linked("blueprints", "", command, host.now());
+    }
+
+    private String stampCommand(String what) {
+        return "komaedit pincel stamp " + what + (RADII[radius] > 0 ? " " + RADII[radius] : "");
+    }
+
+    /**
+     * Lo que estamparía ahora el pincel según la etapa: el plano elegido (o, si se estampó una etiqueta, la etiqueta
+     * del buscador) con el radio elegido.
+     */
+    String stampNow() {
+        if (stamped == null) {
+            return null;
+        }
+        if (stamped.startsWith("#")) {
+            Set<String> tags = activeTags();
+            return stampCommand(tags.size() == 1 ? "#" + tags.iterator().next() : stamped);
+        }
+        return stampCommand(selected.isEmpty() ? stamped : selected);
+    }
+
+    /**
+     * Pasa al pincel de estampar de la mano los cambios de la etapa (otro plano, otro radio) 0,3 s después del último,
+     * mientras ese pincel siga en la mano; nunca toca otro objeto ({@link BrushSync}).
+     */
+    public void syncBrush(StudioHost host) {
+        if (brush.card() == null) {
+            return;
+        }
+        String send = brush.tick(stampNow(), host.heldTool(), host.now());
+        if (send != null) {
+            host.send(send);
+            host.status(host.tr("gui.komaedit.tools.status.brush_synced", host.tr("gui.komaedit.blueprint.stamp")));
+        }
+    }
+
+    /** El pincel que se sigue, para las pruebas. */
+    public BrushSync brush() {
+        return brush;
     }
 
     /** Cuadrícula de tarjetas: miniatura arriba y nombre y tamaño debajo. */

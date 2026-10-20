@@ -2,6 +2,7 @@ package com.komainu.moxia.studio.ui;
 
 import com.komainu.moxia.gradient.GradientAxis;
 import com.komainu.moxia.gradient.GradientPalette;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.recipe.CurveEasing;
 import com.komainu.moxia.recipe.MaterialMetric;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
@@ -19,6 +20,8 @@ import com.komainu.moxia.shape.tube.TubeFormula;
 import com.komainu.moxia.shape.tube.TubeFormulaPreset;
 import com.komainu.moxia.shape.tube.TubeSettings;
 import com.komainu.moxia.studio.BuildEstimate;
+import com.komainu.moxia.studio.ControlHelp;
+import com.komainu.moxia.studio.FigureVariation;
 import com.komainu.moxia.studio.NumericRange;
 import com.komainu.moxia.studio.ParameterHistory;
 import com.komainu.moxia.studio.ShapeCategory;
@@ -51,6 +54,10 @@ public final class FigureStages {
     public static final double REACH = 4_096.0;
     /** Lo que ocupan en una celda de figura el margen y la estrella, fuera del nombre. */
     private static final int SHAPE_NAME_INSET = 22;
+    /** Alto de una fila de variación con su dibujo. */
+    private static final int VARIATION_ROW = 34;
+    /** El color de los dibujos de las variaciones si la figura va en degradado. */
+    private static final String GRADIENT_SAMPLE = "minecraft:light_blue_concrete";
 
     /** Un número de la receta: su rango, su unidad y su ayuda. */
     enum Control {
@@ -65,20 +72,24 @@ public final class FigureStages {
         START_SPACING(new NumericRange(50, 200, 5, 25), ValueUnit.PERCENT_POINTS),
         END_SPACING(new NumericRange(50, 200, 5, 25), ValueUnit.PERCENT_POINTS),
         TWIST(new NumericRange(-1440, 1440, 15, 90), ValueUnit.DEGREES),
-        RHYTHM_INTERVAL(NumericRange.of(2, 32, 1), ValueUnit.NONE),
+        RHYTHM_INTERVAL(NumericRange.of(2, 32, 1), ValueUnit.SEGMENTS),
         CONFORM_RADIUS(NumericRange.of(2, 32, 1), ValueUnit.BLOCKS),
         SURFACE_OFFSET(new NumericRange(-8, 8, 1, 4), ValueUnit.BLOCKS),
-        SOCKET_INTERVAL(new NumericRange(2, 64, 1, 8), ValueUnit.NONE);
+        SOCKET_INTERVAL(new NumericRange(2, 64, 1, 8), ValueUnit.BLOCKS);
 
         final NumericRange range;
         /** {@code null}: depende de la figura (cada una llama a su medida a su manera). */
         final ValueUnit unit;
+        /** Qué le pasa a la figura al moverlo. */
         final String helpKey;
+        /** Sus extremos en palabras ({@code fino|grueso}), si los tiene. */
+        final String endsKey;
 
         Control(NumericRange range, ValueUnit unit) {
             this.range = range;
             this.unit = unit;
             this.helpKey = "gui.komaedit.help." + name().toLowerCase(Locale.ROOT);
+            this.endsKey = "gui.komaedit.ends." + name().toLowerCase(Locale.ROOT);
         }
 
         String key() {
@@ -103,6 +114,8 @@ public final class FigureStages {
     private String selectedInstanceId = "";
     private int selectedPoint = -1;
     private boolean restoring;
+    /** La paleta que tenía el degradado al quitarlo, para volver a ella. */
+    private String lastPalette = GradientPalette.GLOW_CYAN.id();
 
     // ── Estado ──────────────────────────────────────────────────────────────────────────────────────────
 
@@ -249,6 +262,10 @@ public final class FigureStages {
                 })
                 .tooltip(host.tr("gui.komaedit.help.path.clear"));
 
+        if (nodes == 0 && !compact) {
+            // Sin puntos, lo primero que hay que saber: cómo se pone uno.
+            ui.paragraph(column, host.tr("gui.komaedit.path.first"), TEXT_SECONDARY, 0);
+        }
         if (nodes >= minimum) {
             ui.section(column, host.tr("gui.komaedit.path.use_with"));
             String[] targets = {"figure", "river", "ramp", "tree", "loft"};
@@ -355,46 +372,114 @@ public final class FigureStages {
         }
         drawShapeHeader(ui, column, host);
         PathShape shape = draft.shape();
+        if (!pathReady(host)) {
+            // Lo primero que hay que saber: la figura va por un camino, y sus puntos se ponen con un clic en el mundo.
+            ui.paragraph(column, host.tr("gui.komaedit.figure.need_points", requiredPoints(host)
+                    - host.pathPoints().size()), WARNING, 2);
+        }
         if (!compact) {
             ui.paragraph(column, host.tr(StudioNames.shapeDescription(shape)), MUTED, 2);
-        }
-        ui.section(column, host.tr("gui.komaedit.proportions"));
-        if (!compact) {
             drawPresets(ui, column, host);
         }
+        // Lo esencial a la vista, de arriba abajo: cuánto ocupa, de qué está hecha y cómo cambia a lo largo del
+        // camino. Lo que se toca poco (el giro, el tubo, el reparto del degradado, la limpieza), en Más ajustes.
+        ui.section(column, host.tr("gui.komaedit.figure.size"));
         stepper(ui, column, host, StudioNames.radiusLabel(shape), Control.RADIUS);
         stepper(ui, column, host, StudioNames.spacingLabel(shape), Control.SPACING);
         stepper(ui, column, host, StudioNames.thicknessLabel(shape), Control.THICKNESS);
-        stepper(ui, column, host, StudioNames.rollLabel(shape), Control.ROLL);
         if (shape.usesSecondaryMeasure()) {
             stepper(ui, column, host, StudioNames.heightLabel(shape), Control.HEIGHT);
         }
-        if (TubeFigures.supports(shape) || TubeFigures.hasExactEngine(shape)) {
-            String key = "figure:tube";
-            boolean open = !compact || host.preferences().expanded(key);
-            if (compact) {
-                ui.foldable(column, host.tr("gui.komaedit.tube"), "", open).onClick(() -> {
+        drawTubeEssentials(ui, column, host);
+        drawMaterial(ui, column, host, compact);
+        drawVariations(ui, column, host, compact);
+        drawMore(ui, column, host, compact);
+    }
+
+    /** Más ajustes de la figura, plegados: con cuántos hay o cuántos ya no están de serie. */
+    private void drawMore(StudioUi ui, Column column, StudioHost host, boolean compact) {
+        String key = "figure:more";
+        boolean open = host.preferences().expanded(key);
+        long changed = moreChanged();
+        ui.foldable(column, host.tr("gui.komaedit.tools.more"), changed > 0
+                        ? host.tr("gui.komaedit.tools.more.changed", changed) : "", open)
+                .tooltip(host.tr("gui.komaedit.figure.more.help"))
+                .onClick(() -> {
                     host.preferences().setExpanded(key, !open);
                     host.savePreferences();
                 });
-            } else {
-                ui.section(column, host.tr("gui.komaedit.tube"));
-            }
-            if (open) {
-                drawTubeRows(ui, column, host);
-            }
+        if (!open) {
+            return;
         }
+        PathShape shape = draft.shape();
         if (compact) {
-            String key = "figure:presets";
-            boolean open = host.preferences().expanded(key);
-            ui.foldable(column, host.tr("gui.komaedit.tools.presets"), "", open).onClick(() -> {
-                host.preferences().setExpanded(key, !open);
-                host.savePreferences();
-            });
-            if (open) {
-                drawPresets(ui, column, host);
-            }
+            drawPresets(ui, column, host);
         }
+        stepper(ui, column, host, StudioNames.rollLabel(shape), Control.ROLL);
+        drawTubeMore(ui, column, host);
+        RecipeExtensions extensions = draft.extensions();
+        if (FigureVariation.TAPER.on(extensions) || FigureVariation.TWIST.on(extensions)) {
+            cycle(ui, column, host, "gui.komaedit.param.easing", host.tr(StudioNames.easing(extensions.easing())),
+                    "easing", direction -> {
+                        RecipeExtensions current = draft.extensions();
+                        CurveEasing easing = cycle(CurveEasing.values(), current.easing(), direction);
+                        draft = draft.withExtensions(current.withCurve(current.startScalePercent(),
+                                current.endScalePercent(), current.startSpacingPercent(),
+                                current.endSpacingPercent(), current.twistDegrees(), easing));
+                        host.status(host.tr("gui.komaedit.status.easing", host.tr(StudioNames.easing(easing))));
+                    });
+        }
+        if (draft.usesGradient()) {
+            drawGradientMore(ui, column, host, compact);
+        }
+        ui.toggle(column.next(), host.tr("gui.komaedit.modifiers.close_gaps"), extensions.closeMicroGaps(),
+                        extensions.closeMicroGaps())
+                .tooltip(host.tr("gui.komaedit.help.close_gaps"))
+                .hint(host.tr("gui.komaedit.hint.toggle"))
+                .onClick(() -> {
+                    RecipeExtensions current = draft.extensions();
+                    draft = draft.withExtensions(current.withQa(!current.closeMicroGaps(), current.removeIsolated()));
+                });
+        ui.toggle(column.next(), host.tr("gui.komaedit.modifiers.remove_isolated"), extensions.removeIsolated(),
+                        extensions.removeIsolated())
+                .tooltip(host.tr("gui.komaedit.help.remove_isolated"))
+                .hint(host.tr("gui.komaedit.hint.toggle"))
+                .onClick(() -> {
+                    RecipeExtensions current = draft.extensions();
+                    draft = draft.withExtensions(current.withQa(current.closeMicroGaps(), !current.removeIsolated()));
+                });
+        boolean any = !extensions.equals(RecipeExtensions.DEFAULT.withMaterialMetric(extensions.materialMetric()));
+        ui.button(column.next(16), host.tr("gui.komaedit.variations.reset"), any ? StudioUi.Tone.SECONDARY
+                        : StudioUi.Tone.DISABLED)
+                .tooltip(host.tr("gui.komaedit.variations.reset") + "\n" + host.tr("gui.komaedit.variations.reset.help"))
+                .onClick(() -> {
+                    draft = draft.withExtensions(RecipeExtensions.DEFAULT.withMaterialMetric(
+                            draft.extensions().materialMetric()));
+                    host.status(host.tr("gui.komaedit.status.modifiers.reset"));
+                });
+    }
+
+    /** Cuántos ajustes de Más ajustes ya no están de serie, para decirlo en su título plegado. */
+    long moreChanged() {
+        ShapeVariants.Proportions defaults = ShapeVariants.defaults(draft.shape());
+        RecipeExtensions extensions = draft.extensions();
+        RecipeExtensions clean = RecipeExtensions.DEFAULT;
+        long changed = 0;
+        changed += draft.rollDegrees() != defaults.rollDegrees() ? 1 : 0;
+        changed += extensions.easing() != clean.easing() ? 1 : 0;
+        changed += extensions.closeMicroGaps() ? 1 : 0;
+        changed += extensions.removeIsolated() ? 1 : 0;
+        for (String option : List.of(TubeEngine.OPTION, "end", "normal", "smooth", "coverage")) {
+            changed += draft.options().containsKey(option) ? 1 : 0;
+        }
+        if (draft.usesGradient()) {
+            ProceduralRecipe plain = ProceduralRecipe.defaults();
+            changed += draft.gradientAxis() != plain.gradientAxis() ? 1 : 0;
+            changed += draft.dither() != plain.dither() ? 1 : 0;
+            changed += draft.reverse() ? 1 : 0;
+            changed += extensions.materialMetric() != clean.materialMetric() ? 1 : 0;
+        }
+        return changed;
     }
 
     private void drawShapeHeader(StudioUi ui, Column column, StudioHost host) {
@@ -544,29 +629,11 @@ public final class FigureStages {
     }
 
     /**
-     * Filas del espacio de tubo: motor (en las figuras clásicas que tienen versión exacta), perfil o fórmula,
-     * relleno, extremos, orientación de la sección y piezas.
+     * Lo que define la sección y se ve siempre: la fórmula (Expresión), el perfil (Perfil 2D) y si va hueca. El resto
+     * del tubo va en Más ajustes ({@link #drawTubeMore}).
      */
-    private void drawTubeRows(StudioUi ui, Column column, StudioHost host) {
+    private void drawTubeEssentials(StudioUi ui, Column column, StudioHost host) {
         PathShape shape = draft.shape();
-        if (TubeFigures.hasExactEngine(shape)) {
-            cycle(ui, column, host, "gui.komaedit.tube.engine", host.tr(StudioNames.engine(tubeEngine())),
-                    TubeEngine.OPTION, direction -> {
-                        TubeEngine engine = TubeEngine.byIndex(tubeEngine().ordinal() + direction);
-                        Map<String, Double> next = new LinkedHashMap<>(draft.options());
-                        if (engine == TubeEngine.EXACT) {
-                            next.put(TubeEngine.OPTION, (double) engine.ordinal());
-                        } else {
-                            next.remove(TubeEngine.OPTION);
-                        }
-                        draft = draft.withOptions(next);
-                        host.status(host.tr(engine == TubeEngine.EXACT
-                                ? "gui.komaedit.status.engine.exact" : "gui.komaedit.status.engine.classic"));
-                    });
-            if (tubeEngine() != TubeEngine.EXACT) {
-                return;
-            }
-        }
         if (shape == PathShape.EXPRESSION) {
             String formulaName = draft.formula().isEmpty()
                     ? host.tr(StudioNames.formula(formulaPreset())) : host.tr("gui.komaedit.tube.formula.custom");
@@ -601,6 +668,35 @@ public final class FigureStages {
                 setTubeOption("hollow", next ? 1.0 : 0.0);
                 host.status(host.tr(next ? "gui.komaedit.status.hollow.on" : "gui.komaedit.status.hollow.off"));
             });
+        }
+    }
+
+    /**
+     * El resto del espacio de tubo, en Más ajustes: el motor (en las figuras clásicas que tienen versión exacta), los
+     * extremos, la orientación de la sección y las piezas.
+     */
+    private void drawTubeMore(StudioUi ui, Column column, StudioHost host) {
+        PathShape shape = draft.shape();
+        if (!TubeFigures.supports(shape) && !TubeFigures.hasExactEngine(shape)) {
+            return;
+        }
+        if (TubeFigures.hasExactEngine(shape)) {
+            cycle(ui, column, host, "gui.komaedit.tube.engine", host.tr(StudioNames.engine(tubeEngine())),
+                    TubeEngine.OPTION, direction -> {
+                        TubeEngine engine = TubeEngine.byIndex(tubeEngine().ordinal() + direction);
+                        Map<String, Double> next = new LinkedHashMap<>(draft.options());
+                        if (engine == TubeEngine.EXACT) {
+                            next.put(TubeEngine.OPTION, (double) engine.ordinal());
+                        } else {
+                            next.remove(TubeEngine.OPTION);
+                        }
+                        draft = draft.withOptions(next);
+                        host.status(host.tr(engine == TubeEngine.EXACT
+                                ? "gui.komaedit.status.engine.exact" : "gui.komaedit.status.engine.classic"));
+                    });
+            if (tubeEngine() != TubeEngine.EXACT) {
+                return;
+            }
         }
         TubeSettings.EndMode end = TubeSettings.EndMode.byIndex((int) tubeOption("end", 0.0));
         cycle(ui, column, host, "gui.komaedit.tube.ends", host.tr(StudioNames.end(end)), "end", direction -> {
@@ -653,195 +749,224 @@ public final class FigureStages {
                 });
     }
 
-    // ── Modificadores ───────────────────────────────────────────────────────────────────────────────────
+    // ── Variaciones (lo que era la etapa Modificadores) ─────────────────────────────────────────────────
 
-    public void drawModifiers(StudioUi ui, Column column, StudioHost host, boolean compact) {
+    /**
+     * Las variaciones de la figura a lo largo del camino. Cada una es una fila con su dibujo, su nombre, qué hace y un
+     * interruptor; encendida, sus controles salen justo debajo. En las pantallas pequeñas, solo el nombre y el
+     * interruptor (lo que hace sale en la ayuda).
+     */
+    private void drawVariations(StudioUi ui, Column column, StudioHost host, boolean compact) {
         RecipeExtensions extensions = draft.extensions();
-        boolean changed = !extensions.equals(RecipeExtensions.DEFAULT);
-        Rect top = column.next(16);
-        ui.button(top, host.tr("gui.komaedit.modifiers.reset"), changed ? StudioUi.Tone.SECONDARY
-                        : StudioUi.Tone.DISABLED)
-                .tooltip(host.tr("gui.komaedit.modifiers.intro"))
-                .onClick(() -> {
-                    draft = draft.withExtensions(RecipeExtensions.DEFAULT);
-                    host.status(host.tr("gui.komaedit.status.modifiers.reset"));
-                });
-
-        ui.section(column, host.tr("gui.komaedit.modifiers.curve"));
-        stepper(ui, column, host, "gui.komaedit.param.start_scale", Control.START_SCALE);
-        stepper(ui, column, host, "gui.komaedit.param.end_scale", Control.END_SCALE);
-        stepper(ui, column, host, "gui.komaedit.param.start_spacing", Control.START_SPACING);
-        stepper(ui, column, host, "gui.komaedit.param.end_spacing", Control.END_SPACING);
-        stepper(ui, column, host, "gui.komaedit.param.twist", Control.TWIST);
-        cycle(ui, column, host, "gui.komaedit.param.easing", host.tr(StudioNames.easing(extensions.easing())), "easing",
-                direction -> {
-                    RecipeExtensions current = draft.extensions();
-                    CurveEasing easing = cycle(CurveEasing.values(), current.easing(), direction);
-                    draft = draft.withExtensions(current.withCurve(current.startScalePercent(),
-                            current.endScalePercent(), current.startSpacingPercent(), current.endSpacingPercent(),
-                            current.twistDegrees(), easing));
-                    host.status(host.tr("gui.komaedit.status.easing", host.tr(StudioNames.easing(easing))));
-                });
-
-        ui.section(column, host.tr("gui.komaedit.modifiers.fusion"));
-        ui.toggle(column.next(), host.tr("gui.komaedit.modifiers.fusion.enabled"), extensions.rhythmEnabled())
-                .tooltip(host.tr("gui.komaedit.help.fusion"))
-                .onClick(() -> {
-                    RecipeExtensions current = draft.extensions();
-                    boolean enabled = !current.rhythmEnabled();
-                    draft = draft.withExtensions(current.withRhythm(enabled, current.accentShape(),
-                            current.rhythmInterval()));
-                    host.status(host.tr(enabled ? "gui.komaedit.status.fusion.on" : "gui.komaedit.status.fusion.off"));
-                });
-        if (extensions.rhythmEnabled()) {
-            cycle(ui, column, host, "gui.komaedit.param.accent", shapeName(host, extensions.accentShape()), "accent",
-                    direction -> {
-                        RecipeExtensions current = draft.extensions();
-                        draft = draft.withExtensions(current.withRhythm(current.rhythmEnabled(),
-                                cycle(PathShape.values(), current.accentShape(), direction),
-                                current.rhythmInterval()));
-                    });
-            stepper(ui, column, host, "gui.komaedit.param.rhythm_interval", Control.RHYTHM_INTERVAL);
+        PathShape shape = draft.shape();
+        long active = FigureVariation.active(extensions);
+        ui.section(column, host.tr("gui.komaedit.variations"), active == 0 ? "" : active == 1
+                ? host.tr("gui.komaedit.variations.active.one") : host.tr("gui.komaedit.variations.active", active));
+        String material = draft.usesGradient() ? GRADIENT_SAMPLE : draft.pattern();
+        for (FigureVariation variation : FigureVariation.values()) {
+            if (!variation.fits(shape, extensions)) {
+                continue;
+            }
+            boolean on = variation.on(extensions);
+            String name = host.tr(variation.nameKey());
+            String effect = host.tr(variation.effectKey());
+            String help = effect + (variation.immediate(extensions) ? "" : "\n"
+                    + host.tr("gui.komaedit.variation.on_build")) + "\n"
+                    + host.tr(on ? "gui.komaedit.variation.click_off" : "gui.komaedit.variation.click_on");
+            Rect row = column.next(compact ? StudioUi.ROW : VARIATION_ROW);
+            // El nombre, qué hace y su dibujo a la vista; en pantallas pequeñas, solo el nombre (lo demás, en la ayuda).
+            if (ui.visible(row)) {
+                StudioUi.Widget widget = compact ? ui.toggle(row, name, on, on)
+                        : ui.pictureToggle(row, VariationThumbnails.get(variation, material), name, effect, on);
+                widget.tooltip(help)
+                        .hint(host.tr("gui.komaedit.hint.variation"))
+                        .group("variation:" + variation.id())
+                        .onReset(() -> draft = draft.withExtensions(variation.disable(draft.extensions())))
+                        .onClick(() -> {
+                            boolean enabling = !variation.on(draft.extensions());
+                            draft = draft.withExtensions(variation.toggle(draft.extensions(), draft.shape()));
+                            host.status(host.tr(enabling ? "gui.komaedit.status.variation.on"
+                                    : "gui.komaedit.status.variation.off", host.tr(variation.nameKey())));
+                        });
+            }
+            if (on) {
+                drawVariationControls(ui, column, host, variation, compact);
+            }
         }
+    }
 
-        ui.section(column, host.tr("gui.komaedit.modifiers.surface"));
-        SurfaceMode[] modes = SurfaceMode.values();
-        List<Rect> modeCells = column.grid(modes.length, 2, 16);
-        for (int index = 0; index < modes.length; index++) {
-            SurfaceMode mode = modes[index];
-            ui.button(modeCells.get(index), host.tr(StudioNames.surface(mode)),
-                            extensions.surfaceMode() == mode ? StudioUi.Tone.SELECTED : StudioUi.Tone.SECONDARY)
-                    .group("surface")
-                    .onClick(() -> {
-                        RecipeExtensions current = draft.extensions();
-                        draft = draft.withExtensions(current.withSurface(mode, current.conformRadius(),
-                                current.surfaceOffset()));
-                        host.status(host.tr("gui.komaedit.status.surface", host.tr(StudioNames.surface(mode))));
-                    });
+    /** Los controles de una variación encendida, con nombres que dicen qué cambia. */
+    private void drawVariationControls(StudioUi ui, Column column, StudioHost host, FigureVariation variation,
+                                       boolean compact) {
+        RecipeExtensions extensions = draft.extensions();
+        switch (variation) {
+            case TAPER -> {
+                stepper(ui, column, host, "gui.komaedit.variation.taper.end", Control.END_SCALE);
+                stepper(ui, column, host, "gui.komaedit.variation.taper.spacing", Control.END_SPACING);
+                // Las recetas de antes podían cambiar también el principio; aquí solo se enseña para poder quitarlo
+                // (el tamaño del principio ya es el radio de la figura).
+                if (extensions.startScalePercent() != 100) {
+                    stepper(ui, column, host, "gui.komaedit.variation.taper.start", Control.START_SCALE);
+                }
+                if (extensions.startSpacingPercent() != 100) {
+                    stepper(ui, column, host, "gui.komaedit.variation.taper.start_spacing", Control.START_SPACING);
+                }
+            }
+            case TWIST -> stepper(ui, column, host, "gui.komaedit.variation.twist.amount", Control.TWIST);
+            case ACCENT -> {
+                cycle(ui, column, host, "gui.komaedit.variation.accent.shape", shapeName(host, extensions.accentShape()),
+                        "accent", direction -> {
+                            RecipeExtensions current = draft.extensions();
+                            PathShape next = cycle(PathShape.values(), current.accentShape(), direction);
+                            if (next == draft.shape()) {
+                                // La misma figura encima no se vería: se salta.
+                                next = cycle(PathShape.values(), next, direction);
+                            }
+                            draft = draft.withExtensions(current.withRhythm(current.rhythmEnabled(), next,
+                                    current.rhythmInterval()));
+                        });
+                stepper(ui, column, host, "gui.komaedit.variation.accent.every", Control.RHYTHM_INTERVAL);
+            }
+            case GROUND -> {
+                SurfaceMode[] modes = {SurfaceMode.FLOOR, SurfaceMode.CEILING, SurfaceMode.NEAREST};
+                Rect[] cells = column.row(modes.length, compact ? 14 : 16);
+                for (int index = 0; index < modes.length; index++) {
+                    SurfaceMode mode = modes[index];
+                    if (!ui.visible(cells[index])) {
+                        continue;
+                    }
+                    ui.button(cells[index], host.tr(StudioNames.surface(mode)),
+                                    extensions.surfaceMode() == mode ? StudioUi.Tone.SELECTED : StudioUi.Tone.SECONDARY)
+                            .tooltip(host.tr(StudioNames.surface(mode)) + "\n"
+                                    + host.tr("gui.komaedit.variation.ground." + mode.id() + ".help"))
+                            .group("surface")
+                            .onClick(() -> {
+                                RecipeExtensions current = draft.extensions();
+                                draft = draft.withExtensions(current.withSurface(mode, current.conformRadius(),
+                                        current.surfaceOffset()));
+                                host.status(host.tr("gui.komaedit.status.surface", host.tr(StudioNames.surface(mode))));
+                            });
+                }
+                stepper(ui, column, host, "gui.komaedit.variation.ground.offset", Control.SURFACE_OFFSET);
+                stepper(ui, column, host, "gui.komaedit.variation.ground.reach", Control.CONFORM_RADIUS);
+            }
+            case COPIED -> {
+                cycle(ui, column, host, "gui.komaedit.variation.copied.where",
+                        host.tr(StudioNames.socket(extensions.socketPlacement())), "socket_placement", direction -> {
+                            RecipeExtensions current = draft.extensions();
+                            draft = draft.withExtensions(current.withSockets(current.socketsEnabled(),
+                                    cycle(SocketPlacement.values(), current.socketPlacement(), direction),
+                                    current.socketInterval()));
+                        });
+                if (extensions.socketPlacement() == SocketPlacement.INTERVAL) {
+                    stepper(ui, column, host, "gui.komaedit.variation.copied.every", Control.SOCKET_INTERVAL);
+                }
+                if (!compact) {
+                    ui.paragraph(column, host.tr("gui.komaedit.variation.copied.note"), MUTED, 2);
+                }
+            }
         }
-        if (extensions.surfaceMode() != SurfaceMode.NONE) {
-            stepper(ui, column, host, "gui.komaedit.param.conform_radius", Control.CONFORM_RADIUS);
-            stepper(ui, column, host, "gui.komaedit.param.surface_offset", Control.SURFACE_OFFSET);
-        }
-
-        ui.section(column, host.tr("gui.komaedit.modifiers.kitbash"));
-        ui.toggle(column.next(), host.tr("gui.komaedit.modifiers.kitbash.enabled"), extensions.socketsEnabled())
-                .tooltip(host.tr("gui.komaedit.help.kitbash"))
-                .onClick(() -> {
-                    RecipeExtensions current = draft.extensions();
-                    boolean enabled = !current.socketsEnabled();
-                    draft = draft.withExtensions(current.withSockets(enabled, current.socketPlacement(),
-                            current.socketInterval()));
-                    host.status(host.tr(enabled ? "gui.komaedit.status.kitbash.on" : "gui.komaedit.status.kitbash.off"));
-                });
-        if (extensions.socketsEnabled()) {
-            cycle(ui, column, host, "gui.komaedit.param.socket_placement",
-                    host.tr(StudioNames.socket(extensions.socketPlacement())), "socket_placement", direction -> {
-                        RecipeExtensions current = draft.extensions();
-                        draft = draft.withExtensions(current.withSockets(current.socketsEnabled(),
-                                cycle(SocketPlacement.values(), current.socketPlacement(), direction),
-                                current.socketInterval()));
-                    });
-            stepper(ui, column, host, "gui.komaedit.param.socket_interval", Control.SOCKET_INTERVAL);
-        }
-
-        ui.section(column, host.tr("gui.komaedit.modifiers.cleanup"));
-        ui.toggle(column.next(), host.tr("gui.komaedit.modifiers.close_gaps"), extensions.closeMicroGaps())
-                .tooltip(host.tr("gui.komaedit.help.close_gaps"))
-                .onClick(() -> {
-                    RecipeExtensions current = draft.extensions();
-                    draft = draft.withExtensions(current.withQa(!current.closeMicroGaps(), current.removeIsolated()));
-                });
-        ui.toggle(column.next(), host.tr("gui.komaedit.modifiers.remove_isolated"), extensions.removeIsolated())
-                .tooltip(host.tr("gui.komaedit.help.remove_isolated"))
-                .onClick(() -> {
-                    RecipeExtensions current = draft.extensions();
-                    draft = draft.withExtensions(current.withQa(current.closeMicroGaps(), !current.removeIsolated()));
-                });
     }
 
     // ── Material ────────────────────────────────────────────────────────────────────────────────────────
 
-    public void drawMaterial(StudioUi ui, Column column, StudioHost host, boolean compact) {
-        Rect[] mode = column.row(2, compact ? 16 : StudioUi.ROW);
-        ui.button(mode[0], host.tr("gui.komaedit.material.block"), draft.usesGradient() ? StudioUi.Tone.SECONDARY
-                        : StudioUi.Tone.SELECTED)
-                .onClick(() -> draft = copyMaterial(""));
-        ui.button(mode[1], host.tr("gui.komaedit.material.gradient"),
-                        draft.usesGradient() ? StudioUi.Tone.SELECTED : StudioUi.Tone.SECONDARY)
-                .onClick(() -> draft = copyMaterial(draft.usesGradient()
-                        ? draft.paletteId() : GradientPalette.GLOW_CYAN.id()));
-
-        if (!draft.usesGradient()) {
-            column.section();
-            String pattern = draft.pattern();
-            String blockId = pattern.contains(":") ? pattern : "minecraft:" + pattern;
-            StudioUi.Widget[] zones = ui.blockRow(column.next(), new StudioUi.BlockRow(
-                    host.tr("gui.komaedit.material.base_block"), blockId, host.blockName(blockId), false, false,
-                    host.tr("gui.komaedit.material.library_hint"), true, host.tr("gui.komaedit.tools.block.eyedropper")));
-            zones[0].onClick(() -> host.pickBlock(host.tr("gui.komaedit.blocks.for_figure"), blockId,
-                    id -> setPattern(host, id)));
-            zones[1].onClick(() -> {
-                String looked = host.lookedAtBlock();
-                if (looked == null) {
-                    host.status(host.tr("gui.komaedit.blocks.look_nothing"));
-                } else {
-                    setPattern(host, looked);
-                }
-            });
-            return;
+    /**
+     * De qué está hecha la figura: un bloque (la fila abre la biblioteca y su cuentagotas pone el que miras) o, con
+     * Degradado, una paleta que pasa de un color a otro. Cómo se reparte el degradado va en Más ajustes.
+     */
+    private void drawMaterial(StudioUi ui, Column column, StudioHost host, boolean compact) {
+        ui.section(column, host.tr("gui.komaedit.figure.material"));
+        if (draft.usesGradient()) {
+            cycle(ui, column, host, "gui.komaedit.material.palette", draft.palette().displayName(), "palette",
+                    direction -> {
+                        GradientPalette next = cycle(GradientPalette.values(), draft.palette(), direction);
+                        draft = copyMaterial(next.id());
+                        host.status(host.tr("gui.komaedit.status.palette", next.displayName()));
+                    });
+        } else {
+            String blockId = blockId(draft.pattern());
+            Rect row = column.next();
+            if (ui.visible(row)) {
+                StudioUi.Widget[] zones = ui.blockRow(row, new StudioUi.BlockRow(
+                        host.tr("gui.komaedit.material.base_block"), blockId, host.blockName(blockId), false, false,
+                        host.tr("gui.komaedit.material.library_hint"), true,
+                        host.tr("gui.komaedit.tools.block.eyedropper")));
+                zones[0].hint(host.tr("gui.komaedit.hint.block"))
+                        .onClick(() -> host.pickBlock(host.tr("gui.komaedit.blocks.for_figure"), blockId,
+                                id -> setPattern(host, id)));
+                zones[1].onClick(() -> {
+                    String looked = host.lookedAtBlock();
+                    if (looked == null) {
+                        host.status(host.tr("gui.komaedit.blocks.look_nothing"));
+                    } else {
+                        setPattern(host, looked);
+                    }
+                });
+            }
         }
+        boolean gradient = draft.usesGradient();
+        ui.toggle(column.next(), host.tr("gui.komaedit.material.gradient"), gradient, gradient)
+                .tooltip(host.tr("gui.komaedit.help.gradient"))
+                .hint(host.tr("gui.komaedit.hint.toggle"))
+                .group("material:gradient")
+                .onReset(() -> draft = copyMaterial(""))
+                .onClick(() -> {
+                    if (draft.usesGradient()) {
+                        lastPalette = draft.paletteId();
+                        draft = copyMaterial("");
+                    } else {
+                        draft = copyMaterial(lastPalette);
+                    }
+                });
+    }
 
-        ui.section(column, host.tr("gui.komaedit.material.direction"));
+    /** El reparto del degradado, en Más ajustes: dirección, mezcla, al revés y según qué se reparte. */
+    private void drawGradientMore(StudioUi ui, Column column, StudioHost host, boolean compact) {
         GradientAxis[] axes = GradientAxis.values();
-        Rect[] axisCells = column.row(axes.length, 16);
+        Rect[] axisCells = column.row(axes.length, compact ? 14 : 16);
         for (int index = 0; index < axes.length; index++) {
             GradientAxis axis = axes[index];
+            if (!ui.visible(axisCells[index])) {
+                continue;
+            }
             ui.button(axisCells[index], axis.id().toUpperCase(Locale.ROOT),
                             draft.gradientAxis() == axis ? StudioUi.Tone.SELECTED : StudioUi.Tone.SECONDARY)
+                    .tooltip(host.tr("gui.komaedit.material.direction") + " " + axis.id().toUpperCase(Locale.ROOT)
+                            + "\n" + host.tr("gui.komaedit.help.gradient_axis"))
+                    .group("material:axis")
                     .onClick(() -> draft = draft.copy(draft.name(), draft.shape(), draft.pattern(), draft.radius(),
                             draft.spacing(), draft.thickness(), draft.rollDegrees(), draft.height(), draft.paletteId(),
                             axis, draft.dither(), draft.reverse()));
         }
         stepper(ui, column, host, "gui.komaedit.param.dither", Control.DITHER);
-        ui.toggle(column.next(), host.tr("gui.komaedit.material.reverse"), draft.reverse())
+        ui.toggle(column.next(), host.tr("gui.komaedit.material.reverse"), draft.reverse(), draft.reverse())
+                .tooltip(host.tr("gui.komaedit.help.gradient_reverse"))
+                .hint(host.tr("gui.komaedit.hint.toggle"))
                 .onClick(() -> draft = draft.copy(draft.name(), draft.shape(), draft.pattern(), draft.radius(),
                         draft.spacing(), draft.thickness(), draft.rollDegrees(), draft.height(), draft.paletteId(),
                         draft.gradientAxis(), draft.dither(), !draft.reverse()));
+        MaterialMetric metric = draft.extensions().materialMetric();
+        cycle(ui, column, host, "gui.komaedit.material.distribution", host.tr(StudioNames.metric(metric)), "metric",
+                direction -> draft = draft.withExtensions(draft.extensions().withMaterialMetric(
+                        cycle(MaterialMetric.values(), draft.extensions().materialMetric(), direction))));
+    }
 
-        ui.section(column, host.tr("gui.komaedit.material.distribution"));
-        MaterialMetric[] metrics = MaterialMetric.values();
-        List<Rect> metricCells = column.grid(metrics.length, 2, 16);
-        MaterialMetric current = draft.extensions().materialMetric();
-        for (int index = 0; index < metrics.length; index++) {
-            MaterialMetric metric = metrics[index];
-            ui.button(metricCells.get(index), host.tr(StudioNames.metric(metric)),
-                            current == metric ? StudioUi.Tone.SELECTED : StudioUi.Tone.SECONDARY)
-                    .tooltip(host.tr(StudioNames.metric(metric)) + "\n" + host.tr(StudioNames.metricHelp(metric)))
-                    .onClick(() -> draft = draft.withExtensions(draft.extensions().withMaterialMetric(metric)));
-        }
-        if (!compact) {
-            ui.paragraph(column, host.tr(StudioNames.metricHelp(current)), MUTED, 2);
-        }
-
-        ui.section(column, host.tr("gui.komaedit.material.palette"));
-        GradientPalette[] palettes = GradientPalette.values();
-        List<Rect> paletteCells = column.grid(palettes.length, 2, 16);
-        for (int index = 0; index < palettes.length; index++) {
-            GradientPalette palette = palettes[index];
-            if (!ui.visible(paletteCells.get(index))) {
-                continue;
-            }
-            ui.button(paletteCells.get(index), palette.displayName(),
-                            palette.id().equals(draft.paletteId()) ? StudioUi.Tone.SELECTED : StudioUi.Tone.SECONDARY)
-                    .onClick(() -> draft = copyMaterial(palette.id()));
-        }
+    private static String blockId(String pattern) {
+        return pattern.contains(":") ? pattern : "minecraft:" + pattern;
     }
 
     private void setPattern(StudioHost host, String id) {
         draft = draft.copy(draft.name(), draft.shape(), id, draft.radius(), draft.spacing(), draft.thickness(),
                 draft.rollDegrees(), draft.height(), "", draft.gradientAxis(), draft.dither(), draft.reverse());
         host.status(host.tr("gui.komaedit.status.block.selected", host.blockName(id)));
+    }
+
+    /**
+     * El cuentagotas del mundo (Alt+clic): el bloque pulsado pasa a ser el de la figura. Con un degradado se queda el
+     * degradado y solo se dice que hay que quitarlo.
+     */
+    public void pickMaterial(StudioHost host, String id) {
+        setPattern(host, id);
     }
 
     // ── Biblioteca: recetas e instancias ────────────────────────────────────────────────────────────────
@@ -864,6 +989,7 @@ public final class FigureStages {
         }
         List<ProceduralInstanceSummary> instances = host.instances();
         ui.section(column, host.tr("gui.komaedit.instance.list", instances.size()));
+        ui.paragraph(column, host.tr("gui.komaedit.instance.how"), MUTED, 0);
         if (instances.isEmpty()) {
             ui.paragraph(column, host.tr("gui.komaedit.instance.empty"), MUTED, 0);
             return;
@@ -874,8 +1000,9 @@ public final class FigureStages {
                 continue;
             }
             String subtitle = host.tr("gui.komaedit.instance.summary", shapeName(host, instance.recipe().shape()),
-                    instance.blockCount(), instance.pathPoints());
+                    ProgressLine.group(instance.blockCount()), instance.pathPoints());
             ui.listItem(row, instance.recipe().name(), subtitle, instance.id().equals(selectedInstanceId), 0)
+                    .hint(host.tr("gui.komaedit.instance.pick_hint"))
                     .onClick(() -> {
                         selectedInstanceId = instance.id();
                         draft = instance.recipe();
@@ -913,6 +1040,7 @@ public final class FigureStages {
                     host.status(host.tr("gui.komaedit.status.recipe.import", draft.name()));
                 });
 
+        ui.paragraph(column, host.tr("gui.komaedit.recipe.how"), MUTED, 0);
         List<ProceduralRecipe> recipes = host.recipes();
         ui.section(column, host.tr("gui.komaedit.recipe.saved", recipes.size()));
         if (recipes.isEmpty()) {
@@ -926,6 +1054,7 @@ public final class FigureStages {
             }
             ui.listItem(item, recipe.name(), shapeName(host, recipe.shape()) + " · " + materialSummary(host, recipe),
                             recipe.name().equals(draft.name()), 22)
+                    .hint(host.tr("gui.komaedit.recipe.load_hint"))
                     .onClick(() -> {
                         draft = recipe;
                         nameInput = recipe.name();
@@ -1010,15 +1139,18 @@ public final class FigureStages {
         int defaultValue = defaultValue(control);
         ValueUnit unit = unit(control, labelKey);
         NumberView view = NumberView.of(value, null, value, defaultValue, false, range, 0, unit, host::tr);
-        String help = view.help(host.tr(labelKey) + "\n" + host.tr(control.helpKey),
-                unit.format(defaultValue, 0, host::tr), host::tr);
+        // Qué le pasa a la figura y sus extremos; sin traducción de extremos (la clave tal cual), no hay.
+        ControlHelp explained = ControlHelp.of(host.tr(control.helpKey), host.tr(control.endsKey));
+        String help = view.help(explained, unit.format(defaultValue, 0, host::tr), host::tr);
         ui.stepper(row, new StudioUi.Stepper(host.tr(labelKey), view.value(), view.shortValue(), view.fraction(),
                 view.defaultFraction(), view.modified(), view.range(), numbers.editing(control.key()),
                 numbers.dragging(control.key()), numbers.input(),
                 direction -> setValue(control, range.stepped(value(control), direction, host.shift())),
                 (x, y) -> numbers.press(control.key(), value(control), x),
                 () -> setValue(control, defaultValue(control)),
-                help, control.name(), control.key()));
+                help, explained.brief(host.tr("gui.komaedit.ends.format", "%s", "%s")),
+                host.tr("gui.komaedit.hint.number"), explained.low(), explained.high(),
+                control.name(), control.key()));
     }
 
     private void cycle(StudioUi ui, Column column, StudioHost host, String labelKey, String value, String option,
@@ -1029,8 +1161,8 @@ public final class FigureStages {
         }
         ui.cycle(row, host.tr(labelKey), value, step)
                 .onReset(() -> resetOption(option))
-                .tooltip(host.tr(labelKey) + "\n" + host.tr("gui.komaedit.help.option." + option) + "\n"
-                        + host.tr("gui.komaedit.help.cycle"))
+                .tooltip(host.tr("gui.komaedit.help.option." + option))
+                .hint(host.tr("gui.komaedit.hint.cycle"))
                 .group("option:" + option);
     }
 
@@ -1152,6 +1284,8 @@ public final class FigureStages {
             case "easing" -> draft = draft.withExtensions(extensions.withCurve(extensions.startScalePercent(),
                     extensions.endScalePercent(), extensions.startSpacingPercent(), extensions.endSpacingPercent(),
                     extensions.twistDegrees(), defaults.easing()));
+            case "palette" -> draft = copyMaterial(GradientPalette.GLOW_CYAN.id());
+            case "metric" -> draft = draft.withExtensions(extensions.withMaterialMetric(defaults.materialMetric()));
             default -> {
                 Map<String, Double> next = new LinkedHashMap<>(draft.options());
                 next.remove(option);

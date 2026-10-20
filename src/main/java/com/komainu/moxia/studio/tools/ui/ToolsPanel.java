@@ -1,6 +1,7 @@
 package com.komainu.moxia.studio.tools.ui;
 
 import com.komainu.moxia.capability.BuildCapability;
+import com.komainu.moxia.studio.ControlHelp;
 import com.komainu.moxia.studio.NumericRange;
 import com.komainu.moxia.studio.ParameterHistory;
 import com.komainu.moxia.studio.ShapeSearch;
@@ -841,6 +842,7 @@ public final class ToolsPanel {
                 boolean on = current().toggle(toggle.id());
                 ui.toggle(column.next(row), host.tr(toggle.labelKey()), on, !current().isDefault(toggle.id()))
                         .tooltip(help(host, card, toggle))
+                        .hint(host.tr("gui.komaedit.hint.toggle"))
                         .group("tools:" + toggle.id())
                         .onReset(() -> set(current().reset(toggle.id())))
                         .onClick(() -> set(current().with(toggle.id(), !on)));
@@ -850,8 +852,19 @@ public final class ToolsPanel {
         }
     }
 
+    /** Qué le pasa a lo que se construye con este ajuste (la etiqueta ya se ve en la fila). */
     private static String help(Host host, ToolCard card, ToolParam param) {
-        return host.tr(param.labelKey()) + "\n" + withoutCommand(host.tr(card.helpKey(param)));
+        return withoutCommand(host.tr(card.helpKey(param)));
+    }
+
+    /** Cómo se dicen los extremos de un número («de %s a %s»). */
+    private static String endsFormat(Host host) {
+        return host.tr("gui.komaedit.ends.format", "%s", "%s");
+    }
+
+    /** Lo que explica un ajuste en esta tarjeta: qué le pasa al objeto y, si los tiene, sus extremos en palabras. */
+    static ControlHelp explain(Host host, ToolCard card, ToolParam param) {
+        return ControlHelp.of(help(host, card, param), host.tr(card.endsKey(param)));
     }
 
     /** Lo que se ve de un número de la tarjeta elegida. */
@@ -871,6 +884,7 @@ public final class ToolsPanel {
                 : number.unit().format(number.defaultValue(), number.decimals(), host::tr);
         String key = "tools:number:" + number.id();
         NumericRange range = number.range();
+        ControlHelp explained = explain(host, card, number);
         ui.stepper(row, new StudioUi.Stepper(host.tr(number.labelKey()), view.value(), view.shortValue(),
                 view.fraction(), view.defaultFraction(), view.modified(), view.range(), numbers.editing(key),
                 numbers.dragging(key), numbers.input(),
@@ -878,7 +892,9 @@ public final class ToolsPanel {
                         direction, host.shift()))),
                 (x, y) -> numbers.press(key, numberView(host, card, number).base(), x),
                 () -> set(current().reset(number.id())),
-                view.help(help(host, card, number), defaultText, host::tr), "tools:" + number.id(), key));
+                view.help(explained, defaultText, host::tr), explained.brief(endsFormat(host)),
+                host.tr("gui.komaedit.hint.number"),
+                explained.low(), explained.high(), "tools:" + number.id(), key));
     }
 
     private List<String> options(ToolParam.Choice choice, ToolsInfo info) {
@@ -914,7 +930,8 @@ public final class ToolsPanel {
                                     options.get(Math.floorMod(index + direction, options.size()))));
                         })
                 .onReset(() -> set(current().reset(choice.id())))
-                .tooltip(help(host, card, choice) + "\n" + host.tr("gui.komaedit.help.cycle"))
+                .tooltip(help(host, card, choice))
+                .hint(host.tr("gui.komaedit.hint.cycle"))
                 .group("tools:" + choice.id());
     }
 
@@ -1146,8 +1163,8 @@ public final class ToolsPanel {
                 ui.cycle(column.next(this.row), host.tr("gui.komaedit.tools.stamp.category"), tabLabel,
                                 direction -> stampTab = tabs.get(Math.floorMod(tabs.indexOf(current) + direction,
                                         tabs.size())))
-                        .tooltip(host.tr("gui.komaedit.tools.stamp.category.help") + "\n"
-                                + host.tr("gui.komaedit.help.cycle"))
+                        .tooltip(host.tr("gui.komaedit.tools.stamp.category.help"))
+                        .hint(host.tr("gui.komaedit.hint.cycle"))
                         .group("tools:stamp:category");
             }
         }
@@ -1177,6 +1194,7 @@ public final class ToolsPanel {
                 ui.tile(cell, image, icon(card), lines != null ? lines : List.of(ui.fit(label, tile - 4)), chosen)
                         .tooltip(help)
                         .tooltipBelow(cell)
+                        .hint(host.tr("gui.komaedit.tools.stamp.tile.help"))
                         .group("tools:" + choice.id())
                         .onReset(() -> toggleStampFavorite(option, host, choice))
                         .onClick(() -> set(current().with(choice.id(), option).with("custom", "")));
@@ -1186,6 +1204,7 @@ public final class ToolsPanel {
                             star.y() - 1, favorite || ui.hovered(star) ? FAVORITE : MUTED);
                     ui.register(star).tooltip(host.tr("gui.komaedit.tools.stamp.favorite") + "\n" + label)
                             .tooltipBelow(cell)
+                            .hint(host.tr("gui.komaedit.tools.stamp.tile.help"))
                             .onClick(() -> toggleStampFavorite(option, host, choice));
                 }
             }
@@ -1343,6 +1362,25 @@ public final class ToolsPanel {
         String[] parts = list.split(",");
         String first = host.blockName(firstBlock(list));
         return parts.length > 1 ? first + " +" + (parts.length - 1) : first;
+    }
+
+    /**
+     * El cuentagotas del mundo (Alt+clic en un bloque): pasa a ser el primer material de la herramienta elegida (el del
+     * tejado, el tronco del árbol, el de las letras). Devuelve el ajuste que cambió, o {@code null} si la herramienta
+     * no tiene ningún bloque.
+     */
+    public String pickMaterial(Host host, String id) {
+        ToolCard card = selected();
+        for (ToolParam param : card.params()) {
+            if (param instanceof ToolParam.Block block && block.visible(current())) {
+                set(current().with(block.id(), compact(id)));
+                host.status(host.tr("gui.komaedit.status.eyedropper.tool", host.tr(block.labelKey()),
+                        host.blockName(id)));
+                return block.id();
+            }
+        }
+        host.status(host.tr("gui.komaedit.status.eyedropper.none", host.tr(card.nameKey())));
+        return null;
     }
 
     static String firstBlock(String list) {
@@ -1609,6 +1647,7 @@ public final class ToolsPanel {
         String key = "tools:number:" + id;
         NumberView view = NumberView.of(value, null, value, param.defaultValue(), false, range, param.decimals(),
                 param.unit(), host::tr);
+        ControlHelp explained = explain(host, card, param);
         ui.stepper(row, new StudioUi.Stepper(host.tr(param.labelKey()), view.value(), view.shortValue(),
                 view.fraction(), view.defaultFraction(), view.modified(), view.range(), numbers.editing(key),
                 numbers.dragging(key), numbers.input(),
@@ -1616,8 +1655,10 @@ public final class ToolsPanel {
                         direction, host.shift()), host),
                 (x, y) -> numbers.press(key, value, x),
                 () -> queueOption(id, param.defaultValue(), host),
-                view.help(help(host, card, param), param.unit().format(param.defaultValue(), param.decimals(),
-                        host::tr), host::tr), "tools:" + id, key));
+                view.help(explained, param.unit().format(param.defaultValue(), param.decimals(), host::tr),
+                        host::tr), explained.brief(endsFormat(host)), host.tr("gui.komaedit.hint.number"),
+                explained.low(),
+                explained.high(), "tools:" + id, key));
     }
 
     private void queueOption(String id, int value, Host host) {
@@ -1699,12 +1740,6 @@ public final class ToolsPanel {
                 : host.tr(locked ? "gui.komaedit.tools.stamp.footer.seed_locked_number"
                 : "gui.komaedit.tools.stamp.footer.seed", seed);
         return name + " · " + host.tr(mode.optionKey(values.choice("mode"))) + " · " + seedText;
-    }
-
-    /** La línea de ayuda del pie bajo el resumen: en el sello, qué hacen los clics en sus miniaturas. */
-    public String footerHint(Host host) {
-        return !browsing() && selected() instanceof TerrainCards.Stamp
-                ? host.tr("gui.komaedit.tools.stamp.tile.help") : "";
     }
 
     /** «Donde haces clic» o, tras un clic en el mundo, en qué bloque («Clic en 12, 64, -30»). */
