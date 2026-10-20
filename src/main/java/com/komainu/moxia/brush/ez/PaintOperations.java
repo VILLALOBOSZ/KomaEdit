@@ -193,7 +193,7 @@ public final class PaintOperations {
         void paint(SnapshotWorld world, ResolvedPalette palette, int x, int y, int z, int index) {
             BlockState existing = world.state(x, y, z);
             PaletteShift.Kind kind = world.cell(x, y, z) == BrushWorld.Cell.SHAPED
-                    ? ResolvedPalette.kindOf(existing)
+                    ? world.kind(existing)
                     : PaletteShift.Kind.FULL;
             put(x, y, z, existing, palette.place(index, existing, kind));
         }

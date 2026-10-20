@@ -12,6 +12,7 @@ import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.SnapshotJobs;
+import com.komainu.moxia.studio.net.StudioAim;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.function.pattern.Pattern;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -141,7 +142,7 @@ public final class TextService {
      */
     static TextPlacement placement(ServerPlayerEntity player, TextRequest request, int minU, int minV, int maxU,
                                    int maxV) {
-        HitResult result = player.raycast(REACH, 1.0F, false);
+        HitResult result = StudioAim.target(player, REACH);
         BlockHitResult hit = result instanceof BlockHitResult block && result.getType() == HitResult.Type.BLOCK
                 ? block : null;
         int[] anchor;

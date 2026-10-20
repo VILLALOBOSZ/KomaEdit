@@ -250,6 +250,22 @@ public final class ClientStudioHost implements StudioHost {
     }
 
     @Override
+    public void expectGhost(boolean refresh) {
+        com.komainu.moxia.client.gizmo.GhostClient.expectStudio(refresh);
+    }
+
+    @Override
+    public String heldTool() {
+        return client == null || client.player == null ? null
+                : com.komainu.moxia.brush.BrushTool.id(client.player.getMainHandStack());
+    }
+
+    @Override
+    public int[] clickedSpot() {
+        return ClientStudioAim.last();
+    }
+
+    @Override
     public Optional<JobStatusPayload> job() {
         return ToolClientState.job();
     }

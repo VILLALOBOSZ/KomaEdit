@@ -74,7 +74,8 @@ public final class PaletteShift {
 
     /** @return el destino del bloque, o {@code null} si no está en la paleta o no cambiaría */
     public Target target(String blockId, int shift) {
-        Entry entry = lookup.get(normalize(blockId));
+        String id = normalize(blockId);
+        Entry entry = lookup.get(id);
         if (entry == null || shift == 0) {
             return null;
         }
@@ -85,7 +86,7 @@ public final class PaletteShift {
             case SLAB -> slabs.get(to);
             case STAIRS -> stairs.get(to);
         };
-        if (targetId == null || targetId.equals(normalize(blockId))) {
+        if (targetId == null || targetId.equals(id)) {
             return null;
         }
         return new Target(to, entry.kind);
@@ -122,12 +123,31 @@ public final class PaletteShift {
         if (id == null) {
             return null;
         }
+        if (canonical(id)) {
+            // Lo normal en cada bloque de una pasada: el id ya viene como lo da WorldEdit y no se copia.
+            return id;
+        }
         String value = id.trim().toLowerCase(Locale.ROOT);
         int bracket = value.indexOf('[');
         if (bracket >= 0) {
             value = value.substring(0, bracket);
         }
         return value.contains(":") ? value : "minecraft:" + value;
+    }
+
+    /** Si el id ya está como lo da WorldEdit: con espacio de nombres, en minúsculas, sin estado ni espacios. */
+    private static boolean canonical(String id) {
+        boolean namespace = false;
+        for (int index = 0; index < id.length(); index++) {
+            char character = id.charAt(index);
+            if (character == ':') {
+                namespace = true;
+            } else if (character == '[' || character <= ' ' || character >= 'A' && character <= 'Z'
+                    || character > 127) {
+                return false;
+            }
+        }
+        return namespace;
     }
 
     public enum Kind {

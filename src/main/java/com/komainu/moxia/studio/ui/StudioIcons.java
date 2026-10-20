@@ -18,7 +18,7 @@ public final class StudioIcons {
 
     public enum Icon {
         // Etapas.
-        PATH, FIGURE, MODIFIERS, MATERIAL, WEATHER, INSTANCES, RECIPES, COLOR, BLUEPRINTS, TOOLS,
+        PATH, FIGURE, MODIFIERS, MATERIAL, INSTANCES, RECIPES, COLOR, BLUEPRINTS, TOOLS,
         // Barra de herramientas y controles.
         UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE, LOCK, HISTORY, SEARCH, COMMAND, EYEDROPPER, CHEVRON_DOWN,
         CHEVRON_RIGHT, COPY, STAR, STAR_EMPTY, EYE, LIVE,
@@ -84,19 +84,6 @@ public final class StudioIcons {
                 "rrrryyyybbbb",
                 "rrrryyyybbbb",
                 "rrrryyyybbbb");
-        mask(Icon.WEATHER,
-                "............",
-                ".##.........",
-                ".##.........",
-                ".##.........",
-                ".###..#.....",
-                ".###........",
-                ".###........",
-                ".###..##....",
-                ".###..#####.",
-                ".###..#####.",
-                "############",
-                "############");
         mask(Icon.INSTANCES,
                 "########....",
                 "#......#....",

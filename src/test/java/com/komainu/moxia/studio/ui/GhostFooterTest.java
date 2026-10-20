@@ -16,7 +16,7 @@ class GhostFooterTest {
     static StudioHost.Ghost ghost(String title, String summary, String position, String message, int[] counts) {
         return new StudioHost.Ghost(title, summary, position, counts[3] % 2 == 1, true, false, true, false, message,
                 () -> counts[0]++, () -> counts[1]++, () -> counts[2]++, () -> counts[3]++, () -> counts[4]++,
-                () -> { });
+                () -> { }, true);
     }
 
     @Test

@@ -38,8 +38,6 @@ public enum PathShape {
             "knot", "nudos", "biomech"),
     NOODLES("noodles", "Noodles", "Manojo de tubos orgánicos cruzados y texturizados", 9, 5, 2,
             "noodle", "fideos", "tentacles", "tentaculos"),
-    MANDALA("mandala", "Mandala radial", "Rosetón 3D orientable con pétalos, anillos, filigrana y relieve concéntrico", 24, 6, 2,
-            "mandalas", "rosette", "roseton", "radial", "sacred_geometry"),
     CLOUDS("clouds", "Nube orgánica", "Volumen nuboso natural con masas, lóbulos, coronas y estelas erosionadas", 18, 6, 2,
             "cloud", "nube", "nubes", "organic_cloud", "epic_cloud"),
     WEB("web", "Telaraña", "Puente fino entre nudos gruesos o telaraña clásica de radios rectos y arcos cóncavos", 8, 4, 1,

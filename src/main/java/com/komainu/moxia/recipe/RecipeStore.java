@@ -91,7 +91,8 @@ public final class RecipeStore {
         }
     }
 
-    private static ProceduralRecipe read(Path path) {
+    /** Una receta del disco; si no se puede leer (una figura que ya no existe), lanza con el motivo. */
+    static ProceduralRecipe read(Path path) {
         try {
             JsonObject root = JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8)).getAsJsonObject();
             int version = root.get("version").getAsInt();

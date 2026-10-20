@@ -1,5 +1,6 @@
 package com.komainu.moxia.sculpt;
 
+import com.komainu.moxia.brush.ToolHandout;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathManager;
@@ -39,9 +40,8 @@ public final class SculptManager {
 
     public static void activate(ServerPlayerEntity player, SculptProfile profile) {
         PROFILES.put(player.getUuid(), profile);
-        if (!player.getInventory().contains(new ItemStack(Items.BRUSH))) {
-            player.getInventory().offerOrDrop(new ItemStack(Items.BRUSH));
-        }
+        // Con el inventario lleno no se tira al suelo: el aviso dice que haga sitio (el modo ya queda activo).
+        ToolHandout.give(player, new ItemStack(Items.BRUSH), "el pincel para esculpir");
     }
 
     public static Optional<SculptProfile> profile(UUID playerId) {

@@ -399,22 +399,81 @@ class ToolCardsTest {
     }
 
     @Test
-    void presetsOnlyTouchTheirOwnSettings() {
+    void everyPresetLeavesACompleteKnownState() {
         for (ToolCard card : ToolCatalog.ALL) {
             for (ToolPreset preset : card.presets()) {
-                ToolValues applied = card.apply(card.defaults(), preset);
+                ToolValues fresh = card.apply(card.defaults(), preset);
                 for (String id : preset.values().keySet()) {
-                    assertNotNull(applied.param(id), card.id() + "." + preset.id());
+                    assertNotNull(fresh.param(id), card.id() + "." + preset.id());
                 }
                 // La orden con el preset la sigue entendiendo la tarjeta (no lanza).
-                assertNotNull(card.command(applied, false));
+                assertNotNull(card.command(fresh, false));
+                assertTrue(card.matches(fresh, preset), card.id() + "." + preset.id() + " sale marcado");
+                // Venga de donde venga (otro preset, ajustes tocados a mano), la forma queda igual.
+                for (ToolPreset before : card.presets()) {
+                    ToolValues chained = card.apply(card.apply(card.defaults(), before), preset);
+                    for (ToolParam param : card.params()) {
+                        // Lo que es elección del jugador (el tipo de roca de «Peñasco grande») sí se queda.
+                        boolean chosen = card.keptByPresets(param) && before.values().containsKey(param.id())
+                                && !preset.values().containsKey(param.id());
+                        if (!chosen) {
+                            assertEquals(fresh.changed().get(param.id()), chained.changed().get(param.id()),
+                                    card.id() + ": " + before.id() + " → " + preset.id() + " deja " + param.id());
+                        }
+                    }
+                }
             }
         }
         ToolCard tree = card("tree");
-        ToolValues young = tree.apply(tree.defaults().with("species", "birch").with("seed", 9),
-                tree.presets().getFirst());
-        assertEquals("birch", young.choice("species"));
-        assertEquals(9, young.number("seed"));
+        ToolValues young = tree.apply(tree.defaults().with("species", "birch").with("seed", 9)
+                .with("leaves", "cherry_leaves").with("density", 0).with("lean", 30), tree.presets().getFirst());
+        assertEquals("birch", young.choice("species"), "la especie se queda");
+        assertEquals(9, young.number("seed"), "la semilla también");
+        assertEquals("cherry_leaves", young.block("leaves"), "y los materiales");
+        assertEquals(100, young.number("density"), "la copa vuelve a la de serie");
+        assertNull(young.number("lean"), "y la inclinación, a la de la especie");
+    }
+
+    @Test
+    void bareThenYoungGivesTheLeavesBack() {
+        ToolCard tree = card("tree");
+        ToolPreset bare = preset(tree, "bare");
+        ToolValues values = tree.defaults();
+        for (String id : List.of("old", "windswept", "bare", "young")) {
+            values = tree.apply(values, preset(tree, id));
+        }
+        assertEquals(100, values.number("density"));
+        String command = tree.command(values, false);
+        assertFalse(command.contains("-d "), command);
+        TreeSettings settings = TreeSettings.parse(arguments(command, "komaedit tree "));
+        assertNotNull(settings.leafMaterial(), "con hojas");
+        // Y a mano: de 0 se vuelve a subir paso a paso.
+        ToolParam.Number density = (ToolParam.Number) tree.defaults().param("density");
+        ToolValues bareValues = tree.apply(tree.defaults(), bare);
+        assertEquals(0, bareValues.number("density"));
+        int up = density.range().stepped(bareValues.number("density"), 1, false);
+        assertEquals(10, up);
+        assertEquals(10, bareValues.with("density", up).number("density"));
+    }
+
+    @Test
+    void aStampPresetDropsTheTypedStampButKeepsHowItPlaces() {
+        ToolCard stamp = card("stamp");
+        ToolValues values = stamp.apply(stamp.defaults().with("custom", "mi_sello").with("brush_preview", true),
+                preset(stamp, "dunes"));
+        assertEquals("", values.text("custom"));
+        assertTrue(stamp.command(values, false).startsWith("komaedit pincel heightmap duna "));
+        assertTrue(values.toggle("brush_preview"), "la vista previa en cada clic no es la forma: se queda");
+        ToolCard roof = card("roof");
+        assertTrue(roof.apply(roof.defaults().with("replace", true), preset(roof, "steep")).toggle("replace"));
+        // Un interruptor que algún preset sí pone es parte de la forma: los demás lo devuelven al de serie.
+        ToolCard snow = card("snow");
+        assertFalse(snow.apply(snow.apply(snow.defaults(), preset(snow, "drifts")), preset(snow, "dusting"))
+                .toggle("plants"));
+    }
+
+    private static ToolPreset preset(ToolCard card, String id) {
+        return card.presets().stream().filter(preset -> preset.id().equals(id)).findFirst().orElseThrow();
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.komainu.moxia.command;
 
 import com.komainu.moxia.brush.BrushManager;
 import com.komainu.moxia.brush.BrushSettings;
+import com.komainu.moxia.brush.ToolHandout;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PendingBuilds;
@@ -215,7 +216,6 @@ public final class MoxiaCommands {
                 .then(toriiCommand())
                 .then(cloudCommand("cloud"))
                 .then(cloudCommand("nube"))
-                .then(mandalaCommand())
                 .then(webCommand())
                 .then(lightningCommand("lightning"))
                 .then(lightningCommand("rayos"))
@@ -440,37 +440,6 @@ public final class MoxiaCommands {
                 )));
         radius.then(organicity);
         return literal(commandName).then(radius);
-    }
-
-    private static LiteralArgumentBuilder<ServerCommandSource> mandalaCommand() {
-        RequiredArgumentBuilder<ServerCommandSource, Integer> radius = argument(
-                "mandala_radius", IntegerArgumentType.integer(6, 96)
-        );
-        RequiredArgumentBuilder<ServerCommandSource, Integer> symmetry = argument(
-                "mandala_symmetry", IntegerArgumentType.integer(2, 8)
-        ).executes(context -> generateFixed(
-                context,
-                true,
-                PathShape.MANDALA,
-                "quartz_block",
-                IntegerArgumentType.getInteger(context, "mandala_radius"),
-                IntegerArgumentType.getInteger(context, "mandala_symmetry"),
-                2,
-                0
-        ));
-        symmetry.then(argument("mandala_pattern", StringArgumentType.greedyString())
-                .executes(context -> generateFixed(
-                        context,
-                        true,
-                        PathShape.MANDALA,
-                        StringArgumentType.getString(context, "mandala_pattern"),
-                        IntegerArgumentType.getInteger(context, "mandala_radius"),
-                        IntegerArgumentType.getInteger(context, "mandala_symmetry"),
-                        2,
-                        0
-                )));
-        radius.then(symmetry);
-        return literal("mandala").then(radius);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> webCommand() {
@@ -1183,9 +1152,7 @@ public final class MoxiaCommands {
             WorldEditService.validatePattern(player, resolvedPattern);
             SculptManager.deactivate(player);
             BrushManager.activate(player, new BrushSettings(parameters, resolvedPattern));
-            if (!player.getInventory().contains(new ItemStack(Items.BRUSH))) {
-                player.getInventory().offerOrDrop(new ItemStack(Items.BRUSH));
-            }
+            ToolHandout.give(player, new ItemStack(Items.BRUSH), "el pincel del brush de figuras");
             ShapeParameters active = parameters;
             context.getSource().sendFeedback(
                     () -> prefix().append(Text.literal(

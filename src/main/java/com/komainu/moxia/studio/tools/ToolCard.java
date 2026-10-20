@@ -232,13 +232,54 @@ public abstract class ToolCard {
         return problems(values, context).stream().anyMatch(ToolProblem::blocking);
     }
 
-    /** Valores con un ajuste rápido aplicado sobre los de serie (conserva lo que el ajuste no toca). */
+    /**
+     * Valores con un ajuste rápido: un estado completo y conocido. Se parte de los de serie, se conserva lo que el
+     * jugador eligió y no es forma ({@link #keptByPresets}) y encima van los del preset. Así nada se queda con lo de
+     * un preset anterior («Pelado» y luego «Joven» vuelve a tener copa).
+     */
     public ToolValues apply(ToolValues values, ToolPreset preset) {
-        ToolValues result = values;
+        ToolValues result = defaults;
+        for (ToolParam param : params) {
+            if (keptByPresets(param) && !preset.values().containsKey(param.id())) {
+                result = result.with(param.id(), stored(values, param));
+            }
+        }
         for (Map.Entry<String, Object> entry : preset.values().entrySet()) {
             result = result.with(entry.getKey(), entry.getValue());
         }
         return result;
+    }
+
+    /**
+     * Lo que un preset no devuelve al de serie: qué es (la especie, el tipo, el sello), los materiales, los textos
+     * (el del rótulo, la máscara, la paleta), la semilla y los interruptores que ningún preset de la tarjeta toca
+     * (cómo se coloca: vista previa en cada clic, reemplazar, raíces). Todo lo demás es la forma, y la pone el preset.
+     */
+    protected boolean keptByPresets(ToolParam param) {
+        return switch (param) {
+            case ToolParam.Choice choice -> choice.style() == ToolParam.Choice.Style.GALLERY
+                    || choice.style() == ToolParam.Choice.Style.SEARCH;
+            case ToolParam.Block ignored -> true;
+            case ToolParam.Text ignored -> true;
+            case ToolParam.Number number -> number.id().equals("seed");
+            case ToolParam.Toggle toggle -> presets().stream()
+                    .noneMatch(preset -> preset.values().containsKey(toggle.id()));
+        };
+    }
+
+    private static Object stored(ToolValues values, ToolParam param) {
+        return switch (param) {
+            case ToolParam.Number ignored -> values.number(param.id());
+            case ToolParam.Choice ignored -> values.choice(param.id());
+            case ToolParam.Toggle ignored -> values.toggle(param.id());
+            case ToolParam.Block ignored -> values.block(param.id());
+            case ToolParam.Text ignored -> values.text(param.id());
+        };
+    }
+
+    /** Si los valores son ya los que deja el preset (su pastilla sale marcada). */
+    public final boolean matches(ToolValues values, ToolPreset preset) {
+        return apply(values, preset).equals(values);
     }
 
     /** Lee un preset guardado en el servidor ({@code #nombre}) en valores de la tarjeta; solo árboles y rocas. */

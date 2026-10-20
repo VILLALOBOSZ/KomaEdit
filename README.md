@@ -85,7 +85,6 @@ Los modificadores ahora deforman una única geometría continua. Ya no dividen e
 - `voronoi`
 - `knots`
 - `noodles`
-- `mandala`
 - `clouds`
 - `web`
 - `sweep` (perfil 2D en espacio de tubo)
@@ -127,14 +126,6 @@ Ejemplos:
 /komaedit lightningcircle 40 7
 /komaedit circulorayos 48 8 40%magma_block,30%orange_concrete,20%shroomlight,10%yellow_concrete
 ```
-
-## Mandalas tridimensionales
-
-- **Orientación mediante puntos:** P1 define el centro y el vector P1→P2 define la normal del plano. Un P2 vertical crea un mandala horizontal; un P2 horizontal crea uno vertical.
-- **Geometría con relieve:** combina núcleo sólido, cinco anillos ondulados, pétalos principales rellenos, filigrana secundaria, radios y puntas exteriores.
-- **Controles contextuales:** **Tamaño** ajusta el diámetro, **Simetría** aumenta sectores y detalle, **Relieve** controla profundidad y **Giro** rota todo el diseño.
-- **Materiales completos:** admite cualquier patrón WorldEdit y todos los degradados locales del Studio.
-- **Comando rápido:** `/komaedit mandala <tamaño> <simetría 2–8> [patrón]`.
 
 ## Gizmo XYZ para puntos
 

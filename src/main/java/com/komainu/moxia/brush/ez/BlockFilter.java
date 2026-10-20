@@ -1,8 +1,10 @@
 package com.komainu.moxia.brush.ez;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Máscara sencilla de los pinceles sobre la foto capturada: lista separada por comas de ids de bloque y de las
@@ -19,11 +21,26 @@ public final class BlockFilter implements BrushMask {
     private final String source;
     private final List<Term> include;
     private final List<Term> exclude;
+    /** Los ids de cada lado, para no recorrerlos uno a uno en cada bloque (una paleta larga como máscara). */
+    private final Set<String> includeIds;
+    private final Set<String> excludeIds;
 
     private BlockFilter(String source, List<Term> include, List<Term> exclude) {
         this.source = source;
         this.include = include;
         this.exclude = exclude;
+        this.includeIds = ids(include);
+        this.excludeIds = ids(exclude);
+    }
+
+    private static Set<String> ids(List<Term> terms) {
+        Set<String> ids = new HashSet<>();
+        for (Term term : terms) {
+            if (term.kind == Kind.ID) {
+                ids.add(term.id);
+            }
+        }
+        return Set.copyOf(ids);
     }
 
     public static BlockFilter parse(String input) {
@@ -71,16 +88,20 @@ public final class BlockFilter implements BrushMask {
     }
 
     public boolean matches(String blockId, BrushWorld.Cell cell) {
-        return any(include, blockId, cell) && !any(exclude, blockId, cell);
+        String id = includeIds.isEmpty() && excludeIds.isEmpty() ? null : PaletteShift.normalize(blockId);
+        return any(include, includeIds, id, cell) && !any(exclude, excludeIds, id, cell);
     }
 
-    private static boolean any(List<Term> terms, String blockId, BrushWorld.Cell cell) {
+    private static boolean any(List<Term> terms, Set<String> ids, String id, BrushWorld.Cell cell) {
+        if (id != null && ids.contains(id)) {
+            return true;
+        }
         for (Term term : terms) {
             boolean match = switch (term.kind) {
                 case FULL -> cell == BrushWorld.Cell.FULL;
                 case SOLID -> cell == BrushWorld.Cell.FULL || cell == BrushWorld.Cell.SHAPED;
                 case EXISTING -> cell != BrushWorld.Cell.AIR && cell != BrushWorld.Cell.LIQUID;
-                case ID -> term.id.equals(PaletteShift.normalize(blockId));
+                case ID -> false;
             };
             if (match) {
                 return true;
