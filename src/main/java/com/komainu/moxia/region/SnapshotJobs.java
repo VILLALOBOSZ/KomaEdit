@@ -4,6 +4,7 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.sk89q.worldedit.regions.Region;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -33,9 +34,17 @@ public final class SnapshotJobs {
             Function<RegionSnapshot, T> compute,
             BiConsumer<ServerPlayerEntity, T> apply
     ) {
+        ServerWorld world = player.getServerWorld();
         RegionOperationService.capture(player, region, padding, description,
                 snapshot -> compute(player.getServer(), player.getUuid(), description, () -> compute.apply(snapshot),
-                        apply));
+                        (current, result) -> {
+                            if (current.getServerWorld() != world) {
+                                current.sendMessage(message(description + ": " + RegionOperationService.OTHER_WORLD,
+                                        Formatting.YELLOW), false);
+                                return;
+                            }
+                            apply.accept(current, result);
+                        }));
     }
 
     /** Solo el cálculo en un worker y la entrega en el hilo del servidor, sin leer el mundo. */
