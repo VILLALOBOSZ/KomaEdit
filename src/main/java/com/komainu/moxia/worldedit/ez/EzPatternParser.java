@@ -1,6 +1,7 @@
 package com.komainu.moxia.worldedit.ez;
 
 import com.komainu.moxia.noise.NoiseSpec;
+import com.komainu.moxia.progress.ProgressLine;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
@@ -227,7 +228,7 @@ public final class EzPatternParser extends InputParser<Pattern> {
         BlockVector3 size = shape.size();
         long volume = (long) size.x() * size.y() * size.z();
         if (volume > MAX_SELECTION_VOLUME) {
-            throw EzContext.error("#selection admite selecciones de hasta " + MAX_SELECTION_VOLUME + " bloques ("
+            throw EzContext.error("#selection admite selecciones de hasta " + ProgressLine.group(MAX_SELECTION_VOLUME) + " bloques ("
                     + volume + ")");
         }
         Extent extent = context.requireExtent();

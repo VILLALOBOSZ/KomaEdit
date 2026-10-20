@@ -7,7 +7,9 @@ import com.komainu.moxia.brush.ez.EzBrushManager;
 import com.komainu.moxia.brush.ez.EzBrushType;
 import com.komainu.moxia.brush.superwand.SuperwandManager;
 import com.komainu.moxia.brush.superwand.SuperwandMode;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.model.ModelMode;
 import com.komainu.moxia.sculpt.SculptManager;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -162,7 +164,7 @@ public final class BrushCommands {
             switch (BrushOptions.normalize(action)) {
                 case "aplicar", "apply" -> {
                     int queued = SculptManager.apply(player);
-                    feedback(context, Text.literal("Vista previa aplicada: " + queued + " bloques · //undo")
+                    feedback(context, Text.literal("Vista previa aplicada: " + ProgressLine.group(queued) + " bloques · //undo")
                             .formatted(Formatting.GREEN));
                     return 1;
                 }
@@ -204,6 +206,7 @@ public final class BrushCommands {
             EzBrush brush = EzBrush.create(player, type, options);
             String toolId = BrushTool.bind(player, BrushTool.Kind.BRUSH, Items.FEATHER, "Pincel de KomaEdit");
             EzBrushManager.bind(player, toolId, brush);
+            BrushTool.setRadius(player, brush.radius());
             MutableText text = Text.literal(type.displayName() + " en la mano"
                     + (brush.radius() > 0 ? " · radio " + brush.radius() : "")
                     + (brush.preview() ? " · con vista previa" : "") + ". ").formatted(Formatting.GREEN)
@@ -269,14 +272,12 @@ public final class BrushCommands {
     }
 
     private static void feedback(CommandContext<ServerCommandSource> context, Text text) {
-        context.getSource().sendFeedback(() -> Text.literal("KomaEdit · ").formatted(Formatting.GOLD).append(text),
+        context.getSource().sendFeedback(() -> Feedback.prefix().append(text),
                 false);
     }
 
     private static int fail(CommandContext<ServerCommandSource> context, String message) {
-        context.getSource().sendError(Text.literal("KomaEdit · ").formatted(Formatting.GOLD).append(Text.literal(
-                message == null || message.isBlank() ? "Operación inválida" : message).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(context.getSource(), message);
     }
 
     private static MutableText button(String label, String command, Formatting color) {

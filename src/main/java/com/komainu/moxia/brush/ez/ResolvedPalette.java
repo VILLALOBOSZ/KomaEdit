@@ -2,6 +2,7 @@ package com.komainu.moxia.brush.ez;
 
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.gradient.SavedPalettes;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.extension.input.InputParseException;
@@ -40,7 +41,7 @@ public final class ResolvedPalette {
     public static ResolvedPalette resolve(ServerPlayerEntity player, String input, int minimumSize) {
         List<String> entries = SavedPalettes.parse(player.getUuid(), input);
         if (entries.size() < minimumSize) {
-            throw new IllegalArgumentException("La paleta necesita al menos " + minimumSize
+            throw new IllegalArgumentException("La paleta necesita al menos " + ProgressLine.group(minimumSize)
                     + " bloques, por ejemplo stone,andesite o ##Grayscale");
         }
         WorldEditService.PlayerContext context = WorldEditService.context(player);

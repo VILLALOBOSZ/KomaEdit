@@ -3,6 +3,7 @@ package com.komainu.moxia.command;
 import com.komainu.moxia.clipboard.ClipboardScaleService;
 import com.komainu.moxia.clipboard.ClipboardTransform;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -78,12 +79,12 @@ public final class ClipboardCommands {
         return EzCommandSupport.run(context, player -> {
             ClipboardScaleService.Change change = new ClipboardScaleService.Change(rotate, amount,
                     ClipboardTransform.Mode.byId(mode));
-            EzCommandSupport.info(player, "Calculando " + change.describe() + " del portapapeles…");
+            EzCommandSupport.status(player, "Calculando " + change.describe() + " del portapapeles…");
             ClipboardScaleService.start(player, change,
                     outcome -> {
                         BlockVector3 size = outcome.size();
                         EzCommandSupport.send(player, Text.literal("Portapapeles: " + change.describe() + " · "
-                                        + outcome.blocksBefore() + " → " + outcome.blocksAfter() + " bloques · "
+                                        + outcome.blocksBefore() + " → " + ProgressLine.group(outcome.blocksAfter()) + " bloques · "
                                         + size.x() + "×" + size.y() + "×" + size.z()
                                         + (outcome.droppedEntities() > 0 ? " · sin sus " + outcome.droppedEntities()
                                         + " entidades" : "") + ". Pégalo con //paste; ").formatted(Formatting.GREEN)

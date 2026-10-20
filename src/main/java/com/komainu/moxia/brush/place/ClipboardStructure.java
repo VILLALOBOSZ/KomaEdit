@@ -1,5 +1,6 @@
 package com.komainu.moxia.brush.place;
 
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -71,7 +72,7 @@ public record ClipboardStructure(boolean center, int quarterTurns) implements St
         Region region = clipboard.getRegion();
         long volume = region.getVolume();
         if (volume > MAX_BLOCKS) {
-            throw new IllegalArgumentException("El portapapeles es demasiado grande para el pincel (" + volume
+            throw new IllegalArgumentException("El portapapeles es demasiado grande para el pincel (" + ProgressLine.group(volume)
                     + " bloques; máximo " + MAX_BLOCKS + ")");
         }
         BlockVector3 origin = center

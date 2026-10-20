@@ -3,6 +3,7 @@ package com.komainu.moxia.analysis;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.SnapshotJobs;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -79,7 +80,7 @@ public final class AnalyzeService {
                     Formatting.YELLOW), false);
             return;
         }
-        MutableText header = SnapshotJobs.message("Lista de materiales: " + report.blocks() + " bloques, "
+        MutableText header = SnapshotJobs.message("Lista de materiales: " + ProgressLine.group(report.blocks()) + " bloques, "
                 + report.placed().size() + " tipos · en survival " + report.totalItems() + " objetos, "
                 + report.totalSlots() + " huecos ≈ " + report.chests() + " cofres ", Formatting.GREEN).copy();
         header.append(Text.literal("[COPIAR]").styled(style -> style.withColor(Formatting.AQUA).withBold(true)

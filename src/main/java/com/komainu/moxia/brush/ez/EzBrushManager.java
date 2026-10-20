@@ -1,6 +1,7 @@
 package com.komainu.moxia.brush.ez;
 
 import com.komainu.moxia.brush.BrushInput;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.SculptManager;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -71,7 +72,7 @@ public final class EzBrushManager {
     }
 
     static Text message(String text, Formatting color) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD).append(Text.literal(text).formatted(color));
+        return Feedback.prefix().append(Text.literal(text).formatted(color));
     }
 
     /** Puntos de un degradado. */

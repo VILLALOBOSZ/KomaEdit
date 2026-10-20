@@ -1,5 +1,7 @@
 package com.komainu.moxia.client.preview;
 
+import com.komainu.moxia.client.world.ClientWorldSettings;
+import com.komainu.moxia.client.world.WorldLabels;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -64,9 +66,10 @@ public final class EditorOverlayRenderer {
             }
         }
 
+        Box selection = null;
         if (current.boxFirst() != null) {
             BlockPos second = current.boxSecond() == null ? current.boxFirst() : current.boxSecond();
-            Box selection = new Box(
+            selection = new Box(
                     Math.min(current.boxFirst().getX(), second.getX()),
                     Math.min(current.boxFirst().getY(), second.getY()),
                     Math.min(current.boxFirst().getZ(), second.getZ()),
@@ -87,6 +90,9 @@ public final class EditorOverlayRenderer {
             WorldRenderer.drawBox(matrices, lines, new Box(point).expand(0.12), 1.0F, 0.35F, 0.12F, 1.0F);
         }
         matrices.pop();
+        if (selection != null && ClientWorldSettings.get().dimensions()) {
+            WorldLabels.dimensions(context, selection.contract(0.04), 0xFF7A8A);
+        }
     }
 
     private static void drawSphere(MatrixStack matrices, VertexConsumer lines, Vec3d center, double radius) {
@@ -178,19 +184,10 @@ public final class EditorOverlayRenderer {
             float green,
             float blue
     ) {
-        Vec3d direction = end.subtract(start).normalize();
-        Vec3d normal = direction.crossProduct(new Vec3d(0.0, 1.0, 0.0));
-        if (normal.lengthSquared() < 1.0E-6) {
-            normal = direction.crossProduct(new Vec3d(1.0, 0.0, 0.0));
-        }
-        normal = normal.normalize();
-        MatrixStack.Entry entry = matrices.peek();
-        lines.vertex(entry, (float) start.x, (float) start.y, (float) start.z)
-                .color(red, green, blue, 1.0F)
-                .normal(entry, (float) normal.x, (float) normal.y, (float) normal.z);
-        lines.vertex(entry, (float) end.x, (float) end.y, (float) end.z)
-                .color(red, green, blue, 1.0F)
-                .normal(entry, (float) normal.x, (float) normal.y, (float) normal.z);
+        // La normal de una línea es su dirección: el shader de líneas la usa para el grosor en pantalla.
+        int argb = 0xFF000000 | Math.round(red * 255.0F) << 16 | Math.round(green * 255.0F) << 8
+                | Math.round(blue * 255.0F);
+        WorldLabels.line(matrices, lines, start, end, argb);
     }
 
     private record State(

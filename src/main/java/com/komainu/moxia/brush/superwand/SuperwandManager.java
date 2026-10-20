@@ -2,6 +2,7 @@ package com.komainu.moxia.brush.superwand;
 
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.brush.BrushMarkers;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.extension.platform.permission.ActorSelectorLimits;
@@ -348,7 +349,7 @@ public final class SuperwandManager {
     }
 
     private static Text message(String text, Formatting color) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD).append(Text.literal(text).formatted(color));
+        return Feedback.prefix().append(Text.literal(text).formatted(color));
     }
 
     private static final class State {

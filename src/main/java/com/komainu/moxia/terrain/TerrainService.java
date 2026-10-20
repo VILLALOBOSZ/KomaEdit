@@ -6,10 +6,12 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionEdits;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperationService;
@@ -110,7 +112,7 @@ public final class TerrainService {
         if (player == null) {
             return;
         }
-        QuietMode.info(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
+        QuietMode.status(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
         AsyncEngine.submit(
                 playerId,
                 description,
@@ -166,7 +168,7 @@ public final class TerrainService {
                 int queued = PlanPreviews.withExtras(new PlanPreviews.Extras(recompute, null),
                         () -> BatchEditService.submit(current, plan, "air", description));
                 if (!PlanPreviews.holds(playerId, plan)) {
-                    QuietMode.info(current, message(description + ": " + queued + " bloques en cola · "
+                    QuietMode.status(current, message(description + ": " + ProgressLine.group(queued) + " bloques en cola · "
                             + outcome.summary().columns() + " columnas" + (detail.isBlank() ? "" : " · " + detail)
                             + " · //undo para deshacer", Formatting.GREEN));
                 }
@@ -182,13 +184,13 @@ public final class TerrainService {
         int threshold = KomaEditConfig.settings().confirmBuildAboveBlocks();
         int limit = KomaEditConfig.settings().maxBlocksPerOperation();
         if (estimate.blocks() > limit && !KomaPermissions.can(player, KomaPermissions.LIMIT_UNRESTRICTED)) {
-            return " · supera tu límite de " + limit + " bloques";
+            return " · supera tu límite de " + ProgressLine.group(limit) + " bloques";
         }
         return BuildEstimate.needsConfirmation(estimate.blocks(), threshold) ? " · pedirá confirmación" : "";
     }
 
     static Text message(String text, Formatting color) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.DARK_AQUA).append(Text.literal(text).formatted(color));
+        return Feedback.prefix().append(Text.literal(text).formatted(color));
     }
 
     static String readable(Throwable throwable) {

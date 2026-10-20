@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Marcas de partículas que enseñan la simetría alrededor del jugador: una rejilla de puntos en cada plano de espejo
- * (rojo el de X, azul el de Z, verde el de Y), el eje vertical en amarillo y, en el radial, un rayo por brazo con el
- * primero en verde. Lógica pura: devuelve dónde y de qué color; quién las dibuja decide el resto.
+ * Marcas de partículas que enseñan la simetría alrededor del jugador sin el mod en el cliente (con él, los planos los
+ * dibuja el cliente): en cada plano de espejo, un marco con una cruz que pasa por el jugador (rojo el de X, azul el de
+ * Z, verde el de Y), en lugar de una rejilla entera; el eje vertical en amarillo y, en el radial, un rayo por brazo con
+ * el primero en verde. Lógica pura: devuelve dónde y de qué color; quién las dibuja decide el resto.
  */
 public final class SymmetryGuides {
     public static final int PLANE_X = 0xEF5350;
@@ -36,30 +37,24 @@ public final class SymmetryGuides {
         double baseY = Math.floor(py) + 0.5;
         double baseZ = Math.floor(pz) + 0.5;
         if (mode.mirrorX() && Math.abs(px - center.x()) <= MAX_DISTANCE) {
-            for (int u = -RADIUS; u <= RADIUS; u += SPACING) {
-                for (int v = -RADIUS; v <= RADIUS; v += SPACING) {
-                    marks.add(new Mark(center.x(), baseY + v, baseZ + u, PLANE_X));
-                }
+            for (int[] point : frame()) {
+                marks.add(new Mark(center.x(), baseY + point[1], baseZ + point[0], PLANE_X));
             }
         }
         if (mode.mirrorZ() && Math.abs(pz - center.z()) <= MAX_DISTANCE) {
-            for (int u = -RADIUS; u <= RADIUS; u += SPACING) {
-                for (int v = -RADIUS; v <= RADIUS; v += SPACING) {
-                    marks.add(new Mark(baseX + u, baseY + v, center.z(), PLANE_Z));
-                }
+            for (int[] point : frame()) {
+                marks.add(new Mark(baseX + point[0], baseY + point[1], center.z(), PLANE_Z));
             }
         }
         if (mode.mirrorY() && Math.abs(py - center.y()) <= MAX_DISTANCE) {
-            for (int u = -RADIUS; u <= RADIUS; u += SPACING) {
-                for (int v = -RADIUS; v <= RADIUS; v += SPACING) {
-                    marks.add(new Mark(baseX + u, center.y(), baseZ + v, PLANE_Y));
-                }
+            for (int[] point : frame()) {
+                marks.add(new Mark(baseX + point[0], center.y(), baseZ + point[1], PLANE_Y));
             }
         }
         boolean axis = mode.radial() || mode.mirrorX() && mode.mirrorZ();
         if (axis && Math.hypot(px - center.x(), pz - center.z()) <= MAX_DISTANCE) {
-            for (int step = -2 * RADIUS; step <= 2 * RADIUS; step++) {
-                marks.add(new Mark(center.x(), baseY + step * 0.5, center.z(), AXIS));
+            for (int step = -RADIUS; step <= RADIUS; step++) {
+                marks.add(new Mark(center.x(), baseY + step, center.z(), AXIS));
             }
             if (mode.radial()) {
                 for (int arm = 0; arm < mode.arms(); arm++) {
@@ -72,5 +67,21 @@ public final class SymmetryGuides {
             }
         }
         return marks.size() <= MAX_MARKS ? marks : List.copyOf(marks.subList(0, MAX_MARKS));
+    }
+
+    /**
+     * Puntos del marco de un plano, en sus dos ejes: el borde del cuadrado de lado {@code 2·RADIUS} y la cruz por el
+     * centro (donde está el jugador), a saltos de {@link #SPACING}. 45 puntos en vez de los 81 de la rejilla.
+     */
+    static List<int[]> frame() {
+        List<int[]> points = new ArrayList<>();
+        for (int u = -RADIUS; u <= RADIUS; u += SPACING) {
+            for (int v = -RADIUS; v <= RADIUS; v += SPACING) {
+                if (Math.abs(u) == RADIUS || Math.abs(v) == RADIUS || u == 0 || v == 0) {
+                    points.add(new int[]{u, v});
+                }
+            }
+        }
+        return points;
     }
 }

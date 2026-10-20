@@ -3,6 +3,7 @@ package com.komainu.moxia.blueprint;
 import com.komainu.moxia.brush.ez.BrushMask;
 import com.komainu.moxia.brush.ez.SnapshotWorld;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
@@ -78,7 +79,7 @@ public record StampOperation(StampSettings settings, List<BlueprintTemplate> tem
                         stamp.z() + m[6] * x + m[7] * y + m[8] * z,
                         placed);
                 if (++count[0] > MAX_CHANGES) {
-                    throw new IllegalArgumentException("El estampado supera el límite de " + MAX_CHANGES + " bloques");
+                    throw new IllegalArgumentException("El estampado supera el límite de " + ProgressLine.group(MAX_CHANGES) + " bloques");
                 }
             });
         }

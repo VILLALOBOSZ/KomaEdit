@@ -1,5 +1,6 @@
 package com.komainu.moxia.capability;
 
+import com.komainu.moxia.progress.ProgressLine;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -109,7 +110,7 @@ public final class SmearPlanner {
             throw new IllegalArgumentException("Mira más lejos por el eje para estirar");
         }
         if (Math.abs(along) > max) {
-            throw new IllegalArgumentException("Como mucho se estiran " + max + " bloques");
+            throw new IllegalArgumentException("Como mucho se estiran " + ProgressLine.group(max) + " bloques");
         }
         return along;
     }

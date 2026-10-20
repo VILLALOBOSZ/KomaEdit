@@ -1,7 +1,10 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -33,7 +36,7 @@ final class EzCommandSupport {
         try {
             return action.run(player);
         } catch (IncompleteRegionException exception) {
-            return fail(context.getSource(), "Primero haz una selección con WorldEdit (//pos1 y //pos2)");
+            return noSelection(context.getSource());
         } catch (CommandSyntaxException exception) {
             throw exception;
         } catch (Exception exception) {
@@ -59,7 +62,7 @@ final class EzCommandSupport {
     }
 
     static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 
     static void send(ServerPlayerEntity player, Text text) {
@@ -71,11 +74,16 @@ final class EzCommandSupport {
     }
 
     /**
-     * Aviso de «N bloques en cola»: verde, pero como los informativos no sale con {@code /komaedit quiet} (el de
-     * «completada» sale siempre).
+     * Aviso de «N bloques en cola»: efímero, en la action bar, y como los informativos no sale con
+     * {@code /komaedit quiet} (el de «completada» sale siempre, en el chat).
      */
     static void queued(ServerPlayerEntity player, String message) {
-        QuietMode.info(player, prefix().append(Text.literal(message).formatted(Formatting.GREEN)));
+        QuietMode.status(player, prefix().append(Text.literal(message).formatted(Formatting.GREEN)));
+    }
+
+    /** «Calculando…» y demás estados de paso: en la action bar, y no salen con {@code /komaedit quiet}. */
+    static void status(ServerPlayerEntity player, String message) {
+        QuietMode.status(player, prefix().append(Text.literal(message).formatted(Formatting.GRAY)));
     }
 
     /** Mensaje informativo: no sale si el jugador activó {@code /komaedit quiet}. */
@@ -83,9 +91,25 @@ final class EzCommandSupport {
         QuietMode.info(player, prefix().append(Text.literal(message).formatted(Formatting.GRAY)));
     }
 
+    /**
+     * Error de una orden, en rojo y con sonido de fallo. Si es un «desconocido» con propuesta («helx» → «helix»),
+     * lleva además un botón que escribe la orden corregida en el chat.
+     */
     static int fail(ServerCommandSource source, String message) {
-        source.sendError(prefix().append(Text.literal(message).formatted(Formatting.RED)));
-        return 0;
+        String text = message == null || message.isBlank() ? "Operación inválida" : CommandHints.enrich(message);
+        MutableText body = Text.literal(text);
+        EditRequest request = EditRequests.current();
+        CommandHints.suggestion(message)
+                .flatMap(found -> CommandHints.corrected(request == null ? null : request.command(), found))
+                .ifPresent(fixed -> body.append(" ").append(Feedback.fix("[corregir]", fixed)));
+        return Feedback.fail(source, body);
+    }
+
+    /** Sin selección de WorldEdit: qué falta y cómo hacerla. */
+    static int noSelection(ServerCommandSource source) {
+        return Feedback.fail(source, Feedback.problem("No hay selección de WorldEdit",
+                "marca dos esquinas con //pos1 y //pos2 o con la varita").append(" ")
+                .append(Feedback.fix("[//wand]", "//wand")));
     }
 
     /** Texto que se copia al portapapeles al pulsarlo. */

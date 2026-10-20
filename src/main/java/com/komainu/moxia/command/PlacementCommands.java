@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.placement.PlacementBrushStructures;
 import com.komainu.moxia.placement.PlacementService;
@@ -142,12 +143,10 @@ public final class PlacementCommands {
     }
 
     private static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 
     private static int fail(ServerCommandSource source, String message) {
-        source.sendError(Text.literal("KomaEdit · ").formatted(Formatting.GOLD).append(Text.literal(
-                message == null || message.isBlank() ? "Operación inválida" : message).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(source, message);
     }
 }

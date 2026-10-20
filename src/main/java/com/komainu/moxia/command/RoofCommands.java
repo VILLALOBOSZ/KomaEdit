@@ -12,6 +12,7 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.PathStore;
 import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.roof.Footprint;
@@ -192,7 +193,7 @@ final class RoofCommands {
         ServerWorld origin = player.getServerWorld();
         RegionOperationService.capture(player, capture, 0, description, snapshot -> {
             SnapshotWorld world = new SnapshotWorld(snapshot);
-            EzCommandSupport.info(player, description + ": calculando fuera del hilo del servidor…");
+            EzCommandSupport.status(player, description + ": calculando fuera del hilo del servidor…");
             AsyncEngine.submit(
                     playerId,
                     () -> {
@@ -248,7 +249,7 @@ final class RoofCommands {
                 try {
                     int queued = BatchEditService.submitStyled(current, planned.plan(), pattern, description);
                     if (!PlanPreviews.holds(playerId, planned.plan())) {
-                        EzCommandSupport.queued(current, description + " en cola: " + queued + " bloques · "
+                        EzCommandSupport.queued(current, description + " en cola: " + ProgressLine.group(queued) + " bloques · "
                                 + result.pieceCount() + " losas y escaleras · " + summary
                                 + " · //undo para deshacer");
                     }
@@ -459,7 +460,7 @@ final class RoofCommands {
                     + " entre " + curves.size() + " curvas";
             MinecraftServer server = player.getServer();
             GeneratorCommands.Palette chosen = palette;
-            EzCommandSupport.info(player, description + ": calculando fuera del hilo del servidor…");
+            EzCommandSupport.status(player, description + ": calculando fuera del hilo del servidor…");
             AsyncEngine.submit(
                     playerId,
                     () -> LoftGenerator.generate(curves, settings),
@@ -509,7 +510,7 @@ final class RoofCommands {
                 }
                 int pieces = plan.pieceCount();
                 if (!PlanPreviews.holds(playerId, plan)) {
-                    EzCommandSupport.queued(current, description + " en cola: " + queued + " bloques"
+                    EzCommandSupport.queued(current, description + " en cola: " + ProgressLine.group(queued) + " bloques"
                             + (pieces > 0 ? " · " + pieces + " losas y escaleras" : "") + " · //undo para deshacer");
                 }
             } catch (IllegalArgumentException | IllegalStateException exception) {

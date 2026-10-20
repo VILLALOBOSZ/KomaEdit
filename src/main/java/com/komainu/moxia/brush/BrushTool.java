@@ -19,6 +19,8 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class BrushTool {
     public static final String KEY = "komaedit_tool";
+    /** Radio del pincel, para que el cliente lo dibuje en la superficie que se mira (0 o ausente: sin radio). */
+    public static final String RADIUS_KEY = "komaedit_radius";
 
     private BrushTool() {
     }
@@ -95,12 +97,39 @@ public final class BrushTool {
         NbtComponent.set(DataComponentTypes.CUSTOM_DATA, stack, (NbtCompound nbt) -> nbt.putString(KEY, id));
     }
 
+    /** Radio del pincel del objeto, o 0 si no lo tiene. */
+    public static int radius(ItemStack stack) {
+        if (!isTool(stack)) {
+            return 0;
+        }
+        NbtComponent data = stack.get(DataComponentTypes.CUSTOM_DATA);
+        return data == null ? 0 : Math.max(0, data.copyNbt().getInt(RADIUS_KEY));
+    }
+
+    /** Apunta en el objeto de la mano principal el radio de su pincel (0 lo quita). */
+    public static void setRadius(ServerPlayerEntity player, int radius) {
+        ItemStack held = player.getStackInHand(Hand.MAIN_HAND);
+        if (!isTool(held)) {
+            return;
+        }
+        NbtComponent.set(DataComponentTypes.CUSTOM_DATA, held, (NbtCompound nbt) -> {
+            if (radius > 0) {
+                nbt.putInt(RADIUS_KEY, radius);
+            } else {
+                nbt.remove(RADIUS_KEY);
+            }
+        });
+    }
+
     /** Quita la marca del objeto de la mano principal; devuelve el id que tenía. */
     public static String unbind(ServerPlayerEntity player) {
         ItemStack held = player.getStackInHand(Hand.MAIN_HAND);
         String id = id(held);
         if (id != null) {
-            NbtComponent.set(DataComponentTypes.CUSTOM_DATA, held, (NbtCompound nbt) -> nbt.remove(KEY));
+            NbtComponent.set(DataComponentTypes.CUSTOM_DATA, held, (NbtCompound nbt) -> {
+                nbt.remove(KEY);
+                nbt.remove(RADIUS_KEY);
+            });
             NbtComponent data = held.get(DataComponentTypes.CUSTOM_DATA);
             if (data != null && data.isEmpty()) {
                 held.remove(DataComponentTypes.CUSTOM_DATA);

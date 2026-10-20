@@ -1,6 +1,7 @@
 package com.komainu.moxia.terrain;
 
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionEdits;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.sculpt.WorldSnapshot;
@@ -108,7 +109,7 @@ public final class TerrainBlocks {
             BlockState state = blocks.state(blockId);
             builder.addOverride(x, y, z, state);
             if (++changes > MAX_BRUSH_CHANGES) {
-                throw new IllegalArgumentException("El pincel supera el límite de " + MAX_BRUSH_CHANGES + " bloques");
+                throw new IllegalArgumentException("El pincel supera el límite de " + ProgressLine.group(MAX_BRUSH_CHANGES) + " bloques");
             }
         }
 

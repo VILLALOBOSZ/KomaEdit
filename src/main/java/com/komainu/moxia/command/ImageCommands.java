@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.image.Anchor;
 import com.komainu.moxia.image.Dithering;
 import com.komainu.moxia.image.ImageConfig;
@@ -143,12 +144,10 @@ public final class ImageCommands {
     }
 
     private static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 
     private static int fail(ServerCommandSource source, String message) {
-        source.sendError(prefix().append(Text.literal(
-                message == null || message.isBlank() ? "Operación inválida" : message).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(source, message);
     }
 }

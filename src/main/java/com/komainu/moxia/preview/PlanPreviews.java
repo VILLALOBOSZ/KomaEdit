@@ -3,8 +3,11 @@ package com.komainu.moxia.preview;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.BlockBounds;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.feedback.FeedbackEventPayload;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -19,7 +22,6 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -28,6 +30,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +65,8 @@ public final class PlanPreviews {
     private static final int SPAWNS_PER_TICK = 128;
     private static final int ANNOUNCE_ABOVE_SECONDS = 3;
     private static final int ANNOUNCE_PREPARING_ABOVE = 100_000;
+    /** Cambios como mucho en el plan que dibuja el cliente (su superficie o una muestra): unos 1,2 MB. */
+    private static final int CLIENT_ENTRIES = 250_000;
     private static final ThreadLocal<Extras> EXTRAS = new ThreadLocal<>();
     private static final Map<UUID, Preparation> PREPARING = new LinkedHashMap<>();
     private static final ExecutorService SAMPLER = Executors.newSingleThreadExecutor(runnable -> {
@@ -147,6 +152,7 @@ public final class PlanPreviews {
             if (request.kind() != EditRequest.Kind.CONFIRMED) {
                 announce(player, plan.size(), description);
             }
+            LastEdits.remember(id, request);
             return false;
         }
         server = player.getServer();
@@ -154,13 +160,13 @@ public final class PlanPreviews {
         Preparation preparation = new Preparation(id, player.getServerWorld().getRegistryKey(), plan, blocks,
                 description, request, extras, applyOriginal);
         PREPARING.put(id, preparation);
-        if (replaced) {
-            send(player, Text.literal("La vista previa anterior se ha descartado").formatted(Formatting.GRAY));
-        }
         if (plan.size() > ANNOUNCE_PREPARING_ABOVE) {
-            send(player, Text.literal("Preparando la vista previa de " + description + " ("
-                    + ProgressLine.group(plan.size()) + " bloques)…").formatted(Formatting.GRAY));
+            Feedback.status(player, Feedback.format("Preparando la vista previa de %s (%s bloques)…", description,
+                    plan.size()).append(replaced ? " · la anterior se descartó" : ""));
+        } else if (replaced) {
+            Feedback.status(player, "La vista previa anterior se descartó");
         }
+        LastEdits.remember(id, request);
         return true;
     }
 
@@ -204,9 +210,8 @@ public final class PlanPreviews {
 
     /** Descarta con un aviso (al cambiar de dimensión o reaparecer). */
     public static void discard(ServerPlayerEntity player, String reason) {
-        cancel(player.getUuid()).ifPresent(description -> send(player, Text.literal(
-                "Vista previa de " + description + " descartada " + reason + ": no se ha cambiado nada")
-                .formatted(Formatting.YELLOW)));
+        cancel(player.getUuid()).ifPresent(description -> Feedback.warn(player,
+                "Vista previa de " + description + " descartada " + reason + ": no se ha cambiado nada"));
     }
 
     /** El jugador se fue: se olvida todo lo suyo (el cliente ya no tiene los displays). */
@@ -215,6 +220,8 @@ public final class PlanPreviews {
         FLOW.discard(player);
         EditRequests.forget(player);
         PreviewPreferences.forget(player);
+        PreviewPlanSender.forget(player);
+        LastEdits.forget(player);
     }
 
     public static boolean hasPending(UUID player) {
@@ -240,6 +247,8 @@ public final class PlanPreviews {
         FLOW.clear();
         EditRequests.clearAll();
         PreviewPreferences.clearAll();
+        PreviewPlanSender.clearAll();
+        LastEdits.clearAll();
         server = null;
     }
 
@@ -316,8 +325,8 @@ public final class PlanPreviews {
             } catch (RuntimeException exception) {
                 PREPARING.remove(preparation.player);
                 KomaEditMod.LOGGER.warn("KomaEdit preview preparation failed for {}", preparation.player, exception);
-                send(player, Text.literal("No se pudo preparar la vista previa de " + preparation.description + ": "
-                        + readable(exception)).formatted(Formatting.RED));
+                Feedback.error(player, "No se pudo preparar la vista previa de " + preparation.description + ": "
+                        + readable(exception));
             }
         }
     }
@@ -327,8 +336,7 @@ public final class PlanPreviews {
         preparation.builtFrozen = frozen;
         if (frozen.size() == 0) {
             PREPARING.remove(preparation.player);
-            send(player, Text.literal(preparation.description + ": no había nada que cambiar")
-                    .formatted(Formatting.YELLOW));
+            Feedback.warn(player, preparation.description + ": no había nada que cambiar");
             return;
         }
         preparation.sampling = true;
@@ -336,18 +344,23 @@ public final class PlanPreviews {
         for (int index = 0; index < positions.length; index++) {
             positions[index] = frozen.packedPosition(index);
         }
+        boolean client = PreviewPlanSender.supported(player);
         int limit = KomaEditConfig.settings().previewMaxDisplays();
         SAMPLER.execute(() -> {
             try {
-                DisplaySampler.Choice choice = DisplaySampler.choose(positions, positions.length, limit);
-                current.execute(() -> show(current, preparation, choice));
+                if (client) {
+                    ClientPlan plan = clientPlan(preparation, frozen, positions);
+                    current.execute(() -> show(current, preparation, plan.choice(), plan));
+                } else {
+                    DisplaySampler.Choice choice = DisplaySampler.choose(positions, positions.length, limit);
+                    current.execute(() -> show(current, preparation, choice, null));
+                }
             } catch (RuntimeException exception) {
                 current.execute(() -> {
                     if (PREPARING.remove(preparation.player, preparation)) {
                         ServerPlayerEntity online = current.getPlayerManager().getPlayer(preparation.player);
                         if (online != null) {
-                            send(online, Text.literal("No se pudo preparar la vista previa: " + readable(exception))
-                                    .formatted(Formatting.RED));
+                            Feedback.error(online, "No se pudo preparar la vista previa: " + readable(exception));
                         }
                     }
                 });
@@ -355,7 +368,37 @@ public final class PlanPreviews {
         });
     }
 
-    private static void show(MinecraftServer current, Preparation preparation, DisplaySampler.Choice choice) {
+    /** El plan troceado para un cliente que dibuja él mismo la vista previa. */
+    private record ClientPlan(int id, List<byte[]> parts, DisplaySampler.Choice choice) {
+    }
+
+    /** En el hilo de la vista previa: superficie, tipos y estados de lo que se enseña, en partes. */
+    private static ClientPlan clientPlan(Preparation preparation, PackedBlockPlan frozen, long[] positions) {
+        PreviewSurface.Selection selection = PreviewSurface.select(positions, positions.length, CLIENT_ENTRIES);
+        int count = selection.shown();
+        long[] shown = new long[count];
+        int[] states = new int[count];
+        byte[] kinds = new byte[count];
+        for (int slot = 0; slot < count; slot++) {
+            int index = selection.indices()[slot];
+            shown[slot] = positions[index];
+            states[slot] = preparation.stateIds.getInt(index);
+            kinds[slot] = (byte) preparation.kind(index).ordinal();
+        }
+        BlockBounds bounds = frozen.bounds();
+        int id = PreviewPlanSender.nextId();
+        PreviewPlanCodec.Header header = new PreviewPlanCodec.Header(id, bounds.minimumX(), bounds.minimumY(),
+                bounds.minimumZ(), bounds.maximumX(), bounds.maximumY(), bounds.maximumZ(), frozen.size(),
+                preparation.added, preparation.removed, selection.mode(), count);
+        List<byte[]> parts = PreviewPlanCodec.encode(header, shown, states, kinds, selection.faces(),
+                PreviewPlanCodec.DEFAULT_PART_BYTES);
+        DisplaySampler.Choice choice = new DisplaySampler.Choice(selection.indices(), selection.mode(),
+                frozen.size(), selection.surface());
+        return new ClientPlan(id, parts, choice);
+    }
+
+    private static void show(MinecraftServer current, Preparation preparation, DisplaySampler.Choice choice,
+                             ClientPlan clientPlan) {
         if (!PREPARING.remove(preparation.player, preparation)) {
             return;
         }
@@ -364,60 +407,69 @@ public final class PlanPreviews {
             return;
         }
         PackedBlockPlan frozen = preparation.builtFrozen;
-        ServerWorld world = player.getServerWorld();
-        List<PreviewDisplays.Display> displays = new ArrayList<>(choice.shown() + 12);
-        displays.addAll(PreviewDisplays.box(frozen.bounds()));
-        BlockPos.Mutable position = new BlockPos.Mutable();
-        for (int index : choice.indices()) {
-            long packed = frozen.packedPosition(index);
-            int x = PackedBlockPlan.unpackX(packed);
-            int y = PackedBlockPlan.unpackY(packed);
-            int z = PackedBlockPlan.unpackZ(packed);
-            BlockState placed = FabricAdapter.adapt(frozen.override(index));
-            BlockState before = world.getBlockState(position.set(x, y, z));
-            PreviewDisplays.Kind kind = placed.isAir() ? PreviewDisplays.Kind.REMOVE
-                    : before.isAir() ? PreviewDisplays.Kind.ADD : PreviewDisplays.Kind.REPLACE;
-            displays.add(PreviewDisplays.block(x, y, z, placed, kind));
+        List<PreviewDisplays.Display> displays = new ArrayList<>();
+        if (clientPlan == null) {
+            // Sin KomaEdit en el cliente: block displays enviados por paquetes, solo a este jugador.
+            displays.addAll(PreviewDisplays.box(frozen.bounds()));
+            for (int index : choice.indices()) {
+                long packed = frozen.packedPosition(index);
+                BlockState placed = FabricAdapter.adapt(frozen.override(index));
+                displays.add(PreviewDisplays.block(PackedBlockPlan.unpackX(packed), PackedBlockPlan.unpackY(packed),
+                        PackedBlockPlan.unpackZ(packed), placed, preparation.kind(index)));
+            }
         }
-        Held held = new Held(preparation, frozen, choice, displays, sessionLimit(player));
+        Held held = new Held(preparation, frozen, choice, displays, sessionLimit(player),
+                clientPlan == null ? 0 : clientPlan.id());
         ZoneCheck.Watch watch = ZoneCheck.Watch.of(frozen)
                 .then(preparation.extras == null ? null : preparation.extras.watch());
         long ttl = KomaEditConfig.settings().previewTimeoutSeconds() * 1_000_000_000L;
         FLOW.hold(preparation.player, held, watch, System.nanoTime(), ttl);
-        held.spawnSome(player, SPAWNS_PER_TICK);
+        if (clientPlan != null) {
+            PreviewPlanSender.start(player, clientPlan.id(), clientPlan.parts());
+        } else {
+            held.spawnSome(player, SPAWNS_PER_TICK);
+        }
         announceHeld(player, held, ttl);
     }
 
+    /**
+     * Una línea: cuánto cambia, la caja, lo que tardará y los botones. Los detalles (cuánto se pone y se quita, la
+     * muestra, los bloques con datos) van al pasar el ratón por el resumen; el aviso del límite de WorldEdit, aparte,
+     * porque importa.
+     */
     private static void announceHeld(ServerPlayerEntity player, Held held, long ttl) {
         BuildEstimate estimate = BuildEstimate.of(held.frozen.size(), 0, 0, held.frozen.bounds());
-        StringBuilder summary = new StringBuilder("Vista previa de ").append(held.description).append(": ")
-                .append(ProgressLine.group(held.frozen.size())).append(" cambios (")
+        MutableText summary = Feedback.format("Vista previa de %s: %s cambios", held.description,
+                held.frozen.size());
+        if (held.removed > 0) {
+            summary.append(Feedback.format(" (%s quitados)", held.removed));
+        }
+        summary.append(Feedback.format(" · %s×%s×%s · ~%s", estimate.sizeX(), estimate.sizeY(), estimate.sizeZ(),
+                ProgressLine.duration(Math.max(1.0, estimate.seconds()))));
+        StringBuilder details = new StringBuilder()
                 .append(ProgressLine.group(held.added)).append(" puestos o cambiados, ")
-                .append(ProgressLine.group(held.removed)).append(" quitados) · caja ")
-                .append(estimate.sizeX()).append('×').append(estimate.sizeY()).append('×').append(estimate.sizeZ())
-                .append(" · ~").append(ProgressLine.duration(Math.max(1.0, estimate.seconds()))).append(" al aplicar");
-        send(player, Text.literal(summary.toString()).formatted(Formatting.AQUA));
-        player.sendMessage(Text.literal("  ")
-                .append(button("[Aplicar]", "/komaedit confirm", Formatting.GREEN,
-                        "Coloca exactamente lo que ves, sin recalcular"))
-                .append(Text.literal("  "))
-                .append(button("[Descartar]", "/komaedit cancel", Formatting.RED, "No cambia nada"))
-                .append(Text.literal("  caduca en " + ProgressLine.duration(ttl / 1_000_000_000.0))
-                        .formatted(Formatting.GRAY)), false);
+                .append(ProgressLine.group(held.removed)).append(" quitados")
+                .append("\nCaduca en ").append(ProgressLine.duration(ttl / 1_000_000_000.0));
         if (held.choice.mode() != DisplaySampler.Mode.ALL) {
             String how = held.choice.mode() == DisplaySampler.Mode.SURFACE ? "la superficie" : "una muestra";
-            send(player, Text.literal("Se ven " + ProgressLine.group(held.choice.shown()) + " de "
-                    + ProgressLine.group(held.frozen.size()) + " cambios (" + how + ") y la caja")
-                    .formatted(Formatting.GRAY));
+            details.append("\nSe ve ").append(how).append(": ").append(ProgressLine.group(held.choice.shown()))
+                    .append(" de ").append(ProgressLine.group(held.frozen.size()));
         }
-        BuildEstimate.limitWarning(held.frozen.size(), held.sessionLimit).ifPresent(warning ->
-                send(player, Text.literal(warning).formatted(Formatting.GOLD)));
         if (!held.freezable) {
-            send(player, Text.literal("Hay bloques con datos (NBT): al aplicar se volverá a evaluar el patrón")
-                    .formatted(Formatting.GRAY));
+            details.append("\nHay bloques con datos (NBT): al aplicar se volverá a evaluar el patrón");
         }
-        player.sendMessage(Text.literal("KomaEdit · Vista previa lista: /komaedit confirm o /komaedit cancel")
-                .formatted(Formatting.YELLOW), true);
+        Text hover = Text.literal(details.toString());
+        player.sendMessage(Feedback.line(Feedback.Level.INFO, Text.empty()
+                .append(summary.styled(style -> style.withHoverEvent(
+                        new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))))
+                .append(" ")
+                .append(Feedback.button("[Aplicar]", "/komaedit confirm", Formatting.GREEN,
+                        "Coloca exactamente lo que ves, sin recalcular"))
+                .append(" ")
+                .append(Feedback.button("[Descartar]", "/komaedit cancel", Formatting.RED, "No cambia nada"))),
+                false);
+        BuildEstimate.limitWarning(held.frozen.size(), held.sessionLimit).ifPresent(warning ->
+                Feedback.warn(player, warning));
     }
 
     /** Aviso de lo que va a tardar y del límite de WorldEdit cuando un plan se encola sin vista previa. */
@@ -425,10 +477,10 @@ public final class PlanPreviews {
         double seconds = BuildEstimate.placeSeconds(blocks);
         Optional<String> warning = BuildEstimate.limitWarning(blocks, sessionLimit(player));
         if (seconds >= ANNOUNCE_ABOVE_SECONDS) {
-            send(player, Text.literal(description + ": " + ProgressLine.group(blocks) + " bloques · ~"
-                    + ProgressLine.duration(seconds) + " · /komaedit cancel para parar").formatted(Formatting.GRAY));
+            Feedback.status(player, Feedback.format("%s: %s bloques · ~%s · /komaedit cancel para parar",
+                    description, blocks, ProgressLine.duration(seconds)));
         }
-        warning.ifPresent(text -> send(player, Text.literal(text).formatted(Formatting.GOLD)));
+        warning.ifPresent(text -> Feedback.warn(player, text));
     }
 
     private static int sessionLimit(ServerPlayerEntity player) {
@@ -457,6 +509,10 @@ public final class PlanPreviews {
         private final Extras extras;
         private final Runnable applyOriginal;
         private final PackedBlockPlan.Builder frozen;
+        /** Por entrada del plan congelado: id crudo del estado final y si antes había aire o queda aire. */
+        private final IntArrayList stateIds;
+        private final BitSet beforeAir = new BitSet();
+        private final BitSet placedAir = new BitSet();
         private final LongOpenHashSet seen;
         private final long startedAt = System.nanoTime();
         private final BlockPos.Mutable position = new BlockPos.Mutable();
@@ -478,7 +534,14 @@ public final class PlanPreviews {
             this.extras = extras;
             this.applyOriginal = applyOriginal;
             this.frozen = PackedBlockPlan.builder(plan.size());
+            this.stateIds = new IntArrayList(Math.min(plan.size(), 1 << 20));
             this.seen = new LongOpenHashSet(Math.min(plan.size(), 1 << 20));
+        }
+
+        /** Qué hace la entrada {@code index} del plan congelado. */
+        private PreviewDisplays.Kind kind(int index) {
+            return placedAir.get(index) ? PreviewDisplays.Kind.REMOVE
+                    : beforeAir.get(index) ? PreviewDisplays.Kind.ADD : PreviewDisplays.Kind.REPLACE;
         }
 
         /** @return {@code true} cuando ha recorrido todo el plan */
@@ -499,7 +562,8 @@ public final class PlanPreviews {
                 boolean data = block.getNbtReference() != null;
                 freezable &= !data;
                 com.sk89q.worldedit.world.block.BlockState state = block.toImmutableState();
-                int current = Block.getRawIdFromState(world.getBlockState(position.set(x, y, z)));
+                BlockState currentState = world.getBlockState(position.set(x, y, z));
+                int current = Block.getRawIdFromState(currentState);
                 BlockState placed = FabricAdapter.adapt(state);
                 int expected = plan.expectedStateId(index);
                 boolean repeated = !seen.add(packed);
@@ -510,8 +574,14 @@ public final class PlanPreviews {
                 // aplicar el plan original.
                 int watched = repeated ? PackedBlockPlan.NO_EXPECTED_STATE
                         : expected != PackedBlockPlan.NO_EXPECTED_STATE ? expected : current;
+                int entry = stateIds.size();
                 frozen.addConditionalOverride(x, y, z, watched, state);
+                stateIds.add(Block.getRawIdFromState(placed));
+                if (currentState.isAir()) {
+                    beforeAir.set(entry);
+                }
                 if (placed.isAir()) {
+                    placedAir.set(entry);
                     removed++;
                 } else {
                     added++;
@@ -539,12 +609,14 @@ public final class PlanPreviews {
         private final int added;
         private final int removed;
         private final int sessionLimit;
+        /** Id del plan que dibuja el cliente con KomaEdit, o 0 si se enseña con displays. */
+        private final int clientPlan;
         private int spawnCursor;
         private boolean hidden;
         private long confirmedAt;
 
         private Held(Preparation preparation, PackedBlockPlan frozen, DisplaySampler.Choice choice,
-                     List<PreviewDisplays.Display> displays, int sessionLimit) {
+                     List<PreviewDisplays.Display> displays, int sessionLimit, int clientPlan) {
             this.player = preparation.player;
             this.world = preparation.world;
             this.original = preparation.plan;
@@ -560,6 +632,7 @@ public final class PlanPreviews {
             this.added = preparation.added;
             this.removed = preparation.removed;
             this.sessionLimit = sessionLimit;
+            this.clientPlan = clientPlan;
         }
 
         private void spawnSome(ServerPlayerEntity player, int budget) {
@@ -582,6 +655,9 @@ public final class PlanPreviews {
             ServerPlayerEntity online = online(player);
             if (online != null) {
                 PreviewDisplays.destroy(online, held.spawned.toIntArray());
+                if (held.clientPlan != 0) {
+                    PreviewPlanSender.clear(online, held.clientPlan);
+                }
             }
             held.spawned.clear();
         }
@@ -600,11 +676,11 @@ public final class PlanPreviews {
                         held.applyOriginal.run();
                     }
                 });
-                send(online, Text.literal("Aplicando " + held.description + ": " + ProgressLine.group(
-                        held.frozen.size()) + " cambios · /komaedit cancel para parar · //undo para deshacer")
-                        .formatted(Formatting.GREEN));
+                Feedback.status(online, Feedback.format("Aplicando %s: %s cambios · /komaedit cancel para parar",
+                        held.description, held.frozen.size()));
+                Feedback.sound(online, FeedbackEventPayload.Kind.CONFIRM);
             } catch (IllegalArgumentException | IllegalStateException exception) {
-                send(online, Text.literal(held.description + ": " + readable(exception)).formatted(Formatting.RED));
+                Feedback.error(online, held.description + ": " + readable(exception));
             }
         }
 
@@ -614,9 +690,9 @@ public final class PlanPreviews {
             if (online == null) {
                 return;
             }
-            send(online, Text.literal("La zona cambió desde la vista previa (en " + PackedBlockPlan.unpackX(mismatch)
+            Feedback.warn(online, "La zona cambió desde la vista previa (en " + PackedBlockPlan.unpackX(mismatch)
                     + ", " + PackedBlockPlan.unpackY(mismatch) + ", " + PackedBlockPlan.unpackZ(mismatch)
-                    + "): recalculando " + held.description + "…").formatted(Formatting.GOLD));
+                    + "): recalculando " + held.description + "…");
             EditRequest again = held.request.asPreview();
             try {
                 if (held.extras != null && held.extras.recompute() != null) {
@@ -628,8 +704,7 @@ public final class PlanPreviews {
                             held.applyOriginal));
                 }
             } catch (RuntimeException exception) {
-                send(online, Text.literal("No se pudo recalcular " + held.description + ": " + readable(exception))
-                        .formatted(Formatting.RED));
+                Feedback.error(online, "No se pudo recalcular " + held.description + ": " + readable(exception));
             }
         }
 
@@ -637,8 +712,7 @@ public final class PlanPreviews {
         public void expired(UUID player, Held held) {
             ServerPlayerEntity online = online(player);
             if (online != null) {
-                send(online, Text.literal("La vista previa de " + held.description
-                        + " caducó: no se ha cambiado nada").formatted(Formatting.YELLOW));
+                Feedback.warn(online, "La vista previa de " + held.description + " caducó: no se ha cambiado nada");
             }
         }
     }
@@ -654,18 +728,6 @@ public final class PlanPreviews {
     private static ServerPlayerEntity online(UUID player) {
         MinecraftServer current = server;
         return current == null ? null : current.getPlayerManager().getPlayer(player);
-    }
-
-    private static void send(ServerPlayerEntity player, Text text) {
-        player.sendMessage(Text.literal("KomaEdit · ").formatted(Formatting.GOLD).append(text), false);
-    }
-
-    private static MutableText button(String label, String command, Formatting color, String hover) {
-        return Text.literal(label).styled(style -> style
-                .withColor(color)
-                .withBold(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover))));
     }
 
     private static String readable(Throwable throwable) {

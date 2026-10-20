@@ -9,9 +9,11 @@ import com.komainu.moxia.deform.SmoothProfile;
 import com.komainu.moxia.deform.SmoothingOps;
 import com.komainu.moxia.deform.SurfaceOps;
 import com.komainu.moxia.edit.SmoothBlockStates;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.shape.smooth.SmoothMode;
@@ -281,7 +283,7 @@ public final class DeformCommands {
                 + " y largo " + format(projection.halfLength() * 2.0);
         player.sendMessage(prefix().append(Text.literal((sphere ? "Esfera" : "Cilindro") + " de " + radiusText
                 + " y profundidad " + format(projection.depth()) + " en " + box[0] + " " + box[1] + " " + box[2]
-                + " → " + box[3] + " " + box[4] + " " + box[5] + ": " + projection.boxVolume()
+                + " → " + box[3] + " " + box[4] + " " + box[5] + ": " + ProgressLine.group(projection.boxVolume())
                 + " bloques fuera de la selección se " + (args.has('a') ? "rellenan donde toque la figura"
                 : "sustituyen (con -a se respeta lo que la figura no ocupa)") + ".").formatted(Formatting.GRAY)),
                 false);
@@ -515,13 +517,11 @@ public final class DeformCommands {
     }
 
     private static net.minecraft.text.MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.DARK_AQUA);
+        return Feedback.prefix();
     }
 
     private static int fail(ServerCommandSource source, String message) {
-        source.sendError(prefix().append(Text.literal(message == null || message.isBlank()
-                ? "Operación inválida" : message).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(source, message);
     }
 
     /** Perfil de {@code -w} con sus materiales fijos ya comprobados, para que un error salga al escribir la orden. */
