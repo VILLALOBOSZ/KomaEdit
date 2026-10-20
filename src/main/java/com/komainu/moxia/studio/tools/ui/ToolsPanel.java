@@ -443,6 +443,7 @@ public final class ToolsPanel {
             case "roof" -> StudioIcons.Icon.ROOF;
             case "loft" -> StudioIcons.Icon.LOFT;
             case "stamp" -> StudioIcons.Icon.STAMP;
+            case "paintbrush" -> StudioIcons.Icon.PAINT_BRUSH;
             case "ramp" -> StudioIcons.Icon.RAMP;
             case "river" -> StudioIcons.Icon.RIVER;
             case "erosion" -> StudioIcons.Icon.EROSION;
@@ -968,7 +969,7 @@ public final class ToolsPanel {
         GalleryLayout layout = galleryLayout(ui, labels, column.width());
         int perRow = layout.perRow();
         int tile = layout.tile();
-        int rows = compact ? 1 : galleryRows;
+        int rows = compact ? 1 : Math.clamp(card.galleryRows(choice.id()), 1, galleryRows);
         int tileHeight = (compact ? COMPACT_TILE_PICTURE : TILE_PICTURE) + layout.lines() * StudioUi.TILE_LINE + 6;
         int perPage = perRow * rows;
         int pageCount = (options.size() + perPage - 1) / perPage;
@@ -1081,7 +1082,7 @@ public final class ToolsPanel {
             shown = StampGallery.visible(stampSearch, tab, favorites, text);
             List<String> labels = shown.stream().map(name -> host.tr(choice.optionKey(name))).toList();
             layout = galleryLayout(ui, labels.isEmpty() ? List.of("") : labels, column.width());
-            perPage = layout.perRow() * galleryRows;
+            perPage = layout.perRow() * Math.clamp(card.galleryRows(choice.id()), 1, galleryRows);
             pageCount = Math.max(1, (shown.size() + perPage - 1) / perPage);
             pageKey = "stamp:" + (searching ? "?" + stampSearch : tab);
         }

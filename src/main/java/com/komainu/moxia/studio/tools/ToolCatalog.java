@@ -20,6 +20,7 @@ public final class ToolCatalog {
             new RoofCard(),
             new LoftCard(),
             new TerrainCards.Stamp(),
+            new PaintBrushCard(),
             new TerrainCards.Ramp(),
             new TerrainCards.River(),
             new TerrainCards.Erosion(),
