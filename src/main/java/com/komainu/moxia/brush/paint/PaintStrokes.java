@@ -9,6 +9,7 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.WorldSnapshot;
+import com.komainu.moxia.studio.net.StudioAim;
 import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
@@ -253,7 +254,8 @@ public final class PaintStrokes {
         void step(MinecraftServer server, ServerPlayerEntity player, int now) {
             if (!stopped && now - lastInput <= INPUT_GAP_TICKS
                     && toolId.equals(BrushTool.id(player.getMainHandStack()))) {
-                HitResult result = player.raycast(EzBrushManager.REACH, 1.0F, false);
+                // Con el Studio abierto, el último clic del cursor; si no, lo que se mira.
+                HitResult result = StudioAim.target(player, EzBrushManager.REACH);
                 if (result instanceof BlockHitResult hit && result.getType() == HitResult.Type.BLOCK) {
                     tentative.add(center(hit));
                 }
