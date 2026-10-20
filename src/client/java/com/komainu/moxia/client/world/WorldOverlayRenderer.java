@@ -6,6 +6,7 @@ import com.komainu.moxia.feedback.SelectionPayload;
 import com.komainu.moxia.feedback.SymmetryGuidePayload;
 import com.komainu.moxia.feedback.WorldFeedbackSettings;
 import com.komainu.moxia.preview.PreviewPlanCodec;
+import com.komainu.moxia.studio.ui.StudioTheme;
 import com.komainu.moxia.studio.world.BoxSelect;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
@@ -33,15 +34,16 @@ import java.util.Set;
  * </ul>
  */
 public final class WorldOverlayRenderer {
-    private static final int SELECTION = 0xE6F2F2FF;
-    private static final int PREVIEW_BOX = 0xF0FFD84A;
-    private static final int RETICLE = 0xD9FFFFFF;
-    private static final int FACE_HOVER = 0xCCFFE082;
-    private static final int FACE_GRABBED = 0xFFFFCA28;
-    private static final int PLANE_X = 0xEF5350;
-    private static final int PLANE_Z = 0x42A5F5;
-    private static final int PLANE_Y = 0x66BB6A;
-    private static final int AXIS = 0xFFCA28;
+    // Los colores del mundo están con las demás fichas, en StudioTheme (no cambian con el tema).
+    private static final int SELECTION = StudioTheme.WORLD_SELECTION;
+    private static final int PREVIEW_BOX = StudioTheme.WORLD_PREVIEW_BOX;
+    private static final int RETICLE = StudioTheme.WORLD_RETICLE;
+    private static final int FACE_HOVER = StudioTheme.WORLD_FACE_HOVER;
+    private static final int FACE_GRABBED = StudioTheme.WORLD_FACE_GRABBED;
+    private static final int PLANE_X = StudioTheme.WORLD_PLANE_X;
+    private static final int PLANE_Z = StudioTheme.WORLD_PLANE_Z;
+    private static final int PLANE_Y = StudioTheme.WORLD_PLANE_Y;
+    private static final int AXIS = StudioTheme.WORLD_AXIS;
     private static final double BRUSH_REACH = 192.0;
     /** Medio lado del marco de cada plano de simetría. */
     private static final int PLANE_RADIUS = 12;

@@ -53,6 +53,9 @@ public final class StudioView {
     static final String TOOL_OWNER = "tool:";
     private static final int HISTORY_WIDTH = 220;
     private static final int HISTORY_ROWS = 10;
+    /** Alto que ocupa en la chuleta la fila para elegir el tema de colores. */
+    private static final int THEME_ROW = 20;
+    private static final String THEME_GROUP = "studio:theme";
     /** Con al menos este alto de contenido las galerías enseñan cuatro filas en vez de dos. */
     static final int TALL_VIEWPORT = 380;
 
@@ -317,6 +320,7 @@ public final class StudioView {
     public void render(StudioUi ui, int width, int height, int mouseX, int mouseY, StudioHost host) {
         this.ui = ui;
         load(host);
+        StudioTheme.use(StudioPalette.byId(host.preferences().theme()));
         StudioHost bound = bind(host);
         int preferred = panelShare > 0 ? (int) Math.round(panelShare * width) : StudioLayout.AUTO;
         frame = StudioLayout.compute(width, height, preferred, StudioStage.groupSizes());
@@ -410,7 +414,7 @@ public final class StudioView {
         ui.fill(box, PANEL);
         ui.border(box, OUTLINE);
         ui.fill(new Rect(box.x(), box.y(), 2, box.height()), ACCENT);
-        ui.bold(title, box.x() + 7, box.y() + 5, box.width() - 10, WHITE);
+        ui.bold(title, box.x() + 7, box.y() + 5, box.width() - 10, TEXT_STRONG);
         for (int index = 0; index < wrapped.size(); index++) {
             ui.label(wrapped.get(index), box.x() + 7, box.y() + 16 + index * StudioUi.LINE, box.width() - 10,
                     index == 0 ? TEXT : TEXT_SECONDARY);
@@ -473,8 +477,8 @@ public final class StudioView {
         List<Integer> buttons = toolbarButtons();
         int left = bar.x() + frame.padding();
         int right = frame.toolButton(buttons.size() - 1).x() - 4;
-        ui.icon(stage.icon(), left, bar.centerY() - 6, ACCENT_HOVER);
-        ui.bold(host.tr(stage.titleKey()), left + 17, bar.centerY() - 4, right - left - 17, WHITE);
+        ui.icon(stage.icon(), left, bar.centerY() - 6, ACCENT_TEXT);
+        ui.bold(host.tr(stage.titleKey()), left + 17, bar.centerY() - 4, right - left - 17, TEXT_STRONG);
         ui.register(new Rect(left, bar.y(), Math.max(0, right - left), bar.height()))
                 .tooltip(host.tr(stage.titleKey()) + " · " + stage.shortcut() + "\n" + host.tr(stage.subtitleKey()));
 
@@ -536,15 +540,15 @@ public final class StudioView {
                 ui.fill(item.left(2), ACCENT);
             }
             int iconY = item.centerY() - StudioIcons.SIZE / 2;
-            int iconColor = selected ? ACCENT : hovered ? TEXT : TEXT_SECONDARY;
+            int iconColor = selected ? ACCENT_TEXT : hovered ? TEXT : TEXT_SECONDARY;
             if (labels) {
                 ui.icon(value.icon(), item.x() + 6, iconY, iconColor);
                 String key = String.valueOf(value.shortcut());
                 int keyX = item.right() - 4 - ui.width(key);
                 int labelX = item.x() + 6 + StudioIcons.SIZE + 5;
                 ui.label(host.tr(value.titleKey()), labelX, item.centerY() - 4, keyX - labelX - 4,
-                        selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
-                ui.label(key, keyX, item.centerY() - 4, selected ? MUTED : DISABLED);
+                        selected ? TEXT_STRONG : hovered ? TEXT : TEXT_SECONDARY);
+                ui.label(key, keyX, item.centerY() - 4, MUTED);
             } else {
                 ui.icon(value.icon(), item.centerX() - StudioIcons.SIZE / 2, iconY, iconColor);
             }
@@ -590,8 +594,8 @@ public final class StudioView {
             String key = String.valueOf(value.shortcut());
             int keyX = row.right() - 4 - ui.width(key);
             ui.label(host.tr(value.titleKey()), row.x() + 5, row.centerY() - 4, keyX - row.x() - 9,
-                    selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
-            ui.label(key, keyX, row.centerY() - 4, selected ? MUTED : DISABLED);
+                    selected ? TEXT_STRONG : hovered ? TEXT : TEXT_SECONDARY);
+            ui.label(key, keyX, row.centerY() - 4, MUTED);
             ui.register(row).onClick(() -> selectStage(value, host)).tooltip(host.tr(value.subtitleKey()));
         }
     }
@@ -819,7 +823,7 @@ public final class StudioView {
         Rect summary = frame.footerSummary();
         Rect statusLine = frame.footerStatus();
         String help = host.tr("gui.komaedit.ghost.studio.help");
-        ui.icon(StudioIcons.Icon.GIZMO, summary.x() - 1, summary.y() - 2, ACCENT_HOVER);
+        ui.icon(StudioIcons.Icon.GIZMO, summary.x() - 1, summary.y() - 2, ACCENT_TEXT);
         String title = ghost.title() + " · " + ghost.summary();
         // Arriba qué es (o, si no se pudo colocar, por qué); debajo las opciones y dónde está.
         boolean rejected = !ghost.message().isEmpty();
@@ -861,7 +865,7 @@ public final class StudioView {
                                    Runnable toggle, String name, String tooltip) {
         int width = ui.width(label) + 8;
         Rect rect = new Rect(x, line.y() - 1, width + 2, line.height() + 2);
-        int color = !enabled ? DISABLED : on ? ACCENT_HOVER : ui.hovered(rect) ? TEXT : MUTED;
+        int color = !enabled ? DISABLED : on ? ACCENT_TEXT : ui.hovered(rect) ? TEXT : MUTED;
         // La casilla, dibujada: llena si est\u00E1 encendido.
         Rect box = new Rect(x, line.y() + 1, 6, 6);
         if (on) {
@@ -891,7 +895,7 @@ public final class StudioView {
         StudioIcons.Icon icon = mode == StudioPreferences.PreviewMode.LIVE ? StudioIcons.Icon.LIVE
                 : StudioIcons.Icon.EYE;
         ui.icon(icon, rect.centerX() - 6, rect.centerY() - 6, mode == StudioPreferences.PreviewMode.OFF
-                ? (hovered ? TEXT : MUTED) : ACCENT_HOVER);
+                ? (hovered ? TEXT : MUTED) : ACCENT_TEXT);
         ui.register(rect)
                 .tooltip(host.tr("gui.komaedit.preview.mode." + mode.id()) + "\n"
                         + host.tr("gui.komaedit.preview.mode." + mode.id() + ".help") + "\n"
@@ -971,7 +975,7 @@ public final class StudioView {
         ui.border(box, OUTLINE);
         ui.fill(new Rect(box.x(), box.y(), 2, box.height()), ACCENT);
         ui.register(box);
-        ui.bold(host.tr("gui.komaedit.history.title"), box.x() + 8, box.y() + 7, box.width() - 16, WHITE);
+        ui.bold(host.tr("gui.komaedit.history.title"), box.x() + 8, box.y() + 7, box.width() - 16, TEXT_STRONG);
         int y = box.y() + 20;
         if (entries.isEmpty()) {
             ui.label(host.tr("gui.komaedit.history.empty"), box.x() + 8, y + 4, box.width() - 16, MUTED);
@@ -989,7 +993,7 @@ public final class StudioView {
             String blocks = host.tr("gui.komaedit.history.blocks", ProgressLine.group(entry.blocks()));
             int blocksWidth = ui.width(blocks);
             ui.label(entry.label(), row.x() + 6, row.y() + 4, row.width() - blocksWidth - 16,
-                    undone ? DISABLED : current ? WHITE : TEXT_SECONDARY);
+                    undone ? DISABLED : current ? TEXT_STRONG : TEXT_SECONDARY);
             ui.rightAligned(blocks, row.right() - 4, row.y() + 4, undone ? DISABLED : MUTED);
             int target = index;
             ui.register(row)
@@ -1053,27 +1057,75 @@ public final class StudioView {
             keyWidth = Math.max(keyWidth, ui.width(host.tr(shortcut.keysKey())));
         }
         int columnWidth = Math.min(340, (screen.width() - 40) / columns);
-        int modalWidth = columnWidth * columns + 24;
-        int modalHeight = Math.min(screen.height() - 16, 48 + rows * 12);
+        int modalWidth = Math.min(screen.width() - 16, Math.max(columnWidth * columns, themeRowWidth(ui, host)) + 28);
+        int modalHeight = Math.min(screen.height() - 16, 48 + THEME_ROW + rows * 12);
         Rect modal = new Rect((screen.width() - modalWidth) / 2, (screen.height() - modalHeight) / 2, modalWidth,
                 modalHeight);
         ui.fill(modal, PANEL);
         ui.border(modal, DIVIDER);
         ui.fill(new Rect(modal.x(), modal.y(), 2, modal.height()), ACCENT);
-        ui.bold(host.tr("gui.komaedit.shortcuts.title"), modal.x() + 14, modal.y() + 10, modalWidth - 28, WHITE);
+        ui.bold(host.tr("gui.komaedit.shortcuts.title"), modal.x() + 14, modal.y() + 10, modalWidth - 28, TEXT_STRONG);
         ui.label(host.tr("gui.komaedit.shortcuts.close"), modal.x() + 14, modal.bottom() - 14, modalWidth - 28, MUTED);
         int keyColumn = Math.min(keyWidth, columnWidth / 2);
         for (int index = 0; index < shortcuts.size(); index++) {
             StudioShortcuts.Shortcut shortcut = shortcuts.get(index);
             int x = modal.x() + 14 + index / rows * columnWidth;
             int y = modal.y() + 26 + index % rows * 12;
-            if (y > modal.bottom() - 26) {
+            if (y > modal.bottom() - 26 - THEME_ROW) {
                 continue;
             }
-            ui.label(host.tr(shortcut.keysKey()), x, y, keyColumn, ACCENT_HOVER);
+            ui.label(host.tr(shortcut.keysKey()), x, y, keyColumn, ACCENT_TEXT);
             ui.label(host.tr(shortcut.translationKey()), x + keyColumn + 8, y, columnWidth - keyColumn - 16,
                     TEXT_SECONDARY);
         }
+        drawThemeRow(ui, host, new Rect(modal.x() + 14, modal.bottom() - 18 - THEME_ROW, modalWidth - 28, 14));
+    }
+
+    private int themeRowWidth(StudioUi ui, StudioHost host) {
+        int width = ui.width(host.tr("gui.komaedit.theme")) + 6;
+        for (StudioPalette palette : StudioPalette.values()) {
+            width += themeChipWidth(ui, host, palette) + 4;
+        }
+        return width;
+    }
+
+    private static int themeChipWidth(StudioUi ui, StudioHost host, StudioPalette palette) {
+        return ui.width(host.tr(palette.translationKey())) + 24;
+    }
+
+    /**
+     * El selector de tema de la chuleta: una pastilla por tema con su muestra (fondo y acento) y su nombre. Pulsar una
+     * lo pone al momento, detrás del velo se ve ya con sus colores, y se guarda para la próxima vez.
+     */
+    private void drawThemeRow(StudioUi ui, StudioHost host, Rect row) {
+        String title = host.tr("gui.komaedit.theme");
+        ui.label(title, row.x(), row.centerY() - 4, MUTED);
+        int x = row.x() + ui.width(title) + 6;
+        for (StudioPalette palette : StudioPalette.values()) {
+            int width = Math.min(themeChipWidth(ui, host, palette), row.right() - x);
+            if (width < 24) {
+                break;
+            }
+            Rect chip = new Rect(x, row.y(), width, row.height());
+            boolean chosen = palette == StudioTheme.current();
+            ui.chip(chip, "", chosen, TEXT_SECONDARY).onClick(() -> setTheme(host, palette)).group(THEME_GROUP)
+                    .tooltip(host.tr(palette.translationKey() + ".help"));
+            Rect swatch = new Rect(chip.x() + 5, chip.centerY() - 4, 10, 8);
+            ui.fill(swatch, palette.color(StudioTheme.Token.PANEL));
+            ui.fill(new Rect(swatch.x() + 5, swatch.y(), 5, swatch.height()), palette.color(StudioTheme.Token.ACCENT));
+            ui.border(swatch, OUTLINE);
+            ui.label(host.tr(palette.translationKey()), swatch.right() + 4, chip.centerY() - 4,
+                    chip.right() - swatch.right() - 8, chosen ? TEXT_STRONG : ui.hovered(chip) ? TEXT : TEXT_SECONDARY);
+            x += width + 4;
+        }
+    }
+
+    /** Pone el tema {@code palette}, lo recuerda en las preferencias del jugador y lo dice en la línea de estado. */
+    public void setTheme(StudioHost host, StudioPalette palette) {
+        host.preferences().setTheme(palette.id());
+        StudioTheme.use(palette);
+        host.savePreferences();
+        bind(host).status(host.tr("gui.komaedit.theme.applied", host.tr(palette.translationKey())));
     }
 
     // ── Paleta de órdenes ───────────────────────────────────────────────────────────────────────────────
@@ -1115,6 +1167,13 @@ public final class StudioView {
                 figure.selectShape(bound, shape);
                 selectStage(StudioStage.FIGURE, host);
             }));
+        }
+        String themeKind = host.tr(CommandPalette.Kind.THEME.translationKey());
+        for (StudioPalette value : StudioPalette.values()) {
+            entries.add(new CommandPalette.Entry(CommandPalette.Kind.THEME,
+                    host.tr("gui.komaedit.theme") + ": " + host.tr(value.translationKey()), themeKind,
+                    host.tr(value.translationKey() + ".help") + " " + value.id(), StudioIcons.Icon.COLOR,
+                    () -> setTheme(host, value)));
         }
         String blueprintKind = host.tr(CommandPalette.Kind.BLUEPRINT.translationKey());
         for (BlueprintSummary blueprint : host.blueprints().list()) {
@@ -1309,7 +1368,12 @@ public final class StudioView {
     private Click click(double x, double y, int button, StudioUi.Widget widget, StudioHost host) {
         boolean left = button == 0;
         if (cheatSheet) {
-            cheatSheet = false;
+            // Cualquier clic la cierra, salvo en el selector de tema: así se prueban los temas uno tras otro.
+            if (left && widget != null && THEME_GROUP.equals(widget.group())) {
+                widget.press(x, y);
+            } else {
+                cheatSheet = false;
+            }
             return Click.HANDLED;
         }
         Object key = widget == null ? null : widget.key();

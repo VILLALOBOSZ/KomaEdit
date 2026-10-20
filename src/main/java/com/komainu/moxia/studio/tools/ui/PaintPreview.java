@@ -13,16 +13,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Miniaturas de la tarjeta «Pintar terreno»: la huella como mancha de luz (lo que pinta más, más claro, con la dureza
- * de serie) y la muestra del degradado de cada paleta, en celdas de bloque con los colores medidos de sus texturas y
- * la misma trama entre tonos que pone el pincel. Java puro, como {@link StampPreview}.
+ * Miniaturas de la tarjeta «Pintar terreno»: la huella como mancha de hierba (lo que pinta más, más opaco, con la
+ * dureza de serie; el fondo es el de miniatura del tema, así que se lee igual en los temas oscuros y en el claro) y la
+ * muestra del degradado de cada paleta, en celdas de bloque con los colores medidos de sus texturas y la misma trama
+ * entre tonos que pone el pincel. Java puro, como {@link StampPreview}.
  */
 public final class PaintPreview {
-    private static final int BACKGROUND = 0x22262C;
-    private static final int LIGHT = 0xC5E1A5;
+    /** La mancha de la huella: transparente donde no pinta, para que se vea sobre el fondo de miniatura del tema. */
+    private static final int STAIN = 0x6E9A3E;
     /** Los bloques que se tiñen con el bioma: su color medido es el de la textura gris. */
-    private static final Map<String, Integer> TINTED = Map.of("minecraft:grass_block", 0x7FA843,
-            "minecraft:moss_block", 0x596E2D);
+    private static final int GRASS_TINT = 0x7FA843;
+    private static final int MOSS_TINT = 0x596E2D;
+    /** Un bloque sin color medido. */
+    private static final int UNMEASURED = 0x8A8A8A;
+    private static final Map<String, Integer> TINTED = Map.of("minecraft:grass_block", GRASS_TINT,
+            "minecraft:moss_block", MOSS_TINT);
     private static final long DITHER_SALT = 0x5357_4154L;
 
     private PaintPreview() {
@@ -40,7 +45,8 @@ public final class PaintPreview {
             for (int column = 0; column < size; column++) {
                 double u = ((column + 0.5) / size * 2.0 - 1.0) * scale;
                 double intensity = PaintFootprint.intensity(footprint.shape(u, v), hardness);
-                pixels[row * size + column] = 0xFF000000 | mix(BACKGROUND, LIGHT, intensity);
+                int alpha = (int) Math.round(Math.clamp(intensity, 0.0, 1.0) * 255);
+                pixels[row * size + column] = alpha << 24 | STAIN;
             }
         }
         return pixels;
@@ -95,15 +101,7 @@ public final class PaintPreview {
             return tinted;
         }
         BlockColorCatalog.Measured measured = BlockColorCatalog.measured().get(id);
-        return measured == null ? 0x8A8A8A : measured.rgb() & 0xFFFFFF;
-    }
-
-    private static int mix(int a, int b, double t) {
-        double clamped = Math.clamp(t, 0.0, 1.0);
-        int red = (int) Math.round(((a >> 16) & 0xFF) * (1 - clamped) + ((b >> 16) & 0xFF) * clamped);
-        int green = (int) Math.round(((a >> 8) & 0xFF) * (1 - clamped) + ((b >> 8) & 0xFF) * clamped);
-        int blue = (int) Math.round((a & 0xFF) * (1 - clamped) + (b & 0xFF) * clamped);
-        return red << 16 | green << 8 | blue;
+        return measured == null ? UNMEASURED : measured.rgb() & 0xFFFFFF;
     }
 
     private static int scale(int rgb, double factor) {

@@ -98,7 +98,7 @@ Antes, Modificadores era una etapa aparte con nombres abstractos (escala inicial
 
 ### Ajustar rápido
 
-Todos los controles numéricos del Studio (figuras, modificadores, herramientas y color) son iguales: la etiqueta a la izquierda, el valor **con su unidad** (`18 bloques`, `50 %`, `45°`, `×1,5`, `Y 64`; en corto si no cabe, `18 bl.`) entre `−` y `+`, y debajo una barra con el rango, llena hasta el valor y con una marca en el de serie. Un punto rosa delante de la etiqueta dice que el valor ya no es el de serie.
+Todos los controles numéricos del Studio (figuras, modificadores, herramientas y color) son iguales: la etiqueta a la izquierda, el valor **con su unidad** (`18 bloques`, `50 %`, `45°`, `×1,5`, `Y 64`; en corto si no cabe, `18 bl.`) entre `−` y `+`, y debajo una barra con el rango, llena hasta el valor y con una marca en el de serie. Un punto del color del acento delante de la etiqueta dice que el valor ya no es el de serie.
 
 - **Rueda** sobre los botones o el valor: sube o baja un paso. Sobre la etiqueta o fuera de los controles, la rueda desplaza el panel, para no cambiar valores sin querer. Con **Mayús**, `−` `+` y la rueda dan un paso grande (×5, o el propio del control: 45° el giro, 90° la torsión, 25 % las escalas).
 - **Arrastrar** el número en horizontal lo cambia como un deslizador: recorrer el rango entero cuesta unos 240 píxeles, y nunca menos de 6 píxeles por paso. Con **Mayús**, fino: un paso cada 12 píxeles.
@@ -135,7 +135,7 @@ El botón del reloj de la barra abre la lista de los últimos cambios en el mund
 
 ### Paleta de órdenes
 
-`Ctrl+K` (o el botón de la barra) abre un buscador encima de todo para ir a cualquier sitio sin recorrer etapas: **etapas**, **herramientas**, **presets** de cada herramienta, **figuras** y **planos**. Busca sin tildes ni mayúsculas por nombre y por tipo (`tejado`, `azotado`, `planos`); las flechas eligen, `Intro` abre y `Esc` cierra. Elegir un preset abre su herramienta con él aplicado; elegir un plano lo selecciona en Planos.
+`Ctrl+K` (o el botón de la barra) abre un buscador encima de todo para ir a cualquier sitio sin recorrer etapas: **etapas**, **herramientas**, **presets** de cada herramienta, **figuras**, **planos** y **temas** de color. Busca sin tildes ni mayúsculas por nombre y por tipo (`tejado`, `azotado`, `planos`, `tema`); las flechas eligen, `Intro` abre y `Esc` cierra. Elegir un preset abre su herramienta con él aplicado; elegir un plano lo selecciona en Planos; elegir un tema lo pone.
 
 ### Vista previa
 
@@ -265,15 +265,44 @@ En cualquier etapa, mientras algo tuyo está en marcha (leer la selección, calc
 
 ![Pie con la vista previa esperando](renders/studio/1080p_gui3_vista_previa_es.png)
 
+### Temas de color
+
+El Studio tiene cuatro temas de color. El de serie es **Pizarra**; los demás se eligen en el propio Studio o en los ajustes del cliente, y cada jugador recuerda el suyo.
+
+| Tema | Cómo es | Éxito |
+| --- | --- | --- |
+| **Pizarra** (de serie) | Grises azulados y acento azul lapislázuli | Verde menta |
+| **Prismarina** | Azul de mar profundo y acento turquesa, como los templos del océano | Verde |
+| **Bosque** | Verdes de musgo y abeto con acento verde salvia | Turquesa |
+| **Clásico** | Claro: la piedra gris y el texto oscuro del inventario, con el morado de los encantamientos como acento | Verde oscuro |
+
+- **Cambiarlo:** en la chuleta (`F1` o `?`), la fila **Tema** de abajo: un clic en un tema lo pone al momento y la chuleta sigue abierta para probar otro. También desde la paleta de órdenes (`Ctrl+K`, «tema») y en `/kegui ajustes` → **Tema del Studio**. Se guarda en `config/komaedit/studio.json` (`"theme": "forest"`); un nombre que no existe vuelve a Pizarra. Cambiar de tema no cuesta nada: no recarga texturas ni rehace miniaturas.
+- **Por qué Pizarra de serie:** el azul no se confunde con ningún estado (rojo de peligro, ámbar de aviso, verde de éxito), queda lejos de los ocres, la madera y la hierba del mundo que hay al lado y es el acento que se espera en un editor. Prismarina y Bosque pegan más con el mundo, pero se acercan al verde del éxito (por eso Bosque lo pasa a turquesa), y Clásico es claro: va a gusto de cada uno, pero deslumbra de noche o en una cueva.
+- **Reglas de todos los temas** (las comprueban las pruebas): todo el texto llega al contraste WCAG AA (4,5:1) con el fondo que tiene debajo, medido en el Studio pintado de verdad con cada tema, a 1080p y a 854×480; las marcas de selección y el borde del campo en el que se escribe, a 3:1. El **rojo** es solo peligro (borrar, cancelar, errores) y nunca acento; el **ámbar**, aviso; el **verde** o el **turquesa**, éxito. Ninguno de los tres se parece al acento.
+- **Los estados se ven por la forma, no solo por el color:** lo elegido lleva relleno tintado y una marca de acento (barra o marco doble); lo que está bajo el ratón, un relleno más claro y, en botones, pastillas y miniaturas, un borde; un botón desactivado va hueco, solo con su contorno, y su clic sigue diciendo qué falta. Un interruptor encendido (también el de cada **variación** de Figuras) tiene el carril del acento y el pulsador a la derecha; apagado, el carril gris y el pulsador a la izquierda, y la tarjeta de una variación encendida va tintada y con su barra de acento.
+- **Miniaturas:** las de especies, tejados, rocas, sellos, planos, variaciones y las huellas de **Pintar terreno** van sobre un fondo propio, más claro y neutro que la tarjeta, para que el abeto o el roble oscuro no se pierdan en un fondo oscuro ni las hojas en uno de su mismo verde. La huella del pincel de pintura es una mancha de hierba que se transparenta donde no pinta, así que se lee igual en los temas oscuros y en el claro.
+- Los temas oscuros llevan el acento claro con el texto oscuro encima (el botón **Construir**, el interruptor encendido): un acento oscuro con texto blanco no se vería como marca de selección sobre las tarjetas.
+- **Límites:** el tema cambia el Studio, su pie, sus avisos, sus tooltips y su leyenda del mundo. Lo que se dibuja en el mundo (fantasma, gizmo con sus ejes rojo, verde y azul, holograma, vista previa, la caja de selección y sus caras al cogerlas con el ratón, guías de simetría), la barra de acción y los mensajes del chat no cambian, a propósito: su fondo es el mundo y un acento turquesa o salvia se perdería en el agua o la hierba. Esos colores del mundo también son fichas, fijas, en `StudioTheme` (`WORLD_…`); el ámbar de las caras de la selección es el de la caja de la vista previa. No hay temas propios desde un archivo: para añadir uno se escribe en `StudioPalette`, con un color para cada ficha de `StudioTheme`.
+
+![El árbol con los cuatro temas, junto al mundo](renders/studio/temas/comparativa_arbol.png)
+
+![Figuras con dos variaciones encendidas y tres apagadas, con los cuatro temas](renders/studio/temas/comparativa_variaciones.png)
+
+![Las fichas de cada tema y los controles en cada estado](renders/studio/temas/fichas.png)
+
+Hay más comparativas de los cuatro temas en `docs/renders/studio/temas/`: [Herramientas](renders/studio/temas/comparativa_herramientas.png), [Sello de relieve](renders/studio/temas/comparativa_sello.png) y [Pintar terreno](renders/studio/temas/comparativa_pintar.png). Las maquetas de Herramientas, Árbol, Tejado, Planos, Variaciones, Sello y Pintar terreno con cada tema, a 1080p con GUI 3 y a 854×480 con GUI 2, están en `docs/renders/studio/temas/<tema>/`.
+
+![La chuleta con el selector de tema](renders/studio/1080p_gui3_chuleta_tema_es.png)
+
 ### Atajos de teclado
 
-`F1` o `?` abren la chuleta dentro del Studio. Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
+`F1` o `?` abren la chuleta dentro del Studio; abajo tiene el selector de [tema de color](#temas-de-color). Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
 
 | Tecla | Acción |
 | --- | --- |
 | `1` – `7` | Ir a una etapa, en el orden de la columna (`1` Herramientas … `7` Instancias) |
 | `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
-| `Ctrl+K` | Paleta de órdenes: etapas, herramientas, presets, figuras y planos |
+| `Ctrl+K` | Paleta de órdenes: etapas, herramientas, presets, figuras, planos y temas |
 | `Ctrl+F` o `/` | Buscar figura (en Herramientas, herramienta; en Planos, plano) |
 | `B` | Botón principal de la etapa: Construir (las obras grandes piden confirmar), Colocar plano… |
 | `Intro` | Confirmar la vista previa que espera |
@@ -285,7 +314,7 @@ En cualquier etapa, mientras algo tuyo está en marcha (leer la selección, calc
 | `Ctrl+S` | Guardar la receta |
 | `Ctrl+Supr` | Limpiar la trayectoria |
 | `RePág` / `AvPág` | Desplazar el panel |
-| `F1` / `?` | Chuleta de atajos |
+| `F1` / `?` | Chuleta de atajos y tema de colores |
 | `K` / `Esc` | Cerrar el Studio (`Esc` cierra antes la paleta, la biblioteca de bloques, la chuleta o el campo abierto) |
 
 La chuleta (`F1`) lista también los gestos del ratón en el mundo: clic, arrastrar un punto o un tramo, arrastrar una selección, tirar de una cara, doble clic, mantener el clic con un pincel, Alt+clic y el clic derecho.
@@ -718,7 +747,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 
 ### Ajustes del cliente
 
-`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera. Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
+`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera (también el tema del Studio). Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
 
 | Ajuste | De serie | Qué hace |
 | --- | --- | --- |
@@ -733,6 +762,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 | Sonidos | Sí, 35 % | Un sonido corto al confirmar, al terminar una edición larga y al fallar, con su volumen. |
 | Colocar con gizmo | Siempre | Cuándo sale el fantasma con gizmo: **Siempre**, **Con -v** o **Nunca** (ver [Colocar con gizmo](#colocar-con-gizmo)). Se guarda aparte, en `config/komaedit-gizmo.json`, y el cliente se lo dice al servidor al entrar y al cambiarlo. |
 | Rueda mueve el fantasma | Sí | Con un fantasma en pantalla, la rueda lo acerca o lo aleja en lugar de cambiar de casilla. |
+| Tema del Studio | Pizarra | Los colores del Studio: Pizarra, Prismarina, Bosque o Clásico (ver [Temas de color](#temas-de-color)). Se guarda con las preferencias del Studio, en `config/komaedit/studio.json`, y también se cambia dentro del Studio. |
 
 ### Teclas
 

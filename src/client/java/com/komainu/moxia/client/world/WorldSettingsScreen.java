@@ -1,8 +1,10 @@
 package com.komainu.moxia.client.world;
 
 import com.komainu.moxia.client.gizmo.ClientGizmoSettings;
+import com.komainu.moxia.client.gui.studio.ClientStudioHost;
 import com.komainu.moxia.feedback.WorldFeedbackSettings;
 import com.komainu.moxia.gizmo.GizmoSettings;
+import com.komainu.moxia.studio.ui.StudioPalette;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -78,10 +80,21 @@ public final class WorldSettingsScreen extends Screen {
                         Text.translatable("gui.komaedit.world.gizmo_wheel.tooltip")))
                 .build(right, top + row * ROW, BUTTON, 20, Text.translatable("gui.komaedit.world.gizmo_wheel"),
                         (button, enabled) -> ClientGizmoSettings.set(ClientGizmoSettings.get().withWheel(enabled))));
+        row++;
+        // Los colores del Studio (archivo aparte, komaedit/studio.json; también se cambian dentro, con ? o Ctrl+K).
+        addDrawableChild(CyclingButtonWidget.<StudioPalette>builder(palette ->
+                        Text.translatable(palette.translationKey()))
+                .values(StudioPalette.values())
+                .initially(StudioPalette.byId(ClientStudioHost.loadPreferences().theme()))
+                .tooltip(palette -> net.minecraft.client.gui.tooltip.Tooltip.of(
+                        Text.translatable(palette.translationKey() + ".help")))
+                .build(left, top + row * ROW, BUTTON, 20, Text.translatable("gui.komaedit.world.theme"),
+                        (button, value) -> ClientStudioHost.setTheme(value)));
         row += 2;
         addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.world.defaults"), button -> {
             ClientWorldSettings.set(ClientWorldSettings.defaults());
             ClientGizmoSettings.set(GizmoSettings.DEFAULT);
+            ClientStudioHost.setTheme(StudioPalette.DEFAULT);
             clearAndInit();
         }).dimensions(left, top + row * ROW, BUTTON, 20).build());
         addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> close())

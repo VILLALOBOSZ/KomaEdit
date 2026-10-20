@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** La paleta de órdenes (Ctrl+K): encuentra etapas, herramientas, presets, figuras y planos, y los abre. */
+/** La paleta de órdenes (Ctrl+K): encuentra etapas, herramientas, presets, figuras, planos y temas, y los abre. */
 class CommandPaletteTest {
     private StudioDriver studio;
 
@@ -38,7 +38,7 @@ class CommandPaletteTest {
         assertTrue(studio.view.typing(), "con la paleta abierta las letras se escriben");
         studio.key(StudioKey.of(StudioKey.Code.ESCAPE));
         assertFalse(studio.view.palette().isOpen());
-        studio.click("Paleta de órdenes (Ctrl+K): etapas, herramientas, presets, figuras y planos");
+        studio.click("Paleta de órdenes (Ctrl+K): etapas, herramientas, presets, figuras, planos y temas");
         assertTrue(studio.view.palette().isOpen(), "también desde su botón");
     }
 
