@@ -2,9 +2,11 @@ package com.komainu.moxia.glass;
 
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.progress.ProgressLine;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import net.minecraft.server.MinecraftServer;
@@ -92,7 +94,7 @@ public final class GlassGradientService {
                     + ")" + (request.findBackground() ? " sobre " + first.background() : "")
                     : String.format(Locale.ROOT, " · error medio %.3f, máximo %.3f (OKLab)", error / stacks.size(),
                     worst);
-            QuietMode.info(player, prefix().append(Text.literal("Vidriera: " + queued + " bloques en cola" + detail
+            QuietMode.status(player, prefix().append(Text.literal("Vidriera: " + ProgressLine.group(queued) + " bloques en cola" + detail
                     + " · //undo para deshacer").formatted(Formatting.GREEN)));
         } catch (IllegalArgumentException | IllegalStateException exception) {
             player.sendMessage(prefix().append(Text.literal("Vidriera: " + exception.getMessage())
@@ -140,6 +142,6 @@ public final class GlassGradientService {
     }
 
     private static net.minecraft.text.MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.DARK_AQUA);
+        return Feedback.prefix();
     }
 }

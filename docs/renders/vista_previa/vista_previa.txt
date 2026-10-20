@@ -1,0 +1,4 @@
+Escena: 253 cambios (224 se ponen, 16 se sustituyen, 13 se quitan)
+Antes: 265 block displays (con la caja) enviados uno a uno, cada uno con su brillo
+Después: 253 entradas de superficie en 1 parte(s) (1054 bytes), 176 aristas de contorno
+Texturas de Minecraft: sí

@@ -2,6 +2,7 @@ package com.komainu.moxia.sculpt;
 
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.noise.NoiseEngine;
+import com.komainu.moxia.progress.ProgressLine;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -374,7 +375,7 @@ public final class SculptPlanner {
 
     private static void enforceLimit(int size) {
         if (size > MAX_CHANGES) {
-            throw new IllegalArgumentException("La brocha supera el límite seguro de " + MAX_CHANGES + " bloques");
+            throw new IllegalArgumentException("La brocha supera el límite seguro de " + ProgressLine.group(MAX_CHANGES) + " bloques");
         }
     }
 

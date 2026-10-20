@@ -11,17 +11,25 @@ public final class Column {
     public static final int ROW = 20;
     public static final int GAP = 4;
     public static final int SECTION_GAP = 10;
+    /** En pantallas pequeñas las secciones se separan menos. */
+    public static final int COMPACT_SECTION_GAP = 6;
 
     private final int x;
     private final int width;
     private final int top;
+    private final int sectionGap;
     private int y;
 
     public Column(int x, int y, int width) {
+        this(x, y, width, SECTION_GAP);
+    }
+
+    public Column(int x, int y, int width, int sectionGap) {
         this.x = x;
         this.width = width;
         this.top = y;
         this.y = y;
+        this.sectionGap = sectionGap;
     }
 
     public int x() {
@@ -76,7 +84,7 @@ public final class Column {
     /** Separación antes de una sección nueva; no se añade al principio. */
     public void section() {
         if (y > top) {
-            y += SECTION_GAP - GAP;
+            y += sectionGap - GAP;
         }
     }
 

@@ -21,6 +21,7 @@ public final class StudioShortcuts {
     public static final List<Shortcut> ALL = List.of(
             new Shortcut("stage"),
             new Shortcut("next_stage"),
+            new Shortcut("palette"),
             new Shortcut("search"),
             new Shortcut("build"),
             new Shortcut("confirm_preview"),

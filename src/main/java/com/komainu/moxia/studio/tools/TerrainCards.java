@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.tools;
 
+import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.terrain.RiverPlanner;
 import com.komainu.moxia.terrain.StampLibrary;
@@ -48,17 +49,22 @@ public final class TerrainCards {
                             new ToolParam.Choice("stamp", List.copyOf(StampLibrary.descriptions().keySet()),
                                     "montana", ToolParam.Choice.Style.GALLERY, "", null),
                             new ToolParam.Text("custom", "", 64, false, null),
-                            number("radius", 1, 32, 1, 4, 12),
-                            number("height", 0, 96, 1, 5, 12),
+                            number("radius", 1, 32, 1, 4, 12).unit(ValueUnit.BLOCKS),
+                            number("height", 0, 96, 1, 5, 12).unit(ValueUnit.BLOCKS),
                             choice("mode", ToolParam.Choice.Style.BUTTONS, "elevar", "bajar", "aplanar"),
                             palette(),
-                            number("intensity", 1, 100, 5, 25, 100),
+                            number("intensity", 1, 100, 5, 25, 100).unit(ValueUnit.PERCENT_POINTS),
                             choice("rotation", ToolParam.Choice.Style.CYCLE, "mirada", "azar", "0", "45", "90", "135",
                                     "180", "225", "270", "315"),
-                            auto("neutral", 0, 100, 5, 25, 2, 0),
+                            auto("neutral", 0, 100, 5, 25, 2, 0).unit(ValueUnit.PERCENT),
                             toggle("brush_preview", false),
                             mask()
                     ));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("stamp", "radius", "height", "mode");
         }
 
         /** El sello que se usa: el propio escrito o el elegido en la galería. */
@@ -130,15 +136,20 @@ public final class TerrainCards {
                     List.of("rampa", "ramp", "cuesta", "pendiente", "terraplen", "slope", "terreno", "terrain"),
                     List.of(
                             choice("profile", ToolParam.Choice.Style.BUTTONS, "plano", "cono"),
-                            number("width", 1, 64, 1, 4, 5),
+                            number("width", 1, 64, 1, 4, 5).unit(ValueUnit.BLOCKS),
                             when(values -> values.choice("profile").equals("plano"),
-                                    number("transition", 0, 64, 1, 4, 6)),
+                                    number("transition", 0, 64, 1, 4, 6).unit(ValueUnit.BLOCKS)),
                             palette(),
                             when(values -> values.choice("profile").equals("cono"),
-                                    decimal("talus", 1, 80, 1, 5, 10, 1)),
+                                    decimal("talus", 1, 80, 1, 5, 10, 1).unit(ValueUnit.RATIO)),
                             toggle("smooth", false),
                             mask()
                     ));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("profile", "width", "palette");
         }
 
         @Override
@@ -185,22 +196,27 @@ public final class TerrainCards {
                             "barranco", "gully", "cauce", "foso", "agua", "terreno", "terrain"),
                     List.of(
                             choice("kind", ToolParam.Choice.Style.BUTTONS, "rio", "arroyo", "canon", "barranco"),
-                            auto("width", 1, 64, 1, 2, 0, 5),
-                            auto("depth", 0, 96, 1, 2, 0, 3),
+                            auto("width", 1, 64, 1, 2, 0, 5).unit(ValueUnit.BLOCKS),
+                            auto("depth", 0, 96, 1, 2, 0, 3).unit(ValueUnit.BLOCKS),
                             palette(),
-                            auto("bank", 5, 320, 5, 20, 1, 40),
-                            auto("walls", 1, 80, 1, 5, 1, 10),
-                            auto("transition", 0, 64, 1, 4, 0, 6),
+                            auto("bank", 5, 320, 5, 20, 1, 40).unit(ValueUnit.BLOCKS),
+                            auto("walls", 1, 80, 1, 5, 1, 10).unit(ValueUnit.RATIO),
+                            auto("transition", 0, 64, 1, 4, 0, 6).unit(ValueUnit.BLOCKS),
                             choice("fluid", ToolParam.Choice.Style.BUTTONS, "auto", "agua", "lava", "seco"),
                             when(values -> !values.choice("fluid").equals("seco")
                                             && !(values.choice("fluid").equals("auto")
                                             && values.choice("kind").equals("barranco")),
-                                    auto("level", 0, 96, 1, 2, 0, 2)),
-                            auto("smoothing", 0, 256, 1, 8, 0, 6),
+                                    auto("level", 0, 96, 1, 2, 0, 2).unit(ValueUnit.BLOCKS)),
+                            auto("smoothing", 0, 256, 1, 8, 0, 6).unit(ValueUnit.BLOCKS),
                             toggle("follow", false),
                             toggle("keep_order", false),
                             mask()
                     ));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("kind", "width", "depth", "fluid");
         }
 
         static RiverPlanner.Settings preset(ToolValues values) {
@@ -283,14 +299,19 @@ public final class TerrainCards {
                             "terreno", "terrain"),
                     List.of(
                             choice("kind", ToolParam.Choice.Style.BUTTONS, "hidraulica", "termica", "completa"),
-                            auto("iterations", 1, 2_000, 1, 10, 0, 3),
-                            decimal("strength", 1, 80, 1, 5, 10, 1),
+                            auto("iterations", 1, 2_000, 1, 10, 0, 3).unit(ValueUnit.TIMES),
+                            decimal("strength", 1, 80, 1, 5, 10, 1).unit(ValueUnit.MULTIPLIER),
                             when(values -> !values.choice("kind").equals("hidraulica"), auto("angle", 5, 85, 1, 5, 0,
-                                    40)),
+                                    40).unit(ValueUnit.DEGREES)),
                             seed(),
                             palette(),
                             mask()
                     ));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("kind", "iterations", "strength");
         }
 
         @Override

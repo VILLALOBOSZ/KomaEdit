@@ -1,6 +1,7 @@
 package com.komainu.moxia.command;
 
 import com.komainu.moxia.brush.ez.BrushOptions;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.shape.SampledPath;
@@ -395,13 +396,11 @@ public final class TerrainCommands {
     }
 
     private static void feedback(CommandContext<ServerCommandSource> context, Text text) {
-        context.getSource().sendFeedback(() -> Text.literal("KomaEdit · ").formatted(Formatting.DARK_AQUA)
+        context.getSource().sendFeedback(() -> Feedback.prefix()
                 .append(text), false);
     }
 
     private static int fail(CommandContext<ServerCommandSource> context, String message) {
-        context.getSource().sendError(Text.literal("KomaEdit · ").formatted(Formatting.DARK_AQUA).append(Text.literal(
-                message == null || message.isBlank() ? "Operación inválida" : message).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(context.getSource(), message);
     }
 }

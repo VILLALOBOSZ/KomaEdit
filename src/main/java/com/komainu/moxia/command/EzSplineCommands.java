@@ -11,6 +11,7 @@ import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.recipe.StructureBendService;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
@@ -96,7 +97,7 @@ final class EzSplineCommands {
         UUID playerId = player.getUuid();
         var server = player.getServer();
         String description = request.describe();
-        EzCommandSupport.info(player, description + ": calculando fuera del hilo del servidor…");
+        EzCommandSupport.status(player, description + ": calculando fuera del hilo del servidor…");
         int entries = palette.size();
         AsyncEngine.submit(
                 playerId,
@@ -131,7 +132,7 @@ final class EzSplineCommands {
                         }, description);
                         int pieces = planned.plan().pieceCount();
                         if (!PlanPreviews.holds(playerId, planned.plan())) {
-                            EzCommandSupport.queued(current, description + " en cola: " + queued + " bloques"
+                            EzCommandSupport.queued(current, description + " en cola: " + ProgressLine.group(queued) + " bloques"
                                     + (pieces > 0 ? " · " + pieces + " losas/escaleras" : "")
                                     + " · //undo para deshacer");
                         }
@@ -174,7 +175,7 @@ final class EzSplineCommands {
         UUID playerId = player.getUuid();
         var server = player.getServer();
         String description = "Spline " + source.describe();
-        EzCommandSupport.info(player, description + ": doblando " + captured.blocks() + " bloques a lo largo del "
+        EzCommandSupport.status(player, description + ": doblando " + ProgressLine.group(captured.blocks()) + " bloques a lo largo del "
                 + "recorrido…");
         AsyncEngine.submit(
                 playerId,
@@ -187,7 +188,7 @@ final class EzSplineCommands {
                     try {
                         int queued = BatchEditService.submit(current, plan, "air", description);
                         if (!PlanPreviews.holds(playerId, plan)) {
-                            EzCommandSupport.queued(current, description + " en cola: " + queued
+                            EzCommandSupport.queued(current, description + " en cola: " + ProgressLine.group(queued)
                                     + " bloques · //undo para deshacer");
                         }
                     } catch (IllegalArgumentException | IllegalStateException exception) {

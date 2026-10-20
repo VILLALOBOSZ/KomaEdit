@@ -3,6 +3,7 @@ package com.komainu.moxia.command;
 import com.komainu.moxia.analysis.AnalyzeService;
 import com.komainu.moxia.biome.BiomeService;
 import com.komainu.moxia.deform.DeformArguments;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperationService;
@@ -293,12 +294,10 @@ public final class BuilderCommands {
     }
 
     private static net.minecraft.text.MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 
     private static int fail(ServerCommandSource source, String message) {
-        source.sendError(prefixText(message == null || message.isBlank() ? "Operación inválida" : message,
-                Formatting.RED));
-        return 0;
+        return EzCommandSupport.fail(source, message);
     }
 }

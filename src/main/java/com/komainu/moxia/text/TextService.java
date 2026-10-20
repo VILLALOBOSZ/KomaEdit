@@ -9,6 +9,7 @@ import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.SnapshotJobs;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -130,7 +131,7 @@ public final class TextService {
         }
         String pieces = result.slabs() + result.stairs() == 0 ? ""
                 : " (" + result.slabs() + " losas, " + result.stairs() + " escaleras)";
-        QuietMode.info(player, SnapshotJobs.message(description + ": " + queued + " bloques en cola" + pieces
+        QuietMode.status(player, SnapshotJobs.message(description + ": " + ProgressLine.group(queued) + " bloques en cola" + pieces
                 + " · //undo para deshacer", Formatting.GREEN));
     }
 

@@ -10,6 +10,7 @@ import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.permission.PermissionNodes;
 import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.progress.ProgressLine;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -122,7 +123,7 @@ public final class AdminCommands {
                     int palettes = ServerPalettes.load(KomaEditConfig.palettesFile());
                     KomaEditConfig.Settings settings = KomaEditConfig.settings();
                     context.getSource().sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal(
-                            "Configuración recargada: " + settings.maxBlocksPerOperation() + " bloques por operación, "
+                            "Configuración recargada: " + ProgressLine.group(settings.maxBlocksPerOperation()) + " bloques por operación, "
                                     + settings.maxConcurrentJobs() + " trabajos a la vez y " + palettes
                                     + " paletas del servidor").formatted(Formatting.GREEN)), true);
                     return 1;

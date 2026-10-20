@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.gradient.BlockSpec;
 import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.gradient.PaletteCodec;
@@ -9,6 +10,7 @@ import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.gradient.ServerPalettes;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.NamedDefinitions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.PaletteSwapOperation;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -178,7 +180,7 @@ public final class PaletteCommands {
             boolean replaced = SavedPalettes.store(player.getUuid()).put(name, PaletteSpec.join(entries),
                     tokens.flag("f"));
             EzCommandSupport.ok(player, (replaced ? "Paleta sustituida: #" : "Paleta guardada: #") + name + " ("
-                    + entries.size() + " bloques)");
+                    + ProgressLine.group(entries.size()) + " bloques)");
             return 1;
         });
     }
@@ -214,7 +216,7 @@ public final class PaletteCommands {
             boolean replaced = SavedPalettes.store(player.getUuid()).put(name, PaletteSpec.join(entries),
                     tokens.flag("f"));
             EzCommandSupport.send(player, Text.literal((replaced ? "Paleta sustituida: #" : "Paleta guardada: #")
-                            + name + " (" + entries.size() + " bloques) ").formatted(Formatting.GREEN)
+                            + name + " (" + ProgressLine.group(entries.size()) + " bloques) ").formatted(Formatting.GREEN)
                     .append(EzCommandSupport.copyable("[copiar]", String.join(",", entries), Formatting.AQUA)));
             return 1;
         });
@@ -272,7 +274,7 @@ public final class PaletteCommands {
             count = Math.min(count, length);
         }
         if (count > MAX_FETCH) {
-            throw new IllegalArgumentException("Una paleta admite como mucho " + MAX_FETCH + " bloques");
+            throw new IllegalArgumentException("Una paleta admite como mucho " + ProgressLine.group(MAX_FETCH) + " bloques");
         }
         WorldEditService.PlayerContext context = WorldEditService.context(player);
         List<String> entries = new ArrayList<>();
@@ -338,9 +340,10 @@ public final class PaletteCommands {
                 }
             } finally {
                 editSession.close();
+                EditHistory.label(editSession, "Paleta");
                 worldEdit.session().remember(editSession);
             }
-            EzCommandSupport.ok(player, "Paleta colocada: " + patterns.size() + " bloques · //undo para deshacer");
+            EzCommandSupport.ok(player, "Paleta colocada: " + ProgressLine.group(patterns.size()) + " bloques · //undo para deshacer");
             return 1;
         });
     }
@@ -378,7 +381,7 @@ public final class PaletteCommands {
             List<String> entries = SavedPalettes.parse(player.getUuid(),
                     StringArgumentType.getString(context, "palette"));
             String code = PaletteCodec.encode(entries);
-            EzCommandSupport.send(player, Text.literal("Código (" + entries.size() + " bloques): ")
+            EzCommandSupport.send(player, Text.literal("Código (" + ProgressLine.group(entries.size()) + " bloques): ")
                     .formatted(Formatting.YELLOW).append(EzCommandSupport.copyable(code, code, Formatting.AQUA)));
             return 1;
         });

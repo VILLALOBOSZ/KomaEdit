@@ -1,5 +1,6 @@
 package com.komainu.moxia.region;
 
+import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.IncompleteRegionException;
@@ -57,6 +58,7 @@ public final class SignWax {
                     exception);
         } finally {
             editSession.close();
+            EditHistory.label(editSession, "Encerar carteles");
             context.session().remember(editSession);
         }
         return changed;

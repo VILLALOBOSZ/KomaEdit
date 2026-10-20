@@ -11,6 +11,8 @@ import com.komainu.moxia.client.preview.EditorOverlayRenderer;
 import com.komainu.moxia.client.preview.ProceduralPreviewRenderer;
 import com.komainu.moxia.client.recipe.ClientRecipeCatalog;
 import com.komainu.moxia.client.recipe.ClientInstanceCatalog;
+import com.komainu.moxia.client.world.WorldFeedbackClient;
+import com.komainu.moxia.client.world.WorldSettingsScreen;
 import com.komainu.moxia.path.PathHologramPayload;
 import com.komainu.moxia.recipe.RecipeCatalogPayload;
 import com.komainu.moxia.recipe.InstanceCatalogPayload;
@@ -94,6 +96,7 @@ public final class KomaEditClient implements ClientModInitializer {
         ));
         CapabilityControls.register();
         com.komainu.moxia.client.gui.studio.ToolClientState.register();
+        WorldFeedbackClient.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openEditor.wasPressed()) {
                 openEditor(client);
@@ -116,8 +119,16 @@ public final class KomaEditClient implements ClientModInitializer {
                 literal("kegui").executes(context -> {
                     openEditor(MinecraftClient.getInstance());
                     return 1;
-                })
+                }).then(literal("ajustes").executes(context -> openWorldSettings()))
+                        .then(literal("settings").executes(context -> openWorldSettings()))
         ));
+    }
+
+    /** Los ajustes de lo que se ve en el mundo; después del comando, para que el chat no la cierre. */
+    private static int openWorldSettings() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        client.send(() -> client.setScreen(new WorldSettingsScreen(null)));
+        return 1;
     }
 
     private static void openEditor(MinecraftClient client) {

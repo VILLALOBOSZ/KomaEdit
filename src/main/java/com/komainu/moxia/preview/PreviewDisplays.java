@@ -26,14 +26,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Block displays de la vista previa, enviados por paquetes solo al jugador que edita. No existen en el mundo del
+ * Block displays de la vista previa para los clientes sin KomaEdit (los que lo tienen la dibujan ellos con
+ * {@link PreviewPlanPayload}), enviados por paquetes solo al jugador que edita. No existen en el mundo del
  * servidor: nadie más los ve, no se guardan con el chunk y el cliente los olvida al salir o al cambiar de dimensión.
  * Llevan además la etiqueta {@link #TAG}, y el servidor borra cualquier entidad con ella que llegue a cargarse
  * (ver {@code KomaEditMod}), por si alguna acabara en el mundo.
  *
  * <p>Los block displays de vanilla no admiten transparencia: lo nuevo se ve con su bloque y contorno verde (un poco
  * más pequeño si va en un hueco, para distinguirlo de lo real, y envolviendo al bloque viejo si lo sustituye); lo
- * que se quita, cubierto de cristal rojo con contorno rojo.
+ * que se quita, cubierto de cristal rojo con contorno rojo. Lo que envuelve a un bloque real sobresale un 1 % por
+ * cara: con menos, las caras coinciden con las del mundo y parpadean (z-fighting) a pocos bloques.
  */
 public final class PreviewDisplays {
     public static final String TAG = "komaedit_preview";
@@ -41,10 +43,11 @@ public final class PreviewDisplays {
     public static final int REMOVE_COLOR = 0xFF4040;
     public static final int BOX_COLOR = 0xFFD84A;
     private static final float ADD_SCALE = 0.82f;
-    private static final float REPLACE_SCALE = 1.004f;
-    private static final float REMOVE_SCALE = 1.012f;
+    private static final float REPLACE_SCALE = 1.02f;
+    private static final float REMOVE_SCALE = 1.03f;
     private static final float EDGE = 0.07f;
-    private static final float VIEW_RANGE = 4.0f;
+    /** Unos 160 bloques con la distancia de entidades de serie: más lejos solo es ruido. */
+    private static final float VIEW_RANGE = 2.5f;
 
     private PreviewDisplays() {
     }

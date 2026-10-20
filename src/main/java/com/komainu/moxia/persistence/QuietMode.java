@@ -55,6 +55,11 @@ public final class QuietMode {
         CACHE.put(playerId, quiet);
     }
 
+    /** Solo en memoria, sin tocar el disco (pruebas, o mientras el proyecto no está abierto). */
+    public static void remember(UUID playerId, boolean quiet) {
+        CACHE.put(playerId, quiet);
+    }
+
     /** Olvida lo recordado en memoria (al desconectarse); en disco sigue. */
     public static void forget(UUID playerId) {
         CACHE.remove(playerId);
@@ -64,10 +69,23 @@ public final class QuietMode {
         CACHE.clear();
     }
 
-    /** Envía un mensaje informativo, salvo que el jugador los haya silenciado. */
+    /**
+     * Envía un mensaje informativo ya montado, salvo que el jugador los haya silenciado. Para uno nuevo, mejor
+     * {@code Feedback.info} (o {@code Feedback.status} si es efímero), que ponen el prefijo y el color.
+     */
     public static void info(ServerPlayerEntity player, Text text) {
         if (!isQuiet(player.getUuid())) {
             player.sendMessage(text, false);
+        }
+    }
+
+    /**
+     * Lo mismo, efímero, en la action bar: «leyendo…», «calculando…», «N bloques en cola». El chat queda para lo que
+     * se quiere releer (el final de cada edición, los errores, una semilla).
+     */
+    public static void status(ServerPlayerEntity player, Text text) {
+        if (!isQuiet(player.getUuid())) {
+            player.sendMessage(text, true);
         }
     }
 

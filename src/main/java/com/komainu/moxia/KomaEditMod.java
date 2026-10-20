@@ -10,6 +10,7 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.editor.EditorActionPayload;
 import com.komainu.moxia.editor.EditorActionService;
 import com.komainu.moxia.editor.FastPaintService;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.gradient.ServerPalettes;
 import com.komainu.moxia.ivy.IvyService;
 import com.komainu.moxia.path.PathManager;
@@ -65,6 +66,7 @@ public final class KomaEditMod implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(EditorActionPayload.ID, EditorActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RecipeActionPayload.ID, RecipeActionPayload.CODEC);
         com.komainu.moxia.studio.net.StudioToolsNetwork.register();
+        com.komainu.moxia.feedback.WorldFeedback.register();
         ServerPlayNetworking.registerGlobalReceiver(EditorActionPayload.ID, (payload, context) ->
                 context.server().execute(() -> EditorActionService.handle(context.player(), payload))
         );
@@ -85,14 +87,12 @@ public final class KomaEditMod implements ModInitializer {
                     var point = PathManager.add(player.getUuid(), placement);
                     PathHologramSync.sync(serverPlayer);
                     int count = PathManager.saved(player.getUuid()).points().size();
-                    serverPlayer.sendMessage(net.minecraft.text.Text.literal(
-                            "KomaEdit · Punto " + count + ": " + point.x() + ", " + point.y() + ", " + point.z()
-                    ), true);
+                    serverPlayer.sendMessage(Feedback.line(Feedback.Level.INFO,
+                            "Punto " + count + ": " + point.x() + ", " + point.y() + ", " + point.z()), true);
                     return ActionResult.SUCCESS;
                 } catch (IllegalArgumentException exception) {
-                    serverPlayer.sendMessage(net.minecraft.text.Text.literal(
-                            "KomaEdit · " + exception.getMessage()
-                    ), true);
+                    serverPlayer.sendMessage(Feedback.line(Feedback.Level.ERROR,
+                            String.valueOf(exception.getMessage())), true);
                     return ActionResult.FAIL;
                 }
             }
@@ -111,14 +111,12 @@ public final class KomaEditMod implements ModInitializer {
                         throw new IllegalStateException(exception.getMessage(), exception);
                     }
                 });
-                serverPlayer.sendMessage(net.minecraft.text.Text.literal(
-                        "KomaEdit · Figura estampada: " + changed + " bloques · //undo"
-                ), true);
+                serverPlayer.sendMessage(Feedback.line(Feedback.Level.OK,
+                        Feedback.format("Figura estampada: %s bloques · //undo", changed)), true);
                 return ActionResult.SUCCESS;
             } catch (Exception exception) {
-                serverPlayer.sendMessage(net.minecraft.text.Text.literal(
-                        "KomaEdit · " + (exception.getMessage() == null ? "No se pudo estampar" : exception.getMessage())
-                ), true);
+                serverPlayer.sendMessage(Feedback.line(Feedback.Level.ERROR,
+                        exception.getMessage() == null ? "No se pudo estampar" : exception.getMessage()), true);
                 return ActionResult.FAIL;
             }
         });
@@ -139,27 +137,24 @@ public final class KomaEditMod implements ModInitializer {
             } catch (RuntimeException exception) {
                 ProjectStorage.unbind(handler.player.getUuid());
                 LOGGER.error("Could not open KomaEdit project for {}", handler.player.getUuid(), exception);
-                handler.player.sendMessage(net.minecraft.text.Text.literal(
-                        "KomaEdit · El proyecto no pudo abrirse; KomaEdit queda desactivado en este mundo. "
-                                + "Revisa latest.log"
-                ), false);
+                handler.player.sendMessage(Feedback.line(Feedback.Level.ERROR,
+                        "El proyecto no pudo abrirse; KomaEdit queda desactivado en este mundo · revisa latest.log"),
+                        false);
                 return;
             }
             int interrupted = OperationLedger.markInterrupted(handler.player.getUuid());
             if (interrupted > 0) {
-                handler.player.sendMessage(net.minecraft.text.Text.literal(
-                        "KomaEdit · " + interrupted
-                                + " trabajo(s) anterior(es) quedaron interrumpidos; revisa /komaedit project status"
-                ), false);
+                handler.player.sendMessage(Feedback.line(Feedback.Level.WARN, Feedback.format(
+                        "%s trabajo(s) anterior(es) quedaron interrumpidos · revisa /komaedit project status",
+                        interrupted)), false);
             }
             try {
                 // El proyecto ya está abierto: un catálogo que no se pueda enviar no debe desactivar KomaEdit.
                 RecipeActionService.sync(handler.player);
             } catch (RuntimeException exception) {
                 LOGGER.warn("Could not sync KomaEdit catalogs for {}", handler.player.getUuid(), exception);
-                handler.player.sendMessage(net.minecraft.text.Text.literal(
-                        "KomaEdit · No se pudieron cargar las recetas o instancias guardadas; revisa latest.log"
-                ), false);
+                handler.player.sendMessage(Feedback.line(Feedback.Level.WARN,
+                        "No se pudieron cargar las recetas o instancias guardadas · revisa latest.log"), false);
             }
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {

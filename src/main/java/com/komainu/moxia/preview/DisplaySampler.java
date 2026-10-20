@@ -78,7 +78,11 @@ public final class DisplaySampler {
                 || !all.contains(PackedBlockPlan.pack(x, y, z + 1));
     }
 
-    private static int[] sample(long[] positions, IntArrayList candidates, int budget) {
+    /**
+     * Una muestra repartida por el espacio de {@code candidates} (índices de {@code positions}): un cambio por celda
+     * de una rejilla que se hace más gruesa hasta caber y el resto a saltos regulares. Devuelve índices crecientes.
+     */
+    static int[] sample(long[] positions, IntArrayList candidates, int budget) {
         if (budget == 0) {
             return new int[0];
         }

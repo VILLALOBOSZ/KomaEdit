@@ -1,5 +1,6 @@
 package com.komainu.moxia.generator;
 
+import com.komainu.moxia.progress.ProgressLine;
 import java.util.BitSet;
 
 /**
@@ -38,7 +39,7 @@ public final class ShapeVoxelizer {
         int sizeZ = box[5] - box[2] + 1;
         long cells = (long) sizeX * sizeY * sizeZ;
         if (cells > MAX_CELLS) {
-            throw new IllegalArgumentException("La forma es demasiado grande (" + cells
+            throw new IllegalArgumentException("La forma es demasiado grande (" + ProgressLine.group(cells)
                     + " bloques en su caja; máximo " + MAX_CELLS + ")");
         }
         BitSet inside = new BitSet((int) cells);

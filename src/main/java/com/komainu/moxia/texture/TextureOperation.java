@@ -1,5 +1,6 @@
 package com.komainu.moxia.texture;
 
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionEdits;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperation;
@@ -105,7 +106,7 @@ public final class TextureOperation implements RegionOperation {
                     + "amplíala para que incluya el aire de alrededor");
         }
         if (context.surfaceCount() * 20L < context.size() && textured < context.size()) {
-            notice.accept("solo " + context.surfaceCount() + " de " + context.size()
+            notice.accept("solo " + context.surfaceCount() + " de " + ProgressLine.group(context.size())
                     + " bloques dan al aire; si falta superficie, amplía la selección");
         }
     }

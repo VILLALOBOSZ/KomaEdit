@@ -1,6 +1,7 @@
 package com.komainu.moxia.edit;
 
 import com.komainu.moxia.config.KomaEditConfig;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.preview.PlanPreviews;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
@@ -61,16 +62,15 @@ public final class PendingBuilds {
             return true;
         }
         PENDING.put(player.getUuid(), new Pending(description, estimate, submit, System.nanoTime()));
-        player.sendMessage(Text.literal("KomaEdit · ").formatted(Formatting.GOLD)
-                .append(Text.literal(description + " es grande: " + estimate.summary()).formatted(Formatting.YELLOW)), false);
-        player.sendMessage(Text.literal("  ")
+        Text hover = Text.literal("Caduca en 2 min · se pregunta por encima de " + BuildEstimate.group(threshold)
+                + " bloques (confirmBuildAboveBlocks)");
+        Feedback.warn(player, Text.empty()
+                .append(Text.literal(description + " es grande: " + estimate.summary()).styled(style ->
+                        style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))))
+                .append(" ")
                 .append(button("[Construir]", "/komaedit confirm", Formatting.GREEN, "Manda la construcción a la cola"))
-                .append(Text.literal("  "))
-                .append(button("[Descartar]", "/komaedit confirm cancel", Formatting.RED, "No construye nada"))
-                .append(Text.literal("  caduca en 2 min · avisa por encima de " + BuildEstimate.group(threshold)
-                        + " bloques").formatted(Formatting.GRAY)), false);
-        player.sendMessage(Text.literal("KomaEdit · Build grande en espera: /komaedit confirm")
-                .formatted(Formatting.YELLOW), true);
+                .append(" ")
+                .append(button("[Descartar]", "/komaedit confirm cancel", Formatting.RED, "No construye nada")));
         return false;
     }
 

@@ -13,7 +13,7 @@ import java.util.Set;
  * tests (cubos con la misma textura, troncos, arenisca… son cubos; el cristal, el hielo y las hojas no son opacos;
  * las piezas y las plantas no son cubos).
  */
-final class TestColors {
+public final class TestColors {
     /** Cubos con caras distintas (no llevan la «u» en la tabla). */
     private static final List<String> CUBE_SUFFIXES = List.of("_log", "_wood", "_stem", "_hyphae", "sandstone",
             "_pillar", "_ore", "bookshelf", "_block", "basalt", "deepslate", "grass_block", "podzol", "mycelium",
@@ -32,7 +32,7 @@ final class TestColors {
     private TestColors() {
     }
 
-    static BlockColorCatalog vanilla() {
+    public static BlockColorCatalog vanilla() {
         List<BlockColor> blocks = new ArrayList<>();
         for (Map.Entry<String, BlockColorCatalog.Measured> entry : BlockColorCatalog.measured().entrySet()) {
             String id = entry.getKey();

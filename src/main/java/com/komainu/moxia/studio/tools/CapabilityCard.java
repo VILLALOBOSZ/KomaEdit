@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.tools;
 
+import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.capability.BuildCapability;
 
 import java.util.Arrays;
@@ -19,10 +20,10 @@ public final class CapabilityCard extends ToolCard {
                         "extruir", "extrude", "alcance", "reach", "angel", "aire", "rapida", "fastplace",
                         "sin actualizaciones", "noupdates", "vuelo", "fly"),
                 List.of(
-                        number("angel", 1, 64, 1, 4, 4),
-                        number("reach", 5, 64, 1, 4, 24),
-                        number("extrude", 1, 65_536, 16, 256, 256),
-                        decimal("flyspeed", 5, 200, 5, 10, 10, 1)
+                        number("angel", 1, 64, 1, 4, 4).unit(ValueUnit.BLOCKS),
+                        number("reach", 5, 64, 1, 4, 24).unit(ValueUnit.BLOCKS),
+                        number("extrude", 1, 65_536, 16, 256, 256).unit(ValueUnit.BLOCKS),
+                        decimal("flyspeed", 5, 200, 5, 10, 10, 1).unit(ValueUnit.MULTIPLIER)
                 ));
     }
 

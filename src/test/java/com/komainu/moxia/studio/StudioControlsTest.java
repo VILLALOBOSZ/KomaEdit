@@ -39,12 +39,23 @@ class StudioControlsTest {
     }
 
     @Test
-    void dragsInWholeSteps() {
-        assertEquals(10, RANGE.dragged(10, 5, false));
-        assertEquals(12, RANGE.dragged(10, 2 * NumericRange.PIXELS_PER_STEP + 1, false));
-        assertEquals(5, RANGE.dragged(10, -NumericRange.PIXELS_PER_STEP, true));
+    void dragsInWholeStepsAndShiftGoesFine() {
+        NumericRange short1 = NumericRange.of(1, 32, 1);
+        assertEquals(10, short1.dragged(10, 5, false));
+        assertEquals(12, short1.dragged(10, 2 * NumericRange.PIXELS_PER_STEP + 1, false));
+        assertEquals(9, short1.dragged(10, -NumericRange.FINE_PIXELS_PER_STEP, true));
+        assertEquals(10, short1.dragged(10, NumericRange.PIXELS_PER_STEP, true), "fino: hace falta más recorrido");
+        assertTrue(RANGE.dragged(10, NumericRange.DRAG_SPAN, false) >= 127, "un rango largo cabe en un arrastre");
         assertEquals(0.0, RANGE.fraction(1));
         assertEquals(1.0, RANGE.fraction(500));
+    }
+
+    @Test
+    void longRangesCoverTheirWholeSpanInOneDrag() {
+        NumericRange extrude = new NumericRange(1, 65_536, 16, 256);
+        assertTrue(extrude.dragged(1, NumericRange.DRAG_SPAN, false) >= 65_500, "un arrastre largo llega al final");
+        assertTrue(extrude.dragged(1, NumericRange.DRAG_SPAN / 2.0, false) > 30_000);
+        assertEquals(1 + 16 * 2, extrude.dragged(1, 2 * NumericRange.FINE_PIXELS_PER_STEP, true));
     }
 
     @Test

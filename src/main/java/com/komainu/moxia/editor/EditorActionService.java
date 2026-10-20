@@ -1,11 +1,13 @@
 package com.komainu.moxia.editor;
 
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathEditing;
 import com.komainu.moxia.path.PathHistory;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.function.pattern.Pattern;
@@ -141,7 +143,7 @@ public final class EditorActionService {
         }
 
         WorldEditService.setCuboid(player, minimum, maximum);
-        message(player, "Área mágica: " + visited.size() + " bloques conectados");
+        message(player, "Área mágica: " + ProgressLine.group(visited.size()) + " bloques conectados");
     }
 
     private static void requireAction(ServerPlayerEntity player, int action) {
@@ -199,7 +201,7 @@ public final class EditorActionService {
 
     private static void copySelection(ServerPlayerEntity player) throws Exception {
         long copied = WorldEditService.copySelection(player);
-        message(player, "Copiado: " + copied + " bloques · Ctrl+V para posicionar");
+        message(player, "Copiado: " + ProgressLine.group(copied) + " bloques · Ctrl+V para posicionar");
     }
 
     private static void cutSelection(ServerPlayerEntity player) throws Exception {
@@ -218,7 +220,7 @@ public final class EditorActionService {
     }
 
     private static void message(ServerPlayerEntity player, String message) {
-        player.sendMessage(Text.literal("KomaEdit · " + message), true);
+        player.sendMessage(Feedback.line(Feedback.Level.INFO, message), true);
     }
 
     private static String readable(Exception exception) {

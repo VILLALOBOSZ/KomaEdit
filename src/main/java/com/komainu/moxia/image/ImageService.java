@@ -4,11 +4,13 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.shape.smooth.SmoothMaterials;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
@@ -87,8 +89,9 @@ public final class ImageService {
         MinecraftServer server = player.getServer();
         UUID playerId = player.getUuid();
         String name = request.displayName();
-        info(player, "Imagen «" + name + "»: " + (request.isUrl() ? "descargando y calculando" : "calculando")
-                + " fuera del hilo del servidor…");
+        QuietMode.status(player, prefix().append(Text.literal("Imagen «" + name + "»: "
+                + (request.isUrl() ? "descargando y calculando" : "calculando")
+                + " fuera del hilo del servidor…").formatted(Formatting.GRAY)));
         AsyncEngine.submit(
                 playerId,
                 () -> {
@@ -175,7 +178,7 @@ public final class ImageService {
                 if (PlanPreviews.holds(player.getUuid(), built.plan())) {
                     return;
                 }
-                queued(player, "Imagen «" + name + "»: " + summary + " · en cola " + queued
+                queued(player, "Imagen «" + name + "»: " + summary + " · en cola " + ProgressLine.group(queued)
                         + " bloques · //undo para deshacer");
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 fail(player, "Imagen «" + name + "»: " + readable(exception));
@@ -423,7 +426,7 @@ public final class ImageService {
 
     /** El aviso de bloques en cola: tampoco sale con {@code /komaedit quiet} (el de «completada» sí). */
     private static void queued(ServerPlayerEntity player, String message) {
-        QuietMode.info(player, prefix().append(Text.literal(message).formatted(Formatting.GREEN)));
+        QuietMode.status(player, prefix().append(Text.literal(message).formatted(Formatting.GREEN)));
     }
 
     private static void fail(ServerPlayerEntity player, String message) {
@@ -431,6 +434,6 @@ public final class ImageService {
     }
 
     private static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 }

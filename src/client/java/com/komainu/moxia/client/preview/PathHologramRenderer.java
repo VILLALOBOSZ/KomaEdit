@@ -1,5 +1,7 @@
 package com.komainu.moxia.client.preview;
 
+import com.komainu.moxia.client.world.ClientWorldSettings;
+import com.komainu.moxia.client.world.WorldLabels;
 import com.komainu.moxia.path.PathHologramPayload;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.Vec3;
@@ -18,6 +20,12 @@ import java.util.List;
 
 public final class PathHologramRenderer {
     private static final int MAX_CURVE_SEGMENTS = 2_048;
+    /** Hasta tantos puntos, todos llevan su número. */
+    private static final int MAX_NUMBERED = 40;
+    private static final int FIRST = 0x66BB6A;
+    private static final int LAST = 0xFFB833;
+    private static final int NODE = 0x59E6FF;
+    private static final int CURVE = 0xF233E0FF;
     private static volatile RenderState state = RenderState.clear();
 
     private PathHologramRenderer() {
@@ -61,9 +69,21 @@ public final class PathHologramRenderer {
         matrices.push();
         matrices.translate(-camera.x, -camera.y, -camera.z);
         VertexConsumer lines = context.consumers().getBuffer(RenderLayer.getLines());
-        drawNodes(matrices, lines, current.payload().points());
+        List<BlockPos> points = current.payload().points();
+        drawNodes(matrices, lines, points);
         drawCurve(matrices, lines, current.curve());
         matrices.pop();
+        if (ClientWorldSettings.get().pathNumbers()) {
+            drawNumbers(context, points);
+        }
+    }
+
+    /** Verde el primero, naranja el último y azul el resto, para ver hacia dónde va. */
+    private static int nodeColor(int index, int count) {
+        if (index == 0) {
+            return FIRST;
+        }
+        return index == count - 1 ? LAST : NODE;
     }
 
     private static void drawNodes(MatrixStack matrices, VertexConsumer lines, List<BlockPos> points) {
@@ -72,21 +92,37 @@ public final class PathHologramRenderer {
             double centerX = point.getX() + 0.5;
             double centerY = point.getY() + 0.5;
             double centerZ = point.getZ() + 0.5;
-            float red = index == points.size() - 1 ? 1.0F : 0.35F;
-            float green = index == points.size() - 1 ? 0.72F : 0.90F;
-            float blue = index == points.size() - 1 ? 0.20F : 1.0F;
+            int color = nodeColor(index, points.size());
+            double size = index == 0 || index == points.size() - 1 ? 0.3 : 0.24;
             WorldRenderer.drawBox(
                     matrices,
                     lines,
                     new Box(
-                            centerX - 0.24, centerY - 0.24, centerZ - 0.24,
-                            centerX + 0.24, centerY + 0.24, centerZ + 0.24
+                            centerX - size, centerY - size, centerZ - size,
+                            centerX + size, centerY + size, centerZ + size
                     ),
-                    red,
-                    green,
-                    blue,
+                    (color >> 16 & 0xFF) / 255.0F,
+                    (color >> 8 & 0xFF) / 255.0F,
+                    (color & 0xFF) / 255.0F,
                     1.0F
             );
+        }
+    }
+
+    /**
+     * El número de cada punto encima de él. Con muchos puntos, solo el primero, el último y uno de cada cinco, para
+     * no llenar la pantalla de números.
+     */
+    private static void drawNumbers(WorldRenderContext context, List<BlockPos> points) {
+        int count = points.size();
+        for (int index = 0; index < count; index++) {
+            boolean shown = count <= MAX_NUMBERED || index == 0 || index == count - 1 || (index + 1) % 5 == 0;
+            if (!shown) {
+                continue;
+            }
+            BlockPos point = points.get(index);
+            WorldLabels.draw(context, Integer.toString(index + 1), point.getX() + 0.5, point.getY() + 1.15,
+                    point.getZ() + 0.5, nodeColor(index, count));
         }
     }
 
@@ -127,24 +163,13 @@ public final class PathHologramRenderer {
         }
     }
 
+    /**
+     * Un tramo de la curva. La normal de una línea es su dirección (el shader de líneas la usa para darle grosor en
+     * pantalla); con una perpendicular, como antes, los tramos casi desaparecían según desde dónde se mirasen.
+     */
     private static void drawLine(MatrixStack matrices, VertexConsumer lines, Vec3 start, Vec3 end) {
-        Vec3d direction = new Vec3d(
-                end.x() - start.x(),
-                end.y() - start.y(),
-                end.z() - start.z()
-        ).normalize();
-        Vec3d normal = direction.crossProduct(new Vec3d(0.0, 1.0, 0.0));
-        if (normal.lengthSquared() < 1.0E-6) {
-            normal = direction.crossProduct(new Vec3d(1.0, 0.0, 0.0));
-        }
-        normal = normal.normalize();
-        MatrixStack.Entry entry = matrices.peek();
-        lines.vertex(entry, (float) start.x(), (float) start.y(), (float) start.z())
-                .color(0.20F, 0.88F, 1.0F, 0.95F)
-                .normal(entry, (float) normal.x, (float) normal.y, (float) normal.z);
-        lines.vertex(entry, (float) end.x(), (float) end.y(), (float) end.z())
-                .color(0.20F, 0.88F, 1.0F, 0.95F)
-                .normal(entry, (float) normal.x, (float) normal.y, (float) normal.z);
+        WorldLabels.line(matrices, lines, new Vec3d(start.x(), start.y(), start.z()),
+                new Vec3d(end.x(), end.y(), end.z()), CURVE);
     }
 
     private record RenderState(PathHologramPayload payload, List<Vec3> curve) {

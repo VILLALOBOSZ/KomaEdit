@@ -1,5 +1,6 @@
 package com.komainu.moxia.recipe;
 
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.permission.KomaPermissions;
@@ -109,7 +110,7 @@ public final class RecipeActionService {
     }
 
     private static Text message(String value) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.DARK_RED)
+        return Feedback.prefix()
                 .append(Text.literal(value).formatted(Formatting.GRAY));
     }
 }
