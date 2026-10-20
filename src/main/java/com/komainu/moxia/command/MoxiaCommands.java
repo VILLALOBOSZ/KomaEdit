@@ -191,7 +191,8 @@ public final class MoxiaCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> register(dispatcher));
     }
 
-    private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+    /** Todo el árbol de {@code /komaedit}; también lo montan las pruebas, sin el juego. */
+    static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         var root = dispatcher.register(literal("komaedit")
                 .requires(MoxiaCommands::canUse)
                 .then(literal("menu").executes(MoxiaCommands::openHudMenu))
