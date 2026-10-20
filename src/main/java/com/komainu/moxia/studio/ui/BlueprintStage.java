@@ -226,10 +226,24 @@ public final class BlueprintStage {
     private void actions(StudioUi ui, Column column, StudioHost host, BlueprintSummary current, boolean compact) {
         Rect card = column.next(compact ? 30 : 42);
         ui.fill(card, FIELD);
+        Set<String> tags = activeTags();
+        String tag = tags.size() == 1 ? "#" + tags.iterator().next() : null;
+        boolean stamp = host.blueprints().canStamp();
         if (current == null) {
-            ui.label(host.tr("gui.komaedit.blueprint.selected_none"), card.x() + 8, card.y() + 6, card.width() - 16,
+            ui.label(host.tr("gui.komaedit.blueprint.selected_none"), card.x() + 8, card.y() + 5, card.width() - 16,
                     TEXT_SECONDARY);
-            ui.label(host.tr("gui.komaedit.blueprint.pick"), card.x() + 8, card.y() + 18, card.width() - 16, MUTED);
+            if (tag != null && stamp) {
+                // Con una etiqueta en el buscador, el pincel puede estampar uno al azar de esa etiqueta.
+                String label = host.tr("gui.komaedit.blueprint.stamp_tag", tag);
+                Rect button = new Rect(card.x() + 6, card.bottom() - 17, Math.min(card.width() - 12,
+                        ui.chipWidth(label) + 8), 14);
+                ui.button(button, label, StudioUi.Tone.SECONDARY)
+                        .tooltip(label + "\n" + host.tr("gui.komaedit.help.blueprint.stamp_tag", tag))
+                        .onClick(() -> stamp(host, tag));
+            } else {
+                ui.label(host.tr("gui.komaedit.blueprint.pick"), card.x() + 8, card.y() + 17, card.width() - 16,
+                        MUTED);
+            }
             return;
         }
         ui.fill(card.left(2), ACCENT);
@@ -251,7 +265,6 @@ public final class BlueprintStage {
         StudioHost.Blueprints catalog = host.blueprints();
         String reference = current.reference();
         Rect buttons = new Rect(card.x() + 6, card.bottom() - 17, card.width() - 12, 14);
-        boolean stamp = catalog.canStamp();
         boolean share = current.mine() && !current.shared() && catalog.canShare();
         String radiusText = host.tr("gui.komaedit.blueprint.radius_short", RADII[radius] == 0
                 ? host.tr("gui.komaedit.tools.auto") : Integer.toString(RADII[radius]));
@@ -265,8 +278,7 @@ public final class BlueprintStage {
                         ? "gui.komaedit.help.blueprint.stamp" : "gui.komaedit.help.blueprint.denied"))
                 .onClick(() -> {
                     if (stamp) {
-                        stamp(host, activeTags().size() == 1 && query.strip().startsWith("#")
-                                ? "#" + activeTags().iterator().next() : reference);
+                        stamp(host, reference);
                     }
                 });
         ui.chip(cells.get(1), radiusText, false, TEXT_SECONDARY)

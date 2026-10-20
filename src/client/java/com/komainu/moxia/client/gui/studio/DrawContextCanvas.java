@@ -131,7 +131,10 @@ public final class DrawContextCanvas implements StudioCanvas {
         }
         Identifier id = Identifier.of("komaedit", "studio/" + sanitize(image.key()));
         MinecraftClient client = MinecraftClient.getInstance();
-        client.getTextureManager().registerTexture(id, new NativeImageBackedTexture(nativeImage));
+        NativeImageBackedTexture texture = new NativeImageBackedTexture(nativeImage);
+        // Las miniaturas se pintan más pequeñas que su imagen: suavizadas no se rompen los bordes.
+        texture.setFilter(true, false);
+        client.getTextureManager().registerTexture(id, texture);
         TEXTURES.put(image.key(), id);
         if (TEXTURES.size() > MAX_TEXTURES) {
             Iterator<Map.Entry<String, Identifier>> oldest = TEXTURES.entrySet().iterator();

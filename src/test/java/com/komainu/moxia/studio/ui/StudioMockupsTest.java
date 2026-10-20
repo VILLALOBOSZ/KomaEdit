@@ -118,6 +118,19 @@ class StudioMockupsTest {
             driver.mouseX = row[0];
             driver.mouseY = row[1];
         }));
+        scenes.add(new Scene("1080p_gui3_material_es.png", 640, 360, 3, "es_es", driver -> {
+            path(driver, 3);
+            driver.host.lookedAt = "minecraft:mossy_cobblestone";
+            driver.view.selectStage(StudioStage.MATERIAL, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_modificadores_en.png", 640, 360, 3, "en_us", driver -> {
+            path(driver, 3);
+            driver.view.selectStage(StudioStage.MODIFIERS, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_color_es.png", 640, 360, 3, "es_es", driver ->
+                driver.view.selectStage(StudioStage.COLOR, driver.host)));
+        scenes.add(new Scene("1080p_gui3_envejecer_es.png", 640, 360, 3, "es_es", driver ->
+                driver.view.selectStage(StudioStage.WEATHER, driver.host)));
         // 1080p con GUI 4 (la automática): compacto.
         scenes.add(new Scene("1080p_gui4_arbol_es.png", 480, 270, 4, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui4_tejado_en.png", 480, 270, 4, "en_us", driver -> tools(driver, "roof")));

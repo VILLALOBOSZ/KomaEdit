@@ -41,9 +41,10 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `worldedit` | Adaptación de jugador, sesión, selección y patrones |
 | `command` | API Brigadier y validación de entrada |
 | `capability` | Capacidades de construcción a mano: reglas puras, red, servidor y aplicación con WorldEdit |
-| `client.gui` | Pantalla no bloqueante y controles del editor |
-| `studio.tools` | Etapa Herramientas del Studio: cada tarjeta (`ToolCard`) declara sus ajustes, arma la orden de chat que manda Construir, sus nodos de permiso y su validación; `ToolsPanel` dibuja la etapa con `ToolsUi` sin Minecraft (el cliente lo pinta con `StudioToolsUi`, las pruebas con un `ToolsUi` de mentira) |
-| `studio.net` | Red de la etapa: estado de herramientas (permisos, selección, fuentes, presets, simetría), progreso para el pie del Studio y lista de materiales, solo hacia clientes con KomaEdit |
+| `client.gui` | Pantalla no bloqueante del Studio (`ProceduralStudioScreen`: el mundo, la cámara, los clics sobre la trayectoria y el teclado; el panel es `studio.ui`) |
+| `studio.ui` | El Procedural Studio entero sin Minecraft: `StudioView` (estado, ratón y teclado de barra, etapas, contenido, pie, paleta `Ctrl+K`, historial y biblioteca de bloques), las etapas (`FigureStages`, `ColorStage`, `BlueprintStage`), los controles de `StudioUi` (con `NumberView`/`NumberEdit` para los números) y las miniaturas que dibujan los generadores (`ChoiceThumbnails`). Dibuja sobre un `StudioCanvas`: en el juego, `client.gui.studio.DrawContextCanvas`; en las pruebas, una imagen con la fuente y los iconos del juego, de donde salen las maquetas. Lo que pide al juego pasa por `StudioHost` (`ClientStudioHost` en el cliente) |
+| `studio.tools` | Etapa Herramientas del Studio: cada tarjeta (`ToolCard`) declara sus ajustes (con su unidad, `ValueUnit`), arma la orden de chat que manda Construir, sus nodos de permiso y su validación; `ToolsPanel` dibuja la etapa con `StudioUi` |
+| `studio.net` | Red de la etapa: estado de herramientas (permisos, selección, fuentes, presets, simetría y el historial de //undo con el nombre de cada operación, de `worldedit.EditHistory`), progreso para el pie del Studio y lista de materiales, solo hacia clientes con KomaEdit |
 
 ## Flujo de una brocha
 
@@ -76,7 +77,7 @@ Los permisos finos y sus paquetes viven en `permission.PermissionNodes`, lógica
 
 ## Biblioteca de planos
 
-Paquete `blueprint` (y `client.blueprint`, `client.gui.studio.BlueprintStage`).
+Paquete `blueprint` (y `client.blueprint`, `studio.ui.BlueprintStage`).
 
 1. **Guardar.** `BlueprintService.save` toma el portapapeles en el hilo del servidor y hace el resto en su propio hilo («KomaEdit planos»), como `//schem save`: aplica el giro del portapapeles, escribe el esquema `sponge.3`, monta la rejilla de colores (`ThumbnailColors` sobre `BlockColorCatalogs`) y pinta la miniatura. `BlueprintLibrary` (Java puro) guarda el esquema, el PNG y el JSON con `AtomicStorage`, el JSON el último, y comprueba los `BlueprintLimits` de `blueprints.json`.
 2. **Usar.** `load` lee el esquema en ese hilo y lo deja en la sesión de WorldEdit desde el hilo del servidor. La colocación trata los planos como una estructura más (`StructureSpec.Type.BLUEPRINT`): `PlacementService.resolve` pide los esquemas a `BlueprintService.structures` (con caché por archivo y fecha) y sigue el camino de `Clipboard` y `Schematic`, así que `place`, `scatter`, `array`, sus pinceles y la vista previa `-v` funcionan sin más.

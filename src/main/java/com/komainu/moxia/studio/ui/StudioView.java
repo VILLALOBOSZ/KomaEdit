@@ -576,8 +576,8 @@ public final class StudioView {
             int estimateWidth = footer.estimate().isEmpty() ? 0 : ui.width(footer.estimate()) + 8;
             ui.icon(footer.icon(), summary.x() - 1, summary.y() - 2, TEXT_SECONDARY);
             String fitted = FooterText.fit(ui, List.of(footer.target().split(" · ")),
-                    summary.width() - 14 - estimateWidth);
-            ui.label(fitted, summary.x() + 13, summary.y(), TEXT_SECONDARY);
+                    summary.width() - 16 - estimateWidth);
+            ui.label(fitted, summary.x() + 15, summary.y(), TEXT_SECONDARY);
             if (!footer.estimate().isEmpty()) {
                 ui.rightAligned(footer.estimate(), summary.right(), summary.y(), footer.estimateColor());
             }

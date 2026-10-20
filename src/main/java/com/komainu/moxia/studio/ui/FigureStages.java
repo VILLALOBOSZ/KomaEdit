@@ -777,11 +777,11 @@ public final class FigureStages {
                         ? draft.paletteId() : GradientPalette.GLOW_CYAN.id()));
 
         if (!draft.usesGradient()) {
-            ui.section(column, host.tr("gui.komaedit.material.base_block"));
+            column.section();
             String pattern = draft.pattern();
             String blockId = pattern.contains(":") ? pattern : "minecraft:" + pattern;
             StudioUi.Widget[] zones = ui.blockRow(column.next(), new StudioUi.BlockRow(
-                    host.tr("gui.komaedit.material.block"), blockId, host.blockName(blockId), false, false,
+                    host.tr("gui.komaedit.material.base_block"), blockId, host.blockName(blockId), false, false,
                     host.tr("gui.komaedit.material.library_hint"), true, host.tr("gui.komaedit.tools.block.eyedropper")));
             zones[0].onClick(() -> host.pickBlock(host.tr("gui.komaedit.blocks.for_figure"), blockId,
                     id -> setPattern(host, id)));
