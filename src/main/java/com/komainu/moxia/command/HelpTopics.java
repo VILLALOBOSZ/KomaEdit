@@ -177,6 +177,25 @@ public final class HelpTopics {
                     new Entry("/komaedit noisegen heightmap sand,grass_block,stone -m \"#existing !#near[water][3]\"",
                             "-m admite cualquier máscara de WorldEdit (entre comillas si lleva espacios)")
             )),
+            new Topic("roof", "Tejados y lonas", List.of("tejado", "tejados", "roofs", "loft", "lona", "lonas",
+                    "toldo"), List.of(
+                    new Entry("/komaedit roof <tipo> [material] [banderas]",
+                            "Tejado sobre la planta de la selección (alias tejado): gable, hip, mansard, shed, gablet, "
+                                    + "dome, cone, spire, pagoda, flat"),
+                    new Entry("/komaedit roof gable spruce_planks -p 1:1 -a 1 -c dark_oak_planks",
+                            "Ejemplo: dos aguas a 45°, alero de 1 y caballete oscuro"),
+                    new Entry("/komaedit roof hip deepslate_tiles -d -b 2",
+                            "Ejemplo: planta sacada de los muros (L, T, U) y dos buhardillas por lado"),
+                    new Entry("/komaedit roof shed ##DustyBrown -p 1:2 -lado s",
+                            "Ejemplo: a un agua con degradado por altura de una paleta"),
+                    new Entry("/komaedit roof <tipo> … -e", "Solo estima bloques, chunks y tiempo"),
+                    new Entry("/komaedit loft <curva> <curva> [más curvas] [material] [banderas]",
+                            "Superficie entre 2 a 6 recorridos guardados o «actual» (alias lona)"),
+                    new Entry("/komaedit loft white_wool -i catenaria -comba 2",
+                            "Ejemplo: lona colgante entre los 4 puntos marcados (dos tramos)"),
+                    new Entry("/komaedit loft borde1 borde2 borde3 -i catmull -g 2 -w SlabsAndStairs",
+                            "Ejemplo: vela suave entre tres curvas, de 2 de grosor y con piezas")
+            )),
             new Topic("terrain", "Terraformado", List.of("terreno", "terraformar", "rampa", "rio", "canon",
                     "erosion", "relieve", "sellos", "heightmap"), List.of(
                     new Entry("/komaedit pincel heightmap <sello> [radio] [altura] [elevar|bajar|aplanar] [paleta] "

@@ -174,6 +174,8 @@ public final class PermissionNodes {
         add(build + ".terrain.river", Pack.INTERMEDIATE, build, null, "/komaedit terreno rio|arroyo");
         add(build + ".terrain.canyon", Pack.INTERMEDIATE, build, null, "/komaedit terreno canon|barranco");
         add(build + ".terrain.paint", Pack.INTERMEDIATE, build, null, "/komaedit terreno pintar");
+        add(build + ".roof", Pack.INTERMEDIATE, build, null, "/komaedit roof (tejados)");
+        add(build + ".loft", Pack.INTERMEDIATE, build, null, "/komaedit loft (superficies entre curvas)");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
