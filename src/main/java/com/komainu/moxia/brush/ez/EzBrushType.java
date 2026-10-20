@@ -12,7 +12,9 @@ public enum EzBrushType {
     PETAL_PAINTER("petalpainter", "Pintor de pétalos", Set.of('p'), Set.of('n', 'z', 'm'), "petalos", "pp"),
     PLACE("place", "Colocar", Set.of('a', 'x', 'p'), Set.of(), "colocar", "pl"),
     SCATTER("scatter", "Dispersar", Set.of(), Set.of(), "dispersar", "sc"),
-    ARRAY("array", "Hilera", Set.of(), Set.of(), "hilera", "ar");
+    ARRAY("array", "Hilera", Set.of(), Set.of(), "hilera", "ar"),
+    TREE("tree", "Árbol", Set.of(), Set.of(), "arbol", "tr"),
+    ROCK("rock", "Roca", Set.of(), Set.of(), "roca", "rk");
 
     private final String id;
     private final String displayName;
@@ -34,6 +36,11 @@ public enum EzBrushType {
 
     public String displayName() {
         return displayName;
+    }
+
+    /** Los pinceles de árboles y rocas leen sus ajustes como {@code /komaedit tree} y {@code /komaedit rock}. */
+    public boolean nature() {
+        return this == TREE || this == ROCK;
     }
 
     /** Los pinceles de colocación leen sus banderas como {@code place}, {@code scatter} y {@code array}. */
@@ -58,6 +65,6 @@ public enum EzBrushType {
             }
         }
         throw new IllegalArgumentException("Pincel desconocido: " + input
-                + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array)");
+                + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array, tree, rock)");
     }
 }

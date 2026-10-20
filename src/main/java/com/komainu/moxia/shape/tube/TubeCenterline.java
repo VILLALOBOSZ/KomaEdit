@@ -91,6 +91,17 @@ final class TubeCenterline {
         return new TubeCenterline(uniform, path.closed(), settings, curve);
     }
 
+    /** Eje abierto por puntos de control libres (no centros de bloque), para las ramas de {@link TubeLimb}. */
+    static TubeCenterline through(List<Vec3> points, TubeSettings settings) {
+        List<Vec3> controls = distinct(points, false);
+        if (controls.size() < 2) {
+            throw new IllegalArgumentException("La rama necesita al menos 2 puntos distintos");
+        }
+        List<Vec3> dense = kochanekBartels(controls, false, settings.tension(), settings.bias(),
+                settings.continuity());
+        return new TubeCenterline(resample(dense), false, settings, TubeCurve.NONE);
+    }
+
     double minimumRadius() {
         double minimum = Double.MAX_VALUE;
         for (double value : radius) {

@@ -8,6 +8,10 @@ import com.komainu.moxia.brush.place.PlacementTemplate;
 import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
 import com.komainu.moxia.noise.NoiseSpec;
+import com.komainu.moxia.nature.NaturePresets;
+import com.komainu.moxia.nature.NatureService;
+import com.komainu.moxia.nature.RockSettings;
+import com.komainu.moxia.nature.TreeSettings;
 import com.komainu.moxia.placement.PlacementService;
 import com.komainu.moxia.placement.PlacementSettings;
 import com.komainu.moxia.shape.Vec3;
@@ -59,6 +63,12 @@ public abstract sealed class EzBrush {
     abstract void handle(EzBrushManager.Session session, BrushInput input);
 
     public static EzBrush create(ServerPlayerEntity player, EzBrushType type, String input) {
+        if (type == EzBrushType.TREE) {
+            return new Tree(NaturePresets.tree(player.getUuid(), input));
+        }
+        if (type == EzBrushType.ROCK) {
+            return new Rock(NaturePresets.rock(player.getUuid(), input));
+        }
         if (type.placement() && !(type == EzBrushType.PLACE && legacyPreview(input))) {
             PlacementSettings.Kind kind = switch (type) {
                 case SCATTER -> PlacementSettings.Kind.SCATTER;
@@ -107,7 +117,7 @@ public abstract sealed class EzBrush {
                 int maxAmount = maxAmount(block);
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
-            case SCATTER, ARRAY -> throw new IllegalStateException(type.id());
+            case SCATTER, ARRAY, TREE, ROCK -> throw new IllegalStateException(type.id());
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -539,6 +549,52 @@ public abstract sealed class EzBrush {
                 session.info(PlacementService.startBrush(session.player(), settings, target));
             } catch (com.sk89q.worldedit.IncompleteRegionException exception) {
                 throw new IllegalArgumentException("-h Active necesita una selección de WorldEdit");
+            }
+        }
+    }
+
+    /** Árboles: uno en cada clic derecho, con una variante nueva cada vez salvo que fije la semilla. */
+    static final class Tree extends EzBrush {
+        private final TreeSettings settings;
+
+        Tree(TreeSettings settings) {
+            super(EzBrushType.TREE, 0, settings.preview());
+            this.settings = settings;
+        }
+
+        @Override
+        public String controls() {
+            return "clic derecho: " + settings.describe() + " en el suelo que miras"
+                    + (settings.seed().isPresent() ? "" : " (una variante nueva en cada clic)");
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input.right() && !input.swap()) {
+                NatureService.brushTree(session.player(), settings, session.hit());
+            }
+        }
+    }
+
+    /** Rocas: una en cada clic derecho, con una variante nueva cada vez salvo que fije la semilla. */
+    static final class Rock extends EzBrush {
+        private final RockSettings settings;
+
+        Rock(RockSettings settings) {
+            super(EzBrushType.ROCK, 0, settings.preview());
+            this.settings = settings;
+        }
+
+        @Override
+        public String controls() {
+            return "clic derecho: " + settings.describe() + " hundida en el suelo que miras"
+                    + (settings.seed().isPresent() ? "" : " (una variante nueva en cada clic)");
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input.right() && !input.swap()) {
+                NatureService.brushRock(session.player(), settings, session.hit());
             }
         }
     }
