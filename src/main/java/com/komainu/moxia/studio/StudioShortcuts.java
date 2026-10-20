@@ -23,6 +23,8 @@ public final class StudioShortcuts {
             new Shortcut("next_stage"),
             new Shortcut("search"),
             new Shortcut("build"),
+            new Shortcut("confirm_preview"),
+            new Shortcut("cancel_job"),
             new Shortcut("hologram"),
             new Shortcut("param_undo"),
             new Shortcut("world_undo"),

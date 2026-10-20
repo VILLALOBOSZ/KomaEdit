@@ -1,11 +1,17 @@
 package com.komainu.moxia.placement;
 
+import com.komainu.moxia.blueprint.BlueprintService;
+import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.shape.Vec3;
@@ -47,6 +53,7 @@ import it.unimi.dsi.fastutil.longs.LongArrays;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -78,8 +85,13 @@ import java.util.stream.Stream;
 public final class PlacementService {
     public static final int MAX_STRUCTURE_VOLUME = 2_000_000;
     public static final int MAX_SCHEMATICS = 32;
-    /** Radio de búsqueda de superficie de {@code -b}; se recorta si la caja de la trayectoria es muy grande. */
-    public static final int SNAP_RADIUS = 96;
+    /**
+     * Radio de búsqueda de superficie de {@code -b}: {@code arraySnapRadius} de {@code config/komaedit/config.json}
+     * (96 por defecto, como ezEdits). Se recorta si la caja de la trayectoria no cabe en el límite de lectura.
+     */
+    public static int snapRadius() {
+        return KomaEditConfig.settings().arraySnapRadius();
+    }
     private static final long GOLDEN = 0x9E3779B97F4A7C15L;
 
     private PlacementService() {
@@ -110,7 +122,24 @@ public final class PlacementService {
      */
     public static String startBrush(ServerPlayerEntity player, PlacementSettings settings, BrushTarget target)
             throws IncompleteRegionException {
-        return start(player, settings.kind(), settings, target);
+        EditRequest previous = EditRequests.current();
+        if (previous != null) {
+            return start(player, settings.kind(), settings, target);
+        }
+        // Clic de pincel: se coloca al momento, sin la vista previa universal.
+        String[] started = new String[1];
+        IncompleteRegionException[] incomplete = new IncompleteRegionException[1];
+        EditRequests.within(EditRequest.TOOL, () -> {
+            try {
+                started[0] = start(player, settings.kind(), settings, target);
+            } catch (IncompleteRegionException exception) {
+                incomplete[0] = exception;
+            }
+        });
+        if (incomplete[0] != null) {
+            throw incomplete[0];
+        }
+        return started[0];
     }
 
     private static String start(ServerPlayerEntity player, PlacementSettings.Kind kind, PlacementSettings parsed,
@@ -135,7 +164,10 @@ public final class PlacementService {
                 : BlockVector3.at(player.getBlockX(), player.getBlockY(), player.getBlockZ());
         Job job = new Job(player.getUuid(), player.getServer(), kind, settings, spec, resolved, eye, view, feet);
         job.target = target;
+        job.origin = player.getServerWorld();
         String what = resolved.structures().size() == 1 ? resolved.structures().getFirst().describe()
+                : spec.type() == StructureSpec.Type.BLUEPRINT
+                ? new java.util.HashSet<>(resolved.structures()).size() + " planos"
                 : resolved.structures().size() + " schematics";
         switch (kind) {
             case PLACE -> {
@@ -205,6 +237,19 @@ public final class PlacementService {
                 }
                 return new Resolved(structures, palettes, null);
             }
+            case BLUEPRINT -> {
+                List<Structure> structures = new ArrayList<>();
+                List<List<BlockState>> palettes = new ArrayList<>();
+                // Un plano repetido (por su peso) se captura una vez y se repite tal cual.
+                Map<Clipboard, Captured> captures = new java.util.IdentityHashMap<>();
+                for (BlueprintService.Named named : BlueprintService.structures(player, spec.blueprints())) {
+                    Captured captured = captures.computeIfAbsent(named.clipboard(),
+                            clipboard -> capture(clipboard, spec, named.name()));
+                    structures.add(captured.structure());
+                    palettes.add(captured.palette());
+                }
+                return new Resolved(structures, palettes, null);
+            }
             case SHAPE, ICOSPHERE -> {
                 WorldEditService.parsePatternUnchecked(context, spec.pattern());
                 return new Resolved(List.of(spec.procedural(1)), List.of(List.of()), spec.pattern());
@@ -228,10 +273,16 @@ public final class PlacementService {
         if ((long) size.x() * size.y() * size.z() > MAX_STRUCTURE_VOLUME) {
             throw new IllegalArgumentException(name + " supera " + MAX_STRUCTURE_VOLUME + " bloques de caja");
         }
-        BlockVector3 origin = spec.centered()
-                ? BlockVector3.at(Math.floorDiv(minimum.x() + maximum.x(), 2),
-                Math.floorDiv(minimum.y() + maximum.y(), 2), Math.floorDiv(minimum.z() + maximum.z(), 2))
-                : clipboard.getOrigin();
+        StructureSpec.Origin anchor = spec.origin() != null ? spec.origin()
+                : spec.centered() ? StructureSpec.Origin.CENTER : StructureSpec.Origin.INHERENT;
+        BlockVector3 origin = switch (anchor) {
+            case CENTER -> BlockVector3.at(Math.floorDiv(minimum.x() + maximum.x(), 2),
+                    Math.floorDiv(minimum.y() + maximum.y(), 2), Math.floorDiv(minimum.z() + maximum.z(), 2));
+            // Centro de la base: la capa de abajo cae en el bloque de colocación.
+            case BOTTOM -> BlockVector3.at(Math.floorDiv(minimum.x() + maximum.x(), 2), minimum.y(),
+                    Math.floorDiv(minimum.z() + maximum.z(), 2));
+            case INHERENT -> clipboard.getOrigin();
+        };
         BlockVector3 offset = minimum.subtract(origin);
         VoxelStructure.Builder builder = VoxelStructure.builder(size.x(), size.y(), size.z(), offset.x(), offset.y(),
                 offset.z());
@@ -445,7 +496,7 @@ public final class PlacementService {
             maxY = Math.max(maxY, point.y());
             maxZ = Math.max(maxZ, point.z());
         }
-        int margin = SNAP_RADIUS;
+        int margin = snapRadius();
         while (margin > 4 && (long) (maxX - minX + 1 + 2 * margin) * (maxY - minY + 1 + 2 * margin)
                 * (maxZ - minZ + 1 + 2 * margin) > RegionOperationService.MAX_CAPTURE_BLOCKS) {
             margin -= 4;
@@ -517,6 +568,8 @@ public final class PlacementService {
         private final BlockVector3 feet;
         private PathSnapshot path;
         private BrushTarget target;
+        /** Mundo donde se lanzó: lo calculado sobre su foto no se coloca en otro. */
+        private ServerWorld origin;
 
         Job(UUID playerId, MinecraftServer server, PlacementSettings.Kind kind, PlacementSettings settings,
             StructureSpec spec, Resolved resolved, Vec3 eye, DirectionExpr.Context view, BlockVector3 feet) {
@@ -573,7 +626,9 @@ public final class PlacementService {
                     Alignment.Context context = new Alignment.Context(anchor, eye, view, normal, null, null,
                             new Vec3(0, 0, 0), new Vec3(0, 0, 0), new SplittableRandom(settings.seed()),
                             target == null ? null : target.viewDiff());
-                    placements.add(builder.build(anchor, context, 1.0));
+                    Placement placement = builder.build(anchor, context, 1.0);
+                    placements.addAll(settings.copies().active() ? settings.copies().expand(placement)
+                            : List.of(placement));
                 }
                 case SCATTER -> {
                     if (mask != null) {
@@ -615,7 +670,7 @@ public final class PlacementService {
                     PlacementPath line = PlacementPath.create(controls, path.closed(), array.tension(), array.bias(),
                             array.continuity(), array.normalMode());
                     ArrayPlanner.SurfaceSnapper snapper = snapshot == null ? null
-                            : ArrayPlanner.snapper(snapshot, SNAP_RADIUS);
+                            : ArrayPlanner.snapper(snapshot, snapRadius());
                     placements.addAll(ArrayPlanner.plan(line, builder, eye, view, snapper));
                 }
             }
@@ -751,6 +806,11 @@ public final class PlacementService {
             if (player == null) {
                 return;
             }
+            if (origin != null && player.getServerWorld() != origin) {
+                player.sendMessage(message(description() + ": " + RegionOperationService.OTHER_WORLD,
+                        Formatting.YELLOW), false);
+                return;
+            }
             if (output.plan().size() == 0) {
                 player.sendMessage(message(description() + ": no hay nada que cambiar", Formatting.YELLOW), false);
                 return;
@@ -770,10 +830,13 @@ public final class PlacementService {
                 } else {
                     queued = BatchEditService.submit(player, output.plan(), "air", description());
                 }
+                if (PlanPreviews.holds(playerId, output.plan())) {
+                    return;
+                }
                 String covered = output.cover().isEmpty() ? "" : " · " + output.cover().size() + " superficies cubiertas";
-                player.sendMessage(message(description() + ": " + output.placements() + " "
+                QuietMode.info(player, message(description() + ": " + output.placements() + " "
                         + (output.placements() == 1 ? "estructura" : "estructuras") + " · " + queued
-                        + " bloques en cola" + covered + " · //undo para deshacer", Formatting.GREEN), false);
+                        + " bloques en cola" + covered + " · //undo para deshacer", Formatting.GREEN));
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 player.sendMessage(message(description() + ": " + readable(exception), Formatting.RED), false);
             }

@@ -14,7 +14,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Qué losa, escalera, muro o capa corresponde a un bloque.
+ * Qué losa, escalera, muro, capa o panel corresponde a un bloque ({@code glass} → {@code glass_pane},
+ * {@code iron_block} → {@code iron_bars}).
  *
  * <ol>
  *     <li><b>Por nombre.</b> Casi todos los bloques siguen la convención de Minecraft ({@code stone} →
@@ -32,7 +33,8 @@ import java.util.Set;
  */
 public final class SmoothMaterials {
     private static final int MAX_STEMS = 12;
-    private static final String COLORS = "/assets/komaedit/smooth/colors.txt";
+    /** Recurso de la tabla de colores de textura; también la lee {@code color.BlockColorCatalog}. */
+    public static final String COLORS = "/assets/komaedit/smooth/colors.txt";
     /** Bloques cuya familia tiene otro nombre. */
     private static final Map<String, String> TABLE = Map.ofEntries(
             Map.entry("deepslate", "cobbled_deepslate"),
@@ -64,7 +66,8 @@ public final class SmoothMaterials {
             PieceVariant.SLAB, new String[]{"_slab"},
             PieceVariant.STAIR, new String[]{"_stairs"},
             PieceVariant.WALL, new String[]{"_wall", "_fence"},
-            PieceVariant.LAYER, new String[]{"", "_layer", "_layers"}
+            PieceVariant.LAYER, new String[]{"", "_layer", "_layers"},
+            PieceVariant.PANE, new String[]{"_pane", "_bars"}
     );
     private static volatile Map<String, Integer> textureColors;
 
@@ -200,7 +203,8 @@ public final class SmoothMaterials {
         String line;
         while ((line = reader.readLine()) != null) {
             String[] parts = line.trim().split("\\s+");
-            if (parts.length == 4 && !parts[0].startsWith("#")) {
+            // La quinta columna, si la hay, son banderas para /komaedit color.
+            if (parts.length >= 4 && !parts[0].startsWith("#")) {
                 result.put(parts[0], ColorMatch.rgb(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]),
                         Integer.parseInt(parts[3])));
             }
@@ -219,6 +223,7 @@ public final class SmoothMaterials {
             case STAIR -> "stone_brick_stairs";
             case WALL -> "cobblestone_wall";
             case LAYER -> "snow";
+            case PANE -> "glass_pane";
         };
     }
 

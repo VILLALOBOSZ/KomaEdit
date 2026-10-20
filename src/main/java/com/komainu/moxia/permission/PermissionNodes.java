@@ -1,5 +1,8 @@
 package com.komainu.moxia.permission;
 
+import com.komainu.moxia.blueprint.BlueprintPermissions;
+import com.komainu.moxia.capability.BuildCapability;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -94,6 +97,14 @@ public final class PermissionNodes {
         add(build + ".inflate", Pack.BASIC, build, "ezedits.smooth.inflate", "/komaedit inflate");
         add(build + ".deflate", Pack.BASIC, build, "ezedits.smooth.deflate", "/komaedit deflate");
         add(select + ".superwand", Pack.BASIC, select, "ezedits.tools.superwand", "/komaedit superwand");
+        add("komaedit.analyze", Pack.BASIC, use, null, "/komaedit analyze (lista de materiales)");
+        add(build + ".gravity", Pack.BASIC, build, null, "/komaedit gravity");
+        add(build + ".snow", Pack.BASIC, build, null, "/komaedit snow");
+        add(build + ".drain", Pack.BASIC, build, null, "/komaedit drain");
+        add(build + ".waterlog", Pack.BASIC, build, null, "/komaedit waterlog");
+        for (String color : List.of("similar", "gradient", "palette", "hotbar")) {
+            add("komaedit.color." + color, Pack.BASIC, use, null, "/komaedit color " + color);
+        }
         for (String[] entry : new String[][]{{"next", "next"}, {"here", "here"}, {"invert", "invert"},
                 {"delpos2", "delpos"}, {"encapsulate", "encapsulate"}, {"encapsulatenear", "encapsulatenear"},
                 {"catenary", "catenary"}}) {
@@ -147,6 +158,33 @@ public final class PermissionNodes {
         add(build + ".flowfield", Pack.INTERMEDIATE, build, "ezedits.flow.flowfield", "/komaedit flowfield");
         add(build + ".flowline", Pack.INTERMEDIATE, build, "ezedits.flow.flowline", "/komaedit flowline");
         add(build + ".place", Pack.INTERMEDIATE, build, "ezedits.place", "/komaedit place");
+        add(build + ".symmetry.reflectional", Pack.INTERMEDIATE, build, "ezedits.symmetry.reflectional",
+                "/komaedit symmetry con espejos en X, Z e Y");
+        add(build + ".symmetry.rotational", Pack.INTERMEDIATE, build, "ezedits.symmetry.rotational",
+                "/komaedit symmetry radial");
+        add(build + ".text", Pack.INTERMEDIATE, build, null, "/komaedit text");
+        add(build + ".biome", Pack.INTERMEDIATE, build, null, "/komaedit biome");
+        add(build + ".brush.biome", Pack.INTERMEDIATE, build, null, "/komaedit pincel biome");
+        add(build + ".shade", Pack.INTERMEDIATE, build, null, "/komaedit shade");
+        add(build + ".tree", Pack.INTERMEDIATE, build, null, "/komaedit tree");
+        add(build + ".rock", Pack.INTERMEDIATE, build, null, "/komaedit rock");
+        add(build + ".brush.tree", Pack.INTERMEDIATE, build, null, "/komaedit pincel tree");
+        add(build + ".brush.rock", Pack.INTERMEDIATE, build, null, "/komaedit pincel rock");
+        add(build + ".brush.heightmap", Pack.INTERMEDIATE, build, null, "/komaedit pincel heightmap");
+        add(build + ".brush.sculpt", Pack.INTERMEDIATE, build, null,
+                "/komaedit pincel sculpt (esculpir, roca, soldar, fundir, rugosidad, grietas)");
+        add(build + ".terrain.ramp", Pack.INTERMEDIATE, build, null, "/komaedit terreno rampa");
+        add(build + ".terrain.river", Pack.INTERMEDIATE, build, null, "/komaedit terreno rio|arroyo");
+        add(build + ".terrain.canyon", Pack.INTERMEDIATE, build, null, "/komaedit terreno canon|barranco");
+        add(build + ".terrain.paint", Pack.INTERMEDIATE, build, null, "/komaedit terreno pintar");
+        add(build + ".roof", Pack.INTERMEDIATE, build, null, "/komaedit roof (tejados)");
+        add(build + ".loft", Pack.INTERMEDIATE, build, null, "/komaedit loft (superficies entre curvas)");
+        add(BlueprintPermissions.LOAD, Pack.INTERMEDIATE, KomaPermissions.CLIPBOARD, null,
+                "Biblioteca de planos: ver, buscar y cargar al portapapeles (/komaedit blueprint list|load)");
+        add(BlueprintPermissions.SAVE, Pack.INTERMEDIATE, KomaPermissions.CLIPBOARD, null,
+                "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
+        add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
+        add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
@@ -156,11 +194,36 @@ public final class PermissionNodes {
         add(build + ".brush.array", Pack.ADVANCED, build, "ezedits.brush.array", "/komaedit pincel array");
         add(build + ".brush.scatter", Pack.ADVANCED, build, "ezedits.brush.scatter", "/komaedit pincel scatter");
         add(build + ".smoothblocks", Pack.ADVANCED, build, "ezedits.smooth.smoothblocks", "/komaedit smoothblocks");
+        add(build + ".symmetry.worldedit", Pack.ADVANCED, build, null,
+                "/komaedit symmetry worldedit: refleja también las ediciones de WorldEdit y KomaEdit");
+        add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
+        add(BlueprintPermissions.SHARE, Pack.ADVANCED, null, null,
+                "Compartir planos propios con todo el servidor (/komaedit blueprint share)");
+
+        // Capacidades de construcción a mano (menú rápido y /komaedit capability).
+        for (BuildCapability capability : BuildCapability.values()) {
+            Pack pack = switch (capability) {
+                case EXTRUDE, SMEAR, NO_UPDATES, REACH -> Pack.INTERMEDIATE;
+                default -> Pack.BASIC;
+            };
+            add(capability.permission(), pack, build, null, "Capacidad «" + capability.displayName() + "»");
+        }
+        add(BuildCapability.FLY_SPEED_PERMISSION, Pack.BASIC, build, null, "Velocidad de vuelo del menú rápido");
+        add(build + ".terrain.erode.hydraulic", Pack.ADVANCED, build, null, "/komaedit terreno erosion hidraulica");
+        add(build + ".terrain.erode.thermal", Pack.ADVANCED, build, null, "/komaedit terreno erosion termica");
 
         // Administración.
+        add(BuildCapability.GAMEMODE_PERMISSION, Pack.ADMIN, null, null, "Cambiar el modo de juego desde el menú rápido");
+        add(BuildCapability.ANY_MODE_PERMISSION, Pack.ADMIN, null, null, "Usar las capacidades fuera de creativo");
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
         add(KomaPermissions.PROJECT_BACKUP, Pack.ADMIN, null, null, "/komaedit project backup");
+        add(KomaPermissions.ADMIN_IMAGE_URL, Pack.ADMIN, null, null,
+                "Imágenes por URL en /komaedit image (si urlsRequireAdmin está activo)");
         add(KomaPermissions.LIMIT_UNRESTRICTED, Pack.ADMIN, null, null, "Sin límite de bloques por operación");
+        add(BlueprintPermissions.MANAGE, Pack.ADMIN, null, null,
+                "Borrar o reemplazar los planos compartidos de otros jugadores");
+        add(BlueprintPermissions.UNLIMITED, Pack.ADMIN, null, null,
+                "Sin los límites de número y tamaño de planos de blueprints.json");
     }
 
     private PermissionNodes() {

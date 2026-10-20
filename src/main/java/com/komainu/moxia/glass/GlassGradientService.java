@@ -2,7 +2,9 @@ package com.komainu.moxia.glass;
 
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.persistence.QuietMode;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import net.minecraft.server.MinecraftServer;
@@ -79,15 +81,19 @@ public final class GlassGradientService {
             }
         }
         try {
-            int queued = BatchEditService.submit(player, plan.build(), "air", "Vidriera degradada");
+            PackedBlockPlan built = plan.build();
+            int queued = BatchEditService.submit(player, built, "air", "Vidriera degradada");
+            if (PlanPreviews.holds(player.getUuid(), built)) {
+                return;
+            }
             GlassGradientSolver.Stack first = stacks.getFirst();
             String detail = stacks.size() == 1
                     ? " · se ve " + GlassColors.toHex(first.color()) + " (buscado " + GlassColors.toHex(first.target())
                     + ")" + (request.findBackground() ? " sobre " + first.background() : "")
                     : String.format(Locale.ROOT, " · error medio %.3f, máximo %.3f (OKLab)", error / stacks.size(),
                     worst);
-            player.sendMessage(prefix().append(Text.literal("Vidriera: " + queued + " bloques en cola" + detail
-                    + " · //undo para deshacer").formatted(Formatting.GREEN)), false);
+            QuietMode.info(player, prefix().append(Text.literal("Vidriera: " + queued + " bloques en cola" + detail
+                    + " · //undo para deshacer").formatted(Formatting.GREEN)));
         } catch (IllegalArgumentException | IllegalStateException exception) {
             player.sendMessage(prefix().append(Text.literal("Vidriera: " + exception.getMessage())
                     .formatted(Formatting.RED)), false);

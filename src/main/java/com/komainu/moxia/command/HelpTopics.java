@@ -66,23 +66,35 @@ public final class HelpTopics {
                     new Entry("/komaedit path list", "Tus recorridos; clic para cargar"),
                     new Entry("/komaedit path delete <nombre>", "Lo borra")
             )),
-            new Topic("build", "Figuras", List.of("figuras", "construir", "figura", "shapes"), List.of(
+            new Topic("build", "Figuras", List.of("figuras", "construir", "figura", "shapes", "estimar", "nube",
+                    "rayos", "circulorayos"), List.of(
                     new Entry("/komaedit build <figura> [patrón] [escala] [espaciado] [grosor] [giro]",
                             "Construye una figura a lo largo de la trayectoria"),
                     new Entry("/komaedit build \"coil(engine:exact,end:round)\" stone",
                             "Opciones de figura entre comillas"),
                     new Entry("/komaedit estimate <figura> [patrón] [escala] [espaciado] [grosor] [giro]",
                             "Bloques, chunks y tiempo sin construir nada"),
-                    new Entry("/komaedit confirm [cancel]", "Lanza o descarta un Build grande en espera"),
+                    new Entry("/komaedit confirm [cancel]", "Aplica o descarta la vista previa o el Build grande en espera"),
                     new Entry("/komaedit bridge <altura> <ancho> [material]", "Puente arqueado"),
                     new Entry("/komaedit torii <altura> <grosor> <detalle> [material]", "Torii"),
-                    new Entry("/komaedit lightningcircle <radio> <ramificación> [material]", "Aro de rayos")
+                    new Entry("/komaedit pillar <radio> <detalle> [material]", "Columna por la trayectoria"),
+                    new Entry("/komaedit pillararches <altura> <radio> [material]", "Columnas con arcos"),
+                    new Entry("/komaedit cloud <radio> <organicidad> [hueco] [material]", "Nubes (alias nube)"),
+                    new Entry("/komaedit mandala <radio> <simetría> [material]", "Mandala"),
+                    new Entry("/komaedit web <elasticidad> <separación> [material]", "Telaraña entre los puntos"),
+                    new Entry("/komaedit lightning <amplitud> <ramificación> [material]",
+                            "Rayos entre los puntos (alias rayos)"),
+                    new Entry("/komaedit lightningcircle <radio> <ramificación> [material]",
+                            "Aro de rayos (alias circulorayos)"),
+                    new Entry("/komaedit noodles <radio> <separación> [material]", "Fideos enredados")
             )),
-            new Topic("tubes", "Tubos", List.of("tubos", "tubo", "sweep", "perfil"), List.of(
+            new Topic("tubes", "Tubos", List.of("tubos", "tubo", "sweep", "perfil", "braid", "trenza", "noisetube",
+                    "erosion", "expr", "expresion"), List.of(
                     new Entry("/komaedit sweep <perfil> <radios> [patrón] [banderas]", "Tubo sin huecos con perfil"),
-                    new Entry("/komaedit braid <radios> [patrón] [banderas]", "Trenza"),
-                    new Entry("/komaedit noisetube <radios> [patrón] [banderas]", "Tubo erosionado"),
-                    new Entry("/komaedit expr <radios> [banderas] [patrón] <fórmula>", "Figura por fórmula"),
+                    new Entry("/komaedit braid <radios> [patrón] [banderas]", "Trenza (alias trenza)"),
+                    new Entry("/komaedit noisetube <radios> [patrón] [banderas]", "Tubo erosionado (alias erosion)"),
+                    new Entry("/komaedit expr <radios> [banderas] [patrón] <fórmula>",
+                            "Figura por fórmula (alias expresion)"),
                     new Entry("/komaedit sweep circle 2_6_2 stone -e round -w stairs",
                             "Ejemplo: radios con fotogramas, extremos redondos y escaleras")
             )),
@@ -96,17 +108,25 @@ public final class HelpTopics {
                             "Cilindro mordido por un ruido"),
                     new Entry("/komaedit ezsp expression <paleta> <radios> [-z] [-o] <expresión>",
                             "Figura por expresión con paleta"),
-                    new Entry("/komaedit ezsp structure <estructura> [radio] [-z]", "Estructura doblada por el recorrido"),
+                    new Entry("/komaedit ezsp structure <estructura> [radios] [-z] [-t grados] [-r inicio[,fin]]",
+                            "Estructura doblada; 4,12,4 la escala por fotogramas, -t la retuerce y -r la gira"),
                     new Entry("/komaedit ezsp 3d Chainlink(M:99,N:99,E:0.6) clay 10 -q EXACT",
                             "Banderas: -p -q -r -s -t -n -e -w -h, como en ezEdits")
             )),
-            new Topic("edit", "Editar estructuras", List.of("editar", "doblar", "bend", "degradado", "gradient"), List.of(
+            new Topic("edit", "Editar estructuras", List.of("editar", "doblar", "bend", "degradado", "gradient",
+                    "portapapeles", "clipboard", "escalar", "rotsprite"), List.of(
                     new Entry("/komaedit bend [repeat|stretch] [-n upright|horizontal]", "Dobla el portapapeles por la trayectoria"),
+                    new Entry("/komaedit clipboard scale <factor> [nearest|scale2x|scale3x|rotsprite]",
+                            "Agranda o encoge el portapapeles sin dientes de sierra (alias portapapeles escalar)"),
+                    new Entry("/komaedit clipboard rotate <grados> [rotsprite|nearest]",
+                            "Gira el portapapeles cualquier ángulo; escaleras y troncos giran con él (alias girar)"),
+                    new Entry("/komaedit clipboard restore", "Vuelve al portapapeles de antes del último escalado o giro"),
                     new Entry("/komaedit gradient preset <paleta>", "Degradado de paleta sobre la selección"),
                     new Entry("/komaedit job status", "Progreso de la construcción en curso"),
                     new Entry("/komaedit job cancel", "Cancela la construcción en curso")
             )),
-            new Topic("region", "Sobre lo construido", List.of("hiedra", "ivy", "envejecer", "weather", "retocar", "tweak"),
+            new Topic("region", "Sobre lo construido", List.of("hiedra", "ivy", "envejecer", "weather", "retocar", "tweak",
+                    "survival", "enredaderas", "musgo", "unirlosas", "ciclarestado"),
                     List.of(
                             new Entry("/komaedit ivy [estilo] [-l largo] [-b ramas 0–1] [-g cuelgue 0–1] [-n tallos] [-seed semilla]",
                                     "Hiedra viva desde los puntos P o el bloque que miras (alias hiedra)"),
@@ -114,7 +134,8 @@ public final class HelpTopics {
                             new Entry("/komaedit weather [intensidad 0–100] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]",
                                     "Envejece la selección (alias envejecer)"),
                             new Entry("/komaedit envejecer 70 nevado -d 40", "Ejemplo: ruina nevada con derrumbe"),
-                            new Entry("/komaedit tweak deinfest|persist|waterlog|wax", "Retoques sobre la selección (alias retocar)"),
+                            new Entry("/komaedit tweak deinfest|persist|waterlog|wax [on|off]",
+                                    "Retoques sobre la selección (alias retocar, survival); wax encera cobre y carteles"),
                             new Entry("/komaedit vines <máscara> <patrón> [porcentaje] [mínimo] [máximo] [-s semilla]",
                                     "Cuelga enredaderas bajo los bloques (alias enredaderas)"),
                             new Entry("/komaedit moss <patrón> [cantidad] [radios] [iteraciones] [-s semilla]",
@@ -123,8 +144,29 @@ public final class HelpTopics {
                             new Entry("/komaedit statecycle <máscara> <propiedad> [pasos]",
                                     "Avanza una propiedad de estado (alias ciclarestado)")
                     )),
+            new Topic("sculpt", "Esculpir y modelar", List.of("esculpir", "modelar", "modelado", "soldar", "fundir",
+                    "grietas", "rugosidad", "escultura"), List.of(
+                    new Entry("/komaedit pincel sculpt draw|rock|weld|melt|roughen|shatter [radio] [cantidad] [banderas]",
+                            "Pinceles de modelado en la herramienta (alias modelar; atajo: /komaedit pincel soldar 8)"),
+                    new Entry("/komaedit pincel sculpt draw 6 3 -s 1",
+                            "Esculpir: empuja la superficie 3 bloques por su normal (clic izquierdo: la hunde)"),
+                    new Entry("/komaedit pincel sculpt rock 7 0.5 -b stone,andesite,tuff",
+                            "Roca: masa rocosa que se funde con lo que hay (clic izquierdo: la talla)"),
+                    new Entry("/komaedit pincel sculpt weld 8 0.35 -g 2",
+                            "Soldar: une piezas y rellena rincones (clic izquierdo: fundir, que redondea aristas)"),
+                    new Entry("/komaedit pincel sculpt roughen 10 1.5",
+                            "Rugosidad: más caras a la vista sin cambiar apenas el volumen"),
+                    new Entry("/komaedit pincel sculpt shatter 12 6 -e y -w 1 -d 3 -b air",
+                            "Grietas de Voronoi (3D o en columnas con -e) sobre lo que hay, vacías o con -b"),
+                    new Entry("/komaedit pincel sculpt <modo> … -f smooth -m #solid -p",
+                            "Comunes: -f caída, -m máscara, -b material (de serie, el de alrededor), -n cambia los"
+                                    + " clics, -p vista previa"),
+                    new Entry("/komaedit sculpt set draw|rock|weld|melt|roughen|shatter <patrón|auto> <radio> …",
+                            "Los mismos con la brocha de siempre; auto pone el material de alrededor")
+            )),
             new Topic("deform", "Deformar y suavizar", List.of("deformar", "superficie", "surface", "suavizar",
-                    "smooth", "inflate", "inflar", "deflate", "smoothblocks", "cilindro", "esfera"),
+                    "smooth", "inflate", "inflar", "deflate", "desinflar", "smoothblocks", "suavizarpiezas", "cilindro",
+                    "esfera"),
                     List.of(
                             new Entry("/komaedit deform hexagonalize|noise|rotate|voronoialize|voronoialize2|voxelize …",
                                     "Deforma la selección (alias deformar)"),
@@ -135,9 +177,11 @@ public final class HelpTopics {
                             new Entry("/komaedit smooth <radios> [iteraciones] [sesgo]", "Suaviza la selección (alias suavizar)"),
                             new Entry("/komaedit inflate|deflate <radios>", "Engorda o adelgaza (alias inflar, desinflar)"),
                             new Entry("/komaedit smoothblocks <perfil> [radio] [sesgo]",
-                                    "Suaviza con piezas; todas admiten -w Slabs|SlabsAndStairs|SlabsAndStairs2D|Layers|SSW")
+                                    "Suaviza con piezas (alias suavizarpiezas); todas admiten "
+                                            + "-w Slabs|SlabsAndStairs|SlabsAndStairs2D|Layers|SSW|Panes")
                     )),
-            new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass"), List.of(
+            new Topic("texture", "Texturizado", List.of("textura", "texturas", "eztexture", "vidriera", "glass", "image",
+                    "imagen", "stainedglassimage"), List.of(
                     new Entry("/komaedit texture ambient|curvature <máscara> <paleta> [radio] [brillo] [contraste] [-w]",
                             "Oclusión ambiental o curvatura (alias textura)"),
                     new Entry("/komaedit texture axisgradient <máscara> <paleta> [x|y|z] [-r]", "Degradado por eje"),
@@ -154,10 +198,13 @@ public final class HelpTopics {
                     new Entry("/komaedit texture advanced <máscara> <paleta> <textura>",
                             "Combina modos: WeightedAverage(T1:Sun(),T2:Ambient())"),
                     new Entry("/komaedit glassgradient <inicio> [fin] <capas> [longitud] [calidad] [dirección] [-c] [-b] [-s]",
-                            "Vidriera degradada de cristal tintado (alias vidriera)")
+                            "Vidriera degradada de cristal tintado (alias vidriera)"),
+                    new Entry("/komaedit image <archivo|https://…> [ancho] [paleta] [-d none|fs|bayer] [-s] [-o anclaje]",
+                            "Imagen en bloques: vidrio, paneles, lana, hormigón, terracota o tu paleta (alias imagen, "
+                                    + "stainedglassimage)")
             )),
             new Topic("generators", "Generadores", List.of("generadores", "forma", "shape", "noisegen", "ruidogen",
-                    "flowfield", "flujo", "flowline"), List.of(
+                    "flowfield", "flujo", "flowline", "lineaflujo"), List.of(
                     new Entry("/komaedit shape cone|polydome|polygon|square|tetrahedron|torus <patrón> …",
                             "Forma suelta donde estás (alias forma)"),
                     new Entry("/komaedit shape torus prismarine 14 3 rounded_square -o", "Ejemplo: aro de pie hacia la mirada"),
@@ -168,7 +215,47 @@ public final class HelpTopics {
                     new Entry("/komaedit flowfield <paleta> <líneas|n%> [iteraciones] [velocidad] [escala] [ruido] …",
                             "Campo de flujo en la selección (alias flujo)"),
                     new Entry("/komaedit flowline <patrón> <longitud> [gravedad] [ruido] [-l líneas] [-s]",
-                            "Línea de flujo hacia donde miras (alias lineaflujo)")
+                            "Línea de flujo hacia donde miras (alias lineaflujo)"),
+                    new Entry("/komaedit noisegen heightmap sand,grass_block,stone -m \"#existing !#near[water][3]\"",
+                            "-m admite cualquier máscara de WorldEdit (entre comillas si lleva espacios)")
+            )),
+            new Topic("roof", "Tejados y lonas", List.of("tejado", "tejados", "roofs", "loft", "lona", "lonas",
+                    "toldo"), List.of(
+                    new Entry("/komaedit roof <tipo> [material] [banderas]",
+                            "Tejado sobre la planta de la selección (alias tejado): gable, hip, mansard, shed, gablet, "
+                                    + "dome, cone, spire, pagoda, flat"),
+                    new Entry("/komaedit roof gable spruce_planks -p 1:1 -a 1 -c dark_oak_planks",
+                            "Ejemplo: dos aguas a 45°, alero de 1 y caballete oscuro"),
+                    new Entry("/komaedit roof hip deepslate_tiles -d -b 2",
+                            "Ejemplo: planta sacada de los muros (L, T, U) y dos buhardillas por lado"),
+                    new Entry("/komaedit roof shed ##DustyBrown -p 1:2 -lado s",
+                            "Ejemplo: a un agua con degradado por altura de una paleta"),
+                    new Entry("/komaedit roof <tipo> … -e", "Solo estima bloques, chunks y tiempo"),
+                    new Entry("/komaedit loft <curva> <curva> [más curvas] [material] [banderas]",
+                            "Superficie entre 2 a 6 recorridos guardados o «actual» (alias lona)"),
+                    new Entry("/komaedit loft white_wool -i catenaria -comba 2",
+                            "Ejemplo: lona colgante entre los 4 puntos marcados (dos tramos)"),
+                    new Entry("/komaedit loft borde1 borde2 borde3 -i catmull -g 2 -w SlabsAndStairs",
+                            "Ejemplo: vela suave entre tres curvas, de 2 de grosor y con piezas")
+            )),
+            new Topic("terrain", "Terraformado", List.of("terreno", "terraformar", "rampa", "rio", "canon",
+                    "relieve", "sellos", "heightmap"), List.of(
+                    new Entry("/komaedit pincel heightmap <sello> [radio] [altura] [elevar|bajar|aplanar] [paleta] "
+                            + "[-i intensidad] [-r mirada|azar|grados] [-m máscara] [-c neutro] [-p]",
+                            "Pincel de relieve con un sello en grises (alias relieve, sello)"),
+                    new Entry("/komaedit pincel heightmap montana 24 30 natural -r azar",
+                            "Ejemplo: montañas giradas al azar con hierba, piedra y nieve"),
+                    new Entry("/komaedit terreno sellos", "Sellos de serie y PNG de config/komaedit/heightmaps"),
+                    new Entry("/komaedit terreno rampa [plano|cono] [ancho] [transición] [paleta] [-t talud] [-u] [-e]",
+                            "Rampa del primer al último punto de la trayectoria (o //pos1 → //pos2)"),
+                    new Entry("/komaedit terreno rio|arroyo|canon|barranco [ancho] [profundidad] [paleta] "
+                            + "[-o orilla] [-w laderas] [-t transición] [-f agua|lava|seco] [-n nivel] [-y] [-k] [-e]",
+                            "Río o cañón por la trayectoria; el fondo y el agua nunca suben"),
+                    new Entry("/komaedit terreno erosion hidraulica|termica|completa [iteraciones] [fuerza] [paleta] "
+                            + "[-a ángulo] [-s semilla] [-m máscara] [-e]", "Erosión física de la selección"),
+                    new Entry("/komaedit terreno pintar [paleta] [-m máscara]",
+                            "Repinta la superficie de la selección por pendiente y altura"),
+                    new Entry("/komaedit terreno paletas", "Paletas de superficie: natural, desierto, mesa, nevado…")
             )),
             new Topic("placement", "Colocación", List.of("colocar", "colocacion", "place", "array", "hilera",
                     "scatter", "dispersar", "estructuras"), List.of(
@@ -188,7 +275,54 @@ public final class HelpTopics {
                     new Entry("/komaedit pincel place|scatter|array <estructura> [primaria] [secundaria] [banderas]",
                             "Los mismos como pinceles: en el clic, alrededor del clic o por un trazo"),
                     new Entry("/komaedit pincel place Cl SurfaceNormal ViewDiff",
-                            "ViewDiff: clic derecho dónde y clic izquierdo hacia dónde")
+                            "ViewDiff: clic derecho dónde y clic izquierdo hacia dónde"),
+                    new Entry("/komaedit place Cl -copias 11 -desplazar 0,1,0 -revolver 30 -pivote 4,0,0",
+                            "Copias que suben y giran alrededor de un pivote: escalera de caracol (y -torcer)")
+            )),
+            new Topic("symmetry", "Simetría", List.of("simetria", "sym", "espejo", "radial", "ezsymmetry"), List.of(
+                    new Entry("/komaedit symmetry on [modo]",
+                            "Copia lo que pones y rompes; sin centro, lo fija donde estás (alias simetria, sym)"),
+                    new Entry("/komaedit symmetry off", "Deja de copiar"),
+                    new Entry("/komaedit symmetry mode x|z|xz|y|xzy|radial [brazos] [y]",
+                            "Espejos en cualquier combinación, o radial alrededor de un eje vertical"),
+                    new Entry("/komaedit symmetry center [here|selection|<x> <y> <z>] [half [ejes]]",
+                            "Centro en tu bloque, en la selección o en un punto; half lo pone entre bloques"),
+                    new Entry("/komaedit symmetry arms <2-16>", "Brazos del radial"),
+                    new Entry("/komaedit symmetry worldedit [on|off]",
+                            "Refleja también tus ediciones de WorldEdit y KomaEdit, en el mismo //undo"),
+                    new Entry("/komaedit symmetry info", "Estado, centro y botones"),
+                    new Entry("/komaedit sym on radial 8 y", "Ejemplo: rosetón de 8 brazos reflejado arriba y abajo")
+            )),
+            new Topic("nature", "Árboles y rocas", List.of("arboles", "arbol", "tree", "trees", "rocas", "roca",
+                    "rock", "rocks", "naturaleza", "vegetacion"), List.of(
+                    new Entry("/komaedit tree [especie|#preset] [altura] [banderas]",
+                            "Árbol donde miras o en cada punto P (alias arbol): oak, spruce, birch, jungle, acacia, "
+                                    + "cherry, willow, dark_oak, dead, palm, baobab, fantasy"),
+                    new Entry("/komaedit tree oak 22 -g 1.3 -i 12 -h oak_leaves,azalea_leaves",
+                            "-g grosor, -b ramas, -d densidad, -w ancho, -i inclinación, -c curvatura, -s semilla, "
+                                    + "-t tronco, -h hojas, -r raíces, -m máscara, -x variación, -v vista previa"),
+                    new Entry("/komaedit rock [tipo|#preset] [tamaño] [banderas]",
+                            "Roca, peñasco o aguja hundida en el terreno (alias roca): boulder, crag, spire"),
+                    new Entry("/komaedit rock crag 9 -u 0.5 -e 2",
+                            "-b bloques de oscuro a claro, -u musgo, -a alto, -e alargado, -r rugosidad, -g grietas, "
+                                    + "-c caras, -h hundido, -i inclinación, -s semilla, -m máscara, -x, -v"),
+                    new Entry("/komaedit tree save|list|delete <nombre> [ajustes] [-f]",
+                            "Presets: guarda unos ajustes y úsalos con #nombre (también rock save|list|delete)"),
+                    new Entry("/komaedit pincel tree|rock <ajustes> [-x variación] [-p]",
+                            "Pinceles: un árbol o una roca en cada clic derecho, distinto cada vez")
+            )),
+            new Topic("brushes", "Pinceles", List.of("pincel", "pinceles", "ezbrush", "brush", "superwand",
+                    "supervarita", "varita"), List.of(
+                    new Entry("/komaedit pincel <tipo> [opciones]",
+                            "Liga un pincel al objeto de la mano (alias ezbrush): paletteshift, gradient, "
+                                    + "gradientstroke, petalpainter, place, scatter, array, tree, rock, biome, heightmap"),
+                    new Entry("/komaedit pincel gradient ##Magma 8 tapered linear bezier 0.5 -p",
+                            "Ejemplo: degradado con holograma; -p deja verlo antes de aplicarlo"),
+                    new Entry("/komaedit pincel aplicar|cancelar", "Aplica o descarta el holograma del pincel"),
+                    new Entry("/komaedit pincel quitar", "Quita el pincel del objeto de la mano"),
+                    new Entry("/komaedit pincel", "El pincel del objeto de la mano, o la lista de pinceles"),
+                    new Entry("/komaedit superwand [trace|position|relative|grab|off] [-d]",
+                            "Supervarita de selección (alias supervarita)")
             )),
             new Topic("palette", "Paletas guardadas", List.of("paleta", "paletas", "palettes"), List.of(
                     new Entry("/komaedit palette list [all|default|mine]", "Paletas de serie y tuyas; pulsa una para verla"),
@@ -202,6 +336,21 @@ public final class HelpTopics {
                     new Entry("/komaedit palette encode <paleta>", "Código kp1:… para compartirla"),
                     new Entry("/komaedit palette decode <código>", "Convierte un código kp1:… en bloques"),
                     new Entry("/komaedit palette delete <nombre>", "Borra una paleta guardada")
+            )),
+            new Topic("color", "Color y sombreado", List.of("colores", "colour", "parecidos", "shade",
+                    "sombrear", "sombreado"), List.of(
+                    new Entry("/komaedit color similar [bloque|#hex] [n] [-c] [-s] [-o] [-u]",
+                            "Los n bloques de color más parecido; sin bloque, el de la mano o el que miras"),
+                    new Entry("/komaedit color gradient <A> <B> [pasos] [-c] [-s] [-o] [-u] [-v variante] [-p nombre]",
+                            "Degradado en OKLab sin repetir bloques; [otra] da alternativas (alias degradado)"),
+                    new Entry("/komaedit color palette <selection|hotbar|paleta> [nombre] [-f]",
+                            "Paleta de la selección, la barra rápida o una paleta, de oscuro a claro"),
+                    new Entry("/komaedit color hotbar <bloques|undo>", "Lleva bloques a la barra rápida (creativo)"),
+                    new Entry("/komaedit shade [selection|rampa|paleta] [-l luz] [-a 0–1] [-o 0–1] [-d 0–1] [-m máscara]",
+                            "Sombrea la superficie según la luz, con oclusión y sombras (alias sombrear)"),
+                    new Entry("/komaedit shade -l ne -d 0.5", "Ejemplo: luz del noreste con tramado"),
+                    new Entry("/komaedit color gradient deepslate calcite 7 -c -o",
+                            "Ejemplo: de oscuro a claro solo con cubos opacos")
             )),
             new Topic("noise", "Ruidos guardados", List.of("ruido", "ruidos", "noises"), List.of(
                     new Entry("/komaedit noise list [all|default|mine]", "Ruidos de serie y tuyos"),
@@ -224,13 +373,85 @@ public final class HelpTopics {
                     new Entry("/komaedit sel catenary <puntos> [comba] [down|up|left|right]",
                             "Selección convexa colgando como una cadena entre el principio y el final")
             )),
-            new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup"), List.of(
+            new Topic("capability", "Construir a mano", List.of("capacidad", "capacidades", "capabilities",
+                    "axiom", "builder"), List.of(
+                    new Entry("/komaedit capability", "Qué capacidades tienes activas (menú rápido: mantén Z)"),
+                    new Entry("/komaedit capability <capacidad> [on|off]",
+                            "replace, tweak, extrude, smear, angel, reach, fastplace o noupdates"),
+                    new Entry("/komaedit capability angel|reach <bloques>",
+                            "Distancia de colocar en el aire o del alcance largo"),
+                    new Entry("/komaedit capability extrude <bloques>", "Bloques como mucho por capa al extruir"),
+                    new Entry("/komaedit capability option family on|off",
+                            "Reemplazar familia: con planchas de abeto, la escalera de roble pasa a ser de abeto"),
+                    new Entry("/komaedit capability option match type|state",
+                            "La capa de extruir sigue el mismo tipo de bloque o el mismo estado exacto"),
+                    new Entry("/komaedit capability option flyspeed <x>", "Velocidad de vuelo (1 normal, 2.5…)")
+            )),
+            new Topic("preview", "Vista previa y progreso", List.of("vistaprevia", "previa", "progreso", "cancelar",
+                    "confirmar"), List.of(
+                    new Entry("/komaedit texture rockify stone -v",
+                            "-v (o --preview) en cualquier orden: calcula y enseña sin colocar nada"),
+                    new Entry("/komaedit confirm", "Aplica exactamente lo que ves; si la zona cambió, lo recalcula"),
+                    new Entry("/komaedit cancel", "Descarta la vista previa o para la lectura, el cálculo y la colocación"),
+                    new Entry("/komaedit preview always <bloques>",
+                            "Previsualiza siempre las ediciones de N bloques o más"),
+                    new Entry("/komaedit preview off", "Vista previa solo con -v"),
+                    new Entry("/komaedit preview", "Tu preferencia y la vista previa que tengas esperando"),
+                    new Entry("/komaedit job status", "Progreso de la colocación (también en la bossbar)")
+            )),
+            new Topic("utilidades", "Utilidades de obra", List.of("utilities", "texto", "text", "materiales",
+                    "analyze", "analizar", "gravedad", "gravity", "nieve", "snow", "agua", "drain", "drenar", "waterlog",
+                    "inundar", "biomas", "biome", "bioma"), List.of(
+                    new Entry("/komaedit text \"<texto>\" [material] [-f fuente] [-s tamaño] [-d grosor] [-b borde]"
+                            + " [-o material del borde]", "Texto en bloques donde miras (alias texto)"),
+                    new Entry("/komaedit text \"Año Nuevo\" ##Magma -s 12 -b 1 -o black_concrete -w SlabsAndStairs",
+                            "Ejemplo: degradado, borde negro y losas y escaleras"),
+                    new Entry("/komaedit text fonts", "Fuentes de serie y las de config/komaedit/fonts"),
+                    new Entry("/komaedit analyze [-m máscara] [-n líneas]",
+                            "Lista de materiales: coste en survival, pilas y cofres, CSV (alias analizar, materiales)"),
+                    new Entry("/komaedit gravity [-a] [-m máscara]",
+                            "Deja caer los bloques por columnas; -a solo lo que no se apoya (alias gravedad)"),
+                    new Entry("/komaedit snow [capas] [-r radio] [-s sombra] [-h altura] [-p] [-m máscara]",
+                            "Nieve en capas que sigue la pendiente (alias nieve)"),
+                    new Entry("/komaedit drain [water|lava|all] [-k] [-m máscara]",
+                            "Quita el agua o la lava y desanega (alias drenar)"),
+                    new Entry("/komaedit waterlog [nivel|~] [-b] [-m máscara]",
+                            "Inunda y anega por debajo de un nivel (alias inundar)"),
+                    new Entry("/komaedit biome <bioma> [-v] [-m máscara]",
+                            "Pinta el bioma de la selección (alias bioma)"),
+                    new Entry("/komaedit pincel biome <bioma> [radio] [-v] [-m máscara]",
+                            "Pincel de biomas; el clic izquierdo toma el bioma del bloque")
+            )),
+            new Topic("blueprint", "Planos", List.of("planos", "plano", "blueprints", "biblioteca", "estampar",
+                    "stamp"), List.of(
+                    new Entry("/komaedit blueprint save <nombre> [etiquetas]",
+                            "Guarda el portapapeles con miniatura, autor y etiquetas (alias guardar)"),
+                    new Entry("/komaedit blueprint list [texto|#etiqueta] [página]",
+                            "Tus planos y los del servidor, con botones (alias lista, search, buscar)"),
+                    new Entry("/komaedit blueprint load <plano>", "Al portapapeles de WorldEdit (alias cargar)"),
+                    new Entry("/komaedit blueprint place <plano> [primaria] [secundaria] [banderas]",
+                            "Lo coloca como /komaedit place, con -v para la vista previa (alias colocar)"),
+                    new Entry("/komaedit blueprint info <plano>", "Tamaño, bloques, autor, fecha y etiquetas"),
+                    new Entry("/komaedit blueprint tags <plano> [etiquetas]", "Cambia sus etiquetas (vacío: quitarlas)"),
+                    new Entry("/komaedit blueprint share <plano>", "Lo comparte con todo el servidor (servidor/…)"),
+                    new Entry("/komaedit blueprint delete <plano>", "Lo borra (alias borrar)"),
+                    new Entry("/komaedit pincel stamp <planos|#etiqueta> [radio] [-n %] [-d separación] [-r giro]"
+                            + " [-f volteo] [-g apoyar|centro|no]", "Pincel estampar: planos al azar sobre el suelo"),
+                    new Entry("/komaedit scatter Bp(T:rocas) SurfaceNormal Random -n 1",
+                            "Los planos también valen en place, scatter y array con Bp(N:…|T:…)")
+            )),
+            new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup", "menu", "quick", "gui", "quiet",
+                    "silencio", "permisos", "permissions", "reload", "recargar"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),
-                    new Entry("/komaedit menu", "Paleta rápida (tecla K)"),
+                    new Entry("/komaedit menu", "Paleta rápida (tecla K; alias quick)"),
+                    new Entry("/komaedit gui", "Recuerda cómo se abre el Studio (tecla K)"),
                     new Entry("/komaedit info", "Versión del mod y paletas y ruidos de serie"),
-                    new Entry("/komaedit permisos [paquete]", "Qué nodos y paquetes de permisos tienes"),
-                    new Entry("/komaedit reload", "Recarga la configuración y las paletas del servidor (admin)")
+                    new Entry("/komaedit quiet [on|off]", "Silencia los mensajes informativos (se guarda; alias silencio)"),
+                    new Entry("/komaedit wiki", "Dónde está la ayuda"),
+                    new Entry("/komaedit permisos [paquete]", "Qué nodos y paquetes de permisos tienes (alias permissions)"),
+                    new Entry("/komaedit reload", "Recarga la configuración y las paletas del servidor (admin; alias "
+                            + "recargar)")
             ))
     );
 

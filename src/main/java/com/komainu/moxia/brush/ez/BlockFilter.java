@@ -10,9 +10,10 @@ import java.util.Locale;
  * cosa que no sea aire ni líquido). Un {@code !} delante excluye. Si solo hay exclusiones, se parte de
  * {@code #existing}.
  *
- * <p>Ejemplos: {@code #fullblock}, {@code grass_block,moss_block}, {@code #fullblock,!sand,!gravel}.</p>
+ * <p>Ejemplos: {@code #fullblock}, {@code grass_block,moss_block}, {@code #fullblock,!sand,!gravel}. Lo que no sea
+ * una lista así lo lee WorldEdit ({@link BrushMasks}).</p>
  */
-public final class BlockFilter {
+public final class BlockFilter implements BrushMask {
     public static final BlockFilter FULL_BLOCK = parse("#fullblock");
 
     private final String source;
@@ -62,6 +63,11 @@ public final class BlockFilter {
                 yield new Term(Kind.ID, PaletteShift.normalize(text));
             }
         };
+    }
+
+    @Override
+    public boolean matches(BrushWorld world, int x, int y, int z) {
+        return matches(world.blockId(x, y, z), world.cell(x, y, z));
     }
 
     public boolean matches(String blockId, BrushWorld.Cell cell) {

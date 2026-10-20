@@ -10,8 +10,8 @@ public final class StudioIcons {
     public static final int SIZE = 12;
 
     public enum Icon {
-        PATH, FIGURE, STRUCTURES, MODIFIERS, MATERIAL, WEATHER, INSTANCES, RECIPES,
-        UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE
+        PATH, FIGURE, STRUCTURES, MODIFIERS, MATERIAL, WEATHER, INSTANCES, RECIPES, COLOR, BLUEPRINTS,
+        UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE, TOOLS, LOCK
     }
 
     private StudioIcons() {
@@ -60,6 +60,20 @@ public final class StudioIcons {
                 box(context, x + 6, y + 7, 2, 3, color);
                 box(context, x + 8, y + 8, 3, 2, color);
                 box(context, x + 6, y + 4, 1, 1, color);
+            }
+            case COLOR -> {
+                // Tres muestras de oscuro a claro, como una paleta.
+                box(context, x, y + 1, 3, 10, color & 0x66FFFFFF);
+                box(context, x + 4, y + 1, 3, 10, color & 0xAAFFFFFF);
+                box(context, x + 8, y + 1, 3, 10, color);
+            }
+            case BLUEPRINTS -> {
+                // Una lámina de plano: marco, suelo y una casita.
+                outline(context, x, y + 1, 12, 11, color);
+                box(context, x + 2, y + 9, 8, 1, color & 0x88FFFFFF);
+                box(context, x + 3, y + 6, 6, 3, color);
+                box(context, x + 4, y + 5, 4, 1, color);
+                box(context, x + 5, y + 4, 2, 1, color);
             }
             case INSTANCES -> {
                 outline(context, x, y, 8, 8, color);
@@ -111,6 +125,19 @@ public final class StudioIcons {
                     box(context, x + step, y + step, 1, 1, color);
                     box(context, x + 11 - step, y + step, 1, 1, color);
                 }
+            }
+            case TOOLS -> {
+                // Martillo: cabeza con oreja y mango.
+                box(context, x + 1, y + 1, 8, 3, color);
+                box(context, x + 9, y + 2, 2, 1, color);
+                box(context, x + 10, y + 3, 1, 1, color);
+                box(context, x + 4, y + 4, 2, 8, color);
+            }
+            case LOCK -> {
+                box(context, x + 4, y + 1, 4, 1, color);
+                box(context, x + 3, y + 2, 1, 3, color);
+                box(context, x + 8, y + 2, 1, 3, color);
+                box(context, x + 2, y + 5, 8, 6, color);
             }
         }
     }

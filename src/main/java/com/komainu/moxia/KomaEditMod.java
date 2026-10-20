@@ -2,6 +2,8 @@ package com.komainu.moxia;
 
 import com.komainu.moxia.brush.BrushManager;
 import com.komainu.moxia.brush.BrushToolInputs;
+import com.komainu.moxia.capability.CapabilityConfig;
+import com.komainu.moxia.capability.CapabilityService;
 import com.komainu.moxia.command.MoxiaCommands;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
@@ -17,15 +19,24 @@ import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.persistence.OperationLedger;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.preview.PreviewDisplays;
 import com.komainu.moxia.preview.PreviewHologramPayload;
+import com.komainu.moxia.progress.ProgressBars;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.recipe.RecipeActionService;
 import com.komainu.moxia.recipe.RecipeCatalogPayload;
 import com.komainu.moxia.recipe.InstanceCatalogPayload;
 import com.komainu.moxia.sculpt.SnapshotCaptureService;
+import com.komainu.moxia.symmetry.SymmetryService;
 import com.komainu.moxia.ui.QuickBuildPayload;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -53,12 +64,14 @@ public final class KomaEditMod implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(PreviewHologramPayload.ID, PreviewHologramPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(EditorActionPayload.ID, EditorActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RecipeActionPayload.ID, RecipeActionPayload.CODEC);
+        com.komainu.moxia.studio.net.StudioToolsNetwork.register();
         ServerPlayNetworking.registerGlobalReceiver(EditorActionPayload.ID, (payload, context) ->
                 context.server().execute(() -> EditorActionService.handle(context.player(), payload))
         );
         ServerPlayNetworking.registerGlobalReceiver(RecipeActionPayload.ID, (payload, context) ->
                 context.server().execute(() -> RecipeActionService.handle(context.player(), payload))
         );
+        com.komainu.moxia.blueprint.BlueprintNetwork.register();
         MoxiaCommands.register();
         com.komainu.moxia.worldedit.EzExtensions.register();
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
@@ -88,7 +101,16 @@ public final class KomaEditMod implements ModInitializer {
             }
             try {
                 KomaPermissions.require(serverPlayer, KomaPermissions.BUILD);
-                int changed = BrushManager.stamp(serverPlayer, hitResult);
+                // Un estampado de pincel se aplica al momento: sin la vista previa universal.
+                int changed = EditRequests.within(EditRequest.TOOL, () -> {
+                    try {
+                        return BrushManager.stamp(serverPlayer, hitResult);
+                    } catch (RuntimeException exception) {
+                        throw exception;
+                    } catch (Exception exception) {
+                        throw new IllegalStateException(exception.getMessage(), exception);
+                    }
+                });
                 serverPlayer.sendMessage(net.minecraft.text.Text.literal(
                         "KomaEdit · Figura estampada: " + changed + " bloques · //undo"
                 ), true);
@@ -101,6 +123,16 @@ public final class KomaEditMod implements ModInitializer {
             }
         });
         BrushToolInputs.register();
+        CapabilityConfig.load();
+        CapabilityService.register();
+        // Lo que se coloca a mano con las capacidades (reemplazar, extruir…) también se replica en simetría.
+        com.komainu.moxia.capability.HandEditEvents.COLLECT.register((player, world, planned, extra) ->
+                SymmetryService.mirrorHandEdits(player, world,
+                        planned.stream().map(com.komainu.moxia.capability.HandEdit::pos).toList(),
+                        planned.stream().map(com.komainu.moxia.capability.HandEdit::state).toList(),
+                        (pos, state) -> extra.accept(new com.komainu.moxia.capability.HandEdit(pos, state))));
+        SymmetryService.register();
+        com.komainu.moxia.biome.BiomeEditService.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             try {
                 ProjectStorage.bind(handler.player.getUuid(), server);
@@ -132,6 +164,9 @@ public final class KomaEditMod implements ModInitializer {
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             BatchEditService.cancel(handler.player.getUuid(), false);
+            // Lo que aún se lee o se calcula para él ya no tiene a quién entregarse.
+            SnapshotCaptureService.cancel(handler.player.getUuid());
+            AsyncEngine.cancel(handler.player.getUuid());
             FastPaintService.remove(handler.player.getUuid());
             IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
@@ -139,11 +174,26 @@ public final class KomaEditMod implements ModInitializer {
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
             RegionOperationService.cancel(handler.player.getUuid());
+            com.komainu.moxia.persistence.QuietMode.forget(handler.player.getUuid());
+            PlanPreviews.forget(handler.player.getUuid());
+            ProgressBars.remove(handler.player);
+            com.komainu.moxia.studio.net.StudioToolsNetwork.forget(handler.player.getUuid());
+            com.komainu.moxia.command.ColorCommands.forget(handler.player.getUuid());
         });
+        // La vista previa es solo para quien edita y en su dimensión: se descarta al cambiar de mundo o reaparecer.
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) ->
+                PlanPreviews.discard(player, "al cambiar de dimensión"));
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
+                PlanPreviews.discard(newPlayer, "al reaparecer"));
+        // Los displays de vista previa solo existen en el cliente; si alguno llegara al mundo, se borra al cargar.
+        ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> PreviewDisplays.onEntityLoad(entity));
         ServerTickEvents.END_SERVER_TICK.register(BatchEditService::tick);
         ServerTickEvents.END_SERVER_TICK.register(FastPaintService::tick);
         ServerTickEvents.END_SERVER_TICK.register(SnapshotCaptureService::tick);
         ServerTickEvents.END_SERVER_TICK.register(RegionOperationService::tick);
+        ServerTickEvents.END_SERVER_TICK.register(PlanPreviews::tick);
+        ServerTickEvents.END_SERVER_TICK.register(ProgressBars::tick);
+        ServerTickEvents.END_SERVER_TICK.register(server -> PreviewDisplays.sweep());
         ServerLifecycleEvents.SERVER_STARTED.register(server -> AsyncEngine.start());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             BatchEditService.shutdown();
@@ -155,6 +205,11 @@ public final class KomaEditMod implements ModInitializer {
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
             RegionOperationService.clearAll();
+            com.komainu.moxia.persistence.QuietMode.clearAll();
+            PlanPreviews.clearAll();
+            ProgressBars.clearAll();
+            PreviewDisplays.clearOrphans();
+            com.komainu.moxia.command.ColorCommands.clearAll();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");
     }

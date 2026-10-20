@@ -3,9 +3,11 @@ package com.komainu.moxia.ivy;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.sculpt.SnapshotCaptureService;
 import com.komainu.moxia.sculpt.WorldSnapshot;
@@ -229,7 +231,11 @@ public final class IvyService {
                 int expected = rawIds.get(snapshot.get(block.x(), block.y(), block.z()));
                 builder.addConditionalOverride(block.x(), block.y(), block.z(), expected, state(block));
             }
-            int queued = BatchEditService.submit(player, builder.build(), "air", "Hiedra viva");
+            PackedBlockPlan built = builder.build();
+            int queued = BatchEditService.submit(player, built, "air", "Hiedra viva");
+            if (PlanPreviews.holds(player.getUuid(), built)) {
+                return;
+            }
             StringBuilder text = new StringBuilder("Hiedra viva en cola: " + queued + " bloques · "
                     + settings.style().displayName() + " · semilla " + settings.seed().orElseThrow());
             if (result.seedsSkipped() > 0) {
@@ -239,8 +245,8 @@ public final class IvyService {
                 text.append(" · se paró en el límite de bloques");
             }
             text.append(" · //undo para deshacer");
-            player.sendMessage(Text.literal("KomaEdit · ").formatted(Formatting.GOLD)
-                    .append(Text.literal(text.toString()).formatted(Formatting.GREEN)), false);
+            QuietMode.info(player, Text.literal("KomaEdit · ").formatted(Formatting.GOLD)
+                    .append(Text.literal(text.toString()).formatted(Formatting.GREEN)));
         } catch (IllegalArgumentException | IllegalStateException exception) {
             player.sendMessage(error(readable(exception)), false);
         }

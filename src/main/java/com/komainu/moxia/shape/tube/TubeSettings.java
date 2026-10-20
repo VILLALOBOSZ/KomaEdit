@@ -105,6 +105,13 @@ public record TubeSettings(
         );
     }
 
+    /** Los mismos ajustes con otra progresión de radio: las ramas de {@link TubeLimb} llevan un radio por punto. */
+    TubeSettings withRadii(RadiusProgression value) {
+        return new TubeSettings(shape, radius, profile, sides, depth, aspect, exponent, hollow, wall, filled, endMode,
+                normalMode, quality, tension, bias, continuity, twistPerDiameter, startRollDegrees, endRollDegrees,
+                rollRange, stretch, strands, strandThickness, frequency, seed, value, smoothMode, coverage, formula);
+    }
+
     /** La fórmula escrita por el usuario manda; si no hay, la de serie indicada por la opción {@code preset}. */
     static TubeFormula resolveFormula(ShapeOptions options) {
         return options.hasFormula()

@@ -5,6 +5,9 @@ import com.komainu.moxia.brush.BrushSettings;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.shape.smooth.PieceMaterials;
 import com.komainu.moxia.config.KomaEditConfig;
@@ -19,6 +22,7 @@ import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.ProjectStorage;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.persistence.SculptPresetStore;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.recipe.ProceduralRecipe;
@@ -26,6 +30,7 @@ import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.recipe.RecipeExtensions;
 import com.komainu.moxia.recipe.StructureBendService;
 import com.komainu.moxia.region.RegionOperationService;
+import com.komainu.moxia.region.SignWax;
 import com.komainu.moxia.region.TweakOperation;
 import com.komainu.moxia.region.TweakRules;
 import com.komainu.moxia.shape.PathShape;
@@ -45,6 +50,7 @@ import com.komainu.moxia.sculpt.SculptManager;
 import com.komainu.moxia.sculpt.SculptPreviewManager;
 import com.komainu.moxia.sculpt.SculptProfile;
 import com.komainu.moxia.sculpt.SculptSettings;
+import com.komainu.moxia.sculpt.model.ModelMaterial;
 import com.komainu.moxia.weathering.WeatheringService;
 import com.komainu.moxia.weathering.WeatheringSettings;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -187,7 +193,8 @@ public final class MoxiaCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> register(dispatcher));
     }
 
-    private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+    /** Todo el árbol de {@code /komaedit}; también lo montan las pruebas, sin el juego. */
+    static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         var root = dispatcher.register(literal("komaedit")
                 .requires(MoxiaCommands::canUse)
                 .then(literal("menu").executes(MoxiaCommands::openHudMenu))
@@ -230,12 +237,17 @@ public final class MoxiaCommands {
                 .then(EzSplineCommands.command("spline"))
                 .then(ivyCommand("ivy"))
                 .then(ivyCommand("hiedra"))
+                .then(RoofCommands.roof("roof"))
+                .then(RoofCommands.roof("tejado"))
+                .then(RoofCommands.loft("loft"))
+                .then(RoofCommands.loft("lona"))
                 .then(BrushCommands.brush("pincel"))
                 .then(BrushCommands.brush("ezbrush"))
                 .then(BrushCommands.superwand("superwand"))
                 .then(BrushCommands.superwand("supervarita"))
                 .then(jobCommand())
                 .then(projectCommand())
+                .then(sculptCommand().requires(source -> can(source, "komaedit.build.brush.sculpt")))
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(tweakCommand("tweak").requires(MoxiaCommands::canTweak))
                 .then(tweakCommand("retocar").requires(MoxiaCommands::canTweak))
@@ -244,13 +256,23 @@ public final class MoxiaCommands {
                 .then(HelpCommands.command("ayuda"))
                 .executes(MoxiaCommands::openHudMenu));
         DeformCommands.register(root);
+        TerrainCommands.register(root);
         PlacementCommands.register(root);
+        NatureCommands.register(root);
         TextureCommands.register(dispatcher);
+        ImageCommands.register(dispatcher);
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
+        ColorCommands.register(root);
         NoiseCommands.register(root);
         SelectionCommands.register(root);
         AdminCommands.register(root);
+        CapabilityCommands.register(root);
+        SymmetryCommands.register(root);
+        BuilderCommands.register(root);
+        BlueprintCommands.register(root);
+        ClipboardCommands.register(root);
+        PreviewCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
                 .requires(source -> can(source, KomaPermissions.PATH))
@@ -259,6 +281,8 @@ public final class MoxiaCommands {
         dispatcher.register(literal("ke").requires(MoxiaCommands::canUse).redirect(root));
         dispatcher.register(literal("moxia").requires(MoxiaCommands::canUse).redirect(root));
         dispatcher.register(literal("mx").requires(MoxiaCommands::canUse).redirect(root));
+        // Siempre lo último: la bandera -v solo llega a las órdenes registradas antes.
+        PreviewCommands.installFlags(dispatcher, root);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> bridgeCommand() {
@@ -660,11 +684,11 @@ public final class MoxiaCommands {
                         }
                         try {
                             int changed = BatchEditService.submit(current, plan, "air", "Doblar estructura");
-                            current.getCommandSource().sendFeedback(
-                                    () -> prefix().append(Text.literal("Estructura doblada en cola: " + changed
-                                            + " bloques · /komaedit job status").formatted(Formatting.GREEN)),
-                                    false
-                            );
+                            if (PlanPreviews.holds(playerId, plan)) {
+                                return;
+                            }
+                            QuietMode.info(current, prefix().append(Text.literal("Estructura doblada en cola: "
+                                    + changed + " bloques · /komaedit job status").formatted(Formatting.GREEN)));
                         } catch (IllegalArgumentException | IllegalStateException exception) {
                             fail(current.getCommandSource(), message(exception));
                         }
@@ -814,6 +838,16 @@ public final class MoxiaCommands {
             }
             RegionOperationService.submit(player, 0, tweak.displayName() + (enable ? "" : " (off)"),
                     new TweakOperation(tweak, enable));
+            if (tweak == TweakRules.Tweak.WAX) {
+                // Los carteles guardan la cera en sus datos: van en una edición aparte, también con //undo.
+                int signs = SignWax.apply(player, enable);
+                if (signs > 0) {
+                    context.getSource().sendFeedback(() -> prefix().append(Text.literal(signs
+                            + (signs == 1 ? " cartel " : " carteles ") + (enable ? "encerado" : "desencerado")
+                            + (signs == 1 ? "" : "s") + " · //undo para deshacerlo").formatted(Formatting.GREEN)),
+                            false);
+                }
+            }
             return 1;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Selecciona primero la zona con //pos1 y //pos2");
@@ -1186,7 +1220,8 @@ public final class MoxiaCommands {
             return previous.get().pattern();
         }
         Optional<SculptProfile> sculpt = SculptManager.profile(player.getUuid());
-        if (sculpt.isPresent() && !sculpt.get().pattern().equalsIgnoreCase("hand")) {
+        if (sculpt.isPresent() && !sculpt.get().pattern().equalsIgnoreCase("hand")
+                && !ModelMaterial.surrounding(sculpt.get().pattern())) {
             return sculpt.get().pattern();
         }
         throw new IllegalArgumentException("Para usar hand, sostén un bloque en la mano principal o secundaria");
@@ -1254,7 +1289,15 @@ public final class MoxiaCommands {
                     player,
                     StringArgumentType.getString(context, "sculpt_pattern")
             );
-            WorldEditService.validatePattern(player, pattern);
+            if (ModelMaterial.surrounding(pattern)) {
+                // «auto»: el material de alrededor; solo lo entienden los pinceles de modelado.
+                if (type.category() != SculptBrushType.Category.MODEL) {
+                    throw new IllegalArgumentException("«auto» (el material de alrededor) solo vale con draw, rock,"
+                            + " weld, melt, roughen y shatter");
+                }
+            } else {
+                WorldEditService.validatePattern(player, pattern);
+            }
             int radius = IntegerArgumentType.getInteger(context, "sculpt_radius");
             SculptSettings defaults = SculptSettings.defaults(type);
             SculptSettings settings = defaults.withGeometry(
@@ -1473,7 +1516,9 @@ public final class MoxiaCommands {
         String name = StringArgumentType.getString(context, "preset_load_name");
         try {
             SculptProfile profile = SculptPresetStore.load(player.getUuid(), name);
-            WorldEditService.validatePattern(player, profile.pattern());
+            if (!ModelMaterial.surrounding(profile.pattern())) {
+                WorldEditService.validatePattern(player, profile.pattern());
+            }
             BrushManager.deactivate(player.getUuid());
             SculptManager.activate(player, profile);
             context.getSource().sendFeedback(
@@ -1671,13 +1716,10 @@ public final class MoxiaCommands {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
             int changed = GradientService.apply(player, axis, palette, dither, reverse);
-            context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal(
-                            "Degradado " + paletteName + " en cola: " + changed + " bloques · eje "
-                                    + axis.id() + " · mezcla " + dither + "% · /komaedit job status"
-                    ).formatted(Formatting.GREEN)),
-                    false
-            );
+            QuietMode.info(player, prefix().append(Text.literal(
+                    "Degradado " + paletteName + " en cola: " + changed + " bloques · eje "
+                            + axis.id() + " · mezcla " + dither + "% · /komaedit job status"
+            ).formatted(Formatting.GREEN)));
             return changed;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Completa la selección de WorldEdit con //pos1 y //pos2");
@@ -1938,23 +1980,23 @@ public final class MoxiaCommands {
                                     pattern,
                                     requestedParameters.shape().displayName()
                             );
+                            if (PlanPreviews.holds(playerId, plan)) {
+                                return;
+                            }
                             int pieces = plan.pieceCount();
-                            current.getCommandSource().sendFeedback(
-                                    () -> prefix().append(Text.literal(
-                                            requestedParameters.shape().displayName() + " en cola: " + changed
-                                                    + " bloques" + (pieces == 0
-                                                    ? " · espaciado " + requestedParameters.spacing()
-                                                    : " · " + pieces + " piezas")
-                                                    + " · /komaedit job status"
-                                    ).formatted(Formatting.GREEN)),
-                                    false
-                            );
+                            QuietMode.info(current, prefix().append(Text.literal(
+                                    requestedParameters.shape().displayName() + " en cola: " + changed
+                                            + " bloques" + (pieces == 0
+                                            ? " · espaciado " + requestedParameters.spacing()
+                                            : " · " + pieces + " piezas")
+                                            + " · /komaedit job status"
+                            ).formatted(Formatting.GREEN)));
                         } catch (IllegalArgumentException | IllegalStateException exception) {
                             fail(current.getCommandSource(), message(exception));
                         }
                     };
                     PendingBuilds.submitOrHold(
-                            current, requestedParameters.shape().displayName(), BuildEstimate.of(plan), submit
+                            current, requestedParameters.shape().displayName(), BuildEstimate.of(plan), submit, true
                     );
                 }),
                 throwable -> server.execute(() -> {
@@ -1968,9 +2010,14 @@ public final class MoxiaCommands {
     }
 
     private static int confirmPendingBuild(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        Optional<Integer> preview = PreviewCommands.confirm(context);
+        if (preview.isPresent()) {
+            return preview.get();
+        }
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
-            String description = PendingBuilds.confirm(player);
+            // Ya confirmado: el Build no vuelve a pasar por la vista previa.
+            String description = EditRequests.within(EditRequest.CONFIRMED, () -> PendingBuilds.confirm(player));
             context.getSource().sendFeedback(
                     () -> prefix().append(Text.literal("Confirmado: " + description).formatted(Formatting.GREEN)),
                     false
@@ -1983,9 +2030,10 @@ public final class MoxiaCommands {
 
     private static int discardPendingBuild(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        Optional<String> discarded = PendingBuilds.cancel(player.getUuid());
+        Optional<String> discarded = PreviewCommands.discard(player).map(description -> "vista previa de " + description)
+                .or(() -> PendingBuilds.cancel(player.getUuid()));
         if (discarded.isEmpty()) {
-            return fail(context.getSource(), "No hay ningún Build esperando confirmación");
+            return fail(context.getSource(), "No hay ninguna vista previa ni Build esperando confirmación");
         }
         context.getSource().sendFeedback(
                 () -> prefix().append(Text.literal("Descartado: " + discarded.get()).formatted(Formatting.YELLOW)),
@@ -1994,7 +2042,7 @@ public final class MoxiaCommands {
         return 1;
     }
 
-    private static void reportEstimate(ServerPlayerEntity player, String description, BuildEstimate estimate) {
+    static void reportEstimate(ServerPlayerEntity player, String description, BuildEstimate estimate) {
         int threshold = KomaEditConfig.settings().confirmBuildAboveBlocks();
         int limit = KomaEditConfig.settings().maxBlocksPerOperation();
         String verdict = estimate.blocks() > limit && !KomaPermissions.can(player, KomaPermissions.LIMIT_UNRESTRICTED)

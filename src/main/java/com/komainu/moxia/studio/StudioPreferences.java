@@ -18,6 +18,8 @@ import java.util.Set;
 /**
  * Favoritas y recientes del Studio, por jugador y en su propio equipo (no viajan con las recetas).
  * Se guardan por id de figura; un id que ya no existe se conserva por si vuelve en otra versión.
+ * Las herramientas tienen sus propias favoritas y recientes (por id de tarjeta) y la preferencia de construir con
+ * vista previa.
  */
 public final class StudioPreferences {
     public static final int MAX_RECENTS = 6;
@@ -26,6 +28,9 @@ public final class StudioPreferences {
 
     private final Set<String> favorites = new LinkedHashSet<>();
     private final List<String> recents = new ArrayList<>();
+    private final Set<String> toolFavorites = new LinkedHashSet<>();
+    private final List<String> toolRecents = new ArrayList<>();
+    private boolean toolPreview;
 
     public boolean isFavorite(String id) {
         return favorites.contains(id);
@@ -60,6 +65,47 @@ public final class StudioPreferences {
         return List.copyOf(recents);
     }
 
+    public boolean isToolFavorite(String id) {
+        return toolFavorites.contains(id);
+    }
+
+    /** Marca o desmarca una herramienta; devuelve si queda marcada. */
+    public boolean toggleToolFavorite(String id) {
+        if (toolFavorites.remove(id)) {
+            return false;
+        }
+        if (toolFavorites.size() >= MAX_FAVORITES) {
+            return false;
+        }
+        toolFavorites.add(id);
+        return true;
+    }
+
+    public List<String> toolFavorites() {
+        return List.copyOf(toolFavorites);
+    }
+
+    public void pushToolRecent(String id) {
+        toolRecents.remove(id);
+        toolRecents.addFirst(id);
+        while (toolRecents.size() > MAX_RECENTS) {
+            toolRecents.removeLast();
+        }
+    }
+
+    public List<String> toolRecents() {
+        return List.copyOf(toolRecents);
+    }
+
+    /** Si Construir de las herramientas pide la vista previa ({@code -v}) antes de tocar el mundo. */
+    public boolean toolPreview() {
+        return toolPreview;
+    }
+
+    public void setToolPreview(boolean value) {
+        toolPreview = value;
+    }
+
     public String toJson() {
         JsonObject root = new JsonObject();
         root.addProperty("format", FORMAT);
@@ -69,6 +115,13 @@ public final class StudioPreferences {
         JsonArray recentArray = new JsonArray();
         recents.forEach(recentArray::add);
         root.add("recents", recentArray);
+        JsonArray toolFavoriteArray = new JsonArray();
+        toolFavorites.forEach(toolFavoriteArray::add);
+        root.add("toolFavorites", toolFavoriteArray);
+        JsonArray toolRecentArray = new JsonArray();
+        toolRecents.forEach(toolRecentArray::add);
+        root.add("toolRecents", toolRecentArray);
+        root.addProperty("toolPreview", toolPreview);
         return root.toString();
     }
 
@@ -90,6 +143,17 @@ public final class StudioPreferences {
             for (int index = stored.size() - 1; index >= 0; index--) {
                 preferences.pushRecent(stored.get(index));
             }
+            for (String id : strings(root, "toolFavorites")) {
+                if (preferences.toolFavorites.size() < MAX_FAVORITES) {
+                    preferences.toolFavorites.add(id);
+                }
+            }
+            List<String> tools = strings(root, "toolRecents");
+            for (int index = tools.size() - 1; index >= 0; index--) {
+                preferences.pushToolRecent(tools.get(index));
+            }
+            preferences.toolPreview = root.has("toolPreview") && root.get("toolPreview").isJsonPrimitive()
+                    && root.getAsJsonPrimitive("toolPreview").isBoolean() && root.get("toolPreview").getAsBoolean();
         } catch (RuntimeException ignored) {
             return new StudioPreferences();
         }

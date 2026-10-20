@@ -31,6 +31,7 @@ public final class SculptPlanner {
             case LINE -> planLine(settings, linePoints);
             case HEIGHT -> planHeight(settings, center, snapshot);
             case SHAPE, VOLUME -> planVolume(settings, center, face, snapshot);
+            case MODEL -> throw new IllegalStateException("Los pinceles de modelado van por SculptManager.run");
         };
     }
 

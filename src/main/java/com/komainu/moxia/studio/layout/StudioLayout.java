@@ -26,7 +26,12 @@ public final class StudioLayout {
     public static final int TOOL_BUTTON = 20;
     public static final int TOOL_GAP = 3;
     public static final int NAV_GAP = 2;
-    public static final int MIN_NAV_ROW = 14;
+    /** Con muchas etapas en poco alto el hueco entre ellas baja a 1 px antes de encoger más las filas. */
+    public static final int TIGHT_NAV_GAP = 1;
+    /** El alto de un icono: por debajo ya no se ve. */
+    public static final int MIN_NAV_ROW = 12;
+    /** Por debajo de este alto de fila se gana sitio quitando hueco entre etapas. */
+    public static final int COMFORT_NAV_ROW = 14;
     public static final int MAX_NAV_ROW = 22;
     public static final int BUILD_BUTTON_HEIGHT = 20;
     /** Ancho del chat vanilla con escala 1 (320) más sus márgenes. */
@@ -82,12 +87,18 @@ public final class StudioLayout {
         Rect content = new Rect(nav.right(), bodyTop, panelWidth - navWidth, bodyHeight);
         Rect header = new Rect(content.x(), content.y(), content.width(), Math.min(HEADER_HEIGHT, bodyHeight));
         Rect viewport = new Rect(content.x(), header.bottom(), content.width(), content.bottom() - header.bottom());
-        int navRow = Math.clamp((bodyHeight - 8 - NAV_GAP * (stages - 1)) / Math.max(1, stages),
-                MIN_NAV_ROW, MAX_NAV_ROW);
+        int count = Math.max(1, stages);
+        int navGap = NAV_GAP;
+        int navRow = (bodyHeight - 8 - navGap * (count - 1)) / count;
+        if (navRow < COMFORT_NAV_ROW) {
+            navGap = TIGHT_NAV_GAP;
+            navRow = (bodyHeight - 8 - navGap * (count - 1)) / count;
+        }
+        navRow = Math.clamp(navRow, MIN_NAV_ROW, MAX_NAV_ROW);
         Rect handle = new Rect(panel.x() - 3, 0, 6, screenHeight);
         Rect world = new Rect(0, 0, panel.x(), screenHeight);
-        return new Frame(screen, panel, toolbar, nav, mode, navRow, stages, content, header, viewport, footer,
-                handle, world, chatZone(screenWidth, screenHeight));
+        return new Frame(screen, panel, toolbar, nav, mode, navRow, navGap, stages, content, header, viewport,
+                footer, handle, world, chatZone(screenWidth, screenHeight));
     }
 
     /**
@@ -103,6 +114,7 @@ public final class StudioLayout {
             Rect nav,
             NavMode navMode,
             int navRowHeight,
+            int navGap,
             int stages,
             Rect content,
             Rect header,
@@ -114,7 +126,7 @@ public final class StudioLayout {
     ) {
         /** Fila de la etapa {@code index} en la navegación. */
         public Rect navItem(int index) {
-            int y = nav.y() + 6 + index * (navRowHeight + NAV_GAP);
+            int y = nav.y() + 6 + index * (navRowHeight + navGap);
             return new Rect(nav.x() + 3, y, nav.width() - 6, navRowHeight);
         }
 
@@ -146,6 +158,24 @@ public final class StudioLayout {
         public Rect buildButton() {
             return new Rect(footer.x() + PADDING, footer.bottom() - BUILD_BUTTON_HEIGHT - 8,
                     footer.width() - PADDING * 2, BUILD_BUTTON_HEIGHT);
+        }
+
+        /** Barra fina de progreso entre el estado y el botón, mientras hay algo en marcha. */
+        public Rect footerProgress() {
+            Rect status = footerStatus();
+            return new Rect(status.x(), status.bottom() + 1, status.width(), 2);
+        }
+
+        /**
+         * El botón Construir partido en dos (Confirmar y Descartar la vista previa, o Construir y Cancelar): el
+         * segundo, a la derecha, mide {@code secondaryWidth} sin pasar de la mitad.
+         */
+        public Rect[] footerButtons(int secondaryWidth) {
+            Rect button = buildButton();
+            int secondary = Math.clamp(secondaryWidth, 24, button.width() / 2);
+            Rect right = new Rect(button.right() - secondary, button.y(), secondary, button.height());
+            Rect left = new Rect(button.x(), button.y(), button.width() - secondary - TOOL_GAP, button.height());
+            return new Rect[]{left, right};
         }
     }
 }

@@ -110,8 +110,10 @@ class AlignmentTest {
         assertEquals("Clipboard", StructureSpec.parse("Clipboard").name());
         assertThrows(IllegalArgumentException.class, () -> StructureSpec.parse("Cl(O:C"));
         assertThrows(IllegalArgumentException.class, () -> StructureSpec.parse("Cl(nada)"));
-        assertThrows(IllegalArgumentException.class, () -> StructureSources.parse("Schematic(N:arbol)"),
-                "sin el motor de colocación, solo el portapapeles");
+        // Un origen que nadie ha registrado. No vale «Schematic»: lo registra el motor de colocación al montar los
+        // comandos, y otra prueba (CommandTreeSmokeTest) puede haberlo hecho antes en la misma JVM.
+        assertThrows(IllegalArgumentException.class, () -> StructureSources.parse("NoRegistrado(N:arbol)"),
+                "un origen sin registrar no se acepta");
         assertEquals(true, StructureSources.parse("Cl(O:C,R:180)") instanceof ClipboardStructure clipboard
                 && clipboard.center() && clipboard.quarterTurns() == 2);
     }

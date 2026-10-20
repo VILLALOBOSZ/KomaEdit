@@ -2,6 +2,7 @@ package com.komainu.moxia.command;
 
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.generator.FlowField;
 import com.komainu.moxia.generator.FlowLine;
 import com.komainu.moxia.generator.GeneratedBlocks;
@@ -17,7 +18,9 @@ import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.region.RegionEdits;
+import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.mojang.brigadier.CommandDispatcher;
@@ -190,7 +193,9 @@ public final class GeneratorCommands {
                                     new BlockPos(bounds[0], Math.max(bottom, bounds[1]), bounds[2]),
                                     new BlockPos(bounds[3], Math.min(top, bounds[4]), bounds[5]));
                         }
-                        success(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                        if (!PlanPreviews.holds(playerId, result.plan())) {
+                            queued(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         fail(current.getCommandSource(), readable(exception));
                     }
@@ -221,7 +226,8 @@ public final class GeneratorCommands {
                 text -> SavedNoises.parse(player.getUuid(), text));
         KomaPermissions.requireBuild(player, "noisegen");
         Palette palette = Palette.resolve(player, request.palette());
-        SnapshotMask mask = request.mask() == null ? null : SnapshotMask.parse(request.mask());
+        RegionMasks.Bound mask = request.mask() == null ? null
+                : RegionMasks.parse(player, request.mask(), SnapshotMask.LISTS);
         NoiseGenerator.Settings settings = request.settings();
         String description = "Noisegen " + mode.id();
         ServerWorld world = player.getServerWorld();
@@ -229,7 +235,7 @@ public final class GeneratorCommands {
         int top = world.getTopY() - 1;
         info(player, description + " · semilla " + settings.seed() + " (repítela con -s " + settings.seed() + ")");
         if (mask != null) {
-            RegionOperationService.submit(player, 0, description, (snapshot, edits) -> {
+            RegionOperationService.submit(player, mask.padding(), description, (snapshot, edits) -> {
                 SnapshotTerrain terrain = new SnapshotTerrain(snapshot, mask);
                 GeneratedBlocks blocks = new GeneratedBlocks(MAX_BLOCKS);
                 NoiseGenerator.generate(settings, terrain, terrain, palette.traits(), bottom, top, blocks);
@@ -260,13 +266,15 @@ public final class GeneratorCommands {
                 text -> SavedNoises.parse(player.getUuid(), text));
         KomaPermissions.requireBuild(player, "flowfield");
         Palette palette = Palette.resolve(player, request.palette());
-        SnapshotMask mask = request.mask() == null ? null : SnapshotMask.parse(request.mask());
+        RegionMasks.Bound mask = request.mask() == null ? null
+                : RegionMasks.parse(player, request.mask(), SnapshotMask.LISTS);
         FlowField.Settings settings = request.settings();
         String description = "Campo de flujo";
         info(player, description + " · semilla " + settings.seed() + " (repítela con -s " + settings.seed() + ")");
         if (settings.heightmap() != null || mask != null) {
             boolean above = settings.heightmap() == FlowField.Distribution.ABOVE;
-            RegionOperationService.submit(player, above ? 1 : 0, description, (snapshot, edits) -> {
+            int padding = Math.max(above ? 1 : 0, mask == null ? 0 : mask.padding());
+            RegionOperationService.submit(player, padding, description, (snapshot, edits) -> {
                 SnapshotTerrain terrain = new SnapshotTerrain(snapshot, mask);
                 GeneratedBlocks blocks = new GeneratedBlocks(MAX_BLOCKS);
                 FlowField.generate(settings, terrain, terrain, palette.size(), blocks);
@@ -325,7 +333,10 @@ public final class GeneratorCommands {
         if (!result.convex().isEmpty()) {
             convexSelection(player, result.convex());
         }
-        success(player, "Línea de flujo en cola: " + queued + " bloques"
+        if (PlanPreviews.holds(player.getUuid(), built)) {
+            return;
+        }
+        queued(player, "Línea de flujo en cola: " + queued + " bloques"
                 + (result.convex().isEmpty() ? "" : " · selección convexa de " + result.convex().size() + " puntos")
                 + " · //undo para deshacer");
     }
@@ -384,7 +395,9 @@ public final class GeneratorCommands {
                     }
                     try {
                         int queued = BatchEditService.submit(current, plan, "air", description);
-                        success(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                        if (!PlanPreviews.holds(playerId, plan)) {
+                            queued(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         fail(current.getCommandSource(), readable(exception));
                     }
@@ -492,7 +505,12 @@ public final class GeneratorCommands {
     }
 
     private static void info(ServerPlayerEntity player, String text) {
-        player.sendMessage(prefix().append(Text.literal(text).formatted(Formatting.GRAY)), false);
+        QuietMode.info(player, prefix().append(Text.literal(text).formatted(Formatting.GRAY)));
+    }
+
+    /** El aviso de bloques en cola: no sale con {@code /komaedit quiet} (el de «completada» sí). */
+    private static void queued(ServerPlayerEntity player, String text) {
+        QuietMode.info(player, prefix().append(Text.literal(text).formatted(Formatting.GREEN)));
     }
 
     private static void success(ServerPlayerEntity player, String text) {

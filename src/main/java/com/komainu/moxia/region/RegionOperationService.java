@@ -1,8 +1,16 @@
 package com.komainu.moxia.region;
 
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.BuildEstimate;
+import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.preview.EditRequest;
+import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.preview.ZoneCheck;
+import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.fabric.FabricAdapter;
@@ -23,6 +31,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.function.Consumer;
@@ -36,12 +45,23 @@ import java.util.function.Consumer;
  *     <li>Escribe con {@link BatchEditService} por lotes, solo donde el bloque no haya cambiado, y deja el
  *     historial de WorldEdit para //undo.</li>
  * </ol>
+ *
+ * La {@link EditRequest} de la orden (por ejemplo {@code -v}) se recoge al empezar y acompaña a la captura y al
+ * cálculo; con vista previa, el plan espera en {@link PlanPreviews}, que sabe recalcular la operación sobre la misma
+ * selección si el mundo cambia antes de confirmar. La lectura informa de su progreso con {@link #progress}.
  */
 public final class RegionOperationService {
     public static final long MAX_CAPTURE_BLOCKS = 16_000_000L;
     public static final int MAX_CHANGES = 1_500_000;
+    /** Hasta este volumen de foto, la vista previa vigila también toda la selección (no solo los cambios). */
+    private static final long WATCH_SNAPSHOT_UP_TO = 2_000_000L;
     private static final int BLOCKS_PER_SLICE = 32_768;
     private static final long NANOS_PER_TICK = 4_000_000L;
+    /**
+     * Lo que se calculó sobre la foto de un mundo no se aplica en otro: si el jugador cambia de dimensión antes de
+     * que termine, se descarta con este aviso.
+     */
+    public static final String OTHER_WORLD = "cambiaste de mundo antes de que terminara; no se ha cambiado nada";
     private static final Map<UUID, CaptureJob> JOBS = new LinkedHashMap<>();
 
     private RegionOperationService() {
@@ -151,8 +171,20 @@ public final class RegionOperationService {
         }
         JOBS.put(playerId, new CaptureJob(playerId, world, selection, description, operation, onCaptured,
                 RegionSnapshot.builder(minimumX, minimumY, minimumZ, sizeX, sizeY, sizeZ), sizeX, sizeY, sizeZ,
-                minimumX, minimumY, minimumZ));
-        player.sendMessage(message(description + ": leyendo " + volume + " bloques…", Formatting.GRAY), false);
+                minimumX, minimumY, minimumZ, EditRequests.current(), padding, extra));
+        double seconds = BuildEstimate.readSeconds(volume);
+        QuietMode.info(player, message(description + ": leyendo " + ProgressLine.group(volume) + " bloques"
+                + (seconds >= 2.0 ? " (~" + ProgressLine.duration(seconds) + ")" : "") + "…", Formatting.GRAY));
+    }
+
+    /** Lectura en curso del jugador, para la barra de progreso. */
+    public static Optional<ProgressLine> progress(UUID playerId) {
+        CaptureJob job = JOBS.get(playerId);
+        if (job == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new ProgressLine(job.description, ProgressLine.Phase.READING, job.index, job.total,
+                System.nanoTime() - job.startedAt, null));
     }
 
     public static boolean cancel(UUID playerId) {
@@ -181,11 +213,20 @@ public final class RegionOperationService {
             try {
                 if (job.step(deadline)) {
                     JOBS.remove(job.playerId);
-                    if (job.onCaptured != null) {
-                        job.onCaptured.accept(job.builder.build());
-                    } else {
-                        compute(server, player, job.description, job.operation, job.builder.build());
+                    // Quien recibe la foto (onCaptured) decide al terminar; las operaciones se descartan ya.
+                    if (job.onCaptured == null && player.getServerWorld() != job.world) {
+                        player.sendMessage(message(job.description + ": " + OTHER_WORLD, Formatting.YELLOW), false);
+                        continue;
                     }
+                    RegionSnapshot snapshot = job.builder.build();
+                    // La petición de la orden (vista previa…) vuelve a estar activa para lo que salga de la foto.
+                    EditRequests.within(job.request, () -> {
+                        if (job.onCaptured != null) {
+                            job.onCaptured.accept(snapshot);
+                        } else {
+                            compute(server, player, job, snapshot);
+                        }
+                    });
                 }
             } catch (RuntimeException exception) {
                 JOBS.remove(job.playerId);
@@ -197,14 +238,16 @@ public final class RegionOperationService {
     private static void compute(
             MinecraftServer server,
             ServerPlayerEntity player,
-            String description,
-            RegionOperation operation,
+            CaptureJob job,
             RegionSnapshot snapshot
     ) {
+        String description = job.description;
+        RegionOperation operation = job.operation;
         UUID playerId = player.getUuid();
-        player.sendMessage(message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY), false);
+        QuietMode.info(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
         AsyncEngine.submit(
                 playerId,
+                description,
                 () -> {
                     RegionEdits edits = new RegionEdits(snapshot, MAX_CHANGES);
                     operation.apply(snapshot, edits);
@@ -215,15 +258,25 @@ public final class RegionOperationService {
                     if (current == null) {
                         return;
                     }
+                    if (current.getServerWorld() != job.world) {
+                        current.sendMessage(message(description + ": " + OTHER_WORLD, Formatting.YELLOW), false);
+                        return;
+                    }
                     if (edits.changes() == 0) {
                         current.sendMessage(message(description + ": no había nada que cambiar", Formatting.YELLOW),
                                 false);
                         return;
                     }
                     try {
-                        int queued = BatchEditService.submit(current, edits.plan(), "air", description);
-                        current.sendMessage(message(description + ": " + queued
-                                + " bloques en cola · //undo para deshacer", Formatting.GREEN), false);
+                        PackedBlockPlan plan = edits.plan();
+                        PlanPreviews.Extras extras = new PlanPreviews.Extras(
+                                () -> recompute(server, job), watch(snapshot));
+                        int queued = PlanPreviews.withExtras(extras,
+                                () -> BatchEditService.submit(current, plan, "air", description));
+                        if (!PlanPreviews.holds(playerId, plan)) {
+                            QuietMode.info(current, message(description + ": " + queued
+                                    + " bloques en cola · //undo para deshacer", Formatting.GREEN));
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         current.sendMessage(message(description + ": " + readable(exception), Formatting.RED), false);
                     }
@@ -235,6 +288,55 @@ public final class RegionOperationService {
                     }
                 })
         );
+    }
+
+    /** Vuelve a lanzar la operación sobre la misma selección (la vista previa vio que el mundo cambió). */
+    private static void recompute(MinecraftServer server, CaptureJob job) {
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(job.playerId);
+        if (player == null) {
+            return;
+        }
+        start(player, job.selection.clone(), job.padding, job.extra, job.description, job.operation, null);
+    }
+
+    /**
+     * La selección entera de la foto, para que la vista previa note cualquier cambio donde actúa la operación (no
+     * solo en los bloques que cambia). El margen no se vigila: ahí la nieve o un cultivo que crece harían recalcular
+     * sin motivo.
+     */
+    private static ZoneCheck.Watch watch(RegionSnapshot snapshot) {
+        if (snapshot.volume() > WATCH_SNAPSHOT_UP_TO) {
+            return null;
+        }
+        int sizeX = snapshot.maximumX() - snapshot.minimumX() + 1;
+        int sizeZ = snapshot.maximumZ() - snapshot.minimumZ() + 1;
+        long layer = (long) sizeX * sizeZ;
+        int size = (int) snapshot.volume();
+        return new ZoneCheck.Watch() {
+            @Override
+            public int size() {
+                return size;
+            }
+
+            @Override
+            public long position(int index) {
+                int localY = (int) (index / layer);
+                long remainder = index - localY * layer;
+                int localZ = (int) (remainder / sizeX);
+                int localX = (int) (remainder - (long) localZ * sizeX);
+                return PackedBlockPlan.pack(snapshot.minimumX() + localX, snapshot.minimumY() + localY,
+                        snapshot.minimumZ() + localZ);
+            }
+
+            @Override
+            public int expected(int index) {
+                long packed = position(index);
+                int x = PackedBlockPlan.unpackX(packed);
+                int y = PackedBlockPlan.unpackY(packed);
+                int z = PackedBlockPlan.unpackZ(packed);
+                return snapshot.selected(x, y, z) ? snapshot.rawId(x, y, z) : PackedBlockPlan.NO_EXPECTED_STATE;
+            }
+        };
     }
 
     private static Text message(String text, Formatting color) {
@@ -267,6 +369,10 @@ public final class RegionOperationService {
         private final long total;
         private final boolean light;
         private final BlockPos.Mutable position = new BlockPos.Mutable();
+        private final EditRequest request;
+        private final int padding;
+        private final int[] extra;
+        private final long startedAt = System.nanoTime();
         private long index;
 
         private CaptureJob(
@@ -282,9 +388,15 @@ public final class RegionOperationService {
                 int sizeZ,
                 int minimumX,
                 int minimumY,
-                int minimumZ
+                int minimumZ,
+                EditRequest request,
+                int padding,
+                int[] extra
         ) {
             this.playerId = playerId;
+            this.request = request;
+            this.padding = padding;
+            this.extra = extra == null ? null : extra.clone();
             this.world = world;
             this.selection = selection;
             this.description = description;
@@ -297,7 +409,7 @@ public final class RegionOperationService {
             this.minimumY = minimumY;
             this.minimumZ = minimumZ;
             this.total = (long) sizeX * sizeY * sizeZ;
-            this.light = operation.needsLight();
+            this.light = operation != null && operation.needsLight();
         }
 
         /** @return {@code true} cuando la lectura ha terminado */

@@ -2,9 +2,25 @@
 
 Este documento es el catálogo funcional oficial de KomaEdit. Cada función nueva o cambio visible para el jugador debe añadirse aquí en el mismo Pull Request que introduce el código.
 
+## Índice
+
+- **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación)
+- **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Modificadores](#modificadores) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
+- **Sobre lo construido:** [Envejecer](#envejecer) · [Hiedra viva](#hiedra-viva) · [Retoques sobre la selección](#retoques-sobre-la-selección) · [Enredaderas, musgo, losas y estados](#enredaderas-musgo-losas-y-estados) · [Vidriera degradada](#vidriera-degradada)
+- **Edificios y naturaleza:** [Árboles y rocas](#árboles-y-rocas) · [Tejados](#tejados) · [Loft entre curvas](#loft-entre-curvas)
+- **Deformar, texturizar y suavizar:** [Deformar la selección](#deformar-la-selección) · [Superficie](#superficie) · [Texturizado](#texturizado) · [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región) · [Suavizado](#suavizado) · [Smoothblocks: perfiles de -w](#smoothblocks-perfiles-de--w)
+- **Color e imagen:** [Color y sombreado](#color-y-sombreado) · [Imagen en bloques](#imagen-en-bloques)
+- **Generadores y terreno:** [Formas sueltas](#formas-sueltas) · [Terreno con ruido](#terreno-con-ruido) · [Campos y líneas de flujo](#campos-y-líneas-de-flujo) · [Terraformado](#terraformado)
+- **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Supervarita](#supervarita) · [Simetría](#simetría)
+- **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
+- **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria)
+- **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
+- **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
+
 ## Procedural Studio
 
-Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, envejecer, recetas e instancias.
+Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, envejecer, recetas, instancias, color y planos.
+Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, envejecer, recetas, instancias, color y herramientas (árboles, tejados, terreno, utilidades, simetría y capacidades, ver [Herramientas](#herramientas)).
 
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
 - La cámara puede desplazarse mientras el Studio permanece abierto.
@@ -16,9 +32,10 @@ Procedural Studio se abre con `K` y permite construir mientras el mundo continú
 Todo el Studio vive en un único panel opaco pegado a la derecha; el resto de la pantalla es el mundo, sin nada encima, así que el chat de abajo a la izquierda queda a la vista y el marcador del servidor no se transparenta por detrás del panel.
 
 - **Barra de herramientas** (arriba): KomaEdit y los botones con icono de deshacer y rehacer ajustes, mostrar u ocultar el holograma, chuleta de atajos y cerrar. Cada uno explica su atajo al pasar el ratón.
-- **Etapas** (columna izquierda del panel): Trayectoria, Figuras, Estructuras, Modificadores, Material, Envejecer, Instancias y Recetas, con icono y nombre; la elegida se resalta con una barra de acento. El tooltip dice su número de atajo (`1` – `8`) y para qué sirve.
+- **Etapas** (columna izquierda del panel): Trayectoria, Figuras, Estructuras, Modificadores, Material, Envejecer, Instancias, Recetas, Color y Planos, con icono y nombre; la elegida se resalta con una barra de acento. El tooltip dice su número de atajo (`1` – `9`, y `0` para Planos) y para qué sirve. La etapa **Color** (degradados, bloques parecidos y sombreado de la selección) se explica en [Color y sombreado](#color-y-sombreado) y la etapa **Planos** (biblioteca con miniaturas, cargar, colocar y estampar), en [Etapa Planos del Studio](#etapa-planos-del-studio).
+- **Etapas** (columna izquierda del panel): Trayectoria, Figuras, Estructuras, Modificadores, Material, Envejecer, Instancias, Recetas, Color y Herramientas, con icono y nombre; la elegida se resalta con una barra de acento. El tooltip dice su número de atajo (`1` – `9`, y `0` la décima) y para qué sirve. La etapa **Color** (degradados, bloques parecidos y sombreado de la selección) se explica en [Color y sombreado](#color-y-sombreado) y la etapa **Herramientas**, en [Herramientas](#herramientas).
 - **Contenido**: título y subtítulo de la etapa y, debajo, sus secciones desplazables con la rueda (una barra fina a la derecha indica cuánto queda).
-- **Pie** (abajo, siempre visible): figura y material, la estimación **≈ N bloques**, el último mensaje (unos segundos) o el estado del holograma, y el botón **Construir**. Sin puntos suficientes el botón se ve apagado y dice cuántos faltan; al pulsarlo lleva a Trayectoria.
+- **Pie** (abajo, siempre visible): figura y material, la estimación **≈ N bloques**, el último mensaje (unos segundos) o el estado del holograma, y el botón **Construir**. Sin puntos suficientes el botón se ve apagado y dice cuántos faltan; al pulsarlo lleva a Trayectoria. Mientras algo tuyo está en marcha, el pie enseña su progreso y deja confirmar, descartar o cancelar (ver [Progreso en el pie](#progreso-en-el-pie)).
 - El borde izquierdo del panel se arrastra para cambiar su ancho (entre 300 y 470 píxeles de GUI, sin pasar de media pantalla); el ancho se recuerda.
 - La etapa **Trayectoria** cuenta los nodos (`3 / 32 nodos`), si la trayectoria está abierta o cerrada y si se puede construir; tiene **Añadir aquí**, **Deshacer punto**, **Cerrar / Abrir trayectoria** y **Limpiar**, la lista de nodos con sus coordenadas (un clic elige el nodo para moverlo con sus flechas) y un recordatorio de cómo se usa el puntero. El contador de nodos ya no se repite en la cabecera ni en una tarjeta sobre el mundo.
 - El nombre de la receta, **Guardar** y la exportación o importación de `.krecipe` están en la etapa **Recetas**; Construir usa ese mismo nombre.
@@ -69,20 +86,68 @@ El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 - A partir de **250 000 bloques** el recuento sale en amarillo y Construir pide una segunda pulsación en 5 s; si el recuento cambia entre medias, vuelve a pedirla. Por encima de **1 500 000** (el `maxBlocksPerOperation` de serie) sale en rojo: el servidor puede rechazarlo si no tienes `komaedit.limit.unrestricted` o si su configuración es más baja.
 - `H` o el botón del holograma de la barra de herramientas lo ocultan; se sigue calculando, así que el recuento sigue valiendo.
 
+### Herramientas
+
+La etapa **Herramientas** (`0`) lleva al Studio las herramientas que antes solo tenían orden. Cada una es una **tarjeta** con sus ajustes, y **Construir** manda exactamente la orden que se escribiría en el chat (la tarjeta la enseña debajo, en **Orden**; un clic la copia). El servidor la analiza, comprueba los permisos y la ejecuta como siempre: el Studio no repite ninguna lógica.
+
+| Familia | Tarjetas | Orden que manda |
+| --- | --- | --- |
+| Naturaleza | Árbol, Roca | `tree`, `rock` (y `pincel tree`/`rock`, `tree save`) |
+| Tejados | Tejado, Loft | `roof`, `loft` (y `-e` para estimar) |
+| Terreno | Sello de relieve, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
+| Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`) |
+| Simetría | Simetría | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off` |
+| Capacidades | Capacidades | `capability <id> on\|off`, `capability option …` |
+
+![Etapa Herramientas](renders/studio/02_arbol.png)
+
+- **Encontrar:** buscador (`Ctrl+F` o `/` en esta etapa) por nombre, orden, alias y descripción, sin tildes; `Intro` elige la primera. Pastillas de familia, **★ Favoritas** (la estrella de cada tarjeta) y las cuatro **recientes**, guardadas en `config/komaedit/studio.json` aparte de las de figuras.
+- **Ajustes:** los mismos controles que el resto del Studio: filas numéricas (rueda, `−` `+`, arrastre, clic para escribir, clic derecho para el de serie, barra de rango y ayuda con rango y paso), ciclos ‹ ›, botones de opción, interruptores, campos de texto y bloques que se eligen en la biblioteca de bloques. Los números **auto** no llevan bandera: vale el de la herramienta (la altura de la especie, el radio del tipo de roca…) y se ve en gris junto a «auto». Solo salen los ajustes que usa la opción elegida (la altura de la cúpula no sale en un tejado a dos aguas).
+- **Presets:** ajustes rápidos de cada tarjeta (Joven, Viejo, Azotado, Pelado; Empinado, Con buhardillas…), **Azar** (`R`) para una semilla nueva y, en árboles y rocas, los **presets guardados** del jugador (`#nombre`), que se cargan en la tarjeta y se guardan con **Guardar preset** (`tree save <nombre> … -f`).
+- **Vista previa:** el interruptor **Vista previa (-v)** hace que Construir pida la vista previa universal (en el texto, `--preview`, porque su `-v` es «de pie»). Se recuerda para todas las herramientas. Sin vista previa: el sello (que va al pincel, con su `-p`), Materiales, Bioma, Simetría y Capacidades.
+- **Más:** acciones de cada tarjeta: **Al pincel** (árbol, roca, bioma), **Estimar** (tejado, loft y terreno, con `-e`), **Guardar preset** y, en simetría, **Desactivar**, **Centro aquí**, **Entre bloques** y **Centro de la selección**.
+- **Sobre qué trabaja:** cada tarjeta dice si usa la selección de WorldEdit (con su tamaño), los puntos de la trayectoria o el bloque que miras (el centro de la pantalla), o si queda en un pincel. Si falta algo, Construir sale apagado y dice qué («Falta la selección», «Faltan puntos»); en las que siguen la trayectoria lleva a Trayectoria.
+- **Permisos:** al abrir la etapa (y cada segundo mientras se ve) el Studio pregunta al servidor qué nodos tiene el jugador. Una herramienta sin ningún permiso sale apagada con un candado y su ayuda dice qué nodo falta; dentro de la tarjeta, un aviso rojo dice el nodo que pide la opción elegida (el cañón pide `terrain.canyon`, el río `terrain.river`) y Construir queda en «Sin permiso». Es solo para enseñarlo: al construir, el servidor vuelve a comprobarlo todo. Con un servidor que no contesta (sin esta versión de KomaEdit) no se apaga nada.
+- **Validación antes de mandar:** texto vacío o con más de 16 líneas, espacios en máscaras o listas de bloques, caracteres que el chat no admite (`§` o de control: Minecraft echaría al jugador), nombres de sello, recorrido o bioma inválidos, más de 64 gotas en la erosión hidráulica o fuerza térmica de más de 2. Construir queda apagado y dice el motivo.
+- **Sello de relieve:** galería con la miniatura de los 20 sellos de serie (el mapa de alturas pintado con sombreado; el nombre del elegido sale junto al título) y un campo para un PNG propio de `config/komaedit/heightmaps/`. Construir deja el pincel en la mano (`Al pincel`).
+- **Texto:** campo de texto (`\n` parte líneas), selector de fuente con las de serie y las propias del servidor (`config/komaedit/fonts/`), tamaño, grosor, borde, orientación, alineación, espaciado, interlineado y losas y escaleras.
+- **Materiales:** **Contar** lanza `analyze` y la lista llega a la tarjeta: totales (bloques, tipos, objetos, huecos y cofres) y cada objeto con su cantidad y sus pilas, más **Copiar lista** (lo mismo que `[COPIAR]` del chat).
+- **Bioma:** buscador con todos los biomas del registro del servidor (también de datapacks y mods), relleno vertical y radio del pincel.
+- **Simetría:** la tarjeta enseña el estado del servidor (activa o apagada, modo y centro, avisando si el centro está en otra dimensión) y lo sigue si se cambia por el chat. Modo con botones (X, Z, XZ, Y, XY, ZY, XZY y Radial), brazos y espejo arriba ↔ abajo del radial, e interruptor **Reflejar WorldEdit y KomaEdit**. Construir activa con ese modo (o lo aplica si ya estaba activa).
+- **Capacidades:** un interruptor por capacidad (como el menú de la `Z`), apagado con candado y «sin permiso» si falta el nodo, y un aviso si no estás en creativo. Distancia en el aire, alcance, bloques por capa y velocidad de vuelo se mandan al dejar de tocarlos (0,6 s), para no llenar el chat; Reemplazar familia y lo que sigue Extruir, al momento.
+- **Deshacer:** `Z`/`Y` y los botones de la barra deshacen y rehacen los ajustes de la tarjeta, aparte de los de las figuras.
+- Cada tarjeta recuerda sus ajustes mientras dura la sesión, aunque se cierre el Studio.
+
+### Progreso en el pie
+
+En cualquier etapa, mientras algo tuyo está en marcha (leer la selección, calcular, preparar la vista previa, colocar…), el pie del Studio enseña lo mismo que la bossbar, sin esperar el segundo que tarda ella en salir: la fase con su porcentaje, ritmo y tiempo restante y una barra fina.
+
+- **Vista previa esperando:** «N cambios en vista previa · caduca en …» y los botones **Confirmar** (`/komaedit confirm`, también `Intro`) y **Descartar** (`/komaedit cancel`).
+- **En marcha:** Construir sigue a la izquierda y a su lado **Cancelar** (`/komaedit cancel`, también `Ctrl+Retroceso`).
+- El servidor lo cuenta cada 5 ticks con un paquete propio solo a los clientes con KomaEdit; si deja de llegar 3 s, el pie vuelve a lo normal.
+
+![Pie con la vista previa esperando](renders/studio/10_pie_vista_previa.png)
+
 ### Atajos de teclado
 
 `F1` o `?` abren la chuleta dentro del Studio. Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
 
 | Tecla | Acción |
 | --- | --- |
-| `1` – `8` | Ir a una etapa, en el orden de la columna de etapas |
+| `1` – `9`, `0` | Ir a una etapa, en el orden de la columna de etapas (`0`, la décima: Planos) |
 | `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
-| `Ctrl+F` o `/` | Buscar figura |
+| `Ctrl+F` o `/` | Buscar figura (en la etapa Planos, `/` busca planos) |
 | `B` | Construir (las obras grandes piden confirmar) |
+| `1` – `9`, `0` | Ir a una etapa, en el orden de la columna de etapas (`0`: Herramientas) |
+| `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
+| `Ctrl+F` o `/` | Buscar figura (en Herramientas, herramienta) |
+| `B` | Construir (las obras grandes piden confirmar; en Herramientas, la tarjeta elegida) |
+| `Intro` | Confirmar la vista previa que espera |
+| `Ctrl+Retroceso` | Cancelar lo que esté en marcha o descartar la vista previa |
 | `H` | Mostrar u ocultar el holograma |
-| `Z` / `Y` (`Mayús+Z`) | Deshacer / rehacer ajustes del Studio |
+| `Z` / `Y` (`Mayús+Z`) | Deshacer / rehacer ajustes del Studio (en Herramientas, los de la tarjeta) |
 | `Ctrl+Z` / `Ctrl+Y` (`Ctrl+Mayús+Z`) | Deshacer / rehacer en el mundo (WorldEdit) |
-| `R` | Variante al azar con semilla |
+| `R` | Variante al azar con semilla (en Herramientas, semilla nueva) |
 | `Ctrl+S` | Guardar la receta |
 | `Ctrl+Supr` | Limpiar la trayectoria |
 | `RePág` / `AvPág` | Desplazar el panel |
@@ -91,12 +156,15 @@ El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 
 ### Pantallas pequeñas
 
-- Las etapas encogen su alto (hasta 14 píxeles) para que las ocho quepan sin desplazarse con cualquier escala de GUI.
+- Las etapas encogen su alto (hasta 12 píxeles, lo que mide su icono) para que las diez quepan sin desplazarse con cualquier escala de GUI.
+- Las etapas encogen su alto (hasta 12 píxeles, el de su icono) y, si hace falta, el hueco entre ellas (a 1 píxel) para que las diez quepan sin desplazarse con cualquier escala de GUI.
 - Con menos de 600 píxeles de ancho escalado (GUI 4 en 1080p, la escala automática) el panel mide 230 píxeles y las etapas se quedan en iconos con su nombre en el tooltip, para dejar al mundo al menos la mitad de la pantalla. Ahí el chat vanilla (320 píxeles) puede quedar en parte bajo el panel.
 - Los textos que no caben se recortan con «…»; el estado completo sale en un tooltip sobre el pie.
 - Con menos de 330 píxeles de alto la chuleta se muestra en dos columnas.
 - Lo que queda desplazado bajo la cabecera o el pie del panel no responde a clics.
-- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las ocho etapas caben y el panel no pisa el chat cuando hay sitio.
+- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las diez etapas caben y el panel no pisa el chat cuando hay sitio.
+- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las diez etapas caben, la barra de progreso y los dos botones del pie caben y el panel no pisa el chat cuando hay sitio.
+- La etapa Herramientas se dibuja con `ToolsPanel` (en `main`, sin Minecraft): `ToolsPanelTest` la prueba pulsando y escribiendo y `StudioMockupsTest` pinta maquetas PNG con la fuente del juego y los colores del tema (`KOMAEDIT_STUDIO_MOCKUPS=<carpeta>`). Las revisadas están en `docs/renders/studio/`, también a GUI 4 en 1080p y a 854×480.
 
 ## Trayectorias y hologramas
 
@@ -213,17 +281,58 @@ Las figuras centradas usan tu posición como centro; el arco y la catenaria van 
 /komaedit help path                trayectorias
 /komaedit help generate            generar trayectorias
 /komaedit help saved               recorridos guardados
-/komaedit help build               figuras, con todas las figuras clicables
+/komaedit help build               figuras, con todas las figuras clicables, y sus atajos (pillar, cloud, web…)
 /komaedit help tubes               tubos, banderas y fórmula
+/komaedit help spline              spline de ezEdits
 /komaedit help edit                doblar, degradados y jobs
+/komaedit help region              hiedra, envejecer, retocar, enredaderas, musgo y losas
+/komaedit help deform              deformar, superficie, suavizar y smoothblocks
+/komaedit help texture             texturizado, vidriera e imagen en bloques
+/komaedit help generators          formas sueltas, terreno con ruido y flujo
+/komaedit help edit                doblar, escalar y girar el portapapeles, degradados y jobs
+/komaedit help sculpt              pinceles de modelado (esculpir, roca, soldar, fundir, rugosidad, grietas)
 /komaedit help region              hiedra, envejecer y retocar
+/komaedit help symmetry            modo simetría
+/komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
+/komaedit help roof                tejados y lofts (lonas, velas, puentes colgantes)
+/komaedit help terrain             terraformado: relieve, rampas, ríos, erosión y pintar
+/komaedit help placement           colocar, arrays y dispersión de estructuras
+/komaedit help symmetry            modo simetría
+/komaedit help nature              árboles y rocas
+/komaedit help brushes             pinceles y supervarita
+/komaedit help palette             paletas guardadas
+/komaedit help color               color y sombreado
+/komaedit help noise               ruidos guardados
+/komaedit help sel                 selecciones guardadas y utilidades de selección
+/komaedit help capability          construir a mano (menú rápido)
+/komaedit help preview             vista previa, progreso y cancelación
+/komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
+/komaedit help project             proyecto, menús, quiet, permisos y recarga
+/komaedit help blueprint           planos: guardar, buscar, colocar y estampar
 /komaedit help project             proyecto y menús
 ```
+
+El tema también se encuentra por el nombre de cualquiera de sus órdenes y alias: `/komaedit help bioma` abre las utilidades y `/komaedit help erosion`, los tubos (la orden `/komaedit erosion` es el tubo erosionado; la erosión del terreno es `/komaedit terreno erosion`, en `help terrain`).
 
 - Cada comando de la ayuda se puede pulsar: se escribe en el chat hasta su primer argumento para completarlo. Al pasar el ratón se ve qué hace.
 - El autocompletado de figuras, perfiles, paletas, direcciones e índices de punto muestra una descripción junto a cada opción.
 - Los errores de nombre desconocido proponen el más parecido: figuras y sus alias, perfiles, extremos, normales, calidad, piezas, paletas, banderas de tubo, parámetros de figura, temas de ayuda y recorridos guardados. Por ejemplo, `/komaedit build coli stone` responde «Forma 3D desconocida: coli · ¿Quisiste decir «coil»?». Se acepta un error cada cuatro letras (cambiar, sobrar, faltar o intercambiar dos vecinas), sin contar tildes ni mayúsculas, o un prefijo de tres letras o más.
-- Alias: `/ke`, `/mx` y `/moxia` para `/komaedit`; `ruta` para `path`; `ayuda` para `help`; `estimar` para `estimate`; `confirmar` para `confirm`.
+- Alias: `/ke`, `/mx` y `/moxia` para `/komaedit`; `ruta` para `path`; `ayuda` para `help`; `estimar` para `estimate`; `confirmar` para `confirm`; `cancelar` para `cancel`; `vistaprevia` para `preview`. Casi todas las órdenes tienen además su nombre en español (`tejado`, `arbol`, `terreno`, `bioma`…), que la ayuda indica junto a cada una.
+- `/komaedit wiki` (como `/ezedits wiki`) indica dónde está la ayuda: dentro del juego, con `/komaedit help`.
+
+### Mensajes: `/komaedit quiet`
+
+Como `/ezedits quiet`, cada jugador puede silenciar los mensajes informativos de KomaEdit:
+
+```text
+/komaedit quiet          alterna
+/komaedit quiet on       silencia (alias: /komaedit silencio on)
+/komaedit quiet off      vuelve a mostrarlos
+```
+
+- Silencia los mensajes grises de progreso («leyendo N bloques…», «calculando fuera del hilo del servidor…»), la semilla que usan los generadores y el aviso intermedio de «N bloques en cola».
+- Siguen saliendo los errores, los avisos (por ejemplo «no había nada que cambiar»), las respuestas a órdenes directas (guardar una paleta, cambiar de pincel…) y el mensaje final de cada edición (`completada: N bloques · //undo`).
+- Se guarda en el proyecto del mundo de cada jugador (`komaedit/players/<uuid>/settings/chat.json`), así que dura entre sesiones. No pide permiso: solo afecta a tu chat.
 
 ## Diagnóstico antes de construir
 
@@ -249,7 +358,86 @@ Cuando un Build supera `confirmBuildAboveBlocks` bloques (250 000 por defecto) n
 /komaedit confirm cancel     lo descarta
 ```
 
-La geometría ya está calculada, así que se construye exactamente lo estimado. La espera caduca a los dos minutos, al desconectarse o al pedir otro Build. Con `confirmBuildAboveBlocks` a `0` no se pregunta nunca.
+La geometría ya está calculada, así que se construye exactamente lo estimado. La espera caduca a los dos minutos, al desconectarse o al pedir otro Build. Con `confirmBuildAboveBlocks` a `0` no se pregunta nunca. En los Build por orden, con `-v` o con «previsualizar siempre» no sale esta pregunta: la [vista previa](#vista-previa-progreso-y-cancelación) enseña el Build con displays y espera a `/komaedit confirm` (`confirm` aplica antes la vista previa, si la hay). Construir y Actualizar del Studio la siguen pidiendo.
+
+## Vista previa, progreso y cancelación
+
+### Objetivo y acceso
+
+Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y pararlas a medias. La vista previa vale para cualquier orden que calcule un plan de bloques con el motor común: figuras y tubos (`build`, `sweep`, `braid`, `expr`…), `ezspline`, `bend`, colocación (`place`, `array`, `scatter`), `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `texture` y sus modos (`vines`, `moss`, `slabmerge`…), la vidriera, `image`, los generadores (`shape`, `noisegen`, `flowfield`, `flowline`), `weather`, `ivy`, `tweak`, `palette swap`, los tejados (`roof`), los lofts (`loft`), los árboles y rocas (`tree`, `rock`), el terraformado (`terreno`), `shade` y las utilidades que cambian bloques (`text`, `gravity`, `snow`, `drain`, `waterlog`).
+
+```text
+/komaedit <orden> … -v                  calcula y enseña sin colocar nada (también --preview)
+/komaedit confirm                       aplica exactamente lo que ves (alias confirmar)
+/komaedit cancel                        descarta la vista previa o para lo que esté en marcha (alias cancelar)
+/komaedit confirm cancel                descarta la vista previa o el Build en espera
+/komaedit preview                       tu preferencia y si tienes una vista previa esperando (alias vistaprevia)
+/komaedit preview always <bloques>      previsualizar siempre a partir de N bloques (alias siempre)
+/komaedit preview off                   vista previa solo con -v (alias nunca)
+```
+
+Ejemplos:
+
+```text
+/komaedit texture rockify stone,andesite,cobblestone -v
+/komaedit deform rotate 45 -v
+/komaedit deform noise Perlin(F:0.05) 3 -v --preview
+/komaedit build coil stone 8 -v
+/komaedit scatter Cl -n 3 -v
+/komaedit preview always 50000
+```
+
+### La bandera `-v`
+
+- En las órdenes de argumentos fijos va al final (`build coil stone 8 -v`); en las de texto libre al estilo de ezEdits, en cualquier sitio después del modo (`texture rockify -v stone`).
+- Donde ezEdits ya usa `-v` con otro sentido se mantiene el suyo y la vista previa es `--preview`: `deform noise` y `deform voxelize` (vertical), `texture blend` y `texture blocklight` (variación), `weather` / `envejecer` (`-v <vida>`), `shape polydome` (`-v <patrón>` de las aristas), `text` (`-v` de pie), `pincel gradient` (sin marcadores) y `palette print` (detallado). En `biome` (`-v` relleno vertical) y `color gradient` (`-v <variante>`) `-v` es solo suyo: esas órdenes no tienen vista previa.
+- Donde ezEdits ya usa `-v` con otro sentido se mantiene el suyo y la vista previa es `--preview`: `deform noise` y `deform voxelize` (vertical), `texture blend` y `texture blocklight` (variación), `weather` / `envejecer` (`-v <vida>`), `shape polydome` (`-v <patrón>` de las aristas), `text` (`-v`, de pie), `biome` (`-v`, relleno vertical), `pincel gradient` (sin marcadores) y `palette print` (detallado).
+- Con `preview always <bloques>`, cualquier orden cuyo plan llegue a ese número de bloques pasa por la vista previa aunque no lleve `-v`. La preferencia es por jugador y mundo (`komaedit/players/<uuid>/preview`).
+- Los pinceles, la supervarita, el estampado de figuras del pincel `brush` y la vista previa propia de las brochas no la usan nunca: van clic a clic.
+- Con vista previa, un Build grande por orden no pide además la confirmación de texto de `confirmBuildAboveBlocks`: la vista previa ya espera a `/komaedit confirm`.
+
+### Cómo se ve
+
+- Solo la ve quien edita. Son block displays enviados a su cliente por paquetes; no existen en el mundo del servidor, así que nadie más los ve y no hace falta el mod en el cliente.
+- **Lo que se pone:** el bloque nuevo con contorno verde, un poco más pequeño si va en un hueco (para distinguirlo de lo construido) y envolviendo al viejo si lo sustituye, de modo que se ve el resultado.
+- **Lo que se quita:** cubierto de cristal rojo con contorno rojo.
+- **La caja** de la operación, con aristas amarillas.
+- Los block displays de vanilla no admiten transparencia: el bloque nuevo se ve opaco; el cristal rojo sí se transparenta.
+- Como mucho `previewMaxDisplays` displays (1 500 de serie). Si hay más cambios se enseña la superficie (los cambios con alguna cara hacia fuera: una esfera maciza se ve como su cáscara); si tampoco cabe, una muestra repartida por toda la zona, más la caja. El chat dice cuántos se ven y de cuántos. Con `0`, solo la caja.
+- El chat resume la vista previa: cambios, cuántos se ponen o cambian y cuántos se quitan, tamaño de la caja y lo que tardará en colocarse, con los botones **[Aplicar]** y **[Descartar]** y el plazo. Si supera tu `//limit` de WorldEdit, lo avisa.
+
+### Confirmar
+
+- **Se aplica lo que se ve, sin recalcular.** Al preparar la vista previa se resuelve el bloque final de cada posición con su patrón (también los aleatorios, como `50%stone,50%andesite`) y se guarda ese plan; confirmar lo manda a la cola tal cual.
+- **Si el mundo cambió, se recalcula.** Antes de colocar se comprueba la zona: las posiciones que van a cambiar y, en las operaciones sobre la selección de hasta 2 000 000 de bloques, toda la selección (un bloque puesto dentro también cuenta, aunque la operación no fuera a tocarlo; el margen alrededor no se vigila). Si algo cambió, el chat dice dónde, la operación se recalcula (sobre la misma selección, o repitiendo la orden) y la vista previa nueva espera otra confirmación.
+- La comprobación avanza unos 60 000 bloques por tick; la barra de progreso la enseña.
+- Si confirmas mientras se coloca otra edición tuya, te lo dice y la vista previa sigue esperando.
+- Con bloques con datos (NBT, por ejemplo un portapapeles con cofres) el plan no se puede congelar: al aplicar se vuelve a evaluar el patrón, y el chat lo avisa.
+- **Caducidad y limpieza:** caduca a los `previewTimeoutSeconds` segundos (90 de serie) sin cambiar nada. Se descarta también con `/komaedit cancel`, al lanzar otra vista previa, al salir, al cambiar de dimensión, al reaparecer y al parar el servidor. Los displays nunca se guardan con el mundo; aun así, cualquier entidad con la etiqueta `komaedit_preview` que llegue a cargarse se borra en el siguiente tick.
+
+### Progreso y cancelación
+
+- Una bossbar enseña la fase de la operación: **leyendo** la selección, **calculando**, **preparando la vista previa**, **vista previa** (con la cuenta atrás), **comprobando la zona** y **colocando**, con porcentaje, bloques por segundo y tiempo restante. Aparece cuando la operación dura más de un segundo; la vista previa, al momento.
+- Un cálculo que no sabe cuánto le falta enseña el tiempo que lleva, y la barra va y viene.
+- `/komaedit cancel` para todo lo tuyo que esté en marcha: lectura, cálculo y colocación, y descarta la vista previa y el Build en espera. Lo ya colocado queda en una sola entrada de **//undo**: la colocación se corta siempre entre dos bloques, nunca a medias, y el chat dice cuántos bloques llegó a poner. `/komaedit job cancel` sigue parando solo la colocación.
+- También para el pintado de biomas (`biome` y su pincel), que la bossbar enseña como colocación.
+- Si cambias de dimensión antes de que termine una operación que lee el mundo (operaciones sobre la selección, terraformado, tejados, texto, colocación…), se descarta con un aviso y no cambia nada: lo calculado era de la foto del mundo de antes. Al desconectarte se para todo lo tuyo.
+
+### Estimación antes de empezar
+
+- Las operaciones sobre la selección dicen al empezar cuántos bloques van a leer y, si pasa de dos segundos, cuánto tardarán.
+- Una colocación de más de tres segundos avisa de cuánto durará y de que `/komaedit cancel` la para.
+- Si un plan supera el `//limit` de tu sesión de WorldEdit, se avisa antes de empezar: la edición se parará al llegar y lo colocado quedará en //undo; súbelo con `//limit` para hacerla entera.
+- `/komaedit estimate` de las trayectorias sigue igual.
+
+### Rendimiento y limitaciones
+
+- Preparar la vista previa lee el mundo y el patrón de cada bloque en el hilo del servidor, unos 4 ms por tick: un plan de un millón de bloques tarda unos segundos (la barra lo enseña). La elección de displays se hace en un hilo aparte y los displays se envían a 128 por tick.
+- Mientras espera, el plan congelado ocupa unos 40 bytes por bloque.
+- Sin vista previa: los degradados de `gradient` (colocan por regiones, sin el plan que la vista previa necesita), los biomas (`biome`), el editor y Construir del Studio (que tiene su holograma y su confirmación), los pinceles y la supervarita, y las órdenes que no colocan bloques (`color`, `analyze`, `symmetry`, `capability`, `quiet`, los presets de `tree` y `rock`, `text fonts`…), que no aceptan la bandera.
+- Recalcular repitiendo la orden usa tu posición y mirada de ese momento (afecta a `place` y `array` sin selección).
+- Si un plan escribe dos veces en la misma posición, gana la última, igual que sin vista previa.
+- La vista previa y la barra se basan en `BatchEditService`, `RegionOperationService` y `AsyncEngine`: una orden nueva que los use las tiene sin hacer nada (ver `docs/ARCHITECTURE.md`).
 
 ## Figuras procedurales
 
@@ -455,7 +643,7 @@ También está disponible con el comando general:
 | `-k <2–8>` | `strands` | Hebras de la trenza. |
 | `-f <frecuencia>` | `frequency` | Tamaño de las vetas del tubo erosionado. |
 | `-fill` | `filled` | Rellena el alma de la cuerda. |
-| `-w <perfil>` / Piezas | `smooth` | Perfil de smoothblocks: `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers` o `SSW`, con cobertura y materiales opcionales (`SlabsAndStairs(C:0.7,Slab:oak)`); ver [Smoothblocks: perfiles de `-w`](#smoothblocks-perfiles-de--w). Siguen valiendo `none`, `slabs` y `stairs`. |
+| `-w <perfil>` / Piezas | `smooth` | Perfil de smoothblocks: `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW` o `Panes`, con cobertura y materiales opcionales (`SlabsAndStairs(C:0.7,Slab:oak)`); ver [Smoothblocks: perfiles de `-w`](#smoothblocks-perfiles-de--w). Siguen valiendo `none`, `slabs` y `stairs`. |
 | `-c <0–1>` / Cobertura | `coverage` | Cuánta superficie se cubre con piezas: `0` solo bloques enteros, `0.5` (por defecto) la pieza que mejor encaja, `1` toda la superficie que no esté entera. `-c` sin `-w` activa `stairs`. Equivale a `C:` dentro del perfil. |
 
 Perfiles: `circle`, `square`, `diamond`, `rounded`, `polygon`, `star`, `flower`, `rope`, `ellipse` y `rectangle` (también en español: `circulo`, `estrella`, `cuerda`…). Un número al final fija los lados: `polygon6`, `star5`, `rope4`.
@@ -604,6 +792,59 @@ Ejemplos:
 - Un tramo de puente de 7×3×6 doblado sobre 85 bloques de curva (unos 850 bloques) se calcula en menos de 0,1 s en un worker.
 - Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
 - El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
+
+## Escalar y girar el portapapeles
+
+### Objetivo y acceso
+
+Agranda, encoge o gira el portapapeles de WorldEdit sin dientes de sierra, con los algoritmos del pixel art llevados a bloques. Sirve para hacer una estatua más grande a partir de una pequeña, ampliar un sprite de bloques o girar una planta 30° sin que las paredes queden en escalera.
+
+```text
+/komaedit clipboard scale <factor> [nearest|scale2x|scale3x|rotsprite]
+/komaedit clipboard rotate <grados> [rotsprite|nearest|scale2x|scale3x]
+/komaedit clipboard restore
+/komaedit portapapeles escalar|girar|restaurar …
+```
+
+- No coloca nada: cambia el portapapeles, que después se pega con `//paste`, con [`/komaedit place Clipboard`](#colocar-estructuras) o con [`bend`](#doblar-estructuras-del-portapapeles).
+- `restore` vuelve al portapapeles de antes del último escalado o giro (se guarda uno por jugador mientras sigue conectado).
+- `/komaedit clipboard` solo dice el tamaño del portapapeles.
+- Permiso: `komaedit.clipboard` (paquete intermedio).
+
+### Modos
+
+| Modo | Qué hace | Para qué |
+| --- | --- | --- |
+| `nearest` (de serie al escalar) | El bloque más cercano, sin más; ×2 da exactamente 8 bloques por cada uno. | Arquitectura, donde las aristas tienen que seguir rectas. |
+| `scale2x` | Scale2x (EPX) en 3D: cada bloque se parte en 2×2×2 según sus vecinos, así que las diagonales salen lisas y las esquinas se redondean. Para ×4 u ×8 se repite. | Figuras orgánicas y pixel art. |
+| `scale3x` | Scale3x (AdvMAME3x): lo mismo en 3×3×3. | Ampliar ×3 (o ×9). |
+| `rotsprite` (de serie al girar) | El original ampliado 8× con tres Scale2x y leído en la posición exacta (RotSprite). Vale para cualquier factor (×1,5) y cualquier ángulo. | Giros que no son de 90° y factores no enteros. |
+
+- En una capa de un bloque de grosor, `scale2x` y `scale3x` dan exactamente los algoritmos 2D clásicos repetidos en altura. En 3D cada trocito se decide con la regla 2D en los tres planos que lo contienen: si los que proponen un vecino están de acuerdo se queda con él; si no, con el bloque original.
+- **Escalar** va alrededor de la esquina del bloque de origen: el bloque de origen pasa a ocupar de 0 a `factor` en cada eje y lo demás se aleja en proporción. El factor va de 0,1 a 8.
+- **Girar** va sobre el eje vertical, alrededor del centro del bloque de origen, en el sentido de `//rotate` (positivo: de este a sur visto desde arriba), de −360 a 360 grados. Cada capa se gira por su lado: la altura no cambia. Un número exacto de cuartos de vuelta da lo mismo que `//rotate` con cualquier modo.
+- **Estados:** las escaleras, troncos, vallas, raíles, puertas y demás bloques con dirección giran con la estructura, redondeados al cuarto de vuelta más cercano (una escalera no puede quedar a 30°); la `rotation` de 16 pasos de carteles, estandartes y cabezas sigue el ángulo exacto. Es la misma lógica que la [simetría](#simetría).
+- Si el portapapeles tenía un `//rotate` o `//flip` pendiente, se aplica antes.
+- Los bloques con datos (cofres, carteles) conservan los suyos en cada copia. Las entidades y los biomas del portapapeles no se copian (el chat avisa si había entidades).
+
+Ejemplos:
+
+```text
+/komaedit clipboard scale 2
+/komaedit clipboard scale 3 scale3x
+/komaedit clipboard scale 1.5 rotsprite
+/komaedit clipboard rotate 30
+/komaedit portapapeles girar -45 nearest
+/komaedit clipboard restore
+```
+
+### Rendimiento y limitaciones
+
+- El portapapeles puede ocupar hasta 1 000 000 de bloques de caja con `nearest` y 300 000 con los demás modos; el resultado, hasta 8 000 000.
+- Se calcula en un worker y el portapapeles nuevo se cambia al terminar; `/komaedit cancel` corta el cálculo.
+- Scale2x y Scale3x redondean las esquinas exteriores: en un edificio de aristas rectas conviene `nearest`.
+- Solo se gira sobre el eje vertical. Para tumbar una estructura, usa `//rotate` con sus ejes `x` y `z`.
+- Las losas y escaleras no cambian de forma al escalar: una losa ampliada ×2 son 2×2×2 losas.
 
 ## Envejecer
 
@@ -789,7 +1030,7 @@ Quien venga de ezEdits puede escribir sus órdenes de `//ezspline` tal cual, con
 | `rope` | `rope <patrón> <radios>`: igual que `2d CirclesCircle -t 90` |
 | `noise` | `noise <paleta> <radios> [ruido] [profundidad] [-i expresión]` |
 | `expression` | `expression <paleta> <radios> [-z] [-o] <expresión…>` (también `expr`) |
-| `structure` | `structure <estructura> [radio] [-z]` |
+| `structure` | `structure <estructura> [radios] [-z] [-s] [-t] [-r] [-n] [-p]` |
 
 También se aceptan las formas antiguas en las que la figura es el subcomando: `polygon clay 10 4` (polígono de 4 lados), `rope ice 15 6` (cuerda de 6 hebras) o `beads clay 10`.
 
@@ -807,7 +1048,7 @@ Pueden ir en cualquier sitio de la orden (`2d CirclesCircle -t 90 clay 10` vale)
 | `-t <grados>` | Torsión: grados que gira la sección por cada diámetro recorrido. `rope` usa 90 por defecto. |
 | `-n <modo>` | `CONSISTENT` (por defecto), `HORIZONTAL` o `UPRIGHT`. |
 | `-e <modo>` | `FLAT` (por defecto), `SOFT`, `SPIKE`, `ROUND` o `CUBE`. |
-| `-w <perfil>` | Losas, escaleras, capas o muros en la superficie con los perfiles de [Smoothblocks](#smoothblocks-perfiles-de--w): `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW`, con sus parámetros y materiales (`-w Slabs(Slab:oak_slab)`). Con `-c <0–1>` se ajusta la cobertura. |
+| `-w <perfil>` | Losas, escaleras, capas, muros o paneles en la superficie con los perfiles de [Smoothblocks](#smoothblocks-perfiles-de--w): `Slabs`, `SlabsAndStairs`, `SlabsAndStairs2D`, `Layers`, `SSW`, `Panes`, con sus parámetros y materiales (`-w Slabs(Slab:oak_slab)`). Con `-c <0–1>` se ajusta la cobertura. |
 | `-h` | Ayuda en el chat. |
 
 **`-q EXACT`**: un bloque se coloca si la figura ocupa al menos la mitad de su volumen, medido con 64 muestras. Para no pagarlas en todos, primero se miran el centro y las ocho esquinas: si todos caen dentro el bloque está lleno y si todos caen fuera está vacío; solo los bloques que cruza la superficie se miden enteros. Es el volumen más fiel; para detalles de menos de medio bloque es mejor `HIGH`, que da por buenos los bloques ocupados en un 25 %. También vale en `sweep` y en las demás figuras de tubo (`-q exact`).
@@ -870,10 +1111,12 @@ La [figura Expresión](#figura-expresión) con la sintaxis de ezEdits: `x` e `y`
 
 Dobla una [estructura de colocación](#colocación) (`Clipboard`, `Schematic(...)`, `Shape(...)`, `TS(...)`, `Icosphere(...)`…) a lo largo del recorrido con el mismo motor que [`bend`](#doblar-estructuras-del-portapapeles). Su eje +x avanza con el recorrido y su origen lo sigue.
 
-- Sin radio sale a su tamaño; con radio se escala (por vecino más cercano) para que su sección mida eso.
+- **Radios.** Sin radio sale a su tamaño. Con radio se escala (por vecino más cercano) para que su sección mida eso, y con radios por fotogramas, igual que los tubos (`4,12,4`, `0:4,0.3:12,1:4`), la sección cambia de tamaño a lo largo del recorrido. La estructura avanza en sus propias unidades: donde el radio crece, las copias también se alargan y conservan sus proporciones.
 - Sin `-z` se repite tantas veces como quepa entera; con `-z` una sola copia se estira por todo el recorrido.
+- **`-t <grados>`** la retuerce: gira la sección esos grados por cada diámetro recorrido, como en ezEdits.
+- **`-r <grados>`** la gira alrededor del eje desde el principio; con `-r inicio,fin` el giro va de uno a otro a lo largo del recorrido y `-t` no cuenta.
 - `-s` la estira o encoge a lo largo, `-n` y `-p` funcionan como en el resto (normales `CONSISTENT` por defecto).
-- `-t`, `-r`, `-e` y `-w` no se aplican: la estructura se dobla bloque a bloque, girando escaleras y troncos en cuartos de vuelta. Admite un solo radio.
+- `-e` y `-w` no se aplican: la estructura conserva sus bloques. Al doblarla, escaleras y troncos giran en cuartos de vuelta con el rumbo; el giro de `-r`/`-t` mueve los bloques, pero no cambia su orientación.
 
 ### Ejemplos
 
@@ -897,6 +1140,8 @@ Dobla una [estructura de colocación](#colocación) (`Clipboard`, `Schematic(...
 /komaedit ezspline expression clay 10 -t 90 R=0.2;r=0.1;w=0.7;s=0.5;sqrt((abs(x)-w)^2+y^2)<R||sqrt(((z+1)%s-r)^2+y^2)<r&&abs(x)<w
 /komaedit ezspline expression black,red,blue,white,yellow 5 -o -n HORIZONTAL ((z%2)>1.5?5:2*(x>0)+(y>0))+0.001
 /komaedit ezsp structure TS(P:##GlowPurple,S:Heart,T:=(z+y)*.4+.5) 12
+/komaedit ezsp structure Clipboard 3,0.5:9,3 -t 45
+/komaedit ezsp structure Clipboard -z -r 0,180
 ```
 
 ### Rendimiento y limitaciones
@@ -906,10 +1151,10 @@ Dobla una [estructura de colocación](#colocación) (`Clipboard`, `Schematic(...
 - Como en cualquier barrido, si la curva se cierra más que el radio el lado interior se pliega y los motivos de esa zona (hilos de la red o del panal, escamas) se cortan: separa más los puntos o reduce el radio.
 - Las juntas más estrechas que un bloque (escamas, cuentas que se tocan) podían dejar bolsas de aire encerradas; las formas de `ezspline` rellenan las de hasta 24 bloques.
 
-- `-w` acepta los perfiles de [Smoothblocks](#smoothblocks-perfiles-de--w); `Panes`, que KomaEdit aún no tiene, da un error claro. El perfil va en una sola palabra.
+- `-w` acepta todos los perfiles de [Smoothblocks](#smoothblocks-perfiles-de--w), `Panes` incluido. El perfil va en una sola palabra.
 - `Noodles` y `Honeycomb` no empalman los fideos en lazos cerrados; el resto de formas ajusta su paso para cerrar sin costura.
 - `Braids` usa la trenza de KomaEdit (tres hebras en ocho), no la de ezEdits.
-- En `structure` no hay torsión ni giro y la estructura no sigue los radios por fotogramas.
+- En `structure`, una estructura muy pequeña escalada mucho se ve por vecino más cercano (bloques repetidos), y una grande reducida pierde detalles finos. Con radios que cambian, el alcance se calcula con el radio mayor.
 - Las formas son implementaciones propias a partir de la descripción pública de la wiki de ezEdits: las proporciones son las mismas, pero un bloque concreto puede caer distinto.
 
 ## Hiedra viva
@@ -980,6 +1225,332 @@ Ejemplos:
 - Solo reconoce como apoyo las caras enteras, igual que la enredadera de vanilla: no trepa por el frente de escaleras, losas ni vallas, aunque sí tiende alfombra encima.
 - La enredadera de vanilla se sigue extendiendo sola con los ticks aleatorios del mundo, como cualquier enredadera puesta a mano.
 - No hay holograma previo ni entrada en el Studio: se coloca directamente y se deshace con //undo.
+
+## Árboles y rocas
+
+### Objetivo y acceso
+
+Árboles y rocas procedurales de calidad de builder, como los que se hacen a mano con VoxelSniper, Arceon o la herramienta Rock de Axiom, pero en un clic: troncos que se estrechan y se curvan, ramas que se reparten solas por la copa, raíces que se agarran al terreno, copas con bultos y rocas facetadas, agrietadas, sombreadas y hundidas en el suelo.
+
+```text
+/komaedit tree [especie|#preset] [altura] [banderas]
+/komaedit arbol [especie|#preset] [altura] [banderas]
+/komaedit rock [tipo|#preset] [tamaño] [banderas]
+/komaedit roca [tipo|#preset] [tamaño] [banderas]
+/komaedit tree save <nombre> <ajustes> [-f]
+/komaedit tree list
+/komaedit tree delete <nombre>
+/komaedit tree cancel
+/komaedit pincel tree <ajustes>
+/komaedit pincel rock <ajustes>
+```
+
+- **Dónde:** el árbol o la roca se apoya en el suelo que hay bajo el bloque que miras (hasta 160 bloques): si miras la ladera de un cerro sube hasta su superficie y si miras el aire, una planta o unas hojas, baja hasta encontrar suelo firme. Con puntos de trayectoria marcados (**P**, hasta 16), pone uno en cada punto, todos en la misma edición; cada uno sale distinto (semilla propia y un 15 % de variación de tamaño e inclinación, ajustable con `-x`).
+- **Una sola edición:** se lee el entorno repartido por ticks, se calcula en un worker y se coloca con el motor común, así que **//undo** quita todo de una vez, la barra de progreso y `/komaedit cancel` funcionan y vale la vista previa universal (`-v` o `--preview`): se enseña y espera a `/komaedit confirm`.
+- **Máscaras:** respeta la máscara global de WorldEdit (`//gmask`) y, con `-m <máscara>`, otra máscara de WorldEdit que mira lo que había antes (`-m air,short_grass` solo pone bloques en aire y hierba).
+- Permisos: `komaedit.build` o `komaedit.build.tree`, `komaedit.build.rock`, `komaedit.build.brush.tree` y `komaedit.build.brush.rock` (paquete intermedio).
+- **En el Studio:** tarjetas Árbol y Roca de la etapa [Herramientas](#herramientas), con la especie o el tipo en botones, altura y forma, materiales, semilla (**Azar**), presets rápidos y los guardados, **Al pincel** y **Guardar preset**.
+
+![Las doce especies](renders/arboles/arboles.png)
+
+### Especies
+
+| Especie | Alias | Cómo crece | Materiales de serie |
+| --- | --- | --- | --- |
+| `oak` | `roble`, `encina` | Copa en cúpula con 7 bultos, ramas maestras gruesas y raíces anchas | `oak_log`, `oak_leaves` |
+| `spruce` | `abeto`, `pino` | Guía central y pisos de ramas en verticilo que se acortan hacia arriba, cada piso un cono de hojas | `spruce_log`, `spruce_leaves` |
+| `birch` | `abedul` | Tronco fino y alto, copa estrecha y ovalada | `birch_log`, `birch_leaves` |
+| `jungle` | `jungla`, `selva`, `tropical` | Tronco alto con contrafuertes, copa en sombrilla arriba y matas sueltas en el tronco | `jungle_log`, `jungle_leaves` |
+| `acacia` | `sabana` | El tronco se abre en 2–4 guías inclinadas que acaban en copas planas con ramitas en abanico | `acacia_log`, `acacia_leaves` |
+| `cherry` | `cerezo`, `sakura` | Copa ancha y baja, con hojas que cuelgan por debajo | `cherry_log`, `cherry_leaves` |
+| `willow` | `sauce`, `lloron` | Cúpula ancha de la que caen cortinas de hojas casi hasta el suelo | `oak_log`, `oak_leaves,azalea_leaves` |
+| `dark_oak` | `robleoscuro`, `oscuro` | Tronco muy grueso y corto, cúpula densa y plana por debajo | `dark_oak_log`, `dark_oak_leaves` |
+| `dead` | `muerto`, `seco` | Sin hojas, ramas retorcidas y algunas partidas | `spruce_log`, sin hojas |
+| `palm` | `palmera` | Tronco curvo que se inclina más cuanto más sube y una corona de frondas en arco que caen | `jungle_log`, `jungle_leaves` |
+| `baobab` | `adansonia` | Tronco en botella y una corona corta de ramas gruesas con matas pequeñas | `acacia_log`, `acacia_leaves` |
+| `fantasy` | `fantastico`, `retorcido`, `curvo` | Tronco en S y ramas que giran en espiral alrededor del tronco, con hojas colgantes | `mangrove_log`, `flowering_azalea_leaves,azalea_leaves` |
+
+Sin especie se planta un roble; con solo un número, un roble de esa altura.
+
+### Comportamiento de los árboles
+
+- **Tronco y ramas con el motor de tubo.** Cada tronco, rama y raíz es un tubo del mismo espacio de tubo que `sweep` (curva de Kochanek–Bartels, marcos de mínima rotación y voxelizado inverso con supermuestreo) con un radio en cada punto, así que se estrecha sin escalones. El tronco se inclina (`-i`), serpentea con ruido (`-c`) y se ensancha en la base; en una ladera se entierra lo que haga falta para que el lado de abajo no quede al aire.
+- **Ramificación por colonización del espacio** (Runions et al.) en las frondosas: se reparten puntos de atracción por la copa, agrupados en bultos hacia fuera, y las ramas crecen paso a paso hacia ellos hasta consumirlos. El grosor sale del modelo de tuberías (cada rama es tan gruesa como las que sostiene), así que las ramas maestras son gruesas y las puntas de un bloque. El abeto, la acacia, la palmera y el baobab tienen su propio esqueleto.
+- **Copa:** grupos de hojas alrededor de cada punta, elipsoides deformados por ruido y aplanados por debajo para que se vean las ramas. La superficie va casi llena y el interior más ralo (como en los árboles de verdad, que no tienen hojas dentro), con las hojas pegadas a las ramas casi siempre puestas.
+- **Raíces:** salen de la base, siguen la altura del terreno columna a columna y acaban hundiéndose en él; pueden ocupar tierra, hierba, arena, grava, barro y nieve.
+- **Troncos orientados:** cada bloque de tronco o raíz lleva el `axis` del eje del mundo más alineado con su rama (`y` en el tronco, `x` o `z` en las ramas tumbadas). Cualquier bloque con `axis` sirve (troncos, maderas, tallos, hifas…).
+- **Hojas persistentes:** todas las hojas llevan `persistent=true` (no se caen solas nunca) y su `distance` real a la madera; las de la copa están a 6 pasos o menos de la madera, como pide Minecraft, y las colgantes (cortinas y frondas) a 12 o menos.
+- **Nada flotando:** toda la madera queda unida cara con cara a algo apoyado en el suelo (una rama de un bloque en diagonal también) y cada hoja llega a la madera por otras hojas. Si una piedra corta una rama, el trozo suelto se une con un puente corto o se quita.
+- **Qué ocupa:** madera y hojas solo en aire, plantas que se reemplazan (hierba, flores, nieve fina…) y, la madera, también en hojas y agua; las construcciones y la piedra se respetan.
+- Con la misma semilla, el mismo sitio y los mismos ajustes sale el mismo árbol. Sin `-s` se elige una y el chat la dice para repetirla.
+
+### Banderas de los árboles
+
+| Bandera | Efecto |
+| --- | --- |
+| `[especie]` | Una de la tabla, o `#preset`. |
+| `[altura]` | Altura en bloques (4–96; por defecto la de la especie). |
+| `-g <0.25–4>` | Grosor del tronco y, con él, de todas las ramas. |
+| `-b <0–3>` | Cantidad de ramas (y de guías en la acacia, verticilos en el abeto, frondas en la palmera). |
+| `-d <0–2>` | Densidad de la copa; `0` la deja sin hojas. |
+| `-w <0.3–3>` | Ancho de la copa. |
+| `-i <grados>[,rumbo]` | Inclinación del tronco (0–75°); el rumbo va en grados (0 = este, 90 = sur) y sin él es al azar. |
+| `-c <0–4>` | Cuánto serpentean tronco y ramas. |
+| `-s <semilla>` | Semilla. |
+| `-t <bloques>` | Tronco y ramas: un bloque, una lista (`oak_log,stripped_oak_log`), `##paleta` o `#paleta guardada`; con varios, sale a vetas. |
+| `-h <bloques>` | Hojas; `-h no` sin hojas. Con varias, mezcladas. |
+| `-r <bloques>` | Raíces (por defecto, el tronco); `-r no` sin raíces. |
+| `-m <máscara>` | Máscara de WorldEdit: dónde puede poner bloques. |
+| `-x <0–1>` | Variación entre árboles (puntos marcados y pincel). |
+| `-v`, `--preview` | Vista previa universal (solo en la orden). |
+
+Ejemplos:
+
+```text
+/komaedit tree
+/komaedit tree oak 24 -g 1.3 -i 10
+/komaedit tree spruce 30 -d 1.4
+/komaedit tree cherry 14 -w 1.4 -c 1.5
+/komaedit tree willow 18 -h oak_leaves,azalea_leaves,flowering_azalea_leaves
+/komaedit tree palm 18 -i 25,90
+/komaedit tree dead 16 -t spruce_log,stripped_spruce_log -r no
+/komaedit tree baobab 22 -g 1.2 -m grass_block,air
+/komaedit arbol fantastico 26 -c 2
+/komaedit tree jungle 40 -x 0.3
+```
+
+### Rocas
+
+| Tipo | Alias | Forma |
+| --- | --- | --- |
+| `boulder` | `roca`, `piedra`, `canto` | Roca redondeada y facetada (radio 4 por defecto). |
+| `crag` | `penasco`, `peñasco`, `risco` | Peñasco ancho con la cima casi plana, estratos y grietas (radio 7). |
+| `spire` | `aguja`, `pinaculo`, `menhir` | Aguja alta que se estrecha hacia arriba, con grietas a lo largo (radio 3, alto ×3,2). |
+
+- **Forma:** un elipsoide (o un huso que se estrecha, en las agujas) cortado por caras planas al azar, deformado con ruido sobre coordenadas distorsionadas (domain warping, nada de bultos en rejilla) y surcado por grietas que siguen los bordes de unas celdas de Voronoi; los peñascos además tienen estratos horizontales.
+- **Hundida:** una parte de su alto queda bajo tierra (`-h`) y la parte baja sigue al terreno columna a columna: en una ladera baja por el lado de abajo y sube por el de arriba, así que no queda hueco debajo.
+- **Sombreado:** los bloques de `-b` van de oscuro a claro. Cada bloque visible toma el suyo según la altura (más oscuro abajo), hacia dónde mira (luz desde arriba y el sur), lo encajonado que está (más oscuro en grietas y rincones) y un poco de grano. Por defecto `deepslate,tuff,cobblestone,stone,andesite`.
+- **Musgo** (opcional, `-u`): por arriba y en los rincones, a manchas, solo donde le da el aire por encima.
+- Ocupa aire, plantas, agua, tierra y piedra natural; nunca construcciones ni hojas. Queda de una pieza (los trozos sueltos que pueda dejar el ruido se quitan).
+
+| Bandera | Efecto |
+| --- | --- |
+| `[tipo]` o `-t <tipo>` | `boulder`, `crag` o `spire`, o `#preset`. |
+| `[tamaño]` | Radio en bloques (1–32). |
+| `-b <bloques>` | Bloques de oscuro a claro: lista, `##paleta` o `#guardada`. |
+| `-u <0–1 \| bloques>` | Musgo: una cantidad (con `moss_block`) o los bloques del musgo (a la mitad). |
+| `-a <0.2–6>` | Alto respecto al ancho. |
+| `-e <1–4>` | Planta alargada. |
+| `-r <0–1>` | Rugosidad del ruido. |
+| `-g <0–1>` | Grietas y estratos. |
+| `-c <0–32>` | Caras planas talladas (`0` sin caras). |
+| `-h <0–0.9>` | Parte enterrada. |
+| `-i <0–60>` | Inclinación. |
+| `-s`, `-m`, `-x`, `-v` | Semilla, máscara, variación y vista previa, como en los árboles. |
+
+```text
+/komaedit rock
+/komaedit rock 6 -u 0.6
+/komaedit rock crag 10 -e 2 -u 0.5
+/komaedit rock spire 4 -a 4 -i 12
+/komaedit rock boulder 5 -b ##Grayscale -g 0.8
+/komaedit roca peñasco 8 -b granite,diorite,calcite -h 0.4
+```
+
+![Rocas, peñascos y agujas](renders/arboles/rocas.png)
+
+### Presets
+
+Unos ajustes se guardan con nombre, por jugador y mundo (`komaedit/players/<uuid>/nature`), como los ruidos guardados, y se usan con `#nombre`. Lo que se escriba detrás manda sobre lo guardado: `#mio 25 -s 3` usa el preset con otra altura y otra semilla.
+
+```text
+/komaedit tree save bosque oak 22 -g 1.2 -h oak_leaves,azalea_leaves
+/komaedit tree #bosque 28
+/komaedit rock save menhir spire 3 -a 5 -u 0.4
+/komaedit pincel rock #menhir
+```
+
+- `list` (`lista`) enseña los de serie y los tuyos; `delete` (`borrar`) borra uno; `-f` sustituye uno que ya existe. Un preset no puede apuntar a otro ni llamarse como una especie o un tipo.
+
+### Pinceles de árboles y rocas
+
+`/komaedit pincel tree <ajustes>` y `/komaedit pincel rock <ajustes>` aceptan lo mismo que las órdenes (también `#preset`). Cada **clic derecho** planta un árbol o una roca en el suelo que miras con una **variante nueva**: otra semilla y, con `-x` (0,2 por defecto), otra altura, grosor, ancho e inclinación. Con `-s` todos salen iguales. Con `-p` cada clic deja su vista previa de pincel (`/komaedit pincel aplicar`).
+
+```text
+/komaedit pincel tree oak 16 -x 0.35
+/komaedit pincel rock boulder 3 -u 0.4
+```
+
+### Rendimiento y limitaciones
+
+- El cálculo es rápido: un roble de 18 bloques (unos 1 500 bloques) tarda de 70 a 150 ms; uno de 60 (unos 43 000 bloques), menos de un segundo; las rocas de serie, de 10 a 50 ms. Lo que más tarda es leer el entorno, repartido entre ticks.
+- Un árbol lee una caja de su copa más 14 bloques por debajo; con varios puntos marcados la caja los cubre a todos y tiene un tope de 4 millones de bloques. Tope de bloques por operación del servidor (`maxBlocksPerOperation`), como todo el mod.
+- El árbol no ve otros árboles que pongas en la misma orden: si se cruzan, la madera tapa las hojas del otro y las hojas se respetan entre sí.
+- Las rocas no tienen biomas ni entidades en cuenta, y una máscara de bioma da error.
+- Renders de comprobación (fuera del juego): `docs/renders/arboles/` y la prueba `NatureRenderTest` con `KOMAEDIT_NATURE_RENDER=<carpeta>`.
+
+## Tejados
+
+### Objetivo y acceso
+
+Un tejado completo sobre la planta de una casa en una sola orden, con las piezas bien puestas: escaleras mirando al caballete, escaleras colgadas bajo el alero para que no se vean muescas, esquinas exteriores e interiores donde tocan y losas arriba o abajo según la altura. Ahorra la parte más lenta de cada casa y funciona también con plantas en L, T y U.
+
+```text
+/komaedit roof <tipo> [material] [banderas]
+/komaedit tejado <tipo> [material] [banderas]
+```
+
+- **Planta:** la selección de WorldEdit (cuboide, `//sel poly` o cualquier otra; cuenta su huella en planta). Selecciona a la altura de lo alto de los muros: el tejado empieza justo encima de la selección. Con `-d` la planta sale de los muros que hay dentro de la selección (ver más abajo).
+- **Material:** un bloque entero (`spruce_planks`, `deepslate_tiles`…); las escaleras y losas salen de su familia, como en smoothblocks (por nombre o, si no tiene, por color). También vale una escalera o una losa (`dark_oak_stairs`: se usa para las piezas y su bloque entero para el relleno), cualquier patrón de WorldEdit o una paleta `##Nombre`/`#guardada`, que se reparte **en degradado por altura** (la primera entrada abajo, la última en el caballete). Por defecto, `spruce_planks`.
+- Permiso: `komaedit.build` o `komaedit.build.roof` (paquete intermedio).
+- Todo va a una sola edición por lotes: un **//undo** lo quita entero, con la estimación, la confirmación de los Build grandes y la vista previa (`-v`) del motor común.
+
+Ejemplos:
+
+```text
+/komaedit roof gable spruce_planks
+/komaedit roof gable deepslate_tiles -p 1:2 -a 2 -c polished_deepslate
+/komaedit roof hip dark_oak_planks -d -b 2
+/komaedit roof mansard spruce_planks -b 2 -m white_terracotta
+/komaedit roof shed oak_planks -p 1:3 -lado s
+/komaedit roof gablet ##DustyBrown -q 3
+/komaedit roof cone dark_prismarine -p 2:1
+/komaedit roof spire deepslate_tiles -lados 8 -h 12
+/komaedit roof dome copper_block
+/komaedit roof pagoda dark_oak_planks -a 2
+/komaedit roof flat smooth_stone -pretil 1 -m stone_bricks
+/komaedit roof hip spruce_planks -e
+```
+
+### Tipos
+
+| Tipo | Alias | Qué hace | Pendiente por defecto |
+| --- | --- | --- | --- |
+| `gable` | `dosaguas` | A dos aguas: caballete a lo largo del ala, hastiales en los remates. En L, T y U, un hastial al final de cada ala, limatesa en las esquinas de fuera y limahoya en las de dentro. | 1:1 |
+| `hip` | `cuatroaguas`, `pabellon` | A cuatro aguas: todos los bordes son alero; limatesas a 45° y limahoyas en las esquinas de dentro. | 1:1 |
+| `mansard` | `mansarda` | Faldón bajo empinado (2:1 o la pendiente + 1) y faldón alto suave; el alero hace un pequeño quiebro hacia fuera. | 1:2 (el alto) |
+| `shed` | `unagua`, `cobertizo` | A un agua: un solo plano que baja hacia `-lado`; los otros lados se cierran con muro. | 1:2 |
+| `gablet` | `holandes`, `dutch` | Holandés: cuatro aguas abajo y un hastial pequeño arriba en cada remate. | 1:1 |
+| `dome` | `cupula` | Cúpula por anillos, inscrita en la planta; la altura es el radio por la pendiente o `-h`. | 1:1 |
+| `cone` | `cono`, `torreon` | Cono redondo por anillos de escaleras. | 2:1 |
+| `spire` | `aguja`, `chapitel` | Aguja poligonal de `-lados` lados (8 por defecto); con 4 es una pirámide exacta. | 3:1 |
+| `pagoda` | `oriental` | Cuatro aguas con faldones cóncavos (suaves en el alero, empinados arriba) y las puntas del alero levantadas. | 1:1 |
+| `flat` | `plano`, `azotea`, `terraza` | Plano, con pretil de `-pretil` bloques en el borde. | — |
+
+Cúpula, cono y aguja se centran en la caja de la planta; lo que de la planta queda fuera de la figura se cubre con losas, así no queda lo alto de los muros al aire.
+
+### Banderas
+
+| Bandera | Alias | Qué hace |
+| --- | --- | --- |
+| `-p <pendiente>` | `-pendiente`, `-pitch` | Subida:avance (`1:1`, `1:2`, `2:1`, `1:3`) o grados (`30`, `30°`); de 1:10 a 8:1. Las pendientes limpias son 1:1 (escaleras), 1:2 (losa y bloque), 1:3 y 2:1 (escalera sobre bloque); las demás alternan piezas. |
+| `-a <bloques>` | `-alero` | Lo que sale el tejado por fuera de los muros (0 a 8). Por defecto 1, y 0 en `flat` y `dome`. Con 1:1 y alero 1, la escalera del alero queda a la altura de lo alto del muro. |
+| `-g <capas>` | `-grosor` | Grosor del faldón medido en perpendicular (1 a 6). |
+| `-c <material>` | `-caballete` | Material del caballete: la pieza más alta de cada columna que no tiene ninguna vecina más alta (caballete, cúspide y caballetes de las buhardillas). |
+| `-b <n>` | `-buhardillas` | Buhardillas por cada alero recto de 9 bloques o más (0 a 8), en `gable`, `hip`, `mansard`, `shed` y `gablet`. |
+| `-m <material>` | `-muro`, `-hastial` | Material de hastiales, paredes de buhardillas, escalón del holandés y pretil. Sin él se usa el más repetido en lo alto de los muros de debajo y, si no hay muros, el del tejado. |
+| `-abierto` | `-sinhastial` | No cierra los hastiales. |
+| `-ventana <bloque>` | `-window` | Ventana de las buhardillas (`glass_pane` por defecto; los paneles y barrotes se unen a lo largo del muro). |
+| `-lado <n\|s\|e\|o>` | `-bajo` | Lado bajo del tejado a un agua; por defecto, el de la selección más cercano a ti. |
+| `-lados <n>` | `-sides` | Lados de la aguja (3 a 32). |
+| `-h <bloques>` | `-altura` | Altura de cúpula, cono, aguja o pagoda. |
+| `-pretil <bloques>` | `-parapet` | Altura del pretil del tejado plano (0 a 6, 1 por defecto). |
+| `-q <bloques>` | `-quiebro` | Mansarda: hasta dónde llega el faldón empinado (por defecto 1 o 2 bloques, según el fondo). Holandés: hasta dónde llegan las aguas de los remates antes del hastial pequeño (por defecto, la mitad). |
+| `-d` | `-detectar`, `-muros` | La planta sale de los muros, no de la selección. |
+| `-eje <x\|z>` | `-axis` | Dirección del caballete en `gable` y `gablet`; sin ella, en cada ala, a lo largo. |
+| `-escaleras <material>` | `-stairs` | Escaleras de otro material (`dark_oak`, `dark_oak_stairs` o `dark_oak_planks`). |
+| `-losas <material>` | `-slabs` | Losas de otro material. |
+| `-r` | `-reemplazar` | Sustituye también lo que no es aire. Sin ella el tejado no pisa ningún bloque: lo alto de los muros, faroles o lo que haya se respeta. |
+| `-e` | `-estimar` | Solo estima: bloques, piezas, chunks, caja, memoria y tiempo. |
+| `-v` | `--preview` | Vista previa, como en el resto de órdenes. |
+
+### Planta desde los muros (`-d`)
+
+Selecciona la casa entera (o al menos lo alto de los muros, con algo de aire alrededor) y añade `-d`:
+
+- Lo más alto que hay construido en la selección marca la altura: el tejado empieza justo encima.
+- Son muro las columnas con bloque en alguna de las dos capas de arriba (una puerta o una ventana más abajo no cuentan) y la planta es el muro y todo lo que encierra. Así salen plantas en L, T, U o con patio, aunque la selección sea un cuadrado.
+- Si los muros no cierran (falta un trozo arriba), lo dice y no hace nada.
+- El material de los hastiales sale de lo alto de esos muros.
+
+### Comportamiento
+
+- **Faldones.** La altura del tejado se calcula cada medio bloque (las columnas de octantes de las piezas) con la distancia de ajedrez desde el borde de la planta, que en plantas rectilíneas da justo un tejado a cuatro aguas: limatesas a 45° en las esquinas salientes y limahoyas en las entrantes. En los de dos aguas los bordes de hastial no cuentan, y los faldones resbalan a lo largo de ellos. Un borde es hastial si sus dos extremos son esquinas salientes, mide al menos 3 bloques y es más corto que el fondo de planta que tiene detrás (el remate de un ala); en un cuadrado, el caballete va a lo largo del eje x (o el de `-eje`).
+- **Piezas.** Las alturas se redondean a medio bloque y se ajustan dentro de cada bloque para que salga una pieza que existe: arriba losa, bloque o escalera con el escalón alto hacia el caballete; abajo lo mismo boca abajo. Con 1:1 cada fila es una escalera con otra colgada debajo (`half=top`, mirando hacia fuera), así el alero se ve liso desde abajo.
+- **Esquinas.** La forma de cada escalera (recta, interior o exterior) la decide Minecraft según sus vecinas; el tejado elige la orientación de cada escalera para que la forma que pondrá Minecraft sea la que pide la superficie (el mismo repaso del perfil `SlabsAndStairs` de smoothblocks) y la deja ya puesta en el plan. En las limatesas quedan escaleras exteriores y en las limahoyas, interiores.
+- **Hastiales y paredes.** El triángulo bajo cada hastial se rellena desde lo alto del muro hasta el tejado. Lo mismo bajo el escalón del holandés, en las mejillas y el frente de las buhardillas y en los tres lados altos del tejado a un agua.
+- **Buhardillas.** Cinco de ancho: muro delantero de 2 bloques sobre el muro de la casa con ventana de 2 de alto, mejillas a los lados y tejadillo a dos aguas 1:1 que entra en el faldón hasta que este lo tapa. Por dentro quedan abiertas al desván. Se omiten (y se avisa) las que caerían en una limatesa o en un tejado demasiado bajo para que quepan.
+- **Figuras redondas.** Cúpula, cono y agujas de más de 4 lados se hacen por anillos de altura constante, como los construye un constructor: arriba de cada columna una escalera mirando a la cúspide, abajo una colgada hacia fuera y bloques en medio; Minecraft pone las esquinas. Cada columna baja hasta lo alto de sus vecinas, así entre anillos no quedan rendijas.
+- **Nada se pisa.** Sin `-r` el tejado solo va donde hay aire, y la construcción es condicional: si alguien cambia un bloque mientras se coloca, se respeta.
+- Determinista: la misma selección y la misma orden dan siempre el mismo tejado.
+
+### Rendimiento y limitaciones
+
+- La lectura del mundo va repartida entre ticks (la zona del tejado, de unos pocos bloques por debajo del alero a lo más alto que puede llegar) y el cálculo, en un worker; en el hilo del servidor solo se resuelven los materiales.
+- Planta de 512 × 512 bloques como mucho y tejado de 320 bloques de alto como mucho.
+- Las plantas con bordes en diagonal (`//sel poly` inclinado) salen escalonadas: un tejado de Minecraft no tiene faldones en diagonal.
+- Las pendientes que no son 1:1, 1:2, 1:3 o 2:1 alternan escalones de distinto tamaño; es lo más fiel que se puede con bloques.
+- En la pagoda, las puntas levantadas no caben exactas en piezas y llevan algún bloque entero.
+- La cúpula sobre una planta alargada es elíptica; sobre una en L o en U se centra en su caja.
+- En el Procedural Studio está en la etapa [Herramientas](#herramientas) (tarjeta Tejado): manda esta misma orden sobre la selección.
+
+Renders de comprobación (fuera del juego, con `KOMAEDIT_ROOF_RENDER=<carpeta>`), en `docs/renders/tejados/`: cada tipo sobre una casa visto desde dos esquinas y desde abajo, plantas en L, T y U, figuras redondas y detalles de buhardillas, holandés, mansarda, a un agua y pagoda.
+
+## Loft entre curvas
+
+### Objetivo y acceso
+
+Una superficie tendida entre 2 y 6 curvas: toldos, velas, lonas, puentes colgantes, cubiertas curvas o paredes que serpentean. Como el «loft» de Arceon o el modelado de Axiom.
+
+```text
+/komaedit loft [curva] [curva] [más curvas…] [material] [banderas]
+/komaedit lona …
+```
+
+- **Curvas:** nombres de recorridos guardados con `/komaedit path save <nombre>`; `actual` es el recorrido de ahora (los puntos marcados con **P**, o la selección de la supervarita o de WorldEdit). Sin nombres, los puntos de ahora se reparten en `-n` curvas seguidas del mismo número de puntos: con 4 puntos marcados alrededor de un hueco salen dos tramos rectos y una lona entre ellos.
+- Cada curva pasa por sus puntos con un Catmull–Rom, como las trayectorias (en el modo `lineal`, en tramos rectos). Si una curva se marcó al revés que la anterior se le da la vuelta, para que la superficie no salga retorcida.
+- **Material:** cualquier patrón de WorldEdit o una paleta `##Nombre`/`#guardada`, que se reparte en degradado de la primera curva a la última. Por defecto, `white_wool`.
+- Permiso: `komaedit.build` o `komaedit.build.loft` (paquete intermedio).
+- Una sola edición por lotes y un **//undo**, con estimación, confirmación de Build grandes y vista previa (`-v`).
+- En el Studio, tarjeta Loft de la etapa [Herramientas](#herramientas): con los puntos de ahora o con recorridos guardados escritos en **Recorridos guardados**.
+
+Ejemplos:
+
+```text
+/komaedit loft white_wool -i catenaria -comba 2
+/komaedit loft borde1 borde2 red_wool -i catenaria -comba 20%
+/komaedit loft a b c -i catmull -g 2 -w SlabsAndStairs
+/komaedit loft cable1 cable2 spruce_planks -i lineal -w SlabsAndStairs
+/komaedit loft suelo arriba stone_bricks -i catmull
+/komaedit loft aro1 aro2 aro3 aro4 ##FadeOrange -cerrar
+```
+
+### Banderas
+
+| Bandera | Qué hace |
+| --- | --- |
+| `-i lineal\|catmull\|catenaria` | Cómo se pasa de una curva a la siguiente: en recta (superficie reglada), con un Catmull–Rom centrípeto que pasa por todas las curvas (por defecto) o colgando entre cada dos curvas como una catenaria. Alias `linear`, `cr`, `suave`, `catenary`, `cuelga`. |
+| `-comba <bloques\|%>` | Lo que cuelga el centro de cada tramo en la catenaria: en bloques o en tanto por ciento del vano (`20%`). Por defecto, el 15 % del vano. Da por hecha `-i catenaria`. |
+| `-g <bloques>` | Grosor (1 a 8). |
+| `-w <perfil>` | Losas y escaleras en la superficie, con los perfiles de smoothblocks (`SlabsAndStairs`, `Slabs`, `SSW`, `Panes`…). |
+| `-cerrar` | Une la última curva con la primera (con tres o más): tubos y cúpulas abiertas. |
+| `-n <curvas>` | En cuántas curvas se reparten los puntos de ahora (2 a 6, 2 por defecto). |
+| `-e` | Solo estima. |
+| `-v` / `--preview` | Vista previa. |
+
+### Comportamiento
+
+- Las curvas se muestrean cada medio bloque y cada muestra se une con la de la curva siguiente; la malla de triángulos resultante se voxeliza al revés: entra cada bloque cuyo centro queda a menos de medio grosor (y como mínimo medio bloque) de la superficie.
+- **Sin agujeros.** Con medio bloque basta para que la superficie sea estanca: dos bloques que comparten una cara a uno y otro lado de la superficie están a un bloque, así que uno de los dos queda a medio bloque o menos y entra. Ningún camino de caras atraviesa la lona (ni el agua ni las criaturas).
+- La catenaria cuelga en vertical: su forma sale de la comba y la longitud del vano (con combas pequeñas, una parábola).
+- Con `-w`, las mismas distancias miden la ocupación de cada octante y se eligen las piezas como en los tubos; las piezas solo sustituyen o se añaden, nunca quitan bloques de la superficie.
+
+### Rendimiento y limitaciones
+
+- El cálculo va en un worker; no lee el mundo y, como las figuras, sustituye lo que haya donde cae.
+- Como mucho 1 500 000 bloques; curvas de hasta 4 096 bloques de largo.
+- La superficie va siempre de una curva a la siguiente en orden: para una vela con un punto suelto, marca ese punto como una curva corta.
+- Con curvas muy dispares (una larga y otra de dos puntos muy cerca), la malla se aprieta en un lado y la superficie se pliega.
 
 ## Modificadores
 
@@ -1065,11 +1636,12 @@ Alias: `/komaedit retocar` y `/komaedit survival` (el nombre antiguo en ezEdits)
 - `persist` activa o desactiva la persistencia de las hojas para que no se caigan.
 - `waterlog` anega o seca todo lo que admita agua (escaleras, losas, vallas…).
 - `wax` encera o desencera el cobre, incluidas escaleras, losas, puertas, trampillas, rejillas y bombillas. El mineral, el bloque de cobre en bruto y el pararrayos no tienen versión encerada y se dejan igual.
+- `wax` también encera o desencera los carteles, normales y colgantes, como ezEdits: un cartel encerado ya no se puede editar. Los carteles guardan la cera en sus datos (`is_waxed`), no en el estado del bloque, así que se cambian aparte con una edición de WorldEdit: el chat dice cuántos, y se deshacen con su propio `//undo` (el cobre va en otro).
 - La selección se lee repartiendo el trabajo entre ticks, se calcula en un worker y se escribe por lotes. Cada bloque solo se cambia si sigue igual que al leerlo, así no se pisa lo que alguien construya mientras tanto. Se deshace con `//undo`.
 
 ### Limitaciones
 
-- Los carteles encerados guardan el encerado en sus datos, no en el estado del bloque; `wax` no los toca.
+- Los carteles solo se buscan en los chunks cargados de la selección.
 - La selección más su margen admite hasta 16 millones de bloques y 1 500 000 cambios.
 
 ## Deformar la selección
@@ -1167,7 +1739,7 @@ Banderas:
 
 - `-c`: solo talla (el ruido va de 0 a −1).
 - `-e`: solo crece (de 0 a +1). No se puede usar a la vez que `-c`.
-- `-m <máscara>`: solo se tallan los bloques de la lista y solo se crece desde ellos. Es una lista de ids y etiquetas separadas por comas; con `!` delante, la lista se invierte. Por ejemplo: `stone,andesite`, `#minecraft:base_stone_overworld` o `!grass_block`.
+- `-m <máscara>`: solo se tallan los bloques que la cumplen y solo se crece desde ellos. Admite cualquier [máscara de WorldEdit](#máscaras-de-las-operaciones-de-región), con las de ezEdits (`#near`, `#fullblock`, `#eznoisemask`…); si lleva espacios va entre comillas: `-m "#existing !#near[water][2]"`. La lista de antes sigue valiendo con su significado: ids y etiquetas separados por comas, con `!` delante para invertir la lista (`stone,andesite`, `#minecraft:base_stone_overworld`, `!grass_block`).
 - `-t`: intenta conservar la topología. Los cambios se aplican de uno en uno, del más claro al más dudoso, y solo si el bloque es *simple* en ese momento: no se abren túneles, no se cierran huecos y nada se parte en dos ni se une. Lo que no se puede cambiar se queda como estaba.
 
 ### Ejemplos
@@ -1177,6 +1749,7 @@ Banderas:
 /komaedit surface rockify 4 12 2 1 4
 /komaedit surface voronoify 3 10 -c
 /komaedit surface noisify 3 Ce(F:0.1,cR:sub) 1 1 4 -m stone,andesite -t
+/komaedit surface rockify 2 -m ">stone"
 /komaedit surface rockify 3 -w SlabsAndStairs
 ## Texturizado
 
@@ -1189,6 +1762,8 @@ Pinta una paleta sobre lo que ya hay construido en la selección de WorldEdit se
 ```
 
 Alias: `/komaedit textura`. `/komaedit texture` sin modo muestra la ayuda. Requiere el permiso de construir (`komaedit.build`).
+
+Para sombrear según la luz sin montar la paleta ni combinar modos (luz, sombras y oclusión juntas, paleta sacada de la selección y escaleras que cambian de material dentro de su familia), está `/komaedit shade`: ver [Color y sombreado](#color-y-sombreado).
 
 Los argumentos van por posición y las banderas en cualquier sitio. Un argumento con espacios va entre comillas; los paréntesis y corchetes agrupan solos, así que `Ambient(Radius:2, Contrast:0.3)` es un solo argumento.
 
@@ -1261,7 +1836,12 @@ Límites: 1 024 caracteres, 8 niveles de anidado y 32 texturas por expresión.
 
 ## Máscaras de las operaciones de región
 
-`texture`, `vines`, `slabmerge` y `statecycle` aceptan cualquier máscara de WorldEdit que se evalúe sobre bloques. La máscara se parsea en el hilo del servidor y se evalúa en el worker sobre la foto capturada (un `Extent` de solo lectura): no toca el mundo ni bloquea el servidor.
+`texture`, `vines`, `slabmerge` y `statecycle`, y la bandera `-m` de `noisegen`, `flowfield`, `surface` y el pincel `petalpainter`, aceptan cualquier máscara de WorldEdit que se evalúe sobre bloques. La máscara se parsea con el `MaskFactory` de WorldEdit en el hilo del servidor y se evalúa en el worker sobre la foto capturada (un `Extent` de solo lectura): no toca el mundo ni bloquea el servidor.
+
+- En `-m`, la lista de bloques que admitía cada orden antes sigue valiendo con el mismo significado (por ejemplo `#solid,!stone` en los generadores es «sólido y no piedra»); cualquier otra cosa se lee como máscara de WorldEdit. Varias máscaras separadas por espacios se cumplen a la vez y van entre comillas: `-m "#existing !#near[water][3]"`.
+- Lo que la máscara lee al escribir la orden (el bloque de `#aim`, tu posición en los degradados, el portapapeles) sale del mundo en ese momento; lo demás, de la foto. Con máscaras que miran a los vecinos (`>stone`, `#surface`, `#near`) se captura un margen alrededor de la selección (1 bloque, o 17 con `#near`).
+- `#current` no se admite aquí: la máscara global de WorldEdit está atada al mundo y el worker no puede leerla. Escribe la máscara directamente.
+`texture`, `vines`, `slabmerge`, `statecycle` y las [utilidades de obra](#utilidades-de-obra) (`text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` y el pincel `biome`, con `-m`) aceptan cualquier máscara de WorldEdit que se evalúe sobre bloques. La máscara se parsea en el hilo del servidor y se evalúa en el worker sobre la foto capturada (un `Extent` de solo lectura): no toca el mundo ni bloquea el servidor.
 
 - Funcionan: listas de bloques (`stone,andesite`), estados (`oak_stairs[half=top]`, `^[facing=north]`), etiquetas (`##minecraft:logs`), `#existing`, `#solid`, `#air`, `#surface` o `#exposed`, desplazamientos (`>stone` encima de piedra, `<air`), negación (`!`), `#region` y `#dregion`, ruido (`%30`) y expresiones (`=y>64`). También las de ezEdits que registra KomaEdit ([Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit)): `#palette[##Ice]`, `#near[stone][3]`, `#fullblock`, `#attached`… Las que miran la luz (`#blocklight`, `#truelight`, `#lightsource`) la leen del mundo, no de la foto.
 - `*`, `#all` o `todo` aceptan cualquier bloque que no sea aire.
@@ -1333,6 +1913,241 @@ Ejemplos:
 - `-m` usa una lista de bloques y etiquetas, no la sintaxis completa de máscaras de WorldEdit. La máscara global (`//gmask`) se respeta al escribir.
 - Radio de 0 a 32; suavizado de radio 0–8 y 0–16 iteraciones.
 
+## Color y sombreado
+
+### Objetivo y acceso
+
+Ayuda a elegir bloques por su color y a sombrear lo construido, como el Colour Picker, el Gradient Helper y el Autoshade de Axiom:
+
+```text
+/komaedit color similar [bloque|#hex] [n=8] [-c] [-s] [-o] [-u] [-x]
+/komaedit color gradient <A> <B> [pasos=7] [-c] [-s] [-o] [-u] [-x] [-v variante] [-p nombre] [-f]
+/komaedit color palette <selection|hotbar|paleta> [nombre] [-f]
+/komaedit color hotbar <bloques|undo>
+/komaedit shade [selection|rampa|paleta] [-l luz] [-a 0–1] [-r radio] [-o 0–1] [-d 0–1] [-m máscara] [-n tamaño] [-k]
+```
+
+Alias: `colour`; `similar` → `parecidos`, `gradient` → `degradado`, `palette` → `paleta`, `hotbar` → `barra`; `shade` → `sombrear`. Permisos: `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da `komaedit.use`; paquete básico) y `komaedit.build.shade` (los da `komaedit.build`; paquete intermedio). En el Studio están en la etapa **Color** (tecla `9`).
+
+### Colores de los bloques
+
+- Cada bloque tiene un color: la media de su textura en los bloques vanilla (la misma tabla que usa smoothblocks, `assets/komaedit/smooth/colors.txt`, generada desde el jar de 1.21.1 con `tools/smooth_colors.py`) y, en los de mods, su color de mapa, que es más aproximado. Se comparan e interpolan en **OKLab**: una misma distancia se ve como el mismo salto de color en toda la gama y un degradado en línea recta no se ensucia de gris a mitad. En el chat la distancia sale como `Δ` (OKLab × 100): por debajo de 2 casi no se nota; a partir de 10 ya es otro color.
+- De los bloques con exactamente el mismo color (los tablones, su losa, su escalera y su valla) solo se propone uno, el entero.
+- **Materiales lisos.** Por defecto no se proponen menas ni bloques de mineral en bruto, terracota esmaltada, bloques cincelados, coral vivo (se muere fuera del agua), máquinas con cara delantera (horno, dispensador, observador, colmena…), bloques de función (mesa de trabajo, librería, TNT, bloque musical…), texturas con mucho dibujo (más de 0,15 de desviación media en OKLab en alguna cara), bloques que dan luz ni bloques con entidad de bloque (cofres, barriles, arena sospechosa…; también los de mods). Su color medio engaña: una mena de oro tiene el color medio de una piedra amarillenta, pero se ve a motas. `-x` los deja entrar.
+- Nunca se proponen bloques técnicos (barrera, luz, bloques de comandos, de estructura…), piedra infestada ni la losa de roble petrificada, ni bloques sin objeto (no se pueden llevar en la mano).
+
+Filtros comunes (se pueden juntar):
+
+| Bandera | Deja solo |
+| --- | --- |
+| `-c` | Cubos enteros (sin losas, escaleras, vallas, plantas…). |
+| `-s` | Bloques sólidos, con colisión. |
+| `-o` | Bloques opacos (sin cristal, hojas, hielo…). |
+| `-u` | Cubos con la misma textura en las seis caras (piedra, lana, hormigón; no troncos, arenisca ni césped). En bloques de mods no se sabe y no pasan. |
+| `-x` | No es un filtro: deja entrar también los materiales que no son lisos. |
+
+### Bloques parecidos
+
+- `color similar` lista los `n` bloques (hasta 32) de color más parecido a un bloque o a un color `#RRGGBB`. Sin argumento usa el bloque de la mano y, si no llevas ninguno, el que miras.
+- Cada línea lleva la **muestra de color** (`██` del color del bloque; al pasar el ratón dice su nombre, su color en hexadecimal, su luminosidad y qué es) y botones: **[barra]** lo pone en la mano, **[parecidos]** busca a partir de él y **[degradado]** hace el degradado del bloque de referencia hasta él. Pulsar el nombre lo copia. **[todo a la barra]** llena la barra rápida con los resultados.
+
+```text
+/komaedit color similar stone 12 -c -o
+/komaedit color similar #8B5A2B
+/komaedit color parecidos
+```
+
+### Degradado entre bloques
+
+- `color gradient` reparte los pasos en línea recta en OKLab entre los dos extremos y elige un bloque para cada paso, **sin repetir**. Los extremos pueden ser bloques (van tal cual en las puntas) o colores `#hex` (se elige el bloque más cercano). De 2 a 32 pasos, contando los extremos.
+- No elige el más cercano a cada paso por separado: eso repite bloques y a veces da un paso atrás. Resuelve la fila entera (programación dinámica) con dos reglas: cada bloque avanza a lo largo del degradado más que el anterior y, si los extremos tienen distinta luminosidad, la luminosidad no da marcha atrás. Si no hay ninguna fila que las cumpla (dos extremos casi iguales, un filtro muy estricto), se queda con los más cercanos y los ordena por luminosidad.
+- El resultado sale como una tira de muestras (cada una se puede pulsar para llevarla a la mano), la lista copiable y los botones **[a la barra]**, **[guardar]** (escribe `/komaedit palette save nombre …` para que pongas el nombre), **[copiar]**, **[otra]** y **[más pasos]**.
+- **Alternativas:** `-v 1`, `-v 2`… (o **[otra]**) penalizan los bloques que ya salieron en las variantes anteriores; cada una prueba otros bloques sin alejarse del color y con las mismas reglas. Es determinista: la misma variante da siempre lo mismo.
+- `-p nombre` lo guarda directamente como paleta `#nombre` (con `-f` sustituye una que ya exista).
+
+```text
+/komaedit color gradient deepslate calcite 9 -c -o
+/komaedit color gradient dark_oak_planks birch_planks 7 -c -o -v 1
+/komaedit color gradient #2B1B3A #F2C14E 9 -c -o -u -p atardecer
+```
+
+### Paleta ordenada por luminosidad
+
+- `color palette selection [nombre]` lee la selección de WorldEdit (cualquier forma y tamaño, repartido entre ticks) y saca sus materiales, los más abundantes primero (hasta 256); las escaleras, losas y muros cuentan como su bloque entero. `color palette hotbar` usa la barra rápida y `color palette <paleta>` cualquier paleta (`##Grayscale`, `#mía`, `stone,andesite…`).
+- La enseña **de oscuro a claro** con sus muestras y los mismos botones que el degradado; con `nombre` la guarda como `#nombre`. Lo que no tiene color conocido se avisa y queda fuera.
+- `palette fetch` sigue leyendo filas de 1×1×N o la barra rápida en su orden.
+
+### Barra rápida
+
+- `color hotbar <bloques>` pone los bloques (lista separada por comas o cualquier paleta) en la barra rápida: uno solo va a la casilla que tienes elegida; varios, desde la primera casilla. Si son más de 9 se reparten 9 por igual, con el primero y el último. Las entradas sin objeto se avisan y se saltan.
+- Solo en **creativo** (en supervivencia sería sacar bloques de la nada). `color hotbar undo` devuelve la barra que había antes del último cambio.
+
+### Sombrear la selección
+
+`/komaedit shade` recolorea la **superficie** de la selección según la luz que recibe, como el Autoshade de Axiom:
+
+- **Luz directa:** cuánto mira cada cara a la luz (ley de Lambert, con la orientación media de los bloques de alrededor, así una ladera escalonada se ve como una pendiente), apagada en las **sombras que proyecta** el propio volumen.
+- **Oclusión ambiental:** rincones, grietas, huecos y el pie de los muros ven menos cielo y quedan más oscuros.
+- La luz de cada bloque elige su sitio en una **paleta de oscuro a claro**. El 2 % más oscuro va al primer bloque y el 2 % más claro al último; si la luz apenas cambia (una pared lisa), no se estira a toda la paleta.
+- **Formas:** solo cambian los bloques enteros sólidos y las piezas con forma. Escaleras, losas, muros, vallas, trampillas, botones y placas conservan su forma, orientación y mitad y pasan a la pieza del material nuevo; si ese material no la tiene, toman la del más cercano de la paleta que sí la tenga, y si ninguno la tiene se quedan como están. El cristal, las hojas, las flores, las antorchas y lo demás no se tocan.
+- Todo es una edición: `//undo` la deshace. El chat dice qué paleta se usó.
+
+Paleta (primer argumento):
+
+| Valor | Paleta |
+| --- | --- |
+| `selection` (por defecto) | Los materiales de la superficie de la selección, de oscuro a claro. Solo entran los que cubren al menos el 2 % de la superficie (como mucho 16): los detalles sueltos (ojos de piedra luminosa, un ribete de oro) no se reparten por la luz y se quedan. Si queda uno solo, se usa su rampa. |
+| `rampa` | Una rampa de 7 bloques (`-n` de 3 a 16) con el tono del material principal: baja más hacia las sombras de lo que sube hacia los brillos, prefiere el mismo tono antes que la luminosidad exacta (en la arenisca: tablones, madera descortezada, arenisca, arenisca cortada y lisa) y solo usa cubos opacos y lisos. Solo se recolorea ese material, y la luz más corriente le cae a él: sigue siendo el que más se ve. |
+| una paleta | `##Grayscale`, `#mía`, `deepslate,tuff,stone,andesite,calcite`…: se ordena de oscuro a claro (con `-k` se respeta su orden: el primero es la sombra). Recolorea todos los bloques enteros sólidos y piezas de la superficie. Un solo bloque (`/komaedit shade sandstone`) da su rampa. |
+
+Opciones:
+
+| Bandera | Qué hace |
+| --- | --- |
+| `-l <luz>` | De dónde viene la luz. `sol` (por defecto): el sol según la hora del mundo, que en Minecraft sale por el este y se pone por el oeste; su altura se limita entre 20° y 65° (ni rasante ni a plomo, que aplanan el relieve) y de noche alumbra la luna. `jugador`: desde donde estás hacia el centro de la selección. `mirada`: la luz va hacia donde miras. `foco`: luz puntual en tus ojos. `arriba`. Un rumbo (`n`, `ne`, `e`, `se`, `s`, `so`/`sw`, `o`/`w`, `no`/`nw`): viene de ahí a 45°. O `x;y;z`: hacia dónde va la luz, como en `texture sunlight -l`. |
+| `-a <0–1>` | Fuerza de la oclusión ambiental (por defecto `0.6`). |
+| `-r <radio>` | Alcance de la oclusión en bloques (1–8, por defecto 3). |
+| `-o <0–1>` | Fuerza de las sombras proyectadas (por defecto `0.8`; `0` sin sombras). |
+| `-d <0–1>` | Tramado: en el paso entre dos bloques de la paleta los mezcla con un umbral por posición para que no salgan franjas (por defecto `0`). |
+| `-m <máscara>` | Solo los bloques que pasan la máscara de WorldEdit (`-m stone,andesite`, `-m #existing`…). |
+| `-n <tamaño>` | Bloques de la rampa (3–16, por defecto 7). |
+| `-k` | Con una paleta escrita, respeta su orden en lugar de ordenarla por luminosidad. |
+
+```text
+/komaedit shade
+/komaedit shade -l ne -d 0.5
+/komaedit shade rampa -l jugador -o 0.6
+/komaedit shade deepslate,tuff,stone,andesite,calcite -l so -a 0.8
+/komaedit shade ##Grayscale -l arriba -m #existing
+```
+
+Los renders de `docs/renders/color/` (de `ColorRenderTest`, con las texturas de 1.21.1) enseñan degradados con su alternativa, las rampas, una colina y un busto con escaleras y losas antes y después de sombrear.
+
+### Etapa Color del Studio
+
+- **Degradado:** dos tarjetas (Desde y Hasta) que abren el catálogo de bloques, los pasos (2–16), «Solo cubos opacos» y «También menas, máquinas y luces». Debajo, la tira de muestras: al pasar el ratón dice el bloque y su color; un clic lo lleva a la mano. **A la barra** pone todo el degradado en la barra rápida, **Otra** prueba la variante siguiente y **Al chat** lo escribe en el chat con los botones para guardarlo.
+- **Parecidos** al bloque de Desde: ocho muestras; un clic lleva el bloque a la mano.
+- **Sombrear la selección:** luz (sol, desde donde estás, hacia donde miras, desde arriba o un rumbo), paleta (la de la selección, la rampa del material o el degradado de arriba) y tramado; **Sombrear selección** lanza `/komaedit shade` con eso.
+- Calcula en el cliente con el mismo catálogo que el servidor y guarda sus ajustes al cerrar y abrir el Studio; las órdenes las comprueba el servidor como siempre (permisos y creativo).
+
+### Rendimiento y limitaciones
+
+- El catálogo se monta una vez (unos 1 060 bloques vanilla más los de mods) y las búsquedas recorren la lista entera: son instantáneas. Un degradado de 32 pasos prueba como mucho 400 candidatos por paso.
+- `shade` lee la selección más un margen de `2·radio + 2` bloques (8 con el radio 3) repartido entre ticks, calcula en un worker y escribe con `//undo`, como `texture`; el volumen con margen no puede pasar de 8 000 000 de bloques. Las sombras solo las proyecta lo que está dentro de lo leído: amplía la selección si una torre de fuera debería dar sombra. En los renders, una colina de 52×52 con 4 700 bloques de superficie tarda menos de 150 ms.
+- El color medio no dice todo: dos bloques con el mismo color pueden tener texturas muy distintas. Los filtros y la bandera de materiales lisos quitan lo peor; el resto lo decide quien construye. Los colores de mapa de los bloques de mods son mucho más toscos que los medidos.
+- Los bloques que cambian solos (cobre que se oxida, coral fuera del agua) se proponen por su color de ahora; para que no cambien, usa su versión encerada.
+- La luz del sol de Minecraft no tiene inclinación norte-sur: con `-l sol` las caras norte y sur reciben la misma luz. Para dar relieve en esa dirección usa un rumbo o `-l jugador`.
+
+## Imagen en bloques
+
+### Objetivo y acceso
+
+Convierte una imagen en una obra plana de bloques, en vertical o en horizontal, como `//stainedglassimage` de ezEdits. Por defecto sale una vidriera de vidrio tintado; también hay lana, hormigón, terracota, todos los bloques enteros o cualquier paleta de KomaEdit.
+
+```text
+/komaedit image <archivo|https://…> [ancho|anchoxalto] [paleta] [-w ancho] [-h alto] [-p paleta]
+                [-d none|fs|bayer] [-b brillo] [-c contraste] [-a air|keep|bloque] [-u umbral] [-o anclaje] [-s] [-e] [-r]
+```
+
+Alias: `/komaedit imagen` y `/komaedit stainedglassimage`. Permiso `komaedit.build.image` (paquete avanzado; es el `ezedits.stainedglass.image` de ezEdits). Las imágenes por URL dependen además de la [configuración de imágenes](#configuración-de-imágenes). Sin argumentos, la orden muestra su ayuda.
+
+### Origen de la imagen
+
+- **Archivo del servidor:** el nombre es relativo a `config/komaedit/images/`, que se crea al arrancar; se admiten subcarpetas (`vidrieras/rosa.png`) y los nombres con espacios van entre comillas (`"mi foto.png"`). El autocompletado ofrece las imágenes de la carpeta (hasta 100, con un nivel de subcarpetas). El nombre nunca sale de la carpeta: se rechazan `..`, las rutas absolutas, `\` y los enlaces que apunten fuera.
+- **URL `https://`:** solo si el admin las activa. Se aceptan los dominios de su lista, sin usuario ni contraseña y en el puerto 443; el dominio no puede resolver a una dirección interna (bucle local, red privada, enlace local…). Las redirecciones se siguen hasta tres veces y solo dentro del mismo host. La descarga tiene un tamaño y un tiempo máximos y va en un worker, nunca en el hilo del servidor.
+- **Formatos:** PNG (con transparencia), JPG y GIF (de un GIF animado, el primer fotograma). Se reconocen por su contenido, no por la extensión. Antes de decodificar se leen las medidas de la cabecera: una imagen que declare más píxeles de los permitidos (`maxPixels`) o más de 16 384 de lado se rechaza sin cargarla.
+
+### Colocación
+
+- **Mirando una pared** (hasta 128 bloques): la obra queda en vertical delante de la cara que miras, con el centro de su fila de abajo en el bloque de delante; se lee de frente desde donde estás.
+- **Mirando el suelo o el techo:** en horizontal, sobre el suelo o bajo el techo, centrada en el bloque que miras; la parte de arriba de la imagen apunta hacia donde miras.
+- **Sin mirar ningún bloque:** de pie a dos bloques delante de ti, con la base a la altura de tus pies (o en horizontal, dos bloques por encima o por debajo de los ojos, si miras muy arriba o muy abajo).
+- `-r`: sobre la superficie que miras, sustituyendo sus bloques, en lugar de delante.
+- `-s`: ajustada a la selección, que tiene que ser un rectángulo de un bloque de grosor (vertical u horizontal). La imagen cabe entera sin deformarse; `-e` la estira hasta llenarla. Una selección vertical se ve desde tu lado; en una horizontal, la parte de arriba apunta hacia donde miras.
+- **Medida:** `64` o `-w 64` es el ancho en bloques y `-h 40` el alto; la otra medida sale de la proporción de la imagen. `64x40` (o `-w 64 -h 40`) fija las dos y estira. Sin medida, la obra tiene un bloque por píxel hasta 128 bloques en el lado largo. El lado máximo es `maxBlocksPerSide` (512 por defecto).
+- **Anclaje `-o`:** qué punto de la obra cae en el bloque elegido: `center`, `bottom`, `top`, `left`, `right`, `bottomleft`, `bottomright`, `topleft` o `topright` (también `centro`, `abajo`, `arriba`, `izquierda`, `derecha`, `abajoizquierda`…). Por defecto, `bottom` en vertical y `center` en horizontal. Con `-s` dice hacia dónde se arrima la obra si no llena la selección (por defecto, al centro).
+- Lo que cae por encima o por debajo de la altura del mundo no se coloca, y el mensaje final lo dice.
+
+### Paletas
+
+| Paleta | Bloques |
+| --- | --- |
+| `glass` (`vidrio`, `cristal`) | Los 16 vidrios tintados. Por defecto |
+| `panes` (`paneles`) | Los 16 paneles de vidrio tintado; cada panel se une a los bloques de su fila. Solo en vertical |
+| `wool` (`lana`) | Las 16 lanas |
+| `concrete` (`hormigon`) | Los 16 hormigones |
+| `terracotta` (`terracota`) | Las 16 terracotas teñidas y la terracota sin teñir |
+| `solid` (`solidos`, `todos`) | Unos 180 bloques enteros y opacos con la misma textura en todas las caras (piedras, maderas, minerales, hormigón, lana, terracota, cobre…), sin el coral vivo, que muere fuera del agua |
+| `##Nombre`, `#mía`, `a,b,c` | Cualquier paleta de KomaEdit (de serie, del servidor o guardada) o una lista de bloques, con estados (`oak_log[axis=x]`) |
+
+- El color de cada bloque es la media de su textura en Minecraft 1.21.1, la misma tabla que usan los smoothblocks (`assets/komaedit/smooth/colors.txt`). El bloque más parecido se busca en CIELAB (ΔE de 1976), que se acerca más a lo que ve el ojo que la distancia en RGB.
+- En una paleta propia, los bloques que no están en la tabla (los de mods) se ignoran con un aviso; si no queda ninguno, la orden falla.
+- El vidrio tintado se compara por su tinte. A contraluz, con el cielo detrás, se ve más claro (deja pasar algo más de la mitad de la luz); con un interior oscuro detrás, más parecido al tinte.
+
+### Tramado, ajustes y transparencia
+
+- `-d fs` (por defecto): Floyd–Steinberg en serpentina. El error de cada bloque pasa a sus vecinos; es lo mejor para fotos y degradados.
+- `-d bayer` (`ordenado`): tramado ordenado con la matriz de Bayer de 8×8 sobre una mezcla de 16 bloques por color (método de Knoll). La trama es regular y estable, sin los «gusanos» de la difusión.
+- `-d none` (`ninguno`): cada píxel, el bloque más parecido. Zonas planas y bordes limpios, para pixel art y logos.
+- `-b` y `-c`: brillo y contraste de −100 a 100, aplicados antes de elegir los bloques.
+- **Reescalado:** al reducir, cada bloque es la media de los píxeles que cubre, con alfa premultiplicado (un borde transparente no oscurece el color); al ampliar, cada bloque toma el píxel que tiene debajo, así el pixel art sigue nítido.
+- **Transparencia:** un píxel con alfa por debajo de `-u` (50 % por defecto) es un hueco. Con `-a air` (por defecto) el hueco queda en aire y borra lo que hubiera; con `-a keep`, no se toca; con `-a <bloque>`, se rellena con ese bloque. El tramado no reparte error hacia los huecos ni desde ellos, y los paneles no se unen a un hueco.
+- El mensaje final da la imagen original, la medida en bloques, cuántos bloques distintos usa y el ΔE medio «visto de lejos» (entre las medias de 3×3 de la imagen y de los bloques; por debajo de 5 apenas se nota).
+
+### Ejemplos
+
+```text
+/komaedit image roseton.png 48
+/komaedit image foto.jpg 96 concrete -d bayer
+/komaedit image icono.png 32 wool -d none -a keep
+/komaedit image mural.png -s solid -o bottom
+/komaedit image "vidrieras/san jorge.png" -e panes
+/komaedit image mapa.png -p ##Grayscale -c 20 -r
+/komaedit image https://imagenes.ejemplo.com/logo.png 64
+```
+
+Los renders de comprobación (un atardecer generado por código en vidrio tintado, hormigón y bloques enteros, con y sin tramado, y un icono en lana) están en `docs/renders/imagen/`; se regeneran con `KOMAEDIT_IMAGE_RENDER=<carpeta>` y `./gradlew test --tests '*ImageRenderTest'`.
+
+### Configuración de imágenes
+
+`config/komaedit/images.json` se crea al arrancar y se recarga con `/komaedit reload`:
+
+| Clave | Por defecto | Qué hace |
+| --- | --- | --- |
+| `allowUrls` | `false` | Si se aceptan URL `https://`. Desactivado, solo valen los archivos de la carpeta |
+| `urlsRequireAdmin` | `true` | Las URL, solo para quien tenga `komaedit.admin.image.url` (o sea operador) |
+| `allowedHosts` | `[]` | Dominios permitidos: `ejemplo.com` exacto, `*.ejemplo.com` sus subdominios (no el dominio pelado). Vacía, ninguno |
+| `maxImageBytes` | `8388608` (8 MiB) | Tamaño máximo del archivo o de la descarga (de 1 KiB a 64 MiB). La descarga se corta en cuanto lo pasa, lo diga o no la cabecera |
+| `maxPixels` | `4194304` (2048×2048) | Píxeles que puede declarar la imagen (hasta 8192×8192) |
+| `timeoutSeconds` | `10` | Tiempo máximo de la descarga entera, con sus redirecciones (de 1 a 60) |
+| `maxBlocksPerSide` | `512` | Lado máximo de la obra en bloques (de 1 a 4096) |
+
+Un `images.json` inválido se rechaza entero y se usan los valores por defecto (URL desactivadas). Ejemplo para que los admins descarguen de un dominio propio:
+
+```json
+{
+  "format": 1,
+  "allowUrls": true,
+  "urlsRequireAdmin": true,
+  "allowedHosts": ["imagenes.miservidor.net", "*.cdn.miservidor.net"],
+  "maxImageBytes": 8388608,
+  "maxPixels": 4194304,
+  "timeoutSeconds": 10,
+  "maxBlocksPerSide": 512
+}
+```
+
+### Rendimiento y limitaciones
+
+- La lectura o descarga, la decodificación, el reescalado y la elección de bloques van en un worker; el plan se coloca por ticks con la cola común y es una sola edición: `//undo` la deshace entera. Por encima de `confirmBuildAboveBlocks` pide confirmación, y el total cuenta para `maxBlocksPerOperation`.
+- Una foto de 2048×1536 se convierte en unos 40 ms a 128×96 bloques y en 150–250 ms a 512×384, con cualquier paleta y tramado. Si la imagen tiene mucha más resolución de la necesaria, se decodifica saltando píxeles (deja al menos cuatro por bloque), así gasta menos memoria.
+- Una capa de vidrio por píxel: no apila varias capas tintadas para mezclar colores, como hace `glassgradient`.
+- Los colores son los de los bloques vanilla; un bloque de mod en una paleta propia se ignora.
+- Los paneles solo se unen a los vecinos de su fila dentro de la obra; en el mundo, Minecraft puede unirlos además a los bloques que tengan al lado.
+- No hay holograma previo: la obra se coloca directamente (o tras confirmar, si es grande).
+- No se leen JPG en CMYK ni las animaciones de GIF.
+- Las direcciones internas se comprueban al resolver el dominio antes de conectar; la lista de dominios del admin es la barrera principal.
+
 ## Suavizado
 
 ### Objetivo y acceso
@@ -1375,7 +2190,7 @@ Alias: `suavizar`, `inflar`, `desinflar` y `suavizarpiezas`.
 
 ## Smoothblocks: perfiles de `-w`
 
-Smoothblocks termina las superficies con piezas que no ocupan el bloque entero (losas, escaleras, capas de nieve y muros) para que las curvas y pendientes queden suaves, como el smoothblocks de ezEdits. Se activa con `-w <perfil>` y funciona igual en todos los comandos que lo admiten en ezEdits:
+Smoothblocks termina las superficies con piezas que no ocupan el bloque entero (losas, escaleras, capas de nieve, muros y paneles) para que las curvas y pendientes queden suaves, como el smoothblocks de ezEdits. Se activa con `-w <perfil>` y funciona igual en todos los comandos que lo admiten en ezEdits:
 
 | Comando | Equivale en ezEdits |
 | --- | --- |
@@ -1394,6 +2209,7 @@ Smoothblocks termina las superficies con piezas que no ocupan el bloque entero (
 | `SlabsAndStairs2D` | `SAS2D`, `stairs2d`, `escaleras2d` | las mismas | Cada escalera se elige recta y sola; las esquinas solo salen donde Minecraft las fuerza. Más rápido que el 3D. |
 | `Layers` | `capas`, `nieve`, `snow` | capas de nieve de 1 a 7 | Alturas de 1/8 de bloque, siempre apoyadas en el suelo. |
 | `SSW` | `SlabsStairsWalls`, `muros` | losas, escaleras y muros | Los muros toman las columnas finas que no llenan ni media pieza. |
+| `Panes` | `paneles`, `bars`, `barrotes` | paneles de vidrio y barrotes de hierro | Las partes finas de la superficie (láminas, cintas, bordes) pasan a paneles unidos entre sí y a los bloques enteros de al lado, como los ve Minecraft. Pensado para vidrio: `//ezspline noise -w Panes light_gray_stained_glass 20,15,25`. |
 
 Las mayúsculas, `_` y `-` no importan. `none` (o no poner `-w`) deja solo bloques enteros.
 
@@ -1402,7 +2218,7 @@ Las mayúsculas, `_` y `-` no importan. `none` (o no poner `-w`) deja solo bloqu
 Van entre paréntesis tras el nombre, separados por comas, en cualquier orden:
 
 - **Cobertura `C:<0–1>`** (también `coverage:` o `cobertura:`): cuánta superficie se cubre con piezas. `0` coloca solo bloques enteros; `0.5` (por defecto) pone una pieza solo donde encaja mejor que el bloque entero y da los contornos más fieles; `1` pone pieza en cada bloque de superficie que no esté entero, aceptando piezas hasta dos octantes peores (escaleras en cada esquina posible: menos fiel, pero se ve nítido con el sombreado de Minecraft). Los muros nunca se ponen por cobertura: solo donde encajan mejor.
-- **Material por variante** `Slab:`, `Stair:`, `Wall:` y `Layer:` (también `losa:`, `escalera:`, `muro:`, `capa:`): fija el material de esa pieza para todo el comando, sea cual sea el bloque del patrón. Vale la pieza (`acacia_slab`, `minecraft:spruce_stairs`), el nombre corto de su familia (`acacia`, `cobblestone`) o cualquier bloque, que se cambia por su pieza como si lo pusiera el patrón (`oak_planks`, `white_wool`). Solo se admiten las variantes que usa el perfil (`Slabs(Stair:oak)` da error), y un material inexistente se avisa al escribir la orden.
+- **Material por variante** `Slab:`, `Stair:`, `Wall:`, `Layer:` y `Pane:` (también `losa:`, `escalera:`, `muro:`, `capa:`, `panel:`): fija el material de esa pieza para todo el comando, sea cual sea el bloque del patrón. Vale la pieza (`acacia_slab`, `minecraft:spruce_stairs`), el nombre corto de su familia (`acacia`, `cobblestone`) o cualquier bloque, que se cambia por su pieza como si lo pusiera el patrón (`oak_planks`, `white_wool`). Solo se admiten las variantes que usa el perfil (`Slabs(Stair:oak)` da error), y un material inexistente se avisa al escribir la orden.
 
 La forma antigua `stairs:0.7` (cobertura tras dos puntos) sigue funcionando. Un perfil con espacios tras las comas también se lee bien en tubos y en deform, surface y suavizado; en `place`, `array` y `scatter` los paréntesis ya agrupan.
 
@@ -1414,6 +2230,8 @@ La forma antigua `stairs:0.7` (cobertura tras dos puntos) sigue funcionando. Un 
 /komaedit smoothblocks SlabsAndStairs(Slab:acacia,Stair:spruce) 2 0
 /komaedit place Clipboard Aim -w Slabs
 /komaedit scatter Sh(S:Ellipsoid,P:stone) -w SSW(C:0.3,Wall:cobblestone)
+/komaedit ezspline noise light_gray_stained_glass 20,15,25 -w Panes
+/komaedit sweep rectangle 6 glass -a 0.12 -r 90 -w Panes(C:1,Pane:iron_bars)
 ```
 
 ### Cómo se elige cada pieza
@@ -1423,6 +2241,7 @@ La forma antigua `stairs:0.7` (cobertura tras dos puntos) sigue funcionando. Un 
 3. **Esquinas en 3D** (`SlabsAndStairs` y `SSW`). Minecraft decide la forma de cada escalera (recta, esquina interior o exterior) por la orientación de las escaleras de alrededor, así que elegirlas una a una no basta. Tras la primera elección se repasan las escaleras con sus vecinas: para cada una se prueban las demás piezas del perfil y se queda la que deja menos error entre ella y sus cuatro vecinas horizontales, ya con las esquinas que pondrá Minecraft. Los bloques que cambian vuelven a la cola de sus vecinos, hasta 4 pasadas. Así salen las esquinas exteriores de una pirámide o las interiores de un valle.
 4. **Esquinas como en vanilla.** El plan trae ya la forma que calcularía Minecraft para cada escalera, así el mundo queda igual que el holograma.
 5. **Apoyo de las capas.** Una capa de nieve necesita debajo un bloque entero o una pieza con la cara de arriba entera (como en vanilla, que si no la rompe al primer aviso de un vecino). Las capas sin apoyo vuelven a ser el bloque entero, o se quitan si iban en un hueco.
+6. **Paneles.** Al elegir, un panel cuenta como la lámina central de 2/16 de bloque de lado a lado (1/8 de cada octante): gana en los bloques poco llenos, no en los medio llenos de una pared gruesa (salvo con cobertura alta). Al terminar, cada panel se une a sus vecinos horizontales que son paneles o bloques enteros de la figura, y el plan lleva ya esas conexiones: no depende de que Minecraft actualice los vecinos. Los paneles no se unen en vertical.
 
 ### Materiales por defecto
 
@@ -1430,11 +2249,12 @@ Sin material fijo, cada pieza sale del bloque que hay (o que pone el patrón, la
 
 1. **Por nombre**, si el bloque tiene esa pieza: `stone` → `stone_slab`/`stone_stairs`, `stone_bricks` → `stone_brick_*`, `oak_planks` u `oak_log` → `oak_*`, `quartz_pillar` → `quartz_*`, cobre → cobre cortado del mismo grado (también encerado y cincelado), `snow_block` → capas `snow`. Una tabla resuelve los casos sin convención: `deepslate` → `cobbled_deepslate`, `reinforced_deepslate` y `chiseled_deepslate` → `deepslate_tile`, `end_stone` → `end_stone_brick`, `netherrack` y `magma_block` → `nether_brick`, `nether_wart_block` → `red_nether_brick`, `mud` y `packed_mud` → `mud_brick`, `sand` → `sandstone`, `red_sand` → `red_sandstone`, `quartz_bricks` → `quartz`, `smooth_basalt` → `polished_deepslate`, `dripstone_block` → `tuff`, `powder_snow` → `snow`… La madera, que no tiene muros, usa su valla como muro. Funciona igual con bloques de mods que sigan la convención.
 2. **Por color**, si no tiene esa pieza (hormigón, lana, terracota, basalto…): la pieza registrada del color más parecido. El color de cada bloque es la media de sus texturas vanilla (tabla `assets/komaedit/smooth/colors.txt`, generada desde el jar de cliente con `tools/smooth_colors.py`), y se compara con la ΔE de CIELAB, que se parece a como lo ve el ojo. Los bloques de mods que no están en la tabla usan su color de mapa. Ejemplos: `gray_concrete` → losa de `deepslate_tile`, `white_wool` → `smooth_quartz`, `clay` → `smooth_stone`, `dirt` → `mud_brick`, `obsidian` → `blackstone`, `terracotta` → `brick`, `red_concrete` → `mangrove`. Las capas solo existen en nieve, así que `Layers` es siempre de nieve salvo que un mod añada otras. El cobre encerado y la losa de roble petrificado no se eligen por color.
-3. **No se convierten** el cristal, las hojas y demás bloques no opacos ni los bloques con entidad (cofres, hornos…): se quedan enteros, y la pieza de un hueco no se pone. Si el patrón ya pide una pieza (`oak_slab`), se respeta y solo se orienta cuando coincide el tipo.
+3. **No se convierten** el cristal, las hojas y demás bloques no opacos ni los bloques con entidad (cofres, hornos…): se quedan enteros, y la pieza de un hueco no se pone. La excepción son los paneles: el cristal (cubo entero translúcido) sí se convierte en su panel. Si el patrón ya pide una pieza (`oak_slab`, `glass_pane`), se respeta y solo se orienta cuando coincide el tipo.
+4. **Paneles:** `glass` → `glass_pane`, cada vidrio tintado → su panel, `iron_block` → `iron_bars`; el resto, el panel del color más parecido (los paneles tintados y los barrotes). Con `Pane:` se fija uno para todo (`Panes(Pane:iron_bars)`).
 
 ### Holograma
 
-El holograma de las figuras dibuja cada pieza con su forma: losas y escaleras por medios bloques, las capas con su altura y los muros como la columna central. Las colocaciones y operaciones sobre la selección no tienen holograma propio y se ven al aplicarse.
+El holograma de las figuras dibuja cada pieza con su forma: losas y escaleras por medios bloques, las capas con su altura, los muros como la columna central y los paneles como su poste con un brazo hacia cada vecino unido. Las colocaciones y operaciones sobre la selección no tienen holograma propio y se ven al aplicarse.
 
 ### Rendimiento y limitaciones
 
@@ -1542,7 +2362,7 @@ Genera terreno dentro de la selección de WorldEdit a partir de un ruido y una p
 - **advanced:** coloca donde el ruido 3D cae entre el umbral inferior y el superior (0 y 0,5 por defecto, de 0 a 1), y la paleta se reparte de un umbral a otro. Con `-h` es un mapa de alturas 2D en el que los umbrales hacen de rango: por debajo del inferior la columna queda vacía y por encima del superior, llena.
 - Los umbrales admiten fórmulas de KomaEdit (las de la [figura Expresión](#figura-expresión)) con `x`, `y` y `z` normalizadas de −1 a 1 dentro de la selección y `t`, la altura relativa (0 abajo, 1 arriba). Por ejemplo `"0.3+0.2*t"` o `"r < 0.5 ? 0.1 : 0.4"`. Se eligió el compilador de KomaEdit y no el de WorldEdit porque es cerrado (sin bucles ni búferes globales) y unas diez veces más rápido, y aquí se evalúa una vez por bloque.
 - Las coordenadas del ruido son las del mundo, así que dos selecciones vecinas empalman sin costura. Con `-c` se cuentan desde el centro de la selección y con `-n` (advanced) van de −1 a 1 dentro de ella (pide frecuencias altas, del orden de 1).
-- Con `-m` la base de cada columna es el bloque más alto que cumple la máscara: el terreno crece encima de lo que ya hay y las columnas sin ese bloque se saltan. La máscara admite bloques con o sin propiedades (`grass_block`, `oak_log[axis=y]`), `#solid`, `#existing`, `#air`, `#liquid` y `!` para negar, separados por comas.
+- Con `-m` la base de cada columna es el bloque más alto que cumple la máscara: el terreno crece encima de lo que ya hay y las columnas sin ese bloque se saltan. Admite cualquier [máscara de WorldEdit](#máscaras-de-las-operaciones-de-región), también las de ezEdits (`#near`, `#eznoisemask`, `#fullblock`…), entre comillas si lleva espacios. La lista de antes sigue valiendo igual: bloques con o sin propiedades (`grass_block`, `oak_log[axis=y]`), `#solid`, `#existing`, `#air`, `#liquid` y `!` para negar, separados por comas.
 - Se respeta la forma de la selección (cilindros, polígonos, esferas…).
 - Con la misma semilla, la misma selección y los mismos parámetros sale el mismo terreno. Si no se fija `-s` (o vale −1) se elige una al azar y el chat la dice para poder repetirla.
 
@@ -1576,6 +2396,7 @@ Ejemplos:
 /komaedit noisegen advanced -##Magma Perlin(F:0.06) 0.55 1
 /komaedit noisegen advanced sand,grass_block,stone,snow Ce(F:0.05) 0 "0.3+0.2*t" -h -t
 /komaedit noisegen heightmap dirt,grass_block Perlin(F:0.05) 6 -m grass_block
+/komaedit noisegen heightmap sand,grass_block,stone Perlin(F:0.03) 8 -m "#existing !#near[water][3]"
 ```
 
 ### Rendimiento y limitaciones
@@ -1584,7 +2405,7 @@ Ejemplos:
 - Con `-m` primero se lee la selección repartida entre ticks (unos 4 ms por tick), y cada bloque solo se cambia si sigue igual que al leerlo. En ese modo el terreno no pasa del techo de la selección.
 - Límites: hasta 64 millones de bloques recorridos (columnas × altura), 16 millones leídos con `-m` y 1 500 000 bloques colocados (o el límite de operación del servidor).
 - La paleta de los generadores solo admite bloques, no patrones (`#clipboard`, porcentajes…), porque el worker escribe estados fijos. Sí admite las paletas guardadas con `/komaedit palette save` (`#nombre`).
-- La máscara es un subconjunto de las de WorldEdit (ver arriba); las expresiones, los porcentajes o las máscaras de región dan un error claro.
+- La máscara se evalúa sobre la foto de la selección; las de bioma y `#current` no se admiten (ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región)). Las expresiones (`=y>64`) son las más lentas.
 - No hay holograma previo; se deshace con //undo.
 
 ## Campos y líneas de flujo
@@ -1624,7 +2445,7 @@ El arte generativo de los «flow fields», como `//ezflowfield` y `//ezflowline`
 | `[velocidad]` | flowfield | Bloques por paso (1). |
 | `[escala_paleta]` | flowfield | Multiplica la suma de cada bloque (1). |
 | `[ruido]` | ambos | Ruido; por defecto `Perlin()`. Frecuencias de 0,01 a 0,05 dan curvas amplias. |
-| `-m <máscara>` | flowfield | Solo salen líneas de los bloques que la cumplen (misma sintaxis que en noisegen). Va bien con `-j`. |
+| `-m <máscara>` | flowfield | Solo salen líneas de los bloques que la cumplen: cualquier máscara de WorldEdit o la lista de antes, como en noisegen. Va bien con `-j`. |
 | `-h [surface\|above]` | flowfield | Mapa de alturas. |
 | `-i <0–1>` | ambos | Inercia: cuánto pesa la dirección anterior (0). |
 | `-g x,y,z` | flowfield | Gravedad sumada a cada paso, en bloques. |
@@ -1666,6 +2487,293 @@ Ejemplos:
 - La selección convexa de `-c` necesita al menos cuatro puntos que no estén en un mismo plano para tener volumen.
 - No hay holograma previo; los dos se deshacen con //undo.
 
+## Construir a mano: capacidades
+
+### Objetivo y acceso
+
+Las capacidades aceleran la construcción bloque a bloque en creativo, como el modo Builder de Axiom: reemplazar con un clic, retocar estados, extruir capas, estirar filas, colocar en el aire, llegar lejos, colocar sin espera y colocar sin actualizar a los vecinos. Cada una se activa por separado y se recuerda por jugador y mundo (`<mundo>/komaedit/players/<uuid>/capabilities/settings.json`).
+
+- **Studio:** la tarjeta Capacidades de la etapa [Herramientas](#herramientas) tiene los mismos interruptores y números, y manda las órdenes de `/komaedit capability`.
+- **Menú rápido:** mantén `Z` (Controles → KomaEdit → «Menú de capacidades»). Es un círculo con las ocho capacidades; debajo, la velocidad de vuelo y el modo de juego si tienes permiso para ellos.
+  - Clic izquierdo activa o desactiva; clic derecho cambia su opción (familia de Reemplazar, tipo o estado de Extruir, soltar el origen de Arrastrar) y la rueda ajusta su número (distancia de Colocar en el aire, alcance, bloques por capa; con `Mayús` va más deprisa).
+  - Al soltar la tecla se cierra. Si no has pulsado nada y el ratón apunta a una capacidad, la alterna: mantener, apuntar y soltar es el gesto rápido.
+  - Pulsada y soltada en seguida, el menú se queda abierto hasta `Esc` o volver a pulsarla.
+  - Arriba se ve el nombre, qué hace, si falta permiso o hace falta creativo, la opción actual y su atajo.
+- **Atajos sueltos:** cada capacidad tiene su tecla en Controles → KomaEdit («Capacidad: …»), sin asignar de serie.
+- **Orden:** `/komaedit capability` (alias `capacidad`) lista las capacidades con casillas que se pulsan en el chat.
+
+```text
+/komaedit capability
+/komaedit capability <capacidad> [on|off|toggle]
+/komaedit capability angel 8
+/komaedit capability reach 32
+/komaedit capability extrude 512
+/komaedit capability option family on
+/komaedit capability option match state
+/komaedit capability option flyspeed 2.5
+```
+
+Las capacidades activas salen en pequeño a la derecha de la barra rápida. Si el servidor no tiene KomaEdit, el cliente no ofrece nada: el menú no se abre y los clics son los de siempre. Sin KomaEdit en el cliente funcionan el alcance largo y la velocidad de vuelo (con la orden), porque solo dependen del servidor.
+
+### Capacidades
+
+| Capacidad | Id (alias) | Qué hace |
+| --- | --- | --- |
+| Reemplazar | `replace` (`reemplazar`) | Clic derecho con un bloque cambia el bloque apuntado por el de la mano. Conserva cada propiedad que compartan: escalera por escalera mantiene `facing`, `half` y `shape`; losa por losa, `type`; tronco por tronco, `axis`; cualquier anegable, `waterlogged`. Lo que no comparten sale de la colocación normal (hacia dónde miras, mitad pulsada). |
+| Retocar | `tweak` (`retocar`) | Clic derecho con la mano vacía pasa la propiedad elegida al valor siguiente; con `Mayús`, al anterior. `F` con las dos manos vacías elige la propiedad siguiente (`Mayús+F`, la anterior). |
+| Extruir | `extrude` (`extruir`) | Con el mismo bloque que el apuntado en la mano: clic derecho en una cara copia hacia fuera la capa conectada; clic izquierdo la encoge. |
+| Arrastrar | `smear` (`arrastrar`) | El primer clic derecho fija el origen (con `Mayús`, la fila entera) y el eje; el segundo lo estira hasta donde miras. Clic izquierdo cancela. |
+| Colocar en el aire | `angel` (`aire`) | Clic derecho mirando al aire coloca el bloque (o el agua o la lava del cubo) a la distancia elegida, sin apoyo. |
+| Alcance largo | `reach` (`alcance`) | Llegas a los bloques desde más lejos: todo lo que haces con la mano, también romper y colocar normal. |
+| Colocación rápida | `fastplace` (`rapida`) | Sin la espera de 4 ticks entre bloques al mantener el clic derecho (uno por tick). |
+| Sin actualizaciones | `noupdates` (`sinactualizar`) | Coloca y rompe sin avisar a los vecinos: la arena no cae, el agua y la lava se quedan quietas, las escaleras no recalculan su forma. |
+
+### Qué hace cada clic
+
+Si varias capacidades podrían usar el mismo clic, gana la primera de la lista. Lo que no recoge ninguna sigue haciendo lo de Minecraft. Los pinceles y la supervarita conservan siempre sus clics.
+
+| Clic | Condición | Acción |
+| --- | --- | --- |
+| Derecho | Arrastrar activo | Fija el origen o, si ya hay uno, lo estira |
+| Derecho sobre un bloque | Mano vacía y Retocar | Retoca la propiedad elegida |
+| Derecho sobre una cara | El mismo bloque en la mano y Extruir | Extruye la capa |
+| Derecho sobre un bloque | Otro bloque en la mano y Reemplazar | Reemplaza |
+| Derecho sobre una cara | Bloque o cubo en la mano y Sin actualizaciones | Coloca sin actualizar |
+| Derecho mirando al aire | Bloque o cubo en la mano y Colocar en el aire | Coloca a la distancia elegida |
+| Izquierdo | Arrastre a medias | Lo cancela |
+| Izquierdo sobre una cara | El mismo bloque en la mano y Extruir | Encoge la capa |
+| Izquierdo sobre un bloque | Sin actualizaciones | Rompe sin actualizar (cada 5 ticks si se mantiene, como en creativo) |
+| `F` | Retocar, las dos manos vacías y un bloque delante | Cambia la propiedad que se retoca |
+
+Retocar, Extruir y Arrastrar actúan una vez por pulsación; Reemplazar, colocar y romper se repiten al mantener el botón (cada tick con Colocación rápida).
+
+### Retocar
+
+- Las propiedades se recorren en este orden: `facing`, `half`, `type`, `shape`, `axis`, `rotation`, `open`, `hinge`, `face`, `attachment`, `hanging`, `north`, `east`, `south`, `west`, `up`, `down`, `layers`, `waterlogged`, `lit`, `persistent`… y después las demás del bloque.
+- La propiedad elegida se recuerda; si el bloque apuntado no la tiene, se usa la primera suya. El mensaje de la barra dice cuál es y cuántas tiene el bloque (`propiedad 2/4: half = top`).
+- No se retocan las mitades de los bloques de dos partes (`half` de puertas y plantas altas, `part` de camas): cambiar una sola dejaría la otra huérfana.
+- Con actualizaciones, un vecino puede volver a corregir el bloque (por ejemplo la forma de una escalera); con Sin actualizaciones se queda como lo dejes.
+
+### Reemplazar
+
+- Opción **Reemplazar familia** (clic derecho en el menú, o `option family on`): cambia el material y conserva la forma según las familias de Minecraft. Con planchas de abeto en la mano, una escalera de roble pasa a escalera de abeto, una losa a losa y las planchas a planchas; con andesita pulida apuntada y granito en la mano sale granito pulido. Si la familia de la mano no tiene esa pieza (abeto no tiene la valla de otra madera, o el bloque no es de ninguna familia), se reemplaza por el bloque de la mano tal cual.
+- Con el mismo bloque que el apuntado no se reemplaza (sale la colocación normal o, con Extruir, la extrusión).
+- Los bloques de dos partes (puertas, camas, plantas altas) ni se reemplazan ni se colocan con capacidades; con ellos en la mano los clics son los de siempre.
+
+### Extruir
+
+- La capa son los bloques iguales al pulsado que se tocan por un lado en el plano de la cara y tienen esa cara al descubierto (aire, agua, hierba u otro bloque reemplazable delante).
+- «Iguales» es el mismo tipo de bloque (de serie) o el mismo estado exacto (`option match state`): con tipo, una pared de escaleras en varias orientaciones se extruye entera y cada copia conserva la suya.
+- Como mucho los bloques por capa elegidos (`/komaedit capability extrude <n>` o la rueda; 256 de serie) y nunca más que `maxLayerBlocks` del servidor. Si la capa era mayor, el mensaje lo dice.
+- Encoger quita la capa al descubierto; un bloque anegado deja su agua.
+- Una copia anegada solo queda anegada si va a parar a agua.
+- Cada extrusión o encogido es un solo `//undo`. Se copia el estado del bloque, no su contenido: un cofre o un cartel salen vacíos.
+
+### Arrastrar
+
+- El eje es el de la cara pulsada en el primer clic. Con `Mayús` el origen es la tira recta más larga de bloques iguales (con el mismo criterio que Extruir) que cruza el bloque en el plano de esa cara.
+- El final es el punto del eje más cercano a la línea de tu mirada, así que se puede estirar hacia el aire o hacia atrás, a través del propio origen. Si miras casi a lo largo del eje se usa la distancia al bloque mirado (o tu alcance).
+- Mientras el origen está fijado se ve en amarillo y lo que ocupará el estirado, en azul. La barra recuerda «Arrastre: elige el final».
+- Las copias solo van a posiciones libres; lo que haya en medio se respeta. Como mucho `maxSmearLength` bloques de largo y `maxLayerBlocks` en total; el final tiene que estar a menos de `maxReach` de tus ojos.
+- Cada arrastre es un solo `//undo`. Cambiar de dimensión, desactivar Arrastrar o el clic izquierdo sueltan el origen.
+
+### Colocar en el aire y alcance largo
+
+- Colocar en el aire usa la distancia elegida (4 de serie), con un bloque o un cubo de agua o lava. Se ve una caja blanca donde caerá. El bloque se coloca como si se pulsara la cara de arriba; lo que necesita apoyo (antorchas, flores) se queda en el aire con Sin actualizaciones y se cae sin ellas.
+- Alcance largo suma al alcance de Minecraft lo necesario para llegar a la distancia elegida (24 de serie, `/komaedit capability reach <n>`) con un modificador del atributo `block_interaction_range`. Minecraft lo sincroniza con el cliente y el servidor lo comprueba como siempre, así que también sirve para romper, usar y colocar con normalidad, y para clientes sin KomaEdit.
+- Las dos se limitan a `maxReach` del servidor (64 de serie, el tope de Minecraft).
+
+### Sin actualizaciones
+
+Coloca y rompe con una `EditSession` de WorldEdit sin los efectos «vecinos» ni «al colocarse» (los de `//perf`): la arena y la grava flotan, el agua y la lava del cubo se quedan quietas, las vallas no se conectan y las plantas no se rompen sin suelo. La luz sí se actualiza. Afecta también a lo que hacen Reemplazar, Retocar, Extruir, Arrastrar y Colocar en el aire mientras está activa. Romper deja el agua de un bloque anegado.
+
+### Velocidad de vuelo y modo de juego
+
+- La velocidad de vuelo va de ×0,5 a ×20 en el menú (botones o rueda sobre la fila) o con `option flyspeed <x>`; el servidor la limita con `maxFlySpeed`. Se guarda y se vuelve a aplicar al entrar; si ya no tienes el permiso, vuelve a la normal.
+- Los botones de modo de juego cambian entre supervivencia, creativo, aventura y espectador.
+
+### Permisos y comprobaciones del servidor
+
+Todo lo decide el servidor: el cliente solo manda qué ha pulsado y dónde. Para cada acción el servidor comprueba:
+
+- El permiso de la capacidad (`komaedit.capability.<id>`) y que estés en creativo o tengas `komaedit.admin.anymode`. Fuera de creativo, sin ese permiso, las capacidades no hacen nada (el menú lo avisa) y el alcance largo se retira.
+- Que la capacidad siga activa (un cliente con un estado viejo recibe el bueno).
+- La distancia: el bloque pulsado tiene que estar al alcance del jugador (con el alcance largo incluido); la celda de Colocar en el aire, a la distancia elegida; el final de un arrastre, a menos de `maxReach`.
+- Que puedas construir en cada posición: dentro de los límites del mundo y cargada, fuera de la protección del spawn y dentro del borde del mundo, sin modo aventura, sin entidades estorbando el bloque nuevo, solo operadores para bloques de comandos y estructuras, y la aprobación del evento de Fabric `PlayerBlockBreakEvents.BEFORE`, que escuchan la mayoría de mods de protección. Las posiciones que no pasan se saltan y el mensaje dice cuántas y por qué.
+- Un freno por jugador: `actionsPerTick` acciones de un bloque por tick y una acción de varios bloques cada 4 ticks.
+
+Nodos y paquetes:
+
+| Nodo | Paquete |
+| --- | --- |
+| `komaedit.capability.replace`, `.tweak`, `.angel`, `.fastplace`, `.flyspeed` | básico |
+| `komaedit.capability.extrude`, `.smear`, `.noupdates`, `.reach` | intermedio |
+| `komaedit.admin.gamemode` (modo de juego desde el menú), `komaedit.admin.anymode` (capacidades fuera de creativo) | admin |
+
+`komaedit.build` sigue dando todas las `komaedit.capability.*`, como el resto de funciones de construcción, y `komaedit.capability` da la familia entera.
+
+### Historial
+
+Las acciones de más de un bloque (extruir, encoger, arrastrar y cualquiera que otro mod amplíe, como la simetría) son una sola operación de `//undo`. Las de un bloque (reemplazar, retocar, colocar, romper) no entran en el historial, igual que la colocación normal, para no echar del historial de WorldEdit las operaciones grandes.
+
+### Configuración de las capacidades
+
+`config/komaedit/capabilities.json` se crea al arrancar con:
+
+- `maxReach`: `64`; rango `5–64`. Alcance largo y Colocar en el aire.
+- `maxLayerBlocks`: `4096`; rango `1–65536`. Bloques por extrusión, encogido o arrastre.
+- `maxSmearLength`: `64`; rango `1–256`. Largo del arrastre y de la fila de origen.
+- `maxFlySpeed`: `100` (×10); rango `10–200`, en décimas de la velocidad normal.
+- `actionsPerTick`: `4`; rango `1–20`.
+
+Un valor fuera de rango invalida el archivo y se usan los de serie. Se recarga con `/komaedit reload`, que vuelve a mandar el estado a los jugadores.
+
+### Para otros mods
+
+Las capacidades no pasan por `BlockItem.place` ni por el paquete de uso de bloque: un gancho sobre la colocación vanilla no las ve. Antes de aplicar cada acción se lanza el evento `com.komainu.moxia.capability.HandEditEvents.COLLECT` con los bloques previstos (`HandEdit`: posición y estado de Minecraft). Lo que un oyente añada entra en la misma operación: misma `EditSession` y `//undo`, mismo modo sin actualizaciones y las mismas comprobaciones de que el jugador puede construir ahí (todas salvo la de distancia). Así se replica, por ejemplo, en simetría.
+
+### Rendimiento y limitaciones
+
+- Cada clic es una edición pequeña en el hilo del servidor; las capas grandes de Extruir se buscan en el momento (4 096 bloques son unos pocos milisegundos). La vista previa de la capa en el cliente se recalcula solo cuando cambia el bloque, la cara o la opción, y con más de 256 celdas se dibuja como una caja.
+- Las ediciones pasan por WorldEdit: respetan su máscara global (`//gmask`) y su límite de bloques, y los registros que no ven WorldEdit (Ledger, CoreProtect) tampoco las ven.
+- Con Arrastrar activo, todos los clics derechos son suyos: desactívalo para colocar normal.
+- Mientras capturas una trayectoria con `P`, Reemplazar o Retocar se quedan los clics derechos sobre bloques.
+- La celda de Colocar en el aire y el final del arrastre los calcula el cliente con su mirada (para que coincidan con la vista previa); el servidor comprueba la distancia, no que se vea.
+- La colocación rápida la decide el cliente cuando el servidor dice que está activa; Minecraft no limita el ritmo de colocación en el servidor.
+
+## Terraformado
+
+### Objetivo y acceso
+
+Herramientas de paisaje como las de goBrush, Axiom (Elevation, Slope) o Arceon (`//river`): un pincel de relieve con sellos en escala de grises, rampas, ríos y cañones a lo largo de la trayectoria y erosión física de la selección. Todas trabajan sobre el **mapa de alturas** de la zona (el bloque de suelo más alto de cada columna) y lo vuelven a pasar a bloques con una **paleta de superficie** por pendiente y altura.
+
+```text
+/komaedit pincel heightmap <sello> [radio] [altura] [elevar|bajar|aplanar] [paleta] [-i intensidad] [-r mirada|azar|grados] [-m máscara] [-c neutro] [-p]
+/komaedit terreno rampa [plano|cono] [ancho] [transición] [paleta] [-t talud] [-u] [-m máscara] [-e]
+/komaedit terreno rio|arroyo|canon|barranco [ancho] [profundidad] [paleta] [-o orilla] [-w laderas] [-t transición] [-f agua|lava|seco] [-n nivel] [-z suavizado] [-y] [-k] [-m máscara] [-e]
+/komaedit terreno erosion hidraulica|termica|completa [iteraciones] [fuerza] [paleta] [-a ángulo] [-s semilla] [-m máscara] [-e]
+/komaedit terreno pintar [paleta] [-m máscara] [-e]
+/komaedit terreno sellos | paletas
+```
+
+- Alias: `/komaedit terrain` con `ramp`, `river`, `stream`, `canyon`, `gully`, `erode` (`hydraulic`, `thermal`, `full`), `paint`, `stamps` y `palettes`; el pincel también es `relieve` o `sello` (`hm`). `cañon`, `río` y `erosión` con tilde también valen.
+- Permisos: `komaedit.build` o los finos `komaedit.build.brush.heightmap`, `komaedit.build.terrain.ramp`, `.terrain.river` (río y arroyo), `.terrain.canyon` (cañón y barranco), `.terrain.paint` (paquete intermedio) y `.terrain.erode.hydraulic` y `.terrain.erode.thermal` (avanzado; la completa pide los dos).
+- **En el Studio:** familia Terreno de la etapa [Herramientas](#herramientas): sello de relieve con la galería de miniaturas, rampa, río o cañón, erosión y pintar superficie, con **Estimar** (`-e`).
+- **Todo en un worker y un solo //undo:** el pincel va por el camino de los pinceles (captura repartida entre ticks, cálculo fuera del hilo del servidor, `-p` para vista previa) y las órdenes por el motor de las operaciones de región: lectura repartida entre ticks, cálculo en un worker, la estimación de `/komaedit estimate` (bloques, chunks, caja, memoria y tiempo, con la [confirmación de Build grandes](#confirmación-de-build-grandes) por encima del umbral) y escritura por lotes solo donde el bloque no haya cambiado mientras tanto. `-e` solo estima, sin construir.
+- **Máscara `-m`:** decide qué columnas se tocan mirando su **bloque de superficie**. En las órdenes es una máscara de WorldEdit (`grass_block,dirt`, `!stone`, `#existing`…, ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región)); en el pincel, la de los pinceles: una lista (`#fullblock`, `grass_block,sand`, `!sand`) o cualquier máscara de WorldEdit, como en el resto de pinceles. Así se erosiona solo la hierba o se talla un río sin tocar un camino de piedra.
+
+### Paleta de superficie
+
+Las columnas que cambian se repintan según su pendiente nueva, su altura y el agua: hierba en lo llano, piedra en las pendientes, nieve en las cumbres, arena en la orilla y grava en el lecho. Las fronteras llevan ruido para que no salgan en línea recta, y varios bloques separados por `|` se mezclan a manchas. Las paredes que quedan al aire (tres bloques o más de caída, como las de un cañón) se pintan como pendiente.
+
+| Preajuste | Superficie |
+| --- | --- |
+| `natural` (por defecto) | Hierba, piedra y andesita desde 50°, nieve por encima de Y 150, tierra debajo, grava, arena y arcilla en el lecho, arena en la orilla. |
+| `pradera` | Hierba hasta en las cuestas; tierra gruesa y piedra solo desde 58°. |
+| `bosque` | Hierba con podzol y tierra gruesa, piedra musgosa en las pendientes, barro en la orilla. |
+| `desierto` | Arena y arenisca. |
+| `mesa` | Arena roja arriba y estratos de terracota por altura en las pendientes, como unas badlands. |
+| `nevado` | Nieve en todo lo llano y piedra en las pendientes. |
+| `volcanico` | Toba, piedra negra y basalto; magma en el lecho (para ríos de lava). |
+| `playa` | Arena, con arenisca en lo empinado. |
+| `piedra` | Todo piedra, para texturizar después. |
+| `conservar` | Los mismos bloques que tenía cada columna. |
+
+A un preajuste se le pueden cambiar partes con `clave:bloques@valor` separados por comas (sin espacios): `natural,cumbre:powder_snow@170,pendiente:stone|tuff@35`. Claves: `llano`, `pendiente@grados`, `cumbre@Y`, `relleno@capas` (bajo la superficie, 3 por defecto), `fondo`, `lecho` (bajo el agua), `orilla@altura` (sobre el agua) y `estratos` (bandas por altura en las pendientes). También en inglés (`flat`, `steep`, `peak`, `fill`, `deep`, `bed`, `shore`, `strata`). `/komaedit terreno paletas` las lista.
+
+### Pincel de relieve (sellos)
+
+Cada clic estampa un **sello**: una imagen en escala de grises donde el blanco es lo más alto, escalada a un cuadrado de lado `2·radio` alrededor del bloque que miras.
+
+- **Modos:** `elevar` suma la forma del sello, `bajar` la resta y `aplanar` lleva el terreno hacia la altura del bloque del clic con la fuerza que marca el sello. El clic izquierdo hace lo contrario (bajar ↔ elevar) y la F cambia de modo.
+- **Giro (`-r`):** `mirada` (por defecto: la parte de arriba de la imagen apunta hacia donde miras), `azar` (uno distinto en cada clic) o unos grados fijos (0 = la parte de arriba al norte).
+- **Altura e intensidad:** `[altura]` son los bloques que sube el blanco puro (12 por defecto, hasta 96) e `-i` el porcentaje (100 por defecto); repasar acumula.
+- **Gris neutro (`-c`):** el gris que no cambia nada. Por debajo, el sello hunde aunque el modo sea elevar: así funcionan `crater` (neutro 0,35), `dolina` y `valle` (neutro 1). Se guarda en el propio PNG y `-c` lo cambia.
+- **Sellos de serie:** `montana`, `pico`, `colina`, `loma`, `cordillera`, `macizo`, `volcan`, `crater`, `dolina`, `valle`, `duna`, `dunas`, `mesa`, `terrazas`, `acantilado`, `barrancos`, `aguja`, `domo`, `atolon` y `circo`. Están generados por código con funciones y ruido de semilla fija (no vienen de ninguna imagen ajena) y salen siempre iguales. Los que tienen orientación (loma, cordillera, valle, duna, acantilado, circo) la toman del giro.
+- **Sellos propios:** cualquier imagen en `config/komaedit/heightmaps/` con los formatos de `/komaedit image` (PNG, JPG o GIF; mejor PNG en grises de 16 bits, que no deja escalones; en color se toma el brillo y la transparencia deja el terreno como está), de hasta 1024×1024 y 8 MB. Se usa por su nombre sin `.png`. La primera vez que se usa el pincel, KomaEdit escribe allí los sellos de serie como PNG de 16 bits para que sirvan de plantilla; uno con el mismo nombre sustituye al de serie y un archivo borrado vuelve a salir. `/komaedit terreno sellos` los lista; pulsar uno lo deja escrito en el chat.
+- La paleta va como posicional (`natural` por defecto).
+
+```text
+/komaedit pincel heightmap montana 24 30 -r azar
+/komaedit pincel heightmap crater 16 10 natural
+/komaedit pincel heightmap duna 20 8 desierto
+/komaedit pincel heightmap mesa 28 24 mesa -r 30
+/komaedit pincel heightmap mi_isla 32 40 -i 50 -m grass_block,sand
+```
+
+### Rampa
+
+Una rampa del **primer al último punto** de la trayectoria (`/komaedit path`), o de `//pos1` a `//pos2` si no hay trayectoria. Los dos extremos son el bloque de la calzada: la rampa empieza y acaba a su altura. Rellena por debajo y recorta por encima (hasta 32 bloques de desnivel con el terreno).
+
+- **`plano`** (por defecto): sección plana de `[ancho]` bloques (5 por defecto) y una franja de `[transición]` bloques a cada lado (6) que la funde con el terreno con una curva suave.
+- **`cono`**: sección de terraplén. Fuera de la calzada el terreno queda entre dos taludes que bajan (relleno) o suben (desmonte) `-t` bloques por bloque (1, unos 45°), así nunca hay paredes y el terraplén acaba donde toca el terreno.
+- Los extremos se redondean. `-u` pone un perfil suave a lo largo: empieza y acaba más tendida.
+- **Sin escalones:** una rampa que sube más de un bloque por bloque (1,5 veces menos con `-u`) daría escalones y se rechaza con un aviso para alejar los puntos. En la calzada y, con un talud de hasta 1, también en los taludes, dos columnas vecinas nunca se separan más de un bloque. En `plano`, la transición solo queda sin escalones si es más ancha que 1,5 veces el desnivel con el terreno.
+
+```text
+/komaedit terreno rampa
+/komaedit terreno rampa cono 7 -t 0.8
+/komaedit terreno rampa plano 4 10 desierto -u
+```
+
+### Ríos y cañones
+
+Tallan un cauce a lo largo de la trayectoria (curva suave por sus puntos; también cerrada, para un foso) o de los puntos de la selección.
+
+- **Sección:** un fondo plano de `[ancho]` bloques, orillas en curva suave de `-o` bloques que suben `[profundidad]` y, por fuera, una ladera con `-w` bloques de subida por bloque a lo largo de `-t` bloques. Donde el terreno es más bajo que esa sección no se toca, y donde es más alto la ladera lo corta hasta encontrarse con él; en el borde se funde con un mínimo suave y una franja de fundido, así no quedan aristas ni muros.
+- **El agua no sube:** el fondo es el terreno del eje menos la profundidad, con el mínimo acumulado en el sentido del agua y una media móvil de `-z` bloques que conserva ese orden; después se recorre el eje y ninguna columna puede quedar más alta que las anteriores. El agua corre hacia el extremo más bajo (el chat avisa si va al revés que los puntos); `-k` respeta el orden de los puntos y `-y` hace que el fondo siga la altura de los puntos menos la profundidad (sin pasar del terreno) en lugar del terreno.
+- **Agua o lava:** `-f agua` (por defecto en río, arroyo y cañón), `-f lava` o `-f seco` (por defecto en el barranco). `-n` es el nivel sobre el fondo (el del preajuste, sin pasar de la profundidad menos uno). El nivel también baja a escalones en el sentido del agua; donde el terreno de al lado queda más bajo que el agua se levanta un ribazo, ataludado hacia fuera, para que no se escape.
+- **Materiales:** el lecho (lo que queda bajo el agua) sale de la clave `lecho` de la paleta, la orilla de `orilla` y las laderas de la regla de pendiente; con `volcanico`, un río de lava lleva magma y piedra negra.
+- Quita la vegetación (troncos, hojas, plantas) que quedaría flotando sobre lo tallado.
+
+| Preajuste | Ancho | Profundidad | Orilla | Laderas | Transición | Líquido |
+| --- | --- | --- | --- | --- | --- | --- |
+| `rio` | 5 | 3 | 4 | 1 | 6 | agua a 2 |
+| `arroyo` | 2 | 2 | 1,5 | 1 | 4 | agua a 1 |
+| `canon` | 5 | 12 | 3 | 3 | 12 | agua a 2 |
+| `barranco` | 1 | 5 | 2 | 1,5 | 8 | seco |
+
+```text
+/komaedit terreno rio
+/komaedit terreno rio 7 4 bosque
+/komaedit terreno canon 6 24 mesa -o 7 -w 2.5
+/komaedit terreno rio 4 3 volcanico -f lava
+/komaedit terreno barranco 2 6 -t 12
+```
+
+### Erosión física
+
+Erosiona la selección de WorldEdit (con su forma: cilindros, polígonos…) sobre su mapa de alturas. Es mucho más realista que el pincel `erosion` de `/komaedit sculpt`, que solo media alturas vecinas y sigue disponible.
+
+- **`hidraulica`:** simulación de gotas. Cada gota cae en un punto al azar, baja por la pendiente con algo de inercia, arranca suelo mientras va deprisa y con poca carga y lo suelta donde frena o sube. Salen cauces que se juntan, crestas afiladas y abanicos de sedimento al pie de las laderas. `[iteraciones]` son las gotas por columna (3 por defecto, de 0,1 a 64) y `[fuerza]` (1 por defecto, de 0,1 a 8) escala lo que arranca y lo que lleva cada gota.
+- **`termica`:** por talud. Donde una columna queda por encima de sus vecinas más de lo que permite el ángulo de reposo `-a` (40° por defecto), el material resbala hacia ellas y al pie de los cortados se forman canchales. La dureza de la roca varía un poco con un ruido fijo, para que queden resaltes en lugar de un cono perfecto. `[iteraciones]` son las pasadas (40 por defecto, hasta 2000) y `[fuerza]` la parte del exceso que se mueve en cada una (1, de 0,1 a 2).
+- **`completa`:** primero las gotas y luego cinco pasadas térmicas con 8° más de ángulo, que solo desmoronan las paredes que dejan las cárcavas.
+- **Masa:** lo que se arranca se deposita en otra parte (al morir, cada gota deja su carga donde está), así que el volumen se conserva salvo el redondeo de cada columna a bloques. Las columnas fijas (fuera de la máscara o con la superficie fuera de la selección) guían a las gotas pero no se tocan.
+- **Determinista:** con la misma semilla `-s` y la misma selección sale lo mismo; sin `-s`, una al azar.
+- Después se pinta con la paleta: lo arrastrado deja piedra al aire y los depósitos se cubren de hierba (o de lo que diga la paleta; `conservar` mantiene los bloques de cada columna).
+- La selección tiene que abarcar todo el relieve, de debajo del suelo a encima de las cumbres: lo que asoma por arriba de la selección no se erosiona.
+
+```text
+/komaedit terreno erosion hidraulica
+/komaedit terreno erosion hidraulica 6 1.5 -s 42
+/komaedit terreno erosion termica 80 1 -a 35
+/komaedit terreno erosion completa 4 1 nevado -m grass_block,snow_block,stone
+```
+
+### Pintar
+
+`/komaedit terreno pintar [paleta]` repinta la superficie de la selección (la de arriba y las capas de relleno) con la paleta de superficie sin cambiar ninguna altura: sirve para dar materiales a un terreno hecho a mano o generado con otra herramienta.
+
+### Rendimiento y limitaciones
+
+- El cálculo va en un worker y no para el servidor: en una zona de 160×160 columnas, cinco sellos tardan unos 150 ms, un río de 200 bloques unos 150 ms, 40 pasadas térmicas unos 150 ms y la erosión hidráulica con 3 gotas por columna (77 000 gotas) medio segundo. Lo que más tarda es leer la zona, repartida entre ticks (unos 4 ms por tick).
+- La rampa y el río leen la caja que los rodea: de largo, su recorrido más el alcance de la sección; de alto, de algo por debajo del fondo a 24–96 bloques por encima del punto más alto. Pasa por el límite de volumen de las operaciones de región (16 millones de bloques leídos y el límite de operación del servidor sobre la caja); para ríos muy largos, por tramos.
+- El pincel lee como mucho 4 millones de bloques por clic (radio 32 y altura 96 caben) y cambia como mucho 1 000 000.
+- El mapa de alturas es de una sola capa: no hay voladizos ni cuevas en el resultado, y las cuevas bajo la superficie ni se rellenan ni se vacían. Lo que no es suelo (hojas, troncos, plantas, cristal, losas) no cuenta como superficie: al bajar una columna se quita lo que quedaría flotando y al subirla se entierra.
+- El agua y la lava se colocan como bloques fuente; en cada escalón del nivel hay un pequeño salto de agua.
+- Las órdenes `terreno` admiten la [vista previa](#vista-previa-progreso-y-cancelación) del motor común con `-v` (o «previsualizar siempre»), con su barra de progreso y `/komaedit cancel`; el pincel tiene la suya con `-p`. `-e` da solo la estimación y todo se deshace con //undo.
+- Renders de antes y después en `docs/renders/terreno/`; se regeneran con `KOMAEDIT_RENDER_DIR=<carpeta> ./gradlew test --tests "*TerrainRenderDump"`.
+
 ## Pinceles
 
 ### Objetivo y acceso
@@ -1687,6 +2795,11 @@ Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit:
 | `place` | `colocar`, `pl` | [Colocación](#pincel-de-colocación) |
 | `scatter` | `dispersar`, `sc` | [Dispersión](#pincel-de-colocación) |
 | `array` | `hilera`, `ar` | [Hilera a lo largo de un trazo](#pincel-de-colocación) |
+| `tree` | `arbol`, `tr` | [Un árbol en cada clic](#pinceles-de-árboles-y-rocas) |
+| `rock` | `roca`, `rk` | [Una roca en cada clic](#pinceles-de-árboles-y-rocas) |
+| `heightmap` | `relieve`, `sello`, `hm` | [Pincel de relieve](#pincel-de-relieve-sellos) (propio de KomaEdit) |
+| `sculpt` | `modelar`, `modelado`, `sk` | [Modelado](#pinceles-de-modelado): esculpir, roca, soldar, fundir, rugosidad y grietas (propio de KomaEdit) |
+| `stamp` | `estampar`, `planos`, `st` | [Estampar planos de la biblioteca](#pincel-estampar) (propio de KomaEdit) |
 
 - El pincel se liga al **objeto de la mano principal**, como los de WorldEdit: cada objeto guarda el suyo y se pueden llevar varios a la vez. Con la mano vacía se entrega una pluma llamada «Pincel de KomaEdit». Volver a configurar un objeto que ya tiene pincel lo sustituye.
 - `quitar` (`off`, `none`) suelta el pincel del objeto de la mano; `estado` (`status`) dice qué pincel lleva y sus controles.
@@ -1855,7 +2968,7 @@ Esparce follaje en capas sobre el terreno (el Petal Painter de ezEdits): pétalo
 | `[densidad]` | Cuánto follaje (0–1, por defecto 0,3). |
 | `-n <ruido>` | Ruido que reparte el follaje, por ejemplo `Perlin(F:0.05)` para manchas. |
 | `-z <escala>` | Multiplica las coordenadas del ruido (por defecto 0,03, como en ezEdits; con `Perlin(F:1)` da manchas de unos 30 bloques). |
-| `-m <máscara>` | Bloques sobre los que se pone (por defecto `#fullblock`). Lista separada por comas de ids y de `#fullblock`, `#solid` (cubo, losa o escalera) y `#existing`; `!` excluye. |
+| `-m <máscara>` | Bloques sobre los que se pone (por defecto `#fullblock`). Cualquier máscara de WorldEdit, con las de ezEdits, entre comillas si lleva espacios; la lista de antes sigue valiendo: ids y `#fullblock`, `#solid` (cubo, losa o escalera) y `#existing` separados por comas, con `!` para excluir. |
 | `-p` | Vista previa antes de aplicar. |
 
 Ejemplos:
@@ -1865,13 +2978,14 @@ Ejemplos:
 /komaedit pincel petalpainter petals 10 0.6 -m grass_block,moss_block
 /komaedit pincel petalos petals 16 0.5 -n Perlin(F:1) -z 0.05
 /komaedit pincel petalpainter petals 6 1 -m #fullblock,!sand,!gravel
+/komaedit pincel petalpainter petals 8 0.5 -m "##minecraft:dirt !#near[water][2]"
 ```
 
 ### Rendimiento y limitaciones
 
 - Ver [Pinceles](#pinceles).
 - Minecraft 1.21.1 solo tiene `pink_petals`: `wildflowers` y `leaf_litter` llegaron en 1.21.5 y dan un error claro hasta que KomaEdit se actualice. Los bloques de mods con `flower_amount` o `segment_amount` funcionan.
-- La máscara es la propia de los pinceles, sobre la foto capturada: no admite etiquetas (`#minecraft:logs`) ni las máscaras de expresión de WorldEdit.
+- La máscara se lee en cada clic, en el hilo del servidor (así `#aim` o el origen de `#radialgradientmask` son los del clic), y se evalúa sobre la foto de la pasada: fuera de ella todo es aire, y `#current` y las de bioma no se admiten.
 
 ## Pincel de colocación
 
@@ -1918,6 +3032,98 @@ Ejemplos:
 - En estos pinceles `Constant(D:aim)` y `aim` en las direcciones son la mirada de **cada clic** (en ezEdits, la de cuando se configuró el pincel); para la de cada clic también está `Aim`.
 - No hay visualizador de la alineación mientras apuntas (en ezEdits, entidades BlockDisplay).
 - El trazo de `array` admite hasta 256 puntos; con `-b` cada colocación baja a la superficie más cercana.
+
+## Pinceles de modelado
+
+### Objetivo y acceso
+
+Las herramientas de modelado de Axiom que faltaban, como pinceles de clic: **esculpir** (empujar o hundir la superficie), **roca**, **soldar**, **fundir**, **rugosidad** y **grietas**. Sirven para dar forma a terreno, acantilados y rocas a mano, y para retocar lo construido (unir piezas sueltas, redondear aristas, romper un muro).
+
+```text
+/komaedit pincel sculpt <modo> [radio] [cantidad] [banderas]
+/komaedit pincel modelar <modo> …
+/komaedit pincel <modo> …                    atajo: /komaedit pincel soldar 8
+/komaedit sculpt set <modo> <patrón|auto> <radio> [altura] [intensidad] [caída] [hueco]
+```
+
+| Modo | Alias | Clic derecho | Clic izquierdo | `cantidad` (de serie) |
+| --- | --- | --- | --- | --- |
+| `draw` | `esculpir`, `dibujar` | Empuja la superficie hacia fuera | La hunde | Altura en bloques en el centro, 0,5–16 (2) |
+| `rock` | `roca`, `rocoso` | Añade una masa rocosa | Talla esa forma | Rugosidad del ruido, 0–1 (0,4) |
+| `weld` | `soldar`, `unir` | Suelda: solo añade | Funde | Umbral, 0,01–0,99 (0,4) |
+| `melt` | `fundir`, `derretir` | Funde: solo quita | Suelda | Umbral, 0,01–0,99 (0,6) |
+| `roughen` | `rugosidad`, `rugoso` | Hace rugosa la superficie | Lo mismo | Amplitud en bloques, 0,5–8 (1,5) |
+| `shatter` | `grietas`, `agrietar` | Agrieta | Lo mismo | Tamaño de las celdas, 2–32 (60 % del radio, mínimo 3) |
+
+- El radio va de 1 a 32 (6 de serie; 10 en las grietas).
+- En `/komaedit pincel`, `rock` y `roca` son el pincel de rocas sueltas de [Árboles y rocas](#árboles-y-rocas); la roca de modelado es `/komaedit pincel sculpt rock` (o `modelar roca`). Los demás modos valen directamente como pincel: `/komaedit pincel grietas 12 -e y`.
+- Permiso: `komaedit.build.brush.sculpt` (paquete intermedio) o `komaedit.build`. `/komaedit sculpt` no tiene nodo propio.
+
+### Cómo trabaja cada modo
+
+- **Esculpir:** calcula la normal media de la superficie bajo el pincel con los vecinos de cada bloque (los bloques llenos empujan, el aire tira) y desplaza la forma a lo largo de esa normal: el centro se mueve `cantidad` bloques y el resto lo que diga la caída, medida de lado a la normal. Funciona igual en un suelo, en una pared o en el techo de una cueva. Con `-s n` suaviza después `n` pasadas (0–4) dentro del pincel.
+- **Roca:** un poliedro de caras al azar redondeado contra una esfera y deformado con ruido fractal, que asoma un poco de la superficie y se une a lo que hay con una unión suave (`-k`, de serie el 35 % del radio): rellena el hueco entre la roca y el suelo en vez de dejarla pegada. Cada clic es una roca distinta salvo con `-i`.
+- **Soldar y fundir:** desenfoque gaussiano del volumen (`-g`, la desviación en bloques, 1,5 de serie) mezclado con la caída y cortado por el umbral. Con umbral bajo se rellenan rincones y huecos entre piezas (soldar une un pilar suelto a la pared); con umbral alto se comen aristas y esquinas (fundir redondea un bloque cuadrado). Soldar nunca quita y fundir nunca añade.
+- **Rugosidad:** mueve la superficie hacia dentro y hacia fuera con un ruido de media cero (bultos de `-z` bloques, 1,5 de serie, más un salto por bloque): salen muchas más caras a la vista y el volumen apenas cambia.
+- **Grietas:** las aristas de un Voronoi, en 3D o en columnas a lo largo de un eje (`-e x|y|z|3d`; `y` da columnas verticales como el basalto), solo sobre los bloques que ya hay y hasta `-d` bloques de profundidad desde la superficie (3 de serie; 0 sin límite). `-w` es el ancho (1 de serie) y `-b` el relleno: aire de serie, o un bloque o paleta (`-b gravel`). La caída de serie es constante; con otra, las grietas se afinan hacia el borde. Al arrastrar, el dibujo de las grietas sigue siendo el mismo.
+
+### Material, máscara y banderas
+
+- **Material de lo añadido:** el de alrededor (el más repetido entre los vecinos, o el del bloque más cercano), así que una pared de piedra crece de piedra y un prado, de hierba. Lo que queda tapado se entierra: la hierba, el micelio, el podsol y los caminos pasan a tierra, y el nilio a netherrack. Con `-b` se usa una paleta (`-b stone,andesite,tuff`, `##Grayscale`, `#mipaleta`), repartida al azar fijo por posición.
+- **Piel:** si un pincel quita la capa de arriba de una columna (hundir un prado, fundir, la rugosidad), el bloque que queda debajo toma su material: el terreno baja con su hierba en vez de dejar tierra al aire.
+- **Qué cuenta como masa:** todo lo que no es aire, líquido ni reemplazable. La hierba alta, las flores y la nieve en capa se tapan al añadir y no cuentan como forma; el agua se puede rellenar.
+- **Máscara (`-m`):** qué bloques se pueden quitar o cambiar, con la [lista sencilla o una máscara de WorldEdit](#máscaras-y-patrones-en-worldedit) (`-m #solid`, `-m stone,dirt`, `-m !grass_block`). Lo libre siempre se puede llenar.
+
+| Bandera | Modos | Efecto |
+| --- | --- | --- |
+| `-f <caída>` | todos | `constant`, `linear`, `smooth` (de serie) o `spherical`. |
+| `-m <máscara>` | todos | Qué se puede quitar o cambiar. |
+| `-b <paleta>` | todos | Material de lo añadido; en las grietas, el relleno (`air` de serie). `auto` es el de alrededor. |
+| `-s <0–4>` | draw | Pasadas de suavizado. |
+| `-g <0,3–8>` | weld, melt | Desviación del desenfoque. |
+| `-k <0–16>` | rock | Radio de la unión suave con el terreno. |
+| `-z <escala>` | rock, roughen, shatter | Tamaño de los rasgos del ruido o de las celdas. |
+| `-w <0,1–8>` | shatter | Ancho de las grietas. |
+| `-e <eje>` | shatter | `x`, `y`, `z` o `3d` (de serie). |
+| `-d <0–64>` | shatter | Profundidad máxima (0: sin límite). |
+| `-i <semilla>` | rock, roughen, shatter | Fija el azar. |
+| `-n` | todos | Cambia los clics: el izquierdo hace el modo y el derecho el contrario. |
+| `-p` | todos | Vista previa en cada clic; se aplica con `/komaedit pincel aplicar`. |
+
+Ejemplos:
+
+```text
+/komaedit pincel sculpt draw 8 4
+/komaedit pincel esculpir 6 2 -s 1 -m #solid
+/komaedit pincel modelar roca 7 0.5 -b stone,andesite,tuff
+/komaedit pincel soldar 6 0.3 -g 2
+/komaedit pincel fundir 5
+/komaedit pincel rugosidad 10 2 -z 2
+/komaedit pincel grietas 12 6 -e y -d 0
+/komaedit pincel grietas 10 5 -w 1.2 -b gravel,tuff -p
+```
+
+### Con la brocha de `/komaedit sculpt`
+
+Los seis modos también son tipos de la brocha de siempre (`draw`, `rock`, `weld`, `melt`, `roughen`, `shatter`, con sus alias en español), con su vista previa (`/komaedit sculpt preview` y `apply`) y su máscara (`/komaedit sculpt mask`). Lo que trae la orden se reparte así:
+
+- El **patrón** es el material de lo añadido; `auto` (o `alrededor`) pone el de alrededor. En las grietas es el relleno: `air` o `auto` las deja vacías.
+- La **intensidad** es la altura de esculpir, el doble de la amplitud de la rugosidad, el desenfoque de soldar y fundir (`0,5 + intensidad/4`) y el tamaño de celda de las grietas (`intensidad + 2`).
+- **Hueco** (`true`) invierte esculpir y roca. El ruido de `/komaedit sculpt tune` es la rugosidad de la roca (en %).
+
+```text
+/komaedit sculpt set draw auto 8 16 4 smooth
+/komaedit sculpt set shatter air 12 24 6 constant
+/komaedit sculpt set rock "stone,andesite" 6
+```
+
+### Rendimiento y limitaciones
+
+- Cada pasada lee el radio más un margen (lo que se desplaza, el desenfoque o la unión de la roca, hasta 32 bloques más) y se calcula en un worker. Medido sobre colinas: con radio 16, de 5 a 55 ms según el modo; con radio 32, de 25 a 70 ms, salvo la roca (unos 0,4 s). Lo que más tarda es leer la zona, que se reparte entre ticks: la roca lee hasta dos veces el radio (con radio 32, unos 2 millones de bloques, varios segundos). Una pasada cambia como mucho 1 000 000 de bloques.
+- Todo es determinista: la misma zona y los mismos ajustes dan lo mismo (la roca solo cambia de un clic a otro porque cada clic elige semilla, salvo con `-i`).
+- Los cambios van en una sola edición de //undo por clic, con la vista previa y la cancelación del motor común.
+- No se tocan losas ni escaleras para suavizar el resultado: el modelado trabaja con bloques enteros. Para piezas, pasa después [smoothblocks](#smoothblocks-perfiles-de--w).
+- Los bloques con datos (cofres, carteles) cuentan como masa: se pueden fundir o agrietar si la máscara lo deja. Para protegerlos, usa `-m`.
 
 ## Supervarita
 
@@ -1977,6 +3183,95 @@ Herramienta de selección avanzada (la Superwand de ezEdits) que escribe directa
 - Al leer una esfera, un elipsoide o un cilindro se toman el centro y un punto en el borde a lo largo del eje x: el radio en las otras direcciones se pierde si era distinto.
 - La F y el clic izquierdo a distancia necesitan KomaEdit en el cliente; sin él, la supervarita responde al clic derecho y al izquierdo sobre bloques al alcance.
 - La selección agarrada se mueve por bloques enteros y se actualiza en cada tick en que cambia.
+
+## Simetría
+
+### Objetivo y acceso
+
+Modo de construcción con simetría, como `//ezsymmetry` de ezEdits (su wiki solo lo nombra en la página de permisos, así que el diseño es propio). Mientras está activo, cada bloque que pones o rompes a mano se repite al momento en sus copias simétricas, con el estado girado o reflejado. Si lo pides, también se reflejan tus ediciones de WorldEdit y KomaEdit.
+
+```text
+/komaedit symmetry                                  estado, centro y botones (igual que info)
+/komaedit symmetry on [modo]                        activa; sin centro, lo fija en tu bloque
+/komaedit symmetry off                              desactiva
+/komaedit symmetry toggle                           cambia entre activada y desactivada
+/komaedit symmetry mode <modo>                      x, z, xz, y, xy, zy, xzy o radial [brazos] [y]
+/komaedit symmetry center [here]                    centro en el bloque donde estás
+/komaedit symmetry center here half [ejes]          centro en el borde entre bloques más cercano
+/komaedit symmetry center selection                 centro de la selección de WorldEdit
+/komaedit symmetry center <x> <y> <z> [half [ejes]] centro en ese bloque o entre él y el siguiente
+/komaedit symmetry arms <2-16>                      brazos del radial (pasa a radial)
+/komaedit symmetry worldedit [on|off]               refleja también tus ediciones de WorldEdit y KomaEdit
+/komaedit symmetry info                             estado con botones clicables
+```
+
+Alias: `simetria` y `sym` para la orden; `activar`, `desactivar`, `modo`, `centro`, `aqui`, `seleccion`/`sel`, `medio`, `brazos` y `we` para las subórdenes. `/komaedit help symmetry` lista todo con clic.
+
+Permisos: `komaedit.build.symmetry.reflectional` (espejos) y `komaedit.build.symmetry.rotational` (radial), en el paquete intermedio; `komaedit.build.symmetry.worldedit` (reflejar ediciones de WorldEdit y KomaEdit), en el avanzado. `komaedit.build.symmetry` o `komaedit.build` lo dan todo. Se comprueban en cada acción: si te quitan el permiso, las copias se paran.
+
+### Tipos
+
+| Modo | Copias por bloque | Qué hace |
+| --- | --- | --- |
+| `x` | 2 | Espejo en un plano perpendicular al eje X (este ↔ oeste). |
+| `z` | 2 | Espejo en un plano perpendicular al eje Z (norte ↔ sur). |
+| `xz` | 4 | Los dos espejos: cuatro cuadrantes iguales. |
+| `y` | 2 | Espejo arriba ↔ abajo en un plano horizontal. |
+| `xy`, `zy`, `xzy` | 4, 4 y 8 | Combinaciones; el orden de las letras da igual y `x+z` también vale. |
+| `radial <n>` | n | Giro de 360°/n alrededor de un eje vertical, de 2 a 16 brazos. Sin número conserva los brazos que tenías (4 de serie). |
+| `radial <n> y` | 2·n | El radial más el espejo en Y. |
+
+El radial no se combina con los espejos en X o Z. `on <modo>` cambia el modo y activa a la vez: `/komaedit sym on radial 8 y`.
+
+### Centro
+
+- Cada eje del centro cae en el **centro de un bloque** o **entre dos bloques**. Con el centro en un bloque, ese bloque es su propio reflejo y la obra sale con un número impar de bloques de ancho; entre bloques, con un número par.
+- `center <x> <y> <z>` pone el plano en el centro de ese bloque; con `half` lo pone entre ese bloque y el siguiente (el de coordenada mayor), y con `half xz` solo en esos ejes. Admite `~`.
+- `center here` usa el bloque donde estás; `center here half [ejes]`, el borde entre bloques más cercano a tu posición exacta.
+- `center selection` usa el centro de la caja de la selección de WorldEdit: en un eje de lado impar, el bloque del medio; de lado par, entre los dos del medio.
+- El centro se escribe como `x 10, y 64, z -3|-2`: un número es el bloque del centro y `a|b`, el borde entre esos dos bloques.
+- El centro va ligado a su dimensión: en otra dimensión no se copia nada y `info` lo avisa. `on` sin centro, o desde otra dimensión, lo fija en tu bloque.
+- En radial, el centro tiene que caer en bloque en X y Z a la vez, o entre bloques en los dos; si no, se avisa, porque los giros de 90° saltarían bloques.
+
+### Qué se copia a mano
+
+- **Colocar**: todo bloque puesto con su objeto (también antorchas, carteles y estandartes de pared, losas dobles, velas, capas de nieve…) y la otra mitad que pone el propio bloque: puertas, camas y plantas altas.
+- **Romper**: la copia solo se rompe si en su sitio está el mismo bloque, así nunca se rompe algo que no era el reflejo; la otra mitad de puertas y camas va con ella. Las copias no sueltan objetos (un cofre sí suelta lo que guarda, como al romperlo).
+- **Estado**: dirección (`facing`), ejes de troncos y pilares, la `rotation` de 16 pasos de carteles, estandartes y cabezas (exacta en los radiales de 8 y 16 brazos), escaleras (la esquina izquierda pasa a derecha con un espejo), bisagras de puertas, cofres dobles, raíles con sus curvas y rampas, conexiones de vallas, muros, cristal y redstone, y la orientación del crafter. Con el espejo en Y también: mitad de escaleras, trampillas y losas, mitades de puerta, botones y palancas de suelo ↔ techo, campanas, faroles colgados y estalactitas. En radiales que no son múltiplos de 90° la dirección se redondea al cuarto de vuelta más cercano.
+- Cada copia se ajusta a sus vecinos como al colocarla a mano (las vallas se unen, las escaleras hacen esquina) y solo queda anegada si en su sitio hay agua quieta. Si no se sostiene (una antorcha sin pared, una puerta sin suelo), no se pone: tampoco se puede colocar así a mano.
+- Lo puesto y roto a mano no entra en `//undo`, como cualquier bloque puesto a mano.
+- No se copian los cubos (agua, lava), lo que no es un bloque ni los cambios al usar un bloque (abrir una puerta, girar un repetidor).
+
+### Ediciones de WorldEdit y KomaEdit
+
+Con `/komaedit symmetry worldedit on`, cada bloque que escribe una edición tuya (`//set`, `//paste`, `//replace`, las brochas de WorldEdit, los Build, pinceles, deformaciones y demás órdenes de KomaEdit) escribe también sus copias simétricas, en la misma edición:
+
+- Todo queda en **un solo `//undo`**, y `//undo` y `//redo` no se vuelven a reflejar.
+- Las copias pasan por la máscara global (`//gmask`) y cuentan para el límite de bloques de WorldEdit.
+- Como mucho `maxBlocksPerOperation` copias por edición (1.500.000 de serie; sin límite con `komaedit.limit.unrestricted`). Al pasarlo, la edición termina sin más copias y se avisa una vez.
+- Los bloques con datos (cofres, carteles) copian sus datos, como `//paste`. Una copia que cae fuera de la altura del mundo o del borde se salta.
+- Una orden que lee lo que va escribiendo (`//smooth`, `//move`) lee el mundo tal cual: las copias no cambian lo que ve.
+
+### Marcas en el mundo
+
+Mientras la simetría está activa, cada medio segundo se dibujan partículas que solo ves tú: una rejilla de puntos cada 2 bloques en cada plano de espejo alrededor de ti (rojo el de X, azul el de Z, verde el de Y), el eje vertical en amarillo (en el radial y en `xz`) y, en el radial, un rayo por brazo a la altura de tus pies, el primero en verde. Un plano a más de 48 bloques no se dibuja.
+
+### Seguridad
+
+- Una copia hecha a mano nunca pisa un bloque: solo se coloca sobre aire, agua o plantas que se pueden reemplazar. La excepción es completar el mismo bloque cuando el original también se completó (losa doble, otra vela, otra capa de nieve).
+- Antes de tocar cada sitio se comprueba que está dentro de la altura del mundo y del borde, que su chunk está cargado (las copias nunca cargan chunks), la protección del spawn y los mods de protección: se les pregunta con el evento de rotura de Fabric (`PlayerBlockBreakEvents.BEFORE`), como si fueras a romper ese bloque. Si alguno lo impide, esa copia no se hace.
+- Solo se copia en la dimensión del centro y en modos de juego que permiten construir (en aventura o espectador no se copia nada).
+- Si una parte de una copia falla (la otra mitad de una puerta cae en una zona protegida), la copia entera se descarta. La barra de acción dice cuántas copias no se hicieron.
+- Una copia que cae sobre el propio bloque (un bloque en el plano o en el eje) no se hace: no se pisa a sí mismo con su estado reflejado.
+
+### Rendimiento y limitaciones
+
+- A mano, como mucho 31 copias por bloque (`radial 16 y`) de una o dos piezas: no se nota.
+- Con WorldEdit, cada bloque de la edición escribe hasta 31 más: una edición de 100.000 bloques con `radial 16 y` escribe 3,2 millones, que cuentan para los dos límites de arriba.
+- En radiales que no son múltiplos de 90° las posiciones se redondean al bloque más cercano: la simetría no es exacta bloque a bloque y, al romper desde una copia de otro brazo, el redondeo puede no dar con todas las demás. Rompe desde el brazo donde construyes.
+- Los mods de protección que no usan el evento de rotura de Fabric no se consultan. Las copias de WorldEdit siguen las reglas de WorldEdit, que en Fabric tampoco consulta protecciones.
+- La simetría de cada jugador vive en memoria: se pierde al salir del servidor o reiniciarlo.
+- No están los modos `translational` y `update` de ezEdits. En el Studio, la tarjeta Simetría de la etapa [Herramientas](#herramientas) manda estas órdenes y enseña el estado.
 
 ## Máscaras y patrones en WorldEdit
 
@@ -2068,6 +3363,7 @@ Alias: `/komaedit paleta`.
 - `swap` cambia, dentro de la selección, el bloque n del origen por el n del destino. `-a` no toca el aire del origen, `-s` estira el destino para cubrir todo el origen (sin él, lo que sobra del origen se queda igual), `-f` encaja el origen solo por tipo y `-b` copia las propiedades del bloque original sobre el nuevo cuando las admite. Va por el motor de operaciones sobre la selección: lectura repartida, cálculo en un worker y un solo `//undo`.
 - `print` muestra la paleta (`-v` con id completo y estados); al pulsarla se copia.
 - `encode` da un código `kp1:…` que se copia al pulsarlo; `decode` lo convierte otra vez en bloques. El formato es propio de KomaEdit (no es el de ezEdits) y admite bloques de mods.
+- Para sacar los materiales de una selección de cualquier forma, de la barra rápida o de otra paleta **ordenados de oscuro a claro**, usa `/komaedit color palette <selection|hotbar|paleta> [nombre]`; para crear una paleta de degradado entre dos bloques, `/komaedit color gradient … -p nombre` (ver [Color y sombreado](#color-y-sombreado)).
 
 ### Paletas de serie
 
@@ -2216,6 +3512,29 @@ Ejemplos:
 /komaedit colocar Ic(P:"stone,andesite",R:0.7,S:1) C R -s 9,6,9 -w stairs
 ```
 
+### Copias (`-copias`)
+
+Solo en `place` (y en su pincel): repite la colocación como «Modify copies» de Axiom. Cada copia sale de la anterior desplazada, girada alrededor de un pivote y girada sobre sí misma; combinadas dan escaleras de caracol, coronas de columnas, hélices o pilas.
+
+| Bandera | Efecto |
+| --- | --- |
+| `-copias <n>` (`-copies`) | Copias además de la original, de 1 a 256. Hace falta para las demás. |
+| `-desplazar <x,y,z>` (`-translate`, `-offset`) | Lo que se mueve cada copia respecto a la anterior, en bloques del mundo. |
+| `-revolver <grados>` (`-revolve`) | Lo que gira cada copia alrededor de la vertical que pasa por el pivote, en el sentido de `//rotate` (positivo: de este a sur). |
+| `-pivote <x,y,z>` (`-pivot`) | Centro de `-revolver`, relativo al ancla de la colocación (de serie, el ancla: la copia gira sobre sí misma). |
+| `-torcer <grados>` (`-twist`) | Lo que gira cada copia sobre sí misma, alrededor de la dirección de `-desplazar` (o de la vertical si no hay desplazamiento). |
+
+- La copia `i` es la original desplazada `i` veces, girada `i·torcer` sobre sí misma y después `i·revolver` alrededor del pivote. Todas son la misma estructura con la misma semilla.
+- Las copias pasan por el mismo voxelizado que la original: con giros libres no quedan huecos y los bloques con dirección van a la dirección más cercana. Donde se solapan gana la última.
+- Si faltan `-copias` o las copias caerían todas en el mismo sitio, la orden lo dice y no coloca nada.
+- No están en `array` ni en `scatter`, que ya reparten sus colocaciones a lo largo de una trayectoria o de una región.
+
+```text
+/komaedit place Clipboard -copias 11 -desplazar 0,1,0 -revolver 30 -pivote 4,0,0
+/komaedit place Sh(S:Cylinder,P:stone_bricks) C C -s 3,12,3 -copias 7 -revolver 45 -pivote 10,0,0
+/komaedit place Cl -copias 5 -desplazar 0,4,0 -torcer 15
+```
+
 ### Rendimiento y limitaciones
 
 - Se colocan como mucho 5000 estructuras y 1 500 000 bloques por comando; el cálculo se corta si pasaría de 400 millones de muestras.
@@ -2294,6 +3613,7 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 | `Expression(Expression:=<fórmula>,Palette:<paleta>)` | `Ex(E:…,P:…)` | Una fórmula que decide forma y material. |
 | `TexturedShape(Shape:<forma>,TexturingShape:<forma>,Palette:<paleta>)` | `TS(S:…,T:…,P:…)` | Una forma pintada por otra forma o fórmula. |
 | `Icosphere(Pattern:…,Randomness:…,Subdivisions:…,Platform:…)` | `Ic(P:…,R:…,S:…,PL:…)` | Una roca: icosfera deformada. |
+| `Blueprint(Name:…,Tag:…,Origin:…,Rotation:…)` | `Bp(N:…,T:…)` | Planos de la [biblioteca](#biblioteca-de-planos) (propio de KomaEdit). |
 
 ### Comportamiento
 
@@ -2305,16 +3625,17 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 - **Icosphere:** `Randomness` (0–1, por defecto 0,5) deforma los vértices; `Subdivisions` (0–4, por defecto 0) añade polígonos y suaviza la deformación; `Platform` (0–1) aplasta la mitad de arriba. Cada colocación sale distinta.
 - **Paletas** con la notación de ezEdits (`##Magma`, `-##Grayscale(1:8)`, `a,b,c`) o tus paletas guardadas (`#nombre`, ver `/komaedit palette`); cada entrada debe ser un bloque concreto. Los **patrones** de `Shape` e `Icosphere` son de WorldEdit (`50%stone,50%andesite`, `##Gradiente`…). Si llevan comas, van entre comillas: `P:"dirt,stone"`.
 - **Opciones comunes:** `RelativeOffset` (`RO`) desplaza siguiendo la orientación de la colocación, `WorldOffset` (`WO`) en ejes del mundo y `OffsetJitter` (`OJ`, 0–1) multiplica los dos por un valor al azar entre `1-OJ` y 1. Ejemplo: `Sh(S:Cone,P:stone,RO:(0,1,0),WO:(0,0,2))`.
+- **Blueprint:** `Name` (`N`) es una lista de planos separados por `|` (`roca_1|servidor/ruina`), cada uno con peso opcional (`roca_1:3`), y `Tag` (`T`) una o varias etiquetas (`rocas|musgo`); se pueden juntar. Cada colocación elige uno al azar según su peso (hasta 32 planos distintos). `Origin` es `BOTTOM` (de serie: el centro de la base cae en la posición de colocación), `CENTER` o `INHERENT` (donde estabas al copiarlo); `Rotation` como en el portapapeles. Pide `komaedit.blueprint.load`.
 - **Origin:BOTTOM** (propio de KomaEdit) apoya las formas procedurales en el suelo: el origen pasa al centro de su cara de abajo. Por defecto, como en ezEdits, el origen es el centro.
 
 ### Parámetros
 
 | Opción | Valores |
 | --- | --- |
-| `Origin` (`O`) | `INHERENT` o `CENTER` en portapapeles y schematics; `CENTER` o `BOTTOM` en las formas. |
+| `Origin` (`O`) | `INHERENT` o `CENTER` en portapapeles y schematics; `CENTER` o `BOTTOM` en las formas; `BOTTOM`, `CENTER` o `INHERENT` en los planos. |
 | `PasteMethod` (`PM`) | `FAST` o `SMOOTHED` (`smooth`). |
 | `FillBias` (`FB`) | 0,05–8; más alto coloca más bloques en `SMOOTHED`. |
-| `Rotation` (`R`) | Grados alrededor de la vertical (portapapeles y schematics). |
+| `Rotation` (`R`) | Grados alrededor de la vertical (portapapeles, schematics y planos). |
 | `RO`, `WO`, `OJ` | Desplazamientos comunes. |
 
 Ejemplos:
@@ -2327,6 +3648,7 @@ Ejemplos:
 /komaedit place Ex(E:"=x*x+y*y+z*z<0.6+noise(x*3,y*3,z*3)*0.3",P:clay)
 /komaedit place TS(S:Ellipsoid,T:=y*.5+.5,P:##Magma) C C -s 16
 /komaedit scatter Ic(P:"stone,andesite,tuff",R:0.7,S:1,PL:0.3,O:BOTTOM) C R -s 7,5,7 -n 0.3
+/komaedit scatter Bp(N:roca_musgo:3|roca_gris,T:arbustos) S R -n 0.4
 ```
 
 ### Rendimiento y limitaciones
@@ -2413,7 +3735,7 @@ La trayectoria son los puntos P o, si no hay, la selección de WorldEdit (dos pu
 | `-q <factores>` | Escala progresiva: `1`, `0.3,3` o tantos como quieras (`1.5,0.5,5,2,0.2`), repartidos y suavizados a lo largo del recorrido; con `posición:factor` se fija dónde va cada uno. Se combina con `-o`. |
 | `-p t:b:c` | Tensión, sesgo y continuidad de la curva (de -1 a 1). |
 | `-n <modo>` | Marco de `Orthogonal`: `consistent` (por defecto, sin girar sobre sí mismo), `horizontal` (la perpendicular más hacia arriba) o `upright` (el +y del mundo, sin inclinarse). |
-| `-b` | Lleva cada colocación a la superficie más cercana (hasta 96 bloques, como en ezEdits; si no la encuentra, se queda en la curva). |
+| `-b` | Lleva cada colocación a la superficie más cercana (hasta `arraySnapRadius` bloques, 96 por defecto como en ezEdits, configurable en `config.json`; si no la encuentra, se queda en la curva). |
 
 Ejemplos:
 
@@ -2430,8 +3752,291 @@ Ejemplos:
 ### Rendimiento y limitaciones
 
 - La trayectoria admite hasta 4096 bloques y salen como mucho 5000 colocaciones.
-- Con `-b` se lee la caja de la trayectoria con 96 bloques de margen (menos si no cabe en el límite de lectura de 16 millones): la superficie se busca dentro de lo leído, así que el alcance real es ese margen.
+- Con `-b` se lee la caja de la trayectoria con `arraySnapRadius` bloques de margen (96 por defecto; menos si no cabe en el límite de lectura de 16 millones): la superficie se busca dentro de lo leído, así que el alcance real es ese margen.
 - El paso se mide con la caja de cada colocación sobre la tangente: en curvas cerradas, estructuras muy anchas pueden tocarse por el lado de dentro.
+
+## Utilidades de obra
+
+Herramientas pequeñas de uso diario (las que traen Axiom o FAWE): texto en bloques, lista de materiales, gravedad, nieve, drenar e inundar y pintar biomas. Todas leen el mundo en el hilo del servidor repartiendo el trabajo entre ticks, calculan en un worker, escriben por lotes solo donde el bloque sigue como al leerlo y dejan **una sola entrada de `//undo`**. Todas admiten una máscara de WorldEdit con `-m` (ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región)). Las que cambian bloques tienen la [vista previa](#vista-previa-progreso-y-cancelación) (`-v` o `--preview`; en `text`, solo `--preview`, porque `-v` lo pone de pie), la barra de progreso y `/komaedit cancel`; los biomas, la barra y `cancel` (no hay bloques que enseñar, y en `biome` `-v` es el relleno vertical). Ayuda en el juego: `/komaedit help utilidades`. Renders de comprobación fuera del juego en `docs/renders/utilidades/` (se regeneran con `KOMAEDIT_BUILDER_RENDER=<carpeta>`).
+Herramientas pequeñas de uso diario (las que traen Axiom o FAWE): texto en bloques, lista de materiales, gravedad, nieve, drenar e inundar y pintar biomas. Todas están también en el Studio, etapa [Herramientas](#herramientas). Todas leen el mundo en el hilo del servidor repartiendo el trabajo entre ticks, calculan en un worker, escriben por lotes solo donde el bloque sigue como al leerlo y dejan **una sola entrada de `//undo`**. Todas admiten una máscara de WorldEdit con `-m` (ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región)). Ayuda en el juego: `/komaedit help utilidades`. Renders de comprobación fuera del juego en `docs/renders/utilidades/` (se regeneran con `KOMAEDIT_BUILDER_RENDER=<carpeta>`).
+
+### Texto en bloques
+
+```text
+/komaedit text "<texto>" [material] [banderas]
+/komaedit text fonts
+```
+
+Alias: `texto`; `fuentes` para `fonts`. Permiso `komaedit.build.text` (paquete intermedio).
+
+- **Dónde:** en el bloque que miras (hasta 128 bloques), en la cara que miras; si no miras ningún bloque, en tus pies. **De pie** (mirada horizontal) el texto mira hacia ti y su grosor crece hacia ti, así apoyado en una pared no se mete en ella; mirando una pared se pone de frente a ella aunque la mires de lado. De pie sobre el suelo apoya su base en él; bajo un techo cuelga de él. **Tumbado** (mirando al suelo, más de 50° hacia abajo) se lee desde donde estás; mirando al techo cuelga de él y se lee mirando hacia arriba. Tumbado y en una pared queda centrado en el punto mirado. `-v` lo fuerza de pie y `-h` tumbado.
+- **Texto:** entre comillas si lleva espacios (`"Año Nuevo"`; una comilla dentro se escribe `\"`). `\n` parte líneas (hasta 16, con 256 caracteres en total). Los acentos, la ñ, `¿` y `¡` salen con las fuentes de serie; si una fuente no tiene un carácter, se avisa antes de construir.
+- **Material:** un patrón de WorldEdit (`stone`, `50%stone,50%andesite`); sin nada, `stone`. Con `-g v|h` (o si empieza por `#` o lleva `;`) es una **paleta en degradado** con la notación de [Paletas guardadas](#paletas-guardadas) (`##Magma`, `#mipaleta`, `white_concrete;light_gray_concrete;gray_concrete`): `v` va de abajo arriba y `h` de izquierda a derecha; la primera entrada queda abajo o a la izquierda (`-##Magma` la invierte).
+
+| Bandera | Qué hace | Por defecto |
+| --- | --- | --- |
+| `-f <fuente>` | Fuente: `sans` (Lato Bold), `fina` (Lato Regular), `mono` (JetBrains Mono Bold) o el nombre de un archivo de `config/komaedit/fonts/` | `sans` |
+| `-s <tamaño>` | Altura de una mayúscula en bloques (1–256): con `-s 8` una «H» mide 8 bloques | `8` |
+| `-d <grosor>` | Extrusión en bloques (1–64) | `1` |
+| `-b <ancho>` | Borde alrededor de las letras, en bloques (1–16), con las esquinas redondeadas | sin borde |
+| `-o <material>` | Material del borde (un patrón); sin `-b`, borde de 1 | el de las letras |
+| `-g v` o `-g h` | El material es una paleta en degradado vertical u horizontal | — |
+| `-w <perfil>` | Losas y escaleras en los bordes de las letras, como en el resto de comandos (`SlabsAndStairs`, `Slabs(C:0.7)`, `SSW`…) | sin piezas |
+| `-m <máscara>` | Solo donde la máscara acepta (por ejemplo `air` para no tocar nada construido) | todo |
+| `-k <bloques>` | Espacio extra entre letras (-8 a 32, admite decimales) | `0` |
+| `-l <factor>` | Interlineado (0.5 a 4) | `1` |
+| `-a izquierda`, `centro` o `derecha` | Alineación de las líneas entre sí | `centro` |
+
+Ejemplos:
+
+```text
+/komaedit text Kyobble
+/komaedit text "Año Nuevo" ##Magma -s 12 -d 2 -b 1 -o black_concrete -w SlabsAndStairs
+/komaedit text "Plaza Mayor\nAlcázara" quartz_block -f fina -s 6 -m air
+/komaedit text "¿Qué tal?" oak_planks -f mono -s 7 -h
+/komaedit text "BIENVENIDOS" white_concrete;light_blue_concrete;blue_concrete -g h -s 10 -k 1
+```
+
+**Comportamiento.** El texto se dibuja con la fuente sobre una rejilla de 8×8 muestras por bloque: un bloque es letra si la letra lo cubre al menos a la mitad. Con `-w` se mide qué parte de cada octante cubre y se elige la losa o la escalera del material, igual que en el resto de comandos; las piezas solo aparecen en huecos (aire o líquido). El texto **nunca quita bloques**: donde no hay letra se deja lo que hubiera. El borde se calcula con la distancia exacta a la letra, así rodea las curvas y redondea las esquinas.
+
+**Fuentes.** Las de serie van dentro del jar con su licencia, la SIL Open Font License 1.1 (`komaedit/fonts/OFL-Lato.txt` y `OFL-JetBrainsMono.txt`): Lato © tyPoland Łukasz Dziedzic, JetBrains Mono © The JetBrains Mono Project Authors. El administrador puede añadir cualquier `.ttf` u `.otf` a `config/komaedit/fonts/`; se usa por el nombre del archivo sin extensión, en minúsculas (`MiFuente.ttf` → `-f mifuente`), sin reiniciar. `/komaedit text fonts` lista las disponibles. Comprueba que la licencia de una fuente propia permite usarla así.
+
+**Rendimiento y limitaciones.**
+
+- El contorno se calcula al escribir la orden (milisegundos); el relleno, el borde y las piezas, en un worker. La caja del texto entra en el límite de bloques por operación y en los 16 millones de bloques de lectura.
+- Por debajo de unos 6 bloques de tamaño los trazos finos se rompen: usa `sans` o `mono`, que son gruesas.
+- Las piezas de `-w` en un texto tumbado son losas y escaleras horizontales: suavizan los bordes vistos de lado, no desde arriba.
+- Vista previa con `--preview` (`-v` es «de pie»); con `-m air` no se pisa nada y con `//undo` se quita entero.
+
+### Lista de materiales
+
+```text
+/komaedit analyze [-m máscara] [-n líneas]
+```
+
+Alias: `analizar`, `materiales`. Permiso `komaedit.analyze` (paquete básico). No cambia ningún bloque.
+
+- Cuenta los bloques de la selección (sin aire ni líquidos) agrupados por bloque y calcula **lo que cuesta en survival**: las losas pasan a su bloque base a 0,5 (una doble, 1); los muros a 1; las escaleras a 1 con el cortapiedras o a 1,5 si son de madera o de mosaico de bambú, que solo se hacen en la mesa de trabajo (6 → 4). Las puertas, plantas altas y camas cuentan una vez (no la mitad de arriba ni la cabecera); las capas de nieve, velas, pepinos de mar, huevos de tortuga y pétalos cuentan cada unidad; las antorchas y carteles de pared, el cable de redstone, los cultivos y las macetas con planta cuentan el objeto con el que se colocan (maceta y planta por separado). Fuego, portales y piezas técnicas no cuestan nada.
+- El chat muestra el total de bloques y tipos, los objetos que hay que reunir, los **huecos** de inventario (cada objeto con su tamaño de pila: 64, 16 o 1) y los **cofres** que llenaría todo (27 huecos), y las `-n` líneas más grandes (10 por defecto) en unidades, pilas y sueltos (`oak_planks: 1197 (18 pilas + 45)`).
+- **[COPIAR]** copia la lista al portapapeles al pulsarlo (el servidor no puede escribir en tu portapapeles sin ese clic).
+- Se guarda un CSV en `config/komaedit/exports/materiales-<jugador>-<fecha>.csv`, separado por punto y coma (lo abre bien una hoja de cálculo en español), con una fila por objeto (`coste`: cantidad, pila, pilas, sueltos y huecos), una por bloque colocado (`colocado`) y los totales. Pulsar la ruta en el chat la copia.
+- Las cantidades se redondean hacia arriba (media losa también hay que fabricarla). Los bloques de mods cuentan como su propio objeto si existe.
+
+### Gravedad
+
+```text
+/komaedit gravity [-a] [-m máscara]
+```
+
+Alias: `gravedad`. Permiso `komaedit.build.gravity` (paquete básico).
+
+- Deja caer los bloques de la selección **por columnas**, como si fueran arena: cada columna se compacta hacia abajo **conservando el orden** y el número de bloques. Caen dentro de la selección: el fondo de cada columna es lo más bajo de la selección (o el primer bloque fijo).
+- **`-a`**: solo caen los bloques **sin apoyo**, los que no están unidos por alguna cara, a través de otros bloques, a algo de fuera de la selección (el suelo, una pared). Un voladizo pegado a una torre se queda; un trozo suelto cae.
+- **`-m`**: solo caen los bloques que acepta la máscara; los demás se quedan donde están y hacen de suelo para lo que cae encima (`-m sand,gravel`, `-m !glass`).
+- **Agua:** los bloques atraviesan el agua y la lava; el hueco que dejan por debajo del nivel del líquido de la columna se llena de él, así la superficie no baja. Un bloque que acaba bajo el agua queda anegado si lo admite (escaleras, losas, vallas…) y uno que acaba por encima se seca.
+- Lee un bloque de margen. Hasta 16 millones de bloques de lectura y 1 500 000 cambios.
+- Los bloques que guardan datos (cofres, barriles, hornos, carteles, cabezas, generadores…) no se mueven, para no perder lo que guardan: hacen de suelo como los que no pasan la máscara.
+- Limitaciones: es por columnas, no física de sólidos: una isla flotante con `-a` puede deformarse si sus columnas caen distancias distintas. Las antorchas, escaleras de mano y demás bloques que se apoyan en una cara caen como cualquier otro: exclúyelos con la máscara si no quieres moverlos.
+
+### Nieve
+
+```text
+/komaedit snow [capas] [-r radio] [-f relleno] [-s sombra] [-h altura] [-p] [-m máscara]
+```
+
+Alias: `nieve`. Permiso `komaedit.build.snow` (paquete básico).
+
+- Pone **capas de nieve** (de 1 a 8; 2 por defecto) sobre la superficie que ve el cielo en cada columna de la selección. La selección tiene que incluir el aire de encima del terreno.
+- **Solo donde la nieve puede estar**, con la regla de Minecraft: sobre bloques con la cara de arriba entera (también hojas, losas de arriba y escaleras del revés), sobre miel, arena de almas y barro, y nunca sobre hielo, hielo compacto, barreras, losas de abajo, vallas, cristales finos, caminos, agua ni lava.
+- **Sigue la pendiente:** la altura del terreno se suaviza con el radio `-r` (2 por defecto) y cada columna recibe las capas que le faltan para llegar a esa superficie suave: los escalones de un bloque se vuelven rampas y la nieve **se acumula en los huecos**, mientras en las aristas y cimas queda más fina. `-f` (de 0 a 1, 1 por defecto) es cuánto se rellenan los huecos; `-r 0` o `-f 0` dan un manto uniforme. Un vecino cuenta como mucho dos bloques más alto o más bajo, así un árbol o un acantilado no entierran lo que tienen al lado.
+- **`-s`**: capas extra a la sombra total (2 por defecto, de 0 a 8). La sombra es la parte del cielo que tapan los bloques de alrededor (17 rayos de hasta 12 bloques): al pie de un muro o bajo un saliente cuaja más.
+- **`-h`**: capas extra en lo más alto de la selección (0 por defecto, de 0 a 8), repartidas con la altura.
+- **`-p`**: tapa también la hierba corta, los helechos y los arbustos secos (los reemplaza la nieve); sin `-p` se respetan y esas columnas se quedan sin nieve. Las flores nunca se tapan.
+- **`-m`**: solo sobre los bloques que acepta la máscara (se mira el bloque de debajo de la nieve): `-m grass_block,stone`.
+- Nunca quita nieve: una capa existente solo crece. La hierba, el micelio y el podsol de debajo pasan a `snowy=true`.
+- Ejemplos: `/komaedit snow 3`, `/komaedit snow 2 -r 4 -s 4 -p`, `/komaedit snow 1 -h 6 -m stone,andesite`.
+- Rendimiento: lee un margen de `radio + 1` bloques (6 con sombra) para ver a los vecinos. Lo que hay fuera de la selección no recibe nieve, pero cuenta para la pendiente y la sombra.
+
+### Drenar e inundar
+
+```text
+/komaedit drain [water|lava|all] [-k] [-m máscara]
+/komaedit waterlog [nivel|~|~n] [-b] [-m máscara]
+```
+
+Alias: `drenar` e `inundar`; `agua`, `todo` para los modos de `drain`. Permisos `komaedit.build.drain` y `komaedit.build.waterlog` (paquete básico).
+
+- **`drain`** quita el agua (fuente, corriente y columnas de burbujas), la lava (`lava`) o las dos (`all`) de la selección, y **desanega** todos los bloques anegados. Las algas y las praderas marinas se quitan con el agua (fuera de ella se romperían en la siguiente actualización); `-k` las conserva. Agua por defecto.
+- **`waterlog`** inunda por debajo de un nivel, incluido: anega todo lo que admite agua (escaleras, losas, vallas, cadenas…), llena el aire de agua quieta y convierte el agua corriente en quieta. `-b` solo anega bloques, sin llenar el aire. El nivel es una altura (`62`), `~` (tus pies) o `~-2`; sin nada, lo más alto de la selección.
+- `tweak waterlog` sigue existiendo: anega o seca bloques sin mirar el nivel ni llenar el aire.
+- Limitaciones: el agua se escribe con las actualizaciones normales de WorldEdit; si la inundación queda abierta por un lado, el agua correrá hacia fuera como en vanilla. Drenar no seca esponjas mojadas ni cambia el coral (que muere fuera del agua cuando le llega una actualización).
+
+### Pintar biomas
+
+```text
+/komaedit biome <bioma> [-v] [-m máscara]
+/komaedit pincel biome <bioma> [radio] [-v] [-m máscara]
+```
+
+Alias: `bioma`. Permisos `komaedit.build.biome` y `komaedit.build.brush.biome` (paquete intermedio).
+
+- El bioma es cualquier id del servidor, también de datapacks y mods (`cherry_grove`, `minecraft:snowy_plains`, `terralith:moonlight_grove`); el autocompletado los lista.
+- Minecraft guarda el bioma en **celdas de 4×4×4 bloques**: cambia entera cada celda que tenga al menos un bloque dentro de la selección (y de la máscara). **`-v`** (relleno vertical) pinta cada columna de celdas tocada desde el fondo hasta el techo del mundo, para que la lluvia, la nieve que cae y la niebla cambien también por encima y por debajo.
+- **`-m`**: solo las celdas con algún bloque que acepte la máscara (`-m grass_block` cambia el bioma donde hay hierba). Sin máscara no se lee el mundo.
+- **Pincel:** el **clic derecho** pinta una esfera del radio (8 por defecto, hasta 32) alrededor del bloque mirado; el **clic izquierdo** toma el bioma del bloque mirado (cuentagotas) y lo deja en el pincel.
+- **Deshacer y clientes:** el cambio se escribe con WorldEdit (`setBiome`) repartido entre ticks y queda en **una sola entrada de `//undo`**; al terminar, WorldEdit reenvía los biomas de los chunks tocados a los jugadores, así que se ve el color nuevo de la hierba, las hojas y el agua **sin volver a entrar**. Al deshacer pasa lo mismo.
+- Rendimiento: el límite de bloques por operación cuenta celdas (cada celda es una escritura). Con `-v` una zona de 100×100 son unas 60 000 celdas en un mundo de 384 de alto. Los chunks deben estar cargados (WorldEdit los carga si hace falta). La bossbar enseña el avance y `/komaedit cancel` lo para (lo ya pintado se deshace con `//undo`).
+- Limitaciones: la hierba, las hojas y el agua cambian de color en cuanto el cliente recibe el bioma; la nieve, el hielo y la vegetación de cada bioma no aparecen solos (usa `snow`). Las máscaras de bioma de WorldEdit (`$plains`) no sirven en `-m`.
+
+## Biblioteca de planos
+
+### Objetivo y acceso
+
+Una biblioteca de planos como los Blueprints de Axiom: guarda lo que copias con su miniatura, autor y etiquetas, lo encuentras por nombre o etiqueta y lo reutilizas: al portapapeles, colocado con la colocación de KomaEdit o repartido al azar con el pincel **estampar** (rocas, arbustos, ruinas…). Cada jugador tiene los suyos y el servidor una colección compartida para todos.
+
+```text
+/komaedit blueprint save <nombre> [etiquetas]
+/komaedit blueprint list [texto|#etiqueta] [página]
+/komaedit blueprint search <texto|#etiqueta>
+/komaedit blueprint info <plano>
+/komaedit blueprint load <plano>
+/komaedit blueprint place <plano> [primaria] [secundaria] [banderas]
+/komaedit blueprint tags <plano> [etiquetas]
+/komaedit blueprint share <plano>
+/komaedit blueprint delete <plano>
+/komaedit pincel stamp <planos|#etiqueta> [radio] [banderas]
+```
+
+Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `buscar`, `ver`, `cargar`, `colocar`, `etiquetas`, `compartir` y `borrar` para las subórdenes; `estampar` para el pincel. En el Studio, la etapa **Planos** (tecla `0`). Ayuda: `/komaedit help blueprint`.
+
+### Guardar
+
+- `save` guarda el **portapapeles de WorldEdit** (`//copy`) con su giro (`//rotate`, `//flip`) ya aplicado, como `//schem save`.
+- **Nombre:** de 1 a 32 letras, números, `_` o `-`, sin mayúsculas. Guardar otra vez con el mismo nombre reemplaza el plano y conserva su fecha de creación.
+- **Etiquetas:** hasta 8, separadas por espacios o comas, con o sin `#` (`rocas musgo`, `#ruinas,#piedra`). Se guardan sin mayúsculas ni tildes: `Árboles` queda `arboles`. `tags <plano> [etiquetas]` las cambia (sin etiquetas, las quita).
+- Junto al esquema se guardan el **autor**, las fechas, el **tamaño** (ancho × alto × fondo), el **número de bloques** que no son aire, las etiquetas y la huella de la miniatura.
+- **Miniatura:** un PNG isométrico de 128×128 pintado en el servidor por código, sin Minecraft cliente: se mira desde el sureste y desde arriba, la cara de arriba sale más clara que la sur y la este, lo lejano un poco más oscuro, las aristas de los bloques se marcan cuando cada bloque ocupa 3 píxeles o más y el fondo es transparente. Se encuadra en la silueta de lo que no es aire, así que el aire de alrededor del portapapeles no la empequeñece. Los colores son los **colores medios de textura** de la tabla del mod (la misma de smoothblocks, `/komaedit image` y `/komaedit color`), con el color de mapa para los bloques de mods; el agua, el césped, la hierba alta y el nenúfar, que Minecraft tiñe según el bioma, llevan un color fijo, y la barrera, la luz y el vacío de estructura no se pintan.
+- Escribir el esquema y pintar la miniatura va en un hilo aparte («KomaEdit planos»), como `//schem save`: el chat avisa cuando el plano está guardado.
+
+### Dónde se guardan
+
+```text
+config/komaedit/blueprints/players/<uuid>/<nombre>.schem   esquema (formato sponge.3 de WorldEdit)
+config/komaedit/blueprints/players/<uuid>/<nombre>.json    metadatos
+config/komaedit/blueprints/players/<uuid>/<nombre>.png     miniatura
+config/komaedit/blueprints/shared/<nombre>.schem|.json|.png  los compartidos
+```
+
+- El `.schem` es un esquema normal de WorldEdit (Sponge v3, con el NBT de cofres, carteles…): se puede llevar a la carpeta de schematics y abrir con `//schem load`.
+- El JSON lleva `name`, `scope` (`jugador` o `servidor`), `owner`, `author`, `created`, `updated`, `size`, `blocks`, `tags`, `thumbnail` (SHA-256 del PNG), `schematic` y, en los compartidos, `sharedBy` y `sharedAt`.
+- Se escribe con `.tmp` y `.bak`, y el JSON va el último: un cierre a medias deja el plano anterior o el nuevo, nunca uno sin esquema. Un plano dañado se omite de la biblioteca, se avisa en `latest.log` y se queda en disco.
+- Los planos son **del servidor**, no de un mundo: valen en todos los mundos y dimensiones.
+
+### Nombrar y buscar
+
+- `roca` busca primero entre los tuyos y después entre los compartidos; `servidor/roca` (o `server/roca`) va directo al compartido. En las listas, los compartidos salen como `servidor/…` con una ★.
+- `list` y `search` (son la misma orden) piden que **cada palabra** case: con un trozo del nombre o con el principio de una etiqueta (`roca` encuentra `roca_musgo` y lo etiquetado `#rocas`), y `#etiqueta` pide esa etiqueta exacta. Sin tildes ni mayúsculas. Primero el nombre exacto, luego los que empiezan por la búsqueda y luego el resto; dentro de cada grupo, por nombre y los tuyos antes.
+- Ocho por página, con botones: **[cargar]**, **[colocar]** (escribe la orden con `-v` para revisarla), **[estampar]** y **[borrar]** en los tuyos. Al pasar el ratón por el nombre se ven tamaño, bloques, autor, fecha y etiquetas; un clic abre `info`.
+
+### Cargar y colocar
+
+- `load` lo pone en tu **portapapeles de WorldEdit**, con su NBT: luego `//paste`, `//rotate` o `/komaedit place Clipboard`.
+- `place` es lo mismo que `/komaedit place Bp(N:<plano>) …`: alineación primaria y secundaria, `-s`, `-o`, `-r`, `-f`, `-a`, `-w`… (ver [Colocar estructuras](#colocar-estructuras)) y la [vista previa](#vista-previa-progreso-y-cancelación) con `-v`, que se confirma con `/komaedit confirm`. De serie el plano se apoya por el **centro de su base** en tu posición.
+- En `place`, `scatter`, `array` y sus pinceles los planos son una estructura más, **`Blueprint`** (`Bp`), ver [Estructuras colocables](#estructuras-colocables): `Bp(N:roca_1|roca_2:3,T:rocas)` mezcla nombres y etiquetas, con peso opcional; cada colocación elige uno al azar según su peso.
+
+Ejemplos:
+
+```text
+/komaedit blueprint save roca_musgo rocas musgo
+/komaedit blueprint list #rocas
+/komaedit blueprint place casita SurfaceNormal -v
+/komaedit place Bp(N:servidor/pozo) Constant Aim -v
+/komaedit scatter Bp(T:rocas) SurfaceNormal Random -n 0.8 -r Y -f XZ
+/komaedit array Bp(N:farola) Tangential Constant -g 6
+/komaedit pincel stamp #rocas 8 -n 60 -y -1
+/komaedit pincel stamp roca_musgo:3,arbusto 12 -d 5 -m grass_block
+```
+
+### Pincel estampar
+
+`/komaedit pincel stamp <planos|#etiqueta> [radio] [banderas]` pone en tu mano un pincel que, en cada **clic derecho**, coloca al azar planos de la lista sobre el suelo que miras. El **clic izquierdo** olvida lo ya estampado para que la separación empiece de cero.
+
+| Parámetro | Valores |
+| --- | --- |
+| `<planos>` | Nombres y etiquetas separados por comas: `roca_1,roca_2:3,#arbustos,servidor/ruina`. `:n` es el peso (1 de serie); una etiqueta reparte el suyo entre sus planos. Hasta 32 planos distintos. |
+| `[radio]` | `0` (de serie): un plano en el bloque que miras. De 1 a 32: varios repartidos en ese círculo. |
+| `-n %` | Probabilidad de cada hueco (100 de serie): con 60, unos seis de cada diez huecos llevan plano. |
+| `-d bloques` | Separación mínima entre planos (de 0 a 64). De serie, la que evita que se toquen: el doble del radio de la huella del plano más grande, más uno. |
+| `-c n` | Planos por clic como mucho (16 de serie, hasta 64). |
+| `-r giro` | `azar` (de serie: 0, 90, 180 o 270 al azar), un giro fijo (`0`, `90`, `180`, `270`) o `mirada` (según hacia dónde miras). |
+| `-f ejes` | Volteos al azar permitidos: `xz` (de serie), `x`, `z` o `no`. |
+| `-g modo` | Ajuste al suelo: `apoyar` (de serie), `centro` o `no`. |
+| `-y n` | Sube o hunde (negativo) el plano después de apoyarlo, de -16 a 16. `-y -1` entierra un poco las rocas. |
+| `-m máscara` | Solo sobre ese suelo (`grass_block,moss_block`, `#solid`… o cualquier máscara de WorldEdit, como en los demás pinceles). |
+| `-a` | Coloca también el aire del plano (de serie, el aire no pisa nada). |
+| `-p` | Vista previa: `/komaedit pincel aplicar` o `cancelar`. |
+
+Comportamiento:
+
+- **Dónde:** los huecos se reparten como un disco de Poisson: puntos al azar dentro del círculo, cada uno a la separación mínima de todos los demás, y de lo estampado con ese pincel en el último minuto (hasta 256 puntos); con radio 0 el plano va donde miras aunque haya otro cerca. Cada hueco sale con la probabilidad de `-n` y elige plano según los pesos.
+- **Giro y volteo:** se aplican a los bloques y a su estado (escaleras, troncos, puertas…), como `//rotate` y `//flip`.
+- **Suelo:** sostienen los cubos enteros, las losas y las escaleras; la hierba alta, las flores, la nieve en capa y los líquidos no. Se busca el suelo más cercano a la altura del clic, hasta 24 bloques por encima (una ladera que sube) o por debajo.
+- **`apoyar`:** el plano cae hasta que alguna de sus columnas toca el suelo de la suya, así que no se mete en la ladera; en pendiente puede quedar un hueco por debajo del lado bajo (`-y -1` lo entierra). **`centro`:** la base del plano queda sobre el suelo que hay bajo su centro. **`no`:** a la altura del bloque de delante de la cara que miras. Un hueco sin suelo (o que no cumple `-m`) se salta.
+- Cada clic vuelve a leer la lista: los planos nuevos de una etiqueta entran solos. Un nombre o una etiqueta que no existe da error al ponerlo en la mano.
+- Cada pasada es **una entrada de `//undo`**; con `-p`, antes se ve en el holograma.
+
+### Etapa Planos del Studio
+
+- **Cuadrícula** de miniaturas con el nombre y el tamaño debajo (tres columnas con el panel de serie); los compartidos llevan un cuadrito dorado. Un clic elige el plano.
+- **Buscador** (clic o `/` en la etapa): lo mismo que `search`. `Esc` lo borra y `Intro` elige el primero.
+- **Mostrar** todos, solo los tuyos o solo los del servidor, y **Actualizar** para volver a pedir la biblioteca.
+- **Pastillas** con las diez etiquetas más usadas: un clic filtra por la etiqueta y otro la quita.
+- Del plano elegido, sus datos y los botones **Cargar** (al portapapeles), **Colocar** (en tu posición, con vista previa) y **Estampar** (el pincel en la mano con ese plano y el **Radio** elegido); con una sola etiqueta en el buscador aparece **Estampar #etiqueta** para estamparla entera. **Compartir con el servidor** sale en los tuyos si puedes compartir. Sin permiso, el botón sale apagado y lo dice al pasar el ratón.
+- Sin planos, **Guardar el portapapeles…** abre el chat con `/komaedit blueprint save ` escrito.
+- Las miniaturas se piden solo para las tarjetas que se ven y llegan **en trozos de 4 KiB**, como mucho 16 KiB por tick y jugador, para no atascar la conexión. El cliente las guarda por su huella (SHA-256): no se vuelven a pedir mientras el plano no cambie, caben 256 en memoria y se borran al salir del servidor.
+- Maqueta de la etapa (pintada con el mismo reparto que la pantalla): `docs/renders/planos/studio_planos.png` y `studio_planos_rocas.png`; las miniaturas de prueba, en `docs/renders/planos/miniaturas.png`. Se regeneran con `KOMAEDIT_BLUEPRINT_RENDER=<carpeta>` y `BlueprintStudioMockupTest`.
+
+### Permisos y límites
+
+| Nodo | Paquete | Qué da |
+| --- | --- | --- |
+| `komaedit.blueprint.load` | intermedio (o `komaedit.clipboard`) | Ver la biblioteca (lista, búsqueda, `info`, Studio), cargar al portapapeles y usar planos en `Bp(…)` y en el pincel. |
+| `komaedit.blueprint.save` | intermedio (o `komaedit.clipboard`) | Guardar, etiquetar y borrar los planos propios. |
+| `komaedit.build.blueprint` | intermedio (o `komaedit.build`) | `/komaedit blueprint place`. |
+| `komaedit.build.brush.stamp` | intermedio (o `komaedit.build`) | El pincel estampar. |
+| `komaedit.blueprint.share` | avanzado | Compartir los propios y quitar los que uno compartió. |
+| `komaedit.admin.blueprints` | admin | Borrar o reemplazar los compartidos de otros. |
+| `komaedit.limit.blueprints` | admin | Sin los límites de número y tamaño. |
+
+Los límites están en `config/komaedit/blueprints.json`, que se crea solo y se recarga con `/komaedit reload`:
+
+```json
+{
+  "format": 1,
+  "maxPerPlayer": 64,
+  "maxShared": 512,
+  "maxVolume": 1000000,
+  "maxSide": 512,
+  "maxFileKilobytes": 8192,
+  "allowSharing": true
+}
+```
+
+- `maxPerPlayer`: planos propios por jugador; reemplazar uno no cuenta.
+- `maxShared`: planos compartidos en todo el servidor.
+- `maxVolume` y `maxSide`: bloques de caja (ancho × alto × fondo) y lado más largo de un plano.
+- `maxFileKilobytes`: tamaño del esquema comprimido (vale también para `komaedit.limit.blueprints`, para proteger el disco).
+- `allowSharing`: con `false` nadie comparte, tenga el permiso que tenga.
+- Si el archivo no se puede leer se usan los valores de serie y se avisa en `latest.log`.
+
+### Rendimiento y limitaciones
+
+- Guardar no frena el servidor: leer el portapapeles para escribir el esquema y pintar la miniatura van en el hilo de los planos. La miniatura de un plano de 64×40×64 se pinta en una fracción de segundo (lanza un rayo por píxel a una rejilla de colores, al doble de resolución).
+- Colocar y estampar leen el esquema en el hilo del servidor la primera vez; después se queda en una caché de hasta 4 millones de bloques de caja, que se renueva sola si el plano cambia.
+- **Colocar y estampar ponen los bloques sin su NBT** (cofres vacíos, carteles en blanco), como el resto de la colocación de KomaEdit. Para conservarlo: `load` y `//paste`.
+- El pincel estampar admite planos de hasta 262 144 bloques de caja (64³); para más grandes, `blueprint place`. Una pasada cambia como mucho 1 000 000 de bloques.
+- La miniatura pinta cada bloque como un cubo de su color medio: no enseña losas, escaleras, entidades ni el contenido de los bloques.
+- Compartir copia el plano: si luego cambias el tuyo, el compartido no cambia hasta que lo vuelvas a compartir.
 
 ## Recetas, instancias y paquetes
 
@@ -2439,6 +4044,7 @@ Ejemplos:
 - Las instancias conservan receta, trayectoria, estados colocados y checksum; permiten actualizar o retirar una construcción sin borrar bloques modificados manualmente.
 - Seleccionar una instancia vuelve a cargar sus puntos en el editor antes de actualizarla.
 - Los paquetes exportables conservan configuraciones compartibles en `config/komaedit/packages/`.
+- Las recetas e instancias guardan figuras procedurales (parámetros y trayectoria); para guardar y compartir bloques ya construidos están los [planos](#biblioteca-de-planos).
 - Los datos se aíslan por mundo y UUID de jugador para evitar contaminación entre proyectos.
 
 ## Proyecto persistente y recuperación
@@ -2479,20 +4085,33 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
    - Contenido: `komaedit.recipe`, `komaedit.instance`.
    - Edición: `komaedit.select` (selecciones y supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
-   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`; excepción de volumen: `komaedit.limit.unrestricted`.
+   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
-   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`.
+   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
+   - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
+   - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
+   - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
+   - `komaedit.build.brush.sculpt` ([Pinceles de modelado](#pinceles-de-modelado)); escalar y girar el portapapeles va con `komaedit.clipboard`.
+   - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
+   - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
+   - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
    - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…) y `komaedit.select.superwand`.
+   - `komaedit.capability.<capacidad>` y `komaedit.capability.flyspeed` (ver [Construir a mano: capacidades](#construir-a-mano-capacidades)); los da también `komaedit.build`.
 3. **Paquetes** (`permpack` de ezEdits):
 
 | Paquete | Incluye |
 | --- | --- |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, supervarita y selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`). |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`), deform, surface, smooth, texture, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles y recetas. |
-| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, copias del proyecto y sin límite de volumen. Va aparte: no incluye los otros. |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
+| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
+| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
@@ -2506,12 +4125,19 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - `maxBlocksPerOperation`: `1500000` de forma predeterminada; rango válido `10000–10000000`.
 - `maxConcurrentJobs`: `4` de forma predeterminada; rango válido `1–64`.
 - `backupRetention`: `5` de forma predeterminada; rango válido `1–50`.
-- `confirmBuildAboveBlocks`: `250000` de forma predeterminada; rango válido `0–10000000`. Por encima, un Build pide confirmación; `0` lo desactiva. Si falta en un `config.json` anterior se usa el valor por defecto.
+- `confirmBuildAboveBlocks`: `250000` de forma predeterminada; rango válido `0–10000000`. Por encima, un Build pide confirmación; `0` lo desactiva.
+- `arraySnapRadius`: `96` de forma predeterminada (como ezEdits); rango válido `1–256`. Hasta dónde busca superficie `-b` en `array` y su pincel.
+- `previewTimeoutSeconds`: `90` de forma predeterminada; rango válido `10–3600`. Segundos que una [vista previa](#vista-previa-progreso-y-cancelación) espera a `/komaedit confirm` antes de caducar.
+- `previewMaxDisplays`: `1500` de forma predeterminada; rango válido `0–10000`. Block displays como mucho por vista previa; por encima se enseña la superficie o una muestra, y con `0` solo la caja.
 - `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
 
-Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
+Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa ni `arraySnapRadius`) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
 
-`config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
+`config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
+
+`config/komaedit/blueprints.json` guarda los límites de la [biblioteca de planos](#permisos-y-límites) (planos por jugador, compartidos, tamaño y si se puede compartir); también se recarga con `/komaedit reload`.
+
+`config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `config/komaedit/images.json` configura `/komaedit image` (ver [Configuración de imágenes](#configuración-de-imágenes)) y también se recarga. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
 
 ## Rendimiento
 
@@ -2522,6 +4148,8 @@ Una configuración inválida se rechaza completa y el servidor utiliza límites 
 - Las figuras de espacio de tubo recorren solo los ladrillos de 8³ bloques cercanos al eje y localizan el eje con un árbol de esferas.
 - El límite de volumen y la cuota global de jobs se aplican antes de abrir una sesión de edición.
 - Cada job persistente registra avance con frecuencia limitada y su finalización o cancelación.
+- Las operaciones largas enseñan su progreso en una bossbar y se paran con `/komaedit cancel`; lo colocado queda en //undo.
+- La vista previa prepara el plan repartido entre ticks y lo aplica sin recalcularlo si la zona no ha cambiado.
 
 ## Versiones descargables
 
