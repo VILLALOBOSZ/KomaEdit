@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.komainu.moxia.persistence.AtomicStorage;
 
 import java.io.IOException;
@@ -11,26 +12,66 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Favoritas y recientes del Studio, por jugador y en su propio equipo (no viajan con las recetas).
  * Se guardan por id de figura; un id que ya no existe se conserva por si vuelve en otra versión.
- * Las herramientas tienen sus propias favoritas y recientes (por id de tarjeta) y la preferencia de construir con
- * vista previa.
+ * Las herramientas tienen sus propias favoritas y recientes (por id de tarjeta), recuerdan sus últimos ajustes y
+ * por dónde se iba, y la vista previa (ninguna, al construir o en vivo). También se recuerdan la última etapa, los
+ * bloques elegidos hace poco y qué secciones plegables se dejaron abiertas.
  */
 public final class StudioPreferences {
     public static final int MAX_RECENTS = 6;
     public static final int MAX_FAVORITES = 64;
-    private static final int FORMAT = 1;
+    public static final int MAX_BLOCK_RECENTS = 9;
+    private static final int MAX_STORED = 128;
+    private static final int FORMAT = 2;
+
+    /** Qué hace la vista previa de las herramientas. */
+    public enum PreviewMode {
+        /** Construir toca el mundo directamente. */
+        OFF,
+        /** Construir enseña la vista previa y espera a Confirmar. */
+        BUILD,
+        /** Además, al cambiar un ajuste se rehace la vista previa sola (con retardo y solo si es pequeña). */
+        LIVE;
+
+        public String id() {
+            return name().toLowerCase(Locale.ROOT);
+        }
+
+        public PreviewMode next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+
+        static PreviewMode byId(String id) {
+            for (PreviewMode mode : values()) {
+                if (mode.id().equals(id)) {
+                    return mode;
+                }
+            }
+            return OFF;
+        }
+    }
 
     private final Set<String> favorites = new LinkedHashSet<>();
     private final List<String> recents = new ArrayList<>();
     private final Set<String> toolFavorites = new LinkedHashSet<>();
     private final List<String> toolRecents = new ArrayList<>();
-    private boolean toolPreview;
+    private final Map<String, Map<String, Object>> toolValues = new LinkedHashMap<>();
+    private final Map<String, Integer> scroll = new LinkedHashMap<>();
+    private final List<String> blockRecents = new ArrayList<>();
+    private final Set<String> expanded = new LinkedHashSet<>();
+    private PreviewMode previewMode = PreviewMode.OFF;
+    private String stage = "";
+    private String tool = "";
+    private double panelShare;
 
     public boolean isFavorite(String id) {
         return favorites.contains(id);
@@ -99,30 +140,149 @@ public final class StudioPreferences {
 
     /** Si Construir de las herramientas pide la vista previa ({@code -v}) antes de tocar el mundo. */
     public boolean toolPreview() {
-        return toolPreview;
+        return previewMode != PreviewMode.OFF;
     }
 
     public void setToolPreview(boolean value) {
-        toolPreview = value;
+        previewMode = !value ? PreviewMode.OFF : previewMode == PreviewMode.LIVE ? PreviewMode.LIVE
+                : PreviewMode.BUILD;
+    }
+
+    public PreviewMode previewMode() {
+        return previewMode;
+    }
+
+    public void setPreviewMode(PreviewMode mode) {
+        previewMode = mode == null ? PreviewMode.OFF : mode;
+    }
+
+    /** Los últimos ajustes de una herramienta que no son los de serie (vacío si no hay). */
+    public Map<String, Object> toolValues(String id) {
+        Map<String, Object> stored = toolValues.get(id);
+        return stored == null ? Map.of() : Map.copyOf(stored);
+    }
+
+    public void setToolValues(String id, Map<String, Object> values) {
+        toolValues.remove(id);
+        if (!values.isEmpty()) {
+            toolValues.put(id, new LinkedHashMap<>(values));
+        }
+        while (toolValues.size() > MAX_STORED) {
+            toolValues.remove(toolValues.keySet().iterator().next());
+        }
+    }
+
+    /** Por dónde se iba en una lista ({@code tool:tree}, {@code stage:figure}…); 0 si no se sabe. */
+    public int scroll(String key) {
+        return scroll.getOrDefault(key, 0);
+    }
+
+    public void setScroll(String key, int value) {
+        scroll.remove(key);
+        if (value > 0) {
+            scroll.put(key, value);
+        }
+        while (scroll.size() > MAX_STORED) {
+            scroll.remove(scroll.keySet().iterator().next());
+        }
+    }
+
+    /** Bloques elegidos hace poco en la biblioteca de bloques, el último primero. */
+    public List<String> blockRecents() {
+        return List.copyOf(blockRecents);
+    }
+
+    public void pushBlockRecent(String id) {
+        blockRecents.remove(id);
+        blockRecents.addFirst(id);
+        while (blockRecents.size() > MAX_BLOCK_RECENTS) {
+            blockRecents.removeLast();
+        }
+    }
+
+    /** Si una sección plegable se dejó abierta. */
+    public boolean expanded(String key) {
+        return expanded.contains(key);
+    }
+
+    public void setExpanded(String key, boolean open) {
+        if (!open) {
+            expanded.remove(key);
+        } else if (expanded.size() < MAX_STORED) {
+            expanded.add(key);
+        }
+    }
+
+    /** La última etapa abierta (su id), o vacío. */
+    public String stage() {
+        return stage;
+    }
+
+    public void setStage(String value) {
+        stage = value == null ? "" : value;
+    }
+
+    /** La última herramienta elegida (su id), o vacío. */
+    public String tool() {
+        return tool;
+    }
+
+    public void setTool(String value) {
+        tool = value == null ? "" : value;
+    }
+
+    /**
+     * La parte de la pantalla que el jugador dejó al panel al arrastrar su borde (de 0 a 1), o 0 si no lo ha tocado.
+     * Se guarda como proporción para que valga igual con cualquier escala de GUI.
+     */
+    public double panelShare() {
+        return panelShare;
+    }
+
+    public void setPanelShare(double value) {
+        panelShare = Double.isFinite(value) ? Math.clamp(value, 0.0, 1.0) : 0.0;
     }
 
     public String toJson() {
         JsonObject root = new JsonObject();
         root.addProperty("format", FORMAT);
-        JsonArray favoriteArray = new JsonArray();
-        favorites.forEach(favoriteArray::add);
-        root.add("favorites", favoriteArray);
-        JsonArray recentArray = new JsonArray();
-        recents.forEach(recentArray::add);
-        root.add("recents", recentArray);
-        JsonArray toolFavoriteArray = new JsonArray();
-        toolFavorites.forEach(toolFavoriteArray::add);
-        root.add("toolFavorites", toolFavoriteArray);
-        JsonArray toolRecentArray = new JsonArray();
-        toolRecents.forEach(toolRecentArray::add);
-        root.add("toolRecents", toolRecentArray);
-        root.addProperty("toolPreview", toolPreview);
+        root.add("favorites", array(favorites));
+        root.add("recents", array(recents));
+        root.add("toolFavorites", array(toolFavorites));
+        root.add("toolRecents", array(toolRecents));
+        // Las versiones anteriores solo leen este interruptor.
+        root.addProperty("toolPreview", previewMode != PreviewMode.OFF);
+        root.addProperty("preview", previewMode.id());
+        root.addProperty("stage", stage);
+        root.addProperty("tool", tool);
+        if (panelShare > 0) {
+            root.addProperty("panelShare", Math.round(panelShare * 1000) / 1000.0);
+        }
+        JsonObject valuesObject = new JsonObject();
+        toolValues.forEach((id, values) -> {
+            JsonObject card = new JsonObject();
+            values.forEach((param, value) -> {
+                switch (value) {
+                    case Number number -> card.addProperty(param, number);
+                    case Boolean flag -> card.addProperty(param, flag);
+                    default -> card.addProperty(param, value.toString());
+                }
+            });
+            valuesObject.add(id, card);
+        });
+        root.add("toolValues", valuesObject);
+        JsonObject scrollObject = new JsonObject();
+        scroll.forEach(scrollObject::addProperty);
+        root.add("scroll", scrollObject);
+        root.add("blockRecents", array(blockRecents));
+        root.add("expanded", array(expanded));
         return root.toString();
+    }
+
+    private static JsonArray array(Iterable<String> values) {
+        JsonArray array = new JsonArray();
+        values.forEach(array::add);
+        return array;
     }
 
     /** Lee lo que pueda: un archivo roto o a medias da preferencias vacías, nunca un error. */
@@ -152,12 +312,62 @@ public final class StudioPreferences {
             for (int index = tools.size() - 1; index >= 0; index--) {
                 preferences.pushToolRecent(tools.get(index));
             }
-            preferences.toolPreview = root.has("toolPreview") && root.get("toolPreview").isJsonPrimitive()
+            boolean oldPreview = root.has("toolPreview") && root.get("toolPreview").isJsonPrimitive()
                     && root.getAsJsonPrimitive("toolPreview").isBoolean() && root.get("toolPreview").getAsBoolean();
+            String preview = string(root, "preview");
+            preferences.previewMode = preview.isEmpty() ? (oldPreview ? PreviewMode.BUILD : PreviewMode.OFF)
+                    : PreviewMode.byId(preview);
+            preferences.stage = string(root, "stage");
+            preferences.tool = string(root, "tool");
+            if (root.has("panelShare") && root.get("panelShare").isJsonPrimitive()
+                    && root.getAsJsonPrimitive("panelShare").isNumber()) {
+                preferences.setPanelShare(root.get("panelShare").getAsDouble());
+            }
+            readToolValues(root, preferences);
+            if (root.has("scroll") && root.get("scroll").isJsonObject()) {
+                for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("scroll").entrySet()) {
+                    if (entry.getValue().isJsonPrimitive() && entry.getValue().getAsJsonPrimitive().isNumber()) {
+                        preferences.setScroll(entry.getKey(), Math.max(0, entry.getValue().getAsInt()));
+                    }
+                }
+            }
+            List<String> blocks = strings(root, "blockRecents");
+            for (int index = blocks.size() - 1; index >= 0; index--) {
+                preferences.pushBlockRecent(blocks.get(index));
+            }
+            strings(root, "expanded").forEach(key -> preferences.setExpanded(key, true));
         } catch (RuntimeException ignored) {
             return new StudioPreferences();
         }
         return preferences;
+    }
+
+    private static void readToolValues(JsonObject root, StudioPreferences preferences) {
+        if (!root.has("toolValues") || !root.get("toolValues").isJsonObject()) {
+            return;
+        }
+        for (Map.Entry<String, JsonElement> card : root.getAsJsonObject("toolValues").entrySet()) {
+            if (!card.getValue().isJsonObject() || preferences.toolValues.size() >= MAX_STORED) {
+                continue;
+            }
+            Map<String, Object> values = new LinkedHashMap<>();
+            for (Map.Entry<String, JsonElement> param : card.getValue().getAsJsonObject().entrySet()) {
+                if (!param.getValue().isJsonPrimitive()) {
+                    continue;
+                }
+                JsonPrimitive primitive = param.getValue().getAsJsonPrimitive();
+                if (primitive.isBoolean()) {
+                    values.put(param.getKey(), primitive.getAsBoolean());
+                } else if (primitive.isNumber()) {
+                    values.put(param.getKey(), primitive.getAsInt());
+                } else if (primitive.getAsString().length() <= 512) {
+                    values.put(param.getKey(), primitive.getAsString());
+                }
+            }
+            if (!values.isEmpty()) {
+                preferences.toolValues.put(card.getKey(), values);
+            }
+        }
     }
 
     public static StudioPreferences load(Path file) {
@@ -173,6 +383,14 @@ public final class StudioPreferences {
     public void save(Path file) throws IOException {
         Files.createDirectories(file.getParent());
         AtomicStorage.writeString(file, toJson());
+    }
+
+    private static String string(JsonObject root, String key) {
+        if (root.has(key) && root.get(key).isJsonPrimitive() && root.getAsJsonPrimitive(key).isString()) {
+            String value = root.get(key).getAsString().trim();
+            return value.length() <= 64 ? value : "";
+        }
+        return "";
     }
 
     private static List<String> strings(JsonObject root, String key) {

@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.tools;
 
+import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.nature.TreeSettings;
 import com.komainu.moxia.nature.TreeSpecies;
 import com.komainu.moxia.permission.KomaPermissions;
@@ -18,23 +19,32 @@ public final class TreeCard extends ToolCard {
                 List.of("tree", "arbol", "árbol", "bosque", "roble", "abeto", "palmera", "forest", "plant"),
                 List.of(
                         new ToolParam.Choice("species", Arrays.stream(TreeSpecies.values()).map(TreeSpecies::id)
-                                .toList(), "oak", ToolParam.Choice.Style.BUTTONS, "", null),
-                        auto("height", TreeSettings.MIN_HEIGHT, TreeSettings.MAX_HEIGHT, 1, 5, 0, 18),
-                        decimal("thickness", 25, 400, 5, 25, 100, 2),
-                        decimal("branches", 0, 300, 10, 50, 100, 2),
-                        decimal("density", 0, 200, 10, 50, 100, 2),
-                        decimal("crown", 30, 300, 10, 50, 100, 2),
-                        auto("lean", 0, 75, 1, 5, 0, 0),
-                        auto("heading", 0, 345, 15, 45, 0, 0),
-                        decimal("curvature", 0, 400, 10, 50, 100, 2),
+                                .toList(), "oak", ToolParam.Choice.Style.GALLERY, "", null),
+                        auto("height", TreeSettings.MIN_HEIGHT, TreeSettings.MAX_HEIGHT, 1, 5, 0, 18).unit(ValueUnit.BLOCKS),
+                        decimal("thickness", 25, 400, 5, 25, 100, 2).unit(ValueUnit.PERCENT),
+                        decimal("branches", 0, 300, 10, 50, 100, 2).unit(ValueUnit.PERCENT),
+                        decimal("density", 0, 200, 10, 50, 100, 2).unit(ValueUnit.PERCENT),
+                        decimal("crown", 30, 300, 10, 50, 100, 2).unit(ValueUnit.PERCENT),
+                        auto("lean", 0, 75, 1, 5, 0, 0).unit(ValueUnit.DEGREES),
+                        auto("heading", 0, 345, 15, 45, 0, 0).unit(ValueUnit.DEGREES),
+                        decimal("curvature", 0, 400, 10, 50, 100, 2).unit(ValueUnit.PERCENT),
                         seed(),
                         block("trunk", null),
                         block("leaves", null),
                         toggle("roots", true),
                         when(values -> values.toggle("roots"), block("root_block", null)),
-                        auto("variation", 0, 100, 5, 25, 2, 15),
+                        auto("variation", 0, 100, 5, 25, 2, 15).unit(ValueUnit.PERCENT),
                         mask()
                 ));
+    }
+
+
+    @Override
+
+    public List<String> essentials() {
+
+        return List.of("species", "height", "thickness", "crown");
+
     }
 
     /** Lo que va detrás de {@code tree} (y de {@code pincel tree} y {@code tree save <nombre>}). */

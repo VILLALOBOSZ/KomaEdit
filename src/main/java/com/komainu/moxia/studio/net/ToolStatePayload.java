@@ -1,6 +1,7 @@
 package com.komainu.moxia.studio.net;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.worldedit.EditHistory;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
@@ -25,6 +26,8 @@ import java.util.Objects;
  * @param symmetryMode      modo de simetría ({@code xz}, {@code radial 8 y}…)
  * @param symmetryCenter    centro escrito como en el chat, o vacío sin centro
  * @param symmetryElsewhere el centro está en otra dimensión
+ * @param history           el historial de deshacer de WorldEdit, lo último primero (operación y bloques)
+ * @param historyUndone     cuántas de las primeras operaciones están deshechas
  */
 public record ToolStatePayload(
         List<String> granted,
@@ -37,12 +40,16 @@ public record ToolStatePayload(
         int symmetryArms,
         String symmetryCenter,
         boolean symmetryWorldEdit,
-        boolean symmetryElsewhere
+        boolean symmetryElsewhere,
+        List<EditHistory.Line> history,
+        int historyUndone
 ) implements CustomPayload {
     public static final Id<ToolStatePayload> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "tool_state"));
     public static final PacketCodec<RegistryByteBuf, ToolStatePayload> CODEC = PacketCodec.ofStatic(
             ToolStatePayload::write, ToolStatePayload::read);
     private static final int MAX_ITEMS = 256;
+    /** Operaciones del historial que se cuentan, como mucho. */
+    public static final int MAX_HISTORY = 12;
 
     public ToolStatePayload {
         granted = List.copyOf(granted);
@@ -52,6 +59,8 @@ public record ToolStatePayload(
         rockPresets = new LinkedHashMap<>(rockPresets);
         symmetryMode = symmetryMode == null ? "" : symmetryMode;
         symmetryCenter = symmetryCenter == null ? "" : symmetryCenter;
+        history = history == null ? List.of() : List.copyOf(history.subList(0, Math.min(MAX_HISTORY, history.size())));
+        historyUndone = Math.clamp(historyUndone, 0, history.size());
     }
 
     public boolean hasSelection() {
@@ -69,13 +78,14 @@ public record ToolStatePayload(
                 && treePresets.equals(that.treePresets) && rockPresets.equals(that.rockPresets)
                 && symmetryActive == that.symmetryActive && symmetryMode.equals(that.symmetryMode)
                 && symmetryArms == that.symmetryArms && symmetryCenter.equals(that.symmetryCenter)
-                && symmetryWorldEdit == that.symmetryWorldEdit && symmetryElsewhere == that.symmetryElsewhere;
+                && symmetryWorldEdit == that.symmetryWorldEdit && symmetryElsewhere == that.symmetryElsewhere
+                && history.equals(that.history) && historyUndone == that.historyUndone;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(granted, Arrays.hashCode(selection), fonts, treePresets, rockPresets, symmetryActive,
-                symmetryMode, symmetryArms, symmetryCenter, symmetryWorldEdit, symmetryElsewhere);
+                symmetryMode, symmetryArms, symmetryCenter, symmetryWorldEdit, symmetryElsewhere, history, historyUndone);
     }
 
     @Override
@@ -100,6 +110,12 @@ public record ToolStatePayload(
         buffer.writeString(payload.symmetryCenter(), 128);
         buffer.writeBoolean(payload.symmetryWorldEdit());
         buffer.writeBoolean(payload.symmetryElsewhere());
+        buffer.writeVarInt(payload.history().size());
+        for (EditHistory.Line line : payload.history()) {
+            buffer.writeString(line.label(), 64);
+            buffer.writeVarLong(Math.max(0L, line.blocks()));
+        }
+        buffer.writeVarInt(payload.historyUndone());
     }
 
     private static ToolStatePayload read(RegistryByteBuf buffer) {
@@ -109,9 +125,19 @@ public record ToolStatePayload(
         List<String> fonts = strings(buffer);
         Map<String, String> trees = presets(buffer);
         Map<String, String> rocks = presets(buffer);
-        return new ToolStatePayload(granted, selection, fonts, trees, rocks, buffer.readBoolean(),
-                buffer.readString(64), buffer.readVarInt(), buffer.readString(128), buffer.readBoolean(),
-                buffer.readBoolean());
+        boolean active = buffer.readBoolean();
+        String mode = buffer.readString(64);
+        int arms = buffer.readVarInt();
+        String center = buffer.readString(128);
+        boolean worldEdit = buffer.readBoolean();
+        boolean elsewhere = buffer.readBoolean();
+        int count = Math.min(buffer.readVarInt(), MAX_HISTORY);
+        List<EditHistory.Line> history = new ArrayList<>(count);
+        for (int index = 0; index < count; index++) {
+            history.add(new EditHistory.Line(buffer.readString(64), buffer.readVarLong()));
+        }
+        return new ToolStatePayload(granted, selection, fonts, trees, rocks, active, mode, arms, center, worldEdit,
+                elsewhere, history, buffer.readVarInt());
     }
 
     private static void strings(RegistryByteBuf buffer, List<String> values) {

@@ -10,12 +10,15 @@ import com.komainu.moxia.studio.net.ToolStatePayload;
 import com.komainu.moxia.studio.net.ToolStateRequestPayload;
 import com.komainu.moxia.studio.tools.ToolContext;
 import com.komainu.moxia.studio.tools.ui.ToolsInfo;
+import com.komainu.moxia.studio.ui.StudioHost;
+import com.komainu.moxia.worldedit.EditHistory;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -119,6 +122,23 @@ public final class ToolClientState {
                     .toList();
         }
         return biomes;
+    }
+
+    /**
+     * El historial de deshacer del mundo que contó el servidor; las operaciones sin nombre (las de WorldEdit) salen
+     * como «WorldEdit».
+     */
+    public static StudioHost.WorldHistory history(StudioHost host) {
+        ToolStatePayload current = state;
+        if (current == null || current.history().isEmpty()) {
+            return StudioHost.WorldHistory.EMPTY;
+        }
+        List<StudioHost.WorldHistory.Entry> entries = new ArrayList<>();
+        for (EditHistory.Line line : current.history()) {
+            entries.add(new StudioHost.WorldHistory.Entry(line.label().isEmpty()
+                    ? host.tr("gui.komaedit.history.worldedit") : line.label(), line.blocks()));
+        }
+        return new StudioHost.WorldHistory(entries, current.historyUndone());
     }
 
     /** Lo que el jugador tiene en marcha, o vacío. */

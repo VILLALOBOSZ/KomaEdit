@@ -2,12 +2,21 @@ package com.komainu.moxia.studio.tools.ui;
 
 import com.komainu.moxia.capability.BuildCapability;
 import com.komainu.moxia.progress.ProgressLine;
-import com.komainu.moxia.studio.layout.Column;
-import com.komainu.moxia.studio.layout.StudioLayout;
+import com.komainu.moxia.studio.StudioPreferences;
+import com.komainu.moxia.studio.net.JobStatusPayload;
 import com.komainu.moxia.studio.tools.TerrainCards;
 import com.komainu.moxia.studio.tools.ToolCatalog;
 import com.komainu.moxia.studio.tools.ToolContext;
+import com.komainu.moxia.studio.tools.ToolValues;
 import com.komainu.moxia.studio.tools.TreeCard;
+import com.komainu.moxia.studio.ui.ChoiceThumbnails;
+import com.komainu.moxia.studio.ui.FakeStudioHost;
+import com.komainu.moxia.studio.ui.StudioDriver;
+import com.komainu.moxia.studio.ui.StudioKey;
+import com.komainu.moxia.studio.ui.StudioStage;
+import com.komainu.moxia.studio.ui.StudioUi;
+import com.komainu.moxia.studio.ui.StudioView;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,331 +26,446 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** La etapa Herramientas como la usa el jugador: pulsar, escribir, construir, sin Minecraft. */
+/** La etapa Herramientas como la usa el jugador, dentro del Studio entero: pulsar, escribir, construir. */
 class ToolsPanelTest {
-    private static final MinecraftFont FONT = new MinecraftFont();
     private static final ToolContext ALL = new ToolContext(true, ToolCatalog.permissionNodes(), true, 512L, 0, false);
 
+    private StudioDriver studio;
     private ToolsPanel panel;
-    private TestHost host;
-    private FakeToolsUi ui;
+
+    @BeforeAll
+    static void thumbnails() {
+        ChoiceThumbnails.setBlocking(true);
+    }
 
     @BeforeEach
     void setUp() {
-        panel = new ToolsPanel();
-        host = new TestHost("es_es");
-        host.context = ALL;
-        host.info = new ToolsInfo(true, new int[]{8, 5, 8}, List.of("cursiva"), Map.of("bosque", "spruce 30 -d 1.4"),
-                Map.of(), ToolsInfo.Symmetry.OFF, null, List.of("minecraft:plains", "minecraft:cherry_grove",
-                "minecraft:snowy_plains", "terralith:moonlight_grove"), null);
-        ui = new FakeToolsUi(FONT);
-    }
-
-    private void draw() {
-        ui.reset();
-        panel.draw(ui, new Column(0, 0, 224), host);
-    }
-
-    private void click(String label) {
-        draw();
-        ui.zone(label).press();
+        // Alto de sobra: todo se ve sin desplazar y se puede pulsar por lo que dice. Sin los idiomas del juego, como
+        // en el CI: los nombres de bloque que se comprueban vienen de la tabla fija del host.
+        studio = new StudioDriver(new StudioView(), new FakeStudioHost("es_es", false), 960, 1400);
+        studio.host.context = ALL;
+        studio.host.info = new ToolsInfo(true, new int[]{8, 5, 8}, List.of("cursiva"),
+                Map.of("bosque", "spruce 30 -d 1.4"), Map.of(), ToolsInfo.Symmetry.OFF, null,
+                List.of("minecraft:plains", "minecraft:cherry_grove", "minecraft:snowy_plains",
+                        "terralith:moonlight_grove"), null);
+        studio.view.selectStage(StudioStage.TOOLS, studio.host);
+        panel = studio.view.tools();
     }
 
     private void select(String id) {
-        panel.select(ToolCatalog.byId(id), host);
-        draw();
+        panel.select(ToolCatalog.byId(id), studio.host);
+        studio.render();
+    }
+
+    private ToolValues values(String id) {
+        return panel.values(ToolCatalog.byId(id));
+    }
+
+    private boolean hasTile(String name) {
+        studio.render();
+        return studio.ui().widgets().stream().anyMatch(widget -> "tools:stamp".equals(widget.group())
+                && widget.tooltip().startsWith(name + "\n"));
+    }
+
+    private void more() {
+        studio.click("MÁS AJUSTES");
     }
 
     @Test
-    void choosingAToolFromTheListShowsItsCard() {
-        click("Tejado");
+    void withoutAToolTheGridShowsEveryToolByGroup() {
+        assertTrue(panel.browsing());
+        for (String group : List.of("NATURALEZA", "TEJADOS", "TERRENO", "UTILIDADES", "MODOS")) {
+            assertTrue(studio.has(group), group);
+        }
+        for (String tool : List.of("Árbol", "Roca", "Tejado", "Río o cañón", "Texto", "Simetría", "Capacidades")) {
+            assertTrue(studio.has(tool), tool);
+        }
+        assertFalse(studio.has("ESPECIE"), "sin herramienta no hay ajustes");
+    }
+
+    @Test
+    void choosingAToolFoldsTheGridAndShowsItsSettings() {
+        studio.click("Tejado");
         assertEquals("roof", panel.selected().id());
-        draw();
-        assertTrue(ui.has("Dos aguas"), "se ven los ajustes del tejado");
-        assertTrue(host.status.contains("Tejado"));
-        assertEquals("roof", host.preferences.toolRecents().getFirst());
+        assertFalse(panel.browsing(), "la cuadrícula se pliega");
+        assertFalse(studio.has("NATURALEZA"));
+        assertTrue(studio.has("Dos aguas"), "se ven las miniaturas de los tipos");
+        assertTrue(studio.has("Construir tejado"), "y el botón del pie");
+        assertEquals("roof", studio.host.preferences.toolRecents().getFirst());
+        assertEquals("roof", studio.host.preferences.tool());
+        // La cabecera de la herramienta vuelve a abrir la cuadrícula.
+        studio.click("Tejado");
+        assertTrue(panel.browsing());
+    }
+
+    @Test
+    void theHeaderOffersTheRecentToolsInOneClick() {
+        select("tree");
+        select("roof");
+        select("river");
+        assertNotNull(studio.widget("Reciente: Tejado"));
+        studio.click("Reciente: Tejado");
+        assertEquals("roof", panel.selected().id());
     }
 
     @Test
     void theSearchFiltersAndEnterPicksTheFirstMatch() {
-        click("Buscar herramienta…  (Ctrl+F)");
+        select("tree");
+        studio.key(StudioKey.letter('F', true, false));
         assertTrue(panel.typing());
-        for (char character : "nieve".toCharArray()) {
-            panel.type(character);
-        }
-        assertEquals("snow", panel.visibleCards(host).getFirst().id());
-        panel.key(ToolsPanel.Key.ENTER, false, host);
+        assertTrue(panel.browsing(), "buscar abre la cuadrícula");
+        studio.type("nieve");
+        assertEquals("snow", panel.visibleCards(studio.host).getFirst().id());
+        studio.key(StudioKey.of(StudioKey.Code.ENTER));
         assertEquals("snow", panel.selected().id());
         assertFalse(panel.typing());
+        assertFalse(panel.browsing());
     }
 
     @Test
-    void familiesAndFavoritesFilterTheList() {
-        click("Terreno");
-        assertEquals(List.of("stamp", "ramp", "river", "erosion", "paint"),
-                panel.visibleCards(host).stream().map(card -> card.id()).toList());
-        host.preferences.toggleToolFavorite("text");
-        click("★ Favoritas");
-        assertEquals(List.of("text"), panel.visibleCards(host).stream().map(card -> card.id()).toList());
+    void favoritesGetTheirOwnGroupOnTop() {
+        studio.host.preferences.toggleToolFavorite("text");
+        List<String> texts = studio.texts();
+        assertTrue(texts.indexOf("FAVORITAS") >= 0 && texts.indexOf("FAVORITAS") < texts.indexOf("NATURALEZA"));
     }
 
     @Test
     void buildSendsTheSameCommandAsTypingIt() {
         select("tree");
-        panel.build(host);
-        assertEquals("komaedit tree oak", host.last());
-        host.preferences.setToolPreview(true);
-        panel.build(host);
-        assertEquals("komaedit tree oak -v", host.last());
-        assertTrue(panel.buildLabel(host).contains("vista previa"));
+        studio.click("Plantar");
+        assertEquals("komaedit tree oak", studio.host.last());
+        studio.host.preferences.setPreviewMode(StudioPreferences.PreviewMode.BUILD);
+        studio.click("Plantar");
+        assertEquals("komaedit tree oak -v", studio.host.last());
+    }
+
+    @Test
+    void thePreviewEyeCyclesOffBuildAndLive() {
+        select("tree");
+        studio.click("Sin vista previa");
+        assertEquals(StudioPreferences.PreviewMode.BUILD, studio.host.preferences.previewMode());
+        studio.click("Vista previa al construir");
+        assertEquals(StudioPreferences.PreviewMode.LIVE, studio.host.preferences.previewMode());
+        studio.reset("Vista previa en vivo");
+        assertEquals(StudioPreferences.PreviewMode.OFF, studio.host.preferences.previewMode());
     }
 
     @Test
     void withoutPermissionTheCardIsOffAndSaysWhy() {
-        host.context = new ToolContext(true, Set.of(TerrainCards.RIVER_NODE), true, 512L, 4, false);
+        studio.host.context = new ToolContext(true, Set.of(TerrainCards.RIVER_NODE), true, 512L, 4, false);
         select("erosion");
-        draw();
-        assertEquals(ToolsUi.Tone.DISABLED, panel.buildTone(host));
-        assertEquals("Sin permiso", panel.buildLabel(host));
-        panel.build(host);
-        assertNull(host.last(), "no manda nada");
-        assertTrue(host.status.contains(TerrainCards.HYDRAULIC_NODE), host.status);
-        assertTrue(ui.has("Te falta el permiso " + TerrainCards.HYDRAULIC_NODE), "aviso en la tarjeta");
+        assertEquals(StudioUi.Tone.DISABLED, panel.buildTone(studio.host));
+        assertEquals("Sin permiso", panel.buildLabel(studio.host));
+        studio.click("Sin permiso");
+        assertNull(studio.host.last(), "no manda nada");
+        assertTrue(studio.view.status().contains(TerrainCards.HYDRAULIC_NODE), studio.view.status());
+        assertTrue(studio.shows("Te falta el permiso " + TerrainCards.HYDRAULIC_NODE), "aviso en la tarjeta");
     }
 
     @Test
     void whatIsMissingInTheWorldBlocksTheBuildAndLeadsToThePath() {
-        host.context = new ToolContext(true, ToolCatalog.permissionNodes(), false, 0L, 0, false);
+        studio.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), false, 0L, 0, false);
         select("roof");
-        assertEquals("Falta la selección", panel.buildLabel(host));
-        panel.build(host);
-        assertNull(host.last());
+        assertEquals("Falta la selección", panel.buildLabel(studio.host));
+        studio.click("Falta la selección");
+        assertNull(studio.host.last());
         select("river");
-        panel.build(host);
-        assertEquals(1, host.pathVisits, "faltan puntos: lleva a Trayectoria");
-        assertTrue(host.status.startsWith("Marca al menos dos puntos"));
+        studio.click("Marcar puntos");
+        assertEquals(StudioStage.PATH, studio.view.stage(), "la franja lleva a Trayectoria");
+        assertTrue(studio.shows("Río o cañón · "), "y el pie sigue siendo el del río");
     }
 
     @Test
-    void stepsWheelAndTypedNumbersChangeTheSettings() {
+    void numbersShowTheirUnitAndRangeAndResetWithRightClick() {
         select("tree");
-        FakeToolsUi.Recorded height = ui.zoneWithKey("tools:number:height");
-        height.scroll.accept(1);
-        assertEquals(19, panel.values(ToolCatalog.byId("tree")).number("height"), "arranca de la de la especie");
-        draw();
-        ui.zoneWithKey("tools:number:thickness").reset.run();
-        // Pulsar el valor sin arrastrar abre el campo; Intro aplica.
-        ui.zoneWithKey("tools:number:thickness").clickAt.run(190, ui.zoneWithKey("tools:number:thickness").bounds.centerY());
-        panel.release(host);
-        assertTrue(panel.typing());
-        panel.key(ToolsPanel.Key.BACKSPACE, true, host);
-        for (char character : "1,5".toCharArray()) {
-            panel.type(character);
-        }
-        panel.key(ToolsPanel.Key.ENTER, false, host);
-        assertEquals("1.5", panel.values(ToolCatalog.byId("tree")).formatted("thickness"));
-        assertEquals("komaedit tree oak 19 -g 1.5", ToolCatalog.byId("tree").command(
-                panel.values(ToolCatalog.byId("tree")), false));
+        assertTrue(studio.has("auto · 18 bloques"), "la altura automática, con su unidad");
+        assertTrue(studio.has("100 %"), "el grosor es un tanto por ciento");
+        studio.wheelValue("Altura", 1);
+        assertEquals(19, values("tree").number("height"), "arranca de la de la especie");
+        assertTrue(studio.has("19 bloques"));
+        studio.wheelValue("Grosor", 1);
+        assertEquals(105, values("tree").number("thickness"));
+        studio.reset("Grosor");
+        assertEquals(100, values("tree").number("thickness"));
+        assertTrue(studio.view.status().contains("serie"), studio.view.status());
     }
 
     @Test
-    void draggingANumberWorksLikeASlider() {
+    void clickingAValueLetsYouTypeItInItsUnit() {
+        select("tree");
+        studio.clickValue("Grosor");
+        assertTrue(panel.typing(), "pulsar sin arrastrar abre el campo");
+        assertTrue(studio.shows("25–400 %"), "al escribir se ve el rango");
+        studio.key(new StudioKey(StudioKey.Code.BACKSPACE, '\0', true, false));
+        studio.type("150");
+        studio.key(StudioKey.of(StudioKey.Code.ENTER));
+        assertEquals("1.5", values("tree").formatted("thickness"), "150 % es 1.5 en la orden");
+        studio.click("Plantar");
+        assertEquals("komaedit tree oak -g 1.5", studio.host.last());
+    }
+
+    @Test
+    void draggingANumberWorksLikeASliderAndShiftGoesFine() {
         select("snow");
-        ui.zoneWithKey("tools:number:layers").clickAt.run(190, ui.zoneWithKey("tools:number:layers").bounds.centerY());
-        assertTrue(panel.dragging());
-        panel.drag(host.mouseX + 13, host);
-        panel.release(host);
-        assertEquals(4, panel.values(ToolCatalog.byId("snow")).number("layers"), "dos pasos de 6 píxeles");
-        assertFalse(panel.typing());
+        studio.dragValue("Capas", 13, false);
+        assertEquals(4, values("snow").number("layers"), "dos pasos de 6 píxeles");
+        assertFalse(panel.typing(), "un arrastre no abre el campo");
+        studio.dragValue("Capas", -13, true);
+        assertEquals(3, values("snow").number("layers"), "con Mayús, un paso cada 12 píxeles");
     }
 
     @Test
     void textFieldsApplyWhatIsTypedAndRefuseBrokenCharacters() {
         select("text");
-        click("KomaEdit");
+        studio.click("KomaEdit");
         assertTrue(panel.typing());
-        panel.key(ToolsPanel.Key.BACKSPACE, true, host);
-        panel.paste("Plaza Mayor\nde Alcázara§");
-        panel.key(ToolsPanel.Key.ENTER, false, host);
-        assertEquals("Plaza Mayor de Alcázara", panel.values(ToolCatalog.byId("text")).text("text"));
-        panel.build(host);
-        assertEquals("komaedit text \"Plaza Mayor de Alcázara\" stone", host.last());
+        studio.key(new StudioKey(StudioKey.Code.BACKSPACE, '\0', true, false));
+        studio.view.paste("Plaza Mayor\nde Alcázara§", studio.host);
+        studio.key(StudioKey.of(StudioKey.Code.ENTER));
+        assertEquals("Plaza Mayor de Alcázara", values("text").text("text"));
+        studio.click("Escribir");
+        assertEquals("komaedit text \"Plaza Mayor de Alcázara\" stone", studio.host.last());
     }
 
     @Test
-    void blocksComeFromTheBlockLibrary() {
+    void blocksComeFromTheBlockLibraryOrTheEyedropper() {
         select("roof");
-        click("Material");
-        host.picker.accept("minecraft:deepslate_tiles");
-        assertEquals("deepslate_tiles", panel.values(ToolCatalog.byId("roof")).block("material"));
-        draw();
-        ui.zone("Material").reset.run();
-        assertEquals("spruce_planks", panel.values(ToolCatalog.byId("roof")).block("material"));
+        assertTrue(studio.has("Tablones de abeto"), "el nombre del bloque, no su id");
+        studio.click("Tablones de abeto");
+        assertTrue(studio.view.picker().isOpen(), "abre la biblioteca de bloques");
+        studio.type("deepslate tiles");
+        studio.key(StudioKey.of(StudioKey.Code.ENTER));
+        assertFalse(studio.view.picker().isOpen());
+        assertEquals("deepslate_tiles", values("roof").block("material"));
+        assertEquals("minecraft:deepslate_tiles", studio.host.preferences.blockRecents().getFirst());
+        studio.host.lookedAt = "minecraft:stone_bricks";
+        studio.click("Usar el bloque que miras");
+        assertEquals("stone_bricks", values("roof").block("material"));
+        studio.reset("Ladrillos de piedra");
+        assertEquals("spruce_planks", values("roof").block("material"));
+    }
+
+    @Test
+    void withoutATranslationTheBlockShowsAReadableNameNotItsId() {
+        // Como un bloque de un mod sin traducción, o el juego sin sus idiomas: nunca el id crudo.
+        studio.host.blockNames.clear();
+        select("roof");
+        assertTrue(studio.has("Spruce Planks"), studio.texts().toString());
+        assertFalse(studio.texts().stream().anyMatch(text -> text.contains("spruce_planks")), "ni el id");
+        studio.host.lookedAt = "examplemod:mossy_slate_tiles";
+        studio.click("Usar el bloque que miras");
+        assertEquals("examplemod:mossy_slate_tiles", values("roof").block("material"));
+        assertTrue(studio.has("Mossy Slate Tiles"), studio.texts().toString());
+        assertFalse(studio.texts().stream().anyMatch(text -> text.contains("mossy_slate")), "ni el id del mod");
+        // Con traducción, la traducción.
+        studio.host.blockNames.put("block.examplemod.mossy_slate_tiles", "Pizarra musgosa");
+        assertTrue(studio.has("Pizarra musgosa"), studio.texts().toString());
+    }
+
+    @Test
+    void optionalBlocksSayWhatTheyUseInAuto() {
+        select("roof");
+        more();
+        assertTrue(studio.has("Como el tejado"), "el caballete dice qué usa");
+        assertTrue(studio.has("El de los muros"));
     }
 
     @Test
     void presetsAndRandomSeedFillTheSettings() {
         select("tree");
-        click("Viejo");
-        assertEquals(160, panel.values(ToolCatalog.byId("tree")).number("thickness"));
-        click("Azar");
-        assertTrue(panel.values(ToolCatalog.byId("tree")).number("seed") != null);
-        click("#bosque");
-        assertEquals("spruce", panel.values(ToolCatalog.byId("tree")).choice("species"));
-        assertEquals(30, panel.values(ToolCatalog.byId("tree")).number("height"));
+        studio.click("Viejo");
+        assertEquals(160, values("tree").number("thickness"));
+        studio.click("Azar");
+        assertNotNull(values("tree").number("seed"));
+        studio.click("#bosque");
+        assertEquals("spruce", values("tree").choice("species"));
+        assertEquals(30, values("tree").number("height"));
+    }
+
+    @Test
+    void theSpeciesAreThumbnailsWithTheirNames() {
+        select("tree");
+        assertTrue(studio.has("Abeto"));
+        studio.click("Abeto");
+        assertEquals("spruce", values("tree").choice("species"));
+        studio.render();
+        assertTrue(studio.canvas().images().stream().anyMatch(key -> key.contains("tree/species/spruce")),
+                studio.canvas().images().toString());
+    }
+
+    @Test
+    void theRestIsFoldedUnderMoreSettingsAndCountsWhatChanged() {
+        select("tree");
+        assertFalse(studio.has("Semilla"), "la semilla va plegada");
+        studio.click("MÁS AJUSTES");
+        assertTrue(studio.has("Semilla"));
+        assertTrue(studio.host.preferences.expanded(ToolsPanel.MORE_KEY + "tree"), "se recuerda abierto");
+        studio.click("Azar");
+        assertTrue(studio.has("1 cambiados"));
     }
 
     @Test
     void savingAPresetAsksForANameAndSendsTheSaveCommand() {
         select("tree");
-        click("Guardar preset");
+        more();
+        studio.click("Guardar preset");
         assertTrue(panel.typing());
-        for (char character : "Mi_Bosque".toCharArray()) {
-            panel.type(character);
-        }
-        panel.key(ToolsPanel.Key.ENTER, false, host);
-        assertEquals("komaedit tree save mi_bosque oak -f", host.last());
+        studio.type("Mi_Bosque");
+        studio.key(StudioKey.of(StudioKey.Code.ENTER));
+        assertEquals("komaedit tree save mi_bosque oak -f", studio.host.last());
         assertFalse(panel.typing());
     }
 
     @Test
     void secondaryActionsSendTheirOwnCommands() {
         select("tree");
-        click("Al pincel");
-        assertEquals("komaedit pincel tree oak", host.last());
-        host.context = new ToolContext(true, Set.of(TreeCard.NODE), true, 1L, 0, false);
-        draw();
-        ui.zone("Al pincel").press();
-        assertEquals("komaedit pincel tree oak", host.last(), "sin permiso del pincel no manda otra vez");
-        assertTrue(host.status.contains(TreeCard.BRUSH_NODE));
+        more();
+        studio.click("Al pincel");
+        assertEquals("komaedit pincel tree oak", studio.host.last());
+        studio.host.context = new ToolContext(true, Set.of(TreeCard.NODE), true, 1L, 0, false);
+        studio.click("Al pincel");
+        assertEquals("komaedit pincel tree oak", studio.host.last(), "sin permiso del pincel no manda otra vez");
+        assertTrue(studio.view.status().contains(TreeCard.BRUSH_NODE));
     }
 
     @Test
-    void theStampGalleryShowsEveryStampAndPicksOne() {
+    void theStampGalleryPagesAndPicksOne() {
         select("stamp");
-        assertEquals(20, ui.stamps.size());
-        ui.zone("Cráter", "tools:stamp").press();
-        assertEquals("crater", panel.values(ToolCatalog.byId("stamp")).choice("stamp"));
-        panel.build(host);
-        assertEquals("komaedit pincel heightmap crater 12 12 elevar natural", host.last());
+        assertTrue(studio.has("‹") && studio.has("›"), "hay más sellos que casillas: se pasa de página");
+        for (int page = 0; page < 10 && !hasTile("Cráter"); page++) {
+            studio.click("›", "tools:stamp:page");
+        }
+        studio.click("Cráter", "tools:stamp");
+        assertEquals("crater", values("stamp").choice("stamp"));
+        studio.click("Al pincel");
+        assertEquals("komaedit pincel heightmap crater 12 12 elevar natural", studio.host.last());
     }
 
     @Test
     void theBiomeSearchFindsServerBiomes() {
         select("biome");
-        click("plains");
+        studio.clickKey("tools:biome");
         assertTrue(panel.typing());
-        for (char character : "moon".toCharArray()) {
-            panel.type(character);
-        }
-        panel.key(ToolsPanel.Key.ENTER, false, host);
-        assertEquals("terralith:moonlight_grove", panel.values(ToolCatalog.byId("biome")).choice("biome"));
-        panel.build(host);
-        assertEquals("komaedit biome terralith:moonlight_grove", host.last());
+        studio.type("moon");
+        studio.key(StudioKey.of(StudioKey.Code.ENTER));
+        assertEquals("terralith:moonlight_grove", values("biome").choice("biome"));
+        studio.click("Pintar bioma");
+        assertEquals("komaedit biome terralith:moonlight_grove", studio.host.last());
     }
 
     @Test
     void symmetryFollowsTheServerAndTogglesWorldEdit() {
-        host.info = new ToolsInfo(true, new int[0], List.of(), Map.of(), Map.of(),
-                new ToolsInfo.Symmetry(true, "radial 8 y", 8, "x 0, y 64, z 0", false, false), null, List.of(), null);
+        studio.host.info = new ToolsInfo(true, new int[0], List.of(), Map.of(), Map.of(),
+                new ToolsInfo.Symmetry(true, "radial 8 y", 8, "x 0, y 64, z 0", false, false), null, List.of(),
+                null);
         select("symmetry");
-        assertEquals("radial", panel.values(ToolCatalog.byId("symmetry")).choice("mode"));
-        assertEquals("Aplicar modo", panel.buildLabel(host));
-        click("Reflejar WorldEdit y KomaEdit");
-        assertEquals("komaedit symmetry worldedit on", host.last());
-        click("Desactivar");
-        assertEquals("komaedit symmetry off", host.last());
-        click("Centro de la selección");
-        assertEquals("komaedit symmetry center selection", host.last());
+        assertEquals("radial", values("symmetry").choice("mode"));
+        assertEquals("Aplicar modo", panel.buildLabel(studio.host));
+        studio.click("Reflejar WorldEdit y KomaEdit");
+        assertEquals("komaedit symmetry worldedit on", studio.host.last());
+        more();
+        studio.click("Desactivar");
+        assertEquals("komaedit symmetry off", studio.host.last());
+        studio.click("Centro de la selección");
+        assertEquals("komaedit symmetry center selection", studio.host.last());
     }
 
     @Test
     void capabilitiesToggleRightAwayAndSendNumbersWhenLeftAlone() {
-        host.info = new ToolsInfo(true, new int[0], List.of(), Map.of(), Map.of(), ToolsInfo.Symmetry.OFF,
+        studio.host.info = new ToolsInfo(true, new int[0], List.of(), Map.of(), Map.of(), ToolsInfo.Symmetry.OFF,
                 new ToolsInfo.Capabilities(BuildCapability.REPLACE.bit(), BuildCapability.REPLACE.bit()
                         | BuildCapability.REACH.bit(), true, true, false, false, 256, 4, 24, 10, 64, 4096, 100),
                 List.of(), null);
         select("capabilities");
-        click("Reemplazar");
-        assertEquals("komaedit capability replace off", host.last());
-        click("Extruir · sin permiso");
-        assertEquals("komaedit capability replace off", host.last(), "sin permiso no manda nada");
-        draw();
-        ui.zoneWithKey("tools:number:reach").scroll.accept(1);
-        ui.zoneWithKey("tools:number:reach").scroll.accept(1);
-        panel.tick(host);
-        assertEquals("komaedit capability replace off", host.last(), "aún no: se está tocando");
-        host.now += ToolsPanel.OPTION_DELAY_MILLIS + 1;
-        panel.tick(host);
-        assertEquals("komaedit capability option reach 26", host.last());
+        studio.click("Reemplazar");
+        assertEquals("komaedit capability replace off", studio.host.last());
+        studio.click("Extruir · sin permiso");
+        assertEquals("komaedit capability replace off", studio.host.last(), "sin permiso no manda nada");
+        studio.wheelValue("Alcance", 1);
+        studio.wheelValue("Alcance", 1);
+        studio.tick();
+        assertEquals("komaedit capability replace off", studio.host.last(), "aún no: se está tocando");
+        studio.advance(ToolsPanel.OPTION_DELAY_MILLIS + 1);
+        assertEquals("komaedit capability option reach 26", studio.host.last());
     }
 
     @Test
-    void theMaterialListShowsAndCopies() {
-        host.info = new ToolsInfo(true, new int[]{4, 4, 4}, List.of(), Map.of(), Map.of(), ToolsInfo.Symmetry.OFF,
-                null, List.of(), new ToolsInfo.Materials(64, 2, 70, 3, 1, List.of(
+    void theMaterialListShowsBlockNamesAndCopies() {
+        studio.host.info = new ToolsInfo(true, new int[]{4, 4, 4}, List.of(), Map.of(), Map.of(),
+                ToolsInfo.Symmetry.OFF, null, List.of(), new ToolsInfo.Materials(64, 2, 70, 3, 1, List.of(
                 new ToolsInfo.Materials.Line("minecraft:oak_planks", 66, 64),
                 new ToolsInfo.Materials.Line("minecraft:torch", 4, 64)), 0, "oak_planks: 66\ntorch: 4"));
         select("analyze");
-        click("Copiar lista");
-        assertEquals("oak_planks: 66\ntorch: 4", host.copied.getLast());
-        assertTrue(ui.has("oak_planks: 66 (1 pilas + 2)"));
+        studio.click("Copiar lista");
+        assertEquals("oak_planks: 66\ntorch: 4", studio.host.copied.getLast());
+        assertTrue(studio.has("Tablones de roble"), "el nombre traducido, no el id");
+        assertTrue(studio.has("(1 pilas + 2)"));
     }
 
     @Test
     void undoAndRedoGoBackThroughTheSettings() {
         select("snow");
-        ToolsPanel.Snapshot before = panel.snapshot();
-        ui.zoneWithKey("tools:number:layers").scroll.accept(1);
-        panel.track(before, "tools:layers", host.now);
-        assertEquals(3, panel.values(ToolCatalog.byId("snow")).number("layers"));
-        assertTrue(panel.undo(host));
-        assertEquals(2, panel.values(ToolCatalog.byId("snow")).number("layers"));
-        assertTrue(panel.redo(host));
-        assertEquals(3, panel.values(ToolCatalog.byId("snow")).number("layers"));
+        studio.wheelValue("Capas", 1);
+        assertEquals(3, values("snow").number("layers"));
+        studio.key(StudioKey.letter('Z', false, false));
+        assertEquals(2, values("snow").number("layers"));
+        studio.key(StudioKey.letter('Z', false, true));
+        assertEquals(3, values("snow").number("layers"));
     }
 
     @Test
     void theStateIsAskedOncePerSecond() {
-        panel.tick(host);
-        panel.tick(host);
-        assertEquals(1, host.requests);
-        host.now += ToolsPanel.REFRESH_MILLIS;
-        panel.tick(host);
-        assertEquals(2, host.requests);
+        studio.tick();
+        studio.tick();
+        assertEquals(1, studio.host.requests);
+        studio.advance(ToolsPanel.REFRESH_MILLIS);
+        assertEquals(2, studio.host.requests);
     }
 
     @Test
-    void theCommandBoxCopiesTheCommand() {
+    void theCopyIconCopiesTheChatCommand() {
         select("gravity");
-        ui.zones.stream().filter(zone -> zone.tooltip.startsWith("/komaedit gravity")).findFirst().orElseThrow()
-                .press();
-        assertEquals("/komaedit gravity", host.copied.getLast());
+        studio.click("Copiar la orden del chat");
+        assertEquals("/komaedit gravity", studio.host.copied.getLast());
     }
 
     @Test
-    void theJobStripConfirmsDiscardsAndCancels() {
-        StudioLayout.Frame frame = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, 10);
-        ProgressLine waiting = new ProgressLine("Tejado", ProgressLine.Phase.WAITING, 59_000, 90_000, 0, null);
-        ui.reset();
-        JobStrip.draw(ui, frame, waiting, 1_234, 0, host, "Construir", ToolsUi.Tone.PRIMARY, () -> { }, "");
-        assertTrue(ui.has("1 234 cambios en vista previa · caduca en 59 s · Tejado"), ui.zones.toString());
-        ui.zone("Confirmar").press();
-        assertEquals("komaedit confirm", host.last());
-        ui.zone("Descartar").press();
-        assertEquals("komaedit cancel", host.last());
+    void theFooterConfirmsDiscardsAndCancelsWhatIsRunning() {
+        select("roof");
+        studio.host.job = JobStatusPayload.of(new ProgressLine("Tejado", ProgressLine.Phase.WAITING, 59_000, 90_000,
+                0, null), 1_234);
+        assertTrue(studio.has("1 234 cambios · caduca en 59 s · Tejado"), studio.texts().toString());
+        studio.click("Confirmar");
+        assertEquals("komaedit confirm", studio.host.last());
+        studio.click("Descartar");
+        assertEquals("komaedit cancel", studio.host.last());
 
-        ProgressLine placing = new ProgressLine("Nieve", ProgressLine.Phase.PLACING, 500, 1_000, 2_000_000_000L, null);
-        ui.reset();
-        boolean[] built = {false};
-        JobStrip.draw(ui, frame, placing, 0, 0, host, "Construir", ToolsUi.Tone.PRIMARY, () -> built[0] = true, "");
-        assertTrue(ui.has("Nieve · colocando 50 % · 250 bl/s · ~2 s"), ui.zones.toString());
-        ui.zone("Cancelar").press();
-        assertEquals("komaedit cancel", host.last());
-        ui.zone("Construir").press();
-        assertTrue(built[0], "mientras se coloca, Construir sigue a mano");
+        select("snow");
+        studio.host.job = JobStatusPayload.of(new ProgressLine("Nieve", ProgressLine.Phase.PLACING, 500, 1_000,
+                2_000_000_000L, null), 0);
+        assertTrue(studio.has("Colocando 50 % · ~2 s · 250 bl/s · Nieve"), studio.texts().toString());
+        studio.click("Cancelar");
+        assertEquals("komaedit cancel", studio.host.last());
+        studio.click("Nevar");
+        assertEquals("komaedit snow 2", studio.host.last(), "mientras se coloca, Construir sigue a mano");
+    }
+
+    @Test
+    void theLastToolAndItsSettingsAreRemembered() {
+        select("tree");
+        studio.wheelValue("Altura", 1);
+        studio.advance(ToolsPanel.SAVE_DELAY_MILLIS + 1);
+        assertEquals(Map.of("height", 19), studio.host.preferences.toolValues("tree"));
+        // Otro Studio (otra partida) con las mismas preferencias empieza donde se dejó.
+        StudioDriver again = new StudioDriver(new StudioView(), studio.host, 960, 1400);
+        again.render();
+        assertEquals(StudioStage.TOOLS, again.view.stage());
+        assertEquals("tree", again.view.tools().selected().id());
+        assertFalse(again.view.tools().browsing());
+        assertEquals(19, again.view.tools().values(ToolCatalog.byId("tree")).number("height"));
     }
 }

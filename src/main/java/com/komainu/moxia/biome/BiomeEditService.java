@@ -1,5 +1,6 @@
 package com.komainu.moxia.biome;
 
+import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.performance.OperationPolicy;
@@ -129,6 +130,7 @@ public final class BiomeEditService {
             job.session.close();
         } finally {
             if (job.session.size() > 0) {
+                EditHistory.label(job.session, "Bioma");
                 job.context.session().remember(job.session);
             }
         }

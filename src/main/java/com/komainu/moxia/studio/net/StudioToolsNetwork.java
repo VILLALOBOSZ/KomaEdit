@@ -11,6 +11,7 @@ import com.komainu.moxia.symmetry.SymmetryService;
 import com.komainu.moxia.symmetry.SymmetrySettings;
 import com.komainu.moxia.text.TextFonts;
 import com.komainu.moxia.text.TextService;
+import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.regions.Region;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -81,9 +82,16 @@ public final class StudioToolsNetwork {
         SymmetrySettings symmetry = SymmetryService.settings(player.getUuid());
         boolean elsewhere = symmetry.center() != null && symmetry.world() != null
                 && !symmetry.world().equals(SymmetryService.dimension(player.getWorld()));
+        EditHistory.Snapshot history = EditHistory.Snapshot.EMPTY;
+        try {
+            history = EditHistory.snapshot(WorldEditService.context(player).session(), ToolStatePayload.MAX_HISTORY);
+        } catch (RuntimeException ignored) {
+            // Sin sesión de WorldEdit no hay historial que enseñar.
+        }
         return new ToolStatePayload(granted, selection, fonts, trees, rocks, symmetry.active(),
                 symmetry.mode().id(), symmetry.mode().arms(),
-                symmetry.center() == null ? "" : symmetry.center().describe(), symmetry.worldEdit(), elsewhere);
+                symmetry.center() == null ? "" : symmetry.center().describe(), symmetry.worldEdit(), elsewhere,
+                history.lines(), history.undone());
     }
 
     public static void sendState(ServerPlayerEntity player) {

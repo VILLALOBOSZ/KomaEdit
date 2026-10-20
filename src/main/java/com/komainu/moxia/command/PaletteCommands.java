@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.gradient.BlockSpec;
 import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.gradient.PaletteCodec;
@@ -339,6 +340,7 @@ public final class PaletteCommands {
                 }
             } finally {
                 editSession.close();
+                EditHistory.label(editSession, "Paleta");
                 worldEdit.session().remember(editSession);
             }
             EzCommandSupport.ok(player, "Paleta colocada: " + ProgressLine.group(patterns.size()) + " bloques · //undo para deshacer");

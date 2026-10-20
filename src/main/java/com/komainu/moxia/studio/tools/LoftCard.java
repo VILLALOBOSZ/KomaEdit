@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.tools;
 
+import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.permission.KomaPermissions;
 
 import java.util.ArrayList;
@@ -18,13 +19,22 @@ public final class LoftCard extends ToolCard {
                         block("material", "white_wool"),
                         choice("interpolation", ToolParam.Choice.Style.BUTTONS, "catmull", "lineal", "catenaria"),
                         when(values -> values.choice("interpolation").equals("catenaria"),
-                                auto("sag", 0, 64, 1, 4, 0, 3)),
-                        number("thickness", 1, 8, 1, 1, 1),
+                                auto("sag", 0, 64, 1, 4, 0, 3).unit(ValueUnit.BLOCKS)),
+                        number("thickness", 1, 8, 1, 1, 1).unit(ValueUnit.BLOCKS),
                         choice("profile", ToolParam.Choice.Style.CYCLE, "none", "SlabsAndStairs", "Slabs", "SSW"),
                         toggle("closed", false),
                         new ToolParam.Text("curves", "", 160, false, null),
                         when(values -> values.text("curves").isBlank(), number("count", 2, 6, 1, 1, 2))
                 ));
+    }
+
+
+    @Override
+
+    public List<String> essentials() {
+
+        return List.of("material", "interpolation", "thickness");
+
     }
 
     private static List<String> curves(ToolValues values) {

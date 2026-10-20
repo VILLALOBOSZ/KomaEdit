@@ -1,6 +1,7 @@
 package com.komainu.moxia.studio.tools;
 
 import com.komainu.moxia.studio.NumericRange;
+import com.komainu.moxia.studio.ValueUnit;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -35,14 +36,20 @@ public sealed interface ToolParam {
      * Número entero o con {@code decimals} decimales, guardado como entero escalado (1,25 con dos decimales es 125).
      * Con {@code auto} el valor puede quedar vacío: la orden no lleva la bandera y vale el de serie de la herramienta.
      */
-    record Number(String id, NumericRange range, int defaultValue, int decimals, boolean auto,
+    record Number(String id, NumericRange range, int defaultValue, int decimals, boolean auto, ValueUnit unit,
                   Predicate<ToolValues> shown) implements ToolParam {
         public Number {
             if (decimals < 0 || decimals > 2) {
                 throw new IllegalArgumentException("decimals " + decimals);
             }
             defaultValue = range.clamp(defaultValue);
+            unit = unit == null ? ValueUnit.NONE : unit;
             shown = shown == null ? ALWAYS : shown;
+        }
+
+        /** El mismo ajuste, enseñado en {@code value} («18 bloques», «120 %»). */
+        public Number unit(ValueUnit value) {
+            return new Number(id, range, defaultValue, decimals, auto, value, shown);
         }
 
         /** Valor escalado para la orden y la pantalla: {@code 125} con dos decimales es {@code 1.25}. */

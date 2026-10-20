@@ -27,6 +27,11 @@ public final class BlockColorCatalogs {
     private BlockColorCatalogs() {
     }
 
+    /** Usa este catálogo en vez del del registro (pruebas y maquetas, donde no hay registro de bloques). */
+    public static void use(BlockColorCatalog value) {
+        catalog = value;
+    }
+
     public static BlockColorCatalog get() {
         BlockColorCatalog current = catalog;
         if (current == null) {

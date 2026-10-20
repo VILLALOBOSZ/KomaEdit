@@ -158,6 +158,7 @@ public final class WorldEditService {
                     .build());
         } finally {
             editSession.close();
+            EditHistory.label(editSession, "Pegar");
             context.session().remember(editSession);
         }
         return editSession.size();
@@ -178,6 +179,7 @@ public final class WorldEditService {
             }
         } finally {
             editSession.close();
+            EditHistory.label(editSession, "Bloques");
             context.session().remember(editSession);
         }
         return editSession.size();
