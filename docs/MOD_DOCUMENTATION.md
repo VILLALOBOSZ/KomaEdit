@@ -215,7 +215,8 @@ Las figuras centradas usan tu posición como centro; el arco y la catenaria van 
 /komaedit help saved               recorridos guardados
 /komaedit help build               figuras, con todas las figuras clicables
 /komaedit help tubes               tubos, banderas y fórmula
-/komaedit help edit                doblar, degradados y jobs
+/komaedit help edit                doblar, escalar y girar el portapapeles, degradados y jobs
+/komaedit help sculpt              pinceles de modelado (esculpir, roca, soldar, fundir, rugosidad, grietas)
 /komaedit help region              hiedra, envejecer y retocar
 /komaedit help symmetry            modo simetría
 /komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
@@ -701,6 +702,59 @@ Ejemplos:
 - Un tramo de puente de 7×3×6 doblado sobre 85 bloques de curva (unos 850 bloques) se calcula en menos de 0,1 s en un worker.
 - Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
 - El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
+
+## Escalar y girar el portapapeles
+
+### Objetivo y acceso
+
+Agranda, encoge o gira el portapapeles de WorldEdit sin dientes de sierra, con los algoritmos del pixel art llevados a bloques. Sirve para hacer una estatua más grande a partir de una pequeña, ampliar un sprite de bloques o girar una planta 30° sin que las paredes queden en escalera.
+
+```text
+/komaedit clipboard scale <factor> [nearest|scale2x|scale3x|rotsprite]
+/komaedit clipboard rotate <grados> [rotsprite|nearest|scale2x|scale3x]
+/komaedit clipboard restore
+/komaedit portapapeles escalar|girar|restaurar …
+```
+
+- No coloca nada: cambia el portapapeles, que después se pega con `//paste`, con [`/komaedit place Clipboard`](#colocar-estructuras) o con [`bend`](#doblar-estructuras-del-portapapeles).
+- `restore` vuelve al portapapeles de antes del último escalado o giro (se guarda uno por jugador mientras sigue conectado).
+- `/komaedit clipboard` solo dice el tamaño del portapapeles.
+- Permiso: `komaedit.clipboard` (paquete intermedio).
+
+### Modos
+
+| Modo | Qué hace | Para qué |
+| --- | --- | --- |
+| `nearest` (de serie al escalar) | El bloque más cercano, sin más; ×2 da exactamente 8 bloques por cada uno. | Arquitectura, donde las aristas tienen que seguir rectas. |
+| `scale2x` | Scale2x (EPX) en 3D: cada bloque se parte en 2×2×2 según sus vecinos, así que las diagonales salen lisas y las esquinas se redondean. Para ×4 u ×8 se repite. | Figuras orgánicas y pixel art. |
+| `scale3x` | Scale3x (AdvMAME3x): lo mismo en 3×3×3. | Ampliar ×3 (o ×9). |
+| `rotsprite` (de serie al girar) | El original ampliado 8× con tres Scale2x y leído en la posición exacta (RotSprite). Vale para cualquier factor (×1,5) y cualquier ángulo. | Giros que no son de 90° y factores no enteros. |
+
+- En una capa de un bloque de grosor, `scale2x` y `scale3x` dan exactamente los algoritmos 2D clásicos repetidos en altura. En 3D cada trocito se decide con la regla 2D en los tres planos que lo contienen: si los que proponen un vecino están de acuerdo se queda con él; si no, con el bloque original.
+- **Escalar** va alrededor de la esquina del bloque de origen: el bloque de origen pasa a ocupar de 0 a `factor` en cada eje y lo demás se aleja en proporción. El factor va de 0,1 a 8.
+- **Girar** va sobre el eje vertical, alrededor del centro del bloque de origen, en el sentido de `//rotate` (positivo: de este a sur visto desde arriba), de −360 a 360 grados. Cada capa se gira por su lado: la altura no cambia. Un número exacto de cuartos de vuelta da lo mismo que `//rotate` con cualquier modo.
+- **Estados:** las escaleras, troncos, vallas, raíles, puertas y demás bloques con dirección giran con la estructura, redondeados al cuarto de vuelta más cercano (una escalera no puede quedar a 30°); la `rotation` de 16 pasos de carteles, estandartes y cabezas sigue el ángulo exacto. Es la misma lógica que la [simetría](#simetría).
+- Si el portapapeles tenía un `//rotate` o `//flip` pendiente, se aplica antes.
+- Los bloques con datos (cofres, carteles) conservan los suyos en cada copia. Las entidades y los biomas del portapapeles no se copian (el chat avisa si había entidades).
+
+Ejemplos:
+
+```text
+/komaedit clipboard scale 2
+/komaedit clipboard scale 3 scale3x
+/komaedit clipboard scale 1.5 rotsprite
+/komaedit clipboard rotate 30
+/komaedit portapapeles girar -45 nearest
+/komaedit clipboard restore
+```
+
+### Rendimiento y limitaciones
+
+- El portapapeles puede ocupar hasta 1 000 000 de bloques de caja con `nearest` y 300 000 con los demás modos; el resultado, hasta 8 000 000.
+- Se calcula en un worker y el portapapeles nuevo se cambia al terminar; `/komaedit cancel` corta el cálculo.
+- Scale2x y Scale3x redondean las esquinas exteriores: en un edificio de aristas rectas conviene `nearest`.
+- Solo se gira sobre el eje vertical. Para tumbar una estructura, usa `//rotate` con sus ejes `x` y `z`.
+- Las losas y escaleras no cambian de forma al escalar: una losa ampliada ×2 son 2×2×2 losas.
 
 ## Envejecer
 
@@ -2645,6 +2699,7 @@ Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit:
 | `tree` | `arbol`, `tr` | [Un árbol en cada clic](#pinceles) |
 | `rock` | `roca`, `rk` | [Una roca en cada clic](#pinceles) |
 | `heightmap` | `relieve`, `sello`, `hm` | [Pincel de relieve](#pincel-de-relieve-sellos) (propio de KomaEdit) |
+| `sculpt` | `modelar`, `modelado`, `sk` | [Modelado](#pinceles-de-modelado): esculpir, roca, soldar, fundir, rugosidad y grietas (propio de KomaEdit) |
 
 - El pincel se liga al **objeto de la mano principal**, como los de WorldEdit: cada objeto guarda el suyo y se pueden llevar varios a la vez. Con la mano vacía se entrega una pluma llamada «Pincel de KomaEdit». Volver a configurar un objeto que ya tiene pincel lo sustituye.
 - `quitar` (`off`, `none`) suelta el pincel del objeto de la mano; `estado` (`status`) dice qué pincel lleva y sus controles.
@@ -2877,6 +2932,98 @@ Ejemplos:
 - En estos pinceles `Constant(D:aim)` y `aim` en las direcciones son la mirada de **cada clic** (en ezEdits, la de cuando se configuró el pincel); para la de cada clic también está `Aim`.
 - No hay visualizador de la alineación mientras apuntas (en ezEdits, entidades BlockDisplay).
 - El trazo de `array` admite hasta 256 puntos; con `-b` cada colocación baja a la superficie más cercana.
+
+## Pinceles de modelado
+
+### Objetivo y acceso
+
+Las herramientas de modelado de Axiom que faltaban, como pinceles de clic: **esculpir** (empujar o hundir la superficie), **roca**, **soldar**, **fundir**, **rugosidad** y **grietas**. Sirven para dar forma a terreno, acantilados y rocas a mano, y para retocar lo construido (unir piezas sueltas, redondear aristas, romper un muro).
+
+```text
+/komaedit pincel sculpt <modo> [radio] [cantidad] [banderas]
+/komaedit pincel modelar <modo> …
+/komaedit pincel <modo> …                    atajo: /komaedit pincel soldar 8
+/komaedit sculpt set <modo> <patrón|auto> <radio> [altura] [intensidad] [caída] [hueco]
+```
+
+| Modo | Alias | Clic derecho | Clic izquierdo | `cantidad` (de serie) |
+| --- | --- | --- | --- | --- |
+| `draw` | `esculpir`, `dibujar` | Empuja la superficie hacia fuera | La hunde | Altura en bloques en el centro, 0,5–16 (2) |
+| `rock` | `roca`, `rocoso` | Añade una masa rocosa | Talla esa forma | Rugosidad del ruido, 0–1 (0,4) |
+| `weld` | `soldar`, `unir` | Suelda: solo añade | Funde | Umbral, 0,01–0,99 (0,4) |
+| `melt` | `fundir`, `derretir` | Funde: solo quita | Suelda | Umbral, 0,01–0,99 (0,6) |
+| `roughen` | `rugosidad`, `rugoso` | Hace rugosa la superficie | Lo mismo | Amplitud en bloques, 0,5–8 (1,5) |
+| `shatter` | `grietas`, `agrietar` | Agrieta | Lo mismo | Tamaño de las celdas, 2–32 (60 % del radio, mínimo 3) |
+
+- El radio va de 1 a 32 (6 de serie; 10 en las grietas).
+- En `/komaedit pincel`, `rock` y `roca` son el pincel de rocas sueltas de [Árboles y rocas](#árboles-y-rocas); la roca de modelado es `/komaedit pincel sculpt rock` (o `modelar roca`). Los demás modos valen directamente como pincel: `/komaedit pincel grietas 12 -e y`.
+- Permiso: `komaedit.build.brush.sculpt` (paquete intermedio) o `komaedit.build`. `/komaedit sculpt` no tiene nodo propio.
+
+### Cómo trabaja cada modo
+
+- **Esculpir:** calcula la normal media de la superficie bajo el pincel con los vecinos de cada bloque (los bloques llenos empujan, el aire tira) y desplaza la forma a lo largo de esa normal: el centro se mueve `cantidad` bloques y el resto lo que diga la caída, medida de lado a la normal. Funciona igual en un suelo, en una pared o en el techo de una cueva. Con `-s n` suaviza después `n` pasadas (0–4) dentro del pincel.
+- **Roca:** un poliedro de caras al azar redondeado contra una esfera y deformado con ruido fractal, que asoma un poco de la superficie y se une a lo que hay con una unión suave (`-k`, de serie el 35 % del radio): rellena el hueco entre la roca y el suelo en vez de dejarla pegada. Cada clic es una roca distinta salvo con `-i`.
+- **Soldar y fundir:** desenfoque gaussiano del volumen (`-g`, la desviación en bloques, 1,5 de serie) mezclado con la caída y cortado por el umbral. Con umbral bajo se rellenan rincones y huecos entre piezas (soldar une un pilar suelto a la pared); con umbral alto se comen aristas y esquinas (fundir redondea un bloque cuadrado). Soldar nunca quita y fundir nunca añade.
+- **Rugosidad:** mueve la superficie hacia dentro y hacia fuera con un ruido de media cero (bultos de `-z` bloques, 1,5 de serie, más un salto por bloque): salen muchas más caras a la vista y el volumen apenas cambia.
+- **Grietas:** las aristas de un Voronoi, en 3D o en columnas a lo largo de un eje (`-e x|y|z|3d`; `y` da columnas verticales como el basalto), solo sobre los bloques que ya hay y hasta `-d` bloques de profundidad desde la superficie (3 de serie; 0 sin límite). `-w` es el ancho (1 de serie) y `-b` el relleno: aire de serie, o un bloque o paleta (`-b gravel`). La caída de serie es constante; con otra, las grietas se afinan hacia el borde. Al arrastrar, el dibujo de las grietas sigue siendo el mismo.
+
+### Material, máscara y banderas
+
+- **Material de lo añadido:** el de alrededor (el más repetido entre los vecinos, o el del bloque más cercano), así que una pared de piedra crece de piedra y un prado, de hierba. Lo que queda tapado se entierra: la hierba, el micelio, el podsol y los caminos pasan a tierra, y el nilio a netherrack. Con `-b` se usa una paleta (`-b stone,andesite,tuff`, `##Grayscale`, `#mipaleta`), repartida al azar fijo por posición.
+- **Piel:** si un pincel quita la capa de arriba de una columna (hundir un prado, fundir, la rugosidad), el bloque que queda debajo toma su material: el terreno baja con su hierba en vez de dejar tierra al aire.
+- **Qué cuenta como masa:** todo lo que no es aire, líquido ni reemplazable. La hierba alta, las flores y la nieve en capa se tapan al añadir y no cuentan como forma; el agua se puede rellenar.
+- **Máscara (`-m`):** qué bloques se pueden quitar o cambiar, con la [lista sencilla o una máscara de WorldEdit](#máscaras-y-patrones-en-worldedit) (`-m #solid`, `-m stone,dirt`, `-m !grass_block`). Lo libre siempre se puede llenar.
+
+| Bandera | Modos | Efecto |
+| --- | --- | --- |
+| `-f <caída>` | todos | `constant`, `linear`, `smooth` (de serie) o `spherical`. |
+| `-m <máscara>` | todos | Qué se puede quitar o cambiar. |
+| `-b <paleta>` | todos | Material de lo añadido; en las grietas, el relleno (`air` de serie). `auto` es el de alrededor. |
+| `-s <0–4>` | draw | Pasadas de suavizado. |
+| `-g <0,3–8>` | weld, melt | Desviación del desenfoque. |
+| `-k <0–16>` | rock | Radio de la unión suave con el terreno. |
+| `-z <escala>` | rock, roughen, shatter | Tamaño de los rasgos del ruido o de las celdas. |
+| `-w <0,1–8>` | shatter | Ancho de las grietas. |
+| `-e <eje>` | shatter | `x`, `y`, `z` o `3d` (de serie). |
+| `-d <0–64>` | shatter | Profundidad máxima (0: sin límite). |
+| `-i <semilla>` | rock, roughen, shatter | Fija el azar. |
+| `-n` | todos | Cambia los clics: el izquierdo hace el modo y el derecho el contrario. |
+| `-p` | todos | Vista previa en cada clic; se aplica con `/komaedit pincel aplicar`. |
+
+Ejemplos:
+
+```text
+/komaedit pincel sculpt draw 8 4
+/komaedit pincel esculpir 6 2 -s 1 -m #solid
+/komaedit pincel modelar roca 7 0.5 -b stone,andesite,tuff
+/komaedit pincel soldar 6 0.3 -g 2
+/komaedit pincel fundir 5
+/komaedit pincel rugosidad 10 2 -z 2
+/komaedit pincel grietas 12 6 -e y -d 0
+/komaedit pincel grietas 10 5 -w 1.2 -b gravel,tuff -p
+```
+
+### Con la brocha de `/komaedit sculpt`
+
+Los seis modos también son tipos de la brocha de siempre (`draw`, `rock`, `weld`, `melt`, `roughen`, `shatter`, con sus alias en español), con su vista previa (`/komaedit sculpt preview` y `apply`) y su máscara (`/komaedit sculpt mask`). Lo que trae la orden se reparte así:
+
+- El **patrón** es el material de lo añadido; `auto` (o `alrededor`) pone el de alrededor. En las grietas es el relleno: `air` o `auto` las deja vacías.
+- La **intensidad** es la altura de esculpir, el doble de la amplitud de la rugosidad, el desenfoque de soldar y fundir (`0,5 + intensidad/4`) y el tamaño de celda de las grietas (`intensidad + 2`).
+- **Hueco** (`true`) invierte esculpir y roca. El ruido de `/komaedit sculpt tune` es la rugosidad de la roca (en %).
+
+```text
+/komaedit sculpt set draw auto 8 16 4 smooth
+/komaedit sculpt set shatter air 12 24 6 constant
+/komaedit sculpt set rock "stone,andesite" 6
+```
+
+### Rendimiento y limitaciones
+
+- Cada pasada lee el radio más un margen (lo que se desplaza, el desenfoque o la unión de la roca, hasta 32 bloques más) y se calcula en un worker. Medido sobre colinas: con radio 16, de 5 a 55 ms según el modo; con radio 32, de 25 a 70 ms, salvo la roca (unos 0,4 s). Lo que más tarda es leer la zona, que se reparte entre ticks: la roca lee hasta dos veces el radio (con radio 32, unos 2 millones de bloques, varios segundos). Una pasada cambia como mucho 1 000 000 de bloques.
+- Todo es determinista: la misma zona y los mismos ajustes dan lo mismo (la roca solo cambia de un clic a otro porque cada clic elige semilla, salvo con `-i`).
+- Los cambios van en una sola edición de //undo por clic, con la vista previa y la cancelación del motor común.
+- No se tocan losas ni escaleras para suavizar el resultado: el modelado trabaja con bloques enteros. Para piezas, pasa después [smoothblocks](#smoothblocks-perfiles-de--w).
+- Los bloques con datos (cofres, carteles) cuentan como masa: se pueden fundir o agrietar si la máscara lo deja. Para protegerlos, usa `-m`.
 
 ## Supervarita
 
@@ -3263,6 +3410,29 @@ Ejemplos:
 /komaedit place Cl(O:C) C(D:(-1,2,-1)) C(D:west) -j MULTIPLES_45
 /komaedit place Sh(S:Torus(Thickness:0.4),P:gold_block) C C -k x -c 90 -s 20,20,30
 /komaedit colocar Ic(P:"stone,andesite",R:0.7,S:1) C R -s 9,6,9 -w stairs
+```
+
+### Copias (`-copias`)
+
+Solo en `place` (y en su pincel): repite la colocación como «Modify copies» de Axiom. Cada copia sale de la anterior desplazada, girada alrededor de un pivote y girada sobre sí misma; combinadas dan escaleras de caracol, coronas de columnas, hélices o pilas.
+
+| Bandera | Efecto |
+| --- | --- |
+| `-copias <n>` (`-copies`) | Copias además de la original, de 1 a 256. Hace falta para las demás. |
+| `-desplazar <x,y,z>` (`-translate`, `-offset`) | Lo que se mueve cada copia respecto a la anterior, en bloques del mundo. |
+| `-revolver <grados>` (`-revolve`) | Lo que gira cada copia alrededor de la vertical que pasa por el pivote, en el sentido de `//rotate` (positivo: de este a sur). |
+| `-pivote <x,y,z>` (`-pivot`) | Centro de `-revolver`, relativo al ancla de la colocación (de serie, el ancla: la copia gira sobre sí misma). |
+| `-torcer <grados>` (`-twist`) | Lo que gira cada copia sobre sí misma, alrededor de la dirección de `-desplazar` (o de la vertical si no hay desplazamiento). |
+
+- La copia `i` es la original desplazada `i` veces, girada `i·torcer` sobre sí misma y después `i·revolver` alrededor del pivote. Todas son la misma estructura con la misma semilla.
+- Las copias pasan por el mismo voxelizado que la original: con giros libres no quedan huecos y los bloques con dirección van a la dirección más cercana. Donde se solapan gana la última.
+- Si faltan `-copias` o las copias caerían todas en el mismo sitio, la orden lo dice y no coloca nada.
+- No están en `array` ni en `scatter`, que ya reparten sus colocaciones a lo largo de una trayectoria o de una región.
+
+```text
+/komaedit place Clipboard -copias 11 -desplazar 0,1,0 -revolver 30 -pivote 4,0,0
+/komaedit place Sh(S:Cylinder,P:stone_bricks) C C -s 3,12,3 -copias 7 -revolver 45 -pivote 10,0,0
+/komaedit place Cl -copias 5 -desplazar 0,4,0 -torcer 15
 ```
 
 ### Rendimiento y limitaciones
@@ -3667,6 +3837,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
    - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
    - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
+   - `komaedit.build.brush.sculpt` ([Pinceles de modelado](#pinceles-de-modelado)); escalar y girar el portapapeles va con `komaedit.clipboard`.
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
@@ -3677,8 +3848,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 | Paquete | Incluye |
 | --- | --- |
 | `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
 | `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 

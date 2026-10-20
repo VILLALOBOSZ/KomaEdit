@@ -101,8 +101,14 @@ public final class HelpTopics {
                     new Entry("/komaedit ezsp 3d Chainlink(M:99,N:99,E:0.6) clay 10 -q EXACT",
                             "Banderas: -p -q -r -s -t -n -e -w -h, como en ezEdits")
             )),
-            new Topic("edit", "Editar estructuras", List.of("editar", "doblar", "bend", "degradado", "gradient"), List.of(
+            new Topic("edit", "Editar estructuras", List.of("editar", "doblar", "bend", "degradado", "gradient",
+                    "portapapeles", "clipboard", "escalar", "rotsprite"), List.of(
                     new Entry("/komaedit bend [repeat|stretch] [-n upright|horizontal]", "Dobla el portapapeles por la trayectoria"),
+                    new Entry("/komaedit clipboard scale <factor> [nearest|scale2x|scale3x|rotsprite]",
+                            "Agranda o encoge el portapapeles sin dientes de sierra (alias portapapeles escalar)"),
+                    new Entry("/komaedit clipboard rotate <grados> [rotsprite|nearest]",
+                            "Gira el portapapeles cualquier ángulo; escaleras y troncos giran con él (alias girar)"),
+                    new Entry("/komaedit clipboard restore", "Vuelve al portapapeles de antes del último escalado o giro"),
                     new Entry("/komaedit gradient preset <paleta>", "Degradado de paleta sobre la selección"),
                     new Entry("/komaedit job status", "Progreso de la construcción en curso"),
                     new Entry("/komaedit job cancel", "Cancela la construcción en curso")
@@ -125,6 +131,26 @@ public final class HelpTopics {
                             new Entry("/komaedit statecycle <máscara> <propiedad> [pasos]",
                                     "Avanza una propiedad de estado (alias ciclarestado)")
                     )),
+            new Topic("sculpt", "Esculpir y modelar", List.of("esculpir", "modelar", "modelado", "soldar", "fundir",
+                    "grietas", "rugosidad", "escultura"), List.of(
+                    new Entry("/komaedit pincel sculpt draw|rock|weld|melt|roughen|shatter [radio] [cantidad] [banderas]",
+                            "Pinceles de modelado en la herramienta (alias modelar; atajo: /komaedit pincel soldar 8)"),
+                    new Entry("/komaedit pincel sculpt draw 6 3 -s 1",
+                            "Esculpir: empuja la superficie 3 bloques por su normal (clic izquierdo: la hunde)"),
+                    new Entry("/komaedit pincel sculpt rock 7 0.5 -b stone,andesite,tuff",
+                            "Roca: masa rocosa que se funde con lo que hay (clic izquierdo: la talla)"),
+                    new Entry("/komaedit pincel sculpt weld 8 0.35 -g 2",
+                            "Soldar: une piezas y rellena rincones (clic izquierdo: fundir, que redondea aristas)"),
+                    new Entry("/komaedit pincel sculpt roughen 10 1.5",
+                            "Rugosidad: más caras a la vista sin cambiar apenas el volumen"),
+                    new Entry("/komaedit pincel sculpt shatter 12 6 -e y -w 1 -d 3 -b air",
+                            "Grietas de Voronoi (3D o en columnas con -e) sobre lo que hay, vacías o con -b"),
+                    new Entry("/komaedit pincel sculpt <modo> … -f smooth -m #solid -p",
+                            "Comunes: -f caída, -m máscara, -b material (de serie, el de alrededor), -n cambia los"
+                                    + " clics, -p vista previa"),
+                    new Entry("/komaedit sculpt set draw|rock|weld|melt|roughen|shatter <patrón|auto> <radio> …",
+                            "Los mismos con la brocha de siempre; auto pone el material de alrededor")
+            )),
             new Topic("deform", "Deformar y suavizar", List.of("deformar", "superficie", "surface", "suavizar",
                     "smooth", "inflate", "inflar", "deflate", "smoothblocks", "cilindro", "esfera"),
                     List.of(
@@ -233,7 +259,9 @@ public final class HelpTopics {
                     new Entry("/komaedit pincel place|scatter|array <estructura> [primaria] [secundaria] [banderas]",
                             "Los mismos como pinceles: en el clic, alrededor del clic o por un trazo"),
                     new Entry("/komaedit pincel place Cl SurfaceNormal ViewDiff",
-                            "ViewDiff: clic derecho dónde y clic izquierdo hacia dónde")
+                            "ViewDiff: clic derecho dónde y clic izquierdo hacia dónde"),
+                    new Entry("/komaedit place Cl -copias 11 -desplazar 0,1,0 -revolver 30 -pivote 4,0,0",
+                            "Copias que suben y giran alrededor de un pivote: escalera de caracol (y -torcer)")
             )),
             new Topic("symmetry", "Simetría", List.of("simetria", "sym", "espejo", "radial", "ezsymmetry"), List.of(
                     new Entry("/komaedit symmetry on [modo]",

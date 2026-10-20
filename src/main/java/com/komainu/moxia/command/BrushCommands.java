@@ -8,6 +8,7 @@ import com.komainu.moxia.brush.ez.EzBrushType;
 import com.komainu.moxia.brush.superwand.SuperwandManager;
 import com.komainu.moxia.brush.superwand.SuperwandMode;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.sculpt.model.ModelMode;
 import com.komainu.moxia.sculpt.SculptManager;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -71,6 +72,7 @@ public final class BrushCommands {
                 case BIOME -> new String[]{"cherry_grove", "snowy_plains", "desert", "8", "16", "-v", "-m",
                         "grass_block"};
                 case HEIGHTMAP -> heightmapExamples();
+                case SCULPT -> sculptExamples(remaining);
             };
         } catch (IllegalArgumentException exception) {
             examples = new String[0];
@@ -92,6 +94,17 @@ public final class BrushCommands {
     };
 
     private BrushCommands() {
+    }
+
+    /** Sugerencias del pincel de modelado: los modos primero; después números y banderas. */
+    private static String[] sculptExamples(String remaining) {
+        if (!remaining.contains(" ")) {
+            return new String[]{"draw", "rock", "weld", "melt", "roughen", "shatter", "esculpir", "roca", "soldar",
+                    "fundir", "rugosidad", "grietas"};
+        }
+        return new String[]{"6", "8", "12", "2", "0.4", "-f", "smooth", "constant", "-m", "#solid", "-b",
+                "stone,andesite,tuff", "air", "-s", "-g", "-k", "-z", "-w", "-e", "y", "3d", "-d", "-i", "-n",
+                "-p"};
     }
 
     /** Sugerencias del pincel de relieve: los sellos que hay, los modos, las paletas y las banderas. */
@@ -161,7 +174,19 @@ public final class BrushCommands {
                 default -> {
                 }
             }
-            EzBrushType type = EzBrushType.byId(action);
+            EzBrushType type;
+            try {
+                type = EzBrushType.byId(action);
+            } catch (IllegalArgumentException unknown) {
+                // Atajo: el modo de modelado como pincel («/komaedit pincel soldar 8»).
+                try {
+                    ModelMode.byId(action);
+                } catch (IllegalArgumentException notModel) {
+                    throw unknown;
+                }
+                type = EzBrushType.SCULPT;
+                options = action + " " + options;
+            }
             KomaPermissions.requireBuild(player, "brush." + type.id());
             EzBrush brush = EzBrush.create(player, type, options);
             String toolId = BrushTool.bind(player, BrushTool.Kind.BRUSH, Items.FEATHER, "Pincel de KomaEdit");
@@ -187,8 +212,8 @@ public final class BrushCommands {
         var brush = id == null ? java.util.Optional.<EzBrush>empty() : EzBrushManager.brush(player.getUuid(), id);
         if (brush.isEmpty()) {
             feedback(context, Text.literal("Pinceles: paletteshift, gradient, gradientstroke, petalpainter, place,"
-                    + " scatter, array, tree, rock, biome, heightmap. Ejemplo: /komaedit pincel gradient ##Magma 8"
-                    + " tapered 0.6")
+                    + " scatter, array, tree, rock, biome, heightmap, sculpt (draw, rock, weld, melt, roughen,"
+                    + " shatter). Ejemplo: /komaedit pincel gradient ##Magma 8 tapered 0.6")
                     .formatted(Formatting.GRAY));
             return 1;
         }

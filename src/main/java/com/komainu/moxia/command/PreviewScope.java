@@ -16,7 +16,7 @@ final class PreviewScope {
     private static final Set<String> NO_PREVIEW = Set.of("menu", "quick", "gui", "shapes", "estimate", "estimar",
             "confirm", "confirmar", "cancel", "cancelar", "preview", "vistaprevia", "path", "ruta", "sculpt", "brush",
             "pincel", "ezbrush", "superwand", "supervarita", "job", "project", "help", "ayuda", "info", "reload",
-            "recargar", "permissions", "permisos", "noise", "ruido", "sel", "seleccion");
+            "recargar", "permissions", "permisos", "noise", "ruido", "sel", "seleccion", "clipboard", "portapapeles");
     private static final Set<String> PALETTE = Set.of("palette", "paleta");
     /** De las paletas solo editan el mundo estas. */
     private static final Set<String> PALETTE_EDITS = Set.of("swap", "place");

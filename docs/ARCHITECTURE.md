@@ -13,7 +13,8 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `shape` | Muestreo Catmull–Rom y voxelización de figuras 3D |
 | `path` | Trayectorias por jugador |
 | `brush` | Estampado orientado de figuras existentes |
-| `sculpt` | Brochas de volumen/altura, máscaras, perfiles y previews |
+| `sculpt` | Brochas de volumen/altura, máscaras, perfiles y previews; `sculpt.model`: pinceles de modelado (esculpir, roca, soldar, fundir, rugosidad, grietas) como lógica pura sobre `ModelGrid` y su `ModelOperation` |
+| `clipboard` | Escalar y girar el portapapeles: Scale2x, Scale3x y RotSprite en 3D sobre `VoxelVolume` (puros) y `ClipboardScaleService`, que lee y sustituye el portapapeles de WorldEdit |
 | `noise` | Perlin, fBM, ridged y Worley deterministas |
 | `terrain` | Terraformado sobre mapas de alturas: sellos, rampas, ríos, erosión y paleta de superficie |
 | `placement` | Colocación de estructuras (place, array, scatter): alineación, formas procedurales, dispersión y voxelizado |
@@ -142,6 +143,21 @@ Piezas en `com.komainu.moxia.preview` y `com.komainu.moxia.progress`. Una operac
 6. **Cancelar.** `/komaedit cancel` (`command.PreviewCommands`) corta la captura, el worker y la colocación. `edit.PlanApplication` recorre los planes por tramos y se para siempre en una frontera de entrada, así que la `EditSession` que se cierra y se registra en `LocalSession` cubre exactamente lo colocado.
 
 Para un comando nuevo: si es de gestión (no coloca bloques) o ya usa `-v` con otro sentido, añádelo a `PreviewScope`; si su plan no pasa por `BatchEditService.submit`, no tendrá vista previa. Si después de encolar anuncia «en cola», compruébalo antes con `PlanPreviews.holds`.
+
+## Pinceles de modelado
+
+`sculpt.model` es Java puro salvo `ModelOperation`. `ModelOperation` es una `BrushOperation`: pide a `SculptManager.run` la bola del radio más el margen que necesita cada modo (`ModelSettings.reach`), traduce la foto a una `ModelGrid` (un número por estado con masa, `0` para aire, líquidos y reemplazables, y la máscara evaluada por celda) y llama a `ModelSculptor.apply`. El resultado son los materiales de antes y de después; el plan escribe solo lo que cambia (aire, el estado del material o el patrón de `/komaedit sculpt`).
+
+- `ModelFields`: desenfoque gaussiano separable con la ventana recortada en el borde de la captura, lectura trilineal, distancia con signo exacta (Felzenszwalb y Huttenlocher) y ruido de valor 3D determinista.
+- `SurfaceNormals`: normal por vecinos (el aire tira, la masa empuja) y su media pesada bajo el pincel.
+- `Voronoi`: distancia a la arista más cercana en la norma que da planos digitales sin huecos, en 3D o en columnas.
+- `MaterialChooser`: qué material lleva cada celda nueva; recibe el de alrededor (el más votado entre los 26 vecinos de antes o, si no hay, el más cercano por anchura) y si queda tapada, para enterrar la hierba.
+
+Los tipos de `SculptBrushType` de la categoría `MODEL` van por el mismo camino (`ModelOperation.fromSculpt`), y `BrushOperation.pattern()` deja que el plan use el patrón de la brocha. Las pruebas montan rejillas a mano (`ModelGrids`) y los renders usan `PieceRender`.
+
+## Portapapeles: escalar y girar
+
+`clipboard.PixelArtScaler` amplía una `VoxelVolume` bajo demanda: cada nivel (Scale2x o Scale3x) pide a su padre el bloque y sus vecinos y decide cada trocito con la regla 2D en los planos que lo contienen (los tres al escalar, solo el horizontal al girar). El primer nivel se guarda en un array si cabe. `ClipboardTransform` lee cada bloque de la salida en su posición transformada al revés sobre la ampliación (1×, 2×, 3× u 8× para RotSprite), votando entre los dos trocitos cuando cae justo en un centro para no favorecer un lado. `ClipboardStates` reutiliza `symmetry.StateTransform` para girar estados. `ClipboardScaleService` lee el portapapeles (con su `//rotate` pendiente) en el hilo del servidor, calcula y monta el `BlockArrayClipboard` nuevo en un worker y lo cambia en el hilo del servidor.
 
 ## Terraformado
 

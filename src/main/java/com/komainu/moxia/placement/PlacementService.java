@@ -599,7 +599,9 @@ public final class PlacementService {
                     Alignment.Context context = new Alignment.Context(anchor, eye, view, normal, null, null,
                             new Vec3(0, 0, 0), new Vec3(0, 0, 0), new SplittableRandom(settings.seed()),
                             target == null ? null : target.viewDiff());
-                    placements.add(builder.build(anchor, context, 1.0));
+                    Placement placement = builder.build(anchor, context, 1.0);
+                    placements.addAll(settings.copies().active() ? settings.copies().expand(placement)
+                            : List.of(placement));
                 }
                 case SCATTER -> {
                     if (mask != null) {
