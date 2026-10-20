@@ -47,6 +47,27 @@ class GhostSessionTest {
     }
 
     @Test
+    void aRecalculatedObjectKeepsWhereThePlayerLeftIt() {
+        GhostSession before = session();
+        before.nudge(4, 1, -2, NO_GROUND);
+        before.rotate(Orientation.Y, 1, ALL, NO_GROUND);
+        before.toggleKeepExisting();
+        // El árbol más alto: el servidor lo calcula en el mismo sitio y su pivote (el centro de la caja) sube.
+        GhostSession after = new GhostSession(new GhostSession.Info(10, "Árbol", new BlockBounds(-2, -5, -1, 2, 5, 1),
+                160, 4, GhostTransform.at(10, 72, -5), GhostOptions.DEFAULT));
+        after.follow(before, ALL);
+        assertArrayEquals(new int[]{4, 1, -2}, after.offset(), "movido lo mismo que el de antes");
+        assertEquals(new GhostTransform(Orientation.turn(Orientation.Y, 1), 14, 73, -7), after.transform());
+        assertTrue(after.options().keepExisting());
+        // Un giro que el objeto nuevo no admite (unas escaleras tumbadas) se quita; lo movido se queda.
+        GhostSession tipped = session();
+        tipped.rotate(Orientation.X, 1, ALL, NO_GROUND);
+        GhostSession stairs = session();
+        stairs.follow(tipped, UPRIGHT);
+        assertEquals(Orientation.IDENTITY, stairs.transform().orientation());
+    }
+
+    @Test
     void aRejectionLetsItMoveAgainWithTheReason() {
         GhostSession session = session();
         session.confirm(false);

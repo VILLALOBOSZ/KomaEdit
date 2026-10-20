@@ -87,6 +87,19 @@ public final class ToolsPanel {
 
         /** El bloque que se mira (el centro de la pantalla), o {@code null}. */
         String lookedAtBlock();
+
+        /**
+         * El id de la herramienta de KomaEdit que el jugador tiene en la mano ({@code pincel:12ab}), o {@code null}.
+         * Con él el Studio sabe si el pincel que hizo sigue en la mano para pasarle los cambios.
+         */
+        default String heldTool() {
+            return null;
+        }
+
+        /** Donde el jugador hizo clic en el mundo con el Studio abierto ({x, y, z} del bloque), o {@code null}. */
+        default int[] clickedSpot() {
+            return null;
+        }
     }
 
     public enum Key {
@@ -128,6 +141,7 @@ public final class ToolsPanel {
     private final Map<String, Integer> pendingOptions = new LinkedHashMap<>();
     private final Map<String, Integer> pages = new HashMap<>();
     private final NumberEdit numbers = new NumberEdit();
+    private final BrushSync brush = new BrushSync();
     /** Alto de una fila de ajuste: 20 normal, 18 en compacto. */
     private int row = Column.ROW;
     private ToolCard selected;
@@ -744,7 +758,8 @@ public final class ToolsPanel {
         String kind = host.tr("gui.komaedit.palette.kind.preset");
         for (int index = 0; index < presets.size(); index++) {
             ToolPreset preset = presets.get(index);
-            ui.chip(cells.get(index), labels.get(index), false, TEXT_SECONDARY)
+            // Marcada la del preset que hay puesto: se ve de un vistazo y se sabe que otro empieza de cero.
+            ui.chip(cells.get(index), labels.get(index), card.matches(current(), preset), TEXT_SECONDARY)
                     .tooltip(kind + ": " + labels.get(index) + "\n" + host.tr(preset.helpKey()))
                     .group("tools:preset")
                     .onClick(() -> {
@@ -1232,7 +1247,11 @@ public final class ToolsPanel {
             input = "";
             return;
         }
-        send(host, action.command().apply(current()));
+        String command = action.command().apply(current());
+        send(host, command);
+        if (action.id().equals("brush")) {
+            brush.linked(card.id(), action.id(), command, host.now());
+        }
         host.status(host.tr("gui.komaedit.tools.status.sent", host.tr(action.labelKey())));
     }
 
@@ -1460,7 +1479,7 @@ public final class ToolsPanel {
         };
     }
 
-    /** «Selección 10 × 6 × 12», «3 puntos», «Donde miras»: sobre qué trabajará Construir. */
+    /** «Selección 10 × 6 × 12», «3 puntos», «Donde haces clic»: sobre qué trabajará Construir. */
     public String targetText(Host host) {
         ToolsInfo info = host.info();
         ToolContext context = host.context();
@@ -1469,11 +1488,13 @@ public final class ToolsPanel {
             case SELECTION -> info.hasSelection()
                     ? host.tr("gui.komaedit.tools.footer.selection", info.selection()[0], info.selection()[1],
                     info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
-            case PATH_OR_LOOK, PATH_OR_SELECTION -> context.pathPoints() > 0
+            case PATH_OR_LOOK -> context.pathPoints() > 0
+                    ? host.tr("gui.komaedit.tools.footer.points", context.pathPoints()) : clicked(host);
+            case PATH_OR_SELECTION -> context.pathPoints() > 0
                     ? host.tr("gui.komaedit.tools.footer.points", context.pathPoints())
-                    : host.tr(card.target() == ToolTarget.PATH_OR_LOOK || !info.hasSelection()
-                    ? "gui.komaedit.tools.footer.look" : "gui.komaedit.tools.footer.selection_short");
-            case LOOK -> host.tr("gui.komaedit.tools.footer.look");
+                    : host.tr(info.hasSelection() ? "gui.komaedit.tools.footer.selection_short"
+                    : "gui.komaedit.tools.footer.no_selection");
+            case LOOK -> clicked(host);
             case HAND -> host.tr("gui.komaedit.tools.footer.hand");
             case MODE -> card instanceof SymmetryCard
                     ? host.tr(info.symmetry().active() ? "gui.komaedit.tools.footer.on"
@@ -1483,7 +1504,14 @@ public final class ToolsPanel {
         };
     }
 
-    /** «Árbol · donde miras», para quien quiere el resumen en una línea (la paleta de órdenes, las pruebas). */
+    /** «Donde haces clic» o, tras un clic en el mundo, en qué bloque («Clic en 12, 64, -30»). */
+    private static String clicked(Host host) {
+        int[] spot = host.clickedSpot();
+        return spot == null ? host.tr("gui.komaedit.tools.footer.look")
+                : host.tr("gui.komaedit.tools.footer.clicked", spot[0], spot[1], spot[2]);
+    }
+
+    /** «Árbol · donde haces clic», para quien quiere el resumen en una línea (la paleta de órdenes, las pruebas). */
     public String footerSummary(Host host) {
         return host.tr(selected().nameKey()) + " · " + targetText(host);
     }
@@ -1524,8 +1552,12 @@ public final class ToolsPanel {
         return selected().command(current(), preview && selected().previewable());
     }
 
-    /** Construir: manda la orden de la tarjeta o dice qué falta (y lleva a Trayectoria si faltan puntos). */
-    public void build(Host host) {
+    /**
+     * Construir: manda la orden de la tarjeta o dice qué falta (y lleva a Trayectoria si faltan puntos).
+     *
+     * @return la orden mandada, o {@code null} si algo lo impidió
+     */
+    public String build(Host host) {
         commitField(host);
         ToolProblem problem = blocking(host);
         if (problem != null) {
@@ -1533,14 +1565,61 @@ public final class ToolsPanel {
                 host.goToPath();
             }
             host.status(problemText(host, problem));
-            return;
+            return null;
         }
         boolean preview = preview(host);
-        send(host, selected().command(current(), preview));
+        String command = selected().command(current(), preview);
+        send(host, command);
+        if (selected().target() == ToolTarget.HAND) {
+            brush.linked(selected().id(), "", command, host.now());
+        }
         host.preferences().pushToolRecent(selected().id());
         host.savePreferences();
         host.status(host.tr(preview ? "gui.komaedit.tools.status.preview_sent" : "gui.komaedit.tools.status.built",
                 host.tr(selected().nameKey())));
+        return command;
+    }
+
+    /**
+     * Pasa al pincel de la mano los cambios de la tarjeta que lo creó ({@link BrushSync}), aunque ahora se vea otra
+     * herramienta: cualquier cambio en el Studio llega al pincel al momento.
+     */
+    public void syncBrush(Host host) {
+        String id = brush.card();
+        if (id == null) {
+            return;
+        }
+        ToolCard card = ToolCatalog.byId(id);
+        if (card == null) {
+            brush.forget();
+            return;
+        }
+        String send = brush.tick(brushCommand(card, brush.action(), values(card)), host.heldTool(), host.now());
+        if (send != null) {
+            host.send(send);
+            host.status(host.tr("gui.komaedit.tools.status.brush_synced", host.tr(card.nameKey())));
+        }
+    }
+
+    /** El pincel que se sigue, para las pruebas. */
+    public BrushSync brush() {
+        return brush;
+    }
+
+    /** La orden que crea el pincel de la tarjeta con estos valores; {@code null} si algo está mal escrito. */
+    static String brushCommand(ToolCard card, String action, ToolValues values) {
+        if (card.problems(values, ToolContext.UNKNOWN).stream().anyMatch(ToolProblem::blocking)) {
+            return null;
+        }
+        if (action.isEmpty()) {
+            return card.command(values, false);
+        }
+        for (ToolAction candidate : card.actions()) {
+            if (candidate.id().equals(action)) {
+                return candidate.command().apply(values);
+            }
+        }
+        return null;
     }
 
     private void send(Host host, String command) {

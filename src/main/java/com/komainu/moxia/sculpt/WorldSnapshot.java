@@ -8,7 +8,10 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 import java.util.Objects;
 
 public final class WorldSnapshot {
-    private static final BlockState AIR = Objects.requireNonNull(BlockTypes.AIR).getDefaultState();
+    /** El aire de fuera de la foto, al primer uso: capturar no necesita los registros de WorldEdit (las pruebas). */
+    private static final class Air {
+        private static final BlockState STATE = Objects.requireNonNull(BlockTypes.AIR).getDefaultState();
+    }
 
     private final int minimumX;
     private final int minimumY;
@@ -60,7 +63,7 @@ public final class WorldSnapshot {
 
     public BlockState get(int x, int y, int z) {
         if (!contains(x, y, z)) {
-            return AIR;
+            return Air.STATE;
         }
         int localX = x - minimumX;
         int localY = y - minimumY;

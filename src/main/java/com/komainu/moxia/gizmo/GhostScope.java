@@ -15,7 +15,7 @@ import java.util.Set;
  *     <li>{@code paste}: el portapapeles.</li>
  *     <li>{@code place} y {@code blueprint place}: estructuras, schematics, formas y planos.</li>
  *     <li>Figuras y estructuras sobre la trayectoria: {@code build}, {@code bridge}, {@code pillar}, {@code torii},
- *     {@code cloud}, {@code mandala}, {@code web}, {@code noodles}, {@code lightning}, {@code braid},
+ *     {@code cloud}, {@code web}, {@code noodles}, {@code lightning}, {@code braid},
  *     {@code noisetube}, {@code expr}, {@code sweep}, {@code ezspline}, {@code loft} y {@code bend}.</li>
  *     <li>Árboles y rocas ({@code tree}, {@code rock}), tejados ({@code roof}), texto ({@code text}) e imágenes
  *     ({@code image}).</li>
@@ -33,7 +33,7 @@ public final class GhostScope {
     private static final Set<String> MOVABLE = Set.of(
             "paste", "pegar",
             "place", "colocar",
-            "build", "bridge", "pillar", "pillararches", "torii", "cloud", "nube", "mandala", "web", "noodles",
+            "build", "bridge", "pillar", "pillararches", "torii", "cloud", "nube", "web", "noodles",
             "lightning", "rayos", "lightningcircle", "circulorayos", "braid", "trenza", "noisetube", "erosion",
             "expr", "expresion", "sweep", "perfil", "ezspline", "ezsp", "spline", "loft", "lona", "bend", "doblar",
             "tree", "arbol", "rock", "roca", "roof", "tejado", "text", "texto", "image", "imagen");

@@ -368,8 +368,9 @@ public abstract sealed class EzBrush {
         private final double density;
         private final NoiseSpec noise;
         private final double scale;
-        /** Texto de {@code -m} o {@code null}; se vuelve a leer en cada clic. */
+        /** Texto de {@code -m} o {@code null}; si es de WorldEdit se vuelve a leer en cada clic. */
         private final String mask;
+        private final BrushMask fixedMask;
         private final int maxAmount;
 
         Petals(BlockType block, int radius, double density, NoiseSpec noise, double scale, String mask,
@@ -380,6 +381,7 @@ public abstract sealed class EzBrush {
             this.noise = noise;
             this.scale = scale;
             this.mask = mask;
+            this.fixedMask = BrushMasks.fixed(mask);
             this.maxAmount = maxAmount;
         }
 
@@ -397,7 +399,7 @@ public abstract sealed class EzBrush {
             long seed = ThreadLocalRandom.current().nextLong();
             BrushNoise field = noise == null ? BrushNoise.white(seed) : BrushNoise.of(noise, scale, 0x5045_54A1L);
             PetalPainter.Settings settings = new PetalPainter.Settings(block.id(), maxAmount, density, field,
-                    BrushMasks.parse(session.player(), mask), seed);
+                    BrushMasks.forClick(fixedMask, session.player(), mask), seed);
             BlockVector3 center = session.target().add(0, 1, 0);
             session.run(new PaintOperations.Petals(block, settings, center, radius(), input.left()));
         }
@@ -709,11 +711,13 @@ public abstract sealed class EzBrush {
     /** Relieve: un sello de alturas en cada clic. Derecho: el modo; izquierdo: el contrario; F: cambia de modo. */
     static final class Relief extends EzBrush {
         private final HeightmapBrush.Config config;
+        private final BrushMask fixedMask;
         private StampBrush.Mode mode;
 
         Relief(HeightmapBrush.Config config, boolean preview) {
             super(EzBrushType.HEIGHTMAP, config.radius(), preview);
             this.config = config;
+            this.fixedMask = config.mask() == null ? null : BrushMasks.fixed(config.mask());
             this.mode = config.mode();
         }
 
@@ -730,7 +734,8 @@ public abstract sealed class EzBrush {
                 return;
             }
             StampBrush.Mode pass = input.left() ? mode.opposite() : mode;
-            BrushMask mask = config.mask() == null ? null : BrushMasks.parse(session.player(), config.mask());
+            BrushMask mask = config.mask() == null ? null
+                    : BrushMasks.forClick(fixedMask, session.player(), config.mask());
             session.run(HeightmapBrush.operation(config, pass, session.target(), session.player().getYaw(),
                     ThreadLocalRandom.current().nextDouble(), mask));
         }
@@ -745,8 +750,9 @@ public abstract sealed class EzBrush {
         private final ModelSettings settings;
         private final ModelMaterial material;
         private final ModelMaterial fill;
-        /** Texto de {@code -m} o {@code null}; se vuelve a leer en cada clic. */
+        /** Texto de {@code -m} o {@code null}; si es de WorldEdit se vuelve a leer en cada clic. */
         private final String mask;
+        private final BrushMask fixedMask;
         private final boolean freshSeed;
         private final boolean swapClicks;
 
@@ -757,6 +763,7 @@ public abstract sealed class EzBrush {
             this.material = material;
             this.fill = fill;
             this.mask = mask;
+            this.fixedMask = mask == null ? null : BrushMasks.fixed(mask);
             this.freshSeed = freshSeed;
             this.swapClicks = swapClicks;
         }
@@ -878,7 +885,7 @@ public abstract sealed class EzBrush {
             if (mask == null) {
                 return ModelOperation.CellMask.ALL;
             }
-            BrushMask parsed = BrushMasks.parse(player, mask);
+            BrushMask parsed = BrushMasks.forClick(fixedMask, player, mask);
             return new ModelOperation.CellMask() {
                 private SnapshotWorld world;
 

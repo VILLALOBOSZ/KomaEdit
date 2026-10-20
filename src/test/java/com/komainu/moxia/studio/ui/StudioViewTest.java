@@ -37,9 +37,11 @@ class StudioViewTest {
             assertTrue(keys.add(stage.shortcut()), "tecla repetida " + stage.shortcut());
             assertEquals(stage, StudioStage.byShortcut(stage.shortcut()));
         }
-        assertEquals(10, keys.size());
-        assertEquals(List.of(3, 4, 3), Arrays.stream(StudioStage.groupSizes()).boxed().toList());
+        assertEquals(9, keys.size(), "del 1 al 9: Envejecer salió del Studio");
+        assertEquals(List.of(3, 3, 3), Arrays.stream(StudioStage.groupSizes()).boxed().toList());
         assertEquals(StudioStage.FIGURE, StudioStage.byId("structures"), "Estructuras vive ahora en Figuras");
+        assertEquals(null, StudioStage.byId("weather"), "quien lo dejó en Envejecer abre en la de serie");
+        assertEquals('7', StudioStage.BLUEPRINTS.shortcut());
         StudioDriver studio = studio();
         for (String group : List.of("CREAR", "AJUSTAR", "BIBLIOTECA")) {
             assertTrue(studio.has(group), group);
@@ -57,7 +59,7 @@ class StudioViewTest {
         assertEquals(StudioLayout.NavMode.LABELS, studio.view.frame().navMode());
         studio.click("Planos");
         assertEquals(StudioStage.BLUEPRINTS, studio.view.stage());
-        assertTrue(studio.has("8"), "la tecla de cada etapa se ve a su lado");
+        assertTrue(studio.has("7"), "la tecla de cada etapa se ve a su lado");
         studio.key(StudioKey.of(StudioKey.Code.TAB));
         assertEquals(StudioStage.RECIPES, studio.view.stage());
         studio.key(new StudioKey(StudioKey.Code.TAB, '\0', false, true));
@@ -87,7 +89,7 @@ class StudioViewTest {
         assertEquals(StudioStage.TOOLS, studio.view.stage());
         assertEquals("river", studio.view.tools().selected().id());
         studio.click("Tallar cauce");
-        assertEquals("komaedit terreno rio natural", studio.host.last());
+        assertEquals("komaedit terreno rio natural -v", studio.host.last());
     }
 
     @Test
@@ -106,7 +108,7 @@ class StudioViewTest {
         }
         studio.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), false, 0L, 3, false);
         studio.click("Tallar cauce");
-        assertEquals("komaedit terreno rio natural", studio.host.last());
+        assertEquals("komaedit terreno rio natural -v", studio.host.last());
     }
 
     @Test

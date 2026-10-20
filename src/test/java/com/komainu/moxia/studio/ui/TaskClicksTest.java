@@ -41,14 +41,14 @@ class TaskClicksTest {
         studio.click("Árbol");
         studio.click("Abeto");
         studio.click("Plantar");
-        assertEquals("komaedit tree spruce", studio.host.last());
+        assertEquals("komaedit tree spruce -v", studio.host.last(), "con la vista previa en vivo de serie");
         assertEquals(4, studio.clicks(), "la primera vez");
         // La siguiente vez el Studio abre en la etapa y con la herramienta de la última vez.
         StudioDriver again = new StudioDriver(new StudioView(), studio.host, 960, 540);
         again.render();
         again.click("Abedul");
         again.click("Plantar");
-        assertEquals("komaedit tree birch", again.host.last());
+        assertEquals("komaedit tree birch -v", again.host.last());
         assertEquals(2, again.clicks(), "con la herramienta recordada");
     }
 
@@ -59,14 +59,14 @@ class TaskClicksTest {
         studio.click("Tejado");
         studio.click("Cuatro");
         studio.click("Construir tejado");
-        assertEquals("komaedit roof hip spruce_planks", studio.host.last());
+        assertEquals("komaedit roof hip spruce_planks -v", studio.host.last());
         assertEquals(4, studio.clicks(), "con tipo a cuatro aguas");
         // Cambiar el material por el que se mira: un clic (el cuentagotas).
         studio.resetCounts();
         studio.host.lookedAt = "minecraft:deepslate_tiles";
         studio.click("Usar el bloque que miras");
         studio.click("Construir tejado");
-        assertEquals("komaedit roof hip deepslate_tiles", studio.host.last());
+        assertEquals("komaedit roof hip deepslate_tiles -v", studio.host.last());
         assertEquals(2, studio.clicks());
     }
 
@@ -82,7 +82,7 @@ class TaskClicksTest {
         studio.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), false, 0L, 4, false);
         studio.click("Río o cañón");
         studio.click("Tallar cauce");
-        assertEquals("komaedit terreno rio natural", studio.host.last());
+        assertEquals("komaedit terreno rio natural -v", studio.host.last());
         assertEquals(7, studio.clicks(), "etapa, cuatro puntos, «Usar con: Río» y construir");
     }
 

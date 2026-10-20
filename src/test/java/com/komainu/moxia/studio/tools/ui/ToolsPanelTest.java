@@ -48,6 +48,8 @@ class ToolsPanelTest {
         // en el CI: los nombres de bloque que se comprueban vienen de la tabla fija del host.
         studio = new StudioDriver(new StudioView(), new FakeStudioHost("es_es", false), 960, 1400);
         studio.host.context = ALL;
+        // Las órdenes tal cual, sin la vista previa en vivo de serie (la prueban LivePreviewTest y las de abajo).
+        studio.host.preferences.setPreviewMode(StudioPreferences.PreviewMode.OFF);
         studio.host.info = new ToolsInfo(true, new int[]{8, 5, 8}, List.of("cursiva"),
                 Map.of("bosque", "spruce 30 -d 1.4"), Map.of(), ToolsInfo.Symmetry.OFF, null,
                 List.of("minecraft:plains", "minecraft:cherry_grove", "minecraft:snowy_plains",

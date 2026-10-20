@@ -4,6 +4,7 @@ import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
+import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.studio.BuildEstimate;
 import com.komainu.moxia.studio.StudioPreferences;
@@ -47,6 +48,9 @@ public final class StudioView {
     }
 
     public static final long STATUS_MILLIS = 4_000L;
+    /** De quién es la vista previa en vivo que se rehace: la figura o una herramienta ({@code tool:tree}). */
+    static final String FIGURE_OWNER = "figure";
+    static final String TOOL_OWNER = "tool:";
     private static final int HISTORY_WIDTH = 220;
     private static final int HISTORY_ROWS = 10;
     /** Con al menos este alto de contenido las galerías enseñan cuatro filas en vez de dos. */
@@ -241,24 +245,51 @@ public final class StudioView {
             lastHistoryRequest = now;
             host.requestState();
         }
-        String command = livePreviewCommand(bound);
-        if (command == null) {
-            live.tick(null, now, false);
-            return;
-        }
+        tools.syncBrush(bound);
         Optional<JobStatusPayload> job = host.job();
         boolean busy = job.isPresent() && job.get().phaseValue() != ProgressLine.Phase.WAITING;
-        String send = live.tick(command, now, busy);
-        if (send != null) {
-            host.send(send);
-            status(host.tr("gui.komaedit.preview.live.sent"), now);
+        boolean figureSide = stage == StudioStage.FIGURE || stage == StudioStage.MODIFIERS
+                || stage == StudioStage.MATERIAL;
+        boolean ghost = host.ghost().map(StudioHost.Ghost::fromStudio).orElse(false);
+        // La figura solo se rehace sobre su fantasma: sin él, Construir la colocaría otra vez.
+        boolean shown = ghost || !figureSide && job.isPresent()
+                && job.get().phaseValue() == ProgressLine.Phase.WAITING;
+        String owner = figureSide ? FIGURE_OWNER : TOOL_OWNER + tools.selected().id();
+        String command = figureSide ? liveFigureKey(bound) : livePreviewCommand(bound);
+        String send = live.tick(owner, command, now, busy, shown);
+        if (send == null) {
+            return;
         }
+        host.expectGhost(true);
+        if (figureSide) {
+            host.recipeAction(RecipeActionPayload.BUILD, figure.draft(), "");
+        } else {
+            host.send(send);
+        }
+        status(host.tr("gui.komaedit.preview.live.sent"), now);
+    }
+
+    /** Si la vista previa en vivo está encendida (la de serie). */
+    private static boolean liveMode(StudioHost host) {
+        return host.preferences().previewMode() == StudioPreferences.PreviewMode.LIVE;
+    }
+
+    /**
+     * Lo que identifica la figura de ahora para la vista previa en vivo, o {@code null} si ahora no toca: se está
+     * tocando un control, faltan puntos o la figura es grande (más de {@value BuildEstimate#LARGE} bloques) o su
+     * holograma aún no tiene el recuento.
+     */
+    String liveFigureKey(StudioHost host) {
+        if (!liveMode(host) || figure.typing() || figure.dragging() || !figure.pathReady(host)
+                || !host.previewSettled() || BuildEstimate.level(host.previewBlocks()) != BuildEstimate.Level.NORMAL) {
+            return null;
+        }
+        return figure.draft().toString();
     }
 
     /** La orden de la vista previa en vivo con lo de ahora, o {@code null} si ahora no toca. */
     String livePreviewCommand(StudioHost host) {
-        if (stage != StudioStage.TOOLS || tools.browsing() || tools.typing() || tools.dragging()
-                || host.preferences().previewMode() != StudioPreferences.PreviewMode.LIVE) {
+        if (stage != StudioStage.TOOLS || tools.browsing() || tools.typing() || tools.dragging() || !liveMode(host)) {
             return null;
         }
         ToolCard card = tools.selected();
@@ -502,7 +533,6 @@ public final class StudioView {
             case MODIFIERS -> figure.drawModifiers(ui, column, host, compact);
             case MATERIAL -> figure.drawMaterial(ui, column, host, compact);
             case COLOR -> color.draw(ui, column, host, compact);
-            case WEATHER -> figure.drawWeather(ui, column, host, compact);
             case BLUEPRINTS -> blueprints.draw(ui, column, host, compact);
             case RECIPES -> figure.drawRecipes(ui, column, host);
             case INSTANCES -> figure.drawInstances(ui, column, host);
@@ -544,7 +574,7 @@ public final class StudioView {
                 target = host.tr(card.nameKey()) + " · " + target;
             }
             return new Footer(tools.targetIcon(host), target, "", MUTED, tools.buildLabel(host),
-                    tools.buildTone(host), () -> tools.build(host), tools.buildHelp(host), card.previewable(), "");
+                    tools.buildTone(host), () -> buildTool(host), tools.buildHelp(host), card.previewable(), "");
         }
         ToolsInfo info = host.info();
         String selection = info.hasSelection()
@@ -552,19 +582,6 @@ public final class StudioView {
                 info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
         boolean missingSelection = info.known() && !info.hasSelection();
         switch (stage) {
-            case WEATHER -> {
-                return new Footer(StudioIcons.Icon.SELECTION, selection, "", MUTED,
-                        missingSelection ? host.tr("gui.komaedit.tools.problem.no_selection.short")
-                                : host.tr("gui.komaedit.weather.run"),
-                        missingSelection ? StudioUi.Tone.DISABLED : StudioUi.Tone.PRIMARY,
-                        () -> {
-                            if (missingSelection) {
-                                host.status(host.tr("gui.komaedit.tools.problem.no_selection"));
-                            } else {
-                                figure.runWeather(host);
-                            }
-                        }, host.tr("gui.komaedit.weather.selection_hint"), false, "");
-            }
             case COLOR -> {
                 return new Footer(StudioIcons.Icon.SELECTION, selection, "", MUTED,
                         missingSelection ? host.tr("gui.komaedit.tools.problem.no_selection.short")
@@ -580,7 +597,7 @@ public final class StudioView {
             }
             case BLUEPRINTS -> {
                 String chosen = blueprints.selectedName(host);
-                String target = host.tr("gui.komaedit.tools.footer.look") + (chosen.isEmpty() ? "" : " · " + chosen);
+                String target = host.tr("gui.komaedit.blueprint.footer.here") + (chosen.isEmpty() ? "" : " · " + chosen);
                 return new Footer(StudioIcons.Icon.LOOK, target, "", MUTED, blueprints.placeLabel(host),
                         blueprints.placeTone(host), () -> blueprints.place(host),
                         host.tr("gui.komaedit.help.blueprint.place"), false, "");
@@ -612,7 +629,12 @@ public final class StudioView {
                         toolCreation = false;
                         selectStage(StudioStage.PATH, host);
                     }
-                    figure.build(host, host.now());
+                    host.expectGhost(false);
+                    if (figure.build(host, host.now()) && liveMode(host)) {
+                        // Si sale como fantasma, cambiar la figura lo rehace (si no, se colocó y no hay nada que
+                        // rehacer: la vista previa en vivo se olvida sola).
+                        live.arm(FIGURE_OWNER, figure.draft().toString(), host.now());
+                    }
                 }, host.tr("gui.komaedit.help.build"), false, idle);
             }
         }
@@ -1058,6 +1080,38 @@ public final class StudioView {
 
     private void build(StudioHost host) {
         footer(bind(host)).build().run();
+    }
+
+    /** Construir de la herramienta elegida; con la vista previa en vivo, desde ahora sus cambios la rehacen. */
+    private void buildTool(StudioHost host) {
+        ToolCard card = tools.selected();
+        boolean preview = card.previewable() && host.preferences().toolPreview();
+        if (preview) {
+            host.expectGhost(false);
+        }
+        String sent = tools.build(host);
+        if (sent != null && preview && liveMode(host)) {
+            live.arm(TOOL_OWNER + card.id(), sent, host.now());
+        }
+    }
+
+    /**
+     * Si un clic en el mundo coloca la herramienta elegida ahí: en la etapa Herramientas, con una herramienta que va
+     * «donde haces clic» (árbol, roca, texto) y sin puntos de trayectoria que manden.
+     */
+    public boolean placesOnClick(StudioHost host) {
+        if (stage != StudioStage.TOOLS || tools.browsing() || modal()) {
+            return false;
+        }
+        ToolCard card = tools.selected();
+        return card.target() == ToolTarget.LOOK
+                || card.target() == ToolTarget.PATH_OR_LOOK && host.context().pathPoints() == 0;
+    }
+
+    /** Clic en el mundo con {@link #placesOnClick}: la pantalla ya le dijo al servidor dónde; se construye ahí. */
+    public void placeAtClick(StudioHost host) {
+        StudioHost bound = bind(host);
+        buildTool(bound);
     }
 
     // ── Ratón ───────────────────────────────────────────────────────────────────────────────────────────
@@ -1591,6 +1645,21 @@ public final class StudioView {
         @Override
         public Optional<Ghost> ghost() {
             return host.ghost();
+        }
+
+        @Override
+        public void expectGhost(boolean refresh) {
+            host.expectGhost(refresh);
+        }
+
+        @Override
+        public String heldTool() {
+            return host.heldTool();
+        }
+
+        @Override
+        public int[] clickedSpot() {
+            return host.clickedSpot();
         }
 
         @Override

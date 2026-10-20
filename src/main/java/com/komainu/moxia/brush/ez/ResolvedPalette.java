@@ -17,10 +17,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Paleta de un pincel ya convertida en estados de bloque, con la losa y la escalera del material de cada entrada.
  * Se resuelve en el hilo del servidor (parser de WorldEdit y registros) y después se usa desde el worker.
+ *
+ * <p>Es del pincel: se rehace solo al configurarlo de nuevo ({@code /komaedit pincel …} o los cambios del Studio).
+ * Lo que pone cada entrada sobre cada estado del mundo ({@link #place}, que copia propiedades) se recuerda aquí, así
+ * cada clic no lo vuelve a calcular bloque a bloque.</p>
  */
 public final class ResolvedPalette {
     private final String source;
@@ -28,6 +33,12 @@ public final class ResolvedPalette {
     private final List<BlockState> slabs;
     private final List<BlockState> stairs;
     private final List<Boolean> explicit;
+    /** Por estado del mundo, lo que pone cada entrada y clase de pieza (hueco {@code entrada · 3 + clase}). */
+    private final Map<BlockState, Object[]> placed = new ConcurrentHashMap<>();
+    /** Lo que pone {@link #place} cuando el material no tiene esa pieza. */
+    private static final Object NOTHING = new Object();
+    /** Estados distintos que se recuerdan como mucho; con más, el resto se calcula cada vez. */
+    private static final int MAX_REMEMBERED = 1_024;
 
     private ResolvedPalette(String source, List<BlockState> full, List<BlockState> slabs, List<BlockState> stairs,
                             List<Boolean> explicit) {
@@ -91,6 +102,27 @@ public final class ResolvedPalette {
      * hereda las propiedades que compartan (el eje de un tronco) salvo que la entrada fije las suyas.
      */
     public BlockState place(int index, BlockState existing, PaletteShift.Kind kind) {
+        if (existing == null) {
+            return compute(index, null, kind);
+        }
+        Object[] row = placed.get(existing);
+        if (row == null) {
+            if (placed.size() >= MAX_REMEMBERED) {
+                return compute(index, existing, kind);
+            }
+            row = placed.computeIfAbsent(existing, ignored -> new Object[full.size() * 3]);
+        }
+        int slot = index * 3 + kind.ordinal();
+        Object value = row[slot];
+        if (value == null) {
+            BlockState computed = compute(index, existing, kind);
+            value = computed == null ? NOTHING : computed;
+            row[slot] = value;
+        }
+        return value == NOTHING ? null : (BlockState) value;
+    }
+
+    private BlockState compute(int index, BlockState existing, PaletteShift.Kind kind) {
         return switch (kind) {
             case SLAB -> copyProperties(slabs.get(index), existing);
             case STAIRS -> copyProperties(stairs.get(index), existing);

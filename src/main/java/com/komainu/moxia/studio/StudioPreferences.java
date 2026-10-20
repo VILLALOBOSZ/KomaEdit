@@ -31,7 +31,11 @@ public final class StudioPreferences {
     public static final int MAX_FAVORITES = 64;
     public static final int MAX_BLOCK_RECENTS = 9;
     private static final int MAX_STORED = 128;
-    private static final int FORMAT = 2;
+    /**
+     * 3: la vista previa en vivo pasa a ser la de serie. Hasta la 2 lo de serie era «sin vista previa» y se guardaba
+     * igual que si se hubiera elegido, así que un archivo anterior sin vista previa se lee en vivo.
+     */
+    private static final int FORMAT = 3;
 
     /** Qué hace la vista previa de las herramientas. */
     public enum PreviewMode {
@@ -68,7 +72,7 @@ public final class StudioPreferences {
     private final Map<String, Integer> scroll = new LinkedHashMap<>();
     private final List<String> blockRecents = new ArrayList<>();
     private final Set<String> expanded = new LinkedHashSet<>();
-    private PreviewMode previewMode = PreviewMode.OFF;
+    private PreviewMode previewMode = PreviewMode.LIVE;
     private String stage = "";
     private String tool = "";
     private double panelShare;
@@ -315,8 +319,11 @@ public final class StudioPreferences {
             boolean oldPreview = root.has("toolPreview") && root.get("toolPreview").isJsonPrimitive()
                     && root.getAsJsonPrimitive("toolPreview").isBoolean() && root.get("toolPreview").getAsBoolean();
             String preview = string(root, "preview");
-            preferences.previewMode = preview.isEmpty() ? (oldPreview ? PreviewMode.BUILD : PreviewMode.OFF)
+            int format = root.has("format") && root.get("format").isJsonPrimitive()
+                    && root.getAsJsonPrimitive("format").isNumber() ? root.get("format").getAsInt() : 1;
+            PreviewMode chosen = preview.isEmpty() ? (oldPreview ? PreviewMode.BUILD : PreviewMode.OFF)
                     : PreviewMode.byId(preview);
+            preferences.previewMode = format < 3 && chosen == PreviewMode.OFF ? PreviewMode.LIVE : chosen;
             preferences.stage = string(root, "stage");
             preferences.tool = string(root, "tool");
             if (root.has("panelShare") && root.get("panelShare").isJsonPrimitive()

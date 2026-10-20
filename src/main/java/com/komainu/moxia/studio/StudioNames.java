@@ -21,9 +21,6 @@ import java.util.List;
  * pantalla siempre pasa por estas claves para salir en el idioma del cliente.</p>
  */
 public final class StudioNames {
-    /** Climas de Envejecer, en el orden del Studio; el id es el argumento del comando. */
-    public static final List<String> WEATHER_STYLES = List.of("templado", "desierto", "nevado", "hundido");
-
     private StudioNames() {
     }
 
@@ -83,21 +80,13 @@ public final class StudioNames {
         return "komaedit.normal." + mode.id();
     }
 
-    public static String weather(String style) {
-        return "komaedit.weather." + style;
-    }
-
-    public static String weatherHint(String style) {
-        return weather(style) + ".hint";
-    }
-
     /** Primer control de proporciones: el tamaño principal, que cada figura llama a su manera. */
     public static String radiusLabel(PathShape shape) {
         return param(switch (shape) {
             case SWEEP, BRAID, NOISE_TUBE, EXPRESSION -> "radius";
             case LIGHTNING -> "amplitude";
             case WEB -> "elasticity";
-            case CLOUDS, MANDALA -> "size";
+            case CLOUDS -> "size";
             case TORII -> "girth";
             case PILLAR, PILLAR_ARCHES -> "width";
             default -> "scale";
@@ -112,7 +101,6 @@ public final class StudioNames {
             case NOISE_TUBE -> "frequency";
             case LIGHTNING -> "branching";
             case WEB -> "thread_gap";
-            case MANDALA -> "symmetry";
             case CLOUDS -> "organicity";
             case TORII, PILLAR, PILLAR_ARCHES -> "detail";
             default -> "spacing";
@@ -125,7 +113,7 @@ public final class StudioNames {
             case BRAID -> "strand";
             case NOISE_TUBE -> "depth";
             case LIGHTNING -> "core";
-            case MANDALA, TORII, PILLAR, PILLAR_ARCHES -> "relief";
+            case TORII, PILLAR, PILLAR_ARCHES -> "relief";
             case CLOUDS -> "density";
             default -> "thickness";
         });
@@ -192,10 +180,6 @@ public final class StudioNames {
         }
         for (TubeSettings.NormalMode mode : TubeSettings.NormalMode.values()) {
             keys.add(normal(mode));
-        }
-        for (String style : WEATHER_STYLES) {
-            keys.add(weather(style));
-            keys.add(weatherHint(style));
         }
         return keys;
     }

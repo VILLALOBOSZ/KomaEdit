@@ -186,6 +186,9 @@ public final class BrushCommands {
                 case "estado", "status" -> {
                     return status(context);
                 }
+                case "actualizar", "update" -> {
+                    return update(player, options);
+                }
                 default -> {
                 }
             }
@@ -220,6 +223,31 @@ public final class BrushCommands {
         } catch (IllegalArgumentException | IllegalStateException exception) {
             return fail(context, exception.getMessage());
         }
+    }
+
+    /**
+     * {@code pincel actualizar <tipo> <opciones>}: lo que manda el Studio al cambiar un ajuste del pincel que hizo.
+     * Solo cambia el pincel que ya está en la mano y es de ese tipo (nunca marca ni entrega otro objeto) y lo dice en
+     * la barra de acción, sin llenar el chat.
+     */
+    private static int update(ServerPlayerEntity player, String input) {
+        String[] parts = input.strip().split("\\s+", 2);
+        EzBrushType type = EzBrushType.byId(parts[0]);
+        String toolId = BrushTool.id(player.getMainHandStack());
+        java.util.Optional<EzBrush> current = BrushTool.kind(toolId) == BrushTool.Kind.BRUSH
+                ? EzBrushManager.brush(player.getUuid(), toolId) : java.util.Optional.empty();
+        if (current.isEmpty() || current.get().type() != type) {
+            Feedback.statusWarn(player, Text.literal("No tienes en la mano el pincel de " + type.displayName()
+                    + ": los cambios del Studio no se le pasan"));
+            return 0;
+        }
+        KomaPermissions.requireBuild(player, "brush." + type.id());
+        EzBrush brush = EzBrush.create(player, type, parts.length > 1 ? parts[1] : "");
+        EzBrushManager.bind(player, toolId, brush);
+        BrushTool.setRadius(player, brush.radius());
+        Feedback.status(player, type.displayName() + " al día" + (brush.radius() > 0 ? " · radio " + brush.radius()
+                : "") + (brush.preview() ? " · con vista previa" : " · sin vista previa"));
+        return 1;
     }
 
     private static int status(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {

@@ -51,9 +51,11 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
@@ -74,6 +76,8 @@ public final class GhostClient {
     private static final double REACH = 192.0;
     private static final int HUD_EVERY_TICKS = 10;
     private static final int BOX = 0xC07FD7FF;
+    /** Lo que puede tardar en llegar el fantasma que pidió el Studio. */
+    private static final long EXPECT_MILLIS = 20_000L;
     private static final PreviewPlanCodec.Assembler ASSEMBLER = new PreviewPlanCodec.Assembler();
     private static final Map<GizmoKeys.Action, KeyBinding> BINDINGS = new EnumMap<>(GizmoKeys.Action.class);
 
@@ -87,8 +91,24 @@ public final class GhostClient {
     private static int ticks;
     private static String notice = "";
     private static long noticeAt;
+    private static long studioUntil;
+    private static boolean refreshPending;
+    /** El fantasma de ahora lo abrió el Studio (su vista previa en vivo lo puede rehacer). */
+    private static boolean fromStudio;
+    private static boolean terrainDrag;
+    /** El bloque y la cara a los que apuntaba el cursor la última vez al arrastrar por el terreno. */
+    private static int[] terrainLast;
 
     private GhostClient() {
+    }
+
+    /**
+     * El Studio va a pedir un fantasma. Con {@code refresh} es la vista previa en vivo: el que llegue sustituye al de
+     * ahora y sale donde el jugador lo dejó ({@link GhostSession#follow}).
+     */
+    public static void expectStudio(boolean refresh) {
+        studioUntil = System.currentTimeMillis() + EXPECT_MILLIS;
+        refreshPending = refresh;
     }
 
     public static void register() {
@@ -136,13 +156,26 @@ public final class GhostClient {
     // ---------------------------------------------------------------- red
 
     private static void open(GhostPayloads.Open payload, MinecraftClient client) {
+        boolean studio = System.currentTimeMillis() < studioUntil;
+        GhostSession previous = studio && refreshPending && fromStudio && session != null && session.active()
+                ? session : null;
+        studioUntil = 0L;
+        refreshPending = false;
         close();
         GhostOptions options = GhostOptions.fromBits(payload.options()).withGround(false);
         session = new GhostSession(new GhostSession.Info(payload.id(), payload.description(), payload.bounds(),
                 payload.blocks(), payload.air(), GhostTransform.at(payload.pivotX(), payload.pivotY(),
                 payload.pivotZ()), options));
         palette = payload.palette();
+        fromStudio = studio;
         ASSEMBLER.clear();
+        if (previous != null) {
+            // La vista previa en vivo: el mismo objeto con otros ajustes, donde el jugador lo dejó y sin repetir el
+            // aviso del chat.
+            session.follow(previous, RULES);
+            hud(client);
+            return;
+        }
         announce(client);
     }
 
@@ -194,6 +227,9 @@ public final class GhostClient {
         hovered = GizmoHandle.NONE;
         worldDrag = false;
         studioDrag = false;
+        fromStudio = false;
+        terrainDrag = false;
+        terrainLast = null;
         ASSEMBLER.clear();
         GhostRenderer.clear();
     }
@@ -329,15 +365,7 @@ public final class GhostClient {
             return false;
         }
         BlockPos pos = block.getBlockPos();
-        int face = switch (block.getSide()) {
-            case WEST -> 0;
-            case EAST -> 1;
-            case DOWN -> 2;
-            case UP -> 3;
-            case NORTH -> 4;
-            case SOUTH -> 5;
-        };
-        return session.placeAgainst(pos.getX(), pos.getY(), pos.getZ(), face, GROUND);
+        return session.placeAgainst(pos.getX(), pos.getY(), pos.getZ(), face(block.getSide()), GROUND);
     }
 
     // ---------------------------------------------------------------- teclado y ratón (en el mundo)
@@ -475,6 +503,57 @@ public final class GhostClient {
             GhostRenderer.orient(session.transform().orientation(), MinecraftClient.getInstance());
         }
         studioDrag = false;
+        terrainDrag = false;
+        terrainLast = null;
+    }
+
+    /**
+     * Clic del Studio en el mundo que no agarra ninguna pieza del gizmo: el fantasma salta a donde apunta el cursor
+     * (contra la cara del bloque, como «a donde miro») y, mientras se mantenga el botón, lo sigue por el terreno.
+     *
+     * @return si había fantasma que mover
+     */
+    public static boolean studioPlace(BlockHitResult hit) {
+        if (!active() || hit == null || hit.getType() != HitResult.Type.BLOCK) {
+            return false;
+        }
+        terrainDrag = true;
+        terrainLast = null;
+        studioTerrain(hit);
+        return true;
+    }
+
+    /** Si se está llevando el fantasma por el terreno con el ratón (en el Studio). */
+    public static boolean studioTerrainDragging() {
+        return terrainDrag;
+    }
+
+    /** El cursor del Studio arrastrando el fantasma: el bloque y la cara a los que apunta ahora. */
+    public static void studioTerrain(BlockHitResult hit) {
+        if (!terrainDrag || session == null || hit == null || hit.getType() != HitResult.Type.BLOCK) {
+            return;
+        }
+        BlockPos pos = hit.getBlockPos();
+        int[] cell = {pos.getX(), pos.getY(), pos.getZ(), face(hit.getSide())};
+        if (Arrays.equals(cell, terrainLast)) {
+            return;
+        }
+        terrainLast = cell;
+        if (session.placeAgainst(cell[0], cell[1], cell[2], cell[3], GROUND)) {
+            GhostRenderer.orient(session.transform().orientation(), MinecraftClient.getInstance());
+        }
+    }
+
+    /** La cara de un bloque con el número que usa {@link GhostSession#placeAgainst}. */
+    static int face(Direction side) {
+        return switch (side) {
+            case WEST -> 0;
+            case EAST -> 1;
+            case DOWN -> 2;
+            case UP -> 3;
+            case NORTH -> 4;
+            case SOUTH -> 5;
+        };
     }
 
     /** La rueda sobre el mundo en el Studio. */
@@ -523,7 +602,8 @@ public final class GhostClient {
                 () -> perform(new GizmoKeys.Press(GizmoKeys.Action.AIR, false, false, false),
                         MinecraftClient.getInstance()),
                 () -> perform(new GizmoKeys.Press(GizmoKeys.Action.GROUND, false, false, false),
-                        MinecraftClient.getInstance())));
+                        MinecraftClient.getInstance()),
+                fromStudio));
     }
 
     // ---------------------------------------------------------------- dibujo
