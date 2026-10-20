@@ -622,6 +622,11 @@ public final class StudioView {
         Rect area = frame.footer();
         ui.fill(area, SURFACE);
         ui.fill(new Rect(area.x(), area.y(), area.width(), 1), DIVIDER);
+        Optional<StudioHost.Ghost> ghost = host.ghost();
+        if (ghost.isPresent()) {
+            drawGhostFooter(ui, host, ghost.get());
+            return;
+        }
         Footer footer = footer(host);
         long now = host.now();
         Optional<JobStatusPayload> job = host.job();
@@ -703,6 +708,75 @@ public final class StudioView {
         }
         ui.button(build, footer.buildLabel(), footer.tone()).onClick(footer.build())
                 .tooltip(footer.buildLabel() + "\n" + footer.help());
+    }
+
+    /**
+     * El pie mientras se coloca un fantasma con gizmo: qué es, medidas y giro arriba; sus opciones (conservar lo que
+     * hay, pegar el aire, apoyar en el suelo) como interruptores y dónde está, debajo; Colocar y Cancelar en el botón.
+     */
+    private void drawGhostFooter(StudioUi ui, StudioHost host, StudioHost.Ghost ghost) {
+        Rect summary = frame.footerSummary();
+        Rect statusLine = frame.footerStatus();
+        String help = host.tr("gui.komaedit.ghost.studio.help");
+        ui.icon(StudioIcons.Icon.GIZMO, summary.x() - 1, summary.y() - 2, ACCENT_HOVER);
+        String title = ghost.title() + " · " + ghost.summary();
+        // Arriba qué es (o, si no se pudo colocar, por qué); debajo las opciones y dónde está.
+        boolean rejected = !ghost.message().isEmpty();
+        String top = rejected ? ghost.message() : title;
+        ui.label(FooterText.fit(ui, List.of(top.split(" · ")), summary.width() - 16), summary.x() + 15,
+                summary.y(), rejected ? WARNING : TEXT_SECONDARY);
+        ui.register(summary).tooltip((rejected ? ghost.message() + "\n" : "")
+                + host.tr("gui.komaedit.ghost.title", title) + "\n" + ghost.position() + "\n" + help);
+        if (!frame.compact()) {
+            int x = statusLine.x();
+            x = ghostOption(ui, x, statusLine, host.tr("gui.komaedit.ghost.keep.short"), ghost.keepExisting(), true,
+                    ghost.toggleKeep(), host.tr("gui.komaedit.ghost.keep"),
+                    host.tr("gui.komaedit.ghost.button.keep.tooltip"));
+            x = ghostOption(ui, x, statusLine, host.tr("gui.komaedit.ghost.air.short"), ghost.pasteAir(),
+                    ghost.hasAir(), ghost.toggleAir(), host.tr("gui.komaedit.ghost.air"),
+                    host.tr("gui.komaedit.ghost.button.air.tooltip"));
+            x = ghostOption(ui, x, statusLine, host.tr("gui.komaedit.ghost.ground.short"), ghost.ground(), true,
+                    ghost.toggleGround(), host.tr("gui.komaedit.ghost.ground"),
+                    host.tr("gui.komaedit.ghost.button.ground.tooltip"));
+            int space = statusLine.right() - x - 6;
+            if (space > 24) {
+                String fitted = FooterText.fit(ui, List.of(ghost.position().split(" · ")), space);
+                ui.rightAligned(fitted, statusLine.right(), statusLine.y(), MUTED);
+            }
+        }
+        String cancel = host.tr("gui.komaedit.ghost.button.cancel");
+        Rect[] buttons = frame.footerButtons(ui.width(cancel) + 20);
+        String place = host.tr(ghost.waiting() ? "gui.komaedit.ghost.placing" : "gui.komaedit.ghost.button.place");
+        ui.button(buttons[0], place, ghost.waiting() ? StudioUi.Tone.DISABLED : StudioUi.Tone.PRIMARY)
+                .tooltip(place + "\n" + host.tr("gui.komaedit.ghost.button.place.tooltip"))
+                .onClick(ghost.place());
+        ui.button(buttons[1], cancel, StudioUi.Tone.DANGER)
+                .tooltip(cancel + "\n" + host.tr("gui.komaedit.ghost.button.cancel.tooltip"))
+                .onClick(ghost.cancel());
+    }
+
+    /** Un interruptor de texto del pie del fantasma: en acento si está encendido; apagado si no aplica. */
+    private static int ghostOption(StudioUi ui, int x, Rect line, String label, boolean on, boolean enabled,
+                                   Runnable toggle, String name, String tooltip) {
+        int width = ui.width(label) + 8;
+        Rect rect = new Rect(x, line.y() - 1, width + 2, line.height() + 2);
+        int color = !enabled ? DISABLED : on ? ACCENT_HOVER : ui.hovered(rect) ? TEXT : MUTED;
+        // La casilla, dibujada: llena si est\u00E1 encendido.
+        Rect box = new Rect(x, line.y() + 1, 6, 6);
+        if (on) {
+            ui.fill(box, color);
+        } else {
+            ui.fill(new Rect(box.x(), box.y(), 6, 1), color);
+            ui.fill(new Rect(box.x(), box.bottom() - 1, 6, 1), color);
+            ui.fill(new Rect(box.x(), box.y(), 1, 6), color);
+            ui.fill(new Rect(box.right() - 1, box.y(), 1, 6), color);
+        }
+        ui.label(label, x + 8, line.y(), color);
+        StudioUi.Widget widget = ui.register(rect).tooltip(name + "\n" + tooltip);
+        if (enabled) {
+            widget.onClick(toggle);
+        }
+        return x + width + 7;
     }
 
     /** El ojo a la izquierda de Construir: sin vista previa, al construir o en vivo. Un clic pasa al siguiente. */
@@ -1512,6 +1586,11 @@ public final class StudioView {
         @Override
         public Optional<JobStatusPayload> job() {
             return host.job();
+        }
+
+        @Override
+        public Optional<Ghost> ghost() {
+            return host.ghost();
         }
 
         @Override

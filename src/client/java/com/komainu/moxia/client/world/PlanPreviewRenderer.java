@@ -165,11 +165,12 @@ public final class PlanPreviewRenderer {
     // ---------------------------------------------------------------- malla (hilo aparte)
 
     /** Lo que dibuja una sección, aún sin GPU. */
-    private record SectionData(int x, int y, int z, BakedQuad[] quads, int[] quadInfo, int[] quadTint,
+    record SectionData(int x, int y, int z, BakedQuad[] quads, int[] quadInfo, int[] quadTint,
                                int[] colorFaces, int[] edges) {
     }
 
-    private static List<SectionData> mesh(PreviewPlanCodec.Plan plan, MinecraftClient client) {
+    /** La malla de un plan por secciones de 16³ (también la del fantasma del gizmo, en posiciones locales). */
+    static List<SectionData> mesh(PreviewPlanCodec.Plan plan, MinecraftClient client) {
         Map<Long, PreviewOutline.Section> outline = new HashMap<>();
         for (PreviewOutline.Section section : PreviewOutline.build(plan.positions(), plan.kinds(), plan.faces())) {
             outline.put(sectionKey(section.x(), section.y(), section.z()), section);
@@ -284,9 +285,21 @@ public final class PlanPreviewRenderer {
     }
 
     private static void draw(WorldRenderContext context, Scene current) {
+        drawSections(context, current.sections(), null);
+    }
+
+    /**
+     * Dónde va una malla armada en posiciones locales: su origen en el mundo y, si hace falta, un giro rígido
+     * alrededor del centro del bloque del origen (mientras se rehace la malla de un fantasma recién girado).
+     */
+    record Anchor(double x, double y, double z, Matrix4f rotation) {
+    }
+
+    /** Dibuja unas secciones; con {@code anchor}, desplazadas (y giradas) como un fantasma. */
+    static void drawSections(WorldRenderContext context, List<SectionMesh> sections, Anchor anchor) {
         WorldFeedbackSettings settings = ClientWorldSettings.get();
         Vec3d camera = context.camera().getPos();
-        upload(context, current, camera);
+        upload(context, sections, camera, anchor);
         boolean ghost = settings.previewStyle() == WorldFeedbackSettings.PreviewStyle.GHOST;
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -303,32 +316,32 @@ public final class PlanPreviewRenderer {
                 // Una sola capa: la profundidad de la cara más cercana y luego solo su color.
                 RenderSystem.colorMask(false, false, false, false);
                 RenderSystem.depthMask(true);
-                for (SectionMesh section : current.sections()) {
-                    if (section.ghost != null && visible(context, section, camera)) {
+                for (SectionMesh section : sections) {
+                    if (section.ghost != null && visible(context, section, camera, anchor)) {
                         section.ghost.bind();
-                        section.ghost.draw(section.view(context, camera, false), context.projectionMatrix(),
+                        section.ghost.draw(section.view(context, camera, false, anchor), context.projectionMatrix(),
                                 textured);
                     }
                 }
                 RenderSystem.colorMask(true, true, true, true);
                 RenderSystem.depthMask(false);
-                for (SectionMesh section : current.sections()) {
-                    if (section.ghost != null && visible(context, section, camera)) {
+                for (SectionMesh section : sections) {
+                    if (section.ghost != null && visible(context, section, camera, anchor)) {
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
-                                (float) settings.opacityAt(section.distance(camera)));
+                                (float) settings.opacityAt(section.distance(camera, anchor)));
                         section.ghost.bind();
-                        section.ghost.draw(section.view(context, camera, false), context.projectionMatrix(),
+                        section.ghost.draw(section.view(context, camera, false, anchor), context.projectionMatrix(),
                                 textured);
                     }
                 }
             }
             if (colored != null) {
-                for (SectionMesh section : current.sections()) {
-                    if (section.color != null && visible(context, section, camera)) {
+                for (SectionMesh section : sections) {
+                    if (section.color != null && visible(context, section, camera, anchor)) {
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
-                                (float) Math.min(0.85, settings.opacityAt(section.distance(camera)) * 0.9));
+                                (float) Math.min(0.85, settings.opacityAt(section.distance(camera, anchor)) * 0.9));
                         section.color.bind();
-                        section.color.draw(section.view(context, camera, false), context.projectionMatrix(),
+                        section.color.draw(section.view(context, camera, false, anchor), context.projectionMatrix(),
                                 colored);
                     }
                 }
@@ -340,13 +353,13 @@ public final class PlanPreviewRenderer {
             RenderSystem.disableCull();
             RenderSystem.lineWidth(Math.max(2.0F, MinecraftClient.getInstance().getWindow().getFramebufferWidth()
                     / 1920.0F * 2.0F));
-            for (SectionMesh section : current.sections()) {
-                if (section.lines != null && visible(context, section, camera)) {
-                    double distance = section.distance(camera);
+            for (SectionMesh section : sections) {
+                if (section.lines != null && visible(context, section, camera, anchor)) {
+                    double distance = section.distance(camera, anchor);
                     float alpha = ghost ? (float) Math.clamp(0.45 + distance / 12.0, 0.45, 0.95) : 0.95F;
                     RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
                     section.lines.bind();
-                    section.lines.draw(section.view(context, camera, true), context.projectionMatrix(), lines);
+                    section.lines.draw(section.view(context, camera, true, anchor), context.projectionMatrix(), lines);
                 }
             }
         }
@@ -364,16 +377,16 @@ public final class PlanPreviewRenderer {
         RenderSystem.disableBlend();
     }
 
-    private static void upload(WorldRenderContext context, Scene current, Vec3d camera) {
+    private static void upload(WorldRenderContext context, List<SectionMesh> sections, Vec3d camera, Anchor anchor) {
         int quads = 0;
         for (int upload = 0; upload < MAX_UPLOADS_PER_FRAME; upload++) {
             SectionMesh nearest = null;
             double best = Double.MAX_VALUE;
-            for (SectionMesh section : current.sections()) {
-                if (section.data == null || !visible(context, section, camera)) {
+            for (SectionMesh section : sections) {
+                if (section.data == null || !visible(context, section, camera, anchor)) {
                     continue;
                 }
-                double distance = section.distance(camera);
+                double distance = section.distance(camera, anchor);
                 if (distance < best) {
                     best = distance;
                     nearest = section;
@@ -391,9 +404,16 @@ public final class PlanPreviewRenderer {
         }
     }
 
-    private static boolean visible(WorldRenderContext context, SectionMesh section, Vec3d camera) {
-        return section.distance(camera) <= RENDER_DISTANCE
-                && (context.frustum() == null || context.frustum().isVisible(section.bounds));
+    private static boolean visible(WorldRenderContext context, SectionMesh section, Vec3d camera, Anchor anchor) {
+        if (section.distance(camera, anchor) > RENDER_DISTANCE) {
+            return false;
+        }
+        if (anchor != null) {
+            // Desplazada: la caja del mundo es la de la sección movida (girada, se dibuja siempre).
+            return anchor.rotation() != null || context.frustum() == null
+                    || context.frustum().isVisible(section.bounds.offset(anchor.x(), anchor.y(), anchor.z()));
+        }
+        return context.frustum() == null || context.frustum().isVisible(section.bounds);
     }
 
     private static long sectionKey(int x, int y, int z) {
@@ -409,7 +429,7 @@ public final class PlanPreviewRenderer {
         }
     }
 
-    private static final class SectionMesh {
+    static final class SectionMesh {
         private final int originX;
         private final int originY;
         private final int originZ;
@@ -419,7 +439,7 @@ public final class PlanPreviewRenderer {
         private VertexBuffer color;
         private VertexBuffer lines;
 
-        private SectionMesh(SectionData data) {
+        SectionMesh(SectionData data) {
             this.data = data;
             originX = data.x() * 16;
             originY = data.y() * 16;
@@ -427,20 +447,33 @@ public final class PlanPreviewRenderer {
             bounds = new Box(originX, originY, originZ, originX + 16, originY + 16, originZ + 16);
         }
 
-        /** Distancia de la cámara a la caja de la sección (0 dentro). */
-        private double distance(Vec3d camera) {
-            double x = Math.max(0.0, Math.max(originX - camera.x, camera.x - (originX + 16)));
-            double y = Math.max(0.0, Math.max(originY - camera.y, camera.y - (originY + 16)));
-            double z = Math.max(0.0, Math.max(originZ - camera.z, camera.z - (originZ + 16)));
+        /** Distancia de la cámara a la caja de la sección (0 dentro), desplazada con el ancla si la hay. */
+        private double distance(Vec3d camera, Anchor anchor) {
+            double baseX = originX + (anchor == null ? 0.0 : anchor.x());
+            double baseY = originY + (anchor == null ? 0.0 : anchor.y());
+            double baseZ = originZ + (anchor == null ? 0.0 : anchor.z());
+            double x = Math.max(0.0, Math.max(baseX - camera.x, camera.x - (baseX + 16)));
+            double y = Math.max(0.0, Math.max(baseY - camera.y, camera.y - (baseY + 16)));
+            double z = Math.max(0.0, Math.max(baseZ - camera.z, camera.z - (baseZ + 16)));
             return Math.sqrt(x * x + y * y + z * z);
         }
 
         /** Vista de la sección; las líneas, un pelo hacia la cámara para que no se hundan en las aristas. */
-        private Matrix4f view(WorldRenderContext context, Vec3d camera, boolean layered) {
+        private Matrix4f view(WorldRenderContext context, Vec3d camera, boolean layered, Anchor anchor) {
             Matrix4f view = layered ? new Matrix4f().scaling(0.99975586F).mul(context.positionMatrix())
                     : new Matrix4f(context.positionMatrix());
-            return view.translate((float) (originX - camera.x), (float) (originY - camera.y),
-                    (float) (originZ - camera.z));
+            if (anchor == null) {
+                return view.translate((float) (originX - camera.x), (float) (originY - camera.y),
+                        (float) (originZ - camera.z));
+            }
+            // Primero el ancla respecto a la cámara (en doble, sin perder precisión lejos del origen), luego el giro
+            // y por último la sección en coordenadas locales.
+            view.translate((float) (anchor.x() - camera.x), (float) (anchor.y() - camera.y),
+                    (float) (anchor.z() - camera.z));
+            if (anchor.rotation() != null) {
+                view.mul(anchor.rotation());
+            }
+            return view.translate(originX, originY, originZ);
         }
 
         private void upload() {
@@ -581,7 +614,7 @@ public final class PlanPreviewRenderer {
             };
         }
 
-        private void close() {
+        void close() {
             data = null;
             for (VertexBuffer buffer : new VertexBuffer[]{ghost, color, lines}) {
                 if (buffer != null) {
