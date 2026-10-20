@@ -40,6 +40,8 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `command` | API Brigadier y validación de entrada |
 | `capability` | Capacidades de construcción a mano: reglas puras, red, servidor y aplicación con WorldEdit |
 | `client.gui` | Pantalla no bloqueante y controles del editor |
+| `studio.tools` | Etapa Herramientas del Studio: cada tarjeta (`ToolCard`) declara sus ajustes, arma la orden de chat que manda Construir, sus nodos de permiso y su validación; `ToolsPanel` dibuja la etapa con `ToolsUi` sin Minecraft (el cliente lo pinta con `StudioToolsUi`, las pruebas con un `ToolsUi` de mentira) |
+| `studio.net` | Red de la etapa: estado de herramientas (permisos, selección, fuentes, presets, simetría), progreso para el pie del Studio y lista de materiales, solo hacia clientes con KomaEdit |
 
 ## Flujo de una brocha
 
@@ -155,6 +157,12 @@ Para un comando nuevo: si es de gestión (no coloca bloques) o ya usa `-v` con o
 - Lo que depende del jugador (mirada, posición, portapapeles, máscara global) se fija al parsear, en el hilo de la orden.
 - Las máscaras leen bloques del `Extent` que da WorldEdit y la luz del `LightingProvider`, que no carga chunks. Guardan la respuesta por estado de bloque.
 - La lógica pura (`GradientMath`, `NearSearch`, `VoxelRay`, `EzDirections`, `SelectionShape`) no toca Minecraft y tiene pruebas.
+
+## Herramientas del Studio
+
+La etapa Herramientas no ejecuta nada en el cliente: cada `ToolCard` convierte sus valores (`ToolValues`) en la misma orden que escribiría el jugador y el Studio la manda con `sendChatCommand`. El servidor la analiza con su analizador de siempre y comprueba los permisos. Para enseñar las tarjetas apagadas, el cliente pide cada segundo `tool_state_request` y el servidor contesta `tool_state` con los nodos de `ToolCatalog.permissionNodes()` que el jugador tiene (`KomaPermissions.can`), su selección, fuentes propias, presets guardados y simetría. `ProgressBars` manda además `job_status` cada 5 ticks a quien tiene el mod, y `AnalyzeService` manda `material_list` al terminar. Las pruebas leen cada orden con el analizador del servidor (`TreeSettings`, `RoofSettings`, `TextRequest`…), así que si cambia una orden y la tarjeta no, falla una prueba.
+
+Para añadir una herramienta: una clase que extienda `ToolCard` (ajustes, `command`, `permissions` y, si hace falta, `validate`, `actions` y `presets`), una línea en `ToolCatalog.ALL` y sus textos en los idiomas (`ToolTranslationsTest` dice cuáles faltan).
 
 ## Extensiones previstas
 
