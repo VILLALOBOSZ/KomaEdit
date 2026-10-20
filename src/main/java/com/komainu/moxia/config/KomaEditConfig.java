@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.blueprint.BlueprintConfig;
 import com.komainu.moxia.image.ImageConfig;
 import com.komainu.moxia.persistence.AtomicStorage;
 import net.fabricmc.loader.api.FabricLoader;
@@ -27,6 +28,7 @@ public final class KomaEditConfig {
 
     public static void load() {
         ImageConfig.load(directory());
+        BlueprintConfig.load(directory());
         try {
             if (!Files.isRegularFile(FILE)) {
                 save(Settings.DEFAULT);

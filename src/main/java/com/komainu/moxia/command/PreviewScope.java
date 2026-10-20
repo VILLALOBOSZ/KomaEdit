@@ -20,6 +20,9 @@ final class PreviewScope {
     private static final Set<String> PALETTE = Set.of("palette", "paleta");
     /** De las paletas solo editan el mundo estas. */
     private static final Set<String> PALETTE_EDITS = Set.of("swap", "place");
+    private static final Set<String> BLUEPRINT = Set.of("blueprint", "blueprints", "planos", "plano");
+    /** De la biblioteca de planos solo coloca bloques {@code place}. */
+    private static final Set<String> BLUEPRINT_EDITS = Set.of("place", "colocar");
     /** Familias donde ezEdits ya usa {@code -v} en todos los modos: ahí la vista previa es {@code --preview}. */
     private static final Set<String> SHORT_FLAG_FAMILIES = Set.of("weather", "envejecer");
     /** Y familias donde lo usan solo algunos modos (la segunda palabra). */
@@ -43,6 +46,9 @@ final class PreviewScope {
         }
         if (PALETTE.contains(path.getFirst())) {
             return path.size() > 1 && PALETTE_EDITS.contains(path.get(1));
+        }
+        if (BLUEPRINT.contains(path.getFirst())) {
+            return path.size() > 1 && BLUEPRINT_EDITS.contains(path.get(1));
         }
         return true;
     }

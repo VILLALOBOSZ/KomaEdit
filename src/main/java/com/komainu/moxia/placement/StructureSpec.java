@@ -13,6 +13,8 @@ import com.komainu.moxia.shape.Vec3;
  *     <li>{@code Expression(Expression:=fórmula,Palette:paleta)} ({@code Ex})</li>
  *     <li>{@code TexturedShape(Shape:forma,TexturingShape:forma,Palette:paleta)} ({@code TS})</li>
  *     <li>{@code Icosphere(Pattern:…,Randomness:0.5,Subdivisions:0,Platform:0)} ({@code Ic})</li>
+ *     <li>{@code Blueprint(Name:roca_1|roca_2,Tag:rocas,Origin:BOTTOM|CENTER|INHERENT,Rotation:0)} ({@code Bp}):
+ *     planos de la biblioteca de KomaEdit (propio de KomaEdit); de serie se apoyan por el centro de su base</li>
  * </ul>
  *
  * <p>Todas admiten {@code RelativeOffset} ({@code RO}), {@code WorldOffset} ({@code WO}) y {@code OffsetJitter}
@@ -32,10 +34,21 @@ public record StructureSpec(
         String filename,
         String format,
         PlacementBuilder.Offsets offsets,
-        String source
+        String source,
+        Origin origin
 ) {
     public enum Type {
-        CLIPBOARD, SCHEMATIC, SHAPE, EXPRESSION, TEXTURED_SHAPE, ICOSPHERE
+        CLIPBOARD, SCHEMATIC, SHAPE, EXPRESSION, TEXTURED_SHAPE, ICOSPHERE, BLUEPRINT
+    }
+
+    /** Qué punto de una estructura de bloques cae en la posición de colocación. */
+    public enum Origin {
+        /** Donde estaba quien copió ({@code //copy}). */
+        INHERENT,
+        /** El centro de la caja. */
+        CENTER,
+        /** El centro de la base: lo de serie en los planos. */
+        BOTTOM
     }
 
     private static final String[] COMMON = {"relativeoffset", "ro", "worldoffset", "wo", "offsetjitter", "oj"};
@@ -48,7 +61,8 @@ public record StructureSpec(
             case "clipboard", "cl", "portapapeles" -> {
                 allow(call, "origin", "o", "pastemethod", "pm", "fillbias", "fb", "rotation", "r");
                 yield new StructureSpec(Type.CLIPBOARD, null, null, null, null, null, centered(call, false),
-                        smooth(call), fillBias(call), rotation(call), null, null, offsets, call.source());
+                        smooth(call), fillBias(call), rotation(call), null, null, offsets, call.source(),
+                        centered(call, false) ? Origin.CENTER : Origin.INHERENT);
             }
             case "schematic", "sc", "esquema" -> {
                 allow(call, "filename", "n", "name", "nombre", "format", "f", "origin", "o", "pastemethod", "pm",
@@ -59,7 +73,7 @@ public record StructureSpec(
                 }
                 yield new StructureSpec(Type.SCHEMATIC, null, null, null, null, null, centered(call, false),
                         smooth(call), fillBias(call), rotation(call), filename, call.get("format", "f"), offsets,
-                        call.source());
+                        call.source(), centered(call, false) ? Origin.CENTER : Origin.INHERENT);
             }
             case "shape", "sh", "forma" -> {
                 allow(call, "shape", "s", "forma", "pattern", "p", "patron", "origin", "o");
@@ -68,7 +82,7 @@ public record StructureSpec(
                 String pattern = require(call, "Shape necesita el patrón P:, por ejemplo Sh(S:Cone,P:stone)",
                         "pattern", "p", "patron");
                 yield new StructureSpec(Type.SHAPE, pattern, null, ProceduralShapes.parse(shape), null, null,
-                        centered(call, true), false, 1.0, 0.0, null, null, offsets, call.source());
+                        centered(call, true), false, 1.0, 0.0, null, null, offsets, call.source(), null);
             }
             case "expression", "ex", "expresion" -> {
                 allow(call, "expression", "e", "expresion", "palette", "p", "paleta", "origin", "o");
@@ -77,7 +91,7 @@ public record StructureSpec(
                 String palette = require(call, "Expression necesita la paleta P:", "palette", "p", "paleta");
                 String formula = expression.startsWith("=") ? expression.substring(1) : expression;
                 yield new StructureSpec(Type.EXPRESSION, null, palette, ProceduralShapes.formula(formula), null,
-                        null, centered(call, true), false, 1.0, 0.0, null, null, offsets, call.source());
+                        null, centered(call, true), false, 1.0, 0.0, null, null, offsets, call.source(), null);
             }
             case "texturedshape", "ts", "formatexturizada" -> {
                 allow(call, "shape", "s", "forma", "texturingshape", "t", "textura", "palette", "p", "paleta",
@@ -88,7 +102,7 @@ public record StructureSpec(
                 String palette = require(call, "TexturedShape necesita la paleta P:", "palette", "p", "paleta");
                 yield new StructureSpec(Type.TEXTURED_SHAPE, null, palette, ProceduralShapes.parse(shape),
                         ProceduralShapes.parse(texture), null, centered(call, true), false, 1.0, 0.0, null, null,
-                        offsets, call.source());
+                        offsets, call.source(), null);
             }
             case "icosphere", "ic", "icosfera", "roca" -> {
                 allow(call, "pattern", "p", "patron", "randomness", "r", "aleatoriedad", "subdivisions", "s",
@@ -105,10 +119,35 @@ public record StructureSpec(
                         platform == null ? 0.0 : ParamText.number(platform, 0, 1, "Platform")
                 );
                 yield new StructureSpec(Type.ICOSPHERE, pattern, null, null, null, settings, centered(call, true),
-                        false, 1.0, 0.0, null, null, offsets, call.source());
+                        false, 1.0, 0.0, null, null, offsets, call.source(), null);
+            }
+            case "blueprint", "bp", "plano", "planos" -> {
+                allow(call, "name", "n", "nombre", "tag", "t", "etiqueta", "origin", "o", "rotation", "r");
+                String names = call.get("name", "n", "nombre");
+                String tags = call.get("tag", "t", "etiqueta");
+                if (names == null && tags == null) {
+                    throw new IllegalArgumentException("Blueprint necesita planos o una etiqueta: Bp(N:roca_1|roca_2) "
+                            + "o Bp(T:rocas)");
+                }
+                // Una sola lista para la biblioteca: los nombres tal cual y las etiquetas con su #.
+                java.util.List<String> parts = new java.util.ArrayList<>();
+                if (names != null) {
+                    parts.add(names);
+                }
+                if (tags != null) {
+                    for (String tag : tags.split("[,|]")) {
+                        String trimmed = tag.trim();
+                        parts.add(trimmed.startsWith("#") ? trimmed : "#" + trimmed);
+                    }
+                }
+                String selection = String.join("|", parts);
+                com.komainu.moxia.blueprint.BlueprintSelection.parse(selection);
+                Origin origin = blueprintOrigin(call.get("origin", "o"));
+                yield new StructureSpec(Type.BLUEPRINT, null, null, null, null, null, origin == Origin.CENTER, false,
+                        1.0, rotation(call), selection, null, offsets, call.source(), origin);
             }
             default -> throw new IllegalArgumentException("Estructura desconocida: " + call.name() + " (Clipboard, "
-                    + "Schematic, Shape, Expression, TexturedShape o Icosphere)");
+                    + "Schematic, Shape, Expression, TexturedShape, Icosphere o Blueprint)");
         };
     }
 
@@ -124,8 +163,26 @@ public record StructureSpec(
         };
     }
 
+    /** La lista de planos de {@code Blueprint} ({@code roca_1|#rocas}); va en {@link #filename()}. */
+    public String blueprints() {
+        return type == Type.BLUEPRINT ? filename : null;
+    }
+
     public boolean procedural() {
-        return type != Type.CLIPBOARD && type != Type.SCHEMATIC;
+        return type != Type.CLIPBOARD && type != Type.SCHEMATIC && type != Type.BLUEPRINT;
+    }
+
+    /** {@code BOTTOM} (de serie), {@code CENTER} o {@code INHERENT}. */
+    private static Origin blueprintOrigin(String value) {
+        if (value == null) {
+            return Origin.BOTTOM;
+        }
+        return switch (ParamText.normalize(value)) {
+            case "bottom", "b", "base", "abajo" -> Origin.BOTTOM;
+            case "center", "c", "centro" -> Origin.CENTER;
+            case "inherent", "i", "original" -> Origin.INHERENT;
+            default -> throw new IllegalArgumentException("Origen desconocido: " + value + " (BOTTOM, CENTER o INHERENT)");
+        };
     }
 
     private static void allow(ParamText.Call call, String... keys) {

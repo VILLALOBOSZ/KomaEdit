@@ -71,6 +71,7 @@ public final class BrushCommands {
                 case BIOME -> new String[]{"cherry_grove", "snowy_plains", "desert", "8", "16", "-v", "-m",
                         "grass_block"};
                 case HEIGHTMAP -> heightmapExamples();
+                case STAMP -> stampExamples(context.getSource());
             };
         } catch (IllegalArgumentException exception) {
             examples = new String[0];
@@ -92,6 +93,18 @@ public final class BrushCommands {
     };
 
     private BrushCommands() {
+    }
+
+    /** Sugerencias del pincel «estampar»: los planos y etiquetas del jugador, el radio y las banderas. */
+    private static String[] stampExamples(ServerCommandSource source) {
+        java.util.List<String> examples = new java.util.ArrayList<>();
+        if (source.getEntity() instanceof ServerPlayerEntity player) {
+            examples.addAll(com.komainu.moxia.command.BlueprintCommands.references(player));
+            examples.addAll(com.komainu.moxia.command.BlueprintCommands.tags(player));
+        }
+        examples.addAll(java.util.List.of("0", "6", "12", "-n", "60", "-d", "-c", "-r", "azar", "mirada", "-f", "xz",
+                "no", "-g", "apoyar", "centro", "-y", "-1", "-m", "grass_block", "-a", "-p"));
+        return examples.toArray(String[]::new);
     }
 
     /** Sugerencias del pincel de relieve: los sellos que hay, los modos, las paletas y las banderas. */
@@ -187,7 +200,7 @@ public final class BrushCommands {
         var brush = id == null ? java.util.Optional.<EzBrush>empty() : EzBrushManager.brush(player.getUuid(), id);
         if (brush.isEmpty()) {
             feedback(context, Text.literal("Pinceles: paletteshift, gradient, gradientstroke, petalpainter, place,"
-                    + " scatter, array, tree, rock, biome, heightmap. Ejemplo: /komaedit pincel gradient ##Magma 8"
+                    + " scatter, array, tree, rock, biome, heightmap, stamp. Ejemplo: /komaedit pincel gradient ##Magma 8"
                     + " tapered 0.6")
                     .formatted(Formatting.GRAY));
             return 1;

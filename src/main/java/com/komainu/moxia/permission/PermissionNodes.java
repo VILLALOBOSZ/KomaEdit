@@ -1,5 +1,6 @@
 package com.komainu.moxia.permission;
 
+import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.capability.BuildCapability;
 
 import java.util.ArrayList;
@@ -176,6 +177,12 @@ public final class PermissionNodes {
         add(build + ".terrain.paint", Pack.INTERMEDIATE, build, null, "/komaedit terreno pintar");
         add(build + ".roof", Pack.INTERMEDIATE, build, null, "/komaedit roof (tejados)");
         add(build + ".loft", Pack.INTERMEDIATE, build, null, "/komaedit loft (superficies entre curvas)");
+        add(BlueprintPermissions.LOAD, Pack.INTERMEDIATE, KomaPermissions.CLIPBOARD, null,
+                "Biblioteca de planos: ver, buscar y cargar al portapapeles (/komaedit blueprint list|load)");
+        add(BlueprintPermissions.SAVE, Pack.INTERMEDIATE, KomaPermissions.CLIPBOARD, null,
+                "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
+        add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
+        add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
@@ -188,6 +195,8 @@ public final class PermissionNodes {
         add(build + ".symmetry.worldedit", Pack.ADVANCED, build, null,
                 "/komaedit symmetry worldedit: refleja también las ediciones de WorldEdit y KomaEdit");
         add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
+        add(BlueprintPermissions.SHARE, Pack.ADVANCED, null, null,
+                "Compartir planos propios con todo el servidor (/komaedit blueprint share)");
 
         // Capacidades de construcción a mano (menú rápido y /komaedit capability).
         for (BuildCapability capability : BuildCapability.values()) {
@@ -209,6 +218,10 @@ public final class PermissionNodes {
         add(KomaPermissions.ADMIN_IMAGE_URL, Pack.ADMIN, null, null,
                 "Imágenes por URL en /komaedit image (si urlsRequireAdmin está activo)");
         add(KomaPermissions.LIMIT_UNRESTRICTED, Pack.ADMIN, null, null, "Sin límite de bloques por operación");
+        add(BlueprintPermissions.MANAGE, Pack.ADMIN, null, null,
+                "Borrar o reemplazar los planos compartidos de otros jugadores");
+        add(BlueprintPermissions.UNLIMITED, Pack.ADMIN, null, null,
+                "Sin los límites de número y tamaño de planos de blueprints.json");
     }
 
     private PermissionNodes() {
