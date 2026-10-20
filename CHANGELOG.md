@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.5.0 (estable, 2026-10-20)
+
 ### Vista previa, progreso y cancelación
 
 - **Vista previa universal.** Cualquier orden que calcule un plan de bloques (figuras, tubos, `ezspline`, `bend`, `place`/`array`/`scatter`, `deform`, `surface`, `smooth`, `inflate`, `smoothblocks`, `texture` y sus modos, la vidriera, `image`, los generadores, `weather`, `ivy`, `tweak`, `palette swap`…) acepta `-v` o `--preview`: calcula, enseña el resultado solo a quien edita y espera a `/komaedit confirm` o `/komaedit cancel`, con botones en el chat. Donde ezEdits ya usa `-v` (`deform noise`/`voxelize`, `texture blend`/`blocklight`, `weather -v <vida>`, `shape polydome -v <patrón>`, `text -v` (de pie), `pincel gradient`, `palette print`) se respeta el suyo y la vista previa es `--preview`.
