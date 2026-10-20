@@ -27,6 +27,9 @@ final class PreviewScope {
     private static final Set<String> PALETTE = Set.of("palette", "paleta");
     /** De las paletas solo editan el mundo estas. */
     private static final Set<String> PALETTE_EDITS = Set.of("swap", "place");
+    private static final Set<String> BLUEPRINT = Set.of("blueprint", "blueprints", "planos", "plano");
+    /** De la biblioteca de planos solo coloca bloques {@code place}. */
+    private static final Set<String> BLUEPRINT_EDITS = Set.of("place", "colocar");
     /** Subórdenes de gestión dentro de familias que sí editan (la segunda palabra). */
     private static final Map<String, Set<String>> MANAGEMENT_MODES = Map.of(
             "tree", Set.of("save", "guardar", "list", "lista", "delete", "borrar", "cancel", "cancelar"),
@@ -61,6 +64,9 @@ final class PreviewScope {
         }
         if (PALETTE.contains(path.getFirst())) {
             return path.size() > 1 && PALETTE_EDITS.contains(path.get(1));
+        }
+        if (BLUEPRINT.contains(path.getFirst())) {
+            return path.size() > 1 && BLUEPRINT_EDITS.contains(path.get(1));
         }
         Set<String> management = MANAGEMENT_MODES.get(path.getFirst());
         return management == null || path.size() < 2 || !management.contains(path.get(1));

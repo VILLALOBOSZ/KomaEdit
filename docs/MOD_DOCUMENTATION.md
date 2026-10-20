@@ -19,7 +19,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 ## Procedural Studio
 
-Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, envejecer, recetas e instancias.
+Procedural Studio se abre con `K` y permite construir mientras el mundo continúa visible y activo. La interfaz ofrece categorías para trayectorias, figuras, estructuras, modificadores, materiales, envejecer, recetas, instancias, color y planos.
 
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
 - La cámara puede desplazarse mientras el Studio permanece abierto.
@@ -31,7 +31,7 @@ Procedural Studio se abre con `K` y permite construir mientras el mundo continú
 Todo el Studio vive en un único panel opaco pegado a la derecha; el resto de la pantalla es el mundo, sin nada encima, así que el chat de abajo a la izquierda queda a la vista y el marcador del servidor no se transparenta por detrás del panel.
 
 - **Barra de herramientas** (arriba): KomaEdit y los botones con icono de deshacer y rehacer ajustes, mostrar u ocultar el holograma, chuleta de atajos y cerrar. Cada uno explica su atajo al pasar el ratón.
-- **Etapas** (columna izquierda del panel): Trayectoria, Figuras, Estructuras, Modificadores, Material, Envejecer, Instancias, Recetas y Color, con icono y nombre; la elegida se resalta con una barra de acento. El tooltip dice su número de atajo (`1` – `9`) y para qué sirve. La etapa **Color** (degradados, bloques parecidos y sombreado de la selección) se explica en [Color y sombreado](#color-y-sombreado).
+- **Etapas** (columna izquierda del panel): Trayectoria, Figuras, Estructuras, Modificadores, Material, Envejecer, Instancias, Recetas, Color y Planos, con icono y nombre; la elegida se resalta con una barra de acento. El tooltip dice su número de atajo (`1` – `9`, y `0` para Planos) y para qué sirve. La etapa **Color** (degradados, bloques parecidos y sombreado de la selección) se explica en [Color y sombreado](#color-y-sombreado) y la etapa **Planos** (biblioteca con miniaturas, cargar, colocar y estampar), en [Etapa Planos del Studio](#etapa-planos-del-studio).
 - **Contenido**: título y subtítulo de la etapa y, debajo, sus secciones desplazables con la rueda (una barra fina a la derecha indica cuánto queda).
 - **Pie** (abajo, siempre visible): figura y material, la estimación **≈ N bloques**, el último mensaje (unos segundos) o el estado del holograma, y el botón **Construir**. Sin puntos suficientes el botón se ve apagado y dice cuántos faltan; al pulsarlo lleva a Trayectoria.
 - El borde izquierdo del panel se arrastra para cambiar su ancho (entre 300 y 470 píxeles de GUI, sin pasar de media pantalla); el ancho se recuerda.
@@ -90,9 +90,9 @@ El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 
 | Tecla | Acción |
 | --- | --- |
-| `1` – `9` | Ir a una etapa, en el orden de la columna de etapas |
+| `1` – `9`, `0` | Ir a una etapa, en el orden de la columna de etapas (`0`, la décima: Planos) |
 | `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
-| `Ctrl+F` o `/` | Buscar figura |
+| `Ctrl+F` o `/` | Buscar figura (en la etapa Planos, `/` busca planos) |
 | `B` | Construir (las obras grandes piden confirmar) |
 | `H` | Mostrar u ocultar el holograma |
 | `Z` / `Y` (`Mayús+Z`) | Deshacer / rehacer ajustes del Studio |
@@ -106,12 +106,12 @@ El Studio tiene su propio historial de ajustes, aparte del de WorldEdit:
 
 ### Pantallas pequeñas
 
-- Las etapas encogen su alto (hasta 14 píxeles) para que las nueve quepan sin desplazarse con cualquier escala de GUI.
+- Las etapas encogen su alto (hasta 12 píxeles, lo que mide su icono) para que las diez quepan sin desplazarse con cualquier escala de GUI.
 - Con menos de 600 píxeles de ancho escalado (GUI 4 en 1080p, la escala automática) el panel mide 230 píxeles y las etapas se quedan en iconos con su nombre en el tooltip, para dejar al mundo al menos la mitad de la pantalla. Ahí el chat vanilla (320 píxeles) puede quedar en parte bajo el panel.
 - Los textos que no caben se recortan con «…»; el estado completo sale en un tooltip sobre el pie.
 - Con menos de 330 píxeles de alto la chuleta se muestra en dos columnas.
 - Lo que queda desplazado bajo la cabecera o el pie del panel no responde a clics.
-- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las nueve etapas caben y el panel no pisa el chat cuando hay sitio.
+- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las diez etapas caben y el panel no pisa el chat cuando hay sitio.
 
 ## Trayectorias y hologramas
 
@@ -255,6 +255,8 @@ Las figuras centradas usan tu posición como centro; el arco y la catenaria van 
 /komaedit help preview             vista previa, progreso y cancelación
 /komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
 /komaedit help project             proyecto, menús, quiet, permisos y recarga
+/komaedit help blueprint           planos: guardar, buscar, colocar y estampar
+/komaedit help project             proyecto y menús
 ```
 
 El tema también se encuentra por el nombre de cualquiera de sus órdenes y alias: `/komaedit help bioma` abre las utilidades y `/komaedit help erosion`, los tubos (la orden `/komaedit erosion` es el tubo erosionado; la erosión del terreno es `/komaedit terreno erosion`, en `help terrain`).
@@ -2739,6 +2741,7 @@ Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit:
 | `rock` | `roca`, `rk` | [Una roca en cada clic](#pinceles-de-árboles-y-rocas) |
 | `heightmap` | `relieve`, `sello`, `hm` | [Pincel de relieve](#pincel-de-relieve-sellos) (propio de KomaEdit) |
 | `sculpt` | `modelar`, `modelado`, `sk` | [Modelado](#pinceles-de-modelado): esculpir, roca, soldar, fundir, rugosidad y grietas (propio de KomaEdit) |
+| `stamp` | `estampar`, `planos`, `st` | [Estampar planos de la biblioteca](#pincel-estampar) (propio de KomaEdit) |
 
 - El pincel se liga al **objeto de la mano principal**, como los de WorldEdit: cada objeto guarda el suyo y se pueden llevar varios a la vez. Con la mano vacía se entrega una pluma llamada «Pincel de KomaEdit». Volver a configurar un objeto que ya tiene pincel lo sustituye.
 - `quitar` (`off`, `none`) suelta el pincel del objeto de la mano; `estado` (`status`) dice qué pincel lleva y sus controles.
@@ -3552,6 +3555,7 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 | `Expression(Expression:=<fórmula>,Palette:<paleta>)` | `Ex(E:…,P:…)` | Una fórmula que decide forma y material. |
 | `TexturedShape(Shape:<forma>,TexturingShape:<forma>,Palette:<paleta>)` | `TS(S:…,T:…,P:…)` | Una forma pintada por otra forma o fórmula. |
 | `Icosphere(Pattern:…,Randomness:…,Subdivisions:…,Platform:…)` | `Ic(P:…,R:…,S:…,PL:…)` | Una roca: icosfera deformada. |
+| `Blueprint(Name:…,Tag:…,Origin:…,Rotation:…)` | `Bp(N:…,T:…)` | Planos de la [biblioteca](#biblioteca-de-planos) (propio de KomaEdit). |
 
 ### Comportamiento
 
@@ -3563,16 +3567,17 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 - **Icosphere:** `Randomness` (0–1, por defecto 0,5) deforma los vértices; `Subdivisions` (0–4, por defecto 0) añade polígonos y suaviza la deformación; `Platform` (0–1) aplasta la mitad de arriba. Cada colocación sale distinta.
 - **Paletas** con la notación de ezEdits (`##Magma`, `-##Grayscale(1:8)`, `a,b,c`) o tus paletas guardadas (`#nombre`, ver `/komaedit palette`); cada entrada debe ser un bloque concreto. Los **patrones** de `Shape` e `Icosphere` son de WorldEdit (`50%stone,50%andesite`, `##Gradiente`…). Si llevan comas, van entre comillas: `P:"dirt,stone"`.
 - **Opciones comunes:** `RelativeOffset` (`RO`) desplaza siguiendo la orientación de la colocación, `WorldOffset` (`WO`) en ejes del mundo y `OffsetJitter` (`OJ`, 0–1) multiplica los dos por un valor al azar entre `1-OJ` y 1. Ejemplo: `Sh(S:Cone,P:stone,RO:(0,1,0),WO:(0,0,2))`.
+- **Blueprint:** `Name` (`N`) es una lista de planos separados por `|` (`roca_1|servidor/ruina`), cada uno con peso opcional (`roca_1:3`), y `Tag` (`T`) una o varias etiquetas (`rocas|musgo`); se pueden juntar. Cada colocación elige uno al azar según su peso (hasta 32 planos distintos). `Origin` es `BOTTOM` (de serie: el centro de la base cae en la posición de colocación), `CENTER` o `INHERENT` (donde estabas al copiarlo); `Rotation` como en el portapapeles. Pide `komaedit.blueprint.load`.
 - **Origin:BOTTOM** (propio de KomaEdit) apoya las formas procedurales en el suelo: el origen pasa al centro de su cara de abajo. Por defecto, como en ezEdits, el origen es el centro.
 
 ### Parámetros
 
 | Opción | Valores |
 | --- | --- |
-| `Origin` (`O`) | `INHERENT` o `CENTER` en portapapeles y schematics; `CENTER` o `BOTTOM` en las formas. |
+| `Origin` (`O`) | `INHERENT` o `CENTER` en portapapeles y schematics; `CENTER` o `BOTTOM` en las formas; `BOTTOM`, `CENTER` o `INHERENT` en los planos. |
 | `PasteMethod` (`PM`) | `FAST` o `SMOOTHED` (`smooth`). |
 | `FillBias` (`FB`) | 0,05–8; más alto coloca más bloques en `SMOOTHED`. |
-| `Rotation` (`R`) | Grados alrededor de la vertical (portapapeles y schematics). |
+| `Rotation` (`R`) | Grados alrededor de la vertical (portapapeles, schematics y planos). |
 | `RO`, `WO`, `OJ` | Desplazamientos comunes. |
 
 Ejemplos:
@@ -3585,6 +3590,7 @@ Ejemplos:
 /komaedit place Ex(E:"=x*x+y*y+z*z<0.6+noise(x*3,y*3,z*3)*0.3",P:clay)
 /komaedit place TS(S:Ellipsoid,T:=y*.5+.5,P:##Magma) C C -s 16
 /komaedit scatter Ic(P:"stone,andesite,tuff",R:0.7,S:1,PL:0.3,O:BOTTOM) C R -s 7,5,7 -n 0.3
+/komaedit scatter Bp(N:roca_musgo:3|roca_gris,T:arbustos) S R -n 0.4
 ```
 
 ### Rendimiento y limitaciones
@@ -3823,12 +3829,163 @@ Alias: `bioma`. Permisos `komaedit.build.biome` y `komaedit.build.brush.biome` (
 - Rendimiento: el límite de bloques por operación cuenta celdas (cada celda es una escritura). Con `-v` una zona de 100×100 son unas 60 000 celdas en un mundo de 384 de alto. Los chunks deben estar cargados (WorldEdit los carga si hace falta). La bossbar enseña el avance y `/komaedit cancel` lo para (lo ya pintado se deshace con `//undo`).
 - Limitaciones: la hierba, las hojas y el agua cambian de color en cuanto el cliente recibe el bioma; la nieve, el hielo y la vegetación de cada bioma no aparecen solos (usa `snow`). Las máscaras de bioma de WorldEdit (`$plains`) no sirven en `-m`.
 
+## Biblioteca de planos
+
+### Objetivo y acceso
+
+Una biblioteca de planos como los Blueprints de Axiom: guarda lo que copias con su miniatura, autor y etiquetas, lo encuentras por nombre o etiqueta y lo reutilizas: al portapapeles, colocado con la colocación de KomaEdit o repartido al azar con el pincel **estampar** (rocas, arbustos, ruinas…). Cada jugador tiene los suyos y el servidor una colección compartida para todos.
+
+```text
+/komaedit blueprint save <nombre> [etiquetas]
+/komaedit blueprint list [texto|#etiqueta] [página]
+/komaedit blueprint search <texto|#etiqueta>
+/komaedit blueprint info <plano>
+/komaedit blueprint load <plano>
+/komaedit blueprint place <plano> [primaria] [secundaria] [banderas]
+/komaedit blueprint tags <plano> [etiquetas]
+/komaedit blueprint share <plano>
+/komaedit blueprint delete <plano>
+/komaedit pincel stamp <planos|#etiqueta> [radio] [banderas]
+```
+
+Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `buscar`, `ver`, `cargar`, `colocar`, `etiquetas`, `compartir` y `borrar` para las subórdenes; `estampar` para el pincel. En el Studio, la etapa **Planos** (tecla `0`). Ayuda: `/komaedit help blueprint`.
+
+### Guardar
+
+- `save` guarda el **portapapeles de WorldEdit** (`//copy`) con su giro (`//rotate`, `//flip`) ya aplicado, como `//schem save`.
+- **Nombre:** de 1 a 32 letras, números, `_` o `-`, sin mayúsculas. Guardar otra vez con el mismo nombre reemplaza el plano y conserva su fecha de creación.
+- **Etiquetas:** hasta 8, separadas por espacios o comas, con o sin `#` (`rocas musgo`, `#ruinas,#piedra`). Se guardan sin mayúsculas ni tildes: `Árboles` queda `arboles`. `tags <plano> [etiquetas]` las cambia (sin etiquetas, las quita).
+- Junto al esquema se guardan el **autor**, las fechas, el **tamaño** (ancho × alto × fondo), el **número de bloques** que no son aire, las etiquetas y la huella de la miniatura.
+- **Miniatura:** un PNG isométrico de 128×128 pintado en el servidor por código, sin Minecraft cliente: se mira desde el sureste y desde arriba, la cara de arriba sale más clara que la sur y la este, lo lejano un poco más oscuro, las aristas de los bloques se marcan cuando cada bloque ocupa 3 píxeles o más y el fondo es transparente. Se encuadra en la silueta de lo que no es aire, así que el aire de alrededor del portapapeles no la empequeñece. Los colores son los **colores medios de textura** de la tabla del mod (la misma de smoothblocks, `/komaedit image` y `/komaedit color`), con el color de mapa para los bloques de mods; el agua, el césped, la hierba alta y el nenúfar, que Minecraft tiñe según el bioma, llevan un color fijo, y la barrera, la luz y el vacío de estructura no se pintan.
+- Escribir el esquema y pintar la miniatura va en un hilo aparte («KomaEdit planos»), como `//schem save`: el chat avisa cuando el plano está guardado.
+
+### Dónde se guardan
+
+```text
+config/komaedit/blueprints/players/<uuid>/<nombre>.schem   esquema (formato sponge.3 de WorldEdit)
+config/komaedit/blueprints/players/<uuid>/<nombre>.json    metadatos
+config/komaedit/blueprints/players/<uuid>/<nombre>.png     miniatura
+config/komaedit/blueprints/shared/<nombre>.schem|.json|.png  los compartidos
+```
+
+- El `.schem` es un esquema normal de WorldEdit (Sponge v3, con el NBT de cofres, carteles…): se puede llevar a la carpeta de schematics y abrir con `//schem load`.
+- El JSON lleva `name`, `scope` (`jugador` o `servidor`), `owner`, `author`, `created`, `updated`, `size`, `blocks`, `tags`, `thumbnail` (SHA-256 del PNG), `schematic` y, en los compartidos, `sharedBy` y `sharedAt`.
+- Se escribe con `.tmp` y `.bak`, y el JSON va el último: un cierre a medias deja el plano anterior o el nuevo, nunca uno sin esquema. Un plano dañado se omite de la biblioteca, se avisa en `latest.log` y se queda en disco.
+- Los planos son **del servidor**, no de un mundo: valen en todos los mundos y dimensiones.
+
+### Nombrar y buscar
+
+- `roca` busca primero entre los tuyos y después entre los compartidos; `servidor/roca` (o `server/roca`) va directo al compartido. En las listas, los compartidos salen como `servidor/…` con una ★.
+- `list` y `search` (son la misma orden) piden que **cada palabra** case: con un trozo del nombre o con el principio de una etiqueta (`roca` encuentra `roca_musgo` y lo etiquetado `#rocas`), y `#etiqueta` pide esa etiqueta exacta. Sin tildes ni mayúsculas. Primero el nombre exacto, luego los que empiezan por la búsqueda y luego el resto; dentro de cada grupo, por nombre y los tuyos antes.
+- Ocho por página, con botones: **[cargar]**, **[colocar]** (escribe la orden con `-v` para revisarla), **[estampar]** y **[borrar]** en los tuyos. Al pasar el ratón por el nombre se ven tamaño, bloques, autor, fecha y etiquetas; un clic abre `info`.
+
+### Cargar y colocar
+
+- `load` lo pone en tu **portapapeles de WorldEdit**, con su NBT: luego `//paste`, `//rotate` o `/komaedit place Clipboard`.
+- `place` es lo mismo que `/komaedit place Bp(N:<plano>) …`: alineación primaria y secundaria, `-s`, `-o`, `-r`, `-f`, `-a`, `-w`… (ver [Colocar estructuras](#colocar-estructuras)) y la [vista previa](#vista-previa-progreso-y-cancelación) con `-v`, que se confirma con `/komaedit confirm`. De serie el plano se apoya por el **centro de su base** en tu posición.
+- En `place`, `scatter`, `array` y sus pinceles los planos son una estructura más, **`Blueprint`** (`Bp`), ver [Estructuras colocables](#estructuras-colocables): `Bp(N:roca_1|roca_2:3,T:rocas)` mezcla nombres y etiquetas, con peso opcional; cada colocación elige uno al azar según su peso.
+
+Ejemplos:
+
+```text
+/komaedit blueprint save roca_musgo rocas musgo
+/komaedit blueprint list #rocas
+/komaedit blueprint place casita SurfaceNormal -v
+/komaedit place Bp(N:servidor/pozo) Constant Aim -v
+/komaedit scatter Bp(T:rocas) SurfaceNormal Random -n 0.8 -r Y -f XZ
+/komaedit array Bp(N:farola) Tangential Constant -g 6
+/komaedit pincel stamp #rocas 8 -n 60 -y -1
+/komaedit pincel stamp roca_musgo:3,arbusto 12 -d 5 -m grass_block
+```
+
+### Pincel estampar
+
+`/komaedit pincel stamp <planos|#etiqueta> [radio] [banderas]` pone en tu mano un pincel que, en cada **clic derecho**, coloca al azar planos de la lista sobre el suelo que miras. El **clic izquierdo** olvida lo ya estampado para que la separación empiece de cero.
+
+| Parámetro | Valores |
+| --- | --- |
+| `<planos>` | Nombres y etiquetas separados por comas: `roca_1,roca_2:3,#arbustos,servidor/ruina`. `:n` es el peso (1 de serie); una etiqueta reparte el suyo entre sus planos. Hasta 32 planos distintos. |
+| `[radio]` | `0` (de serie): un plano en el bloque que miras. De 1 a 32: varios repartidos en ese círculo. |
+| `-n %` | Probabilidad de cada hueco (100 de serie): con 60, unos seis de cada diez huecos llevan plano. |
+| `-d bloques` | Separación mínima entre planos (de 0 a 64). De serie, la que evita que se toquen: el doble del radio de la huella del plano más grande, más uno. |
+| `-c n` | Planos por clic como mucho (16 de serie, hasta 64). |
+| `-r giro` | `azar` (de serie: 0, 90, 180 o 270 al azar), un giro fijo (`0`, `90`, `180`, `270`) o `mirada` (según hacia dónde miras). |
+| `-f ejes` | Volteos al azar permitidos: `xz` (de serie), `x`, `z` o `no`. |
+| `-g modo` | Ajuste al suelo: `apoyar` (de serie), `centro` o `no`. |
+| `-y n` | Sube o hunde (negativo) el plano después de apoyarlo, de -16 a 16. `-y -1` entierra un poco las rocas. |
+| `-m máscara` | Solo sobre ese suelo (`grass_block,moss_block`, `#solid`… o cualquier máscara de WorldEdit, como en los demás pinceles). |
+| `-a` | Coloca también el aire del plano (de serie, el aire no pisa nada). |
+| `-p` | Vista previa: `/komaedit pincel aplicar` o `cancelar`. |
+
+Comportamiento:
+
+- **Dónde:** los huecos se reparten como un disco de Poisson: puntos al azar dentro del círculo, cada uno a la separación mínima de todos los demás, y de lo estampado con ese pincel en el último minuto (hasta 256 puntos); con radio 0 el plano va donde miras aunque haya otro cerca. Cada hueco sale con la probabilidad de `-n` y elige plano según los pesos.
+- **Giro y volteo:** se aplican a los bloques y a su estado (escaleras, troncos, puertas…), como `//rotate` y `//flip`.
+- **Suelo:** sostienen los cubos enteros, las losas y las escaleras; la hierba alta, las flores, la nieve en capa y los líquidos no. Se busca el suelo más cercano a la altura del clic, hasta 24 bloques por encima (una ladera que sube) o por debajo.
+- **`apoyar`:** el plano cae hasta que alguna de sus columnas toca el suelo de la suya, así que no se mete en la ladera; en pendiente puede quedar un hueco por debajo del lado bajo (`-y -1` lo entierra). **`centro`:** la base del plano queda sobre el suelo que hay bajo su centro. **`no`:** a la altura del bloque de delante de la cara que miras. Un hueco sin suelo (o que no cumple `-m`) se salta.
+- Cada clic vuelve a leer la lista: los planos nuevos de una etiqueta entran solos. Un nombre o una etiqueta que no existe da error al ponerlo en la mano.
+- Cada pasada es **una entrada de `//undo`**; con `-p`, antes se ve en el holograma.
+
+### Etapa Planos del Studio
+
+- **Cuadrícula** de miniaturas con el nombre y el tamaño debajo (tres columnas con el panel de serie); los compartidos llevan un cuadrito dorado. Un clic elige el plano.
+- **Buscador** (clic o `/` en la etapa): lo mismo que `search`. `Esc` lo borra y `Intro` elige el primero.
+- **Mostrar** todos, solo los tuyos o solo los del servidor, y **Actualizar** para volver a pedir la biblioteca.
+- **Pastillas** con las diez etiquetas más usadas: un clic filtra por la etiqueta y otro la quita.
+- Del plano elegido, sus datos y los botones **Cargar** (al portapapeles), **Colocar** (en tu posición, con vista previa) y **Estampar** (el pincel en la mano con ese plano y el **Radio** elegido); con una sola etiqueta en el buscador aparece **Estampar #etiqueta** para estamparla entera. **Compartir con el servidor** sale en los tuyos si puedes compartir. Sin permiso, el botón sale apagado y lo dice al pasar el ratón.
+- Sin planos, **Guardar el portapapeles…** abre el chat con `/komaedit blueprint save ` escrito.
+- Las miniaturas se piden solo para las tarjetas que se ven y llegan **en trozos de 4 KiB**, como mucho 16 KiB por tick y jugador, para no atascar la conexión. El cliente las guarda por su huella (SHA-256): no se vuelven a pedir mientras el plano no cambie, caben 256 en memoria y se borran al salir del servidor.
+- Maqueta de la etapa (pintada con el mismo reparto que la pantalla): `docs/renders/planos/studio_planos.png` y `studio_planos_rocas.png`; las miniaturas de prueba, en `docs/renders/planos/miniaturas.png`. Se regeneran con `KOMAEDIT_BLUEPRINT_RENDER=<carpeta>` y `BlueprintStudioMockupTest`.
+
+### Permisos y límites
+
+| Nodo | Paquete | Qué da |
+| --- | --- | --- |
+| `komaedit.blueprint.load` | intermedio (o `komaedit.clipboard`) | Ver la biblioteca (lista, búsqueda, `info`, Studio), cargar al portapapeles y usar planos en `Bp(…)` y en el pincel. |
+| `komaedit.blueprint.save` | intermedio (o `komaedit.clipboard`) | Guardar, etiquetar y borrar los planos propios. |
+| `komaedit.build.blueprint` | intermedio (o `komaedit.build`) | `/komaedit blueprint place`. |
+| `komaedit.build.brush.stamp` | intermedio (o `komaedit.build`) | El pincel estampar. |
+| `komaedit.blueprint.share` | avanzado | Compartir los propios y quitar los que uno compartió. |
+| `komaedit.admin.blueprints` | admin | Borrar o reemplazar los compartidos de otros. |
+| `komaedit.limit.blueprints` | admin | Sin los límites de número y tamaño. |
+
+Los límites están en `config/komaedit/blueprints.json`, que se crea solo y se recarga con `/komaedit reload`:
+
+```json
+{
+  "format": 1,
+  "maxPerPlayer": 64,
+  "maxShared": 512,
+  "maxVolume": 1000000,
+  "maxSide": 512,
+  "maxFileKilobytes": 8192,
+  "allowSharing": true
+}
+```
+
+- `maxPerPlayer`: planos propios por jugador; reemplazar uno no cuenta.
+- `maxShared`: planos compartidos en todo el servidor.
+- `maxVolume` y `maxSide`: bloques de caja (ancho × alto × fondo) y lado más largo de un plano.
+- `maxFileKilobytes`: tamaño del esquema comprimido (vale también para `komaedit.limit.blueprints`, para proteger el disco).
+- `allowSharing`: con `false` nadie comparte, tenga el permiso que tenga.
+- Si el archivo no se puede leer se usan los valores de serie y se avisa en `latest.log`.
+
+### Rendimiento y limitaciones
+
+- Guardar no frena el servidor: leer el portapapeles para escribir el esquema y pintar la miniatura van en el hilo de los planos. La miniatura de un plano de 64×40×64 se pinta en una fracción de segundo (lanza un rayo por píxel a una rejilla de colores, al doble de resolución).
+- Colocar y estampar leen el esquema en el hilo del servidor la primera vez; después se queda en una caché de hasta 4 millones de bloques de caja, que se renueva sola si el plano cambia.
+- **Colocar y estampar ponen los bloques sin su NBT** (cofres vacíos, carteles en blanco), como el resto de la colocación de KomaEdit. Para conservarlo: `load` y `//paste`.
+- El pincel estampar admite planos de hasta 262 144 bloques de caja (64³); para más grandes, `blueprint place`. Una pasada cambia como mucho 1 000 000 de bloques.
+- La miniatura pinta cada bloque como un cubo de su color medio: no enseña losas, escaleras, entidades ni el contenido de los bloques.
+- Compartir copia el plano: si luego cambias el tuyo, el compartido no cambia hasta que lo vuelvas a compartir.
+
 ## Recetas, instancias y paquetes
 
 - Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
 - Las instancias conservan receta, trayectoria, estados colocados y checksum; permiten actualizar o retirar una construcción sin borrar bloques modificados manualmente.
 - Seleccionar una instancia vuelve a cargar sus puntos en el editor antes de actualizarla.
 - Los paquetes exportables conservan configuraciones compartibles en `config/komaedit/packages/`.
+- Las recetas e instancias guardan figuras procedurales (parámetros y trayectoria); para guardar y compartir bloques ya construidos están los [planos](#biblioteca-de-planos).
 - Los datos se aíslan por mundo y UUID de jugador para evitar contaminación entre proyectos.
 
 ## Proyecto persistente y recuperación
@@ -3877,6 +4034,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
    - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
    - `komaedit.build.brush.sculpt` ([Pinceles de modelado](#pinceles-de-modelado)); escalar y girar el portapapeles va con `komaedit.clipboard`.
+   - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
@@ -3891,6 +4049,10 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
 | `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
+| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
@@ -3913,6 +4075,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa ni `arraySnapRadius`) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
 
 `config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
+
+`config/komaedit/blueprints.json` guarda los límites de la [biblioteca de planos](#permisos-y-límites) (planos por jugador, compartidos, tamaño y si se puede compartir); también se recarga con `/komaedit reload`.
 
 `config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `config/komaedit/images.json` configura `/komaedit image` (ver [Configuración de imágenes](#configuración-de-imágenes)) y también se recarga. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
 

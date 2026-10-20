@@ -28,6 +28,12 @@ class PreviewScopeTest {
         assertTrue(PreviewScope.eligible(List.of("palette", "swap", "<args>")));
         assertFalse(PreviewScope.eligible(List.of("palette", "print", "<args>")), "palette print -v es «detallado»");
         assertFalse(PreviewScope.eligible(List.of()));
+        assertTrue(PreviewScope.eligible(List.of("blueprint", "place", "<args>")));
+        assertTrue(PreviewScope.eligible(List.of("planos", "colocar", "<args>")));
+        for (String management : List.of("save", "list", "load", "delete", "share", "tags", "info")) {
+            assertFalse(PreviewScope.eligible(List.of("blueprint", management, "<args>")), "blueprint " + management);
+        }
+        assertFalse(PreviewScope.eligible(List.of("plano")));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.komainu.moxia.client.gui;
 
+import com.komainu.moxia.client.gui.studio.BlueprintStage;
 import com.komainu.moxia.client.gui.studio.ColorStage;
 import com.komainu.moxia.client.gui.studio.StudioIcons;
 import com.komainu.moxia.client.gui.studio.StudioUi;
@@ -124,6 +125,8 @@ public final class ProceduralStudioScreen extends Screen {
     private static ShapeCategory rememberedCategory = ShapeCategory.ALL;
     /** Etapa de color: su degradado y sus ajustes siguen ahí al reabrir el Studio. */
     private static final ColorStage COLOR_STAGE = new ColorStage();
+    /** Etapa de planos: búsqueda, filtro y plano elegido siguen ahí al reabrir el Studio. */
+    private static final BlueprintStage BLUEPRINT_STAGE = new BlueprintStage();
 
     private ProceduralRecipe draft = rememberedDraft;
     private int weatherIntensity = 50;
@@ -216,6 +219,9 @@ public final class ProceduralStudioScreen extends Screen {
         status = tr("gui.komaedit.status.ready");
         sendCommand("komaedit path mode on");
         ClientPlayNetworking.send(new RecipeActionPayload(RecipeActionPayload.SYNC, draft));
+        if (stage == Stage.BLUEPRINTS) {
+            BLUEPRINT_STAGE.opened();
+        }
     }
 
     @Override
@@ -274,7 +280,8 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     private boolean typing() {
-        return editingFormula || editingName || editingSearch || editingControl != null || blockCatalog;
+        return editingFormula || editingName || editingSearch || editingControl != null || blockCatalog
+                || BLUEPRINT_STAGE.editing();
     }
 
     // ── Marco ───────────────────────────────────────────────────────────────────────────────────────────
@@ -316,7 +323,7 @@ public final class ProceduralStudioScreen extends Screen {
             }
             int iconY = item.centerY() - StudioIcons.SIZE / 2;
             int iconColor = selected ? ACCENT : hovered ? TEXT : TEXT_SECONDARY;
-            String number = Integer.toString(value.ordinal() + 1);
+            String number = shortcut(value);
             if (labels) {
                 ui.icon(value.icon, item.x() + 6, iconY, iconColor);
                 int labelX = item.x() + 6 + StudioIcons.SIZE + 5;
@@ -327,7 +334,8 @@ public final class ProceduralStudioScreen extends Screen {
             }
             ui.register(item)
                     .onClick(() -> selectStage(value))
-                    .tooltip(number + " · " + tr(value.titleKey) + "\n" + tr(value.subtitleKey));
+                    .tooltip((number.isEmpty() ? "" : number + " · ") + tr(value.titleKey) + "\n"
+                            + tr(value.subtitleKey));
         }
     }
 
@@ -356,6 +364,7 @@ public final class ProceduralStudioScreen extends Screen {
             case INSTANCES -> drawInstancesStage(column);
             case RECIPES -> drawRecipesStage(column);
             case COLOR -> COLOR_STAGE.draw(ui, column, colorHost());
+            case BLUEPRINTS -> BLUEPRINT_STAGE.draw(ui, column, blueprintHost());
         }
         contentHeight = column.height() + 12;
         ui.popClip();
@@ -1125,6 +1134,38 @@ public final class ProceduralStudioScreen extends Screen {
 
     // ── Ventanas modales ────────────────────────────────────────────────────────────────────────────────
 
+    private BlueprintStage.Host blueprintHost() {
+        return new BlueprintStage.Host() {
+            @Override
+            public String tr(String key, Object... arguments) {
+                return ProceduralStudioScreen.tr(key, arguments);
+            }
+
+            @Override
+            public void send(String command) {
+                sendCommand(command);
+            }
+
+            @Override
+            public void suggest(String command) {
+                if (client != null) {
+                    client.setScreen(new net.minecraft.client.gui.screen.ChatScreen(command));
+                }
+            }
+
+            @Override
+            public void status(String text) {
+                status = text;
+            }
+        };
+    }
+
+    /** Tecla de la etapa: 1 – 9 y el 0 para la décima; las demás, solo con Tab. */
+    private static String shortcut(Stage value) {
+        int index = value.ordinal();
+        return index < 9 ? Integer.toString(index + 1) : index == 9 ? "0" : "";
+    }
+
     private ColorStage.Host colorHost() {
         return new ColorStage.Host() {
             @Override
@@ -1298,6 +1339,9 @@ public final class ProceduralStudioScreen extends Screen {
         }
         if (!"search".equals(key)) {
             editingSearch = false;
+        }
+        if (!BlueprintStage.SEARCH_KEY.equals(key)) {
+            BLUEPRINT_STAGE.stopEditing();
         }
         if (!"name".equals(key)) {
             editingName = false;
@@ -1488,6 +1532,9 @@ public final class ProceduralStudioScreen extends Screen {
         if (editingSearch) {
             return searchKeyPressed(keyCode);
         }
+        if (BLUEPRINT_STAGE.editing()) {
+            return BLUEPRINT_STAGE.keyPressed(keyCode, control);
+        }
         if (blockCatalog) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
                 blockCatalog = false;
@@ -1577,6 +1624,9 @@ public final class ProceduralStudioScreen extends Screen {
             }
             return true;
         }
+        if (BLUEPRINT_STAGE.editing()) {
+            return BLUEPRINT_STAGE.charTyped(chr);
+        }
         if (editingSearch) {
             if (chr >= 32 && chr != 127 && shapeSearch.length() < 32) {
                 shapeSearch += chr;
@@ -1605,7 +1655,11 @@ public final class ProceduralStudioScreen extends Screen {
             return true;
         }
         if (chr == '/') {
-            focusSearch();
+            if (stage == Stage.BLUEPRINTS) {
+                BLUEPRINT_STAGE.focusSearch();
+            } else {
+                focusSearch();
+            }
             return true;
         }
         return super.charTyped(chr, modifiers);
@@ -1667,8 +1721,13 @@ public final class ProceduralStudioScreen extends Screen {
             }
             return true;
         }
-        if (!shift && keyCode >= GLFW.GLFW_KEY_1 && keyCode < GLFW.GLFW_KEY_1 + Stage.values().length) {
+        if (!shift && keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_9
+                && keyCode - GLFW.GLFW_KEY_1 < Stage.values().length) {
             selectStage(Stage.values()[keyCode - GLFW.GLFW_KEY_1]);
+            return true;
+        }
+        if (!shift && keyCode == GLFW.GLFW_KEY_0 && Stage.values().length > 9) {
+            selectStage(Stage.values()[9]);
             return true;
         }
         switch (keyCode) {
@@ -2115,6 +2174,10 @@ public final class ProceduralStudioScreen extends Screen {
         stage = next;
         contentScroll = 0;
         editingSearch = false;
+        BLUEPRINT_STAGE.stopEditing();
+        if (stage == Stage.BLUEPRINTS) {
+            BLUEPRINT_STAGE.opened();
+        }
         if (stage == Stage.STRUCTURES && !STRUCTURE_SHAPES.contains(draft.shape())) {
             draft = draft.withShapeDefaults(STRUCTURE_SHAPES.getFirst());
         } else if (stage == Stage.FIGURE && !FIGURE_SHAPES.contains(draft.shape())) {
@@ -2345,7 +2408,8 @@ public final class ProceduralStudioScreen extends Screen {
         WEATHER("gui.komaedit.stage.weather", StudioIcons.Icon.WEATHER),
         INSTANCES("gui.komaedit.stage.instances", StudioIcons.Icon.INSTANCES),
         RECIPES("gui.komaedit.stage.recipes", StudioIcons.Icon.RECIPES),
-        COLOR("gui.komaedit.stage.color", StudioIcons.Icon.COLOR);
+        COLOR("gui.komaedit.stage.color", StudioIcons.Icon.COLOR),
+        BLUEPRINTS("gui.komaedit.stage.blueprints", StudioIcons.Icon.BLUEPRINTS);
 
         private final String titleKey;
         private final String subtitleKey;

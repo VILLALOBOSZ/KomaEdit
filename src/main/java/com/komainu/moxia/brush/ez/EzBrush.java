@@ -1,6 +1,8 @@
 package com.komainu.moxia.brush.ez;
 
 import com.komainu.moxia.biome.BiomeService;
+import com.komainu.moxia.blueprint.BlueprintStamps;
+import com.komainu.moxia.blueprint.StampSettings;
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.brush.BrushMarkers;
 import com.komainu.moxia.brush.place.Alignment;
@@ -81,6 +83,9 @@ public abstract sealed class EzBrush {
         if (type == EzBrushType.ROCK) {
             return new Rock(NaturePresets.rock(player.getUuid(), input));
         }
+        if (type == EzBrushType.STAMP) {
+            return new Stamp(new BlueprintStamps(player, StampSettings.parse(input)));
+        }
         if (type.placement() && !(type == EzBrushType.PLACE && legacyPreview(input))) {
             PlacementSettings.Kind kind = switch (type) {
                 case SCATTER -> PlacementSettings.Kind.SCATTER;
@@ -130,7 +135,7 @@ public abstract sealed class EzBrush {
                 int maxAmount = maxAmount(block);
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
-            case SCATTER, ARRAY, TREE, ROCK -> throw new IllegalStateException(type.id());
+            case SCATTER, ARRAY, TREE, ROCK, STAMP -> throw new IllegalStateException(type.id());
             case BIOME -> {
                 BiomeType biome = BiomeService.parse(
                         options.required(0, "el bioma (cherry_grove, snowy_plains…)"));
@@ -663,6 +668,37 @@ public abstract sealed class EzBrush {
             if (input.right() && !input.swap()) {
                 NatureService.brushRock(session.player(), settings, session.hit());
             }
+        }
+    }
+
+    /**
+     * Estampar: planos de la biblioteca al azar alrededor del clic, girados, volteados y apoyados en el suelo. Clic
+     * izquierdo: olvida dónde estampó, para que la separación vuelva a empezar.
+     */
+    static final class Stamp extends EzBrush {
+        private final BlueprintStamps stamps;
+
+        Stamp(BlueprintStamps stamps) {
+            super(EzBrushType.STAMP, stamps.settings().radius(), stamps.settings().preview());
+            this.stamps = stamps;
+        }
+
+        @Override
+        public String controls() {
+            return stamps.controls();
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input.swap()) {
+                return;
+            }
+            if (input.left()) {
+                stamps.forget();
+                session.info("Estampar: la separación vuelve a empezar");
+                return;
+            }
+            session.run(stamps.operation(session.player(), session.hit()));
         }
     }
 

@@ -270,6 +270,7 @@ public final class MoxiaCommands {
         CapabilityCommands.register(root);
         SymmetryCommands.register(root);
         BuilderCommands.register(root);
+        BlueprintCommands.register(root);
         ClipboardCommands.register(root);
         PreviewCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.

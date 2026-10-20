@@ -422,6 +422,24 @@ public final class HelpTopics {
                     new Entry("/komaedit pincel biome <bioma> [radio] [-v] [-m máscara]",
                             "Pincel de biomas; el clic izquierdo toma el bioma del bloque")
             )),
+            new Topic("blueprint", "Planos", List.of("planos", "plano", "blueprints", "biblioteca", "estampar",
+                    "stamp"), List.of(
+                    new Entry("/komaedit blueprint save <nombre> [etiquetas]",
+                            "Guarda el portapapeles con miniatura, autor y etiquetas (alias guardar)"),
+                    new Entry("/komaedit blueprint list [texto|#etiqueta] [página]",
+                            "Tus planos y los del servidor, con botones (alias lista, search, buscar)"),
+                    new Entry("/komaedit blueprint load <plano>", "Al portapapeles de WorldEdit (alias cargar)"),
+                    new Entry("/komaedit blueprint place <plano> [primaria] [secundaria] [banderas]",
+                            "Lo coloca como /komaedit place, con -v para la vista previa (alias colocar)"),
+                    new Entry("/komaedit blueprint info <plano>", "Tamaño, bloques, autor, fecha y etiquetas"),
+                    new Entry("/komaedit blueprint tags <plano> [etiquetas]", "Cambia sus etiquetas (vacío: quitarlas)"),
+                    new Entry("/komaedit blueprint share <plano>", "Lo comparte con todo el servidor (servidor/…)"),
+                    new Entry("/komaedit blueprint delete <plano>", "Lo borra (alias borrar)"),
+                    new Entry("/komaedit pincel stamp <planos|#etiqueta> [radio] [-n %] [-d separación] [-r giro]"
+                            + " [-f volteo] [-g apoyar|centro|no]", "Pincel estampar: planos al azar sobre el suelo"),
+                    new Entry("/komaedit scatter Bp(T:rocas) SurfaceNormal Random -n 1",
+                            "Los planos también valen en place, scatter y array con Bp(N:…|T:…)")
+            )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup", "menu", "quick", "gui", "quiet",
                     "silencio", "permisos", "permissions", "reload", "recargar"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),

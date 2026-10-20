@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * Lleva las estructuras de los comandos de colocación al pincel de colocación ({@code /komaedit pincel place}):
- * {@code Schematic}, {@code Shape}, {@code Expression}, {@code TexturedShape} e {@code Icosphere}. En cada clic la
+ * {@code Schematic}, {@code Shape}, {@code Expression}, {@code TexturedShape}, {@code Icosphere} y {@code Blueprint}. En cada clic la
  * estructura se pasa a bloques con su tamaño natural (20×20×20 las procedurales) y el pincel la orienta.
  */
 public final class PlacementBrushStructures {
@@ -40,6 +40,7 @@ public final class PlacementBrushStructures {
         StructureSources.register(spec -> source(spec, "Expression"), "Expression", "Ex", "Expresion");
         StructureSources.register(spec -> source(spec, "TexturedShape"), "TexturedShape", "TS");
         StructureSources.register(spec -> source(spec, "Icosphere"), "Icosphere", "Ic", "Icosfera", "Roca");
+        StructureSources.register(spec -> source(spec, "Blueprint"), "Blueprint", "Bp", "Plano");
     }
 
     private static StructureSource source(com.komainu.moxia.brush.place.StructureSpec brushSpec, String name) {

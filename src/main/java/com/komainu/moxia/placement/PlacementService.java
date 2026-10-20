@@ -1,5 +1,6 @@
 package com.komainu.moxia.placement;
 
+import com.komainu.moxia.blueprint.BlueprintService;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
@@ -165,6 +166,8 @@ public final class PlacementService {
         job.target = target;
         job.origin = player.getServerWorld();
         String what = resolved.structures().size() == 1 ? resolved.structures().getFirst().describe()
+                : spec.type() == StructureSpec.Type.BLUEPRINT
+                ? new java.util.HashSet<>(resolved.structures()).size() + " planos"
                 : resolved.structures().size() + " schematics";
         switch (kind) {
             case PLACE -> {
@@ -234,6 +237,19 @@ public final class PlacementService {
                 }
                 return new Resolved(structures, palettes, null);
             }
+            case BLUEPRINT -> {
+                List<Structure> structures = new ArrayList<>();
+                List<List<BlockState>> palettes = new ArrayList<>();
+                // Un plano repetido (por su peso) se captura una vez y se repite tal cual.
+                Map<Clipboard, Captured> captures = new java.util.IdentityHashMap<>();
+                for (BlueprintService.Named named : BlueprintService.structures(player, spec.blueprints())) {
+                    Captured captured = captures.computeIfAbsent(named.clipboard(),
+                            clipboard -> capture(clipboard, spec, named.name()));
+                    structures.add(captured.structure());
+                    palettes.add(captured.palette());
+                }
+                return new Resolved(structures, palettes, null);
+            }
             case SHAPE, ICOSPHERE -> {
                 WorldEditService.parsePatternUnchecked(context, spec.pattern());
                 return new Resolved(List.of(spec.procedural(1)), List.of(List.of()), spec.pattern());
@@ -257,10 +273,16 @@ public final class PlacementService {
         if ((long) size.x() * size.y() * size.z() > MAX_STRUCTURE_VOLUME) {
             throw new IllegalArgumentException(name + " supera " + MAX_STRUCTURE_VOLUME + " bloques de caja");
         }
-        BlockVector3 origin = spec.centered()
-                ? BlockVector3.at(Math.floorDiv(minimum.x() + maximum.x(), 2),
-                Math.floorDiv(minimum.y() + maximum.y(), 2), Math.floorDiv(minimum.z() + maximum.z(), 2))
-                : clipboard.getOrigin();
+        StructureSpec.Origin anchor = spec.origin() != null ? spec.origin()
+                : spec.centered() ? StructureSpec.Origin.CENTER : StructureSpec.Origin.INHERENT;
+        BlockVector3 origin = switch (anchor) {
+            case CENTER -> BlockVector3.at(Math.floorDiv(minimum.x() + maximum.x(), 2),
+                    Math.floorDiv(minimum.y() + maximum.y(), 2), Math.floorDiv(minimum.z() + maximum.z(), 2));
+            // Centro de la base: la capa de abajo cae en el bloque de colocación.
+            case BOTTOM -> BlockVector3.at(Math.floorDiv(minimum.x() + maximum.x(), 2), minimum.y(),
+                    Math.floorDiv(minimum.z() + maximum.z(), 2));
+            case INHERENT -> clipboard.getOrigin();
+        };
         BlockVector3 offset = minimum.subtract(origin);
         VoxelStructure.Builder builder = VoxelStructure.builder(size.x(), size.y(), size.z(), offset.x(), offset.y(),
                 offset.z());
