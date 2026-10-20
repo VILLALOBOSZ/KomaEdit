@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.7.0 (estable, 2026-10-20)
+
 ### Colocar con gizmo, como en Axiom
 
 - **Lo que se coloca se mueve antes.** Con KomaEdit en el cliente, pegar (`/komaedit paste`, o **Ctrl+V** en el mundo), `place`, los planos, las figuras y estructuras de la trayectoria (también Construir del Studio), los árboles, las rocas, los tejados, el texto y las imágenes salen como **fantasma** translúcido con un **gizmo**: flechas por eje (rojo X, verde Y, azul Z), anillos de giro y un cubo central, del mismo tamaño en pantalla a cualquier distancia y resaltados al pasar el punto de mira. Lo que lee el terreno o la selección (terraformar, envejecer, texturizar, suavizar, hiedra, `scatter`…) sigue con su vista previa de siempre. Sin el mod nada cambia.
