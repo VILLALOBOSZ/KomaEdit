@@ -1,5 +1,6 @@
 package com.komainu.moxia.edit;
 
+import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.persistence.OperationLedger;
@@ -467,6 +468,7 @@ public final class BatchEditService {
             job.editSession.close();
         } finally {
             if (job.editSession.size() > 0) {
+                EditHistory.label(job.editSession, job.description);
                 job.context.session().remember(job.editSession);
             }
         }

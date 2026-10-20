@@ -102,6 +102,22 @@ public abstract class ToolCard {
         return List.of();
     }
 
+    /**
+     * Los ajustes que se ven siempre en la tarjeta; los demás quedan plegados en «Más ajustes». Vacío: todos menos
+     * máscara, semilla y variación, que casi nunca se tocan.
+     */
+    public List<String> essentials() {
+        return List.of();
+    }
+
+    /** Si el ajuste se ve sin abrir «Más ajustes». */
+    public final boolean essential(ToolParam param) {
+        List<String> chosen = essentials();
+        return chosen.isEmpty() ? !ADVANCED.contains(param.id()) : chosen.contains(param.id());
+    }
+
+    private static final Set<String> ADVANCED = Set.of("mask", "seed", "variation");
+
     /** Lo que vale un ajuste en automático, para enseñarlo en gris ({@code null} si no se sabe). */
     public String autoHint(String paramId, ToolValues values) {
         return null;
@@ -247,7 +263,7 @@ public abstract class ToolCard {
 
     protected static ToolParam.Number number(String id, int min, int max, int step, int bigStep, int defaultValue) {
         return new ToolParam.Number(id, new com.komainu.moxia.studio.NumericRange(min, max, step, bigStep),
-                defaultValue, 0, false, null);
+                defaultValue, 0, false, null, null);
     }
 
     /**
@@ -257,20 +273,20 @@ public abstract class ToolCard {
     protected static ToolParam.Number auto(String id, int min, int max, int step, int bigStep, int decimals,
                                            int start) {
         return new ToolParam.Number(id, new com.komainu.moxia.studio.NumericRange(min, max, step, bigStep), start,
-                decimals, true, null);
+                decimals, true, null, null);
     }
 
     protected static ToolParam.Number decimal(String id, int min, int max, int step, int bigStep, int defaultValue,
                                               int decimals) {
         return new ToolParam.Number(id, new com.komainu.moxia.studio.NumericRange(min, max, step, bigStep),
-                defaultValue, decimals, false, null);
+                defaultValue, decimals, false, null, null);
     }
 
     /** El mismo ajuste, visible solo cuando {@code shown} lo dice. */
     protected static ToolParam when(java.util.function.Predicate<ToolValues> shown, ToolParam param) {
         return switch (param) {
             case ToolParam.Number number -> new ToolParam.Number(number.id(), number.range(), number.defaultValue(),
-                    number.decimals(), number.auto(), shown);
+                    number.decimals(), number.auto(), number.unit(), shown);
             case ToolParam.Choice choice -> new ToolParam.Choice(choice.id(), choice.options(), choice.defaultValue(),
                     choice.style(), choice.source(), shown);
             case ToolParam.Toggle toggle -> new ToolParam.Toggle(toggle.id(), toggle.defaultValue(), shown);

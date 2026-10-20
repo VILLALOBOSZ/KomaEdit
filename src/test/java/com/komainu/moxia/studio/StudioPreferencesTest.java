@@ -79,4 +79,52 @@ class StudioPreferencesTest {
         assertEquals(List.of("coil"), partial.favorites());
         assertTrue(partial.recents().isEmpty());
     }
+
+    @Test
+    void theStudioRemembersStageToolSettingsScrollBlocksAndFoldedSections() throws Exception {
+        StudioPreferences preferences = new StudioPreferences();
+        preferences.setStage("tools");
+        preferences.setTool("roof");
+        preferences.setToolValues("roof", java.util.Map.of("type", "hip", "overhang", 2, "open", true));
+        preferences.setScroll("tool:roof", 120);
+        preferences.pushBlockRecent("minecraft:deepslate_tiles");
+        preferences.pushBlockRecent("minecraft:spruce_planks");
+        preferences.setExpanded("tools:more:roof", true);
+        preferences.setPreviewMode(StudioPreferences.PreviewMode.LIVE);
+        Path file = directory.resolve("all.json");
+        preferences.save(file);
+
+        StudioPreferences loaded = StudioPreferences.load(file);
+        assertEquals("tools", loaded.stage());
+        assertEquals("roof", loaded.tool());
+        assertEquals(java.util.Map.of("type", "hip", "overhang", 2, "open", true), loaded.toolValues("roof"));
+        assertEquals(120, loaded.scroll("tool:roof"));
+        assertEquals(0, loaded.scroll("tool:tree"));
+        assertEquals(List.of("minecraft:spruce_planks", "minecraft:deepslate_tiles"), loaded.blockRecents());
+        assertTrue(loaded.expanded("tools:more:roof"));
+        assertEquals(StudioPreferences.PreviewMode.LIVE, loaded.previewMode());
+    }
+
+    @Test
+    void previewModesCycleAndOldFilesKeepTheirChoice() {
+        assertEquals(StudioPreferences.PreviewMode.BUILD, StudioPreferences.PreviewMode.OFF.next());
+        assertEquals(StudioPreferences.PreviewMode.LIVE, StudioPreferences.PreviewMode.BUILD.next());
+        assertEquals(StudioPreferences.PreviewMode.OFF, StudioPreferences.PreviewMode.LIVE.next());
+        assertEquals(StudioPreferences.PreviewMode.BUILD,
+                StudioPreferences.fromJson("{\"toolPreview\": true}").previewMode(), "el interruptor de antes");
+        StudioPreferences live = new StudioPreferences();
+        live.setPreviewMode(StudioPreferences.PreviewMode.LIVE);
+        live.setToolPreview(true);
+        assertEquals(StudioPreferences.PreviewMode.LIVE, live.previewMode(), "encender no quita el en vivo");
+    }
+
+    @Test
+    void blockRecentsAreBoundedAndWithoutDuplicates() {
+        StudioPreferences preferences = new StudioPreferences();
+        for (int index = 0; index < 20; index++) {
+            preferences.pushBlockRecent("minecraft:block_" + index % 12);
+        }
+        assertEquals(StudioPreferences.MAX_BLOCK_RECENTS, preferences.blockRecents().size());
+        assertEquals("minecraft:block_7", preferences.blockRecents().getFirst());
+    }
 }

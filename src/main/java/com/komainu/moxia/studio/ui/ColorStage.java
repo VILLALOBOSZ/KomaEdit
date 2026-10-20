@@ -1,4 +1,4 @@
-package com.komainu.moxia.client.gui.studio;
+package com.komainu.moxia.studio.ui;
 
 import com.komainu.moxia.color.BlockColor;
 import com.komainu.moxia.color.BlockColorCatalog;
@@ -7,28 +7,19 @@ import com.komainu.moxia.color.ColorFilter;
 import com.komainu.moxia.color.ColorGradient;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static com.komainu.moxia.client.gui.studio.StudioTheme.ACCENT;
-import static com.komainu.moxia.client.gui.studio.StudioTheme.CARD;
-import static com.komainu.moxia.client.gui.studio.StudioTheme.CARD_HOVER;
-import static com.komainu.moxia.client.gui.studio.StudioTheme.MUTED;
-import static com.komainu.moxia.client.gui.studio.StudioTheme.TEXT;
-import static com.komainu.moxia.client.gui.studio.StudioTheme.TEXT_SECONDARY;
+import static com.komainu.moxia.studio.ui.StudioTheme.*;
 
 /**
  * Etapa «Color» del Studio: degradado entre dos bloques con sus muestras, los parecidos al primero y el sombreado de
  * la selección. Calcula en el cliente con el mismo catálogo que el servidor ({@link BlockColorCatalogs}) y deja el
  * trabajo a las órdenes de siempre: {@code /komaedit color hotbar}, {@code color gradient} y {@code shade}. Guarda
- * su estado entre aperturas del Studio.
+ * su estado entre aperturas del Studio. El sombreado, que toca el mundo, es el botón del pie.
  */
 public final class ColorStage {
     /** Lo que la etapa necesita de la pantalla. */
@@ -37,10 +28,14 @@ public final class ColorStage {
 
         void send(String command);
 
-        /** Abre el catálogo de bloques y entrega el elegido. */
-        void pickBlock(Consumer<String> onPick);
+        /** Abre la biblioteca de bloques y entrega el elegido. */
+        void pickBlock(String title, String current, Consumer<String> onPick);
 
         void status(String text);
+
+        String blockName(String id);
+
+        String lookedAtBlock();
     }
 
     private static final List<String> LIGHTS = List.of("sol", "jugador", "mirada", "arriba", "ne", "no", "se", "so");
@@ -65,73 +60,76 @@ public final class ColorStage {
     private String similarKey = "";
     private List<BlockColorCatalog.Match> similar = List.of();
 
-    public void draw(StudioUi ui, Column column, Host host) {
+    public void draw(StudioUi ui, Column column, Host host, boolean compact) {
         ui.section(column, host.tr("gui.komaedit.color.gradient"));
-        Rect[] ends = column.row(2, 30);
-        blockCard(ui, ends[0], from, host.tr("gui.komaedit.color.from"), host, id -> {
+        blockRow(ui, column, host, from, host.tr("gui.komaedit.color.from"), id -> {
             from = id;
             variant = 0;
         });
-        blockCard(ui, ends[1], to, host.tr("gui.komaedit.color.to"), host, id -> {
+        blockRow(ui, column, host, to, host.tr("gui.komaedit.color.to"), id -> {
             to = id;
             variant = 0;
         });
-        ui.cycle(column.next(), host.tr("gui.komaedit.color.steps"), Integer.toString(steps), direction -> {
-            steps = Math.clamp(steps + direction, MIN_STEPS, MAX_STEPS);
-            variant = 0;
-        }).tooltip(host.tr("gui.komaedit.help.color.steps"));
-        ui.toggle(column.next(), host.tr("gui.komaedit.color.cubes"), cubes)
-                .tooltip(host.tr("gui.komaedit.help.color.cubes"))
-                .onClick(() -> cubes = !cubes);
-        ui.toggle(column.next(), host.tr("gui.komaedit.color.anything"), anything)
-                .tooltip(host.tr("gui.komaedit.help.color.anything"))
-                .onClick(() -> anything = !anything);
+        ui.cycle(column.next(), host.tr("gui.komaedit.color.steps"), Integer.toString(steps), steps != 7,
+                        direction -> {
+                            steps = Math.clamp(steps + direction, MIN_STEPS, MAX_STEPS);
+                            variant = 0;
+                        })
+                .tooltip(host.tr("gui.komaedit.color.steps") + "\n" + host.tr("gui.komaedit.help.color.steps"));
+        if (!compact) {
+            ui.toggle(column.next(), host.tr("gui.komaedit.color.cubes"), cubes)
+                    .tooltip(host.tr("gui.komaedit.help.color.cubes"))
+                    .onClick(() -> cubes = !cubes);
+            ui.toggle(column.next(), host.tr("gui.komaedit.color.anything"), anything)
+                    .tooltip(host.tr("gui.komaedit.help.color.anything"))
+                    .onClick(() -> anything = !anything);
+        }
 
         List<BlockColor> blocks = gradient();
         if (blocks.isEmpty()) {
             ui.paragraph(column, gradientError, MUTED, 3);
         } else {
             swatches(ui, column, blocks, host);
-            Rect[] actions = column.row(3, StudioUi.ROW);
-            ui.button(actions[0], host.tr("gui.komaedit.color.to_hotbar"), StudioUi.Tone.PRIMARY)
-                    .tooltip(host.tr("gui.komaedit.help.color.to_hotbar"))
+            Rect[] actions = column.row(2, compact ? 16 : StudioUi.ROW);
+            ui.button(actions[0], host.tr("gui.komaedit.color.to_hotbar"), StudioUi.Tone.SECONDARY)
+                    .tooltip(host.tr("gui.komaedit.color.to_hotbar") + "\n" + host.tr("gui.komaedit.help.color.to_hotbar"))
                     .onClick(() -> {
                         host.send("komaedit color hotbar " + ids(blocks));
                         host.status(host.tr("gui.komaedit.status.color.hotbar", blocks.size()));
                     });
             ui.button(actions[1], host.tr("gui.komaedit.color.another"), StudioUi.Tone.SECONDARY)
-                    .tooltip(host.tr("gui.komaedit.help.color.another"))
+                    .tooltip(host.tr("gui.komaedit.color.another") + "\n" + host.tr("gui.komaedit.help.color.another"))
                     .onClick(() -> variant++);
-            ui.button(actions[2], host.tr("gui.komaedit.color.to_chat"), StudioUi.Tone.SECONDARY)
-                    .tooltip(host.tr("gui.komaedit.help.color.to_chat"))
-                    .onClick(() -> host.send(gradientCommand()));
         }
 
-        ui.section(column, host.tr("gui.komaedit.color.similar", shortName(from)));
-        List<BlockColorCatalog.Match> matches = similar();
-        swatches(ui, column, matches.stream().map(BlockColorCatalog.Match::block).toList(), host);
+        if (!compact) {
+            ui.section(column, host.tr("gui.komaedit.color.similar", host.blockName(from)));
+            List<BlockColorCatalog.Match> matches = similar();
+            swatches(ui, column, matches.stream().map(BlockColorCatalog.Match::block).toList(), host);
+        }
 
         ui.section(column, host.tr("gui.komaedit.color.shade"));
         ui.cycle(column.next(), host.tr("gui.komaedit.color.light"),
-                host.tr("gui.komaedit.color.light." + LIGHTS.get(light)),
-                direction -> light = Math.floorMod(light + direction, LIGHTS.size()))
-                .tooltip(host.tr("gui.komaedit.help.color.light"));
+                        host.tr("gui.komaedit.color.light." + LIGHTS.get(light)),
+                        direction -> light = Math.floorMod(light + direction, LIGHTS.size()))
+                .tooltip(host.tr("gui.komaedit.color.light") + "\n" + host.tr("gui.komaedit.help.color.light"));
         ui.cycle(column.next(), host.tr("gui.komaedit.color.palette"),
-                host.tr("gui.komaedit.color.palette." + PALETTES.get(palette)),
-                direction -> palette = Math.floorMod(palette + direction, PALETTES.size()))
-                .tooltip(host.tr("gui.komaedit.help.color.palette"));
+                        host.tr("gui.komaedit.color.palette." + PALETTES.get(palette)),
+                        direction -> palette = Math.floorMod(palette + direction, PALETTES.size()))
+                .tooltip(host.tr("gui.komaedit.color.palette") + "\n" + host.tr("gui.komaedit.help.color.palette"));
         ui.cycle(column.next(), host.tr("gui.komaedit.color.dither"), dither + " %",
-                direction -> dither = Math.clamp(dither + direction * 10, 0, 100))
-                .tooltip(host.tr("gui.komaedit.help.color.dither"));
-        ui.paragraph(column, host.tr("gui.komaedit.color.shade_hint"), TEXT_SECONDARY, 0);
-        ui.button(column.next(), host.tr("gui.komaedit.color.shade_run"), StudioUi.Tone.PRIMARY).onClick(() -> {
-            host.send(shadeCommand());
-            host.status(host.tr("gui.komaedit.status.color.shading"));
-        });
+                        direction -> dither = Math.clamp(dither + direction * 10, 0, 100))
+                .tooltip(host.tr("gui.komaedit.color.dither") + "\n" + host.tr("gui.komaedit.help.color.dither"));
+    }
+
+    /** El sombreado de la selección: lo que hace el botón del pie en esta etapa. */
+    public void shade(Host host) {
+        host.send(shadeCommand());
+        host.status(host.tr("gui.komaedit.status.color.shading"));
     }
 
     /** La orden de sombreado con lo elegido en la etapa. */
-    String shadeCommand() {
+    public String shadeCommand() {
         String source = switch (PALETTES.get(palette)) {
             case "rampa" -> "rampa ";
             case "gradient" -> gradient.isEmpty() ? "" : ids(gradient) + " ";
@@ -139,12 +137,6 @@ public final class ColorStage {
         };
         return "komaedit shade " + source + "-l " + LIGHTS.get(light) + " -d "
                 + String.format(Locale.ROOT, "%.1f", dither / 100.0);
-    }
-
-    private String gradientCommand() {
-        String flags = filter().flags();
-        return "komaedit color gradient " + shortName(from) + " " + shortName(to) + " " + steps
-                + (flags.isEmpty() ? "" : " " + flags) + (variant > 0 ? " -v " + variant : "");
     }
 
     private ColorFilter filter() {
@@ -179,18 +171,22 @@ public final class ColorStage {
         return similar;
     }
 
-    private static void blockCard(StudioUi ui, Rect card, String id, String caption, Host host,
-                                  Consumer<String> onPick) {
-        boolean hovered = ui.hovered(card);
-        ui.fill(card, hovered ? CARD_HOVER : CARD);
-        BlockColor color = BlockColorCatalogs.get().get(id);
-        if (color != null) {
-            ui.fill(new Rect(card.x(), card.y(), 3, card.height()), 0xFF000000 | color.rgb());
-        }
-        ui.item(stack(id), card.x() + 7, card.y() + 7);
-        ui.label(caption, card.x() + 27, card.y() + 5, card.width() - 31, MUTED);
-        ui.label(shortName(id), card.x() + 27, card.y() + 16, card.width() - 31, TEXT);
-        ui.register(card).tooltip(host.tr("gui.komaedit.help.color.pick")).onClick(() -> host.pickBlock(onPick));
+    private static void blockRow(StudioUi ui, Column column, Host host, String id, String caption,
+                                 Consumer<String> onPick) {
+        StudioUi.Widget[] zones = ui.blockRow(column.next(), new StudioUi.BlockRow(caption, id, host.blockName(id),
+                false, false, caption + "\n" + host.tr("gui.komaedit.help.color.pick"), true,
+                host.tr("gui.komaedit.tools.block.eyedropper")));
+        zones[0].onClick(() -> host.pickBlock(host.tr("gui.komaedit.blocks.for", host.tr("gui.komaedit.stage.color"),
+                caption), id, onPick));
+        zones[1].onClick(() -> {
+            String looked = host.lookedAtBlock();
+            if (looked == null) {
+                host.status(host.tr("gui.komaedit.blocks.look_nothing"));
+                return;
+            }
+            onPick.accept(looked);
+            host.status(host.tr("gui.komaedit.blocks.looked", host.blockName(looked)));
+        });
     }
 
     /** Fila de muestras: el color arriba y el bloque debajo; un clic lo lleva a la mano. */
@@ -207,9 +203,9 @@ public final class ColorStage {
                 if (hovered) {
                     ui.fill(new Rect(cell.x(), cell.bottom() - 1, cell.width(), 1), ACCENT);
                 }
-                ui.item(stack(block.id()), cell.x() + 3, cell.y() + 8);
+                ui.item(block.id(), cell.x() + 3, cell.y() + 8);
                 ui.register(cell)
-                        .tooltip(block.shortName() + "\n" + block.hex() + " · " + block.describeFlags() + "\n"
+                        .tooltip(host.blockName(block.id()) + "\n" + block.hex() + " · " + block.describeFlags() + "\n"
                                 + host.tr("gui.komaedit.help.color.swatch"))
                         .onClick(() -> host.send("komaedit color hotbar " + block.shortName()));
             }
@@ -218,16 +214,5 @@ public final class ColorStage {
 
     private static String ids(List<BlockColor> blocks) {
         return String.join(",", blocks.stream().map(BlockColor::shortName).toList());
-    }
-
-    private static String shortName(String id) {
-        return id.startsWith("minecraft:") ? id.substring("minecraft:".length()) : id;
-    }
-
-    private static ItemStack stack(String id) {
-        Identifier identifier = Identifier.tryParse(id);
-        ItemStack stack = identifier == null ? ItemStack.EMPTY
-                : Registries.BLOCK.get(identifier).asItem().getDefaultStack();
-        return stack.isEmpty() ? Items.BARRIER.getDefaultStack() : stack;
     }
 }

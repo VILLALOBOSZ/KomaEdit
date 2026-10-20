@@ -1,5 +1,6 @@
 package com.komainu.moxia.capability;
 
+import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
@@ -106,6 +107,7 @@ public final class HandEditApplier {
         } finally {
             session.close();
             if (session.size() > 1) {
+                EditHistory.label(session, "Edición a mano");
                 context.session().remember(session);
             }
         }

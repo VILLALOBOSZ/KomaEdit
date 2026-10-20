@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.tools;
 
+import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.permission.KomaPermissions;
 
 import java.util.ArrayList;
@@ -36,17 +37,22 @@ public final class UtilityCards {
                             block("material", "stone"),
                             new ToolParam.Choice("font", BUILTIN_FONTS, "sans", ToolParam.Choice.Style.BUTTONS,
                                     "fonts", null),
-                            number("size", 1, 256, 1, 4, 8),
-                            number("thickness", 1, 64, 1, 2, 1),
-                            number("border", 0, 16, 1, 2, 0),
+                            number("size", 1, 256, 1, 4, 8).unit(ValueUnit.BLOCKS),
+                            number("thickness", 1, 64, 1, 2, 1).unit(ValueUnit.BLOCKS),
+                            number("border", 0, 16, 1, 2, 0).unit(ValueUnit.BLOCKS),
                             when(values -> values.number("border", 0) > 0, block("border_material", null)),
                             choice("orientation", ToolParam.Choice.Style.BUTTONS, "auto", "standing", "flat"),
                             choice("align", ToolParam.Choice.Style.BUTTONS, "centro", "izquierda", "derecha"),
                             decimal("spacing", -80, 320, 5, 10, 0, 1),
-                            decimal("line_spacing", 5, 40, 1, 5, 10, 1),
+                            decimal("line_spacing", 5, 40, 1, 5, 10, 1).unit(ValueUnit.MULTIPLIER),
                             choice("profile", ToolParam.Choice.Style.CYCLE, "none", "SlabsAndStairs", "Slabs", "SSW"),
                             mask()
                     ));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("text", "material", "font", "size");
         }
 
         /** El texto entre comillas, con las comillas de dentro escapadas como pide la orden. */
@@ -194,14 +200,19 @@ public final class UtilityCards {
             super("snow", ToolFamily.UTILITIES, ToolTarget.SELECTION,
                     List.of("snow", "nieve", "nevar", "invierno", "winter"),
                     List.of(
-                            number("layers", 1, 8, 1, 2, 2),
-                            number("radius", 0, 16, 1, 2, 2),
-                            decimal("fill", 0, 10, 1, 5, 10, 1),
-                            number("shade", 0, 8, 1, 2, 2),
-                            number("height", 0, 8, 1, 2, 0),
+                            number("layers", 1, 8, 1, 2, 2).unit(ValueUnit.LAYERS),
+                            number("radius", 0, 16, 1, 2, 2).unit(ValueUnit.BLOCKS),
+                            decimal("fill", 0, 10, 1, 5, 10, 1).unit(ValueUnit.PERCENT),
+                            number("shade", 0, 8, 1, 2, 2).unit(ValueUnit.LAYERS),
+                            number("height", 0, 8, 1, 2, 0).unit(ValueUnit.LAYERS),
                             toggle("plants", false),
                             mask()
                     ));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("layers", "plants");
         }
 
         @Override
@@ -277,12 +288,17 @@ public final class UtilityCards {
                     List.of(
                             choice("level", ToolParam.Choice.Style.BUTTONS, "top", "feet", "fixed"),
                             when(values -> values.choice("level").equals("fixed"),
-                                    number("level_y", -2_048, 2_047, 1, 8, 62)),
+                                    number("level_y", -2_048, 2_047, 1, 8, 62).unit(ValueUnit.Y)),
                             when(values -> values.choice("level").equals("feet"),
-                                    number("offset", -16, 16, 1, 4, 0)),
+                                    number("offset", -16, 16, 1, 4, 0).unit(ValueUnit.BLOCKS)),
                             toggle("blocks_only", false),
                             mask()
                     ));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("level", "level_y", "offset");
         }
 
         /** El nivel tal como lo lee la orden: nada (lo alto de la selección), {@code ~}, {@code ~-2} o una altura. */
@@ -329,9 +345,14 @@ public final class UtilityCards {
                             new ToolParam.Choice("biome", List.of(), "minecraft:plains", ToolParam.Choice.Style.SEARCH,
                                     "biomes", null),
                             toggle("vertical", false),
-                            number("radius", 1, 32, 1, 4, 8),
+                            number("radius", 1, 32, 1, 4, 8).unit(ValueUnit.BLOCKS),
                             mask()
                     ));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("biome", "radius");
         }
 
         private static String biome(ToolValues values) {

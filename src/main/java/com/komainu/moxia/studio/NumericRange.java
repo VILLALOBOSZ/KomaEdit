@@ -7,8 +7,12 @@ import java.util.OptionalInt;
  * También traduce lo escrito en el campo y el arrastre del ratón a un valor válido.
  */
 public record NumericRange(int min, int max, int step, int bigStep) {
-    /** Píxeles de arrastre horizontal por paso. */
+    /** Píxeles de arrastre horizontal por paso, como mucho (los rangos largos van más deprisa). */
     public static final int PIXELS_PER_STEP = 6;
+    /** Con Mayús, el arrastre fino: un paso cada tantos píxeles, sea cual sea el rango. */
+    public static final int FINE_PIXELS_PER_STEP = 12;
+    /** Arrastrar esta distancia recorre el rango entero (si así va más deprisa que un paso cada 6 píxeles). */
+    public static final int DRAG_SPAN = 240;
 
     public NumericRange {
         if (min > max || step < 1 || bigStep < step) {
@@ -30,10 +34,21 @@ public record NumericRange(int min, int max, int step, int bigStep) {
         return clamp(value + Integer.signum(direction) * amount);
     }
 
-    /** Valor tras arrastrar {@code pixels} desde {@code start}; redondea al paso del control. */
-    public int dragged(int start, double pixels, boolean big) {
-        int steps = (int) (pixels / PIXELS_PER_STEP);
-        return clamp(start + steps * (big ? bigStep : step));
+    /**
+     * Valor tras arrastrar {@code pixels} desde {@code start}, en pasos enteros del control. Normal: un paso cada
+     * {@value #PIXELS_PER_STEP} píxeles o, en rangos largos, el rango entero en {@value #DRAG_SPAN}. Fino (Mayús):
+     * un paso cada {@value #FINE_PIXELS_PER_STEP} píxeles.
+     */
+    public int dragged(int start, double pixels, boolean fine) {
+        double stepsPerPixel = fine ? 1.0 / FINE_PIXELS_PER_STEP
+                : Math.max(1.0 / PIXELS_PER_STEP, steps() / (double) DRAG_SPAN);
+        long steps = (long) (pixels * stepsPerPixel);
+        return clamp((int) Math.clamp(start + steps * step, Integer.MIN_VALUE, Integer.MAX_VALUE));
+    }
+
+    /** Cuántos pasos normales caben en el rango. */
+    public long steps() {
+        return ((long) max - min) / step;
     }
 
     /** Lo escrito en el campo: entero con signo opcional, ajustado al rango; vacío o inválido no aplica. */

@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.tools;
 
+import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.nature.RockSettings;
 import com.komainu.moxia.nature.RockType;
 import com.komainu.moxia.permission.KomaPermissions;
@@ -18,21 +19,30 @@ public final class RockCard extends ToolCard {
                 List.of("rock", "roca", "piedra", "boulder", "crag", "spire", "penasco", "aguja", "menhir", "stone"),
                 List.of(
                         new ToolParam.Choice("type", Arrays.stream(RockType.values()).map(RockType::id).toList(),
-                                "boulder", ToolParam.Choice.Style.BUTTONS, "", null),
-                        auto("size", 10, (int) (RockSettings.MAX_SIZE * 10), 5, 20, 1, 40),
-                        auto("aspect", 20, 600, 5, 25, 2, 75),
-                        auto("elongation", 100, 400, 5, 25, 2, 130),
-                        auto("roughness", 0, 100, 5, 25, 2, 45),
-                        auto("cracks", 0, 100, 5, 25, 2, 40),
+                                "boulder", ToolParam.Choice.Style.GALLERY, "", null),
+                        auto("size", 10, (int) (RockSettings.MAX_SIZE * 10), 5, 20, 1, 40).unit(ValueUnit.BLOCKS),
+                        auto("aspect", 20, 600, 5, 25, 2, 75).unit(ValueUnit.PERCENT),
+                        auto("elongation", 100, 400, 5, 25, 2, 130).unit(ValueUnit.MULTIPLIER),
+                        auto("roughness", 0, 100, 5, 25, 2, 45).unit(ValueUnit.PERCENT),
+                        auto("cracks", 0, 100, 5, 25, 2, 40).unit(ValueUnit.PERCENT),
                         auto("facets", 0, 32, 1, 4, 0, 9),
-                        auto("sink", 0, 90, 5, 10, 2, 25),
-                        number("lean", 0, 60, 1, 5, 0),
+                        auto("sink", 0, 90, 5, 10, 2, 25).unit(ValueUnit.PERCENT),
+                        number("lean", 0, 60, 1, 5, 0).unit(ValueUnit.DEGREES),
                         seed(),
                         new ToolParam.Text("palette", "", 256, false, null),
-                        decimal("moss", 0, 100, 5, 25, 0, 2),
-                        auto("variation", 0, 100, 5, 25, 2, 15),
+                        decimal("moss", 0, 100, 5, 25, 0, 2).unit(ValueUnit.PERCENT),
+                        auto("variation", 0, 100, 5, 25, 2, 15).unit(ValueUnit.PERCENT),
                         mask()
                 ));
+    }
+
+
+    @Override
+
+    public List<String> essentials() {
+
+        return List.of("type", "size", "moss");
+
     }
 
     String settings(ToolValues values) {

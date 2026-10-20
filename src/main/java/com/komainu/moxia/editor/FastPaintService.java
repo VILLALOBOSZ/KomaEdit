@@ -1,5 +1,6 @@
 package com.komainu.moxia.editor;
 
+import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
@@ -185,6 +186,7 @@ public final class FastPaintService {
             stroke.editSession.close();
         } finally {
             if (stroke.editSession.size() > 0) {
+                EditHistory.label(stroke.editSession, "Trazo");
                 stroke.context.session().remember(stroke.editSession);
             }
         }

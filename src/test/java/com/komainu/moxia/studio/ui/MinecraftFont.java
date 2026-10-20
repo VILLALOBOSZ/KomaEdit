@@ -1,4 +1,4 @@
-package com.komainu.moxia.studio.tools.ui;
+package com.komainu.moxia.studio.ui;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -21,7 +21,7 @@ import java.util.Map;
  * de las pruebas, para que las maquetas midan y pinten el texto como el juego. Lo que no está en esos bitmaps (★,
  * flechas) se pinta con una fuente del sistema, como hace el juego con unifont.
  */
-final class MinecraftFont {
+public final class MinecraftFont {
     private record Glyph(BufferedImage sheet, int x, int y, int cellWidth, int cellHeight, double scale, int ascent,
                          int advance) {
     }
@@ -30,7 +30,7 @@ final class MinecraftFont {
     private final Font fallback = new Font(Font.SANS_SERIF, Font.PLAIN, 8);
     private final boolean loaded;
 
-    MinecraftFont() {
+    public MinecraftFont() {
         boolean ok;
         try {
             load();
@@ -41,7 +41,7 @@ final class MinecraftFont {
         loaded = ok;
     }
 
-    boolean loaded() {
+    public boolean loaded() {
         return loaded;
     }
 
@@ -106,7 +106,7 @@ final class MinecraftFont {
         return 0;
     }
 
-    int advance(int code, boolean bold) {
+    public int advance(int code, boolean bold) {
         int extra = bold ? 1 : 0;
         if (code == ' ') {
             return 4 + extra;
@@ -119,11 +119,11 @@ final class MinecraftFont {
         return 8 + extra;
     }
 
-    int width(String text) {
+    public int width(String text) {
         return width(text, false);
     }
 
-    int width(String text, boolean bold) {
+    public int width(String text, boolean bold) {
         int total = 0;
         for (int code : text.codePoints().toArray()) {
             total += advance(code, bold);
@@ -135,7 +135,7 @@ final class MinecraftFont {
      * Pinta {@code text} con la esquina superior izquierda en (x, y) de GUI, a {@code scale} píxeles por punto, sin
      * salirse de {@code clip} (en coordenadas de GUI; {@code null} sin recorte).
      */
-    void draw(BufferedImage target, String text, int x, int y, int argb, boolean bold, int scale,
+    public void draw(BufferedImage target, String text, int x, int y, int argb, boolean bold, int scale,
               java.awt.Rectangle clip) {
         int cursor = x;
         for (int code : text.codePoints().toArray()) {

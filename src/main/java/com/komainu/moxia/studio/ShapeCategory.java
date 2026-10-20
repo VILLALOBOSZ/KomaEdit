@@ -3,7 +3,7 @@ package com.komainu.moxia.studio;
 import com.komainu.moxia.shape.PathShape;
 
 /**
- * Familias de figuras del buscador del Studio. Solo ordenan la lista: no cambian ninguna figura.
+ * Familias de figuras del Studio: agrupan la cuadrícula de figuras. Solo ordenan la lista: no cambian ninguna figura.
  * Una figura nueva sin familia asignada cae en {@link #ORGANIC}, así que nunca desaparece de la lista.
  */
 public enum ShapeCategory {
@@ -12,7 +12,9 @@ public enum ShapeCategory {
     TUBE("gui.komaedit.category.tube"),
     LINKS("gui.komaedit.category.links"),
     SKINS("gui.komaedit.category.skins"),
-    ORGANIC("gui.komaedit.category.organic");
+    ORGANIC("gui.komaedit.category.organic"),
+    /** Las de antes en su etapa propia: pilares, arcos, puentes y torii. */
+    STRUCTURES("gui.komaedit.category.structures");
 
     private final String translationKey;
 
@@ -30,6 +32,7 @@ public enum ShapeCategory {
             case SWEEP, BRAID, NOISE_TUBE, EXPRESSION -> TUBE;
             case CHAINLINK, BEADS, RINGS, KNOTS, COIL, NOODLES -> LINKS;
             case SCALES, SPIKED_SCALES, TILES, HEX_ARMOR, VORONOI, HONEYCOMB, FISHNET -> SKINS;
+            case PILLAR, PILLAR_ARCHES, TORII, ARCH_BRIDGE -> STRUCTURES;
             default -> ORGANIC;
         };
     }

@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.tools;
 
+import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.roof.RoofSettings;
 import com.komainu.moxia.roof.RoofType;
@@ -20,12 +21,12 @@ public final class RoofCard extends ToolCard {
                 List.of("roof", "tejado", "techo", "gable", "hip", "dosaguas", "cupula", "mansarda", "tejas"),
                 List.of(
                         new ToolParam.Choice("type", Arrays.stream(RoofType.values()).map(RoofType::id).toList(),
-                                "gable", ToolParam.Choice.Style.BUTTONS, "", null),
+                                "gable", ToolParam.Choice.Style.GALLERY, "", null),
                         block("material", "spruce_planks"),
                         when(type(type -> type != RoofType.FLAT), choice("slope", ToolParam.Choice.Style.CYCLE,
                                 "auto", "1:1", "1:2", "2:1", "1:3", "3:1", "30", "45", "60")),
-                        auto("overhang", 0, RoofSettings.MAX_OVERHANG, 1, 2, 0, 1),
-                        number("thickness", 1, RoofSettings.MAX_THICKNESS, 1, 1, 1),
+                        auto("overhang", 0, RoofSettings.MAX_OVERHANG, 1, 2, 0, 1).unit(ValueUnit.BLOCKS),
+                        number("thickness", 1, RoofSettings.MAX_THICKNESS, 1, 1, 1).unit(ValueUnit.BLOCKS),
                         when(type(type -> type != RoofType.FLAT), block("ridge", null)),
                         when(type(RoofType::allowsDormers), number("dormers", 0, RoofSettings.MAX_DORMERS, 1, 2, 0)),
                         when(values -> type(values).allowsDormers() && values.number("dormers", 0) > 0,
@@ -35,10 +36,10 @@ public final class RoofCard extends ToolCard {
                         when(type(type -> type == RoofType.SHED), choice("side", ToolParam.Choice.Style.BUTTONS,
                                 "auto", "n", "s", "e", "o")),
                         when(type(type -> type == RoofType.SPIRE), auto("sides", 3, 32, 1, 4, 0, 8)),
-                        when(type(type -> TALL.contains(type.id())), auto("height", 1, 128, 1, 5, 0, 8)),
-                        when(type(type -> type == RoofType.FLAT), auto("parapet", 0, 6, 1, 1, 0, 1)),
+                        when(type(type -> TALL.contains(type.id())), auto("height", 1, 128, 1, 5, 0, 8).unit(ValueUnit.BLOCKS)),
+                        when(type(type -> type == RoofType.FLAT), auto("parapet", 0, 6, 1, 1, 0, 1).unit(ValueUnit.BLOCKS)),
                         when(type(type -> type == RoofType.MANSARD || type == RoofType.GABLET),
-                                auto("break", 1, 32, 1, 2, 0, 2)),
+                                auto("break", 1, 32, 1, 2, 0, 2).unit(ValueUnit.BLOCKS)),
                         when(type(type -> type == RoofType.GABLE || type == RoofType.GABLET),
                                 choice("axis", ToolParam.Choice.Style.BUTTONS, "auto", "x", "z")),
                         toggle("detect", false),
@@ -46,6 +47,15 @@ public final class RoofCard extends ToolCard {
                         when(type(type -> type != RoofType.FLAT), block("slabs", null)),
                         toggle("replace", false)
                 ));
+    }
+
+
+    @Override
+
+    public List<String> essentials() {
+
+        return List.of("type", "material", "slope", "overhang");
+
     }
 
     private static Predicate<ToolValues> type(Predicate<RoofType> test) {

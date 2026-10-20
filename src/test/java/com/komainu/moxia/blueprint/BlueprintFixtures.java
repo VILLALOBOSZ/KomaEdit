@@ -8,7 +8,7 @@ import java.util.SplittableRandom;
 import java.util.UUID;
 
 /** Planos de prueba pintados con los colores medios reales de los bloques (la tabla de {@code smooth/colors.txt}). */
-final class BlueprintFixtures {
+public final class BlueprintFixtures {
     static final UUID ALICE = UUID.fromString("00000000-0000-0000-0000-00000000a11c");
     static final UUID BRUNO = UUID.fromString("00000000-0000-0000-0000-0000000b0b00");
 
@@ -37,7 +37,7 @@ final class BlueprintFixtures {
     }
 
     /** Roca: un elipsoide irregular de piedra, andesita y musgo. */
-    static BlueprintThumbnail.Grid rock(long seed) {
+    public static BlueprintThumbnail.Grid rock(long seed) {
         SplittableRandom random = new SplittableRandom(seed);
         BlueprintThumbnail.Grid grid = new BlueprintThumbnail.Grid(7, 5, 6);
         int stone = color("stone");
@@ -60,7 +60,7 @@ final class BlueprintFixtures {
     }
 
     /** Arbusto: hojas de roble en bola con un tronco corto. */
-    static BlueprintThumbnail.Grid bush() {
+    public static BlueprintThumbnail.Grid bush() {
         BlueprintThumbnail.Grid grid = new BlueprintThumbnail.Grid(5, 4, 5);
         grid.set(2, 0, 2, color("oak_log"));
         int leaves = color("oak_leaves");
@@ -78,7 +78,7 @@ final class BlueprintFixtures {
     }
 
     /** Ruina: muros de ladrillo de piedra con huecos, suelo y una columna caída. */
-    static BlueprintThumbnail.Grid ruin(long seed) {
+    public static BlueprintThumbnail.Grid ruin(long seed) {
         SplittableRandom random = new SplittableRandom(seed);
         BlueprintThumbnail.Grid grid = new BlueprintThumbnail.Grid(9, 6, 9);
         int bricks = color("stone_bricks");
@@ -109,7 +109,7 @@ final class BlueprintFixtures {
     }
 
     /** Casita: muros de tablones con esquinas de tronco, tejado escalonado y ventana. */
-    static BlueprintThumbnail.Grid house() {
+    public static BlueprintThumbnail.Grid house() {
         BlueprintThumbnail.Grid grid = new BlueprintThumbnail.Grid(9, 9, 7);
         int planks = color("spruce_planks");
         int log = color("spruce_log");
@@ -150,7 +150,7 @@ final class BlueprintFixtures {
     }
 
     /** Árbol: tronco de abedul y copa redondeada. */
-    static BlueprintThumbnail.Grid tree() {
+    public static BlueprintThumbnail.Grid tree() {
         BlueprintThumbnail.Grid grid = new BlueprintThumbnail.Grid(7, 11, 7);
         for (int y = 0; y < 7; y++) {
             grid.set(3, y, 3, color("birch_log"));
@@ -170,7 +170,7 @@ final class BlueprintFixtures {
     }
 
     /** Pozo: aro de adoquines con agua, postes y tejadillo. */
-    static BlueprintThumbnail.Grid well() {
+    public static BlueprintThumbnail.Grid well() {
         BlueprintThumbnail.Grid grid = new BlueprintThumbnail.Grid(5, 6, 5);
         int cobble = color("mossy_cobblestone");
         for (int z = 0; z < 5; z++) {
@@ -199,7 +199,7 @@ final class BlueprintFixtures {
     }
 
     /** Grande: una torre de 40 de alto sobre una plaza de 64×64, para medir el tiempo de la miniatura. */
-    static BlueprintThumbnail.Grid plaza() {
+    public static BlueprintThumbnail.Grid plaza() {
         BlueprintThumbnail.Grid grid = new BlueprintThumbnail.Grid(64, 40, 64);
         int floor = color("smooth_stone");
         int tower = color("deepslate_bricks");

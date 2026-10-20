@@ -139,6 +139,46 @@ public final class ToolValues {
         return new ToolValues(params, Collections.unmodifiableMap(next));
     }
 
+    /** Los valores que no son los de serie, para guardarlos (números como enteros escalados). */
+    public Map<String, Object> changed() {
+        Map<String, Object> changed = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : values.entrySet()) {
+            if (!isDefault(entry.getKey()) && entry.getValue() != null) {
+                changed.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return changed;
+    }
+
+    /**
+     * Los valores de serie con lo guardado encima. Lo que ya no existe, no es del tipo del ajuste o no se acepta
+     * (una opción que se quitó) se ignora: un archivo de otra versión nunca rompe la tarjeta.
+     */
+    public ToolValues restore(Map<String, ?> stored) {
+        ToolValues result = this;
+        for (Map.Entry<String, ?> entry : stored.entrySet()) {
+            ToolParam param = params.get(entry.getKey());
+            Object value = entry.getValue();
+            if (param == null || value == null) {
+                continue;
+            }
+            boolean fits = switch (param) {
+                case ToolParam.Number ignored -> value instanceof java.lang.Number;
+                case ToolParam.Toggle ignored -> value instanceof Boolean;
+                default -> value instanceof String;
+            };
+            if (!fits) {
+                continue;
+            }
+            try {
+                result = result.with(entry.getKey(), value);
+            } catch (IllegalArgumentException ignored) {
+                // Una opción que ya no existe: se queda la de serie.
+            }
+        }
+        return result;
+    }
+
     private String checked(String id, Class<? extends ToolParam> type) {
         ToolParam param = param(id);
         if (!type.isInstance(param)) {

@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StudioLayoutTest {
     private static final int STAGES = 10;
+    /** Crear, Ajustar y Biblioteca, como en el Studio. */
+    private static final int[] GROUPS = {3, 4, 3};
     private static final int[][] WINDOWS = {
             {1920, 1080}, {2560, 1440}, {1366, 768}, {1280, 720}, {1600, 900}, {854, 480}, {3840, 2160}
     };
@@ -47,7 +49,10 @@ class StudioLayoutTest {
                 assertTrue(frame.footer().encloses(frame.footerSummary()), where);
                 assertTrue(frame.footer().encloses(frame.footerStatus()), where);
                 assertFalse(frame.footerStatus().intersects(frame.buildButton()), where);
-                assertFalse(frame.footerSummary().intersects(frame.footerStatus()), where);
+                if (!frame.compact()) {
+                    // En compacto el estado comparte la línea de arriba; si no, van en dos líneas.
+                    assertFalse(frame.footerSummary().intersects(frame.footerStatus()), where);
+                }
                 assertTrue(frame.footer().encloses(frame.footerProgress()), where);
                 assertFalse(frame.footerProgress().intersects(frame.footerStatus()), where);
                 assertFalse(frame.footerProgress().intersects(frame.buildButton()), where);
@@ -96,25 +101,52 @@ class StudioLayoutTest {
     void withRoomTheStagesKeepTheirComfortableRowAndGap() {
         StudioLayout.Frame nine = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, 9);
         assertEquals(StudioLayout.NAV_GAP, nine.navGap());
-        StudioLayout.Frame ten = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, STAGES);
+        StudioLayout.Frame ten = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, GROUPS);
         assertEquals(StudioLayout.NAV_GAP, ten.navGap());
         assertTrue(ten.navRowHeight() >= StudioLayout.COMFORT_NAV_ROW);
-        // 854×480 con GUI 2: las diez caben quitando hueco entre etapas.
-        StudioLayout.Frame tight = StudioLayout.compute(427, 240, 0, STAGES);
-        assertEquals(StudioLayout.TIGHT_NAV_GAP, tight.navGap());
+        // 854×480 con GUI 2: las diez caben, con sus rayas de grupo, sin desplazar.
+        StudioLayout.Frame tight = StudioLayout.compute(427, 240, 0, GROUPS);
         assertTrue(tight.nav().encloses(tight.navItem(STAGES - 1)));
+        assertTrue(tight.navRowHeight() >= StudioLayout.MIN_NAV_ROW);
+    }
+
+    @Test
+    void groupsHaveTheirCaptionAboveTheirFirstStage() {
+        for (int[] screen : scaledScreens()) {
+            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], StudioLayout.DEFAULT_PANEL_WIDTH,
+                    GROUPS);
+            int first = 0;
+            for (int group = 0; group < GROUPS.length; group++) {
+                if (frame.navMode() == StudioLayout.NavMode.ICONS && group == 0) {
+                    // Con iconos solo hay raya entre grupos, no antes del primero.
+                    first += GROUPS[group];
+                    continue;
+                }
+                Rect caption = frame.groupCaption(group);
+                Rect item = frame.navItem(first);
+                assertTrue(caption.bottom() <= item.y(), screen[0] + "×" + screen[1] + " · grupo " + group);
+                assertTrue(frame.nav().encloses(caption), screen[0] + "×" + screen[1] + " · grupo " + group);
+                if (first > 0) {
+                    assertFalse(caption.intersects(frame.navItem(first - 1)), "la raya no pisa la etapa de antes");
+                }
+                assertEquals(group, frame.groupOf(first));
+                first += GROUPS[group];
+            }
+        }
     }
 
     @Test
     void toolbarButtonsFitNextToTheTitle() {
         for (int[] screen : scaledScreens()) {
-            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], 0, STAGES);
-            for (int index = 0; index < 5; index++) {
+            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], 0, GROUPS);
+            // Siete botones con el panel ancho; en uno estrecho, holograma y rehacer se quedan en sus teclas.
+            int buttons = frame.panel().width() < 300 ? 5 : 7;
+            for (int index = 0; index < buttons; index++) {
                 Rect button = frame.toolButton(index);
                 assertTrue(frame.toolbar().encloses(button), screen[0] + "×" + screen[1] + " · botón " + index);
             }
-            // Queda sitio para «KomaEdit» (unos 50 px) a la izquierda del último botón.
-            assertTrue(frame.toolButton(4).x() - frame.toolbar().x() >= 60, screen[0] + "×" + screen[1]);
+            // Queda sitio para el nombre de la etapa a la izquierda del último botón.
+            assertTrue(frame.toolButton(buttons - 1).x() - frame.toolbar().x() >= 60, screen[0] + "×" + screen[1]);
         }
     }
 
@@ -133,7 +165,10 @@ class StudioLayoutTest {
         StudioLayout.Frame wide = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, STAGES);
         assertEquals(StudioLayout.NavMode.LABELS, wide.navMode());
         StudioLayout.Frame narrowest = StudioLayout.compute(960, 540, 0, STAGES);
-        assertEquals(StudioLayout.NavMode.LABELS, narrowest.navMode(), "el ancho mínimo ya deja nombres");
+        assertEquals(StudioLayout.NavMode.ICONS, narrowest.navMode(), "al mínimo, el sitio es para el contenido");
+        StudioLayout.Frame gui3 = StudioLayout.compute(640, 360, 10_000, STAGES);
+        assertEquals(StudioLayout.NavMode.ICONS, gui3.navMode(), "1080p con GUI 3: iconos y contenido ancho");
+        assertTrue(gui3.innerWidth() >= 260, "ancho del contenido " + gui3.innerWidth());
         StudioLayout.Frame tiny = StudioLayout.compute(320, 240, 0, STAGES);
         assertEquals(StudioLayout.NavMode.ICONS, tiny.navMode());
     }

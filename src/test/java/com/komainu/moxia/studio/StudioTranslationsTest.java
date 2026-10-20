@@ -26,10 +26,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StudioTranslationsTest {
     private static final Path CLIENT_SOURCES = Path.of("src", "client", "java");
+    /** El Studio común (vista, etapas y controles), que pinta el juego y las maquetas. */
+    private static final Path STUDIO_SOURCES = Path.of("src", "main", "java", "com", "komainu", "moxia", "studio");
+    private static final Path STUDIO_UI = STUDIO_SOURCES.resolve("ui");
     /** Clases cuyo texto llega a la pantalla del Studio o al HUD de captura. */
     private static final List<Path> PLAYER_FACING = List.of(
             CLIENT_SOURCES.resolve("com/komainu/moxia/client/gui/ProceduralStudioScreen.java"),
-            CLIENT_SOURCES.resolve("com/komainu/moxia/client/gui/studio/StudioUi.java"),
+            CLIENT_SOURCES.resolve("com/komainu/moxia/client/gui/studio/ClientStudioHost.java"),
+            STUDIO_UI.resolve("StudioUi.java"),
+            STUDIO_UI.resolve("StudioView.java"),
+            STUDIO_UI.resolve("FigureStages.java"),
+            STUDIO_UI.resolve("ColorStage.java"),
+            STUDIO_UI.resolve("BlueprintStage.java"),
+            STUDIO_UI.resolve("BlockPicker.java"),
+            STUDIO_UI.resolve("CommandPalette.java"),
+            STUDIO_SOURCES.resolve("tools/ui/ToolsPanel.java"),
             CLIENT_SOURCES.resolve("com/komainu/moxia/client/hud/PathCaptureHud.java"),
             CLIENT_SOURCES.resolve("com/komainu/moxia/client/preview/ProceduralPreviewRenderer.java")
     );
@@ -69,10 +80,24 @@ class StudioTranslationsTest {
                 "coverage", "accent", "socket_placement", "easing")) {
             keys.add("gui.komaedit.help.option." + option);
         }
-        for (String stage : List.of("path", "figure", "structures", "modifiers", "material", "weather",
-                "instances", "recipes")) {
-            keys.add("gui.komaedit.stage." + stage);
-            keys.add("gui.komaedit.stage." + stage + ".subtitle");
+        for (com.komainu.moxia.studio.ui.StudioStage stage : com.komainu.moxia.studio.ui.StudioStage.values()) {
+            keys.add(stage.titleKey());
+            keys.add(stage.subtitleKey());
+            keys.add(stage.group().translationKey());
+        }
+        for (com.komainu.moxia.studio.ui.CommandPalette.Kind kind
+                : com.komainu.moxia.studio.ui.CommandPalette.Kind.values()) {
+            keys.add(kind.translationKey());
+        }
+        for (StudioPreferences.PreviewMode mode : StudioPreferences.PreviewMode.values()) {
+            keys.add("gui.komaedit.preview.mode." + mode.id());
+            keys.add("gui.komaedit.preview.mode." + mode.id() + ".help");
+        }
+        for (ValueUnit unit : ValueUnit.values()) {
+            if (!unit.key().isEmpty()) {
+                keys.add(unit.key());
+                keys.add(unit.shortKey());
+            }
         }
         for (String control : List.of("radius", "spacing", "thickness", "roll", "height", "dither", "start_scale",
                 "end_scale", "start_spacing", "end_spacing", "twist", "rhythm_interval", "conform_radius",
@@ -85,11 +110,13 @@ class StudioTranslationsTest {
     @Test
     void everyKeyWrittenInTheClientExistsInBothLanguages() throws IOException {
         Set<String> keys = new TreeSet<>();
-        try (Stream<Path> files = Files.walk(CLIENT_SOURCES)) {
-            for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
-                Matcher matcher = KEY.matcher(Files.readString(file));
-                while (matcher.find()) {
-                    keys.add(matcher.group(1));
+        for (Path root : List.of(CLIENT_SOURCES, STUDIO_SOURCES)) {
+            try (Stream<Path> files = Files.walk(root)) {
+                for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                    Matcher matcher = KEY.matcher(Files.readString(file));
+                    while (matcher.find()) {
+                        keys.add(matcher.group(1));
+                    }
                 }
             }
         }
