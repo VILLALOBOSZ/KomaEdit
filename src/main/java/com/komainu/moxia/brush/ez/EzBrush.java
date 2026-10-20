@@ -708,26 +708,40 @@ public abstract sealed class EzBrush {
         return String.format(Locale.ROOT, "%d, %d, %d", point.x(), point.y(), point.z());
     }
 
-    /** Relieve: un sello de alturas en cada clic. Derecho: el modo; izquierdo: el contrario; F: cambia de modo. */
+    /**
+     * Relieve: un sello de alturas en cada clic, cada vez con su variación (giro, escala, espejo y ruido fino según la
+     * semilla y el número de clic). Derecho: el modo; izquierdo: el contrario; F: cambia de modo; Mayús+F: semilla
+     * nueva.
+     */
     static final class Relief extends EzBrush {
         private final HeightmapBrush.Config config;
         private final BrushMask fixedMask;
         private StampBrush.Mode mode;
+        private long seed;
+        private int clicks;
 
         Relief(HeightmapBrush.Config config, boolean preview) {
             super(EzBrushType.HEIGHTMAP, config.radius(), preview);
             this.config = config;
             this.fixedMask = config.mask() == null ? null : BrushMasks.fixed(config.mask());
             this.mode = config.mode();
+            this.seed = config.seed();
         }
 
         @Override
         public String controls() {
-            return HeightmapBrush.controls(config, mode);
+            return HeightmapBrush.controls(config, mode, seed);
         }
 
         @Override
         void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input == BrushInput.SNEAK_SWAP) {
+                seed = ThreadLocalRandom.current().nextInt(1_000_000);
+                clicks = 0;
+                session.info("Relieve: semilla nueva " + seed + (config.locked()
+                        ? " (bloqueada: todos los clics saldrán iguales)" : ""));
+                return;
+            }
             if (input.swap()) {
                 mode = mode.next();
                 session.info("Relieve: " + mode.displayName().toLowerCase(Locale.ROOT) + " con el clic derecho");
@@ -736,8 +750,8 @@ public abstract sealed class EzBrush {
             StampBrush.Mode pass = input.left() ? mode.opposite() : mode;
             BrushMask mask = config.mask() == null ? null
                     : BrushMasks.forClick(fixedMask, session.player(), config.mask());
-            session.run(HeightmapBrush.operation(config, pass, session.target(), session.player().getYaw(),
-                    ThreadLocalRandom.current().nextDouble(), mask));
+            session.run(HeightmapBrush.operation(config, pass, session.target(), session.player().getYaw(), seed,
+                    clicks++, mask));
         }
     }
 

@@ -126,9 +126,9 @@ public final class BrushCommands {
     private static String[] heightmapExamples() {
         java.util.List<String> examples = new java.util.ArrayList<>(
                 com.komainu.moxia.terrain.TerrainService.catalog().names());
-        examples.addAll(java.util.List.of("12", "16", "elevar", "bajar", "aplanar"));
+        examples.addAll(java.util.List.of("12", "16", "sumar", "restar", "maximo", "aplanar", "suavizar", "auto"));
         examples.addAll(com.komainu.moxia.terrain.SurfacePalette.presets().keySet());
-        examples.addAll(java.util.List.of("-i", "-r", "mirada", "azar", "-m", "-c", "-p"));
+        examples.addAll(java.util.List.of("-i", "-r", "mirada", "azar", "-x", "60", "-s", "-k", "-m", "-c", "-p"));
         return examples.toArray(String[]::new);
     }
 

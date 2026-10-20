@@ -107,7 +107,7 @@ public final class ToolsPanel {
     }
 
     private enum Field {
-        NONE, SEARCH, TEXT, PRESET_NAME, BIOME
+        NONE, SEARCH, TEXT, PRESET_NAME, BIOME, STAMP
     }
 
     /** Un estado del historial de ajustes: la tarjeta y sus valores. */
@@ -153,6 +153,9 @@ public final class ToolsPanel {
     private String fieldParam = "";
     private String input = "";
     private String biomeSearch = "";
+    /** Lo escrito en el buscador de sellos y la pestaña de la galería ({@code null}: la del sello elegido). */
+    private String stampSearch = "";
+    private String stampTab;
     private ToolAction namingAction;
     private long lastRequest = Long.MIN_VALUE / 2;
     private long pendingSince;
@@ -225,6 +228,7 @@ public final class ToolsPanel {
             selected = card;
             namingAction = null;
             biomeSearch = "";
+            stampSearch = "";
         }
         browsing = false;
         search = "";
@@ -952,6 +956,10 @@ public final class ToolsPanel {
      */
     private void drawGallery(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
                              boolean compact) {
+        if (card.id().equals("stamp")) {
+            drawStampGallery(ui, column, host, card, choice, compact);
+            return;
+        }
         String value = current().choice(choice.id());
         boolean custom = card.id().equals("stamp") && !current().text("custom").isBlank();
         String chosenName = custom ? current().text("custom").strip() : host.tr(choice.optionKey(value));
@@ -1018,6 +1026,128 @@ public final class ToolsPanel {
                         });
             }
         }
+    }
+
+    /**
+     * La galería de sellos de relieve: un buscador, la pestaña de categoría (o las favoritas) y sus miniaturas en
+     * color, con una estrella para marcar favoritos. Escribiendo se buscan en todas las categorías a la vez.
+     */
+    private void drawStampGallery(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
+                                  boolean compact) {
+        String value = current().choice(choice.id());
+        boolean custom = !current().text("custom").isBlank();
+        StudioPreferences preferences = host.preferences();
+        List<String> favorites = preferences.stampFavorites();
+        List<String> tabs = StampGallery.tabs(favorites);
+        String tab = stampTab != null && tabs.contains(stampTab) ? stampTab : StampGallery.tabOf(value);
+        List<String> shown = StampGallery.visible(stampSearch, tab, favorites,
+                name -> host.tr(choice.optionKey(name)) + " " + host.tr(choice.optionKey(name) + ".help"));
+        List<String> labels = shown.stream().map(name -> host.tr(choice.optionKey(name))).toList();
+        GalleryLayout layout = galleryLayout(ui, labels.isEmpty() ? List.of("") : labels, column.width());
+        int perRow = layout.perRow();
+        int tile = layout.tile();
+        int rows = compact ? 1 : galleryRows;
+        int tileHeight = (compact ? COMPACT_TILE_PICTURE : TILE_PICTURE) + layout.lines() * StudioUi.TILE_LINE + 6;
+        int perPage = perRow * rows;
+        int pageCount = Math.max(1, (shown.size() + perPage - 1) / perPage);
+        String pageKey = "stamp:" + (stampSearch.isEmpty() ? tab : "?" + stampSearch);
+        int page = Math.clamp(pages.computeIfAbsent(pageKey, ignored -> Math.max(0, shown.indexOf(value))
+                / perPage), 0, pageCount - 1);
+
+        if (!compact) {
+            column.section();
+        }
+        Rect title = column.next(10);
+        if (!current().isDefault(choice.id())) {
+            ui.fill(new Rect(title.x() - 5, title.y() + 4, 2, 2), ACCENT);
+        }
+        String caption = host.tr(choice.labelKey()).toUpperCase(Locale.ROOT);
+        int arrows = pageCount > 1 ? 36 : 0;
+        int starWidth = custom ? 0 : 14;
+        ui.label(caption, title.x(), title.y() + 1, title.width() - arrows - starWidth, MUTED);
+        int nameX = title.x() + ui.width(caption) + 6;
+        String chosenName = custom ? current().text("custom").strip() : host.tr(choice.optionKey(value));
+        ui.label(chosenName, nameX, title.y() + 1, title.right() - arrows - starWidth - nameX, TEXT);
+        if (!custom) {
+            boolean favorite = preferences.isStampFavorite(value);
+            Rect star = new Rect(title.right() - arrows - 14, title.y() - 2, 13, 13);
+            ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x(), star.y(),
+                    favorite || ui.hovered(star) ? FAVORITE : MUTED);
+            ui.register(star).tooltip(host.tr("gui.komaedit.tools.stamp.favorite"))
+                    .onClick(() -> toggleStampFavorite(value, host, choice));
+        }
+        if (pageCount > 1) {
+            Rect previous = new Rect(title.right() - 34, title.y() - 2, 16, 13);
+            Rect next = new Rect(title.right() - 16, title.y() - 2, 16, 13);
+            ui.button(previous, "‹", page > 0 ? StudioUi.Tone.SECONDARY : StudioUi.Tone.DISABLED)
+                    .tooltip(host.tr("gui.komaedit.page", page + 1, pageCount))
+                    .group("tools:stamp:page")
+                    .onClick(() -> pages.put(pageKey, Math.max(0, page - 1)));
+            ui.button(next, "›", page < pageCount - 1 ? StudioUi.Tone.SECONDARY : StudioUi.Tone.DISABLED)
+                    .tooltip(host.tr("gui.komaedit.page", page + 1, pageCount))
+                    .group("tools:stamp:page")
+                    .onClick(() -> pages.put(pageKey, Math.min(pageCount - 1, page + 1)));
+        }
+        Rect search = column.next(compact ? 14 : 16);
+        ui.searchField(search, stampSearch, host.tr("gui.komaedit.tools.stamp.search"), field == Field.STAMP,
+                        shown.size(), () -> {
+                            stampSearch = "";
+                            stopEditing();
+                        })
+                .key("tools:stamp_search")
+                .tooltip(host.tr("gui.komaedit.tools.stamp.search.help"))
+                .onClick(() -> field = Field.STAMP);
+        if (stampSearch.isEmpty()) {
+            String tabLabel = tab.equals(StampGallery.FAVORITES) ? host.tr("gui.komaedit.tools.stamp.favorites")
+                    : host.tr("gui.komaedit.tools.stamp.category." + tab);
+            ui.cycle(column.next(compact ? 16 : this.row), host.tr("gui.komaedit.tools.stamp.category"), tabLabel,
+                            direction -> stampTab = tabs.get(Math.floorMod(tabs.indexOf(tab) + direction,
+                                    tabs.size())))
+                    .tooltip(host.tr("gui.komaedit.tools.stamp.category.help") + "\n"
+                            + host.tr("gui.komaedit.help.cycle"))
+                    .group("tools:stamp:category");
+        }
+        if (shown.isEmpty()) {
+            Rect empty = column.next(tileHeight);
+            ui.label(host.tr(stampSearch.isEmpty() ? "gui.komaedit.tools.stamp.no_favorites"
+                    : "gui.komaedit.tools.stamp.no_results"), empty.x() + 2, empty.y() + 4, empty.width() - 4, MUTED);
+            return;
+        }
+        int start = page * perPage;
+        int end = Math.min(shown.size(), start + perPage);
+        for (int rowStart = start; rowStart < end; rowStart += perRow) {
+            Rect row = column.next(tileHeight);
+            for (int index = rowStart; index < Math.min(end, rowStart + perRow); index++) {
+                String option = shown.get(index);
+                Rect cell = new Rect(row.x() + (index - rowStart) * (tile + Column.GAP), row.y(), tile, tileHeight);
+                if (!ui.visible(cell)) {
+                    continue;
+                }
+                boolean chosen = option.equals(value) && !custom;
+                boolean favorite = preferences.isStampFavorite(option);
+                StudioImage image = ChoiceThumbnails.get(card.id(), choice.id(), option);
+                String help = labels.get(index) + "\n" + host.tr(choice.optionKey(option) + ".help") + "\n"
+                        + host.tr("gui.komaedit.tools.stamp.tile.help");
+                ui.tile(cell, image, icon(card), layout.names().get(index), chosen)
+                        .tooltip(help)
+                        .group("tools:" + choice.id())
+                        .onReset(() -> toggleStampFavorite(option, host, choice))
+                        .onClick(() -> set(current().with(choice.id(), option).with("custom", "")));
+                if (favorite || ui.hovered(cell)) {
+                    Rect star = new Rect(cell.right() - 12, cell.y() + 1, 11, 11);
+                    ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x() - 1,
+                            star.y() - 1, favorite || ui.hovered(star) ? FAVORITE : MUTED);
+                    ui.register(star).tooltip(help).onClick(() -> toggleStampFavorite(option, host, choice));
+                }
+            }
+        }
+    }
+
+    private void toggleStampFavorite(String stamp, Host host, ToolParam.Choice choice) {
+        boolean added = host.preferences().toggleStampFavorite(stamp);
+        host.savePreferences();
+        host.status(host.tr(added ? "gui.komaedit.favorite.added" : "gui.komaedit.favorite.removed",
+                host.tr(choice.optionKey(stamp))));
     }
 
     /** Reparto de una galería: cuántas miniaturas por fila, su ancho, cuántas líneas de nombre y cada nombre. */
@@ -1645,6 +1775,7 @@ public final class ToolsPanel {
             case TEXT -> ("tools:text:" + fieldParam).equals(key);
             case PRESET_NAME -> "tools:preset_name".equals(key);
             case BIOME -> "tools:biome".equals(key);
+            case STAMP -> "tools:stamp_search".equals(key);
         };
     }
 
@@ -1742,6 +1873,19 @@ public final class ToolsPanel {
                         biomeSearch = "";
                         stopEditing();
                     }
+                    case STAMP -> {
+                        // Intro elige el primero de lo encontrado y vuelve a su categoría.
+                        ToolParam.Choice choice = (ToolParam.Choice) current().param("stamp");
+                        List<String> found = StampGallery.visible(stampSearch, "", host.preferences()
+                                .stampFavorites(), name -> host.tr(choice.optionKey(name)) + " "
+                                + host.tr(choice.optionKey(name) + ".help"));
+                        if (!found.isEmpty() && !stampSearch.isEmpty()) {
+                            set(current().with("stamp", found.getFirst()).with("custom", ""));
+                            stampTab = StampGallery.tabOf(found.getFirst());
+                        }
+                        stampSearch = "";
+                        stopEditing();
+                    }
                     case PRESET_NAME -> saveNamed(host);
                     default -> commitField(host);
                 }
@@ -1762,6 +1906,10 @@ public final class ToolsPanel {
                         biomeSearch = "";
                         stopEditing();
                     }
+                    case STAMP -> {
+                        stampSearch = "";
+                        stopEditing();
+                    }
                     case PRESET_NAME -> {
                         namingAction = null;
                         stopEditing();
@@ -1773,6 +1921,7 @@ public final class ToolsPanel {
                 switch (field) {
                     case SEARCH -> search = erase(search, control);
                     case BIOME -> biomeSearch = erase(biomeSearch, control);
+                    case STAMP -> stampSearch = erase(stampSearch, control);
                     default -> input = erase(input, control);
                 }
             }
@@ -1803,6 +1952,11 @@ public final class ToolsPanel {
             case BIOME -> {
                 if (biomeSearch.length() < 64) {
                     biomeSearch += Character.toLowerCase(character);
+                }
+            }
+            case STAMP -> {
+                if (stampSearch.length() < 32) {
+                    stampSearch += Character.toLowerCase(character);
                 }
             }
             case PRESET_NAME -> {

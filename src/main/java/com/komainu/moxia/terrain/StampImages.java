@@ -99,11 +99,26 @@ public final class StampImages {
 
     /** Guarda el sello como PNG en grises de 16 bits, con su gris neutro. */
     public static void write(HeightStamp stamp, OutputStream output) throws IOException {
+        write(stamp, output, 16);
+    }
+
+    /**
+     * Guarda el sello como PNG en grises de 16 bits con {@code bits} de precisión (de 8 a 16): los bits que sobran
+     * van a cero y el PNG comprime mucho mejor. Con 12 bits la altura se guarda a 1/4096, de sobra para bloques.
+     */
+    public static void write(HeightStamp stamp, OutputStream output, int bits) throws IOException {
+        if (bits < 8 || bits > 16) {
+            throw new IllegalArgumentException("La precisión del PNG va de 8 a 16 bits");
+        }
+        int levels = (1 << bits) - 1;
+        int shift = 16 - bits;
         BufferedImage image = new BufferedImage(stamp.width(), stamp.height(), BufferedImage.TYPE_USHORT_GRAY);
         var raster = image.getRaster();
         for (int row = 0; row < stamp.height(); row++) {
             for (int column = 0; column < stamp.width(); column++) {
-                int value = (int) Math.round(Math.clamp(stamp.pixel(column, row), 0.0, 1.0) * 65_535.0);
+                int level = (int) Math.round(Math.clamp(stamp.pixel(column, row), 0.0, 1.0) * levels);
+                // El blanco se guarda como 65535 para que el gris neutro de los que hunden siga siendo exacto.
+                int value = level == levels ? 65_535 : level << shift;
                 raster.setSample(column, row, 0, value);
             }
         }

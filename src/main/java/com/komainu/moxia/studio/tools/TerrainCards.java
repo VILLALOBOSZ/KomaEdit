@@ -2,6 +2,7 @@ package com.komainu.moxia.studio.tools;
 
 import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.terrain.HeightmapBrush;
 import com.komainu.moxia.terrain.RiverPlanner;
 import com.komainu.moxia.terrain.StampLibrary;
 import com.komainu.moxia.terrain.SurfacePalette;
@@ -39,20 +40,31 @@ public final class TerrainCards {
         return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
     }
 
-    /** {@code /komaedit pincel heightmap}: el sello con su miniatura, radio, altura, modo y paleta. */
+    /**
+     * {@code /komaedit pincel heightmap}: la biblioteca de sellos (galería por categorías con buscador y favoritos),
+     * radio, altura natural del sello, modo de mezcla, paleta de su categoría y la variación de cada clic.
+     */
     public static final class Stamp extends ToolCard {
+        /** Variación de serie (por ciento). */
+        static final int DEFAULT_VARIATION = 60;
+
         Stamp() {
             super("stamp", ToolFamily.TERRAIN, ToolTarget.HAND,
                     List.of("heightmap", "sello", "relieve", "stamp", "montana", "monte", "colina", "crater",
-                            "terreno", "terrain", "brush", "pincel"),
+                            "volcan", "duna", "isla", "canon", "acantilado", "mesa", "terreno", "terrain", "brush",
+                            "pincel"),
                     List.of(
                             new ToolParam.Choice("stamp", List.copyOf(StampLibrary.descriptions().keySet()),
                                     "montana", ToolParam.Choice.Style.GALLERY, "", null),
                             new ToolParam.Text("custom", "", 64, false, null),
                             number("radius", 1, 32, 1, 4, 12).unit(ValueUnit.BLOCKS),
-                            number("height", 0, 96, 1, 5, 12).unit(ValueUnit.BLOCKS),
-                            choice("mode", ToolParam.Choice.Style.BUTTONS, "elevar", "bajar", "aplanar"),
-                            palette(),
+                            auto("height", 0, 96, 1, 5, 0, 12).unit(ValueUnit.BLOCKS),
+                            choice("mode", ToolParam.Choice.Style.BUTTONS, "sumar", "restar", "maximo", "aplanar",
+                                    "suavizar"),
+                            autoPalette(),
+                            number("variation", 0, 100, 5, 25, DEFAULT_VARIATION).unit(ValueUnit.PERCENT_POINTS),
+                            toggle("lock_seed", false),
+                            seed(),
                             number("intensity", 1, 100, 5, 25, 100).unit(ValueUnit.PERCENT_POINTS),
                             choice("rotation", ToolParam.Choice.Style.CYCLE, "mirada", "azar", "0", "45", "90", "135",
                                     "180", "225", "270", "315"),
@@ -62,9 +74,18 @@ public final class TerrainCards {
                     ));
         }
 
+        /** La paleta: en automático la de la categoría del sello, o cualquiera de serie. */
+        private static ToolParam.Choice autoPalette() {
+            List<String> options = new ArrayList<>();
+            options.add(HeightmapBrush.AUTO_PALETTE);
+            options.addAll(palettes());
+            return new ToolParam.Choice("palette", options, HeightmapBrush.AUTO_PALETTE, ToolParam.Choice.Style.CYCLE,
+                    "", null);
+        }
+
         @Override
         public List<String> essentials() {
-            return List.of("stamp", "radius", "height", "mode");
+            return List.of("stamp", "radius", "height", "mode", "palette", "variation", "lock_seed");
         }
 
         /** El sello que se usa: el propio escrito o el elegido en la galería. */
@@ -73,18 +94,27 @@ public final class TerrainCards {
             return custom.isEmpty() ? values.choice("stamp") : custom;
         }
 
+        /** La altura que se manda: la escrita o, en automático, la natural del sello para ese radio. */
+        static String height(ToolValues values) {
+            return values.number("height") != null ? values.formatted("height")
+                    : Integer.toString(HeightmapBrush.naturalHeight(stamp(values), values.number("radius", 12)));
+        }
+
         @Override
         public String command(ToolValues values, boolean preview) {
             CommandLine line = new CommandLine("komaedit pincel heightmap " + stamp(values))
                     .word(values.formatted("radius"))
-                    .word(values.formatted("height"))
+                    .word(height(values))
                     .word(values.choice("mode"))
                     .word(values.choice("palette"))
                     .changed(values, "intensity", "-i");
             if (!values.choice("rotation").equals("mirada")) {
                 line.flag("-r", values.choice("rotation"));
             }
-            return line.flag("-c", values.formatted("neutral"))
+            return line.changed(values, "variation", "-x")
+                    .flag("-s", values.formatted("seed"))
+                    .flag("-k", values.toggle("lock_seed"))
+                    .flag("-c", values.formatted("neutral"))
                     .flag("-m", values.text("mask"))
                     .flag("-p", values.toggle("brush_preview"))
                     .build();
@@ -110,16 +140,21 @@ public final class TerrainCards {
         @Override
         public List<ToolPreset> presets() {
             return List.of(
-                    ToolPreset.of("mountain", "stamp", "montana", "radius", 24, "height", 30, "rotation", "azar"),
-                    ToolPreset.of("hills", "stamp", "colina", "radius", 16, "height", 8, "intensity", 60),
-                    ToolPreset.of("dunes", "stamp", "duna", "radius", 20, "height", 8, "palette", "desierto"),
-                    ToolPreset.of("crater", "stamp", "crater", "radius", 16, "height", 10));
+                    ToolPreset.of("mountain", "stamp", "montana", "radius", 24, "rotation", "azar"),
+                    ToolPreset.of("range", "stamp", "cordillera", "radius", 30),
+                    ToolPreset.of("hills", "stamp", "lomas", "radius", 22, "mode", "maximo"),
+                    ToolPreset.of("dunes", "stamp", "dunas", "radius", 24),
+                    ToolPreset.of("canyon", "stamp", "canon", "radius", 26),
+                    ToolPreset.of("crater", "stamp", "crater", "radius", 16));
         }
 
         @Override
         public String autoHint(String paramId, ToolValues values) {
             if (paramId.equals("neutral") && StampLibrary.has(values.choice("stamp"))) {
-                return format(StampLibrary.get(values.choice("stamp")).neutral());
+                return format(StampLibrary.info(values.choice("stamp")).neutral());
+            }
+            if (paramId.equals("height")) {
+                return height(values.with("height", null));
             }
             return null;
         }
