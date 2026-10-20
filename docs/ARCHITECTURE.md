@@ -15,6 +15,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `brush` | Estampado orientado de figuras existentes |
 | `sculpt` | Brochas de volumen/altura, máscaras, perfiles y previews |
 | `noise` | Perlin, fBM, ridged y Worley deterministas |
+| `terrain` | Terraformado sobre mapas de alturas: sellos, rampas, ríos, erosión y paleta de superficie |
 | `placement` | Colocación de estructuras (place, array, scatter): alineación, formas procedurales, dispersión y voxelizado |
 | `edit` | Plan compacto y aplicación WorldEdit por lotes |
 | `performance` | Pool acotado, cancelación, cuotas y aislamiento de cálculos |
@@ -103,6 +104,10 @@ Piezas relacionadas:
 - Luz: si `RegionOperation.needsLight()` devuelve `true`, la captura guarda también la luz de bloque y del cielo de cada posición (`RegionSnapshot.blockLight`, `skyLight`); `StateInfo.luminance` es la luz que emite cada estado.
 - `texture.TextureContext` y `texture.TextureField`: los modos de `/komaedit texture` son campos puros (un valor de 0 a 1 o `NaN` por bloque) sobre la foto, combinables; `TextureOperation` los convierte en bloques de la paleta. Sirven de ejemplo para medir sobre la foto (sumas acumuladas de sólidos, normales, suavizado).
 - `gradient.SavedPalettes` y `noise.SavedNoises`: paletas (`#nombre`) y ruidos guardados por jugador y mundo sobre `persistence.NamedDefinitions`. Para aceptarlos, pasa `SavedPalettes.resolver(uuid)` a `PaletteSpec.parse` o `SavedNoises.resolver(uuid)` a `NoiseSpec.parse`.
+
+## Terraformado
+
+`terrain` trabaja sobre `TerrainView`, una vista mínima de la zona capturada: `TerrainColumns` lee el suelo de cada columna, las herramientas (`StampBrush`, `RampPlanner`, `RiverPlanner`, `HydraulicErosion`, `ThermalErosion`) cambian un `HeightField` de alturas con decimales y `TerrainWriter` lo vuelve a pasar a bloques con `SurfacePalette`. Todo eso es Java puro y se prueba con un mundo de texto. En el juego, `TerrainService` lee con `RegionOperationService.capture`, calcula en `AsyncEngine` sobre `RegionTerrainView`, escribe en `RegionEdits` y pasa por `BuildEstimate` y `PendingBuilds`; el pincel de relieve es una `BrushOperation` (`HeightmapOperation`) sobre `BrushTerrainView`.
 
 ## Máscaras y patrones en WorldEdit
 

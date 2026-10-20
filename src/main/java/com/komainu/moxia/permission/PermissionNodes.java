@@ -147,6 +147,11 @@ public final class PermissionNodes {
         add(build + ".flowfield", Pack.INTERMEDIATE, build, "ezedits.flow.flowfield", "/komaedit flowfield");
         add(build + ".flowline", Pack.INTERMEDIATE, build, "ezedits.flow.flowline", "/komaedit flowline");
         add(build + ".place", Pack.INTERMEDIATE, build, "ezedits.place", "/komaedit place");
+        add(build + ".brush.heightmap", Pack.INTERMEDIATE, build, null, "/komaedit pincel heightmap");
+        add(build + ".terrain.ramp", Pack.INTERMEDIATE, build, null, "/komaedit terreno rampa");
+        add(build + ".terrain.river", Pack.INTERMEDIATE, build, null, "/komaedit terreno rio|arroyo");
+        add(build + ".terrain.canyon", Pack.INTERMEDIATE, build, null, "/komaedit terreno canon|barranco");
+        add(build + ".terrain.paint", Pack.INTERMEDIATE, build, null, "/komaedit terreno pintar");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
@@ -156,6 +161,8 @@ public final class PermissionNodes {
         add(build + ".brush.array", Pack.ADVANCED, build, "ezedits.brush.array", "/komaedit pincel array");
         add(build + ".brush.scatter", Pack.ADVANCED, build, "ezedits.brush.scatter", "/komaedit pincel scatter");
         add(build + ".smoothblocks", Pack.ADVANCED, build, "ezedits.smooth.smoothblocks", "/komaedit smoothblocks");
+        add(build + ".terrain.erode.hydraulic", Pack.ADVANCED, build, null, "/komaedit terreno erosion hidraulica");
+        add(build + ".terrain.erode.thermal", Pack.ADVANCED, build, null, "/komaedit terreno erosion termica");
 
         // Administración.
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");

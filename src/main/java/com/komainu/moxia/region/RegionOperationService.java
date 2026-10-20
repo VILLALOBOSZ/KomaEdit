@@ -297,7 +297,7 @@ public final class RegionOperationService {
             this.minimumY = minimumY;
             this.minimumZ = minimumZ;
             this.total = (long) sizeX * sizeY * sizeZ;
-            this.light = operation.needsLight();
+            this.light = operation != null && operation.needsLight();
         }
 
         /** @return {@code true} cuando la lectura ha terminado */

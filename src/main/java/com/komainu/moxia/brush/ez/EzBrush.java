@@ -11,6 +11,8 @@ import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.placement.PlacementService;
 import com.komainu.moxia.placement.PlacementSettings;
 import com.komainu.moxia.shape.Vec3;
+import com.komainu.moxia.terrain.HeightmapBrush;
+import com.komainu.moxia.terrain.StampBrush;
 import com.komainu.moxia.noise.SavedNoises;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockType;
@@ -108,6 +110,7 @@ public abstract sealed class EzBrush {
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
             case SCATTER, ARRAY -> throw new IllegalStateException(type.id());
+            case HEIGHTMAP -> new Relief(HeightmapBrush.parse(options), preview);
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -545,5 +548,34 @@ public abstract sealed class EzBrush {
 
     static String text(BlockVector3 point) {
         return String.format(Locale.ROOT, "%d, %d, %d", point.x(), point.y(), point.z());
+    }
+
+    /** Relieve: un sello de alturas en cada clic. Derecho: el modo; izquierdo: el contrario; F: cambia de modo. */
+    static final class Relief extends EzBrush {
+        private final HeightmapBrush.Config config;
+        private StampBrush.Mode mode;
+
+        Relief(HeightmapBrush.Config config, boolean preview) {
+            super(EzBrushType.HEIGHTMAP, config.radius(), preview);
+            this.config = config;
+            this.mode = config.mode();
+        }
+
+        @Override
+        public String controls() {
+            return HeightmapBrush.controls(config, mode);
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (input.swap()) {
+                mode = mode.next();
+                session.info("Relieve: " + mode.displayName().toLowerCase(Locale.ROOT) + " con el clic derecho");
+                return;
+            }
+            StampBrush.Mode pass = input.left() ? mode.opposite() : mode;
+            session.run(HeightmapBrush.operation(config, pass, session.target(), session.player().getYaw(),
+                    ThreadLocalRandom.current().nextDouble()));
+        }
     }
 }

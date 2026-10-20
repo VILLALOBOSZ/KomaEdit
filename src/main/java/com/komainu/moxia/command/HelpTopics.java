@@ -170,6 +170,25 @@ public final class HelpTopics {
                     new Entry("/komaedit flowline <patrón> <longitud> [gravedad] [ruido] [-l líneas] [-s]",
                             "Línea de flujo hacia donde miras (alias lineaflujo)")
             )),
+            new Topic("terrain", "Terraformado", List.of("terreno", "terraformar", "rampa", "rio", "canon",
+                    "erosion", "relieve", "sellos", "heightmap"), List.of(
+                    new Entry("/komaedit pincel heightmap <sello> [radio] [altura] [elevar|bajar|aplanar] [paleta] "
+                            + "[-i intensidad] [-r mirada|azar|grados] [-m máscara] [-c neutro] [-p]",
+                            "Pincel de relieve con un sello en grises (alias relieve, sello)"),
+                    new Entry("/komaedit pincel heightmap montana 24 30 natural -r azar",
+                            "Ejemplo: montañas giradas al azar con hierba, piedra y nieve"),
+                    new Entry("/komaedit terreno sellos", "Sellos de serie y PNG de config/komaedit/heightmaps"),
+                    new Entry("/komaedit terreno rampa [plano|cono] [ancho] [transición] [paleta] [-t talud] [-u] [-e]",
+                            "Rampa del primer al último punto de la trayectoria (o //pos1 → //pos2)"),
+                    new Entry("/komaedit terreno rio|arroyo|canon|barranco [ancho] [profundidad] [paleta] "
+                            + "[-o orilla] [-w laderas] [-t transición] [-f agua|lava|seco] [-n nivel] [-y] [-k] [-e]",
+                            "Río o cañón por la trayectoria; el fondo y el agua nunca suben"),
+                    new Entry("/komaedit terreno erosion hidraulica|termica|completa [iteraciones] [fuerza] [paleta] "
+                            + "[-a ángulo] [-s semilla] [-m máscara] [-e]", "Erosión física de la selección"),
+                    new Entry("/komaedit terreno pintar [paleta] [-m máscara]",
+                            "Repinta la superficie de la selección por pendiente y altura"),
+                    new Entry("/komaedit terreno paletas", "Paletas de superficie: natural, desierto, mesa, nevado…")
+            )),
             new Topic("placement", "Colocación", List.of("colocar", "colocacion", "place", "array", "hilera",
                     "scatter", "dispersar", "estructuras"), List.of(
                     new Entry("/komaedit place <estructura> [primaria] [secundaria] [banderas]",

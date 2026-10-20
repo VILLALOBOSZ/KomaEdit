@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Terraformado.** Herramientas de paisaje sobre el mapa de alturas, como las de goBrush, Axiom y Arceon, con una paleta de superficie por pendiente y altura (hierba en lo llano, piedra en las pendientes, nieve en las cumbres, arena en la orilla, grava en el lecho): preajustes `natural`, `pradera`, `bosque`, `desierto`, `mesa` (estratos de terracota), `nevado`, `volcanico`, `playa`, `piedra` y `conservar`, y cambios `clave:bloques@valor`. Todo en un worker, con la estimación del motor común, la confirmación de Build grandes, máscaras `-m` y un solo //undo.
+- Añade el **pincel de relieve** `/komaedit pincel heightmap` (alias `relieve`, `sello`): estampa un sello en escala de grises que eleva, baja o aplana, escalado al radio, girado con la mirada, al azar o a unos grados y con intensidad; el gris neutro deja hundir (cráteres, dolinas). Trae 20 sellos de serie generados por código (montaña, pico, colina, loma, cordillera, macizo, volcán, cráter, dolina, valle, duna, dunas, mesa, terrazas, acantilado, barrancos, aguja, domo, atolón y circo) y lee cualquier PNG de `config/komaedit/heightmaps/`, donde escribe los de serie como plantilla.
+- Añade `/komaedit terreno rampa [plano|cono]`: rampa del primer al último punto que rellena y recorta, con transición suave o taludes de terraplén, y que nunca deja escalones de más de un bloque (las demasiado empinadas se rechazan).
+- Añade `/komaedit terreno rio|arroyo|canon|barranco` por la trayectoria: sección con fondo, orillas en curva y laderas que se funden con el terreno, fondo con su material y agua, lava o seco a su nivel. El fondo y el agua bajan siempre en el sentido del agua y se levantan ribazos para que no se escape.
+- Añade `/komaedit terreno erosion hidraulica|termica|completa`: erosión física de la selección por gotas (cauces, sedimento y abanicos) y por talud (canchales), con iteraciones, fuerza, ángulo y semilla; conserva la masa y es determinista. El pincel `erosion` de `sculpt` sigue igual.
+- Añade `/komaedit terreno pintar`, que repinta la superficie de la selección con la paleta sin cambiar alturas, y `/komaedit terreno sellos|paletas`.
+- Corrige `RegionOperationService.capture` (lo usan `place`, `scatter` y `array`), que fallaba con un `NullPointerException` al leer la luz sin operación.
+- Añade pruebas JUnit del terraformado (masa de la erosión, río que no sube, rampa sin escalones, escala y giro de los sellos, determinismo, paleta, PNG y escritura de columnas) y renders de comprobación con `KOMAEDIT_RENDER_DIR`; los de antes y después están en `docs/renders/terreno/`.
+
 ## 1.4.0 (estable, 2026-10-19)
 
 - Añade **`/komaedit ezspline`** (alias `ezsp`, `spline`) con la sintaxis de `//ezspline` de ezEdits: `2d`, `3d`, `basic`, `rope`, `noise`, `expression` y `structure`, las formas con sus parámetros largos y abreviados (`Chainlink(E:0.2,T:1,G:0,M:3,N:3,P:BOTH)` o `Ch(...)`) y las banderas comunes `-p -q -r -s -t -n -e -w -h`, en cualquier orden. También las formas antiguas como `//ezsp polygon clay 10 4`. Los ejemplos de la wiki funcionan tal cual, con los perfiles de `-w` (salvo `Panes`, que KomaEdit no tiene).
