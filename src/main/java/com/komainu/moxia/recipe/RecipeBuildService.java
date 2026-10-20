@@ -4,10 +4,12 @@ import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.gradient.GradientService;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.shape.smooth.SmoothPieces;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
@@ -332,7 +334,7 @@ public final class RecipeBuildService {
                 );
             }
             player.sendMessage(message(
-                    recipe.shape().displayName() + " en cola: " + queued + " bloques · instancia "
+                    recipe.shape().displayName() + " en cola: " + ProgressLine.group(queued) + " bloques · instancia "
                             + instanceId.substring(0, 8)
             ), false);
         } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -376,7 +378,7 @@ public final class RecipeBuildService {
     }
 
     private static Text message(String value) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.DARK_RED)
+        return Feedback.prefix()
                 .append(Text.literal(value).formatted(Formatting.GRAY));
     }
 

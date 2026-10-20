@@ -3,6 +3,7 @@ package com.komainu.moxia.region;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.preview.EditRequest;
@@ -162,7 +163,7 @@ public final class RegionOperationService {
         }
         if (volume > MAX_CAPTURE_BLOCKS) {
             throw new IllegalArgumentException("La selección es demasiado grande para esta operación ("
-                    + volume + " bloques con su margen; máximo " + MAX_CAPTURE_BLOCKS + ")");
+                    + ProgressLine.group(volume) + " bloques con su margen; máximo " + MAX_CAPTURE_BLOCKS + ")");
         }
         OperationPolicy.validate(player, selection.getVolume(), 0);
         UUID playerId = player.getUuid();
@@ -173,7 +174,7 @@ public final class RegionOperationService {
                 RegionSnapshot.builder(minimumX, minimumY, minimumZ, sizeX, sizeY, sizeZ), sizeX, sizeY, sizeZ,
                 minimumX, minimumY, minimumZ, EditRequests.current(), padding, extra));
         double seconds = BuildEstimate.readSeconds(volume);
-        QuietMode.info(player, message(description + ": leyendo " + ProgressLine.group(volume) + " bloques"
+        QuietMode.status(player, message(description + ": leyendo " + ProgressLine.group(volume) + " bloques"
                 + (seconds >= 2.0 ? " (~" + ProgressLine.duration(seconds) + ")" : "") + "…", Formatting.GRAY));
     }
 
@@ -244,7 +245,7 @@ public final class RegionOperationService {
         String description = job.description;
         RegionOperation operation = job.operation;
         UUID playerId = player.getUuid();
-        QuietMode.info(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
+        QuietMode.status(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
         AsyncEngine.submit(
                 playerId,
                 description,
@@ -274,7 +275,7 @@ public final class RegionOperationService {
                         int queued = PlanPreviews.withExtras(extras,
                                 () -> BatchEditService.submit(current, plan, "air", description));
                         if (!PlanPreviews.holds(playerId, plan)) {
-                            QuietMode.info(current, message(description + ": " + queued
+                            QuietMode.status(current, message(description + ": " + ProgressLine.group(queued)
                                     + " bloques en cola · //undo para deshacer", Formatting.GREEN));
                         }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -340,7 +341,7 @@ public final class RegionOperationService {
     }
 
     private static Text message(String text, Formatting color) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.DARK_AQUA)
+        return Feedback.prefix()
                 .append(Text.literal(text).formatted(color));
     }
 

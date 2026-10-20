@@ -1,5 +1,6 @@
 package com.komainu.moxia.region;
 
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.sk89q.worldedit.regions.Region;
 import net.minecraft.server.MinecraftServer;
@@ -97,7 +98,7 @@ public final class SnapshotJobs {
     }
 
     public static Text message(String text, Formatting color) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.DARK_AQUA)
+        return Feedback.prefix()
                 .append(Text.literal(text).formatted(color));
     }
 

@@ -1,5 +1,6 @@
 package com.komainu.moxia.color;
 
+import com.komainu.moxia.progress.ProgressLine;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -104,7 +105,7 @@ public final class ColorGradient {
      */
     public static List<BlockColor> ramp(BlockColorCatalog catalog, BlockColor base, int size, ColorFilter filter) {
         if (size < 2 || size > MAX_STEPS) {
-            throw new IllegalArgumentException("La rampa va de 2 a " + MAX_STEPS + " bloques");
+            throw new IllegalArgumentException("La rampa va de 2 a " + ProgressLine.group(MAX_STEPS) + " bloques");
         }
         double low = Math.max(0.12, base.l() - RAMP_DOWN);
         double high = Math.min(0.95, base.l() + RAMP_UP);

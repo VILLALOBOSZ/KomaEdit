@@ -5,7 +5,9 @@ import com.komainu.moxia.color.BlockColor;
 import com.komainu.moxia.color.BlockColorCatalog;
 import com.komainu.moxia.color.BlockColorCatalogs;
 import com.komainu.moxia.config.KomaEditConfig;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.WorldEditException;
@@ -129,7 +131,7 @@ public final class BlueprintService {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(owner);
                     if (current != null) {
                         current.sendMessage(message("Plano guardado: " + entry.reference() + " · "
-                                + meta.describeSize() + " · " + meta.blocks() + " bloques"
+                                + meta.describeSize() + " · " + ProgressLine.group(meta.blocks()) + " bloques"
                                 + (tags.isEmpty() ? "" : " · #" + String.join(" #", tags)), Formatting.GREEN), false);
                         BlueprintNetwork.sendCatalog(current);
                     }
@@ -410,6 +412,6 @@ public final class BlueprintService {
     }
 
     static Text message(String text, Formatting color) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD).append(Text.literal(text).formatted(color));
+        return Feedback.prefix().append(Text.literal(text).formatted(color));
     }
 }

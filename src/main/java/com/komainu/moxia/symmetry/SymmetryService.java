@@ -3,6 +3,7 @@ package com.komainu.moxia.symmetry;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.brush.BrushMarkers;
 import com.komainu.moxia.config.KomaEditConfig;
+import com.komainu.moxia.feedback.WorldOverlaySync;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.symmetry.SymmetryGeometry.Copy;
 import com.komainu.moxia.symmetry.SymmetryGeometry.Point;
@@ -461,7 +462,9 @@ public final class SymmetryService {
         for (Map.Entry<UUID, SymmetrySettings> entry : SETTINGS.entrySet()) {
             SymmetrySettings settings = entry.getValue();
             ServerPlayerEntity player = current.getPlayerManager().getPlayer(entry.getKey());
-            if (player == null || !settings.appliesIn(dimension(player.getServerWorld()))) {
+            if (player == null || !settings.appliesIn(dimension(player.getServerWorld()))
+                    || WorldOverlaySync.drawsSymmetry(player)) {
+                // Con KomaEdit en el cliente, los planos los dibuja él (WorldOverlaySync): sin partículas.
                 continue;
             }
             for (SymmetryGuides.Mark mark : SymmetryGuides.marks(settings.mode(), settings.center(),

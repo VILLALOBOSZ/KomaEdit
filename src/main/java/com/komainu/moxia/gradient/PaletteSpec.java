@@ -1,5 +1,6 @@
 package com.komainu.moxia.gradient;
 
+import com.komainu.moxia.progress.ProgressLine;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -173,7 +174,7 @@ public final class PaletteSpec {
             position++;
             if (start < 1 || end < start || end > value.size()) {
                 throw new IllegalArgumentException("El tramo (" + start + ":" + end + ") no cabe en una paleta de "
-                        + value.size() + " bloques");
+                        + ProgressLine.group(value.size()) + " bloques");
             }
             return new ArrayList<>(value.subList(start - 1, end));
         }

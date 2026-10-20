@@ -1,5 +1,6 @@
 package com.komainu.moxia.texture;
 
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionSnapshot;
 
 import java.util.Arrays;
@@ -35,7 +36,7 @@ public final class TextureContext {
     public TextureContext(RegionSnapshot snapshot, Filter filter, Settings settings, BooleanSupplier cancelled) {
         if (snapshot.volume() > MAX_VOLUME) {
             throw new IllegalArgumentException("La selección es demasiado grande para texturizar ("
-                    + snapshot.volume() + " bloques con su margen; máximo " + MAX_VOLUME + ")");
+                    + ProgressLine.group(snapshot.volume()) + " bloques con su margen; máximo " + MAX_VOLUME + ")");
         }
         this.snapshot = snapshot;
         this.settings = settings;

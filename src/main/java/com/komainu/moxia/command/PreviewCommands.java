@@ -3,8 +3,10 @@ package com.komainu.moxia.command;
 import com.komainu.moxia.biome.BiomeEditService;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.ivy.IvyService;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.preview.LastEdits;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.preview.PreviewFlags;
 import com.komainu.moxia.preview.PreviewPreferences;
@@ -19,6 +21,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -64,6 +67,37 @@ final class PreviewCommands {
         for (String name : new String[]{"cancel", "cancelar"}) {
             root.addChild(literal(name).executes(PreviewCommands::cancel).build());
         }
+        for (String name : new String[]{"repeat", "repetir"}) {
+            LiteralArgumentBuilder<ServerCommandSource> repeat = literal(name)
+                    .executes(context -> repeat(context, false));
+            for (String flag : new String[]{PreviewFlags.SHORT, PreviewFlags.LONG}) {
+                repeat.then(literal(flag).executes(context -> repeat(context, true)));
+            }
+            root.addChild(repeat.build());
+        }
+    }
+
+    /**
+     * {@code /komaedit repeat [-v]}: vuelve a ejecutar la última orden que colocó (o enseñó) un plan. Corre con su
+     * propia petición, así recuerda su vista previa y se recalcula sola si hace falta.
+     */
+    private static int repeat(CommandContext<ServerCommandSource> context, boolean preview)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Optional<LastEdits.Entry> last = LastEdits.last(player.getUuid());
+        if (last.isEmpty()) {
+            return Feedback.fail(context.getSource(), Feedback.problem("No hay ninguna orden que repetir",
+                    "se apunta la última que coloca bloques (no los clics de pincel)"));
+        }
+        String command = last.get().commandFor(preview);
+        Feedback.status(player, "Repitiendo /" + command);
+        try {
+            return context.getSource().getServer().getCommandManager().getDispatcher()
+                    .execute(command, context.getSource());
+        } catch (CommandSyntaxException exception) {
+            return Feedback.fail(context.getSource(), Text.literal("No se pudo repetir: " + exception.getMessage())
+                    .append(" ").append(Feedback.fix("[editar]", command)));
+        }
     }
 
     /** Engancha {@code -v}/{@code --preview} en las órdenes ya registradas bajo {@code root}. */
@@ -91,14 +125,14 @@ final class PreviewCommands {
         String always = threshold > 0
                 ? "siempre a partir de " + ProgressLine.group(threshold) + " bloques"
                 : "solo con -v (usa /komaedit preview always <bloques> para previsualizar siempre)";
-        EzCommandSupport.send(player, Text.literal("Vista previa: " + always).formatted(Formatting.AQUA));
+        MutableText line = Text.literal("Vista previa: " + always);
         if (PlanPreviews.hasPending(player.getUuid())) {
-            player.sendMessage(Text.literal("  Tienes una vista previa esperando: ")
-                    .formatted(Formatting.GRAY)
+            line.append(" · tienes una esperando ")
                     .append(EzCommandSupport.button("[Aplicar]", "/komaedit confirm", Formatting.GREEN))
-                    .append(Text.literal(" "))
-                    .append(EzCommandSupport.button("[Descartar]", "/komaedit cancel", Formatting.RED)), false);
+                    .append(" ")
+                    .append(EzCommandSupport.button("[Descartar]", "/komaedit cancel", Formatting.RED));
         }
+        Feedback.reply(player, line);
         return threshold;
     }
 
@@ -133,7 +167,7 @@ final class PreviewCommands {
                             + "la vista previa sigue esperando"));
             case EXPIRED -> Optional.of(0);
             case STARTED -> {
-                EzCommandSupport.info(player, "Confirmado: comprobando que la zona no ha cambiado…");
+                Feedback.status(player, "Confirmado: comprobando que la zona no ha cambiado…");
                 yield Optional.of(1);
             }
         };
@@ -169,8 +203,7 @@ final class PreviewCommands {
         if (stopped.isEmpty()) {
             return EzCommandSupport.fail(context.getSource(), "No tenías nada en marcha que cancelar");
         }
-        EzCommandSupport.send(player, Text.literal("Cancelado: " + String.join(" · ", stopped))
-                .formatted(Formatting.YELLOW));
+        Feedback.warn(player, "Cancelado: " + String.join(" · ", stopped));
         return stopped.size();
     }
 }

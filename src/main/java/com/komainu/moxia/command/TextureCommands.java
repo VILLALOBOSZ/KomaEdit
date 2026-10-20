@@ -1,10 +1,12 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.glass.GlassGradientRequest;
 import com.komainu.moxia.glass.GlassGradientService;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.MossOperation;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperation;
@@ -222,7 +224,7 @@ public final class TextureCommands {
         int margin = Math.clamp(padding, 0, 32);
         long volume = (long) (size.x() + 1 + 2 * margin) * (size.y() + 1 + 2 * margin) * (size.z() + 1 + 2 * margin);
         if (volume > TextureContext.MAX_VOLUME) {
-            throw new IllegalArgumentException("La selección es demasiado grande para texturizar (" + volume
+            throw new IllegalArgumentException("La selección es demasiado grande para texturizar (" + ProgressLine.group(volume)
                     + " bloques con su margen de " + margin + "; máximo " + TextureContext.MAX_VOLUME + ")");
         }
     }
@@ -257,13 +259,11 @@ public final class TextureCommands {
     }
 
     private static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 
     private static int fail(ServerCommandSource source, String message) {
-        source.sendError(prefix().append(Text.literal(
-                message == null || message.isBlank() ? "Operación inválida" : message).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(source, message);
     }
 
     @FunctionalInterface

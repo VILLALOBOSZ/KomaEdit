@@ -3,12 +3,14 @@ package com.komainu.moxia.nature;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.preview.PlanPreviews;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.SculptManager;
 import com.komainu.moxia.sculpt.SnapshotCaptureService;
@@ -121,7 +123,7 @@ public final class NatureService {
         long side = capture.horizontalRadius() * 2L + 1L;
         long volume = side * side * (capture.verticalRadius() * 2L + 1L);
         if (volume > SculptManager.MAX_OPERATION_CAPTURE) {
-            throw new IllegalArgumentException(operation.displayName() + ": la zona es demasiado grande (" + volume
+            throw new IllegalArgumentException(operation.displayName() + ": la zona es demasiado grande (" + ProgressLine.group(volume)
                     + " bloques; máximo " + SculptManager.MAX_OPERATION_CAPTURE + "); usa menos puntos o más juntos");
         }
         SnapshotCaptureService.submit(player, WorldEditService.context(player).world(), capture.center(),
@@ -152,7 +154,7 @@ public final class NatureService {
             if (PlanPreviews.holds(playerId, plan)) {
                 return;
             }
-            QuietMode.info(player, message(operation.displayName() + " en cola: " + queued + " bloques · //undo para "
+            QuietMode.status(player, message(operation.displayName() + " en cola: " + ProgressLine.group(queued) + " bloques · //undo para "
                     + "deshacer", Formatting.GREEN));
         } catch (IllegalArgumentException | IllegalStateException exception) {
             player.sendMessage(message(operation.displayName() + ": " + exception.getMessage(), Formatting.RED), false);
@@ -169,7 +171,7 @@ public final class NatureService {
     }
 
     private static Text message(String text, Formatting color) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD).append(Text.literal(text).formatted(color));
+        return Feedback.prefix().append(Text.literal(text).formatted(color));
     }
 
     private static String readable(Throwable throwable) {

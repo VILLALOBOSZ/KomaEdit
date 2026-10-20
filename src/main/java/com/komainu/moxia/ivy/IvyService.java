@@ -3,12 +3,14 @@ package com.komainu.moxia.ivy;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.SnapshotCaptureService;
 import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -221,7 +223,7 @@ public final class IvyService {
         }
         if (result.blocks().isEmpty()) {
             player.sendMessage(error("No hay ninguna superficie donde agarrarse a menos de "
-                    + IvyGrower.SEED_SEARCH + " bloques de las semillas"), false);
+                    + ProgressLine.group(IvyGrower.SEED_SEARCH) + " bloques de las semillas"), false);
             return;
         }
         try {
@@ -236,7 +238,7 @@ public final class IvyService {
             if (PlanPreviews.holds(player.getUuid(), built)) {
                 return;
             }
-            StringBuilder text = new StringBuilder("Hiedra viva en cola: " + queued + " bloques · "
+            StringBuilder text = new StringBuilder("Hiedra viva en cola: " + ProgressLine.group(queued) + " bloques · "
                     + settings.style().displayName() + " · semilla " + settings.seed().orElseThrow());
             if (result.seedsSkipped() > 0) {
                 text.append(" · ").append(result.seedsSkipped()).append(" semilla(s) sin superficie cerca");
@@ -245,7 +247,7 @@ public final class IvyService {
                 text.append(" · se paró en el límite de bloques");
             }
             text.append(" · //undo para deshacer");
-            QuietMode.info(player, Text.literal("KomaEdit · ").formatted(Formatting.GOLD)
+            QuietMode.status(player, Feedback.prefix()
                     .append(Text.literal(text.toString()).formatted(Formatting.GREEN)));
         } catch (IllegalArgumentException | IllegalStateException exception) {
             player.sendMessage(error(readable(exception)), false);
@@ -281,12 +283,12 @@ public final class IvyService {
     }
 
     private static Text message(String value) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD)
+        return Feedback.prefix()
                 .append(Text.literal(value).formatted(Formatting.GRAY));
     }
 
     private static Text error(String value) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD)
+        return Feedback.prefix()
                 .append(Text.literal(value).formatted(Formatting.RED));
     }
 

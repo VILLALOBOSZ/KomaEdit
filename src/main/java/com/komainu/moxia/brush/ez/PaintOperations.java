@@ -1,6 +1,7 @@
 package com.komainu.moxia.brush.ez;
 
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -203,7 +204,7 @@ public final class PaintOperations {
             }
             builder.addOverride(x, y, z, state);
             if (++changes > MAX_CHANGES) {
-                throw new IllegalArgumentException("El pincel supera el límite de " + MAX_CHANGES + " bloques");
+                throw new IllegalArgumentException("El pincel supera el límite de " + ProgressLine.group(MAX_CHANGES) + " bloques");
             }
         }
 

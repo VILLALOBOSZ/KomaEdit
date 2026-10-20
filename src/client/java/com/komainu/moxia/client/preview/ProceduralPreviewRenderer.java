@@ -1,6 +1,8 @@
 package com.komainu.moxia.client.preview;
 
+import com.komainu.moxia.client.world.ClientWorldSettings;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.feedback.WorldFeedbackSettings;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeGeometryEngine;
@@ -168,10 +170,18 @@ public final class ProceduralPreviewRenderer {
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
+        // Las caras rozan las del mundo: adelantarlas en profundidad evita que parpadeen (z-fighting).
+        RenderSystem.enablePolygonOffset();
+        RenderSystem.polygonOffset(-1.0F, -10.0F);
+        WorldFeedbackSettings settings = ClientWorldSettings.get();
         for (SectionMesh section : current.sections()) {
             if (section.buffer() == null || !visible(context, section, camera)) {
                 continue;
             }
+            // Igual que la vista previa del plan: más tenue al acercarse, para ver lo que hay detrás.
+            double distance = Math.max(0.0, Math.sqrt(section.distanceSquared(camera)) - 8.0);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
+                    (float) (settings.opacityAt(distance) / settings.previewOpacity()));
             Matrix4f modelView = new Matrix4f(context.positionMatrix()).translate(
                     (float) (section.originX() - camera.x),
                     (float) (section.originY() - camera.y),
@@ -181,6 +191,8 @@ public final class ProceduralPreviewRenderer {
             section.buffer().draw(modelView, context.projectionMatrix(), shader);
         }
         VertexBuffer.unbind();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disablePolygonOffset();
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.disableBlend();

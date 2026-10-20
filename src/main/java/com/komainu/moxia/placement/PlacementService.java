@@ -5,6 +5,7 @@ import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.SmoothBlockStates;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
@@ -12,6 +13,7 @@ import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.komainu.moxia.shape.Vec3;
@@ -271,7 +273,7 @@ public final class PlacementService {
         BlockVector3 maximum = region.getMaximumPoint();
         BlockVector3 size = maximum.subtract(minimum).add(1, 1, 1);
         if ((long) size.x() * size.y() * size.z() > MAX_STRUCTURE_VOLUME) {
-            throw new IllegalArgumentException(name + " supera " + MAX_STRUCTURE_VOLUME + " bloques de caja");
+            throw new IllegalArgumentException(name + " supera " + ProgressLine.group(MAX_STRUCTURE_VOLUME) + " bloques de caja");
         }
         StructureSpec.Origin anchor = spec.origin() != null ? spec.origin()
                 : spec.centered() ? StructureSpec.Origin.CENTER : StructureSpec.Origin.INHERENT;
@@ -834,8 +836,8 @@ public final class PlacementService {
                     return;
                 }
                 String covered = output.cover().isEmpty() ? "" : " · " + output.cover().size() + " superficies cubiertas";
-                QuietMode.info(player, message(description() + ": " + output.placements() + " "
-                        + (output.placements() == 1 ? "estructura" : "estructuras") + " · " + queued
+                QuietMode.status(player, message(description() + ": " + output.placements() + " "
+                        + (output.placements() == 1 ? "estructura" : "estructuras") + " · " + ProgressLine.group(queued)
                         + " bloques en cola" + covered + " · //undo para deshacer", Formatting.GREEN));
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 player.sendMessage(message(description() + ": " + readable(exception), Formatting.RED), false);
@@ -848,7 +850,7 @@ public final class PlacementService {
     }
 
     static Text message(String text, Formatting color) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.DARK_AQUA)
+        return Feedback.prefix()
                 .append(Text.literal(text).formatted(color));
     }
 

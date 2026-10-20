@@ -1,5 +1,6 @@
 package com.komainu.moxia.blueprint;
 
+import com.komainu.moxia.progress.ProgressLine;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
@@ -38,7 +39,7 @@ public final class BlueprintTemplate {
         Region region = clipboard.getRegion();
         long volume = region.getVolume();
         if (volume > MAX_VOLUME) {
-            throw new IllegalArgumentException(name + " es demasiado grande para estamparlo (" + volume
+            throw new IllegalArgumentException(name + " es demasiado grande para estamparlo (" + ProgressLine.group(volume)
                     + " bloques de caja; máximo " + MAX_VOLUME + "): colócalo con /komaedit blueprint place");
         }
         BlockVector3 minimum = region.getMinimumPoint();

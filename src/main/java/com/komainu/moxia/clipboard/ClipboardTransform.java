@@ -1,5 +1,6 @@
 package com.komainu.moxia.clipboard;
 
+import com.komainu.moxia.progress.ProgressLine;
 import java.util.Locale;
 
 /**
@@ -243,7 +244,7 @@ public final class ClipboardTransform {
 
     private static void checkVolume(long volume, long maximum) {
         if (volume > maximum) {
-            throw new IllegalArgumentException("El resultado ocuparía " + volume + " bloques de caja (máximo "
+            throw new IllegalArgumentException("El resultado ocuparía " + ProgressLine.group(volume) + " bloques de caja (máximo "
                     + maximum + "); usa un factor menor o copia menos");
         }
     }

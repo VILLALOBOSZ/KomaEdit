@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.persistence.AtomicStorage;
 import com.komainu.moxia.persistence.ProjectStorage;
+import com.komainu.moxia.progress.ProgressLine;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -65,7 +66,7 @@ public final class PreviewPreferences {
 
     static int validate(int blocks) {
         if (blocks < 0 || blocks > MAX_THRESHOLD) {
-            throw new IllegalArgumentException("El umbral va de 0 (apagado) a " + MAX_THRESHOLD + " bloques");
+            throw new IllegalArgumentException("El umbral va de 0 (apagado) a " + ProgressLine.group(MAX_THRESHOLD) + " bloques");
         }
         return blocks;
     }

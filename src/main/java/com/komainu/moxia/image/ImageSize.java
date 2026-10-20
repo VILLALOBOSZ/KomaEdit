@@ -1,5 +1,6 @@
 package com.komainu.moxia.image;
 
+import com.komainu.moxia.progress.ProgressLine;
 /**
  * Medida de la obra en bloques. Con el ancho o el alto, la otra medida sale de la proporción de la imagen; con los
  * dos se estira; sin ninguno, la imagen conserva su tamaño hasta {@code defaultLongest} bloques en su lado largo.
@@ -64,7 +65,7 @@ public record ImageSize(int width, int height) {
 
     private ImageSize checked(int maxSide) {
         if (width > maxSide || height > maxSide) {
-            throw new IllegalArgumentException("La obra saldría de " + width + "×" + height
+            throw new IllegalArgumentException("La obra saldría de " + width + "×" + ProgressLine.group(height)
                     + " bloques; el lado máximo del servidor es " + maxSide);
         }
         return this;

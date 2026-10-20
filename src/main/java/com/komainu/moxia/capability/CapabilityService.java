@@ -1,7 +1,9 @@
 package com.komainu.moxia.capability;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -153,9 +155,9 @@ public final class CapabilityService {
             case REPLACE_FAMILY -> "Reemplazar familia: " + (settings.replaceFamily() ? "sí" : "no");
             case EXTRUDE_MATCH -> "Extruir sigue bloques del mismo "
                     + (settings.extrudeByState() ? "estado" : "tipo");
-            case EXTRUDE_LIMIT -> "Extruir: hasta " + settings.extrudeLimit() + " bloques por capa";
-            case ANGEL_DISTANCE -> "Colocar en el aire a " + settings.angelDistance() + " bloques";
-            case REACH_DISTANCE -> "Alcance largo: " + settings.reachDistance() + " bloques";
+            case EXTRUDE_LIMIT -> "Extruir: hasta " + ProgressLine.group(settings.extrudeLimit()) + " bloques por capa";
+            case ANGEL_DISTANCE -> "Colocar en el aire a " + ProgressLine.group(settings.angelDistance()) + " bloques";
+            case REACH_DISTANCE -> "Alcance largo: " + ProgressLine.group(settings.reachDistance()) + " bloques";
             case FLY_SPEED -> "Velocidad de vuelo: ×" + String.format(java.util.Locale.ROOT, "%.1f",
                     settings.flySpeed() / 10.0);
         };
@@ -319,7 +321,7 @@ public final class CapabilityService {
         }
         HandEditApplier.Result result = HandEditApplier.apply(player, edits, updates);
         requireChanged(result);
-        message(player, (shrink ? "Encogido: " : "Extruido: ") + result.changed() + " bloques"
+        message(player, (shrink ? "Encogido: " : "Extruido: ") + ProgressLine.group(result.changed()) + " bloques"
                 + (layer.truncated() ? " (límite de " + limit + ")" : "") + skipped(result) + " · //undo");
     }
 
@@ -409,7 +411,7 @@ public final class CapabilityService {
         int distance = Math.clamp(settings.angelDistance(), 1, CapabilityConfig.limits().maxReach());
         Vec3d eye = player.getEyePos();
         if (!CapabilityRules.withinReach(eye.x, eye.y, eye.z, BlockStates.cell(cell), distance)) {
-            throw new IllegalArgumentException("Esa posición está más lejos de " + distance + " bloques");
+            throw new IllegalArgumentException("Esa posición está más lejos de " + ProgressLine.group(distance) + " bloques");
         }
         if (!world.isInBuildLimit(cell) || !world.getBlockState(cell).isReplaceable()) {
             throw new IllegalArgumentException("Ahí ya hay un bloque");
@@ -507,7 +509,7 @@ public final class CapabilityService {
         HandEditApplier.Result result = HandEditApplier.apply(player, edits, updates);
         sync(player);
         requireChanged(result);
-        message(player, "Estirado: " + result.changed() + " bloques" + (truncated ? " (límite)" : "")
+        message(player, "Estirado: " + ProgressLine.group(result.changed()) + " bloques" + (truncated ? " (límite)" : "")
                 + skipped(result) + " · //undo");
     }
 
@@ -748,6 +750,6 @@ public final class CapabilityService {
     }
 
     private static void message(ServerPlayerEntity player, Text message) {
-        player.sendMessage(Text.literal("KomaEdit · ").append(message), true);
+        player.sendMessage(Feedback.prefix().append(message), true);
     }
 }

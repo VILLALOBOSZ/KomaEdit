@@ -1,10 +1,12 @@
 package com.komainu.moxia.sculpt;
 
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.model.ModelOperation;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -183,7 +185,7 @@ public final class SculptManager {
                     );
                     SculptPreviewManager.put(currentPlayer, preview);
                     currentPlayer.sendMessage(message(
-                            "Preview " + settings.type().displayName() + ": " + plan.size()
+                            "Preview " + settings.type().displayName() + ": " + ProgressLine.group(plan.size())
                                     + " bloques · /komaedit sculpt apply"
                     ), false);
                 }),
@@ -216,7 +218,7 @@ public final class SculptManager {
         long volume = side * side * (capture.verticalRadius() * 2L + 1L);
         if (volume > MAX_OPERATION_CAPTURE) {
             throw new IllegalArgumentException(operation.displayName() + ": la zona es demasiado grande ("
-                    + volume + " bloques; máximo " + MAX_OPERATION_CAPTURE + ")");
+                    + ProgressLine.group(volume) + " bloques; máximo " + MAX_OPERATION_CAPTURE + ")");
         }
         SnapshotCaptureService.submit(
                 player,
@@ -254,7 +256,7 @@ public final class SculptManager {
                     if (preview) {
                         SculptPreviewManager.put(current, new SculptPreview(worldKey, null, operation.pattern(), plan,
                                 System.currentTimeMillis(), operation.displayName(), operation.previewColor()));
-                        current.sendMessage(message("Vista previa " + operation.displayName() + ": " + plan.size()
+                        current.sendMessage(message("Vista previa " + operation.displayName() + ": " + ProgressLine.group(plan.size())
                                 + " bloques · /komaedit pincel aplicar"), false);
                         return;
                     }
@@ -263,7 +265,7 @@ public final class SculptManager {
                         int queued = EditRequests.within(EditRequest.TOOL,
                                 () -> BatchEditService.submit(current, plan, operation.pattern(),
                                         operation.displayName()));
-                        current.sendMessage(message(operation.displayName() + ": " + queued
+                        current.sendMessage(message(operation.displayName() + ": " + ProgressLine.group(queued)
                                 + " bloques · //undo para deshacer"), true);
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         current.sendMessage(message(operation.displayName() + ": " + exception.getMessage()), true);
@@ -310,7 +312,7 @@ public final class SculptManager {
     }
 
     private static Text message(String value) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD)
+        return Feedback.prefix()
                 .append(Text.literal(value).formatted(Formatting.GRAY));
     }
 
