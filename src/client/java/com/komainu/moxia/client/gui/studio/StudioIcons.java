@@ -11,7 +11,7 @@ public final class StudioIcons {
 
     public enum Icon {
         PATH, FIGURE, STRUCTURES, MODIFIERS, MATERIAL, WEATHER, INSTANCES, RECIPES, COLOR,
-        UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE
+        UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE, TOOLS, LOCK
     }
 
     private StudioIcons() {
@@ -117,6 +117,19 @@ public final class StudioIcons {
                     box(context, x + step, y + step, 1, 1, color);
                     box(context, x + 11 - step, y + step, 1, 1, color);
                 }
+            }
+            case TOOLS -> {
+                // Martillo: cabeza con oreja y mango.
+                box(context, x + 1, y + 1, 8, 3, color);
+                box(context, x + 9, y + 2, 2, 1, color);
+                box(context, x + 10, y + 3, 1, 1, color);
+                box(context, x + 4, y + 4, 2, 8, color);
+            }
+            case LOCK -> {
+                box(context, x + 4, y + 1, 4, 1, color);
+                box(context, x + 3, y + 2, 1, 3, color);
+                box(context, x + 8, y + 2, 1, 3, color);
+                box(context, x + 2, y + 5, 8, 6, color);
             }
         }
     }

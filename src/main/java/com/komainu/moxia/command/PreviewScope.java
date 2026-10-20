@@ -20,8 +20,12 @@ final class PreviewScope {
     private static final Set<String> PALETTE = Set.of("palette", "paleta");
     /** De las paletas solo editan el mundo estas. */
     private static final Set<String> PALETTE_EDITS = Set.of("swap", "place");
-    /** Familias donde ezEdits ya usa {@code -v} en todos los modos: ahí la vista previa es {@code --preview}. */
-    private static final Set<String> SHORT_FLAG_FAMILIES = Set.of("weather", "envejecer");
+    /**
+     * Familias que ya usan {@code -v} en todos los modos: ahí la vista previa es {@code --preview}. Envejecer (la
+     * vida, como en ezEdits), el texto (de pie) y los biomas (relleno vertical).
+     */
+    private static final Set<String> SHORT_FLAG_FAMILIES = Set.of("weather", "envejecer", "text", "texto", "biome",
+            "bioma");
     /** Y familias donde lo usan solo algunos modos (la segunda palabra). */
     private static final Map<String, Set<String>> SHORT_FLAG_MODES = Map.of(
             // vertical

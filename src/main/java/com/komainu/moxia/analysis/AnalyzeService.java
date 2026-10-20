@@ -72,6 +72,8 @@ public final class AnalyzeService {
 
     private static void show(ServerPlayerEntity player, Output output, int lines) {
         MaterialReport report = output.report();
+        // La tarjeta Materiales del Studio enseña la lista entera.
+        com.komainu.moxia.studio.net.StudioToolsNetwork.sendMaterials(player, report);
         if (report.blocks() == 0) {
             player.sendMessage(SnapshotJobs.message("Lista de materiales: la selección está vacía",
                     Formatting.YELLOW), false);
