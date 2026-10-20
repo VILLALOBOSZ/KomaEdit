@@ -39,7 +39,16 @@ public final class StudioShortcuts {
             new Shortcut("big_step"),
             new Shortcut("drag"),
             new Shortcut("reset"),
-            new Shortcut("favorite")
+            new Shortcut("favorite"),
+            new Shortcut("world_click"),
+            new Shortcut("world_drag_point"),
+            new Shortcut("world_drag_segment"),
+            new Shortcut("world_select"),
+            new Shortcut("world_face"),
+            new Shortcut("world_magic"),
+            new Shortcut("world_paint"),
+            new Shortcut("world_eyedropper"),
+            new Shortcut("world_camera")
     );
 
     private StudioShortcuts() {

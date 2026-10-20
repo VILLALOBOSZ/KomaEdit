@@ -12,13 +12,12 @@ KomaEdit es un complemento Fabric + WorldEdit para crear **detalle procedural re
 ## Flujo de trabajo
 
 1. Pulsa `K` para abrir **Procedural Studio**.
-2. En **Trayectoria**, añade puntos con clic sobre el mundo o con la tecla `P`.
-3. En **Figura**, selecciona una gramática 3D; usa **Estructuras** para arquitectura monumental orientada por puntos.
-4. En **Modificadores**, añade taper, torsión, fusión procedural, conformado, sockets Kitbash y reparación geométrica.
-5. En **Material**, elige un bloque del registro completo o un degradado guiado por la forma.
-6. Pulsa **Construir receta**. La geometría se calcula fuera del hilo principal y se coloca por lotes; la trayectoria permanece disponible para probar otras configuraciones.
-7. Abre **Instancias** para actualizar o retirar la pieza sin destruir bloques modificados manualmente.
-8. Asigna un nombre y pulsa **Guardar** para reutilizar o exportar la configuración.
+2. En **Figuras** (o en **Trayectoria**), pon los puntos con clic sobre el mundo o con la tecla `P`; arrastrándolos se mueven.
+3. En **Figuras**, elige la figura (la familia **Estructuras** tiene la arquitectura monumental orientada por puntos), su tamaño y su **material**: un bloque del registro completo (Alt+clic en el mundo lo coge) o un degradado guiado por la forma.
+4. Si quieres, enciende sus **variaciones**: Afinar, Retorcer, Otra figura encima, Pegar al terreno y Repetir lo copiado. Cada una se pone de un clic y el holograma la enseña al momento.
+5. Pulsa **Construir**. La geometría se calcula fuera del hilo principal y se coloca por lotes; la trayectoria permanece disponible para probar otras configuraciones.
+6. Abre **Instancias** para actualizar o retirar la pieza sin destruir bloques modificados manualmente.
+7. En **Recetas**, asigna un nombre y pulsa **Guardar** para reutilizar o exportar la configuración.
 
 Las recetas, instancias y bitácoras de operación se guardan dentro de cada mundo, separadas por UUID de jugador. KomaEdit migra una sola vez los datos antiguos de `config/komaedit/` y conserva copias de seguridad atómicas para reducir el riesgo de corrupción tras un cierre inesperado.
 
@@ -51,9 +50,9 @@ Las recetas, instancias y bitácoras de operación se guardan dentro de cada mun
 - Conserva el último holograma válido mientras calcula el siguiente.
 - Si una generación falla, libera la clave bloqueada y reintenta automáticamente con espera progresiva.
 
-## Modificadores procedurales
+## Variaciones procedurales
 
-La sección **Deformar** es opcional y no edita los puntos ni suaviza las curvas espaciales del brush. Únicamente altera progresivamente la figura ya escogida. Para construir figuras normales puede ignorarse por completo o mantenerse en sus valores neutrales.
+Las **Variaciones** de la figura (antes la etapa Modificadores) son opcionales y no editan los puntos ni suavizan las curvas espaciales del brush. En el Studio se llaman por lo que hacen: **Afinar** (escala y espaciado inicial/final), **Retorcer** (torsión), **Otra figura encima** (fusión), **Pegar al terreno** (conformado) y **Repetir lo copiado** (sockets Kitbash); la curva y la limpieza van en Más ajustes. Únicamente altera progresivamente la figura ya escogida. Para construir figuras normales puede ignorarse por completo o mantenerse en sus valores neutrales.
 
 - **Escala inicial/final:** modifica el grosor transversal desde el primer punto hasta el último. `100% → 100%` no deforma; `160% → 70%` crea un inicio grande que se reduce progresivamente. El marco se muestrea cada `0.75` bloques y reconstruye separaciones producidas por escalas grandes.
 - **Espaciado inicial/final:** comprime o estira el patrón a lo largo del recorrido. `100%` es neutral; valores bajos juntan repeticiones y valores altos las separan.

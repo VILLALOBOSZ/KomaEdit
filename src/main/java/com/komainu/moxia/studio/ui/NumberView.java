@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.ui;
 
+import com.komainu.moxia.studio.ControlHelp;
 import com.komainu.moxia.studio.NumericRange;
 import com.komainu.moxia.studio.ValueUnit;
 
@@ -67,8 +68,12 @@ public record NumberView(String value, String shortValue, String range, double f
         }
     }
 
-    /** La ayuda de una fila numérica: qué cambia, el rango con el de serie y, en una línea, los gestos. */
-    public String help(String what, String defaultText, BiFunction<String, Object[], String> tr) {
-        return what + "\n" + tr.apply("gui.komaedit.unit.help", new Object[]{range, defaultText});
+    /**
+     * La ayuda de una fila numérica: qué cambia en lo que se construye, los extremos en palabras y el rango con el de
+     * serie. Los gestos (rueda, arrastrar, escribir) los dice la línea del pie, igual para todas.
+     */
+    public String help(ControlHelp what, String defaultText, BiFunction<String, Object[], String> tr) {
+        String format = tr.apply("gui.komaedit.ends.format", new Object[]{"%s", "%s"});
+        return what.brief(format) + "\n" + tr.apply("gui.komaedit.unit.help", new Object[]{range, defaultText});
     }
 }

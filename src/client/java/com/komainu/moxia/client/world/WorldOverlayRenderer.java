@@ -6,6 +6,7 @@ import com.komainu.moxia.feedback.SelectionPayload;
 import com.komainu.moxia.feedback.SymmetryGuidePayload;
 import com.komainu.moxia.feedback.WorldFeedbackSettings;
 import com.komainu.moxia.preview.PreviewPlanCodec;
+import com.komainu.moxia.studio.world.BoxSelect;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -35,6 +36,8 @@ public final class WorldOverlayRenderer {
     private static final int SELECTION = 0xE6F2F2FF;
     private static final int PREVIEW_BOX = 0xF0FFD84A;
     private static final int RETICLE = 0xD9FFFFFF;
+    private static final int FACE_HOVER = 0xCCFFE082;
+    private static final int FACE_GRABBED = 0xFFFFCA28;
     private static final int PLANE_X = 0xEF5350;
     private static final int PLANE_Z = 0x42A5F5;
     private static final int PLANE_Y = 0x66BB6A;
@@ -47,6 +50,11 @@ public final class WorldOverlayRenderer {
 
     private static volatile SelectionPayload selection = SelectionPayload.NONE;
     private static volatile SymmetryGuidePayload symmetry = SymmetryGuidePayload.NONE;
+    /** Con el Studio abierto: la cara de la selección bajo el cursor (o agarrada) y si se está tirando de ella. */
+    private static volatile BoxSelect.Face face;
+    private static volatile boolean faceGrabbed;
+    /** Con el Studio abierto: el bloque al que apunta el cursor, para el círculo del pincel. */
+    private static volatile BlockHitResult studioCursor;
     private static boolean broken;
 
     private WorldOverlayRenderer() {
@@ -54,6 +62,22 @@ public final class WorldOverlayRenderer {
 
     public static void selection(SelectionPayload payload) {
         selection = payload;
+    }
+
+    /** La selección que se está dibujando (la del servidor o, mientras se arrastra en el Studio, la de ahora). */
+    public static SelectionPayload selection() {
+        return selection;
+    }
+
+    /** La cara de la selección que se resalta (bajo el cursor del Studio o agarrada), o {@code null}. */
+    public static void face(BoxSelect.Face value, boolean grabbed) {
+        face = value;
+        faceGrabbed = grabbed;
+    }
+
+    /** El bloque al que apunta el cursor del Studio (para el círculo del pincel), o {@code null} fuera de él. */
+    public static void studioCursor(BlockHitResult hit) {
+        studioCursor = hit;
     }
 
     public static void symmetry(SymmetryGuidePayload payload) {
@@ -90,6 +114,10 @@ public final class WorldOverlayRenderer {
                     currentSelection.maxX() + 1.0, currentSelection.maxY() + 1.0, currentSelection.maxZ() + 1.0)
                     .expand(0.004);
             box(matrices, lines, box, SELECTION);
+            BoxSelect.Face highlighted = face;
+            if (highlighted != null && currentSelection.complete()) {
+                face(matrices, lines, box, highlighted, faceGrabbed ? FACE_GRABBED : FACE_HOVER);
+            }
         }
         PreviewPlanCodec.Header preview = PlanPreviewRenderer.header().orElse(null);
         if (preview != null) {
@@ -131,6 +159,32 @@ public final class WorldOverlayRenderer {
         }
     }
 
+    /** Una cara de la caja resaltada: su borde algo metido hacia dentro y una cruz, para que se vea qué se agarra. */
+    private static void face(MatrixStack matrices, VertexConsumer lines, Box box, BoxSelect.Face side, int argb) {
+        double inset = 0.12;
+        double[] low = {box.minX, box.minY, box.minZ};
+        double[] high = {box.maxX, box.maxY, box.maxZ};
+        int axis = side.axis();
+        double plane = side.sign() > 0 ? high[axis] : low[axis];
+        int u = (axis + 1) % 3;
+        int v = (axis + 2) % 3;
+        Vec3d[] corners = new Vec3d[4];
+        double[][] uv = {{low[u] + inset, low[v] + inset}, {high[u] - inset, low[v] + inset},
+                {high[u] - inset, high[v] - inset}, {low[u] + inset, high[v] - inset}};
+        for (int index = 0; index < 4; index++) {
+            double[] point = new double[3];
+            point[axis] = plane;
+            point[u] = uv[index][0];
+            point[v] = uv[index][1];
+            corners[index] = new Vec3d(point[0], point[1], point[2]);
+        }
+        for (int index = 0; index < 4; index++) {
+            WorldLabels.line(matrices, lines, corners[index], corners[(index + 1) % 4], argb);
+        }
+        WorldLabels.line(matrices, lines, corners[0], corners[2], argb);
+        WorldLabels.line(matrices, lines, corners[1], corners[3], argb);
+    }
+
     private static void box(MatrixStack matrices, VertexConsumer lines, Box box, int argb) {
         WorldRenderer.drawBox(matrices, lines, box, (argb >> 16 & 0xFF) / 255.0F, (argb >> 8 & 0xFF) / 255.0F,
                 (argb & 0xFF) / 255.0F, (argb >>> 24) / 255.0F);
@@ -141,7 +195,8 @@ public final class WorldOverlayRenderer {
     /** El radio del pincel en la mano sobre la cara que se mira, más una cruz pequeña en el centro. */
     private static void reticle(WorldRenderContext context, MatrixStack matrices, VertexConsumer lines) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || client.currentScreen != null) {
+        BlockHitResult cursor = studioCursor;
+        if (client.player == null || client.currentScreen != null && cursor == null) {
             return;
         }
         int radius = BrushTool.radius(client.player.getMainHandStack());
@@ -150,7 +205,8 @@ public final class WorldOverlayRenderer {
         }
         Entity camera = client.getCameraEntity() == null ? client.player : client.getCameraEntity();
         float delta = context.tickCounter().getTickDelta(true);
-        HitResult hit = camera.raycast(BRUSH_REACH, delta, false);
+        // Con el Studio abierto el pincel va donde apunta el cursor, no el centro de la pantalla.
+        HitResult hit = client.currentScreen != null ? cursor : camera.raycast(BRUSH_REACH, delta, false);
         if (!(hit instanceof BlockHitResult block) || hit.getType() != HitResult.Type.BLOCK) {
             return;
         }

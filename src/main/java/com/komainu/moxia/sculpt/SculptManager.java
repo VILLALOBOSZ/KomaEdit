@@ -83,7 +83,7 @@ public final class SculptManager {
     }
 
     public static void previewTarget(ServerPlayerEntity player) {
-        HitResult result = player.raycast(192.0, 1.0F, false);
+        HitResult result = com.komainu.moxia.studio.net.StudioAim.target(player, 192.0);
         if (!(result instanceof BlockHitResult hit) || result.getType() != HitResult.Type.BLOCK) {
             throw new IllegalArgumentException("Mira un bloque para previsualizar la brocha");
         }

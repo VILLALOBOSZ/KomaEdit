@@ -638,10 +638,17 @@ public final class StudioUi {
         if (model.modified()) {
             fill(new Rect(row.x() + 3, row.centerY() - 2, 2, 2), ACCENT);
         }
-        String label = model.editing() && !model.range().isEmpty() ? model.label() + " · " + model.range()
-                : model.label();
-        label(label, labelX, row.centerY() - 5, minus.x() - labelX - 4,
-                model.editing() ? MUTED : hovered ? TEXT : TEXT_SECONDARY);
+        if (model.dragging() && !model.low().isEmpty()) {
+            // Al arrastrar, los extremos en palabras: hacia dónde va cada lado.
+            int right = minus.x() - 6;
+            label(model.low(), labelX, row.centerY() - 5, (right - labelX) / 2 - 4, ACCENT_HOVER);
+            rightAligned(fit(model.high(), (right - labelX) / 2 - 4), right, row.centerY() - 5, ACCENT_HOVER);
+        } else {
+            String label = model.editing() && !model.range().isEmpty() ? model.label() + " · " + model.range()
+                    : model.label();
+            label(label, labelX, row.centerY() - 5, minus.x() - labelX - 4,
+                    model.editing() ? MUTED : hovered ? TEXT : TEXT_SECONDARY);
+        }
         stepButton(minus, "−");
         stepButton(plus, "+");
         boolean valueHovered = hovered(value);
@@ -676,6 +683,8 @@ public final class StudioUi {
                 .onScroll(model.step())
                 .onReset(model.reset())
                 .tooltip(model.help())
+                .brief(model.brief())
+                .hint(model.hint())
                 .group(model.group())
                 .key(model.key());
     }
@@ -731,6 +740,46 @@ public final class StudioUi {
             fill(new Rect(row.x() + 3, row.centerY() - 1, 2, 2), ACCENT);
         }
         nameLabel(label, row.x() + 8, row, track.x() - row.x() - 12, on || hovered ? TEXT : TEXT_SECONDARY);
+        return register(row);
+    }
+
+    /**
+     * Fila con dibujo e interruptor: la miniatura a la izquierda (o un hueco mientras se pinta), el nombre en negrita
+     * y debajo, en gris, qué hace; a la derecha el pulsador. Toda la fila lo cambia. Para lo que se enciende viéndolo
+     * (las variaciones de la figura).
+     */
+    public Widget pictureToggle(Rect row, StudioImage image, String title, String subtitle, boolean on) {
+        boolean hovered = hovered(row);
+        fill(row, on ? CARD_ACTIVE : hovered ? CARD_HOVER : CARD);
+        if (on) {
+            fill(row.left(2), ACCENT);
+        }
+        int side = row.height() - 4;
+        Rect picture = new Rect(row.x() + 4, row.y() + 2, side, side);
+        // Un fondo claro detrás del dibujo: los materiales oscuros se leen igual sobre la tarjeta.
+        fill(picture, FIELD);
+        if (image != null) {
+            image(image, picture);
+        } else {
+            border(picture, DIVIDER);
+        }
+        Rect track = new Rect(row.right() - 26, row.centerY() - 5, 20, 10);
+        fill(track, on ? ACCENT : TRACK);
+        fill(on ? new Rect(track.right() - 9, track.y() + 1, 8, 8) : new Rect(track.x() + 1, track.y() + 1, 8, 8),
+                on ? WHITE : TEXT_SECONDARY);
+        int textX = picture.right() + 6;
+        int room = track.x() - textX - 4;
+        // Qué hace, en dos líneas como mucho: se lee entero sin pasar el ratón.
+        List<String> lines = wrap(subtitle, room);
+        if (lines.size() > 2) {
+            lines = new ArrayList<>(lines.subList(0, 2));
+            lines.set(1, fit(lines.get(1) + ELLIPSIS, room));
+        }
+        int top = row.centerY() - (10 + lines.size() * LINE) / 2;
+        bold(title, textX, top, room, on || hovered ? WHITE : TEXT);
+        for (int index = 0; index < lines.size(); index++) {
+            label(lines.get(index), textX, top + 11 + index * LINE, on ? TEXT_SECONDARY : MUTED);
+        }
         return register(row);
     }
 
@@ -843,6 +892,11 @@ public final class StudioUi {
      * @param fraction        dónde cae el valor en su rango, de 0 a 1
      * @param defaultFraction dónde cae el de serie ({@code NaN} si no tiene, como un automático)
      * @param range           el rango escrito («3–64 bloques»), que se enseña al escribir
+     * @param help            la ayuda entera: qué cambia, los extremos y el rango
+     * @param brief           la ayuda corta sobre el número: qué cambia y los extremos
+     * @param hint            los gestos, para la línea del pie
+     * @param low             el extremo de la izquierda en palabras («fino»), o vacío
+     * @param high            el de la derecha («grueso»)
      */
     public record Stepper(
             String label,
@@ -859,6 +913,10 @@ public final class StudioUi {
             Click press,
             Runnable reset,
             String help,
+            String brief,
+            String hint,
+            String low,
+            String high,
             String group,
             Object key
     ) {
@@ -888,6 +946,8 @@ public final class StudioUi {
         private IntConsumer scroll;
         private Runnable reset;
         private String tooltip = "";
+        private String brief = "";
+        private String hint = "";
         private String group;
         private Object key;
 
@@ -917,6 +977,18 @@ public final class StudioUi {
 
         public Widget tooltip(String text) {
             this.tooltip = text == null ? "" : text;
+            return this;
+        }
+
+        /** La ayuda corta que sale sobre el valor (donde la entera taparía lo que se está cambiando). */
+        public Widget brief(String text) {
+            this.brief = text == null ? "" : text;
+            return this;
+        }
+
+        /** Lo que dice la línea del pie mientras el ratón está encima: qué gestos tiene. */
+        public Widget hint(String text) {
+            this.hint = text == null ? "" : text;
             return this;
         }
 
@@ -953,6 +1025,14 @@ public final class StudioUi {
 
         public String tooltip() {
             return tooltip;
+        }
+
+        public String brief() {
+            return brief;
+        }
+
+        public String hint() {
+            return hint;
         }
 
         public String group() {

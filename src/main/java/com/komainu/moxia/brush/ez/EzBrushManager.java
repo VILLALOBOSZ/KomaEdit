@@ -4,6 +4,7 @@ import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.SculptManager;
+import com.komainu.moxia.studio.net.StudioAim;
 import com.sk89q.worldedit.math.BlockVector3;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -114,8 +115,9 @@ public final class EzBrushManager {
             return player;
         }
 
+        /** El bloque al que apunta el pincel: donde se hizo clic con el Studio abierto o, si no, el que se mira. */
         public BlockHitResult hit() {
-            HitResult result = player.raycast(REACH, 1.0F, false);
+            HitResult result = StudioAim.target(player, REACH);
             if (!(result instanceof BlockHitResult hit) || result.getType() != HitResult.Type.BLOCK) {
                 throw new IllegalArgumentException("Mira un bloque (hasta " + (int) REACH + " bloques)");
             }

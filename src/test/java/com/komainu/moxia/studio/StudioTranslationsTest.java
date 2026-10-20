@@ -2,9 +2,11 @@ package com.komainu.moxia.studio;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.komainu.moxia.recipe.SurfaceMode;
 import com.komainu.moxia.shape.smooth.SmoothMode;
 import com.komainu.moxia.shape.tube.TubeEngine;
 import com.komainu.moxia.shape.tube.TubeSettings;
+import com.komainu.moxia.studio.world.BoxSelect;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -77,8 +79,21 @@ class StudioTranslationsTest {
             keys.add("gui.komaedit.status.smooth." + mode.id());
         }
         for (String option : List.of(TubeEngine.OPTION, "preset", "profile", "hollow", "end", "normal", "smooth",
-                "coverage", "accent", "socket_placement", "easing")) {
+                "coverage", "accent", "socket_placement", "easing", "palette", "metric")) {
             keys.add("gui.komaedit.help.option." + option);
+        }
+        // Las variaciones de la figura, sus modos de pegar al terreno y las caras de la selección.
+        for (FigureVariation variation : FigureVariation.values()) {
+            keys.add(variation.nameKey());
+            keys.add(variation.effectKey());
+        }
+        for (SurfaceMode mode : SurfaceMode.values()) {
+            if (mode != SurfaceMode.NONE) {
+                keys.add("gui.komaedit.variation.ground." + mode.id() + ".help");
+            }
+        }
+        for (BoxSelect.Face face : BoxSelect.Face.values()) {
+            keys.add("gui.komaedit.world.face." + face.name().toLowerCase(java.util.Locale.ROOT));
         }
         for (com.komainu.moxia.studio.ui.StudioStage stage : com.komainu.moxia.studio.ui.StudioStage.values()) {
             keys.add(stage.titleKey());

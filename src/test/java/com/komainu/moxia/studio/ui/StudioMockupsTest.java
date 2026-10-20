@@ -7,6 +7,7 @@ import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.blueprint.BlueprintThumbnail;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.studio.FigureVariation;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.net.JobStatusPayload;
@@ -61,7 +62,7 @@ class StudioMockupsTest {
             // El ratón sobre los iconos: sale la lista con el nombre y la tecla de cada etapa.
             tools(driver, "roof");
             driver.render();
-            var icon = driver.view.frame().navItem(StudioStage.MODIFIERS.ordinal());
+            var icon = driver.view.frame().navItem(StudioStage.COLOR.ordinal());
             driver.mouseX = icon.centerX();
             driver.mouseY = icon.centerY();
         }));
@@ -154,14 +155,95 @@ class StudioMockupsTest {
             driver.mouseX = row[0];
             driver.mouseY = row[1];
         }));
-        scenes.add(new Scene("1080p_gui3_material_es.png", 640, 360, 3, "es_es", driver -> {
-            path(driver, 3);
-            driver.host.lookedAt = "minecraft:mossy_cobblestone";
-            driver.view.selectStage(StudioStage.MATERIAL, driver.host);
+        // Modificadores y Material, dentro de Figuras: el material bajo el tamaño y las variaciones con su dibujo.
+        for (String language : List.of("es_es", "en_us")) {
+            String suffix = language.substring(0, 2);
+            scenes.add(new Scene("1080p_gui3_variaciones_" + suffix + ".png", 640, 360, 3, language,
+                    driver -> variations(driver, true)));
+            scenes.add(new Scene("854_gui2_variaciones_" + suffix + ".png", 427, 240, 2, language,
+                    driver -> variations(driver, true)));
+            scenes.add(new Scene("1080p_gui3_variaciones_apagadas_" + suffix + ".png", 640, 360, 3, language,
+                    driver -> variations(driver, false)));
+            scenes.add(new Scene("854_gui2_variaciones_apagadas_" + suffix + ".png", 427, 240, 2, language,
+                    driver -> variations(driver, false)));
+        }
+        // Lo primero que ve quien abre el Studio: Figuras sin puntos.
+        scenes.add(new Scene("1080p_gui3_primera_vez_es.png", 640, 360, 3, "es_es", driver -> {
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.host.status = "";
         }));
-        scenes.add(new Scene("1080p_gui3_modificadores_en.png", 640, 360, 3, "en_us", driver -> {
+        scenes.add(new Scene("854_gui2_primera_vez_en.png", 427, 240, 2, "en_us", driver -> {
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.host.status = "";
+        }));
+        // La biblioteca de la figura: recetas guardadas e instancias construidas.
+        scenes.add(new Scene("1080p_gui3_recetas_es.png", 640, 360, 3, "es_es", driver -> {
+            figure(driver);
+            driver.host.recipes.add(driver.view.figure().draft().withName("trenza_puente"));
+            driver.host.recipes.add(com.komainu.moxia.recipe.ProceduralRecipe.defaults().withName("escamas_muro"));
+            driver.view.selectStage(StudioStage.RECIPES, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_instancias_es.png", 640, 360, 3, "es_es", driver -> {
+            figure(driver);
+            driver.host.instances.add(new com.komainu.moxia.recipe.ProceduralInstanceSummary("a1",
+                    driver.view.figure().draft().withName("trenza_puente"), 3, 12_340, 0L));
+            driver.view.selectStage(StudioStage.INSTANCES, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_sello_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "stamp");
+            driver.mouseX = 200;
+            driver.mouseY = 220;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
+        }));
+        scenes.add(new Scene("1080p_gui3_material_es.png", 640, 360, 3, "es_es", driver -> {
+            figure(driver);
+            scrollTo(driver, "MATERIAL");
+        }));
+        // Lo que explica cada control: sobre el número, qué cambia y sus extremos; al arrastrarlo, los extremos en
+        // la fila; y en el pie, sus gestos.
+        scenes.add(new Scene("1080p_gui3_ayuda_numero_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "tree");
+            int[] value = driver.valuePoint("Ancho de copa");
+            driver.mouseX = value[0];
+            driver.mouseY = value[1];
+        }));
+        scenes.add(new Scene("1080p_gui3_ayuda_numero_en.png", 640, 360, 3, "en_us", driver -> {
+            tools(driver, "tree");
+            int[] value = driver.valuePoint("Crown width");
+            driver.mouseX = value[0];
+            driver.mouseY = value[1];
+        }));
+        scenes.add(new Scene("1080p_gui3_arrastrar_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "tree");
+            int[] value = driver.valuePoint("Altura");
+            driver.view.mouseClicked(value[0], value[1], 0, driver.host);
+            driver.view.mouseDragged(value[0] + 30, value[1], 0, driver.host);
+            driver.mouseX = value[0] + 30;
+            driver.mouseY = value[1];
+        }));
+        // El ratón sobre el mundo: el pie dice qué hace cada clic en esta etapa.
+        scenes.add(new Scene("1080p_gui3_pie_mundo_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "roof");
+            driver.mouseX = 200;
+            driver.mouseY = 220;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
+        }));
+        scenes.add(new Scene("1080p_gui3_pie_mundo_en.png", 640, 360, 3, "en_us", driver -> {
             path(driver, 3);
-            driver.view.selectStage(StudioStage.MODIFIERS, driver.host);
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.mouseX = 200;
+            driver.mouseY = 220;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
+        }));
+        scenes.add(new Scene("854_gui2_pie_mundo_es.png", 427, 240, 2, "es_es", driver -> {
+            tools(driver, "tree");
+            driver.mouseX = 120;
+            driver.mouseY = 150;
+            driver.render();
+            driver.advance(StudioView.LEGEND_MILLIS + 100);
         }));
         scenes.add(new Scene("1080p_gui3_color_es.png", 640, 360, 3, "es_es", driver ->
                 driver.view.selectStage(StudioStage.COLOR, driver.host)));
@@ -213,6 +295,40 @@ class StudioMockupsTest {
             scene.setup().accept(driver);
             BufferedImage image = driver.paint(scene.scale(), ui -> world(ui, scene.width(), scene.height()));
             ImageIO.write(image, "png", folder.resolve(scene.file()).toFile());
+        }
+    }
+
+    /** Una trenza sobre tres puntos en Figuras. */
+    private static void figure(StudioDriver driver) {
+        path(driver, 3);
+        driver.host.previewBlocks = 12_300;
+        driver.view.figure().selectShape(driver.host, PathShape.BRAID);
+        driver.view.selectStage(StudioStage.FIGURE, driver.host);
+        driver.host.status = "";
+    }
+
+    /** Figuras con la lista de variaciones a la vista; {@code on}: retorcida y afinada al final. */
+    private static void variations(StudioDriver driver, boolean on) {
+        figure(driver);
+        if (on) {
+            var extensions = driver.view.figure().draft().extensions();
+            extensions = FigureVariation.TWIST.enable(extensions, PathShape.BRAID);
+            extensions = FigureVariation.TAPER.enable(extensions, PathShape.BRAID);
+            driver.view.figure().setDraft(driver.view.figure().draft().withExtensions(extensions));
+        }
+        scrollTo(driver, driver.host.tr("gui.komaedit.variations").toUpperCase(java.util.Locale.ROOT));
+    }
+
+    /** Desplaza el panel hasta que {@code text} quede arriba (con la rueda sobre una etiqueta, como un jugador). */
+    private static void scrollTo(StudioDriver driver, String text) {
+        for (int step = 0; step < 40; step++) {
+            driver.render();
+            var drawn = driver.canvas().texts().stream().filter(item -> item.text().equals(text)).findFirst();
+            if (drawn.isPresent() && drawn.get().y() < driver.view.frame().viewport().y() + 30) {
+                return;
+            }
+            driver.view.mouseScrolled(driver.view.frame().innerLeft() + 2, driver.view.frame().viewport().y() + 2, -1,
+                    driver.host);
         }
     }
 

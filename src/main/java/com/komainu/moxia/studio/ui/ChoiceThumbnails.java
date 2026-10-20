@@ -77,17 +77,25 @@ public final class ChoiceThumbnails {
             return null;
         }
         String key = "choice/" + card + "/" + param + "/" + option;
+        return cached(key, () -> render(key, card, param, option));
+    }
+
+    /**
+     * Una miniatura por su clave: la hecha, o {@code null} mientras se pinta en segundo plano (o ya hecha, si se pide
+     * con {@link #setBlocking}). Lo que no se puede pintar se queda sin miniatura.
+     */
+    static StudioImage cached(String key, java.util.function.Supplier<StudioImage> painter) {
         StudioImage ready = READY.get(key);
         if (ready != null || PENDING.contains(key)) {
             return ready;
         }
         if (blocking) {
-            return READY.computeIfAbsent(key, ignored -> render(key, card, param, option));
+            return READY.computeIfAbsent(key, ignored -> painter.get());
         }
         PENDING.add(key);
         WORKER.execute(() -> {
             try {
-                READY.put(key, render(key, card, param, option));
+                READY.put(key, painter.get());
             } catch (RuntimeException exception) {
                 // Una opción que no se puede pintar se queda con su icono.
             } finally {

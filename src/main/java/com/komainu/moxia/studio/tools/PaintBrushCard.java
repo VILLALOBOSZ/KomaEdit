@@ -75,8 +75,9 @@ public final class PaintBrushCard extends ToolCard {
 
     @Override
     public List<String> essentials() {
-        return List.of("paint_palette", "custom_palette", "stamp", "gradient", "radius", "strength", "seed",
-                "lock_seed");
+        // Lo de empezar: qué colores, qué forma, cómo se reparten, el tamaño, la fuerza y la semilla. Bloquearla, en Más
+        // ajustes.
+        return List.of("paint_palette", "custom_palette", "stamp", "gradient", "radius", "strength", "seed");
     }
 
     /** Dos galerías: las paletas en dos filas y las huellas en una (con ‹ ›), para que lo demás quepa a la vista. */
