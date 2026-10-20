@@ -10,7 +10,7 @@ public final class StudioIcons {
     public static final int SIZE = 12;
 
     public enum Icon {
-        PATH, FIGURE, STRUCTURES, MODIFIERS, MATERIAL, WEATHER, INSTANCES, RECIPES, COLOR,
+        PATH, FIGURE, STRUCTURES, MODIFIERS, MATERIAL, WEATHER, INSTANCES, RECIPES, COLOR, BLUEPRINTS,
         UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE
     }
 
@@ -66,6 +66,14 @@ public final class StudioIcons {
                 box(context, x, y + 1, 3, 10, color & 0x66FFFFFF);
                 box(context, x + 4, y + 1, 3, 10, color & 0xAAFFFFFF);
                 box(context, x + 8, y + 1, 3, 10, color);
+            }
+            case BLUEPRINTS -> {
+                // Una lámina de plano: marco, suelo y una casita.
+                outline(context, x, y + 1, 12, 11, color);
+                box(context, x + 2, y + 9, 8, 1, color & 0x88FFFFFF);
+                box(context, x + 3, y + 6, 6, 3, color);
+                box(context, x + 4, y + 5, 4, 1, color);
+                box(context, x + 5, y + 4, 2, 1, color);
             }
             case INSTANCES -> {
                 outline(context, x, y, 8, 8, color);

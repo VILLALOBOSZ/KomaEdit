@@ -26,7 +26,8 @@ public final class StudioLayout {
     public static final int TOOL_BUTTON = 20;
     public static final int TOOL_GAP = 3;
     public static final int NAV_GAP = 2;
-    public static final int MIN_NAV_ROW = 14;
+    /** Lo justo para el icono (12) y el texto (8): así caben las diez etapas también en 854×480 con GUI 2. */
+    public static final int MIN_NAV_ROW = 12;
     public static final int MAX_NAV_ROW = 22;
     public static final int BUILD_BUTTON_HEIGHT = 20;
     /** Ancho del chat vanilla con escala 1 (320) más sus márgenes. */

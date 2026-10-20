@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StudioLayoutTest {
-    private static final int STAGES = 9;
+    private static final int STAGES = 10;
     private static final int[][] WINDOWS = {
             {1920, 1080}, {2560, 1440}, {1366, 768}, {1280, 720}, {1600, 900}, {854, 480}, {3840, 2160}
     };
