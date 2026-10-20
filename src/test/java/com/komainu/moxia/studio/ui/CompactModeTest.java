@@ -105,8 +105,9 @@ class CompactModeTest {
         studio.view.tools().select(ToolCatalog.byId("tree"), studio.host);
         assertTrue(studio.has("Roble"));
         assertFalse(studio.has("Baobab"), "solo una fila");
-        studio.click("›", "tools:species:page");
-        studio.click("›", "tools:species:page");
+        for (int page = 0; page < 4 && !studio.has("Baobab"); page++) {
+            studio.click("›", "tools:species:page");
+        }
         assertTrue(studio.has("Baobab"), "pasando de página");
     }
 }

@@ -186,4 +186,76 @@ class StudioViewTest {
         studio.click("Elige una herramienta");
         assertTrue(studio.host.sent.isEmpty());
     }
+
+    @Test
+    void withIconsTheNamesShowUpWhenTheMouseIsOverTheNavigation() {
+        StudioDriver studio = new StudioDriver("es_es", 640, 360);
+        studio.render();
+        assertEquals(StudioLayout.NavMode.ICONS, studio.view.frame().navMode());
+        assertFalse(studio.has("Modificadores"), "sin el ratón encima, solo iconos");
+        com.komainu.moxia.studio.layout.Rect icon = studio.view.frame().navItem(StudioStage.MODIFIERS.ordinal());
+        studio.mouseX = icon.centerX();
+        studio.mouseY = icon.centerY();
+        for (StudioStage stage : StudioStage.values()) {
+            assertTrue(studio.has(studio.host.tr(stage.titleKey())), stage.id());
+        }
+        assertTrue(studio.view.navFlyout());
+        studio.click("Planos");
+        assertEquals(StudioStage.BLUEPRINTS, studio.view.stage(), "pulsar un nombre abre la etapa");
+        studio.mouseX = 100;
+        studio.mouseY = 100;
+        studio.render();
+        assertFalse(studio.view.navFlyout(), "fuera del panel, la lista se va");
+    }
+
+    @Test
+    void theChosenBlueprintCardHoldsItsButtonsAndTheNamesAreWhole() {
+        for (int[] screen : new int[][]{{640, 360}, {427, 240}, {480, 270}, {960, 540}}) {
+            StudioDriver studio = new StudioDriver("es_es", screen[0], screen[1]);
+            StudioMockupsTest.blueprints(studio);
+            studio.render();
+            String where = screen[0] + "×" + screen[1];
+            int library = studio.canvas().texts().stream().filter(text -> text.text().startsWith("BIBLIOTECA"))
+                    .mapToInt(ImageCanvas.Drawn::y).findFirst().orElseThrow();
+            for (StudioUi.Widget widget : studio.ui().widgets()) {
+                String first = widget.tooltip().split("\n", 2)[0];
+                if (first.equals("Cargar") || first.equals("Estampar") || first.startsWith("Radio")) {
+                    assertTrue(widget.bounds().bottom() < library, where + " · «" + first + "» se sale de la tarjeta");
+                }
+            }
+            List<String> texts = studio.texts();
+            assertFalse(texts.stream().anyMatch(text -> text.startsWith("roca_mu") && text.endsWith("…")),
+                    where + ": " + texts);
+            assertFalse(texts.stream().anyMatch(text -> text.startsWith("ruina_pa") && text.endsWith("…")),
+                    where + ": " + texts);
+        }
+    }
+
+    @Test
+    void thePanelEdgeDragsSavesItsShareAndRightClickRestoresTheDefault() {
+        StudioDriver studio = new StudioDriver("es_es", 640, 360);
+        studio.render();
+        assertEquals(243, studio.view.frame().panel().width(), "de serie, el 38 %");
+        int edge = studio.view.frame().panel().x();
+        studio.view.mouseClicked(edge, 180, 0, studio.host);
+        studio.view.mouseDragged(640 - 280, 180, 0, studio.host);
+        studio.view.mouseReleased(640 - 280, 180, 0, studio.host);
+        studio.render();
+        assertEquals(280, studio.view.frame().panel().width());
+        assertEquals(280 / 640.0, studio.host.preferences().panelShare(), 1e-9, "se guarda como parte de la pantalla");
+        assertTrue(studio.host.saves > 0);
+        // Con otra escala de GUI se queda la misma parte de la pantalla.
+        StudioDriver bigger = new StudioDriver(new StudioView(), studio.host, 960, 540);
+        bigger.render();
+        assertEquals(420, bigger.view.frame().panel().width());
+        studio.view.mouseClicked(studio.view.frame().panel().x(), 180, 0, studio.host);
+        studio.view.mouseDragged(10, 180, 0, studio.host);
+        studio.view.mouseReleased(10, 180, 0, studio.host);
+        studio.render();
+        assertEquals(StudioLayout.maximumPanelWidth(640), studio.view.frame().panel().width(), "no pasa del máximo");
+        studio.view.mouseClicked(studio.view.frame().panel().x(), 180, 1, studio.host);
+        studio.render();
+        assertEquals(243, studio.view.frame().panel().width(), "clic derecho en el borde: el de serie");
+        assertEquals(0.0, studio.host.preferences().panelShare());
+    }
 }

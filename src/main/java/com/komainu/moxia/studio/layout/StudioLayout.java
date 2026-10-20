@@ -11,6 +11,10 @@ import java.util.Arrays;
  * qué se trabaja, el estado y el botón Construir. El resto de la pantalla queda para el mundo: abajo a la izquierda
  * se dibuja el chat y arriba a la derecha el marcador del servidor, que el panel tapa sin transparentarse.</p>
  *
+ * <p>El panel se lleva de serie el {@value #DEFAULT_SHARE_PERCENT} % del ancho (el mundo es lo importante) y su
+ * borde izquierdo se arrastra entre {@value #MIN_PANEL_WIDTH} píxeles y el {@value #MAX_SHARE_PERCENT} % de la
+ * pantalla.</p>
+ *
  * <p>En pantallas bajas (menos de {@value #COMPACT_HEIGHT} píxeles escalados de alto, como 854×480 con GUI 2 o
  * 1080p con GUI 4) el reparto es compacto: barra y pie más bajos, navegación solo con iconos y el contenido sin
  * descripciones.</p>
@@ -27,15 +31,18 @@ public final class StudioLayout {
     public static final int NAV_LABEL_WIDTH = 112;
     public static final int NAV_ICON_WIDTH = 26;
     /** Con menos sitio para el contenido, la navegación pasa a iconos (el contenido es lo que se usa). */
-    public static final int MIN_CONTENT_WIDTH = 220;
-    public static final int MIN_PANEL_WIDTH = 300;
-    /** Por debajo de este ancho escalado (GUI 4 en 1080p) el panel encoge y la navegación queda en iconos. */
+    public static final int MIN_CONTENT_WIDTH = 210;
+    public static final int MIN_PANEL_WIDTH = 230;
+    /** Por debajo de este ancho escalado (GUI 4 en 1080p) el panel se queda en el mínimo. */
     public static final int NARROW_SCREEN = 600;
     /** Por debajo de este alto escalado el Studio pasa a compacto. */
     public static final int COMPACT_HEIGHT = 300;
-    public static final int NARROW_PANEL_WIDTH = 230;
     public static final int MAX_PANEL_WIDTH = 470;
-    public static final int DEFAULT_PANEL_WIDTH = 350;
+    /** Ancho que se pide para el de serie: el {@value #DEFAULT_SHARE_PERCENT} % de la pantalla. */
+    public static final int AUTO = 0;
+    public static final int DEFAULT_SHARE_PERCENT = 38;
+    /** Arrastrando, el panel no pasa de esta parte de la pantalla. */
+    public static final int MAX_SHARE_PERCENT = 45;
     public static final int TOOL_BUTTON = 20;
     public static final int TOOL_GAP = 3;
     public static final int NAV_GAP = 2;
@@ -67,8 +74,7 @@ public final class StudioLayout {
     }
 
     public static int minimumPanelWidth(int screenWidth) {
-        int floor = screenWidth < NARROW_SCREEN ? NARROW_PANEL_WIDTH : MIN_PANEL_WIDTH;
-        return Math.min(floor, Math.max(160, screenWidth * 2 / 3));
+        return Math.min(MIN_PANEL_WIDTH, Math.max(160, screenWidth * 2 / 3));
     }
 
     /** En pantallas estrechas el panel no pasa del mínimo: el mundo necesita sitio para colocar puntos. */
@@ -76,10 +82,21 @@ public final class StudioLayout {
         if (screenWidth < NARROW_SCREEN) {
             return minimumPanelWidth(screenWidth);
         }
-        return Math.max(minimumPanelWidth(screenWidth), Math.min(MAX_PANEL_WIDTH, screenWidth / 2));
+        return Math.max(minimumPanelWidth(screenWidth),
+                Math.min(MAX_PANEL_WIDTH, screenWidth * MAX_SHARE_PERCENT / 100));
     }
 
+    /** El ancho de serie: el {@value #DEFAULT_SHARE_PERCENT} % de la pantalla, dentro de los límites. */
+    public static int defaultPanelWidth(int screenWidth) {
+        int share = Math.round(screenWidth * DEFAULT_SHARE_PERCENT / 100.0F);
+        return clampPanelWidth(screenWidth, Math.max(1, share));
+    }
+
+    /** {@code preferred} dentro de los límites; {@link #AUTO} (o menos) da el de serie. */
     public static int clampPanelWidth(int screenWidth, int preferred) {
+        if (preferred <= AUTO) {
+            return defaultPanelWidth(screenWidth);
+        }
         return Math.clamp(preferred, minimumPanelWidth(screenWidth), maximumPanelWidth(screenWidth));
     }
 

@@ -1273,7 +1273,7 @@
   "gui.komaedit.blueprint.stamp": "Estampar",
   "gui.komaedit.blueprint.radius": "Radio",
   "gui.komaedit.blueprint.stamp_tag": "Estampar %s",
-  "gui.komaedit.blueprint.share": "Compartir con el servidor",
+  "gui.komaedit.blueprint.share": "Compartir",
   "gui.komaedit.help.blueprint.search": "Palabras del nombre o #etiqueta exacta; Esc borra, Intro elige el primero. Atajo: /",
   "gui.komaedit.help.blueprint.scope": "Todos, solo los tuyos o solo los compartidos del servidor.",
   "gui.komaedit.help.blueprint.refresh": "Vuelve a pedir la biblioteca al servidor.",
@@ -1376,5 +1376,6 @@
   "gui.komaedit.shortcut.palette": "Paleta de órdenes: ir a cualquier etapa, herramienta, preset, figura o plano",
   "gui.komaedit.shortcut.palette.keys": "Ctrl+K",
   "gui.komaedit.tools.pick": "Elige una herramienta",
-  "gui.komaedit.tools.pick.help": "Elige arriba la herramienta; luego sus ajustes salen aquí."
+  "gui.komaedit.tools.pick.help": "Elige arriba la herramienta; luego sus ajustes salen aquí.",
+  "gui.komaedit.help.panel_width": "Ancho del panel: el %s %% de la pantalla\nArrastra el borde para cambiarlo · clic derecho: el de serie"
 }

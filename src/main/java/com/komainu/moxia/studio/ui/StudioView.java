@@ -49,6 +49,8 @@ public final class StudioView {
     public static final long STATUS_MILLIS = 4_000L;
     private static final int HISTORY_WIDTH = 220;
     private static final int HISTORY_ROWS = 10;
+    /** Con al menos este alto de contenido las galerías enseñan cuatro filas en vez de dos. */
+    static final int TALL_VIEWPORT = 380;
 
     private final ToolsPanel tools = new ToolsPanel();
     private final FigureStages figure = new FigureStages();
@@ -60,7 +62,8 @@ public final class StudioView {
 
     private StudioStage stage = StudioStage.FIGURE;
     private boolean loaded;
-    private int panelWidth = StudioLayout.DEFAULT_PANEL_WIDTH;
+    /** Parte de la pantalla que el jugador dejó al panel, o 0 para la de serie. */
+    private double panelShare;
     private StudioLayout.Frame frame;
     private StudioUi ui;
     private int scroll;
@@ -71,6 +74,8 @@ public final class StudioView {
     private boolean cheatSheet;
     private boolean historyOpen;
     private boolean resizing;
+    /** Con la navegación en iconos, la lista con los nombres que sale al pasar el ratón por ella. */
+    private boolean navFlyout;
     private String status = "";
     private long statusAt = Long.MIN_VALUE / 2;
     /** En Trayectoria, el pie construye la herramienta que llevó allí (no la figura). */
@@ -131,12 +136,13 @@ public final class StudioView {
         return cheatSheet;
     }
 
-    public int panelWidth() {
-        return panelWidth;
+    /** Parte de la pantalla que el jugador dejó al panel arrastrando su borde, o 0 si es la de serie. */
+    public double panelShare() {
+        return panelShare;
     }
 
-    public void setPanelWidth(int width) {
-        panelWidth = width;
+    public boolean navFlyout() {
+        return navFlyout;
     }
 
     /** Si alguna ventana tapa el panel (las teclas y el ratón van a ella). */
@@ -159,6 +165,7 @@ public final class StudioView {
             return;
         }
         loaded = true;
+        panelShare = host.preferences().panelShare();
         StudioStage remembered = StudioStage.byId(host.preferences().stage());
         if (remembered != null) {
             stage = remembered;
@@ -273,20 +280,34 @@ public final class StudioView {
         this.ui = ui;
         load(host);
         StudioHost bound = bind(host);
-        frame = StudioLayout.compute(width, height, panelWidth, StudioStage.groupSizes());
+        int preferred = panelShare > 0 ? (int) Math.round(panelShare * width) : StudioLayout.AUTO;
+        frame = StudioLayout.compute(width, height, preferred, StudioStage.groupSizes());
         ui.begin(mouseX, mouseY, !modal());
         rememberScroll(host);
+        Rect flyout = frame.navMode() == StudioLayout.NavMode.ICONS ? navFlyoutBounds(ui, bound) : null;
+        navFlyout = flyout != null && !modal() && !dragging() && !historyOpen
+                && (frame.nav().contains(mouseX, mouseY) || navFlyout && flyout.contains(mouseX, mouseY));
 
         ui.fill(frame.panel(), PANEL);
         drawToolbar(ui, bound);
         drawNavigation(ui, bound);
+        if (navFlyout) {
+            // Lo que queda bajo la lista no se resalta.
+            ui.disableHover();
+        }
         drawContent(ui, bound);
+        if (navFlyout) {
+            ui.enableHover();
+        }
         drawFooter(ui, bound);
-        drawResizeHandle(ui, mouseX, mouseY);
+        drawResizeHandle(ui, bound, mouseX, mouseY);
         if (historyOpen && !modal()) {
             drawHistory(ui, bound);
         }
         ui.canvas().beginOverlay();
+        if (navFlyout) {
+            drawNavFlyout(ui, bound, flyout);
+        }
         if (picker.isOpen()) {
             picker.draw(ui, frame.screen(), bound);
         } else if (palette.isOpen()) {
@@ -413,10 +434,51 @@ public final class StudioView {
             } else {
                 ui.icon(value.icon(), item.centerX() - StudioIcons.SIZE / 2, iconY, iconColor);
             }
-            ui.register(item)
-                    .onClick(() -> selectStage(value, host))
-                    .tooltip(host.tr(value.titleKey()) + " · " + value.shortcut() + "\n"
-                            + host.tr(value.subtitleKey()));
+            StudioUi.Widget widget = ui.register(item).onClick(() -> selectStage(value, host));
+            if (labels) {
+                widget.tooltip(host.tr(value.titleKey()) + " · " + value.shortcut() + "\n"
+                        + host.tr(value.subtitleKey()));
+            }
+        }
+    }
+
+    /** Dónde va la lista de etapas con nombre que sale junto a los iconos: a su derecha, a la altura de cada uno. */
+    Rect navFlyoutBounds(StudioUi ui, StudioHost host) {
+        int names = 0;
+        for (StudioStage value : StudioStage.values()) {
+            names = Math.max(names, ui.width(host.tr(value.titleKey())));
+        }
+        Rect nav = frame.nav();
+        Rect last = frame.navItem(StudioStage.values().length - 1);
+        return new Rect(nav.right(), nav.y(), names + 30, last.bottom() + 4 - nav.y());
+    }
+
+    /**
+     * Con la navegación en iconos, al pasar el ratón por ella sale a su lado el nombre y la tecla de cada etapa,
+     * en la misma fila que su icono; pulsar un nombre abre la etapa.
+     */
+    private void drawNavFlyout(StudioUi ui, StudioHost host, Rect box) {
+        ui.fill(box, SURFACE);
+        ui.border(box, OUTLINE);
+        StudioStage.Group[] groups = StudioStage.Group.values();
+        for (int group = 1; group < groups.length; group++) {
+            Rect caption = frame.groupCaption(group);
+            ui.fill(new Rect(box.x() + 4, caption.centerY(), box.width() - 8, 1), DIVIDER);
+        }
+        for (StudioStage value : StudioStage.values()) {
+            Rect item = frame.navItem(value.ordinal());
+            Rect row = new Rect(box.x() + 2, item.y(), box.width() - 4, item.height());
+            boolean selected = value == stage;
+            boolean hovered = ui.hovered(row) || ui.hovered(item);
+            if (selected || hovered) {
+                ui.fill(row, selected ? CARD_ACTIVE : CARD_HOVER);
+            }
+            String key = String.valueOf(value.shortcut());
+            int keyX = row.right() - 4 - ui.width(key);
+            ui.label(host.tr(value.titleKey()), row.x() + 5, row.centerY() - 4, keyX - row.x() - 9,
+                    selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
+            ui.label(key, keyX, row.centerY() - 4, selected ? MUTED : DISABLED);
+            ui.register(row).onClick(() -> selectStage(value, host)).tooltip(host.tr(value.subtitleKey()));
         }
     }
 
@@ -430,6 +492,9 @@ public final class StudioView {
         boolean compact = frame.compact();
         Column column = new Column(frame.innerLeft(), viewport.y() + top - scroll, frame.innerWidth(),
                 compact ? Column.COMPACT_SECTION_GAP : Column.SECTION_GAP);
+        // Con un panel alto las galerías enseñan todas sus opciones; si no, dos filas y páginas, para que lo de
+        // debajo (material, ajustes) se vea sin desplazar.
+        tools.setGalleryRows(viewport.height() >= TALL_VIEWPORT ? 4 : 2);
         switch (stage) {
             case TOOLS -> tools.draw(ui, column, host, compact);
             case PATH -> figure.drawPath(ui, column, host, compact, target -> useWith(target, host));
@@ -686,13 +751,27 @@ public final class StudioView {
         };
     }
 
-    private void drawResizeHandle(StudioUi ui, int mouseX, int mouseY) {
+    private void drawResizeHandle(StudioUi ui, StudioHost host, int mouseX, int mouseY) {
         Rect handle = frame.resizeHandle();
         boolean active = resizing || !modal() && handle.contains(mouseX, mouseY);
         ui.fill(new Rect(frame.panel().x(), 0, 1, frame.screen().height()), active ? ACCENT : DIVIDER);
         if (active) {
             ui.fill(new Rect(frame.panel().x() - 1, 0, 2, frame.screen().height()), ACCENT);
         }
+        // Un asa a media altura para que se vea que el borde se arrastra.
+        int grip = frame.screen().height() / 2;
+        ui.fill(new Rect(frame.panel().x() - 1, grip - 10, 3, 20), active ? ACCENT : OUTLINE);
+        int percent = (int) Math.round(100.0 * frame.panel().width() / Math.max(1, frame.screen().width()));
+        ui.register(handle)
+                .tooltip(host.tr("gui.komaedit.help.panel_width", percent))
+                .onReset(() -> setPanelShare(host, 0.0));
+    }
+
+    /** Cambia la parte de la pantalla del panel y la guarda (0: la de serie). */
+    private void setPanelShare(StudioHost host, double share) {
+        panelShare = share;
+        host.preferences().setPanelShare(share);
+        host.savePreferences();
     }
 
     /** Dónde va el desplegable del historial: bajo la barra, pegado a la derecha del panel. */
@@ -990,8 +1069,9 @@ public final class StudioView {
             return true;
         }
         if (resizing && frame != null) {
-            panelWidth = StudioLayout.clampPanelWidth(frame.screen().width(),
-                    frame.screen().width() - (int) Math.round(x));
+            int screen = frame.screen().width();
+            int width = StudioLayout.clampPanelWidth(screen, Math.max(1, screen - (int) Math.round(x)));
+            panelShare = width / (double) screen;
             return true;
         }
         return false;
@@ -1004,7 +1084,10 @@ public final class StudioView {
         StudioHost bound = bind(host);
         tools.release(bound);
         figure.release(bound);
-        resizing = false;
+        if (resizing) {
+            resizing = false;
+            setPanelShare(host, panelShare);
+        }
     }
 
     /** La rueda: sobre un valor lo cambia; sobre el contenido lo desplaza. Devuelve si fue dentro del Studio. */

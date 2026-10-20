@@ -57,7 +57,7 @@ class TaskClicksTest {
         StudioDriver studio = fresh(true, 0);
         studio.click("Herramientas");
         studio.click("Tejado");
-        studio.click("Cuatr…");
+        studio.click("Cuatro");
         studio.click("Construir tejado");
         assertEquals("komaedit roof hip spruce_planks", studio.host.last());
         assertEquals(4, studio.clicks(), "con tipo a cuatro aguas");

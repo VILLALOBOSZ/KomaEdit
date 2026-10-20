@@ -67,6 +67,11 @@ public final class StudioUi {
         hoverEnabled = true;
     }
 
+    /** Hasta {@link #enableHover()} nada se resalta (lo que queda debajo de una lista desplegada). */
+    public void disableHover() {
+        hoverEnabled = false;
+    }
+
     public StudioCanvas canvas() {
         return canvas;
     }
@@ -143,6 +148,10 @@ public final class StudioUi {
 
     public int width(String value) {
         return canvas.width(value);
+    }
+
+    public int boldWidth(String value) {
+        return canvas.boldWidth(value);
     }
 
     public void label(String value, int x, int y, int color) {
@@ -404,14 +413,18 @@ public final class StudioUi {
         fill(rect, CARD);
     }
 
+    /** Alto de cada línea del nombre bajo una miniatura. */
+    public static final int TILE_LINE = 9;
+
     /**
-     * Miniatura con nombre debajo, para elegir entre opciones que se entienden mejor viéndolas (especies, tejados,
-     * sellos). La elegida lleva marco de acento y el nombre en blanco.
+     * Miniatura con su nombre debajo, en una o más líneas ({@link #nameLines}), para elegir lo que se entiende mejor
+     * viéndolo (especies, tejados, sellos). La imagen se ajusta al hueco que queda sobre el nombre; sin imagen, el
+     * icono de reserva. La elegida lleva marco de acento y el nombre en blanco.
      */
-    public Widget tile(Rect rect, StudioImage image, StudioIcons.Icon fallback, String label, boolean selected) {
+    public Widget tile(Rect rect, StudioImage image, StudioIcons.Icon fallback, List<String> lines, boolean selected) {
         boolean hovered = hovered(rect);
         fill(rect, selected ? CARD_ACTIVE : hovered ? CARD_HOVER : CARD);
-        int caption = label.isEmpty() ? 0 : 11;
+        int caption = lines.isEmpty() ? 0 : lines.size() * TILE_LINE + 2;
         Rect picture = new Rect(rect.x() + 2, rect.y() + 2, rect.width() - 4, rect.height() - 4 - caption);
         if (image != null) {
             int side = Math.min(picture.width(), picture.height());
@@ -422,10 +435,11 @@ public final class StudioUi {
             icon(fallback, picture.centerX() - size / 2, picture.centerY() - size / 2,
                     selected ? ACCENT : TEXT_SECONDARY, scale);
         }
-        if (caption > 0) {
-            String fitted = fit(label, rect.width() - 4);
-            label(fitted, rect.centerX() - width(fitted) / 2, rect.bottom() - 10,
-                    selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
+        int y = rect.bottom() - caption;
+        for (String line : lines) {
+            String fitted = fit(line, rect.width() - 2);
+            label(fitted, rect.centerX() - width(fitted) / 2, y, selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
+            y += TILE_LINE;
         }
         if (selected) {
             border(rect, ACCENT);
@@ -434,6 +448,98 @@ public final class StudioUi {
             border(rect, OUTLINE);
         }
         return register(rect);
+    }
+
+    /** Alto de una celda de cuadrícula con el nombre en una línea y en dos. */
+    public static final int GRID_CELL = 18;
+    public static final int GRID_CELL_TALL = 22;
+
+    /** Columnas de una cuadrícula de nombres y si sus celdas necesitan dos líneas. */
+    public record NameGrid(int columns, boolean tall) {
+        public int cellHeight() {
+            return tall ? GRID_CELL_TALL : GRID_CELL;
+        }
+    }
+
+    /**
+     * Las más columnas (hasta {@code maxColumns}) con las que cada nombre cabe entero en dos líneas como mucho en una
+     * celda de la que {@code inset} píxeles no son para el nombre (icono, estrella).
+     */
+    public NameGrid nameGrid(List<String> names, int width, int maxColumns, int inset) {
+        for (int columns = Math.max(1, maxColumns); columns >= 1; columns--) {
+            int nameWidth = (width - (columns - 1) * Column.GAP) / columns - inset;
+            boolean tall = false;
+            boolean fits = true;
+            for (String name : names) {
+                if (canvas.width(name) <= nameWidth) {
+                    continue;
+                }
+                List<String> lines = nameLines(name, nameWidth, 2);
+                if (lines == null) {
+                    fits = false;
+                    break;
+                }
+                tall |= lines.size() > 1;
+            }
+            if (fits || columns == 1) {
+                return new NameGrid(columns, tall);
+            }
+        }
+        return new NameGrid(1, false);
+    }
+
+    /** Cuántas líneas (una o dos) necesita {@code text} en {@code width} sin cortarse. */
+    public int nameLineCount(String text, int width) {
+        if (canvas.width(text) <= width) {
+            return 1;
+        }
+        List<String> lines = nameLines(text, width, 2);
+        return lines == null ? 1 : lines.size();
+    }
+
+    /**
+     * Un nombre centrado en vertical en {@code row}: en una línea si cabe, si no en dos partidas por palabras, y solo
+     * si ni así cabe, cortado con «…».
+     */
+    public void nameLabel(String text, int x, Rect row, int width, int color) {
+        if (canvas.width(text) <= width) {
+            label(text, x, row.centerY() - 4, width, color);
+            return;
+        }
+        List<String> lines = nameLines(text, width, 2);
+        if (lines == null || lines.size() < 2 || row.height() < GRID_CELL_TALL - 2) {
+            label(text, x, row.centerY() - 4, width, color);
+            return;
+        }
+        label(lines.get(0), x, row.centerY() - 9, width, color);
+        label(lines.get(1), x, row.centerY(), width, color);
+    }
+
+    /**
+     * El nombre de una miniatura partido por palabras en {@code width}, sin cortar ninguna: {@code null} si una
+     * palabra no cabe entera o hacen falta más de {@code maxLines} líneas.
+     */
+    public List<String> nameLines(String value, int width, int maxLines) {
+        List<String> lines = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        for (String word : value.strip().split("\\s+")) {
+            if (canvas.width(word) > width) {
+                return null;
+            }
+            String candidate = line.isEmpty() ? word : line + " " + word;
+            if (canvas.width(candidate) <= width) {
+                line.setLength(0);
+                line.append(candidate);
+                continue;
+            }
+            lines.add(line.toString());
+            line.setLength(0);
+            line.append(word);
+        }
+        if (!line.isEmpty()) {
+            lines.add(line.toString());
+        }
+        return lines.size() <= maxLines ? lines : null;
     }
 
     // ── Componentes de columna ──────────────────────────────────────────────────────────────────────────

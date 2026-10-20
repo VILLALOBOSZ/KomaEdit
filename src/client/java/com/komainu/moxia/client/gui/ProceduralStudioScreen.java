@@ -56,10 +56,9 @@ public final class ProceduralStudioScreen extends Screen {
         super(Text.translatable("gui.komaedit.title"));
     }
 
+    /** Al salir del mundo: el Studio vuelve a leer sus preferencias (el ancho del panel va en ellas). */
     public static void resetSession() {
-        StudioView fresh = new StudioView();
-        fresh.setPanelWidth(view.panelWidth());
-        view = fresh;
+        view = new StudioView();
     }
 
     /** La receta que enseña el holograma: la de la figura en curso. */

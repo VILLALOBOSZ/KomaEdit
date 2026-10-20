@@ -35,7 +35,7 @@ class StudioLayoutTest {
     @Test
     void everyRegionStaysInsideItsParentAtEveryResolutionAndScale() {
         for (int[] screen : scaledScreens()) {
-            for (int preferred : new int[]{0, StudioLayout.DEFAULT_PANEL_WIDTH, 10_000}) {
+            for (int preferred : new int[]{1, StudioLayout.AUTO, 10_000}) {
                 StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], preferred, STAGES);
                 String where = screen[0] + "×" + screen[1] + " (GUI " + screen[2] + ", panel " + preferred + ")";
                 assertTrue(frame.screen().encloses(frame.panel()), where);
@@ -69,7 +69,7 @@ class StudioLayoutTest {
     @Test
     void panelPartsNeverOverlap() {
         for (int[] screen : scaledScreens()) {
-            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], StudioLayout.DEFAULT_PANEL_WIDTH,
+            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], StudioLayout.AUTO,
                     STAGES);
             List<Rect> parts = List.of(frame.toolbar(), frame.nav(), frame.content(), frame.footer());
             for (int first = 0; first < parts.size(); first++) {
@@ -84,7 +84,7 @@ class StudioLayoutTest {
     @Test
     void everyStageFitsInTheNavigationWithoutScrolling() {
         for (int[] screen : scaledScreens()) {
-            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], StudioLayout.DEFAULT_PANEL_WIDTH,
+            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], StudioLayout.AUTO,
                     STAGES);
             for (int index = 0; index < STAGES; index++) {
                 Rect item = frame.navItem(index);
@@ -99,9 +99,9 @@ class StudioLayoutTest {
 
     @Test
     void withRoomTheStagesKeepTheirComfortableRowAndGap() {
-        StudioLayout.Frame nine = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, 9);
+        StudioLayout.Frame nine = StudioLayout.compute(960, 540, StudioLayout.AUTO, 9);
         assertEquals(StudioLayout.NAV_GAP, nine.navGap());
-        StudioLayout.Frame ten = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, GROUPS);
+        StudioLayout.Frame ten = StudioLayout.compute(960, 540, StudioLayout.AUTO, GROUPS);
         assertEquals(StudioLayout.NAV_GAP, ten.navGap());
         assertTrue(ten.navRowHeight() >= StudioLayout.COMFORT_NAV_ROW);
         // 854×480 con GUI 2: las diez caben, con sus rayas de grupo, sin desplazar.
@@ -113,7 +113,7 @@ class StudioLayoutTest {
     @Test
     void groupsHaveTheirCaptionAboveTheirFirstStage() {
         for (int[] screen : scaledScreens()) {
-            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], StudioLayout.DEFAULT_PANEL_WIDTH,
+            StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], StudioLayout.AUTO,
                     GROUPS);
             int first = 0;
             for (int group = 0; group < GROUPS.length; group++) {
@@ -162,13 +162,15 @@ class StudioLayoutTest {
 
     @Test
     void labelsAreShownWheneverThereIsRoom() {
-        StudioLayout.Frame wide = StudioLayout.compute(960, 540, StudioLayout.DEFAULT_PANEL_WIDTH, STAGES);
+        StudioLayout.Frame wide = StudioLayout.compute(960, 540, StudioLayout.AUTO, STAGES);
         assertEquals(StudioLayout.NavMode.LABELS, wide.navMode());
-        StudioLayout.Frame narrowest = StudioLayout.compute(960, 540, 0, STAGES);
+        StudioLayout.Frame narrowest = StudioLayout.compute(960, 540, 1, STAGES);
         assertEquals(StudioLayout.NavMode.ICONS, narrowest.navMode(), "al mínimo, el sitio es para el contenido");
-        StudioLayout.Frame gui3 = StudioLayout.compute(640, 360, 10_000, STAGES);
-        assertEquals(StudioLayout.NavMode.ICONS, gui3.navMode(), "1080p con GUI 3: iconos y contenido ancho");
-        assertTrue(gui3.innerWidth() >= 260, "ancho del contenido " + gui3.innerWidth());
+        StudioLayout.Frame gui3 = StudioLayout.compute(640, 360, StudioLayout.AUTO, STAGES);
+        assertEquals(StudioLayout.NavMode.ICONS, gui3.navMode(), "1080p con GUI 3: iconos y el contenido entero");
+        assertTrue(gui3.innerWidth() >= 190, "ancho del contenido " + gui3.innerWidth());
+        StudioLayout.Frame gui3At1440 = StudioLayout.compute(853, 480, StudioLayout.AUTO, STAGES);
+        assertEquals(StudioLayout.NavMode.LABELS, gui3At1440.navMode(), "1440p con GUI 3: con nombres");
         StudioLayout.Frame tiny = StudioLayout.compute(320, 240, 0, STAGES);
         assertEquals(StudioLayout.NavMode.ICONS, tiny.navMode());
     }
@@ -176,7 +178,7 @@ class StudioLayoutTest {
     @Test
     void theStudioLeavesTheChatFreeWheneverTheScreenAllowsIt() {
         for (int[] screen : scaledScreens()) {
-            for (int preferred : new int[]{0, StudioLayout.DEFAULT_PANEL_WIDTH, 10_000}) {
+            for (int preferred : new int[]{1, StudioLayout.AUTO, 10_000}) {
                 StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], preferred, STAGES);
                 if (screen[0] - frame.panel().width() >= StudioLayout.CHAT_WIDTH) {
                     assertFalse(frame.panel().intersects(frame.chatZone()),
@@ -199,6 +201,23 @@ class StudioLayoutTest {
                 assertTrue(frame.panel().width() <= screen[0] / 2, screen[0] + "×" + screen[1]);
             }
         }
+    }
+
+    @Test
+    void byDefaultThePanelLeavesMostOfABigScreenToTheWorld() {
+        for (int[] screen : scaledScreens()) {
+            if (screen[0] >= StudioLayout.NARROW_SCREEN) {
+                StudioLayout.Frame frame = StudioLayout.compute(screen[0], screen[1], StudioLayout.AUTO, STAGES);
+                assertTrue(frame.panel().width() * 100 <= screen[0] * 40,
+                        screen[0] + "×" + screen[1] + " · panel " + frame.panel().width());
+                StudioLayout.Frame widest = StudioLayout.compute(screen[0], screen[1], 10_000, STAGES);
+                assertTrue(widest.panel().width() * 100 <= screen[0] * StudioLayout.MAX_SHARE_PERCENT,
+                        "arrastrando, como mucho el " + StudioLayout.MAX_SHARE_PERCENT + " %");
+            }
+        }
+        // 1080p con GUI 3: antes 320 de 640 (la mitad); ahora el 38 %.
+        assertEquals(243, StudioLayout.compute(640, 360, StudioLayout.AUTO, STAGES).panel().width());
+        assertEquals(365, StudioLayout.compute(960, 540, StudioLayout.AUTO, STAGES).panel().width());
     }
 
     @Test

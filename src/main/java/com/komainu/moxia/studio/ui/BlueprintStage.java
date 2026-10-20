@@ -123,7 +123,10 @@ public final class BlueprintStage {
         }
         BlueprintSummary current = shown.stream().filter(blueprint -> blueprint.reference().equals(selected))
                 .findFirst().orElse(null);
-        actions(ui, column, host, current, compact);
+        // Compartir solo sale en los planos propios: su sitio cuenta si hay alguno, para que la tarjeta no salte.
+        boolean shareable = host.blueprints().canShare()
+                && shown.stream().anyMatch(blueprint -> blueprint.mine() && !blueprint.shared());
+        actions(ui, column, host, current, compact, shareable);
 
         ui.section(column, host.tr("gui.komaedit.blueprint.library", shown.size()));
         if (shown.isEmpty()) {
@@ -221,10 +224,20 @@ public final class BlueprintStage {
 
     /**
      * El plano elegido en una tarjeta de alto fijo (así la cuadrícula no salta al elegir): nombre, tamaño, Cargar y
-     * Estampar con su radio. Sin plano elegido dice cómo elegir.
+     * Estampar con su radio. Sin plano elegido dice cómo elegir. Si los botones no caben en una fila, la tarjeta
+     * crece para la segunda; el alto se calcula con el radio más largo y con Compartir, para que no salte nunca.
      */
-    private void actions(StudioUi ui, Column column, StudioHost host, BlueprintSummary current, boolean compact) {
-        Rect card = column.next(compact ? 30 : 42);
+    private void actions(StudioUi ui, Column column, StudioHost host, BlueprintSummary current, boolean compact,
+                         boolean shareable) {
+        int widest = 0;
+        for (int value : RADII) {
+            widest = Math.max(widest, ui.chipWidth(radiusText(host, value)));
+        }
+        int[] worst = {ui.chipWidth(host.tr("gui.komaedit.blueprint.stamp")) + 8, widest,
+                ui.chipWidth(host.tr("gui.komaedit.blueprint.load")),
+                shareable ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0};
+        int extra = (buttonRows(worst, column.width() - 12) - 1) * BUTTON_PITCH;
+        Rect card = column.next((compact ? 30 : 42) + extra);
         ui.fill(card, FIELD);
         Set<String> tags = activeTags();
         String tag = tags.size() == 1 ? "#" + tags.iterator().next() : null;
@@ -264,10 +277,9 @@ public final class BlueprintStage {
                         + (current.tags().isEmpty() ? "" : "\n#" + String.join(" #", current.tags())));
         StudioHost.Blueprints catalog = host.blueprints();
         String reference = current.reference();
-        Rect buttons = new Rect(card.x() + 6, card.bottom() - 17, card.width() - 12, 14);
+        Rect buttons = new Rect(card.x() + 6, card.bottom() - 17 - extra, card.width() - 12, 14);
         boolean share = current.mine() && !current.shared() && catalog.canShare();
-        String radiusText = host.tr("gui.komaedit.blueprint.radius_short", RADII[radius] == 0
-                ? host.tr("gui.komaedit.tools.auto") : Integer.toString(RADII[radius]));
+        String radiusText = radiusText(host, RADII[radius]);
         int[] widths = {ui.chipWidth(host.tr("gui.komaedit.blueprint.stamp")) + 8,
                 ui.chipWidth(radiusText), ui.chipWidth(host.tr("gui.komaedit.blueprint.load")),
                 share ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0};
@@ -294,9 +306,55 @@ public final class BlueprintStage {
                 });
         if (share) {
             ui.button(cells.get(3), host.tr("gui.komaedit.blueprint.share"), StudioUi.Tone.SECONDARY)
-                    .tooltip(host.tr("gui.komaedit.help.blueprint.share"))
+                    .tooltip(host.tr("gui.komaedit.blueprint.share") + "\n"
+                            + host.tr("gui.komaedit.help.blueprint.share"))
                     .onClick(() -> host.send("komaedit blueprint share " + current.name()));
         }
+    }
+
+    private static final int BUTTON_PITCH = 14 + Column.GAP;
+
+    private static String radiusText(StudioHost host, int value) {
+        return host.tr("gui.komaedit.blueprint.radius_short", value == 0 ? host.tr("gui.komaedit.tools.auto")
+                : Integer.toString(value));
+    }
+
+    /** Cuántas filas ocupan unos botones de estos anchos en {@code width}. */
+    private static int buttonRows(int[] widths, int width) {
+        int bottom = Column.flow(widths, 14, 0, 0, width).stream().mapToInt(Rect::bottom).max().orElse(14);
+        return Math.max(1, (bottom + Column.GAP) / BUTTON_PITCH);
+    }
+
+    /**
+     * El nombre de un plano en dos líneas como mucho, partiendo tras «_», «-» o un espacio (los nombres son de
+     * archivo); solo si ni así cabe, se corta con «…».
+     */
+    static List<String> nameLines(StudioUi ui, String name, int width) {
+        if (ui.width(name) <= width) {
+            return List.of(name);
+        }
+        List<String> parts = new ArrayList<>();
+        int start = 0;
+        for (int index = 0; index < name.length(); index++) {
+            char character = name.charAt(index);
+            if (character == '_' || character == '-' || character == ' ') {
+                parts.add(name.substring(start, index + 1));
+                start = index + 1;
+            }
+        }
+        if (start < name.length()) {
+            parts.add(name.substring(start));
+        }
+        StringBuilder first = new StringBuilder();
+        int used = 0;
+        while (used < parts.size() && ui.width(first + parts.get(used)) <= width) {
+            first.append(parts.get(used++));
+        }
+        if (first.isEmpty() || used == parts.size()) {
+            return List.of(ui.fit(name, width));
+        }
+        return List.of(first.toString().stripTrailing(), ui.fit(String.join("", parts.subList(used, parts.size())),
+                width));
     }
 
     /** Colocar el plano elegido con vista previa: el botón del pie en esta etapa. */
@@ -338,7 +396,9 @@ public final class BlueprintStage {
     private void grid(StudioUi ui, Column column, StudioHost host, List<BlueprintSummary> shown) {
         int columns = Math.max(2, (column.width() + Column.GAP) / (MIN_CARD + Column.GAP));
         int cardWidth = (column.width() - (columns - 1) * Column.GAP) / columns;
-        List<Rect> cells = column.grid(shown.size(), columns, cardWidth + CAPTION);
+        // Si algún nombre necesita dos líneas, todas las tarjetas ganan una (la cuadrícula sigue alineada).
+        boolean tall = shown.stream().anyMatch(blueprint -> nameLines(ui, blueprint.name(), cardWidth - 8).size() > 1);
+        List<Rect> cells = column.grid(shown.size(), columns, cardWidth + CAPTION + (tall ? StudioUi.TILE_LINE : 0));
         List<String> wanted = new ArrayList<>();
         for (int index = 0; index < cells.size(); index++) {
             BlueprintSummary blueprint = shown.get(index);
@@ -367,8 +427,12 @@ public final class BlueprintStage {
             } else if (hovered) {
                 ui.border(cell, OUTLINE);
             }
-            ui.label(blueprint.name(), cell.x() + 4, image.bottom() + 3, cell.width() - 8, chosen ? WHITE : TEXT);
-            ui.label(blueprint.describeSize(), cell.x() + 4, image.bottom() + 12, cell.width() - 8, MUTED);
+            int y = image.bottom() + 3;
+            for (String line : nameLines(ui, blueprint.name(), cell.width() - 8)) {
+                ui.label(line, cell.x() + 4, y, cell.width() - 8, chosen ? WHITE : TEXT);
+                y += StudioUi.TILE_LINE;
+            }
+            ui.label(blueprint.describeSize(), cell.x() + 4, y, cell.width() - 8, MUTED);
             ui.register(cell)
                     .tooltip(blueprint.name() + "\n" + host.tr("gui.komaedit.blueprint.details",
                             blueprint.describeSize(), blueprint.blocks(), blueprint.author())

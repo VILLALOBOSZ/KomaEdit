@@ -50,6 +50,8 @@ public final class FigureStages {
     public static final int MAX_PATH_POINTS = 32;
     public static final double REACH = 4_096.0;
     private static final List<String> WEATHER_STYLES = StudioNames.WEATHER_STYLES;
+    /** Lo que ocupan en una celda de figura el margen y la estrella, fuera del nombre. */
+    private static final int SHAPE_NAME_INSET = 22;
 
     /** Un número de la receta (o de Envejecer): su rango, su unidad y su ayuda. */
     enum Control {
@@ -466,7 +468,9 @@ public final class FigureStages {
                 ui.label(host.tr("gui.komaedit.search.empty"), empty.x() + 8, empty.y() + 4, empty.width() - 16, MUTED);
                 continue;
             }
-            List<Rect> cells = column.grid(group.getValue().size(), columns, StudioUi.SMALL_ROW + 2);
+            StudioUi.NameGrid grid = ui.nameGrid(group.getValue().stream().map(shape -> shapeName(host, shape))
+                    .toList(), column.width(), columns, SHAPE_NAME_INSET);
+            List<Rect> cells = column.grid(group.getValue().size(), grid.columns(), grid.cellHeight());
             for (int index = 0; index < group.getValue().size(); index++) {
                 drawShapeButton(ui, cells.get(index), group.getValue().get(index), host);
             }
@@ -508,8 +512,9 @@ public final class FigureStages {
         }
         Rect star = cell.rightPart(14);
         boolean favorite = host.preferences().isFavorite(shape.id());
-        ui.label(shapeName(host, shape), cell.x() + 7, cell.centerY() - 4, cell.width() - (favorite || hovered ? 22
-                : 10), selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
+        // El sitio de la estrella se guarda siempre, para que el nombre no salte de línea al pasar el ratón.
+        ui.nameLabel(shapeName(host, shape), cell.x() + 7, cell, cell.width() - SHAPE_NAME_INSET,
+                selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
         if (favorite || hovered) {
             ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x() + 1, cell.centerY() - 6,
                     favorite || ui.hovered(star) ? FAVORITE : MUTED);

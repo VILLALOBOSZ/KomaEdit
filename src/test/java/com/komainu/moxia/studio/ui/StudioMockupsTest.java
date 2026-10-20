@@ -57,6 +57,17 @@ class StudioMockupsTest {
         scenes.add(new Scene("1080p_gui3_herramientas_es.png", 640, 360, 3, "es_es", driver -> tools(driver, null)));
         scenes.add(new Scene("1080p_gui3_arbol_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui3_tejado_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "roof")));
+        scenes.add(new Scene("1080p_gui3_navegacion_es.png", 640, 360, 3, "es_es", driver -> {
+            // El ratón sobre los iconos: sale la lista con el nombre y la tecla de cada etapa.
+            tools(driver, "roof");
+            driver.render();
+            var icon = driver.view.frame().navItem(StudioStage.MODIFIERS.ordinal());
+            driver.mouseX = icon.centerX();
+            driver.mouseY = icon.centerY();
+        }));
+        // 1080p con GUI 2: sitio para los nombres de las etapas.
+        scenes.add(new Scene("1080p_gui2_tejado_es.png", 960, 540, 2, "es_es", driver -> tools(driver, "roof")));
+        scenes.add(new Scene("1080p_gui2_arbol_en.png", 960, 540, 2, "en_us", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui3_rio_en.png", 640, 360, 3, "en_us", driver -> {
             path(driver, 4);
             tools(driver, "river");
@@ -106,6 +117,11 @@ class StudioMockupsTest {
             driver.host.previewBlocks = 12_300;
             driver.view.figure().selectShape(driver.host, PathShape.BRAID);
             driver.view.selectStage(StudioStage.FIGURE, driver.host);
+        }));
+        scenes.add(new Scene("1080p_gui3_figuras_lista_es.png", 640, 360, 3, "es_es", driver -> {
+            path(driver, 3);
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+            driver.view.figure().setBrowsing(true);
         }));
         scenes.add(new Scene("1080p_gui3_mas_ajustes_es.png", 640, 360, 3, "es_es", driver -> {
             tools(driver, "tree");
@@ -176,7 +192,8 @@ class StudioMockupsTest {
         }
     }
 
-    private static void blueprints(StudioDriver driver) {
+    /** La biblioteca de las maquetas, con «casita» elegida (también la usan otras pruebas). */
+    static void blueprints(StudioDriver driver) {
         FakeStudioHost.FakeBlueprints catalog = driver.host.blueprints;
         add(catalog, "casita", BlueprintFixtures.house(), true, "Villalobos", 342, List.of("casas", "aldea"));
         add(catalog, "pozo", BlueprintFixtures.well(), true, "Villalobos", 74, List.of("aldea", "agua"));

@@ -1273,7 +1273,7 @@
   "gui.komaedit.blueprint.stamp": "Stamp",
   "gui.komaedit.blueprint.radius": "Radius",
   "gui.komaedit.blueprint.stamp_tag": "Stamp %s",
-  "gui.komaedit.blueprint.share": "Share with the server",
+  "gui.komaedit.blueprint.share": "Share",
   "gui.komaedit.help.blueprint.search": "Words from the name or an exact #tag; Esc clears, Enter picks the first. Shortcut: /",
   "gui.komaedit.help.blueprint.scope": "All, only yours or only the server's shared ones.",
   "gui.komaedit.help.blueprint.refresh": "Asks the server for the library again.",
@@ -1376,5 +1376,6 @@
   "gui.komaedit.shortcut.palette": "Command palette: jump to any stage, tool, preset, figure or blueprint",
   "gui.komaedit.shortcut.palette.keys": "Ctrl+K",
   "gui.komaedit.tools.pick": "Choose a tool",
-  "gui.komaedit.tools.pick.help": "Choose the tool above; its settings then show up here."
+  "gui.komaedit.tools.pick.help": "Choose the tool above; its settings then show up here.",
+  "gui.komaedit.help.panel_width": "Panel width: %s%% of the screen\nDrag the edge to resize it · right click: default"
 }

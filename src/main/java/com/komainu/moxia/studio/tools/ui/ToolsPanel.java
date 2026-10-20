@@ -111,9 +111,14 @@ public final class ToolsPanel {
     /** Los ajustes se guardan en disco como mucho cada tanto, no en cada paso de un arrastre. */
     public static final long SAVE_DELAY_MILLIS = 2_000L;
     public static final String MORE_KEY = "tools:more:";
-    private static final int CELL = 18;
-    private static final int TILE = 40;
-    private static final int MAX_TILE = 56;
+    /** Lo que ocupan en una celda de herramienta el icono y la estrella, fuera del nombre. */
+    private static final int TOOL_NAME_INSET = 37;
+    /** Ancho mínimo y máximo de una miniatura de galería. */
+    static final int MIN_TILE = 40;
+    static final int MAX_TILE = 72;
+    /** Alto de la imagen de una miniatura (en compacto, menos). */
+    static final int TILE_PICTURE = 30;
+    static final int COMPACT_TILE_PICTURE = 20;
     private static final int BIOME_ROWS = 6;
     private static final int SMALL_ROW = StudioUi.SMALL_ROW;
     private static final SplittableRandom SEEDS = new SplittableRandom();
@@ -129,6 +134,7 @@ public final class ToolsPanel {
     private boolean browsing = true;
     private boolean loaded;
     private String search = "";
+    private int galleryRows = 2;
     private Field field = Field.NONE;
     private String fieldParam = "";
     private String input = "";
@@ -400,7 +406,11 @@ public final class ToolsPanel {
                         empty.width() - 16, MUTED);
                 continue;
             }
-            List<Rect> cells = column.grid(group.cards().size(), columns, CELL);
+            // Cada nombre entero: si no cabe en una línea la fila crece a dos, y si ni así, hay menos columnas.
+            boolean anyLocked = group.cards().stream().anyMatch(card -> card.locked(context));
+            StudioUi.NameGrid grid = ui.nameGrid(group.cards().stream().map(card -> host.tr(card.nameKey())).toList(),
+                    column.width(), columns, TOOL_NAME_INSET + (anyLocked ? 10 : 0));
+            List<Rect> cells = column.grid(group.cards().size(), grid.columns(), grid.cellHeight());
             for (int index = 0; index < group.cards().size(); index++) {
                 drawToolCell(ui, cells.get(index), group.cards().get(index), host, context);
             }
@@ -447,8 +457,8 @@ public final class ToolsPanel {
         ui.icon(icon(card), cell.x() + 5, cell.centerY() - 6, color);
         Rect star = cell.rightPart(14);
         boolean favorite = host.preferences().isToolFavorite(card.id());
-        int reserve = locked ? 26 : favorite || hovered ? 16 : 4;
-        ui.label(host.tr(card.nameKey()), cell.x() + 21, cell.centerY() - 4, cell.width() - 21 - reserve,
+        // El sitio de la estrella se guarda siempre, para que el nombre no salte de línea al pasar el ratón.
+        ui.nameLabel(host.tr(card.nameKey()), cell.x() + 21, cell, cell.width() - TOOL_NAME_INSET - (locked ? 10 : 0),
                 locked ? DISABLED : chosen ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
         if (locked) {
             ui.icon(StudioIcons.Icon.LOCK, star.x() - 11, cell.centerY() - 6, DISABLED);
@@ -494,9 +504,13 @@ public final class ToolsPanel {
         ToolCard card = selected();
         Rect row = column.next(compact ? 20 : 22);
         List<ToolCard> recents = new ArrayList<>();
+        // Las recientes que caben sin cortar el nombre (icono, nombre en negrita y flecha); la estrella y copiar van
+        // siempre.
+        int needed = ui.boldWidth(host.tr(card.nameKey())) + 44;
+        int room = Math.clamp((row.width() - needed) / 19 - 2, 0, compact ? 2 : 3);
         for (String id : host.preferences().toolRecents()) {
             ToolCard recent = ToolCatalog.byId(id);
-            if (recent != null && recent != card && recents.size() < (compact ? 2 : 3)) {
+            if (recent != null && recent != card && recents.size() < room) {
                 recents.add(recent);
             }
         }
@@ -916,8 +930,10 @@ public final class ToolsPanel {
     }
 
     /**
-     * Miniaturas con su nombre debajo. Caben {@code rows} filas (una en pantallas pequeñas); si hay más opciones,
-     * el título lleva ‹ › para pasar de página, y la página siempre empieza enseñando la elegida.
+     * Miniaturas con su nombre debajo, siempre entero (en dos líneas si hace falta): se ponen tantas por fila como
+     * dejan caber todos los nombres ({@link #galleryLayout}). Caben {@link #galleryRows} filas (una en pantallas
+     * pequeñas); si hay más opciones, el título lleva ‹ › para pasar de página, y la página siempre empieza
+     * enseñando la elegida.
      */
     private void drawGallery(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
                              boolean compact) {
@@ -925,17 +941,22 @@ public final class ToolsPanel {
         boolean custom = card.id().equals("stamp") && !current().text("custom").isBlank();
         String chosenName = custom ? current().text("custom").strip() : host.tr(choice.optionKey(value));
         List<String> options = choice.options();
-        int perRow = Math.max(2, (column.width() + Column.GAP) / (TILE + Column.GAP));
-        int tile = Math.min(MAX_TILE, (column.width() - (perRow - 1) * Column.GAP) / perRow);
-        int rows = compact ? 1 : 2;
-        int tileHeight = compact ? 40 : Math.min(tile + 8, 54);
+        List<String> labels = options.stream().map(option -> host.tr(choice.optionKey(option))).toList();
+        GalleryLayout layout = galleryLayout(ui, labels, column.width());
+        int perRow = layout.perRow();
+        int tile = layout.tile();
+        int rows = compact ? 1 : galleryRows;
+        int tileHeight = (compact ? COMPACT_TILE_PICTURE : TILE_PICTURE) + layout.lines() * StudioUi.TILE_LINE + 6;
         int perPage = perRow * rows;
         int pageCount = (options.size() + perPage - 1) / perPage;
         String pageKey = card.id() + ":" + choice.id();
         int page = Math.clamp(pages.computeIfAbsent(pageKey, ignored -> Math.max(0, options.indexOf(value))
                 / perPage), 0, Math.max(0, pageCount - 1));
 
-        column.section();
+        if (!compact) {
+            // En compacto la galería va pegada a la cabecera: el sitio es para sus nombres.
+            column.section();
+        }
         Rect title = column.next(10);
         if (!current().isDefault(choice.id())) {
             ui.fill(new Rect(title.x() - 5, title.y() + 4, 2, 2), ACCENT);
@@ -969,10 +990,10 @@ public final class ToolsPanel {
                 }
                 boolean chosen = option.equals(value) && !custom;
                 StudioImage image = ChoiceThumbnails.get(card.id(), choice.id(), option);
-                String label = host.tr(choice.optionKey(option));
+                String label = labels.get(index);
                 String description = card.id().equals("stamp") && StampLibrary.descriptions().containsKey(option)
                         ? "\n" + host.tr("gui.komaedit.tools.option.stamp." + option + ".help") : "";
-                ui.tile(cell, image, icon(card), label, chosen)
+                ui.tile(cell, image, icon(card), layout.names().get(index), chosen)
                         .tooltip(label + description)
                         .group("tools:" + choice.id())
                         .onReset(() -> set(current().reset(choice.id())))
@@ -982,6 +1003,47 @@ public final class ToolsPanel {
                         });
             }
         }
+    }
+
+    /** Reparto de una galería: cuántas miniaturas por fila, su ancho, cuántas líneas de nombre y cada nombre. */
+    record GalleryLayout(int perRow, int tile, int lines, List<List<String>> names) {
+    }
+
+    /**
+     * Las más columnas posibles (con miniaturas de {@value #MIN_TILE} a {@value #MAX_TILE} píxeles) con las que el
+     * nombre de cada opción cabe entero en dos líneas como mucho. Si ni con dos columnas cabe alguno, ese se corta.
+     */
+    static GalleryLayout galleryLayout(StudioUi ui, List<String> labels, int width) {
+        for (int perRow = Math.max(2, (width + Column.GAP) / (MIN_TILE + Column.GAP)); perRow >= 2; perRow--) {
+            int tile = Math.min(MAX_TILE, (width - (perRow - 1) * Column.GAP) / perRow);
+            List<List<String>> names = new ArrayList<>();
+            int lines = 1;
+            for (String label : labels) {
+                List<String> split = ui.nameLines(label, tile - 4, 2);
+                if (split == null) {
+                    names = null;
+                    break;
+                }
+                names.add(split);
+                lines = Math.max(lines, split.size());
+            }
+            if (names != null) {
+                return new GalleryLayout(perRow, tile, lines, names);
+            }
+        }
+        int tile = Math.min(MAX_TILE, (width - Column.GAP) / 2);
+        List<List<String>> names = new ArrayList<>();
+        for (String label : labels) {
+            List<String> wrapped = ui.wrap(label, tile - 4);
+            names.add(wrapped.size() <= 2 ? wrapped : List.of(wrapped.get(0), ui.fit(String.join(" ",
+                    wrapped.subList(1, wrapped.size())), tile - 4)));
+        }
+        return new GalleryLayout(2, tile, 2, names);
+    }
+
+    /** Filas de las galerías fuera del modo compacto: más con un panel alto. */
+    public void setGalleryRows(int rows) {
+        galleryRows = Math.max(1, rows);
     }
 
     private void drawSearchChoice(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,

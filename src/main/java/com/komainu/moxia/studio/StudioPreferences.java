@@ -71,6 +71,7 @@ public final class StudioPreferences {
     private PreviewMode previewMode = PreviewMode.OFF;
     private String stage = "";
     private String tool = "";
+    private double panelShare;
 
     public boolean isFavorite(String id) {
         return favorites.contains(id);
@@ -230,6 +231,18 @@ public final class StudioPreferences {
         tool = value == null ? "" : value;
     }
 
+    /**
+     * La parte de la pantalla que el jugador dejó al panel al arrastrar su borde (de 0 a 1), o 0 si no lo ha tocado.
+     * Se guarda como proporción para que valga igual con cualquier escala de GUI.
+     */
+    public double panelShare() {
+        return panelShare;
+    }
+
+    public void setPanelShare(double value) {
+        panelShare = Double.isFinite(value) ? Math.clamp(value, 0.0, 1.0) : 0.0;
+    }
+
     public String toJson() {
         JsonObject root = new JsonObject();
         root.addProperty("format", FORMAT);
@@ -242,6 +255,9 @@ public final class StudioPreferences {
         root.addProperty("preview", previewMode.id());
         root.addProperty("stage", stage);
         root.addProperty("tool", tool);
+        if (panelShare > 0) {
+            root.addProperty("panelShare", Math.round(panelShare * 1000) / 1000.0);
+        }
         JsonObject valuesObject = new JsonObject();
         toolValues.forEach((id, values) -> {
             JsonObject card = new JsonObject();
@@ -303,6 +319,10 @@ public final class StudioPreferences {
                     : PreviewMode.byId(preview);
             preferences.stage = string(root, "stage");
             preferences.tool = string(root, "tool");
+            if (root.has("panelShare") && root.get("panelShare").isJsonPrimitive()
+                    && root.getAsJsonPrimitive("panelShare").isNumber()) {
+                preferences.setPanelShare(root.get("panelShare").getAsDouble());
+            }
             readToolValues(root, preferences);
             if (root.has("scroll") && root.get("scroll").isJsonObject()) {
                 for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("scroll").entrySet()) {
