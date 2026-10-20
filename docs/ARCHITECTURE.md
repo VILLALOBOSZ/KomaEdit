@@ -23,6 +23,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `gradient` | Paletas y selección streaming por eje |
 | `color` | Colores de bloque en OKLab (`BlockColorCatalog`), parecidos, degradados (`ColorGradient`) y sombreado (`ShadeOperation`, con `texture.ShadeField`) |
 | `generator` | Generadores de ezEdits (formas, noisegen, flowfield, flowline): lógica pura sobre `Volume` y `GeneratedBlocks` |
+| `nature` | Árboles y rocas: especies, colonización del espacio, copas, raíces y rocas como lógica pura sobre `NatureTerrain` y `NatureVoxels`; `NatureOperation` y `NatureService` los llevan al worker y al motor común |
 | `image` | Imagen en bloques (`/komaedit image`): lectura y descarga con límites, reescalado, cuantización en CIELAB y tramado, probados sin Minecraft; `ImageService` lo une al mundo y a la cola de edición |
 | `text` | Texto en bloques (`/komaedit text`): fuentes TrueType (de serie con OFL y propias), rasterizado en muestras, borde por distancia exacta y colocación según la mirada; `TextModel` es un `DeformField` para las piezas de `-w` |
 | `analysis` | Lista de materiales (`/komaedit analyze`): recuento sobre la foto y coste en survival (`SurvivalCost`, lógica pura con un registro inyectado), pilas, cofres y CSV |
