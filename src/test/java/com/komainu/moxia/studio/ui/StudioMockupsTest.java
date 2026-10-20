@@ -98,7 +98,7 @@ class StudioMockupsTest {
                     new StudioHost.WorldHistory.Entry("Árbol", 412),
                     new StudioHost.WorldHistory.Entry("WorldEdit", 3_820),
                     new StudioHost.WorldHistory.Entry("Río o cañón", 9_771),
-                    new StudioHost.WorldHistory.Entry("Envejecer", 2_040)), 1);
+                    new StudioHost.WorldHistory.Entry("Hiedra", 2_040)), 1);
             driver.click("Cambios en el mundo: deshacer o rehacer hasta un punto (Ctrl+Z, Ctrl+Y)");
         }));
         scenes.add(new Scene("1080p_gui3_vista_previa_es.png", 640, 360, 3, "es_es", driver -> {
@@ -165,8 +165,35 @@ class StudioMockupsTest {
         }));
         scenes.add(new Scene("1080p_gui3_color_es.png", 640, 360, 3, "es_es", driver ->
                 driver.view.selectStage(StudioStage.COLOR, driver.host)));
-        scenes.add(new Scene("1080p_gui3_envejecer_es.png", 640, 360, 3, "es_es", driver ->
-                driver.view.selectStage(StudioStage.WEATHER, driver.host)));
+        // Lo que pidió el autor tras probar la 1.7.0: presets que dejan el árbol entero, colocar con el ratón, la
+        // vista previa en vivo con el fantasma y el pincel que sigue al Studio.
+        scenes.add(new Scene("1080p_gui3_arbol_presets_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "tree");
+            driver.click("Pelado");
+            driver.click("Joven");
+            driver.host.status = "";
+        }));
+        scenes.add(new Scene("1080p_gui3_arbol_clic_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "tree");
+            driver.host.clickedSpot = new int[]{124, 64, -38};
+        }));
+        scenes.add(new Scene("1080p_gui3_fantasma_vivo_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "tree");
+            driver.host.ghost = GhostFooterTest.ghost("Árbol roble", "giro 0° · 7×19×7",
+                    "124, 65, -38 · (+2, 0, -1)", "", new int[5]);
+            int[] title = driver.where("Árbol roble · giro 0° · 7×19×7");
+            driver.mouseX = title[0];
+            driver.mouseY = title[1];
+        }));
+        scenes.add(new Scene("1080p_gui3_sello_pincel_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "stamp");
+            driver.host.preferences.setExpanded("tools:more:stamp", true);
+            for (int step = 0; step < 12 && !driver.has("Vista previa en cada clic"); step++) {
+                driver.view.mouseScrolled(driver.view.frame().innerLeft() + 4, 200, -1, driver.host);
+            }
+            driver.view.status(driver.host.tr("gui.komaedit.tools.status.brush_synced",
+                    driver.host.tr("gui.komaedit.tools.stamp")), driver.host.now());
+        }));
         // 1080p con GUI 4 (la automática): compacto.
         scenes.add(new Scene("1080p_gui4_arbol_es.png", 480, 270, 4, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui4_tejado_en.png", 480, 270, 4, "en_us", driver -> tools(driver, "roof")));

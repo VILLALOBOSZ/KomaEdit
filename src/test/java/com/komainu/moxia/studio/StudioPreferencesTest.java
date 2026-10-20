@@ -65,8 +65,24 @@ class StudioPreferencesTest {
         assertTrue(loaded.isToolFavorite("tree"));
         assertEquals(List.of("tree", "roof"), loaded.toolRecents());
         assertTrue(loaded.toolPreview());
-        assertFalse(StudioPreferences.fromJson("{\"favorites\": [\"coil\"]}").toolPreview(),
-                "un archivo de antes empieza sin vista previa");
+        assertEquals(StudioPreferences.PreviewMode.LIVE,
+                StudioPreferences.fromJson("{\"favorites\": [\"coil\"]}").previewMode(),
+                "un archivo de antes, sin elegir nada, empieza con la vista previa en vivo");
+    }
+
+    @Test
+    void theLivePreviewIsOnByDefaultAndAChosenOffSticks() {
+        assertEquals(StudioPreferences.PreviewMode.LIVE, new StudioPreferences().previewMode());
+        // La 1.7.0 guardaba «off» aunque nadie lo eligiera (era lo de serie): pasa a en vivo una vez.
+        assertEquals(StudioPreferences.PreviewMode.LIVE,
+                StudioPreferences.fromJson("{\"format\": 2, \"toolPreview\": false, \"preview\": \"off\"}")
+                        .previewMode());
+        assertEquals(StudioPreferences.PreviewMode.BUILD,
+                StudioPreferences.fromJson("{\"format\": 2, \"preview\": \"build\"}").previewMode());
+        // Apagada a mano con esta versión, se queda apagada.
+        StudioPreferences off = new StudioPreferences();
+        off.setPreviewMode(StudioPreferences.PreviewMode.OFF);
+        assertEquals(StudioPreferences.PreviewMode.OFF, StudioPreferences.fromJson(off.toJson()).previewMode());
     }
 
     @Test

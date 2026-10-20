@@ -80,7 +80,6 @@ public final class HelpTopics {
                     new Entry("/komaedit pillar <radio> <detalle> [material]", "Columna por la trayectoria"),
                     new Entry("/komaedit pillararches <altura> <radio> [material]", "Columnas con arcos"),
                     new Entry("/komaedit cloud <radio> <organicidad> [hueco] [material]", "Nubes (alias nube)"),
-                    new Entry("/komaedit mandala <radio> <simetría> [material]", "Mandala"),
                     new Entry("/komaedit web <elasticidad> <separación> [material]", "Telaraña entre los puntos"),
                     new Entry("/komaedit lightning <amplitud> <ramificación> [material]",
                             "Rayos entre los puntos (alias rayos)"),

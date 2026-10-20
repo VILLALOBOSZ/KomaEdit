@@ -1,6 +1,7 @@
 package com.komainu.moxia.client.gui;
 
 import com.komainu.moxia.client.gizmo.GhostClient;
+import com.komainu.moxia.client.gui.studio.ClientStudioAim;
 import com.komainu.moxia.client.gui.studio.ClientStudioHost;
 import com.komainu.moxia.client.gui.studio.DrawContextCanvas;
 import com.komainu.moxia.client.mixin.GameRendererAccessor;
@@ -109,6 +110,8 @@ public final class ProceduralStudioScreen extends Screen {
         EditorOverlayRenderer.clear();
         view.closed(host);
         sendCommand("komaedit path mode off");
+        // Fuera del Studio todo vuelve a ir donde se mira.
+        ClientStudioAim.clear();
     }
 
     @Override
@@ -134,6 +137,8 @@ public final class ProceduralStudioScreen extends Screen {
             case WORLD -> {
                 if (view.stage() == StudioStage.PATH) {
                     worldClicked(mouseX, mouseY);
+                } else {
+                    placeClicked(mouseX, mouseY);
                 }
             }
             case CAMERA -> cameraDragging = true;
@@ -141,6 +146,39 @@ public final class ProceduralStudioScreen extends Screen {
             }
         }
         return true;
+    }
+
+    /**
+     * «Donde haces clic»: con un fantasma a la vista, salta a donde apunta el cursor y lo sigue mientras se arrastra;
+     * si no, con una herramienta que va en el mundo (árbol, roca, texto), se construye ahí. El rayo sale del cursor,
+     * no del centro de la pantalla.
+     */
+    private void placeClicked(double mouseX, double mouseY) {
+        BlockHitResult hit = cursorHit(mouseX, mouseY);
+        if (GhostClient.studioPlace(hit)) {
+            return;
+        }
+        if (!view.placesOnClick(host)) {
+            return;
+        }
+        if (hit == null) {
+            view.status(tr("gui.komaedit.status.click.no_block"), System.currentTimeMillis());
+            return;
+        }
+        ClientStudioAim.send(hit);
+        view.placeAtClick(host);
+    }
+
+    /** El bloque al que apunta el cursor (hasta {@link FigureStages#REACH} bloques), o {@code null}. */
+    private BlockHitResult cursorHit(double mouseX, double mouseY) {
+        if (client == null || client.world == null || client.player == null) {
+            return null;
+        }
+        Ray ray = rayForMouse(mouseX, mouseY);
+        HitResult result = client.world.raycast(new RaycastContext(ray.origin(),
+                ray.origin().add(ray.direction().multiply(FigureStages.REACH)), RaycastContext.ShapeType.OUTLINE,
+                RaycastContext.FluidHandling.NONE, client.player));
+        return result instanceof BlockHitResult hit && result.getType() == HitResult.Type.BLOCK ? hit : null;
     }
 
     private static int studioButton(int button) {
@@ -177,6 +215,10 @@ public final class ProceduralStudioScreen extends Screen {
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (GhostClient.studioDragging() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             GhostClient.studioDrag(gizmoRay(mouseX, mouseY));
+            return true;
+        }
+        if (GhostClient.studioTerrainDragging() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            GhostClient.studioTerrain(cursorHit(mouseX, mouseY));
             return true;
         }
         if (view.mouseDragged(mouseX, mouseY, studioButton(button), host)) {

@@ -101,7 +101,7 @@ class StudioTranslationsTest {
         }
         for (String control : List.of("radius", "spacing", "thickness", "roll", "height", "dither", "start_scale",
                 "end_scale", "start_spacing", "end_spacing", "twist", "rhythm_interval", "conform_radius",
-                "surface_offset", "socket_interval", "weather_intensity", "weather_collapse", "weather_vegetation")) {
+                "surface_offset", "socket_interval")) {
             keys.add("gui.komaedit.help." + control);
         }
         assertPresentInBothLanguages(keys);

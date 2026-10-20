@@ -49,11 +49,10 @@ import static com.komainu.moxia.studio.ui.StudioTheme.*;
 public final class FigureStages {
     public static final int MAX_PATH_POINTS = 32;
     public static final double REACH = 4_096.0;
-    private static final List<String> WEATHER_STYLES = StudioNames.WEATHER_STYLES;
     /** Lo que ocupan en una celda de figura el margen y la estrella, fuera del nombre. */
     private static final int SHAPE_NAME_INSET = 22;
 
-    /** Un número de la receta (o de Envejecer): su rango, su unidad y su ayuda. */
+    /** Un número de la receta: su rango, su unidad y su ayuda. */
     enum Control {
         RADIUS(ShapeVariants.RADIUS, null),
         SPACING(ShapeVariants.SPACING, null),
@@ -69,10 +68,7 @@ public final class FigureStages {
         RHYTHM_INTERVAL(NumericRange.of(2, 32, 1), ValueUnit.NONE),
         CONFORM_RADIUS(NumericRange.of(2, 32, 1), ValueUnit.BLOCKS),
         SURFACE_OFFSET(new NumericRange(-8, 8, 1, 4), ValueUnit.BLOCKS),
-        SOCKET_INTERVAL(new NumericRange(2, 64, 1, 8), ValueUnit.NONE),
-        WEATHER_INTENSITY(new NumericRange(0, 100, 5, 25), ValueUnit.PERCENT_POINTS),
-        WEATHER_COLLAPSE(new NumericRange(0, 100, 5, 25), ValueUnit.PERCENT_POINTS),
-        WEATHER_VEGETATION(new NumericRange(0, 100, 5, 25), ValueUnit.PERCENT_POINTS);
+        SOCKET_INTERVAL(new NumericRange(2, 64, 1, 8), ValueUnit.NONE);
 
         final NumericRange range;
         /** {@code null}: depende de la figura (cada una llama a su medida a su manera). */
@@ -95,11 +91,6 @@ public final class FigureStages {
     private final SplittableRandom seeds = new SplittableRandom();
     private final BuildEstimate estimate = new BuildEstimate();
     private ProceduralRecipe draft = ProceduralRecipe.defaults();
-    private int weatherIntensity = 50;
-    private int weatherCollapse = 50;
-    private int weatherVegetation = 50;
-    private int weatherStyle;
-    private boolean weatherWater;
     private boolean browsing;
     private boolean editingSearch;
     private String shapeSearch = "";
@@ -853,42 +844,6 @@ public final class FigureStages {
         host.status(host.tr("gui.komaedit.status.block.selected", host.blockName(id)));
     }
 
-    // ── Envejecer ───────────────────────────────────────────────────────────────────────────────────────
-
-    /** Envejecer la selección de WorldEdit: clima, intensidad, derrumbe, vida y charcos. Se lanza desde el pie. */
-    public void drawWeather(StudioUi ui, Column column, StudioHost host, boolean compact) {
-        ui.section(column, host.tr("gui.komaedit.weather.climate"));
-        List<Rect> cells = column.grid(WEATHER_STYLES.size(), 2, compact ? 16 : 18);
-        for (int index = 0; index < WEATHER_STYLES.size(); index++) {
-            int style = index;
-            ui.button(cells.get(index), host.tr(StudioNames.weather(WEATHER_STYLES.get(index))),
-                            weatherStyle == index ? StudioUi.Tone.SELECTED : StudioUi.Tone.SECONDARY)
-                    .tooltip(host.tr(StudioNames.weather(WEATHER_STYLES.get(index))) + "\n"
-                            + host.tr(StudioNames.weatherHint(WEATHER_STYLES.get(index))))
-                    .onClick(() -> weatherStyle = style);
-        }
-        if (!compact) {
-            ui.paragraph(column, host.tr(StudioNames.weatherHint(WEATHER_STYLES.get(weatherStyle))), MUTED, 2);
-        }
-        ui.section(column, host.tr("gui.komaedit.weather.wear"));
-        stepper(ui, column, host, "gui.komaedit.param.weather_intensity", Control.WEATHER_INTENSITY);
-        stepper(ui, column, host, "gui.komaedit.param.weather_collapse", Control.WEATHER_COLLAPSE);
-        stepper(ui, column, host, "gui.komaedit.param.weather_vegetation", Control.WEATHER_VEGETATION);
-        ui.toggle(column.next(), host.tr("gui.komaedit.weather.water"), weatherWater)
-                .onClick(() -> weatherWater = !weatherWater);
-    }
-
-    /** La orden de Envejecer con lo elegido. */
-    public String weatherCommand() {
-        return "komaedit weather " + weatherIntensity + " " + WEATHER_STYLES.get(weatherStyle)
-                + " -d " + weatherCollapse + " -v " + weatherVegetation + (weatherWater ? " -agua" : "");
-    }
-
-    public void runWeather(StudioHost host) {
-        host.send(weatherCommand());
-        host.status(host.tr("gui.komaedit.status.weather.running"));
-    }
-
     // ── Biblioteca: recetas e instancias ────────────────────────────────────────────────────────────────
 
     public void drawInstances(StudioUi ui, Column column, StudioHost host) {
@@ -1038,7 +993,7 @@ public final class FigureStages {
         }
         String name = labelKey.substring(labelKey.lastIndexOf('.') + 1);
         return switch (name) {
-            case "sides", "repetitions", "symmetry", "branching", "detail", "frequency", "organicity", "elasticity",
+            case "sides", "repetitions", "branching", "detail", "frequency", "organicity", "elasticity",
                  "chaos", "density", "relief_3d", "curvature" -> ValueUnit.NONE;
             case "roll" -> ValueUnit.DEGREES;
             default -> ValueUnit.BLOCKS;
@@ -1107,9 +1062,6 @@ public final class FigureStages {
             case CONFORM_RADIUS -> extensions.conformRadius();
             case SURFACE_OFFSET -> extensions.surfaceOffset();
             case SOCKET_INTERVAL -> extensions.socketInterval();
-            case WEATHER_INTENSITY -> weatherIntensity;
-            case WEATHER_COLLAPSE -> weatherCollapse;
-            case WEATHER_VEGETATION -> weatherVegetation;
         };
     }
 
@@ -1133,29 +1085,11 @@ public final class FigureStages {
             case CONFORM_RADIUS -> extensions.conformRadius();
             case SURFACE_OFFSET -> extensions.surfaceOffset();
             case SOCKET_INTERVAL -> extensions.socketInterval();
-            case WEATHER_INTENSITY, WEATHER_COLLAPSE, WEATHER_VEGETATION -> 50;
         };
     }
 
     void setValue(Control control, int requested) {
         int next = range(control).clamp(requested);
-        // Envejecer no es parte de la receta: sus valores viven aquí y no entran en el historial.
-        switch (control) {
-            case WEATHER_INTENSITY -> {
-                weatherIntensity = next;
-                return;
-            }
-            case WEATHER_COLLAPSE -> {
-                weatherCollapse = next;
-                return;
-            }
-            case WEATHER_VEGETATION -> {
-                weatherVegetation = next;
-                return;
-            }
-            default -> {
-            }
-        }
         int radius = draft.radius();
         int spacing = draft.spacing();
         int thickness = draft.thickness();
@@ -1201,8 +1135,6 @@ public final class FigureStages {
                     extensions.surfaceMode(), extensions.conformRadius(), next);
             case SOCKET_INTERVAL -> extensions = extensions.withSockets(
                     extensions.socketsEnabled(), extensions.socketPlacement(), next);
-            case WEATHER_INTENSITY, WEATHER_COLLAPSE, WEATHER_VEGETATION -> {
-            }
         }
         draft = draft.copy(draft.name(), draft.shape(), draft.pattern(), radius, spacing, thickness, roll, height,
                 draft.paletteId(), draft.gradientAxis(), dither, draft.reverse()).withExtensions(extensions);

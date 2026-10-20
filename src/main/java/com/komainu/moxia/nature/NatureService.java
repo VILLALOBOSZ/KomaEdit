@@ -14,6 +14,7 @@ import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.SculptManager;
 import com.komainu.moxia.sculpt.SnapshotCaptureService;
+import com.komainu.moxia.studio.net.StudioAim;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.math.BlockVector3;
 import net.minecraft.block.BlockState;
@@ -243,7 +244,7 @@ public final class NatureService {
     private record Anchors(List<BlockPos> points, String source) {
     }
 
-    /** Los puntos de la trayectoria (P) o, si no hay, el bloque que se mira. */
+    /** Los puntos de la trayectoria (P) o, si no hay, el bloque que se mira (con el Studio, donde se hizo clic). */
     private static Anchors anchors(ServerPlayerEntity player) {
         PathSnapshot path = PathManager.saved(player.getUuid());
         if (!path.points().isEmpty()) {
@@ -258,11 +259,12 @@ public final class NatureService {
             return new Anchors(points, points.size() == 1 ? "en el punto marcado"
                     : "en los " + points.size() + " puntos marcados");
         }
-        HitResult result = player.raycast(160.0, 1.0F, false);
+        HitResult result = StudioAim.target(player, 160.0);
         if (!(result instanceof BlockHitResult hit) || result.getType() != HitResult.Type.BLOCK) {
             throw new IllegalArgumentException("Mira el suelo donde va (hasta 160 bloques) o marca puntos con P");
         }
-        return new Anchors(List.of(hit.getBlockPos()), "donde miras");
+        return new Anchors(List.of(hit.getBlockPos()), StudioAim.clicked(player) ? "donde hiciste clic"
+                : "donde miras");
     }
 
     private static BlockPos target(BlockHitResult hit) {

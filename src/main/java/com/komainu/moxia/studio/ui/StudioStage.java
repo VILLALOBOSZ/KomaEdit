@@ -8,13 +8,12 @@ import java.util.Locale;
  *
  * <ul>
  *     <li><b>Crear</b>: qué se construye y dónde (herramientas, trayectoria y figuras).</li>
- *     <li><b>Ajustar</b>: cómo queda lo que se crea o lo que ya hay (modificadores, material, color y
- *     envejecer).</li>
+ *     <li><b>Ajustar</b>: cómo queda lo que se crea o lo que ya hay (modificadores, material y color).</li>
  *     <li><b>Biblioteca</b>: lo guardado (planos, recetas e instancias).</li>
  * </ul>
  *
- * Cada etapa tiene su tecla: del 1 al 9 y el 0 para la décima. Las antiguas «Estructuras» son ahora una familia de
- * Figuras.
+ * Cada etapa tiene su tecla, del 1 al 9. Las antiguas «Estructuras» son ahora una familia de Figuras; Envejecer
+ * salió del Studio (queda la orden {@code /komaedit weather}).
  */
 public enum StudioStage {
     TOOLS("tools", Group.CREATE, StudioIcons.Icon.TOOLS),
@@ -23,7 +22,6 @@ public enum StudioStage {
     MODIFIERS("modifiers", Group.ADJUST, StudioIcons.Icon.MODIFIERS),
     MATERIAL("material", Group.ADJUST, StudioIcons.Icon.MATERIAL),
     COLOR("color", Group.ADJUST, StudioIcons.Icon.COLOR),
-    WEATHER("weather", Group.ADJUST, StudioIcons.Icon.WEATHER),
     BLUEPRINTS("blueprints", Group.LIBRARY, StudioIcons.Icon.BLUEPRINTS),
     RECIPES("recipes", Group.LIBRARY, StudioIcons.Icon.RECIPES),
     INSTANCES("instances", Group.LIBRARY, StudioIcons.Icon.INSTANCES);

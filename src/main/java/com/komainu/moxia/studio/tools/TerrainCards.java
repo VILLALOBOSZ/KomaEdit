@@ -100,6 +100,13 @@ public final class TerrainCards {
             return List.of(STAMP_NODE);
         }
 
+        /** Un preset con sello quita el sello propio escrito: si no, la orden seguiría usando ese. */
+        @Override
+        public ToolValues apply(ToolValues values, ToolPreset preset) {
+            ToolValues applied = super.apply(values, preset);
+            return preset.values().containsKey("stamp") ? applied.with("custom", "") : applied;
+        }
+
         @Override
         public List<ToolPreset> presets() {
             return List.of(

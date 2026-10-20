@@ -91,6 +91,12 @@ public final class FakeStudioHost implements StudioHost {
     public JobStatusPayload job;
     /** El fantasma con gizmo que se está colocando, o {@code null}. */
     public Ghost ghost;
+    /** Avisos de que va a salir un fantasma: {@code false} el de Construir, {@code true} el de la vista en vivo. */
+    public final List<Boolean> expectedGhosts = new ArrayList<>();
+    /** La herramienta de KomaEdit de la mano ({@code pincel:…}), o {@code null}. */
+    public String heldTool;
+    /** Donde se hizo clic en el mundo, o {@code null}. */
+    public int[] clickedSpot;
     public WorldHistory history = WorldHistory.EMPTY;
     public List<String> hotbar = new ArrayList<>();
     public List<ProceduralRecipe> recipes = new ArrayList<>();
@@ -330,6 +336,21 @@ public final class FakeStudioHost implements StudioHost {
     @Override
     public Optional<Ghost> ghost() {
         return Optional.ofNullable(ghost);
+    }
+
+    @Override
+    public void expectGhost(boolean refresh) {
+        expectedGhosts.add(refresh);
+    }
+
+    @Override
+    public String heldTool() {
+        return heldTool;
+    }
+
+    @Override
+    public int[] clickedSpot() {
+        return clickedSpot;
     }
 
     @Override

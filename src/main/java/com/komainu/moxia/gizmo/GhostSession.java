@@ -137,6 +137,22 @@ public final class GhostSession {
                 transform.z() - info.start().z()};
     }
 
+    /**
+     * El mismo objeto, recalculado con otros ajustes (la vista previa en vivo del Studio): sale movido lo mismo que el
+     * de antes desde donde se calculó, con su giro (si este lo admite) y sus opciones. Lo que el jugador ya colocó con
+     * el ratón o el gizmo no se pierde al tocar un ajuste.
+     */
+    public void follow(GhostSession previous, Rules rules) {
+        if (previous == null || phase != Phase.MOVING) {
+            return;
+        }
+        int[] moved = previous.offset();
+        Orientation orientation = previous.transform.orientation();
+        transform = new GhostTransform(rules.admits(orientation) ? orientation : Orientation.IDENTITY,
+                info.start().x() + moved[0], info.start().y() + moved[1], info.start().z() + moved[2]);
+        options = previous.options;
+    }
+
     // ---------------------------------------------------------------- mover
 
     /** Mueve unos bloques. Moverlo en vertical a mano quita «apoyar en el suelo». */

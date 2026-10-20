@@ -68,6 +68,13 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
         return Optional.empty();
     }
 
+    /**
+     * El Studio va a mandar algo que abre un fantasma (Construir con vista previa). Con {@code refresh} es la vista
+     * previa en vivo, que sustituye al fantasma de ahora: el nuevo sale donde el jugador dejó este y con su giro.
+     */
+    default void expectGhost(boolean refresh) {
+    }
+
     void close();
 
     /** La biblioteca de planos del cliente: catálogo, permisos y miniaturas. */
@@ -102,10 +109,12 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
      * @param position dónde está y cuánto se ha movido («120, 64, -40 · (+3, 0, -2)»)
      * @param waiting confirmado: esperando al servidor
      * @param message por qué no se colocó la última vez, o vacío
+     * @param fromStudio lo abrió Construir del Studio (la vista previa en vivo lo puede rehacer)
      */
     record Ghost(String title, String summary, String position, boolean keepExisting, boolean pasteAir,
                  boolean ground, boolean hasAir, boolean waiting, String message, Runnable place, Runnable copy,
-                 Runnable cancel, Runnable toggleKeep, Runnable toggleAir, Runnable toggleGround) {
+                 Runnable cancel, Runnable toggleKeep, Runnable toggleAir, Runnable toggleGround,
+                 boolean fromStudio) {
     }
 
     /**
