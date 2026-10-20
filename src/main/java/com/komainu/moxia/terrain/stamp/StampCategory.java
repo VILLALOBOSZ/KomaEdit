@@ -14,7 +14,7 @@ public enum StampCategory {
     CLIFFS("acantilados", "Acantilados y escarpes", "costa", 0.55),
     CANYONS("canones", "Cañones y gargantas", "mesa", 0.5),
     CRATERS("crateres", "Cráteres y calderas", "rocoso", 0.35),
-    VOLCANOES("volcanes", "Volcanes", "volcanico", 0.7),
+    VOLCANOES("volcanes", "Volcanes", "ceniza", 0.7),
     DUNES("dunas", "Dunas", "desierto", 0.22),
     ISLANDS("islas", "Islas y atolones", "isla", 0.35),
     TERRACES("terrazas", "Terrazas y bancales", "bancal", 0.4),

@@ -34,6 +34,8 @@ import java.util.Set;
  */
 public final class SurfacePalette {
     public static final String DEFAULT = "natural";
+    /** Desnivel mínimo (en bloques) para que una cumbre relativa pinte algo. */
+    public static final int MIN_PEAK_RANGE = 6;
     private static final long SALT = 0x5355_5246_4143_45L;
     private static final Map<String, String> PRESETS = new LinkedHashMap<>();
     private static final Map<String, String> DESCRIPTIONS = new LinkedHashMap<>();
@@ -78,6 +80,9 @@ public final class SurfacePalette {
         preset("bancal", "Hierba en los bancales y muros de piedra en los escalones",
                 "llano:grass_block,pendiente:cobblestone|mossy_cobblestone|stone@40,relleno:dirt@3,fondo:stone,"
                         + "lecho:gravel|clay,orilla:sand@0");
+        preset("ceniza", "Volcán: toba y andesita en las laderas, basalto en lo empinado y piedra negra en la cima",
+                "llano:tuff|tuff|andesite|coarse_dirt,pendiente:basalt|tuff|blackstone@36,cumbre:blackstone|basalt@75%,"
+                        + "relleno:tuff@3,fondo:stone,lecho:magma_block|blackstone,orilla:basalt|tuff@1");
         preset("glaciar", "Nieve y hielo; roca y grava en las pendientes",
                 "llano:snow_block|snow_block|packed_ice,pendiente:stone|gravel|packed_ice@38,relleno:packed_ice@3,"
                         + "fondo:stone,lecho:packed_ice|blue_ice,orilla:gravel@0");
@@ -144,10 +149,16 @@ public final class SurfacePalette {
         return peak != null && !Double.isNaN(peakFraction);
     }
 
-    /** La misma paleta con la cumbre relativa ya puesta en una Y, entre lo más bajo y lo más alto de la zona. */
+    /**
+     * La misma paleta con la cumbre relativa ya puesta en una Y, entre lo más bajo y lo más alto de la zona. Con menos
+     * de {@value #MIN_PEAK_RANGE} bloques de desnivel no hay cumbre: un llano o una loma no se nievan.
+     */
     public SurfacePalette forRange(double lowest, double highest) {
         if (!relativePeak() || Double.isNaN(lowest) || Double.isNaN(highest)) {
             return this;
+        }
+        if (highest - lowest < MIN_PEAK_RANGE) {
+            return new SurfacePalette(this, Integer.MAX_VALUE / 2);
         }
         return new SurfacePalette(this, (int) Math.round(lowest + (highest - lowest) * peakFraction));
     }

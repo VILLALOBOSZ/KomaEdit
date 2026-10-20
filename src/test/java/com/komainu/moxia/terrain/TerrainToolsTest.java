@@ -322,19 +322,20 @@ class TerrainToolsTest {
 
     @Test
     void builtInStampsAreValidAndMeetTheTerrainAtTheirEdge() {
-        assertTrue(StampLibrary.descriptions().size() >= 15 && StampLibrary.descriptions().size() <= 20);
+        // Lo detallado (cada sello cargado del jar, su borde y que no se repitan) está en StampLibraryTest.
+        assertTrue(StampLibrary.descriptions().size() >= 60 && StampLibrary.descriptions().size() <= 80);
         for (String name : StampLibrary.descriptions().keySet()) {
-            HeightStamp stamp = StampLibrary.render(name, 64);
+            HeightStamp stamp = StampLibrary.render(name, 48);
             double maximum = 0.0;
             double minimum = 1.0;
-            for (int row = 0; row < 64; row++) {
-                for (int column = 0; column < 64; column++) {
+            for (int row = 0; row < 48; row++) {
+                for (int column = 0; column < 48; column++) {
                     maximum = Math.max(maximum, stamp.pixel(column, row));
                     minimum = Math.min(minimum, stamp.pixel(column, row));
                 }
             }
             assertTrue(maximum - minimum > 0.3, name + " tiene relieve");
-            for (int index = 0; index < 64; index++) {
+            for (int index = 0; index < 48; index++) {
                 assertEquals(stamp.neutral(), stamp.pixel(index, 0), 1e-6, name + " no llega neutro al borde");
                 assertEquals(stamp.neutral(), stamp.pixel(0, index), 1e-6, name + " no llega neutro al borde");
             }
@@ -386,9 +387,14 @@ class TerrainToolsTest {
     @Test
     void catalogWritesDefaultsAndPrefersFiles(@org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
         StampCatalog catalog = new StampCatalog(directory.resolve("heightmaps"));
-        assertEquals(StampLibrary.descriptions().size(), catalog.writeDefaults());
+        assertEquals(1, catalog.writeDefaults(), "solo la explicación: los de serie van en el mod");
         assertEquals(0, catalog.writeDefaults(), "no pisa lo que ya hay");
-        assertTrue(Files.exists(directory.resolve("heightmaps/volcan.png")));
+        assertTrue(Files.exists(directory.resolve("heightmaps/" + StampCatalog.README)));
+        assertTrue(!Files.exists(directory.resolve("heightmaps/volcan.png")));
+        assertEquals(directory.resolve("heightmaps/volcan.png"), catalog.export("volcán"));
+        assertTrue(Files.exists(directory.resolve("heightmaps/volcan.png")), "exportar deja uno para retocar");
+        assertThrows(IllegalArgumentException.class, () -> catalog.export("volcan"), "no pisa lo exportado");
+        assertThrows(IllegalArgumentException.class, () -> catalog.export("no_existe"));
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(8, 8,
                 java.awt.image.BufferedImage.TYPE_BYTE_GRAY);
         image.getRaster().setSample(3, 3, 0, 255);

@@ -137,15 +137,15 @@ final class SurfaceShapes {
         list.add(raise("isla", c, "Isla con playa baja, costa recortada y un monte en medio", 0.78,
                 SurfaceShapes::island, Bake.water(40, 2.5, 1.2)));
         list.add(raise("archipielago", c, "Archipiélago: islotes de distintos tamaños", 0.82,
-                SurfaceShapes::archipelago, Bake.water(16, 1.5, 0.8)));
+                SurfaceShapes::archipelago, Bake.water(16, 1.5, 0.8)).withRatio(0.3));
         list.add(raise("atolon", c, "Atolón: anillo bajo con islotes y pasos al mar", 0.82,
-                SurfaceShapes::atoll, null).withRatio(0.12));
+                SurfaceShapes::atoll, null).withRatio(0.2));
         list.add(raise("cayo", c, "Cayo: islote bajo de arena con una flecha curva", 0.8,
-                SurfaceShapes::cay, Bake.slide(10, 10, 30)));
+                SurfaceShapes::cay, Bake.slide(10, 10, 30)).withRatio(0.22));
         list.add(raise("isla_media_luna", c, "Isla en media luna: el borde de una caldera abierta al mar", 0.8,
                 SurfaceShapes::crescentIsland, Bake.water(40, 2.0, 1.0)));
         list.add(raise("tombolo", c, "Tómbolo: dos islotes unidos por una barra de arena", 0.82,
-                SurfaceShapes::tombolo, Bake.water(20, 1.5, 0.8)));
+                SurfaceShapes::tombolo, Bake.water(20, 1.5, 0.8)).withRatio(0.32));
     }
 
     private static double island(double x, double y, double r, long s) {

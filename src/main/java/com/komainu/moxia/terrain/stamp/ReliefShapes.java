@@ -228,13 +228,13 @@ final class ReliefShapes {
     private static void hills(List<StampRecipe> list) {
         StampCategory c = StampCategory.HILLS;
         list.add(raise("colina", c, "Colina suave y redonda", 0.72,
-                ReliefShapes::hill, Bake.full(16, 1.5, 0.6, 4, 30)));
+                ReliefShapes::hill, Bake.full(16, 1.5, 0.6, 4, 30)).withRatio(0.35));
         list.add(raise("loma", c, "Loma alargada hacia la mirada, más empinada por delante", 0.75,
-                ReliefShapes::drumlin, Bake.full(16, 1.0, 0.5, 3, 28)));
+                ReliefShapes::drumlin, Bake.full(16, 1.0, 0.5, 3, 28)).withRatio(0.3));
         list.add(raise("lomas", c, "Varias lomas bajas que se encadenan", 0.72,
-                ReliefShapes::rollingHills, Bake.full(18, 2.0, 0.8, 4, 30)));
+                ReliefShapes::rollingHills, Bake.full(18, 2.0, 0.8, 4, 30)).withRatio(0.3));
         list.add(raise("cerro", c, "Cerro de cima ancha y casi llana: sitio para un pueblo", 0.75,
-                ReliefShapes::flatHill, Bake.full(20, 2.0, 0.8, 5, 30)));
+                ReliefShapes::flatHill, Bake.full(20, 2.0, 0.8, 5, 30)).withRatio(0.35));
         list.add(new StampRecipe("ondulaciones", c, "Ondulaciones suaves que suben y bajan el terreno", 0.5, 0.55,
                 StampRecipe.points((x, y, r, s) -> 0.5 + 0.5 * fbm(x * 1.6, y * 1.6, s, 3)), null).withRatio(0.12));
     }

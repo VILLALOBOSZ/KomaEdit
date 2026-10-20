@@ -117,10 +117,10 @@ public final class StampLibrary {
         return recipe;
     }
 
-    /** Lo que quedó a menos de medio escalón del gris neutro al guardarlo vuelve a ser neutro exacto. */
+    /** Lo que quedó a menos de un escalón del gris neutro al guardarlo vuelve a ser neutro exacto. */
     private static HeightStamp snapped(HeightStamp stamp, double neutral) {
         float[] values = stamp.values().clone();
-        double tolerance = 0.5 / ((1 << STORED_BITS) - 1);
+        double tolerance = 1.0 / ((1 << STORED_BITS) - 1);
         for (int index = 0; index < values.length; index++) {
             if (Math.abs(values[index] - neutral) <= tolerance) {
                 values[index] = (float) neutral;

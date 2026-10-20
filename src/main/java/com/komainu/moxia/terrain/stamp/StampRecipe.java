@@ -12,9 +12,9 @@ import com.komainu.moxia.terrain.ThermalErosion;
  *     <li>la forma en bruto, con capas de ruido, crestas y valles;</li>
  *     <li>la erosión del terraformado ({@link HydraulicErosion} y {@link ThermalErosion}) sobre esa forma puesta a
  *     escala de bloques, para que salgan cauces, crestas afiladas y faldas de derrubios en lugar de conos lisos;</li>
- *     <li>la normalización: el blanco puro es lo más alto (o el negro lo más hondo en los que hunden);</li>
- *     <li>el borde: desde {@code edge} hasta el círculo inscrito todo baja suave al gris neutro, para que el sello se
- *     funda con lo que haya.</li>
+ *     <li>el borde: desde un poco antes de {@code edge} hasta el círculo inscrito todo baja suave al gris neutro, para
+ *     que el sello se funda con lo que haya;</li>
+ *     <li>la normalización: el blanco puro es lo más alto (o el negro lo más hondo en los que hunden).</li>
  * </ol>
  *
  * @param neutral el gris que no cambia nada: 0 en los que levantan, 1 en los que hunden, 0,5 en los de detalle
@@ -127,8 +127,6 @@ public record StampRecipe(String name, StampCategory category, String descriptio
         if (bake != null) {
             erode(values, size, seed);
         }
-        normalize(values);
-        float[] result = new float[values.length];
         for (int row = 0; row < size; row++) {
             double y = coordinate(row, size);
             for (int column = 0; column < size; column++) {
@@ -138,9 +136,14 @@ public record StampRecipe(String name, StampCategory category, String descriptio
                 // El borde empieza un poco antes de lo que pide la receta: la falda llega a cero con una curva
                 // larga, sin el codo que se vería como un anillo alrededor.
                 double window = StampMath.smoothstep(1.0, edge - WINDOW_LEAD, r);
-                double value = r >= 1.0 ? neutral : neutral + (values[index] - neutral) * window;
-                result[index] = (float) Math.clamp(value, 0.0, 1.0);
+                values[index] = r >= 1.0 ? neutral : neutral + (values[index] - neutral) * window;
             }
+        }
+        // Después del borde: así lo más alto que queda (o lo más hondo) es exactamente el blanco (o el negro).
+        normalize(values);
+        float[] result = new float[values.length];
+        for (int index = 0; index < values.length; index++) {
+            result[index] = (float) Math.clamp(values[index], 0.0, 1.0);
         }
         return result;
     }

@@ -51,8 +51,7 @@ public final class TerrainCards {
         Stamp() {
             super("stamp", ToolFamily.TERRAIN, ToolTarget.HAND,
                     List.of("heightmap", "sello", "relieve", "stamp", "montana", "monte", "colina", "crater",
-                            "volcan", "duna", "isla", "canon", "acantilado", "mesa", "terreno", "terrain", "brush",
-                            "pincel"),
+                            "volcan", "duna", "isla", "acantilado", "meseta", "terreno", "terrain", "brush", "pincel"),
                     List.of(
                             new ToolParam.Choice("stamp", List.copyOf(StampLibrary.descriptions().keySet()),
                                     "montana", ToolParam.Choice.Style.GALLERY, "", null),
@@ -85,7 +84,8 @@ public final class TerrainCards {
 
         @Override
         public List<String> essentials() {
-            return List.of("stamp", "radius", "height", "mode", "palette", "variation", "lock_seed");
+            // La paleta y la variación ya funcionan de serie (la de la categoría y un 60 %): van en «Más ajustes».
+            return List.of("stamp", "radius", "height", "mode");
         }
 
         /** El sello que se usa: el propio escrito o el elegido en la galería. */
