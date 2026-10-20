@@ -37,7 +37,7 @@ public final class UtilityCards {
                             new ToolParam.Choice("font", BUILTIN_FONTS, "sans", ToolParam.Choice.Style.BUTTONS,
                                     "fonts", null),
                             number("size", 1, 256, 1, 4, 8),
-                            number("depth", 1, 64, 1, 2, 1),
+                            number("thickness", 1, 64, 1, 2, 1),
                             number("border", 0, 16, 1, 2, 0),
                             when(values -> values.number("border", 0) > 0, block("border_material", null)),
                             choice("orientation", ToolParam.Choice.Style.BUTTONS, "auto", "standing", "flat"),
@@ -61,7 +61,7 @@ public final class UtilityCards {
             if (!values.choice("font").equals("sans")) {
                 line.flag("-f", values.choice("font"));
             }
-            line.changed(values, "size", "-s").changed(values, "depth", "-d").changed(values, "border", "-b");
+            line.changed(values, "size", "-s").changed(values, "thickness", "-d").changed(values, "border", "-b");
             if (values.param("border_material").visible(values)) {
                 line.flag("-o", values.block("border_material"));
             }
@@ -95,8 +95,8 @@ public final class UtilityCards {
         @Override
         public List<ToolPreset> presets() {
             return List.of(
-                    ToolPreset.of("sign", "size", 6, "depth", 1, "font", "sans", "orientation", "standing"),
-                    ToolPreset.of("monument", "size", 16, "depth", 3, "border", 1, "profile", "SlabsAndStairs"),
+                    ToolPreset.of("sign", "size", 6, "thickness", 1, "font", "sans", "orientation", "standing"),
+                    ToolPreset.of("monument", "size", 16, "thickness", 3, "border", 1, "profile", "SlabsAndStairs"),
                     ToolPreset.of("floor", "orientation", "flat", "size", 10),
                     ToolPreset.of("mono", "font", "mono"));
         }

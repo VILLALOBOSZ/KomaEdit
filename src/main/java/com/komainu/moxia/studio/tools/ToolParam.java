@@ -53,6 +53,12 @@ public sealed interface ToolParam {
             return BigDecimal.valueOf(scaled, decimals).stripTrailingZeros().toPlainString();
         }
 
+        /** Valor para la pantalla: con decimales, al menos uno ({@code 1.0}, {@code 1.25}). */
+        public String display(int scaled) {
+            String text = format(scaled);
+            return decimals > 0 && !text.contains(".") ? text + ".0" : text;
+        }
+
         public double decimal(int scaled) {
             return scaled / Math.pow(10, decimals);
         }

@@ -402,7 +402,7 @@ public final class ToolsPanel {
         ui.bold(host.tr(card.nameKey()), title.x(), title.y() + 1, title.width() - familyWidth,
                 ToolsUi.Ink.ACCENT_HOVER);
         ui.label(family, title.right() - familyWidth + 6, title.y() + 1, familyWidth, ToolsUi.Ink.MUTED);
-        ui.paragraph(column, host.tr(card.descriptionKey()), ToolsUi.Ink.MUTED, 3);
+        ui.paragraph(column, host.tr(card.descriptionKey()), ToolsUi.Ink.MUTED, 0);
         ui.paragraph(column, target(card, host, context, info), ToolsUi.Ink.TEXT_SECONDARY, 2);
 
         List<ToolProblem> problems = card.problems(values, context);
@@ -609,9 +609,10 @@ public final class ToolsPanel {
         Integer value = current().number(number.id());
         String hint = card.autoHint(number.id(), current());
         int base = base(card, number);
-        String shown = value != null ? number.format(value)
+        String shown = value != null ? number.display(value)
                 : hint != null ? hint : host.tr("gui.komaedit.tools.auto");
-        String label = host.tr(number.labelKey()) + (value == null && number.auto()
+        // «· auto» solo cuando el número que se ve es el automático; si no se sabe, el valor ya dice «auto».
+        String label = host.tr(number.labelKey()) + (value == null && hint != null
                 ? " · " + host.tr("gui.komaedit.tools.auto") : "");
         NumericRange range = number.range();
         String help = host.tr(card.helpKey(number)) + "\n" + host.tr("gui.komaedit.tools.range",
@@ -716,9 +717,10 @@ public final class ToolsPanel {
     }
 
     private void drawGallery(ToolsUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice) {
-        drawCaption(ui, column, host.tr(choice.labelKey()));
         String value = current().choice(choice.id());
         boolean custom = !current().text("custom").isBlank();
+        drawCaption(ui, column, host.tr(choice.labelKey()) + " · " + (custom ? current().text("custom").strip()
+                : host.tr(choice.optionKey(value))));
         int perRow = Math.max(1, (column.width() + 2) / (GALLERY_CELL + 2));
         List<String> options = choice.options();
         for (int start = 0; start < options.size(); start += perRow) {
@@ -815,8 +817,8 @@ public final class ToolsPanel {
         ui.item(shown == null ? "minecraft:barrier" : firstBlock(shown), row.x() + 4, row.y() + 4);
         int textX = row.x() + 24;
         ui.label(host.tr(block.labelKey()), textX, row.y() + 3, row.width() - 28, ToolsUi.Ink.MUTED);
-        String text = value != null ? compact(value)
-                : host.tr("gui.komaedit.tools.block.auto", hint == null ? "" : compact(hint));
+        String text = value != null ? compact(value) : hint == null ? host.tr("gui.komaedit.tools.block.none")
+                : host.tr("gui.komaedit.tools.block.auto", compact(hint));
         ui.label(text, textX, row.y() + 13, row.width() - 28, value != null ? ToolsUi.Ink.TEXT
                 : ToolsUi.Ink.TEXT_SECONDARY);
         ui.register(row)
@@ -1052,8 +1054,11 @@ public final class ToolsPanel {
             String label = permitted ? name : name + " · " + host.tr("gui.komaedit.capability.no_permission");
             String help = host.tr("gui.komaedit.capability." + capability.id() + ".desc") + (permitted ? ""
                     : "\n" + host.tr("gui.komaedit.tools.problem.permission", capability.permission()));
-            ui.toggle(row, label, on && permitted)
-                    .tooltip(help)
+            ToolsUi.Zone toggle = ui.toggle(row, label, on && permitted);
+            if (!permitted) {
+                ui.lock(row.right() - 42, row.centerY() - 4, ToolsUi.Ink.DISABLED);
+            }
+            toggle.tooltip(help)
                     .group("tools:capability")
                     .onClick(() -> {
                         if (!permitted) {
@@ -1100,9 +1105,10 @@ public final class ToolsPanel {
         int value = range.clamp(pendingOptions.getOrDefault(id, serverValue));
         String key = "tools:number:" + id;
         boolean editing = field == Field.NUMBER && fieldParam.equals(id);
-        ui.stepper(row, new ToolsUi.Stepper(host.tr(param.labelKey()), param.format(value), range.fraction(value),
+        ui.stepper(row, new ToolsUi.Stepper(host.tr(param.labelKey()), param.display(value), range.fraction(value),
                 editing, id.equals(dragParam), input,
-                direction -> queueOption(id, range.stepped(value, direction, host.shift()), host),
+                direction -> queueOption(id, range.stepped(range.clamp(pendingOptions.getOrDefault(id, serverValue)),
+                        direction, host.shift()), host),
                 () -> {
                     dragParam = id;
                     dragStartX = host.mouseX();

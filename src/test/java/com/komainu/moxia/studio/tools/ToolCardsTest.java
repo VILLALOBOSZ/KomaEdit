@@ -224,7 +224,7 @@ class ToolCardsTest {
     void theTextCommandQuotesTheTextAndIsReadBackByTheServer() {
         ToolCard text = card("text");
         ToolValues values = text.defaults().with("text", "Plaza \"Mayor\"\\nAlcázara").with("material", "quartz_block")
-                .with("font", "fina").with("size", 12).with("depth", 2).with("border", 1)
+                .with("font", "fina").with("size", 12).with("thickness", 2).with("border", 1)
                 .with("border_material", "black_concrete").with("orientation", "standing").with("align", "izquierda")
                 .with("spacing", 15).with("line_spacing", 12).with("profile", "SlabsAndStairs").with("mask", "air");
         String command = text.command(values, false);
@@ -297,7 +297,7 @@ class ToolCardsTest {
     @Test
     void symmetryBuildsTheModeTheServerReads() {
         SymmetryCard symmetry = (SymmetryCard) card("symmetry");
-        ToolValues radial = symmetry.defaults().with("mode", "radial").with("arms", 8).with("vertical", true);
+        ToolValues radial = symmetry.defaults().with("mode", "radial").with("arms", 8).with("mirror_y", true);
         assertEquals("komaedit symmetry on radial 8 y", symmetry.command(radial, false));
         SymmetryMode parsed = SymmetryMode.parse(SymmetryCard.modeArgument(radial), SymmetryMode.DEFAULT_ARMS);
         assertTrue(parsed.radial());
@@ -309,7 +309,7 @@ class ToolCardsTest {
         ToolValues back = symmetry.fromServer(symmetry.defaults(), parsed.withArms(6).id(), 6);
         assertEquals("radial", back.choice("mode"));
         assertEquals(6, back.number("arms"));
-        assertTrue(back.toggle("vertical"));
+        assertTrue(back.toggle("mirror_y"));
         assertEquals("xzy", symmetry.fromServer(symmetry.defaults(), SymmetryMode.parse("xzy", 4).id(), 4)
                 .choice("mode"));
         assertEquals("komaedit symmetry worldedit on", SymmetryCard.worldEditCommand(true));

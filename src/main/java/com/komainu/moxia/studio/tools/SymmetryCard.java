@@ -23,7 +23,7 @@ public final class SymmetryCard extends ToolCard {
                         new ToolParam.Choice("mode", MODES, "x", ToolParam.Choice.Style.BUTTONS, "", null),
                         when(SymmetryCard::radial, number("arms", SymmetryMode.MIN_ARMS, SymmetryMode.MAX_ARMS, 1, 2,
                                 SymmetryMode.DEFAULT_ARMS)),
-                        when(SymmetryCard::radial, toggle("vertical", false))
+                        when(SymmetryCard::radial, toggle("mirror_y", false))
                 ));
     }
 
@@ -36,7 +36,7 @@ public final class SymmetryCard extends ToolCard {
         if (!radial(values)) {
             return values.choice("mode");
         }
-        return "radial " + values.formatted("arms") + (values.toggle("vertical") ? " y" : "");
+        return "radial " + values.formatted("arms") + (values.toggle("mirror_y") ? " y" : "");
     }
 
     /** Activa con el modo elegido (si ya estaba activa, solo cambia el modo). */
@@ -91,6 +91,6 @@ public final class SymmetryCard extends ToolCard {
             return values;
         }
         ToolValues result = values.with("mode", normalized).with("arms", arms);
-        return normalized.equals("radial") ? result.with("vertical", vertical) : result;
+        return normalized.equals("radial") ? result.with("mirror_y", vertical) : result;
     }
 }
