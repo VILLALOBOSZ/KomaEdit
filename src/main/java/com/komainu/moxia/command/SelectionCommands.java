@@ -3,6 +3,7 @@ package com.komainu.moxia.command;
 import com.komainu.moxia.path.PathGenerators;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.NamedDefinitions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.worldedit.ez.EzDirections;
 import com.komainu.moxia.worldedit.ez.SavedSelections;
@@ -318,7 +319,7 @@ public final class SelectionCommands {
                         center.add(radius, radius, radius));
             }
             if (region.getVolume() > MAX_SCAN) {
-                throw new IllegalArgumentException("La zona tiene " + region.getVolume() + " bloques; el máximo es "
+                throw new IllegalArgumentException("La zona tiene " + ProgressLine.group(region.getVolume()) + " bloques; el máximo es "
                         + MAX_SCAN);
             }
             ParserContext parser = new ParserContext();

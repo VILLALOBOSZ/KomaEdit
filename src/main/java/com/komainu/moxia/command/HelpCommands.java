@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.tube.TubeFormulaPreset;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -119,6 +120,6 @@ public final class HelpCommands {
     }
 
     private static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 }

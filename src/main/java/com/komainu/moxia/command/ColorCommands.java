@@ -13,6 +13,7 @@ import com.komainu.moxia.gradient.PaletteSpec;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.NamedDefinitions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.region.RegionSnapshot;
@@ -452,7 +453,7 @@ public final class ColorCommands {
         int margin = Math.clamp(padding, 0, 32);
         long volume = (long) (size.x() + 1 + 2 * margin) * (size.y() + 1 + 2 * margin) * (size.z() + 1 + 2 * margin);
         if (volume > TextureContext.MAX_VOLUME) {
-            throw new IllegalArgumentException("La selección es demasiado grande para sombrear (" + volume
+            throw new IllegalArgumentException("La selección es demasiado grande para sombrear (" + ProgressLine.group(volume)
                     + " bloques con su margen de " + margin + "; máximo " + TextureContext.MAX_VOLUME + ")");
         }
     }
@@ -526,9 +527,9 @@ public final class ColorCommands {
         if (name != null) {
             boolean replaced = SavedPalettes.store(player.getUuid()).put(name, PaletteSpec.join(names), force);
             EzCommandSupport.ok(player, (replaced ? "Paleta sustituida: #" : "Paleta guardada: #") + name + " ("
-                    + names.size() + " bloques, de oscuro a claro)");
+                    + ProgressLine.group(names.size()) + " bloques, de oscuro a claro)");
         }
-        EzCommandSupport.send(player, Text.literal("Paleta " + from + ", de oscuro a claro (" + names.size()
+        EzCommandSupport.send(player, Text.literal("Paleta " + from + ", de oscuro a claro (" + ProgressLine.group(names.size())
                 + " bloques):").formatted(Formatting.YELLOW));
         player.sendMessage(swatches(sorted, sorted.size() > 16 ? 1 : 2), false);
         player.sendMessage(Text.literal("  ")

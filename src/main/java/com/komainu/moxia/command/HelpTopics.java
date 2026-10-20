@@ -388,7 +388,7 @@ public final class HelpTopics {
                     new Entry("/komaedit capability option flyspeed <x>", "Velocidad de vuelo (1 normal, 2.5…)")
             )),
             new Topic("preview", "Vista previa y progreso", List.of("vistaprevia", "previa", "progreso", "cancelar",
-                    "confirmar"), List.of(
+                    "confirmar", "repeat", "repetir"), List.of(
                     new Entry("/komaedit texture rockify stone -v",
                             "-v (o --preview) en cualquier orden: calcula y enseña sin colocar nada"),
                     new Entry("/komaedit confirm", "Aplica exactamente lo que ves; si la zona cambió, lo recalcula"),
@@ -397,6 +397,8 @@ public final class HelpTopics {
                             "Previsualiza siempre las ediciones de N bloques o más"),
                     new Entry("/komaedit preview off", "Vista previa solo con -v"),
                     new Entry("/komaedit preview", "Tu preferencia y la vista previa que tengas esperando"),
+                    new Entry("/komaedit repeat [-v]",
+                            "Repite la última orden que colocó bloques, donde estás ahora (-v: con vista previa)"),
                     new Entry("/komaedit job status", "Progreso de la colocación (también en la bossbar)")
             )),
             new Topic("utilidades", "Utilidades de obra", List.of("utilities", "texto", "text", "materiales",

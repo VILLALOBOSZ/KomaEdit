@@ -2,6 +2,7 @@ package com.komainu.moxia.command;
 
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.generator.FlowField;
 import com.komainu.moxia.generator.FlowLine;
@@ -19,6 +20,7 @@ import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionEdits;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperationService;
@@ -147,7 +149,7 @@ public final class GeneratorCommands {
         MinecraftServer server = player.getServer();
         UUID playerId = player.getUuid();
         String description = request.describe();
-        info(player, description + ": calculando fuera del hilo del servidor…");
+        status(player, description + ": calculando fuera del hilo del servidor…");
         AsyncEngine.submit(
                 playerId,
                 () -> {
@@ -194,7 +196,7 @@ public final class GeneratorCommands {
                                     new BlockPos(bounds[3], Math.min(top, bounds[4]), bounds[5]));
                         }
                         if (!PlanPreviews.holds(playerId, result.plan())) {
-                            queued(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                            queued(current, description + " en cola: " + ProgressLine.group(queued) + " bloques · //undo para deshacer");
                         }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         fail(current.getCommandSource(), readable(exception));
@@ -247,7 +249,7 @@ public final class GeneratorCommands {
         int height = settings.height() > 0 ? settings.height() : volume.sizeY();
         if ((long) volume.sizeX() * volume.sizeZ() * Math.max(height, volume.sizeY()) > MAX_SCAN) {
             throw new IllegalArgumentException("La selección es demasiado grande para generar terreno (máximo "
-                    + MAX_SCAN + " bloques recorridos)");
+                    + ProgressLine.group(MAX_SCAN) + " bloques recorridos)");
         }
         submitDirect(player, description, palette, blocks ->
                 NoiseGenerator.generate(settings, volume, null, palette.traits(), bottom, top, blocks));
@@ -285,7 +287,7 @@ public final class GeneratorCommands {
         Volume volume = volume(player);
         if ((long) volume.sizeX() * volume.sizeY() * volume.sizeZ() > MAX_SCAN) {
             throw new IllegalArgumentException("La selección es demasiado grande para un campo de flujo (máximo "
-                    + MAX_SCAN + " bloques)");
+                    + ProgressLine.group(MAX_SCAN) + " bloques)");
         }
         submitDirect(player, description, palette, blocks ->
                 FlowField.generate(settings, volume, null, palette.size(), blocks));
@@ -336,7 +338,7 @@ public final class GeneratorCommands {
         if (PlanPreviews.holds(player.getUuid(), built)) {
             return;
         }
-        queued(player, "Línea de flujo en cola: " + queued + " bloques"
+        queued(player, "Línea de flujo en cola: " + ProgressLine.group(queued) + " bloques"
                 + (result.convex().isEmpty() ? "" : " · selección convexa de " + result.convex().size() + " puntos")
                 + " · //undo para deshacer");
     }
@@ -396,7 +398,7 @@ public final class GeneratorCommands {
                     try {
                         int queued = BatchEditService.submit(current, plan, "air", description);
                         if (!PlanPreviews.holds(playerId, plan)) {
-                            queued(current, description + " en cola: " + queued + " bloques · //undo para deshacer");
+                            queued(current, description + " en cola: " + ProgressLine.group(queued) + " bloques · //undo para deshacer");
                         }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         fail(current.getCommandSource(), readable(exception));
@@ -501,7 +503,11 @@ public final class GeneratorCommands {
     }
 
     private static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
+    }
+
+    private static void status(ServerPlayerEntity player, String text) {
+        QuietMode.status(player, prefix().append(Text.literal(text).formatted(Formatting.GRAY)));
     }
 
     private static void info(ServerPlayerEntity player, String text) {
@@ -510,7 +516,7 @@ public final class GeneratorCommands {
 
     /** El aviso de bloques en cola: no sale con {@code /komaedit quiet} (el de «completada» sí). */
     private static void queued(ServerPlayerEntity player, String text) {
-        QuietMode.info(player, prefix().append(Text.literal(text).formatted(Formatting.GREEN)));
+        QuietMode.status(player, prefix().append(Text.literal(text).formatted(Formatting.GREEN)));
     }
 
     private static void success(ServerPlayerEntity player, String text) {
@@ -518,8 +524,7 @@ public final class GeneratorCommands {
     }
 
     private static int fail(ServerCommandSource source, String message) {
-        source.sendError(prefix().append(Text.literal(message).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(source, message);
     }
 
     private static String readable(Throwable throwable) {

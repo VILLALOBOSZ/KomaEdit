@@ -1,6 +1,7 @@
 package com.komainu.moxia.weathering;
 
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.RegionEdits;
 import com.komainu.moxia.region.RegionOperation;
 import com.komainu.moxia.region.RegionOperationService;
@@ -42,7 +43,7 @@ public final class WeatheringService {
                 minimum.x(), minimum.y(), minimum.z(), maximum.x(), maximum.y(), maximum.z()
         );
         if (box.volume() > MAX_VOLUME) {
-            throw new IllegalArgumentException("La selección ocupa " + box.volume()
+            throw new IllegalArgumentException("La selección ocupa " + ProgressLine.group(box.volume())
                     + " bloques; Envejecer admite hasta 2 000 000. Hazlo por partes");
         }
         WeatheringSettings settings = requested.seed() == null

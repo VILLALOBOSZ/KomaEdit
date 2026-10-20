@@ -1,6 +1,7 @@
 package com.komainu.moxia.editor;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -176,7 +177,7 @@ public final class FastPaintService {
             STROKES.remove(stroke.playerId);
             finish(stroke, player, true);
             KomaEditMod.LOGGER.error("Fast paint stroke failed for {}", stroke.playerId, exception);
-            player.sendMessage(Text.literal("KomaEdit · La pintura falló: " + readable(exception)), true);
+            player.sendMessage(Feedback.line(Feedback.Level.ERROR, "La pintura falló: " + readable(exception)), true);
         }
     }
 
@@ -190,9 +191,8 @@ public final class FastPaintService {
         }
         if (player != null && stroke.editSession.size() > 0) {
             String state = cancelled ? "parcial" : "completo";
-            player.sendMessage(Text.literal(
-                    "KomaEdit · Trazo " + state + ": " + stroke.editSession.size() + " bloques · Ctrl+Z"
-            ), true);
+            player.sendMessage(Feedback.line(cancelled ? Feedback.Level.WARN : Feedback.Level.OK,
+                    Feedback.format("Trazo %s: %s bloques · Ctrl+Z", state, stroke.editSession.size())), true);
         }
     }
 

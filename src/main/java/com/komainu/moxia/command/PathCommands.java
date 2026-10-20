@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathEditing;
 import com.komainu.moxia.path.PathGenerators;
 import com.komainu.moxia.path.PathHistory;
@@ -734,14 +735,11 @@ public final class PathCommands {
     }
 
     private static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 
     private static int fail(ServerCommandSource source, String message) {
-        source.sendError(prefix().append(Text.literal(
-                message == null || message.isBlank() ? "Operación inválida" : CommandHints.enrich(message)
-        ).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(source, message);
     }
 
     /** Para el listado de ayuda: nombres de los subcomandos. */

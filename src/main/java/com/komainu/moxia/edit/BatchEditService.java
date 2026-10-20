@@ -1,6 +1,8 @@
 package com.komainu.moxia.edit;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.feedback.FeedbackEventPayload;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.persistence.OperationLedger;
 import com.komainu.moxia.preview.PlanPreviews;
@@ -19,7 +21,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
@@ -298,7 +299,7 @@ public final class BatchEditService {
         if (job == null) {
             return false;
         }
-        finish(job, null, true);
+        finish(job, null, Outcome.CANCELLED, null);
         return true;
     }
 
@@ -317,7 +318,7 @@ public final class BatchEditService {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(job.playerId);
             if (player == null) {
                 JOBS.remove(job.playerId);
-                finish(job, null, true);
+                finish(job, null, Outcome.CANCELLED, null);
                 continue;
             }
             processSlice(job, player, globalDeadline);
@@ -326,7 +327,7 @@ public final class BatchEditService {
 
     public static void shutdown() {
         for (Job job : java.util.List.copyOf(JOBS.values())) {
-            finish(job, null, true);
+            finish(job, null, Outcome.CANCELLED, null);
         }
         JOBS.clear();
     }
@@ -364,21 +365,19 @@ public final class BatchEditService {
             }
             if (!job.hasNext()) {
                 JOBS.remove(job.playerId);
-                finish(job, player, false);
+                finish(job, player, Outcome.DONE, null);
             } else {
                 job.persistProgress();
             }
         } catch (MaxChangedBlocksException exception) {
             JOBS.remove(job.playerId);
             job.syncProcessed();
-            finish(job, player, true);
-            player.sendMessage(message("Se alcanzó el límite de WorldEdit; el cambio parcial puede deshacerse"), false);
+            finish(job, player, Outcome.LIMIT, null);
         } catch (RuntimeException exception) {
             JOBS.remove(job.playerId);
             job.syncProcessed();
-            finish(job, player, true);
             KomaEditMod.LOGGER.error("Batch edit failed for {}", job.playerId, exception);
-            player.sendMessage(message("La edición falló: " + readableMessage(exception)), false);
+            finish(job, player, Outcome.FAILED, readableMessage(exception));
         }
     }
 
@@ -458,7 +457,20 @@ public final class BatchEditService {
         }
     }
 
-    private static void finish(Job job, ServerPlayerEntity player, boolean cancelled) {
+    /** Cómo acabó una edición. */
+    private enum Outcome {
+        DONE,
+        CANCELLED,
+        /** Se paró en el límite de bloques de WorldEdit ({@code //limit}). */
+        LIMIT,
+        FAILED
+    }
+
+    /** Una edición que dura al menos esto suena al terminar (si el cliente tiene el mod y el sonido activado). */
+    private static final long DONE_SOUND_AFTER_NANOS = 3_000_000_000L;
+
+    private static void finish(Job job, ServerPlayerEntity player, Outcome outcome, String reason) {
+        boolean cancelled = outcome != Outcome.DONE;
         if (job.application != null) {
             job.application.stop();
             job.protectedBlocks = job.application.protectedBlocks();
@@ -471,15 +483,7 @@ public final class BatchEditService {
             }
         }
         if (player != null) {
-            String state = cancelled ? "cancelada" : "completada";
-            player.sendMessage(message(
-                    job.description + " " + state + ": " + job.editSession.size() + " bloques · //undo"
-            ), false);
-            if (job.protectedBlocks > 0) {
-                player.sendMessage(message(
-                        job.protectedBlocks + " cambios manuales protegidos y conservados"
-                ), false);
-            }
+            announce(job, player, outcome, reason);
         }
         OperationLedger.finish(
                 job.playerId,
@@ -512,9 +516,28 @@ public final class BatchEditService {
         }
     }
 
-    private static Text message(String value) {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD)
-                .append(Text.literal(value).formatted(Formatting.GRAY));
+    /** Una sola línea por edición: cómo acabó, cuántos bloques y cómo deshacerla. */
+    private static void announce(Job job, ServerPlayerEntity player, Outcome outcome, String reason) {
+        int placed = job.editSession.size();
+        Text kept = job.protectedBlocks > 0
+                ? Feedback.format(" · %s cambios manuales conservados", job.protectedBlocks) : Text.empty();
+        switch (outcome) {
+            case DONE -> {
+                Feedback.ok(player, Feedback.format("%s completada: %s bloques", job.description, placed)
+                        .append(kept).append(" · //undo"));
+                if (System.nanoTime() - job.startedAt >= DONE_SOUND_AFTER_NANOS) {
+                    Feedback.sound(player, FeedbackEventPayload.Kind.DONE);
+                }
+            }
+            case CANCELLED -> Feedback.warn(player, Feedback.format("%s cancelada: %s bloques colocados",
+                    job.description, placed).append(kept).append(" · //undo"));
+            case LIMIT -> Feedback.warn(player, Feedback.format(
+                    "%s parada en el límite de WorldEdit: %s bloques colocados", job.description, placed)
+                    .append(kept).append(" · //undo los quita, //limit lo sube"));
+            case FAILED -> Feedback.error(player, Feedback.format("%s falló: %s", job.description, reason)
+                    .append(placed > 0 ? Feedback.format(" · %s bloques colocados, //undo los quita", placed)
+                            : Text.literal(" · no se colocó nada")));
+        }
     }
 
     private static String readableMessage(Throwable throwable) {

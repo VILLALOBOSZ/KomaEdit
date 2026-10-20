@@ -4,7 +4,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 ## Índice
 
-- **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación)
+- **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación) · [En el mundo: ajustes, teclas y mensajes](#en-el-mundo-ajustes-teclas-y-mensajes)
 - **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Modificadores](#modificadores) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
 - **Sobre lo construido:** [Envejecer](#envejecer) · [Hiedra viva](#hiedra-viva) · [Retoques sobre la selección](#retoques-sobre-la-selección) · [Enredaderas, musgo, losas y estados](#enredaderas-musgo-losas-y-estados) · [Vidriera degradada](#vidriera-degradada)
 - **Edificios y naturaleza:** [Árboles y rocas](#árboles-y-rocas) · [Tejados](#tejados) · [Loft entre curvas](#loft-entre-curvas)
@@ -171,6 +171,7 @@ En cualquier etapa, mientras algo tuyo está en marcha (leer la selección, calc
 Las trayectorias se crean con puntos colocados mediante `P` o desde Procedural Studio. Los nodos pueden moverse con el gizmo XYZ y la geometría se recalcula sin modificar el mundo.
 
 - El raycast alcanza hasta 4096 bloques cargados.
+- Cada punto lleva su número encima (el primero en verde, el último en naranja); ver [Trayectorias](#trayectorias).
 - El holograma representa las posiciones exactas de la futura construcción.
 - La previsualización permanece visible al cerrar la interfaz.
 - El cálculo se ejecuta fuera del hilo de renderizado, admite cancelación y conserva temporalmente el último resultado válido.
@@ -330,8 +331,9 @@ Como `/ezedits quiet`, cada jugador puede silenciar los mensajes informativos de
 /komaedit quiet off      vuelve a mostrarlos
 ```
 
-- Silencia los mensajes grises de progreso («leyendo N bloques…», «calculando fuera del hilo del servidor…»), la semilla que usan los generadores y el aviso intermedio de «N bloques en cola».
-- Siguen saliendo los errores, los avisos (por ejemplo «no había nada que cambiar»), las respuestas a órdenes directas (guardar una paleta, cambiar de pincel…) y el mensaje final de cada edición (`completada: N bloques · //undo`).
+- Silencia lo informativo: los estados de paso de la barra de acción («leyendo N bloques…», «calculando fuera del hilo del servidor…», «N bloques en cola», «preparando la vista previa…»), los mensajes grises del chat y la semilla que usan los generadores.
+- Siguen saliendo los errores, los avisos (por ejemplo «no había nada que cambiar»), las respuestas a consultas y a órdenes directas (guardar una paleta, cambiar de pincel…) y el mensaje final de cada edición (`completada: N bloques · //undo`).
+- El estilo de los mensajes (prefijo `KE ·`, colores, una línea por acción) está en [Estilo de los mensajes](#estilo-de-los-mensajes).
 - Se guarda en el proyecto del mundo de cada jugador (`komaedit/players/<uuid>/settings/chat.json`), así que dura entre sesiones. No pide permiso: solo afecta a tu chat.
 
 ## Diagnóstico antes de construir
@@ -351,7 +353,7 @@ Calcula la misma geometría que `build` (fuera del hilo del servidor) y responde
 
 ### Confirmación de Build grandes
 
-Cuando un Build supera `confirmBuildAboveBlocks` bloques (250 000 por defecto) no se encola enseguida: el chat muestra la estimación con los botones **[Construir]** y **[Descartar]**, y la barra de acción recuerda `/komaedit confirm`. Afecta al comando `build`, a los comandos de figura y tubo, y a Construir y Actualizar del Studio.
+Cuando un Build supera `confirmBuildAboveBlocks` bloques (250 000 por defecto) no se encola enseguida: el chat muestra en una línea la estimación con los botones **[Construir]** y **[Descartar]** (el plazo y el umbral, al pasar el ratón). Afecta al comando `build`, a los comandos de figura y tubo, y a Construir y Actualizar del Studio.
 
 ```text
 /komaedit confirm            manda a la cola el Build en espera
@@ -374,7 +376,10 @@ Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y
 /komaedit preview                       tu preferencia y si tienes una vista previa esperando (alias vistaprevia)
 /komaedit preview always <bloques>      previsualizar siempre a partir de N bloques (alias siempre)
 /komaedit preview off                   vista previa solo con -v (alias nunca)
+/komaedit repeat [-v]                   repite la última orden que colocó bloques, donde estás (alias repetir)
 ```
+
+Con KomaEdit en el cliente, Intro aplica y Retroceso descarta la vista previa que espera (ver [Teclas](#teclas)).
 
 Ejemplos:
 
@@ -391,20 +396,32 @@ Ejemplos:
 
 - En las órdenes de argumentos fijos va al final (`build coil stone 8 -v`); en las de texto libre al estilo de ezEdits, en cualquier sitio después del modo (`texture rockify -v stone`).
 - Donde ezEdits ya usa `-v` con otro sentido se mantiene el suyo y la vista previa es `--preview`: `deform noise` y `deform voxelize` (vertical), `texture blend` y `texture blocklight` (variación), `weather` / `envejecer` (`-v <vida>`), `shape polydome` (`-v <patrón>` de las aristas), `text` (`-v` de pie), `pincel gradient` (sin marcadores) y `palette print` (detallado). En `biome` (`-v` relleno vertical) y `color gradient` (`-v <variante>`) `-v` es solo suyo: esas órdenes no tienen vista previa.
-- Donde ezEdits ya usa `-v` con otro sentido se mantiene el suyo y la vista previa es `--preview`: `deform noise` y `deform voxelize` (vertical), `texture blend` y `texture blocklight` (variación), `weather` / `envejecer` (`-v <vida>`), `shape polydome` (`-v <patrón>` de las aristas), `text` (`-v`, de pie), `biome` (`-v`, relleno vertical), `pincel gradient` (sin marcadores) y `palette print` (detallado).
 - Con `preview always <bloques>`, cualquier orden cuyo plan llegue a ese número de bloques pasa por la vista previa aunque no lleve `-v`. La preferencia es por jugador y mundo (`komaedit/players/<uuid>/preview`).
 - Los pinceles, la supervarita, el estampado de figuras del pincel `brush` y la vista previa propia de las brochas no la usan nunca: van clic a clic.
 - Con vista previa, un Build grande por orden no pide además la confirmación de texto de `confirmBuildAboveBlocks`: la vista previa ya espera a `/komaedit confirm`.
 
 ### Cómo se ve
 
-- Solo la ve quien edita. Son block displays enviados a su cliente por paquetes; no existen en el mundo del servidor, así que nadie más los ve y no hace falta el mod en el cliente.
-- **Lo que se pone:** el bloque nuevo con contorno verde, un poco más pequeño si va en un hueco (para distinguirlo de lo construido) y envolviendo al viejo si lo sustituye, de modo que se ve el resultado.
-- **Lo que se quita:** cubierto de cristal rojo con contorno rojo.
-- **La caja** de la operación, con aristas amarillas.
-- Los block displays de vanilla no admiten transparencia: el bloque nuevo se ve opaco; el cristal rojo sí se transparenta.
-- Como mucho `previewMaxDisplays` displays (1 500 de serie). Si hay más cambios se enseña la superficie (los cambios con alguna cara hacia fuera: una esfera maciza se ve como su cáscara); si tampoco cabe, una muestra repartida por toda la zona, más la caja. El chat dice cuántos se ven y de cuántos. Con `0`, solo la caja.
-- El chat resume la vista previa: cambios, cuántos se ponen o cambian y cuántos se quitan, tamaño de la caja y lo que tardará en colocarse, con los botones **[Aplicar]** y **[Descartar]** y el plazo. Si supera tu `//limit` de WorldEdit, lo avisa.
+Solo la ve quien edita: nadie más, y nada de ella se guarda con el mundo.
+
+**Con KomaEdit en el cliente**, el servidor manda el plan en un formato compacto y el cliente lo dibuja él mismo (sin entidades):
+
+- **Lo que se pone**, con su propio bloque translúcido (50 % de serie) y un tinte verdoso muy leve; **lo que sustituye a otro bloque**, igual con un tinte azulado; **lo que se quita**, cubierto de rojo translúcido. A plena luz: se ve igual de noche o en una cueva.
+- **El contorno de la figura**, sin la rejilla de cada bloque: las aristas donde la figura dobla, también las de las esquinas hacia dentro y la frontera entre lo que se pone y lo que se quita. Verde lo que se pone, azul claro lo que sustituye, rojo lo que se quita.
+- **La caja** de la operación en amarillo, con sus medidas.
+- **Sin parpadeos:** lo que coincide con un bloque del mundo (lo que sustituye, lo que se quita) se adelanta con *polygon offset* en lugar de dibujarse un poco más grande, así no hay z-fighting a ninguna distancia; y aparece entera cuando ha llegado, no a trozos.
+- **Una sola capa:** solo se ve la cara más cercana de la vista previa, no un amasijo de caras y aristas de detrás.
+- **No tapa el mundo:** se aclara al acercarte (hasta la cuarta parte, encima de ella) y, con el ajuste **Solo contorno**, solo se dibujan las aristas. Ver [Ajustes del cliente](#ajustes-del-cliente).
+- **Con muchos cambios**, la superficie: lo que tiene alguna cara al descubierto, nunca el interior (una esfera maciza llega como su cáscara), hasta 250 000 bloques; con más, una muestra repartida.
+
+**Sin el mod en el cliente**, block displays enviados por paquetes solo a ese jugador:
+
+- **Lo que se pone:** el bloque nuevo con contorno verde, un poco más pequeño si va en un hueco (para distinguirlo de lo construido) y envolviendo al viejo si lo sustituye (un 2 % más grande, para que no parpadee con él).
+- **Lo que se quita:** cubierto de cristal rojo con contorno rojo. **La caja**, con aristas amarillas.
+- Los block displays de vanilla no admiten transparencia: el bloque nuevo se ve opaco; el cristal rojo sí se transparenta. Se ven hasta unos 160 bloques.
+- Como mucho `previewMaxDisplays` displays (1 500 de serie). Si hay más cambios se enseña la superficie; si tampoco cabe, una muestra repartida por toda la zona, más la caja. Con `0`, solo la caja.
+
+En los dos casos, el chat resume la vista previa en una línea: cambios, cuántos se quitan, tamaño de la caja y lo que tardará en colocarse, con los botones **[Aplicar]** y **[Descartar]**; al pasar el ratón por el resumen, cuántos se ponen o cambian, el plazo y si se ve la superficie o una muestra. Si supera tu `//limit` de WorldEdit, lo avisa en otra línea.
 
 ### Confirmar
 
@@ -432,12 +449,114 @@ Ejemplos:
 
 ### Rendimiento y limitaciones
 
-- Preparar la vista previa lee el mundo y el patrón de cada bloque en el hilo del servidor, unos 4 ms por tick: un plan de un millón de bloques tarda unos segundos (la barra lo enseña). La elección de displays se hace en un hilo aparte y los displays se envían a 128 por tick.
+- Preparar la vista previa lee el mundo y el patrón de cada bloque en el hilo del servidor, unos 4 ms por tick: un plan de un millón de bloques tarda unos segundos (la barra lo enseña). La superficie (o la elección de displays) se calcula en un hilo aparte; el plan compacto se envía a unos 64 KiB por tick y los displays, a 128 por tick.
 - Mientras espera, el plan congelado ocupa unos 40 bytes por bloque.
 - Sin vista previa: los degradados de `gradient` (colocan por regiones, sin el plan que la vista previa necesita), los biomas (`biome`), el editor y Construir del Studio (que tiene su holograma y su confirmación), los pinceles y la supervarita, y las órdenes que no colocan bloques (`color`, `analyze`, `symmetry`, `capability`, `quiet`, los presets de `tree` y `rock`, `text fonts`…), que no aceptan la bandera.
 - Recalcular repitiendo la orden usa tu posición y mirada de ese momento (afecta a `place` y `array` sin selección).
 - Si un plan escribe dos veces en la misma posición, gana la última, igual que sin vista previa.
 - La vista previa y la barra se basan en `BatchEditService`, `RegionOperationService` y `AsyncEngine`: una orden nueva que los use las tiene sin hacer nada (ver `docs/ARCHITECTURE.md`).
+
+## En el mundo: ajustes, teclas y mensajes
+
+### Objetivo y acceso
+
+Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio: la vista previa, la selección con sus medidas, los puntos de la trayectoria, el radio del pincel y los planos de la simetría; las teclas para aplicar, descartar y repetir; un cuentagotas de bloque, y el estilo común de los mensajes. Lo que se dibuja, las teclas y los sonidos necesitan KomaEdit en el cliente; sin él, el servidor sigue enseñando la vista previa con block displays y la simetría con partículas, y los mensajes son los mismos.
+
+```text
+/kegui ajustes          ajustes de lo que se ve y suena en el mundo (también /kegui settings)
+/komaedit repeat        repite la última orden que colocó bloques, donde estás ahora (alias repetir)
+/komaedit repeat -v     lo mismo, con vista previa
+```
+
+### Ajustes del cliente
+
+`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera. Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
+
+| Ajuste | De serie | Qué hace |
+| --- | --- | --- |
+| Vista previa | Bloques y contorno | **Bloques y contorno**: cada bloque que quedará, translúcido, y el contorno de la figura. **Solo contorno**: solo las aristas; no tapa nada. |
+| Opacidad | 50 % | De 15 a 90 %, la de los bloques de la vista previa. |
+| Atenuar al acercarse | Sí | La vista previa se aclara cuando estás encima (hasta la cuarta parte), para ver lo que hay detrás. También el holograma del Studio. |
+| Contorno de la selección | Sí (no con WorldEditCUI) | La selección de WorldEdit con líneas finas. Si tienes WorldEditCUI viene apagado para no verla dos veces. |
+| Medidas | Sí | Ancho, alto y largo en la selección, en la caja de la vista previa, en la caja de la herramienta del Studio y en la del holograma de las brochas. |
+| Números de la trayectoria | Sí | El número de cada punto encima de él. |
+| Radio del pincel | Sí | Con un pincel en la mano, su radio sobre la superficie que miras. |
+| Guías de simetría | Sí | Los planos y el eje de la simetría alrededor de ti, sin partículas. |
+| Sonidos | Sí, 35 % | Un sonido corto al confirmar, al terminar una edición larga y al fallar, con su volumen. |
+
+### Teclas
+
+Todas están en **Controles → KomaEdit** y se pueden cambiar.
+
+| Tecla | De serie | Qué hace |
+| --- | --- | --- |
+| Aplicar la vista previa | Intro | Solo si hay una vista previa esperando: `/komaedit confirm`. Sin vista previa no hace nada, así no estorba. |
+| Descartar la vista previa | Retroceso | Solo si hay una esperando: `/komaedit confirm cancel`. |
+| Repetir la última operación aquí | Sin asignar | `/komaedit repeat`; con Mayús, `/komaedit repeat -v` (con vista previa). |
+| Cuentagotas de bloque | Sin asignar | El bloque que miras, hasta 192 bloques (ver abajo). |
+| Ajustes de KomaEdit en el mundo | Sin asignar | Abre los ajustes. |
+
+Al llegar una vista previa, la barra de acción recuerda las teclas: «12 300 cambios · Intro aplicar · Retroceso descartar».
+
+### Repetir la última operación
+
+`/komaedit repeat` vuelve a ejecutar la última orden tuya que colocó (o enseñó) un plan de bloques, tal como la escribiste. Así, las que trabajan donde estás o donde miras (`tree`, `rock`, `place` sin selección, `text`, los generadores en los pies…) caen en tu sitio de ahora, y las que trabajan sobre la selección usan la selección de ese momento: mueve la selección y repite.
+
+- Si la orden original llevaba `-v`, la repetición también; `repeat -v` la pide siempre.
+- No cuentan los clics de pincel ni de supervarita, las confirmaciones ni el propio `repeat`.
+- Se recuerda en memoria mientras estás conectado. Sin nada que repetir, lo dice y no cambia nada.
+- Repetir pasa por la misma orden, con sus permisos, su vista previa, su estimación y su //undo.
+
+### Selección y medidas
+
+- La selección de WorldEdit se dibuja con líneas blancas finas y sus medidas en las tres aristas más cercanas a la cámara, una por eje. Las medidas se ven a través de los bloques, con un fondo suave, y mantienen su tamaño en pantalla a cualquier distancia (hasta 160 bloques).
+- Una selección que no es un cuboide (polígono, elipsoide, cilindro, convexa) se ve por su caja, con el nombre de la forma encima. Con solo el primer punto puesto, ese bloque con «pos1».
+- Solo la selección del mundo en el que estás. El servidor la mira cada medio segundo y solo la manda cuando cambia; nunca pregunta por la de otro mundo, porque WorldEdit la borraría al cambiar de dimensión.
+- La caja de la vista previa (amarilla) y la de la herramienta Caja del Studio llevan también sus medidas.
+
+### Trayectorias
+
+- Cada punto lleva su número encima: el primero en verde, el último en naranja y el resto en azul (los cuadros de los puntos, igual). Con más de 40 puntos se numeran el primero, el último y uno de cada cinco.
+- Las líneas de la curva, del gizmo y de la esfera de pintura se ven igual desde cualquier ángulo (antes casi desaparecían según desde dónde se mirasen).
+
+### Radio del pincel
+
+Con un pincel de `/komaedit pincel` en la mano, un círculo de su radio sobre la cara del bloque que miras (hasta 192 bloques, como el rayo del pincel), con una cruz pequeña en el centro, como en Axiom. Los pinceles sin radio (la supervarita, la colocación sin tamaño) no lo dibujan. El radio va en los datos del objeto: un pincel configurado con una versión anterior lo enseña al volver a configurarlo.
+
+### Simetría
+
+Con KomaEdit en el cliente, cada plano de espejo se dibuja como un marco de 24×24 bloques alrededor de ti con líneas tenues cada 4 bloques (pegadas a múltiplos de 4: al andar saltan de 4 en 4 en lugar de arrastrarse), rojo el de X, azul el de Z y verde el de Y; el eje vertical en amarillo y, en el radial, un rayo por brazo a la altura de tus pies, el primero en verde. No hay partículas. Sin el mod, las partículas de siempre, ahora un marco con una cruz por plano (45 puntos en lugar de 81).
+
+### Cuentagotas
+
+La tecla del cuentagotas toma el bloque que miras, hasta 192 bloques:
+
+- En creativo lo pone en la mano, como la rueda del ratón pero de lejos.
+- En supervivencia lo elige si lo tienes en el inventario.
+- Con Mayús copia además su estado exacto (`oak_stairs[facing=east,half=top,…]`) al portapapeles, para pegarlo en una orden o un patrón.
+- La barra de acción dice qué ha tomado.
+
+### Sonidos
+
+Sutiles y desactivables (en los ajustes, con su volumen): un clic al aplicar una vista previa, una campanilla cuando termina una edición que ha tardado tres segundos o más (las cortas, como cada clic de pincel, no suenan) y un tono grave cuando una orden o una edición falla. Como mucho uno cada cuarto de segundo. Los decide el cliente: el servidor solo avisa del momento, y sin el mod no suena nada.
+
+### Estilo de los mensajes
+
+- Todos empiezan por **`KE ·`**, corto, para que el mensaje quepa en una línea.
+- Un color con sentido: **verde** lo que terminó bien, **aguamarina** la respuesta a una consulta, **gris** lo informativo, **amarillo** los avisos y **rojo** los errores.
+- Los números van con separador de miles (`12 300 bloques`) y, en los mensajes principales, en blanco.
+- **Una línea por acción.** La vista previa: «Vista previa de Texturizar: 12 300 cambios (240 quitados) · 40×12×38 · ~4 s [Aplicar] [Descartar]», con el detalle (cuánto se pone y se quita, la muestra, el plazo) al pasar el ratón por el resumen. El final de cada edición: «Texturizar completada: 12 300 bloques · 15 cambios manuales conservados · //undo», o «cancelada», «parada en el límite de WorldEdit» o «falló» con la causa y lo que quedó colocado, en la misma línea. El Build grande en espera, también en una.
+- **Lo efímero va a la barra de acción**, no al chat: «leyendo N bloques…», «calculando fuera del hilo del servidor…», «preparando la vista previa…», «N bloques en cola», «confirmado: comprobando la zona…», «aplicando…». La bossbar sigue enseñando el progreso.
+- **Los errores dicen la causa y cómo arreglarlo.** Si escribiste algo desconocido con una propuesta («Forma 3D desconocida: helx · ¿Quisiste decir «helix»?»), el botón **[corregir]** escribe en el chat la orden con la palabra cambiada, para revisarla y mandarla. Sin selección de WorldEdit, el error lo dice y el botón **[//wand]** escribe la orden de la varita.
+- `/komaedit quiet` silencia lo informativo y lo efímero de la barra de acción; los errores, los avisos, las respuestas a consultas y el final de cada edición salen siempre (ver [Mensajes](#mensajes-komaedit-quiet)).
+
+### Rendimiento y limitaciones
+
+- La vista previa en el cliente recibe solo la superficie de los cambios (lo que tiene alguna cara al descubierto), con las caras que se ven ya calculadas, hasta 250 000 entradas; con más, una muestra repartida por la zona. Cada entrada ocupa unos 5 bytes: el plan va en partes de 32 KiB, dos por tick (unos 64 KiB por tick y jugador), así que una vista previa de 250 000 bloques de superficie tarda en llegar alrededor de un segundo.
+- La malla se arma en un hilo aparte y se sube a la tarjeta por secciones de 16×16×16, primero las más cercanas y con un tope por fotograma. Los bloques usan su modelo (escaleras, losas, vallas…) con el color de serie de la hierba y las hojas, no el del bioma; los que no tienen modelo (agua, lava, luz) se ven como cajas de color.
+- Se dibuja a plena luz y sin niebla, al final del mundo: con gráficos «Fabulosos» queda por encima de lo translúcido (agua, cristal).
+- Si el dibujo falla (un controlador o un mod de shaders incompatible), la vista previa se oculta en lugar de cerrar el juego, se apunta en `latest.log` y la siguiente vuelve a intentarlo. La vista previa del servidor sigue funcionando igual.
+- Sin el mod en el cliente: block displays, como antes (ver [Cómo se ve](#cómo-se-ve)).
 
 ## Figuras procedurales
 
@@ -3254,7 +3373,7 @@ Con `/komaedit symmetry worldedit on`, cada bloque que escribe una edición tuya
 
 ### Marcas en el mundo
 
-Mientras la simetría está activa, cada medio segundo se dibujan partículas que solo ves tú: una rejilla de puntos cada 2 bloques en cada plano de espejo alrededor de ti (rojo el de X, azul el de Z, verde el de Y), el eje vertical en amarillo (en el radial y en `xz`) y, en el radial, un rayo por brazo a la altura de tus pies, el primero en verde. Un plano a más de 48 bloques no se dibuja.
+Mientras la simetría está activa, solo tú ves sus guías. Con KomaEdit en el cliente se dibujan con líneas: cada plano de espejo como un marco de 24×24 bloques alrededor de ti con líneas tenues cada 4 (rojo el de X, azul el de Z, verde el de Y), el eje vertical en amarillo (en el radial y en `xz`) y, en el radial, un rayo por brazo a la altura de tus pies, el primero en verde; se apagan en los [ajustes del cliente](#ajustes-del-cliente). Sin el mod, cada medio segundo, partículas con la misma forma: un marco y una cruz de puntos cada 2 bloques por plano (45 puntos, en lugar de la rejilla de 81 de antes), el eje y los rayos. Un plano a más de 48 bloques no se dibuja con partículas.
 
 ### Seguridad
 

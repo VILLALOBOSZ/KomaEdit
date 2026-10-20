@@ -1,6 +1,7 @@
 package com.komainu.moxia.brush.place;
 
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
@@ -56,7 +57,7 @@ public record PlacementOperation(String label, PlacementTemplate template, int[]
                     placed
             );
             if (++count[0] > MAX_CHANGES) {
-                throw new IllegalArgumentException("La colocación supera el límite de " + MAX_CHANGES + " bloques");
+                throw new IllegalArgumentException("La colocación supera el límite de " + ProgressLine.group(MAX_CHANGES) + " bloques");
             }
         });
         return builder.build();

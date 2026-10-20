@@ -9,11 +9,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SymmetryGuidesTest {
+    /** Borde de 9×9 puntos (32) y la cruz de dentro (13). */
+    private static final int PLANE = 45;
+
+    @Test
+    void theFrameIsTheBorderAndTheCross() {
+        List<int[]> frame = SymmetryGuides.frame();
+        assertEquals(PLANE, frame.size());
+        for (int[] point : frame) {
+            assertTrue(Math.abs(point[0]) == SymmetryGuides.RADIUS || Math.abs(point[1]) == SymmetryGuides.RADIUS
+                    || point[0] == 0 || point[1] == 0);
+        }
+    }
+
     @Test
     void mirrorPlanesAreDrawnOnThePlaneAroundThePlayer() {
         SymmetryCenter center = SymmetryCenter.of(10, 64, 0, true, false, false);
         List<Mark> marks = SymmetryGuides.marks(SymmetryMode.mirror(true, false, false, 4), center, 4.3, 70.0, -2.6);
-        assertEquals(81, marks.size());
+        assertEquals(PLANE, marks.size(), "marco y cruz, no la rejilla entera");
         for (Mark mark : marks) {
             assertEquals(11.0, mark.x(), 1.0E-9, "el plano X pasa entre el bloque 10 y el 11");
             assertEquals(SymmetryGuides.PLANE_X, mark.color());
@@ -27,7 +40,7 @@ class SymmetryGuidesTest {
         SymmetryCenter center = SymmetryCenter.block(0, 64, 0);
         List<Mark> marks = SymmetryGuides.marks(SymmetryMode.radial(6, false), center, 3.0, 64.0, 3.0);
         long axis = marks.stream().filter(mark -> mark.x() == 0.5 && mark.z() == 0.5).count();
-        assertEquals(4 * SymmetryGuides.RADIUS + 1, axis);
+        assertEquals(2 * SymmetryGuides.RADIUS + 1, axis);
         long firstArm = marks.stream().filter(mark -> mark.color() == SymmetryGuides.FIRST_ARM).count();
         assertEquals(SymmetryGuides.RADIUS, firstArm);
         assertEquals(axis + 6L * SymmetryGuides.RADIUS, marks.size());
@@ -38,7 +51,7 @@ class SymmetryGuidesTest {
         SymmetryCenter center = SymmetryCenter.block(0, 64, 0);
         assertTrue(SymmetryGuides.marks(SymmetryMode.mirror(true, false, false, 4), center, 500.0, 64.0, 0.0).isEmpty());
         List<Mark> everything = SymmetryGuides.marks(SymmetryMode.mirror(true, true, true, 4), center, 2.0, 66.0, 2.0);
-        assertEquals(3 * 81 + 4 * SymmetryGuides.RADIUS + 1, everything.size());
+        assertEquals(3 * PLANE + 2 * SymmetryGuides.RADIUS + 1, everything.size());
         assertTrue(SymmetryGuides.marks(SymmetryMode.radial(16, true), center, 1.0, 64.0, 1.0).size()
                 <= SymmetryGuides.MAX_MARKS);
         everything.stream().filter(mark -> mark.color() == SymmetryGuides.PLANE_Y)

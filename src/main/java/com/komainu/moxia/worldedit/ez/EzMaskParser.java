@@ -2,6 +2,7 @@ package com.komainu.moxia.worldedit.ez;
 
 import com.komainu.moxia.gradient.BlockSpec;
 import com.komainu.moxia.noise.NoiseSpec;
+import com.komainu.moxia.progress.ProgressLine;
 import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.extension.input.InputParseException;
@@ -272,7 +273,7 @@ public final class EzMaskParser extends InputParser<Mask> {
     private static Mask containedMask(ParserContext context, Clipboard clipboard, boolean includeAir, boolean strict)
             throws InputParseException {
         if (clipboard.getRegion().getVolume() > MAX_SCAN) {
-            throw EzContext.error("El portapapeles o schematic tiene más de " + MAX_SCAN + " bloques");
+            throw EzContext.error("El portapapeles o schematic tiene más de " + ProgressLine.group(MAX_SCAN) + " bloques");
         }
         Set<BlockState> states = new LinkedHashSet<>();
         for (BlockVector3 position : clipboard.getRegion()) {

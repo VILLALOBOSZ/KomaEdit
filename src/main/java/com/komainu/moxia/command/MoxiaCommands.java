@@ -5,10 +5,12 @@ import com.komainu.moxia.brush.BrushSettings;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BuildEstimate;
 import com.komainu.moxia.edit.PendingBuilds;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.edit.SmoothBlockStates;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.shape.smooth.PieceMaterials;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.gradient.GradientAxis;
@@ -669,7 +671,7 @@ public final class MoxiaCommands {
             var server = player.getServer();
             String axis = TubeBender.resolvedAxis(captured.template(), settings.axis()).id();
             context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal("Doblando " + captured.blocks()
+                    () -> prefix().append(Text.literal("Doblando " + ProgressLine.group(captured.blocks())
                             + " bloques del portapapeles; avanza por su eje " + axis
                             + " (cámbialo con -a x|z|-x|-z)…").formatted(Formatting.GRAY)),
                     false
@@ -687,8 +689,8 @@ public final class MoxiaCommands {
                             if (PlanPreviews.holds(playerId, plan)) {
                                 return;
                             }
-                            QuietMode.info(current, prefix().append(Text.literal("Estructura doblada en cola: "
-                                    + changed + " bloques · /komaedit job status").formatted(Formatting.GREEN)));
+                            QuietMode.status(current, prefix().append(Text.literal("Estructura doblada en cola: "
+                                    + ProgressLine.group(changed) + " bloques · /komaedit job status").formatted(Formatting.GREEN)));
                         } catch (IllegalArgumentException | IllegalStateException exception) {
                             fail(current.getCommandSource(), message(exception));
                         }
@@ -1233,7 +1235,7 @@ public final class MoxiaCommands {
             int changed = BrushManager.stampTarget(player);
             context.getSource().sendFeedback(
                     () -> prefix().append(Text.literal(
-                            "Figura estampada: " + changed + " bloques · usa //undo"
+                            "Figura estampada: " + ProgressLine.group(changed) + " bloques · usa //undo"
                     ).formatted(Formatting.GREEN)),
                     false
             );
@@ -1344,7 +1346,7 @@ public final class MoxiaCommands {
             int scheduled = SculptManager.apply(player);
             context.getSource().sendFeedback(
                     () -> prefix().append(Text.literal(
-                            "Edición en cola: " + scheduled + " bloques; el mundo seguirá respondiendo"
+                            "Edición en cola: " + ProgressLine.group(scheduled) + " bloques; el mundo seguirá respondiendo"
                     ).formatted(Formatting.GREEN)),
                     false
             );
@@ -1470,7 +1472,7 @@ public final class MoxiaCommands {
         SculptManager.activate(player, current.get().withSettings(settings));
         context.getSource().sendFeedback(
                 () -> prefix().append(Text.literal(
-                        "Máscara " + list.displayName + ": " + blocks.size() + " bloques"
+                        "Máscara " + list.displayName + ": " + ProgressLine.group(blocks.size()) + " bloques"
                 ).formatted(Formatting.GREEN)),
                 false
         );
@@ -1716,8 +1718,8 @@ public final class MoxiaCommands {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
             int changed = GradientService.apply(player, axis, palette, dither, reverse);
-            QuietMode.info(player, prefix().append(Text.literal(
-                    "Degradado " + paletteName + " en cola: " + changed + " bloques · eje "
+            QuietMode.status(player, prefix().append(Text.literal(
+                    "Degradado " + paletteName + " en cola: " + ProgressLine.group(changed) + " bloques · eje "
                             + axis.id() + " · mezcla " + dither + "% · /komaedit job status"
             ).formatted(Formatting.GREEN)));
             return changed;
@@ -1984,8 +1986,8 @@ public final class MoxiaCommands {
                                 return;
                             }
                             int pieces = plan.pieceCount();
-                            QuietMode.info(current, prefix().append(Text.literal(
-                                    requestedParameters.shape().displayName() + " en cola: " + changed
+                            QuietMode.status(current, prefix().append(Text.literal(
+                                    requestedParameters.shape().displayName() + " en cola: " + ProgressLine.group(changed)
                                             + " bloques" + (pieces == 0
                                             ? " · espaciado " + requestedParameters.spacing()
                                             : " · " + pieces + " piezas")
@@ -2046,7 +2048,7 @@ public final class MoxiaCommands {
         int threshold = KomaEditConfig.settings().confirmBuildAboveBlocks();
         int limit = KomaEditConfig.settings().maxBlocksPerOperation();
         String verdict = estimate.blocks() > limit && !KomaPermissions.can(player, KomaPermissions.LIMIT_UNRESTRICTED)
-                ? " · supera tu límite de " + limit + " bloques"
+                ? " · supera tu límite de " + ProgressLine.group(limit) + " bloques"
                 : BuildEstimate.needsConfirmation(estimate.blocks(), threshold) ? " · pedirá confirmación" : "";
         player.getCommandSource().sendFeedback(
                 () -> prefix().append(Text.literal("Estimación de " + description + ": " + estimate.summary() + verdict)
@@ -2082,14 +2084,11 @@ public final class MoxiaCommands {
     }
 
     private static MutableText prefix() {
-        return Text.literal("KomaEdit · ").formatted(Formatting.GOLD);
+        return Feedback.prefix();
     }
 
     private static int fail(ServerCommandSource source, String message) {
-        source.sendError(prefix().append(Text.literal(
-                message == null || message.isBlank() ? "Operación inválida" : CommandHints.enrich(message)
-        ).formatted(Formatting.RED)));
-        return 0;
+        return EzCommandSupport.fail(source, message);
     }
 
     private static String message(Exception exception) {

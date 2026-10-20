@@ -16,14 +16,15 @@ final class PreviewScope {
      * Familias sin vista previa: ayuda, ajustes, trayectorias, pinceles (que tienen la suya), gestión y consultas.
      * {@code color} solo enseña bloques en el chat (y ahí {@code -v} es la variante del degradado), {@code biome} pinta
      * biomas sin bloques que enseñar (y ahí {@code -v} es el relleno vertical) y {@code gradient} coloca por regiones
-     * sin pasar por el plan que la vista previa necesita.
+     * sin pasar por el plan que la vista previa necesita. {@code repeat} lleva su propia {@code -v}: la orden que
+     * repite se ejecuta con su propia petición.
      */
     private static final Set<String> NO_PREVIEW = Set.of("menu", "quick", "gui", "shapes", "estimate", "estimar",
             "confirm", "confirmar", "cancel", "cancelar", "preview", "vistaprevia", "path", "ruta", "sculpt", "brush",
             "pincel", "ezbrush", "superwand", "supervarita", "job", "project", "help", "ayuda", "info", "reload",
             "recargar", "permissions", "permisos", "noise", "ruido", "sel", "seleccion", "quiet", "silencio", "wiki",
             "symmetry", "simetria", "sym", "capability", "capacidad", "color", "colour", "analyze", "analizar",
-            "materiales", "biome", "bioma", "gradient", "clipboard", "portapapeles");
+            "materiales", "biome", "bioma", "gradient", "clipboard", "portapapeles", "repeat", "repetir");
     private static final Set<String> PALETTE = Set.of("palette", "paleta");
     /** De las paletas solo editan el mundo estas. */
     private static final Set<String> PALETTE_EDITS = Set.of("swap", "place");

@@ -2,6 +2,7 @@ package com.komainu.moxia.progress;
 
 import com.komainu.moxia.biome.BiomeEditService;
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.region.RegionOperationService;
@@ -109,7 +110,7 @@ public final class ProgressBars {
     }
 
     private static void update(ServerBossBar bossBar, ProgressLine line, int ticks) {
-        bossBar.setName(Text.literal("KomaEdit · " + line.text()));
+        bossBar.setName(Text.literal(Feedback.PREFIX + " · " + line.text()));
         bossBar.setColor(switch (line.phase()) {
             case READING -> BossBar.Color.BLUE;
             case CALCULATING -> BossBar.Color.PURPLE;

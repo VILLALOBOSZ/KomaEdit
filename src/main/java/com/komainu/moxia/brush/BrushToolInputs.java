@@ -2,6 +2,7 @@ package com.komainu.moxia.brush;
 
 import com.komainu.moxia.brush.ez.EzBrushManager;
 import com.komainu.moxia.brush.superwand.SuperwandManager;
+import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -101,7 +102,7 @@ public final class BrushToolInputs {
         }
         if (kind == BrushTool.Kind.SUPERWAND ? !KomaPermissions.can(player, KomaPermissions.SELECT + ".superwand")
                 : !KomaPermissions.canAny(player, KomaPermissions.BUILD + ".brush")) {
-            player.sendMessage(Text.literal("KomaEdit · No tienes permiso para usar esta herramienta"), true);
+            Feedback.statusWarn(player, Text.literal("No tienes permiso para usar esta herramienta"));
             return;
         }
         switch (kind) {

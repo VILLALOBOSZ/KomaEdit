@@ -1,6 +1,7 @@
 package com.komainu.moxia.sculpt.model;
 
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.BrushFalloff;
 import com.komainu.moxia.sculpt.BrushMask;
 import com.komainu.moxia.sculpt.BrushOperation;
@@ -79,7 +80,7 @@ public record ModelOperation(ModelSettings settings, ModelMaterial added, ModelM
         ModelSculptor.Result result = ModelSculptor.apply(grid, settings, table.chooser(added, settings.seed()),
                 table.chooser(fill, settings.seed() ^ 0x5348415454L), ModelOperation::checkCancelled);
         if (result.changes() > MAX_CHANGES) {
-            throw new IllegalArgumentException("El pincel supera el límite de " + MAX_CHANGES + " bloques");
+            throw new IllegalArgumentException("El pincel supera el límite de " + ProgressLine.group(MAX_CHANGES) + " bloques");
         }
         PackedBlockPlan.Builder builder = PackedBlockPlan.builder(Math.max(16, result.changes()));
         int[] after = result.after();

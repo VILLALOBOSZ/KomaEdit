@@ -1,5 +1,6 @@
 package com.komainu.moxia.blueprint;
 
+import com.komainu.moxia.progress.ProgressLine;
 /**
  * Límites de la biblioteca de planos, en {@code config/komaedit/blueprints.json}. Quien tenga
  * {@code komaedit.blueprint.unlimited} se salta los de número y tamaño (no el del archivo, que protege el disco).
@@ -35,11 +36,11 @@ public record BlueprintLimits(
         }
         int side = Math.max(sizeX, Math.max(sizeY, sizeZ));
         if (side > maxSide) {
-            throw new IllegalArgumentException("El plano mide " + side + " bloques de lado; el máximo es " + maxSide);
+            throw new IllegalArgumentException("El plano mide " + ProgressLine.group(side) + " bloques de lado; el máximo es " + maxSide);
         }
         long volume = (long) sizeX * sizeY * sizeZ;
         if (volume > maxVolume) {
-            throw new IllegalArgumentException("El plano ocupa " + volume + " bloques de caja; el máximo es "
+            throw new IllegalArgumentException("El plano ocupa " + ProgressLine.group(volume) + " bloques de caja; el máximo es "
                     + maxVolume);
         }
     }

@@ -1,5 +1,7 @@
 package com.komainu.moxia.client.preview;
 
+import com.komainu.moxia.client.world.ClientWorldSettings;
+import com.komainu.moxia.client.world.WorldLabels;
 import com.komainu.moxia.preview.PreviewHologramPayload;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.render.RenderLayer;
@@ -49,5 +51,8 @@ public final class PreviewHologramRenderer {
         VertexConsumer lines = context.consumers().getBuffer(RenderLayer.getLines());
         WorldRenderer.drawBox(matrices, lines, bounds, red, green, blue, 0.95F);
         matrices.pop();
+        if (ClientWorldSettings.get().dimensions()) {
+            WorldLabels.dimensions(context, bounds.contract(0.03), color & 0xFFFFFF);
+        }
     }
 }

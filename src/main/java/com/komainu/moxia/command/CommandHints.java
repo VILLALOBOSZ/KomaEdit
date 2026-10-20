@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,6 +56,10 @@ public final class CommandHints {
     private CommandHints() {
     }
 
+    /** Lo escrito y lo que se propone en su lugar. */
+    record Suggestion(String typed, String found) {
+    }
+
     /** Devuelve el mensaje con la propuesta añadida, o tal cual si no la hay. */
     public static String enrich(String message) {
         if (message == null || message.contains("¿Quisiste decir")) {
@@ -64,9 +69,25 @@ public final class CommandHints {
         if (!matcher.matches()) {
             return message;
         }
+        // Si el mensaje ya trae la lista entre paréntesis, la propuesta va delante para que se vea.
+        return suggestion(message)
+                .map(found -> matcher.group(1) + ": " + matcher.group(2) + " · ¿Quisiste decir «" + found.found()
+                        + "»?" + matcher.group(3))
+                .orElse(message);
+    }
+
+    /** La propuesta para un mensaje de «desconocido», si la hay. */
+    static Optional<Suggestion> suggestion(String message) {
+        if (message == null) {
+            return Optional.empty();
+        }
+        Matcher matcher = UNKNOWN.matcher(message);
+        if (!matcher.matches()) {
+            return Optional.empty();
+        }
         Supplier<Collection<String>> candidates = CANDIDATES.get(matcher.group(1).trim());
         if (candidates == null) {
-            return message;
+            return Optional.empty();
         }
         String typed = matcher.group(2);
         // Las expresiones de figura llegan como «coli(engine:exact)»: se compara solo el nombre.
@@ -74,11 +95,24 @@ public final class CommandHints {
         if (parenthesis > 0) {
             typed = typed.substring(0, parenthesis);
         }
-        // Si el mensaje ya trae la lista entre paréntesis, la propuesta va delante para que se vea.
-        return DidYouMean.best(typed, candidates.get())
-                .map(found -> matcher.group(1) + ": " + matcher.group(2) + " · ¿Quisiste decir «" + found + "»?"
-                        + matcher.group(3))
-                .orElse(message);
+        String word = typed;
+        return DidYouMean.best(word, candidates.get()).map(found -> new Suggestion(word, found));
+    }
+
+    /**
+     * La orden escrita con la palabra cambiada por la propuesta (la primera vez que aparece suelta o como nombre de
+     * una expresión, {@code helx(…)}), o vacío si no se encuentra.
+     */
+    static Optional<String> corrected(String input, Suggestion suggestion) {
+        if (input == null || input.isBlank()) {
+            return Optional.empty();
+        }
+        Matcher word = Pattern.compile("(?<![\\w#:.-])" + Pattern.quote(suggestion.typed()) + "(?![\\w:.-])")
+                .matcher(input);
+        if (!word.find()) {
+            return Optional.empty();
+        }
+        return Optional.of(input.substring(0, word.start()) + suggestion.found() + input.substring(word.end()));
     }
 
     public static List<String> shapeNames() {

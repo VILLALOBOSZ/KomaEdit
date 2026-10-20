@@ -9,6 +9,7 @@ import com.komainu.moxia.blueprint.BlueprintService;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.placement.PlacementService;
 import com.komainu.moxia.placement.PlacementSettings;
+import com.komainu.moxia.progress.ProgressLine;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -172,7 +173,7 @@ public final class BlueprintCommands {
         BlueprintMeta meta = entry.meta();
         String reference = meta.reference();
         MutableText hover = Text.literal(reference).formatted(Formatting.WHITE)
-                .append(Text.literal("\n" + meta.describeSize() + " · " + meta.blocks() + " bloques"
+                .append(Text.literal("\n" + meta.describeSize() + " · " + ProgressLine.group(meta.blocks()) + " bloques"
                         + "\nde " + meta.author() + " · " + DATE.format(Instant.ofEpochMilli(meta.created()))
                         + (meta.tags().isEmpty() ? "" : "\n#" + String.join(" #", meta.tags()))).formatted(Formatting.GRAY));
         MutableText line = Text.literal(meta.scope() == BlueprintScope.SHARED ? " ★ " : " • ")
@@ -210,7 +211,7 @@ public final class BlueprintCommands {
         EzCommandSupport.send(player, Text.literal(meta.reference()).formatted(Formatting.YELLOW)
                 .append(Text.literal(meta.scope() == BlueprintScope.SHARED ? " · compartido" : " · tuyo")
                         .formatted(Formatting.GRAY)));
-        player.sendMessage(Text.literal("  Tamaño " + meta.describeSize() + " · " + meta.blocks() + " bloques · "
+        player.sendMessage(Text.literal("  Tamaño " + meta.describeSize() + " · " + ProgressLine.group(meta.blocks()) + " bloques · "
                 + (entry.schematic().toFile().length() / 1024 + 1) + " KiB").formatted(Formatting.GRAY), false);
         String updated = meta.updated() > meta.created()
                 ? " · cambiado " + DATE.format(Instant.ofEpochMilli(meta.updated())) : "";
