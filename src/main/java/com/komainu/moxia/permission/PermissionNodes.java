@@ -165,6 +165,10 @@ public final class PermissionNodes {
         add(build + ".biome", Pack.INTERMEDIATE, build, null, "/komaedit biome");
         add(build + ".brush.biome", Pack.INTERMEDIATE, build, null, "/komaedit pincel biome");
         add(build + ".shade", Pack.INTERMEDIATE, build, null, "/komaedit shade");
+        add(build + ".tree", Pack.INTERMEDIATE, build, null, "/komaedit tree");
+        add(build + ".rock", Pack.INTERMEDIATE, build, null, "/komaedit rock");
+        add(build + ".brush.tree", Pack.INTERMEDIATE, build, null, "/komaedit pincel tree");
+        add(build + ".brush.rock", Pack.INTERMEDIATE, build, null, "/komaedit pincel rock");
         add(build + ".brush.heightmap", Pack.INTERMEDIATE, build, null, "/komaedit pincel heightmap");
         add(build + ".terrain.ramp", Pack.INTERMEDIATE, build, null, "/komaedit terreno rampa");
         add(build + ".terrain.river", Pack.INTERMEDIATE, build, null, "/komaedit terreno rio|arroyo");

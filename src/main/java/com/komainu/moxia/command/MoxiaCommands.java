@@ -250,6 +250,7 @@ public final class MoxiaCommands {
         DeformCommands.register(root);
         TerrainCommands.register(root);
         PlacementCommands.register(root);
+        NatureCommands.register(root);
         TextureCommands.register(dispatcher);
         ImageCommands.register(dispatcher);
         GeneratorCommands.register(dispatcher);

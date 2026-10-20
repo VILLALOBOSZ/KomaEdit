@@ -220,6 +220,7 @@ Las figuras centradas usan tu posición como centro; el arco y la catenaria van 
 /komaedit help symmetry            modo simetría
 /komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
 /komaedit help preview             vista previa, progreso y cancelación
+/komaedit help nature              árboles y rocas
 /komaedit help project             proyecto y menús
 ```
 
@@ -1079,6 +1080,168 @@ Ejemplos:
 - Solo reconoce como apoyo las caras enteras, igual que la enredadera de vanilla: no trepa por el frente de escaleras, losas ni vallas, aunque sí tiende alfombra encima.
 - La enredadera de vanilla se sigue extendiendo sola con los ticks aleatorios del mundo, como cualquier enredadera puesta a mano.
 - No hay holograma previo ni entrada en el Studio: se coloca directamente y se deshace con //undo.
+
+## Árboles y rocas
+
+### Objetivo y acceso
+
+Árboles y rocas procedurales de calidad de builder, como los que se hacen a mano con VoxelSniper, Arceon o la herramienta Rock de Axiom, pero en un clic: troncos que se estrechan y se curvan, ramas que se reparten solas por la copa, raíces que se agarran al terreno, copas con bultos y rocas facetadas, agrietadas, sombreadas y hundidas en el suelo.
+
+```text
+/komaedit tree [especie|#preset] [altura] [banderas]
+/komaedit arbol [especie|#preset] [altura] [banderas]
+/komaedit rock [tipo|#preset] [tamaño] [banderas]
+/komaedit roca [tipo|#preset] [tamaño] [banderas]
+/komaedit tree save <nombre> <ajustes> [-f]
+/komaedit tree list
+/komaedit tree delete <nombre>
+/komaedit tree cancel
+/komaedit pincel tree <ajustes>
+/komaedit pincel rock <ajustes>
+```
+
+- **Dónde:** el árbol o la roca se apoya en el suelo que hay bajo el bloque que miras (hasta 160 bloques): si miras la ladera de un cerro sube hasta su superficie y si miras el aire, una planta o unas hojas, baja hasta encontrar suelo firme. Con puntos de trayectoria marcados (**P**, hasta 16), pone uno en cada punto, todos en la misma edición; cada uno sale distinto (semilla propia y un 15 % de variación de tamaño e inclinación, ajustable con `-x`).
+- **Una sola edición:** se lee el entorno repartido por ticks, se calcula en un worker y se coloca con el motor común, así que **//undo** quita todo de una vez, la barra de progreso y `/komaedit cancel` funcionan y vale la vista previa universal (`-v` o `--preview`): se enseña y espera a `/komaedit confirm`.
+- **Máscaras:** respeta la máscara global de WorldEdit (`//gmask`) y, con `-m <máscara>`, otra máscara de WorldEdit que mira lo que había antes (`-m air,short_grass` solo pone bloques en aire y hierba).
+- Permisos: `komaedit.build` o `komaedit.build.tree`, `komaedit.build.rock`, `komaedit.build.brush.tree` y `komaedit.build.brush.rock` (paquete intermedio).
+
+![Las doce especies](renders/arboles/arboles.png)
+
+### Especies
+
+| Especie | Alias | Cómo crece | Materiales de serie |
+| --- | --- | --- | --- |
+| `oak` | `roble`, `encina` | Copa en cúpula con 7 bultos, ramas maestras gruesas y raíces anchas | `oak_log`, `oak_leaves` |
+| `spruce` | `abeto`, `pino` | Guía central y pisos de ramas en verticilo que se acortan hacia arriba, cada piso un cono de hojas | `spruce_log`, `spruce_leaves` |
+| `birch` | `abedul` | Tronco fino y alto, copa estrecha y ovalada | `birch_log`, `birch_leaves` |
+| `jungle` | `jungla`, `selva`, `tropical` | Tronco alto con contrafuertes, copa en sombrilla arriba y matas sueltas en el tronco | `jungle_log`, `jungle_leaves` |
+| `acacia` | `sabana` | El tronco se abre en 2–4 guías inclinadas que acaban en copas planas con ramitas en abanico | `acacia_log`, `acacia_leaves` |
+| `cherry` | `cerezo`, `sakura` | Copa ancha y baja, con hojas que cuelgan por debajo | `cherry_log`, `cherry_leaves` |
+| `willow` | `sauce`, `lloron` | Cúpula ancha de la que caen cortinas de hojas casi hasta el suelo | `oak_log`, `oak_leaves,azalea_leaves` |
+| `dark_oak` | `robleoscuro`, `oscuro` | Tronco muy grueso y corto, cúpula densa y plana por debajo | `dark_oak_log`, `dark_oak_leaves` |
+| `dead` | `muerto`, `seco` | Sin hojas, ramas retorcidas y algunas partidas | `spruce_log`, sin hojas |
+| `palm` | `palmera` | Tronco curvo que se inclina más cuanto más sube y una corona de frondas en arco que caen | `jungle_log`, `jungle_leaves` |
+| `baobab` | `adansonia` | Tronco en botella y una corona corta de ramas gruesas con matas pequeñas | `acacia_log`, `acacia_leaves` |
+| `fantasy` | `fantastico`, `retorcido`, `curvo` | Tronco en S y ramas que giran en espiral alrededor del tronco, con hojas colgantes | `mangrove_log`, `flowering_azalea_leaves,azalea_leaves` |
+
+Sin especie se planta un roble; con solo un número, un roble de esa altura.
+
+### Comportamiento de los árboles
+
+- **Tronco y ramas con el motor de tubo.** Cada tronco, rama y raíz es un tubo del mismo espacio de tubo que `sweep` (curva de Kochanek–Bartels, marcos de mínima rotación y voxelizado inverso con supermuestreo) con un radio en cada punto, así que se estrecha sin escalones. El tronco se inclina (`-i`), serpentea con ruido (`-c`) y se ensancha en la base; en una ladera se entierra lo que haga falta para que el lado de abajo no quede al aire.
+- **Ramificación por colonización del espacio** (Runions et al.) en las frondosas: se reparten puntos de atracción por la copa, agrupados en bultos hacia fuera, y las ramas crecen paso a paso hacia ellos hasta consumirlos. El grosor sale del modelo de tuberías (cada rama es tan gruesa como las que sostiene), así que las ramas maestras son gruesas y las puntas de un bloque. El abeto, la acacia, la palmera y el baobab tienen su propio esqueleto.
+- **Copa:** grupos de hojas alrededor de cada punta, elipsoides deformados por ruido y aplanados por debajo para que se vean las ramas. La superficie va casi llena y el interior más ralo (como en los árboles de verdad, que no tienen hojas dentro), con las hojas pegadas a las ramas casi siempre puestas.
+- **Raíces:** salen de la base, siguen la altura del terreno columna a columna y acaban hundiéndose en él; pueden ocupar tierra, hierba, arena, grava, barro y nieve.
+- **Troncos orientados:** cada bloque de tronco o raíz lleva el `axis` del eje del mundo más alineado con su rama (`y` en el tronco, `x` o `z` en las ramas tumbadas). Cualquier bloque con `axis` sirve (troncos, maderas, tallos, hifas…).
+- **Hojas persistentes:** todas las hojas llevan `persistent=true` (no se caen solas nunca) y su `distance` real a la madera; las de la copa están a 6 pasos o menos de la madera, como pide Minecraft, y las colgantes (cortinas y frondas) a 12 o menos.
+- **Nada flotando:** toda la madera queda unida cara con cara a algo apoyado en el suelo (una rama de un bloque en diagonal también) y cada hoja llega a la madera por otras hojas. Si una piedra corta una rama, el trozo suelto se une con un puente corto o se quita.
+- **Qué ocupa:** madera y hojas solo en aire, plantas que se reemplazan (hierba, flores, nieve fina…) y, la madera, también en hojas y agua; las construcciones y la piedra se respetan.
+- Con la misma semilla, el mismo sitio y los mismos ajustes sale el mismo árbol. Sin `-s` se elige una y el chat la dice para repetirla.
+
+### Banderas de los árboles
+
+| Bandera | Efecto |
+| --- | --- |
+| `[especie]` | Una de la tabla, o `#preset`. |
+| `[altura]` | Altura en bloques (4–96; por defecto la de la especie). |
+| `-g <0.25–4>` | Grosor del tronco y, con él, de todas las ramas. |
+| `-b <0–3>` | Cantidad de ramas (y de guías en la acacia, verticilos en el abeto, frondas en la palmera). |
+| `-d <0–2>` | Densidad de la copa; `0` la deja sin hojas. |
+| `-w <0.3–3>` | Ancho de la copa. |
+| `-i <grados>[,rumbo]` | Inclinación del tronco (0–75°); el rumbo va en grados (0 = este, 90 = sur) y sin él es al azar. |
+| `-c <0–4>` | Cuánto serpentean tronco y ramas. |
+| `-s <semilla>` | Semilla. |
+| `-t <bloques>` | Tronco y ramas: un bloque, una lista (`oak_log,stripped_oak_log`), `##paleta` o `#paleta guardada`; con varios, sale a vetas. |
+| `-h <bloques>` | Hojas; `-h no` sin hojas. Con varias, mezcladas. |
+| `-r <bloques>` | Raíces (por defecto, el tronco); `-r no` sin raíces. |
+| `-m <máscara>` | Máscara de WorldEdit: dónde puede poner bloques. |
+| `-x <0–1>` | Variación entre árboles (puntos marcados y pincel). |
+| `-v`, `--preview` | Vista previa universal (solo en la orden). |
+
+Ejemplos:
+
+```text
+/komaedit tree
+/komaedit tree oak 24 -g 1.3 -i 10
+/komaedit tree spruce 30 -d 1.4
+/komaedit tree cherry 14 -w 1.4 -c 1.5
+/komaedit tree willow 18 -h oak_leaves,azalea_leaves,flowering_azalea_leaves
+/komaedit tree palm 18 -i 25,90
+/komaedit tree dead 16 -t spruce_log,stripped_spruce_log -r no
+/komaedit tree baobab 22 -g 1.2 -m grass_block,air
+/komaedit arbol fantastico 26 -c 2
+/komaedit tree jungle 40 -x 0.3
+```
+
+### Rocas
+
+| Tipo | Alias | Forma |
+| --- | --- | --- |
+| `boulder` | `roca`, `piedra`, `canto` | Roca redondeada y facetada (radio 4 por defecto). |
+| `crag` | `penasco`, `peñasco`, `risco` | Peñasco ancho con la cima casi plana, estratos y grietas (radio 7). |
+| `spire` | `aguja`, `pinaculo`, `menhir` | Aguja alta que se estrecha hacia arriba, con grietas a lo largo (radio 3, alto ×3,2). |
+
+- **Forma:** un elipsoide (o un huso que se estrecha, en las agujas) cortado por caras planas al azar, deformado con ruido sobre coordenadas distorsionadas (domain warping, nada de bultos en rejilla) y surcado por grietas que siguen los bordes de unas celdas de Voronoi; los peñascos además tienen estratos horizontales.
+- **Hundida:** una parte de su alto queda bajo tierra (`-h`) y la parte baja sigue al terreno columna a columna: en una ladera baja por el lado de abajo y sube por el de arriba, así que no queda hueco debajo.
+- **Sombreado:** los bloques de `-b` van de oscuro a claro. Cada bloque visible toma el suyo según la altura (más oscuro abajo), hacia dónde mira (luz desde arriba y el sur), lo encajonado que está (más oscuro en grietas y rincones) y un poco de grano. Por defecto `deepslate,tuff,cobblestone,stone,andesite`.
+- **Musgo** (opcional, `-u`): por arriba y en los rincones, a manchas, solo donde le da el aire por encima.
+- Ocupa aire, plantas, agua, tierra y piedra natural; nunca construcciones ni hojas. Queda de una pieza (los trozos sueltos que pueda dejar el ruido se quitan).
+
+| Bandera | Efecto |
+| --- | --- |
+| `[tipo]` o `-t <tipo>` | `boulder`, `crag` o `spire`, o `#preset`. |
+| `[tamaño]` | Radio en bloques (1–32). |
+| `-b <bloques>` | Bloques de oscuro a claro: lista, `##paleta` o `#guardada`. |
+| `-u <0–1 \| bloques>` | Musgo: una cantidad (con `moss_block`) o los bloques del musgo (a la mitad). |
+| `-a <0.2–6>` | Alto respecto al ancho. |
+| `-e <1–4>` | Planta alargada. |
+| `-r <0–1>` | Rugosidad del ruido. |
+| `-g <0–1>` | Grietas y estratos. |
+| `-c <0–32>` | Caras planas talladas (`0` sin caras). |
+| `-h <0–0.9>` | Parte enterrada. |
+| `-i <0–60>` | Inclinación. |
+| `-s`, `-m`, `-x`, `-v` | Semilla, máscara, variación y vista previa, como en los árboles. |
+
+```text
+/komaedit rock
+/komaedit rock 6 -u 0.6
+/komaedit rock crag 10 -e 2 -u 0.5
+/komaedit rock spire 4 -a 4 -i 12
+/komaedit rock boulder 5 -b ##Grayscale -g 0.8
+/komaedit roca peñasco 8 -b granite,diorite,calcite -h 0.4
+```
+
+![Rocas, peñascos y agujas](renders/arboles/rocas.png)
+
+### Presets
+
+Unos ajustes se guardan con nombre, por jugador y mundo (`komaedit/players/<uuid>/nature`), como los ruidos guardados, y se usan con `#nombre`. Lo que se escriba detrás manda sobre lo guardado: `#mio 25 -s 3` usa el preset con otra altura y otra semilla.
+
+```text
+/komaedit tree save bosque oak 22 -g 1.2 -h oak_leaves,azalea_leaves
+/komaedit tree #bosque 28
+/komaedit rock save menhir spire 3 -a 5 -u 0.4
+/komaedit pincel rock #menhir
+```
+
+- `list` (`lista`) enseña los de serie y los tuyos; `delete` (`borrar`) borra uno; `-f` sustituye uno que ya existe. Un preset no puede apuntar a otro ni llamarse como una especie o un tipo.
+
+### Pinceles
+
+`/komaedit pincel tree <ajustes>` y `/komaedit pincel rock <ajustes>` aceptan lo mismo que las órdenes (también `#preset`). Cada **clic derecho** planta un árbol o una roca en el suelo que miras con una **variante nueva**: otra semilla y, con `-x` (0,2 por defecto), otra altura, grosor, ancho e inclinación. Con `-s` todos salen iguales. Con `-p` cada clic deja su vista previa de pincel (`/komaedit pincel aplicar`).
+
+```text
+/komaedit pincel tree oak 16 -x 0.35
+/komaedit pincel rock boulder 3 -u 0.4
+```
+
+### Rendimiento y limitaciones
+
+- El cálculo es rápido: un roble de 18 bloques (unos 1 500 bloques) tarda de 70 a 150 ms; uno de 60 (unos 43 000 bloques), menos de un segundo; las rocas de serie, de 10 a 50 ms. Lo que más tarda es leer el entorno, repartido entre ticks.
+- Un árbol lee una caja de su copa más 14 bloques por debajo; con varios puntos marcados la caja los cubre a todos y tiene un tope de 4 millones de bloques. Tope de bloques por operación del servidor (`maxBlocksPerOperation`), como todo el mod.
+- El árbol no ve otros árboles que pongas en la misma orden: si se cruzan, la madera tapa las hojas del otro y las hojas se respetan entre sí.
+- Las rocas no tienen biomas ni entidades en cuenta, y una máscara de bioma da error.
+- Renders de comprobación (fuera del juego): `docs/renders/arboles/` y la prueba `NatureRenderTest` con `KOMAEDIT_NATURE_RENDER=<carpeta>`.
 
 ## Modificadores
 
@@ -2321,6 +2484,8 @@ Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit:
 | `place` | `colocar`, `pl` | [Colocación](#pincel-de-colocación) |
 | `scatter` | `dispersar`, `sc` | [Dispersión](#pincel-de-colocación) |
 | `array` | `hilera`, `ar` | [Hilera a lo largo de un trazo](#pincel-de-colocación) |
+| `tree` | `arbol`, `tr` | [Un árbol en cada clic](#pinceles) |
+| `rock` | `roca`, `rk` | [Una roca en cada clic](#pinceles) |
 | `heightmap` | `relieve`, `sello`, `hm` | [Pincel de relieve](#pincel-de-relieve-sellos) (propio de KomaEdit) |
 
 - El pincel se liga al **objeto de la mano principal**, como los de WorldEdit: cada objeto guarda el suyo y se pueden llevar varios a la vez. Con la mano vacía se entrega una pluma llamada «Pincel de KomaEdit». Volver a configurar un objeto que ya tiene pincel lo sustituye.
@@ -3340,7 +3505,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
-   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`.
+   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
    - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
    - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
@@ -3353,7 +3518,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 | Paquete | Incluye |
 | --- | --- |
 | `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
 | `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
