@@ -17,7 +17,8 @@ import java.util.Locale;
  * <p>Comunes: {@code -s} dimensiones, {@code -o} escala aleatoria, {@code -c}/{@code -k} orientación,
  * {@code -f} simetrías aleatorias, {@code -r} giros de 90° aleatorios, {@code -a} colocar aire, {@code -j} ajuste
  * de direcciones, {@code -x} perturbar la secundaria, {@code -w} perfil de smoothblocks ({@link SmoothProfile}) e {@code -i}
- * semilla.</p>
+ * semilla. Solo en {@code place}: {@code -copias}, {@code -desplazar}, {@code -revolver}, {@code -pivote} y
+ * {@code -torcer} ({@link PlacementCopies}).</p>
  */
 public record PlacementSettings(
         Kind kind,
@@ -38,7 +39,8 @@ public record PlacementSettings(
         long seed,
         boolean randomSeed,
         Scatter scatter,
-        Array array
+        Array array,
+        PlacementCopies copies
 ) {
     public enum Kind {
         PLACE("place"), SCATTER("scatter"), ARRAY("array");
@@ -147,6 +149,12 @@ public record PlacementSettings(
         double continuity = 0;
         TubeSettings.NormalMode normalMode = array.normalMode();
         boolean snapSurface = false;
+        int copies = 0;
+        Vec3 copyOffset = new Vec3(0, 0, 0);
+        double revolve = 0.0;
+        Vec3 pivot = new Vec3(0, 0, 0);
+        double twist = 0.0;
+        boolean copyFlags = false;
 
         for (int index = 1; index < words.size(); index++) {
             String word = words.get(index);
@@ -250,6 +258,30 @@ public record PlacementSettings(
                     only(kind, Kind.ARRAY, flag);
                     progression = progression(value);
                 }
+                case "-copias", "-copies" -> {
+                    only(kind, Kind.PLACE, flag);
+                    copies = (int) ParamText.number(value, 1, PlacementCopies.MAX_COPIES, flag);
+                }
+                case "-desplazar", "-translate", "-offset" -> {
+                    only(kind, Kind.PLACE, flag);
+                    copyOffset = PlacementCopies.vector(value, flag);
+                    copyFlags = true;
+                }
+                case "-revolver", "-revolve" -> {
+                    only(kind, Kind.PLACE, flag);
+                    revolve = ParamText.number(value, -3_600, 3_600, flag);
+                    copyFlags = true;
+                }
+                case "-pivote", "-pivot" -> {
+                    only(kind, Kind.PLACE, flag);
+                    pivot = PlacementCopies.vector(value, flag);
+                    copyFlags = true;
+                }
+                case "-torcer", "-twist" -> {
+                    only(kind, Kind.PLACE, flag);
+                    twist = ParamText.number(value, -3_600, 3_600, flag);
+                    copyFlags = true;
+                }
                 case "-p" -> {
                     only(kind, Kind.ARRAY, flag);
                     String[] parts = value.split("[:,]");
@@ -279,14 +311,15 @@ public record PlacementSettings(
                 maximumScale, axis, angle, flips, rotationAxis, placeAir, snap, perturb, smooth,
                 randomSeed ? 0 : seed, randomSeed,
                 new Scatter(region, List.copyOf(directions), threshold, mask, density, iterations, cover, trim),
-                new Array(gap, maxOffset, progression, tension, bias, continuity, normalMode, snapSurface));
+                new Array(gap, maxOffset, progression, tension, bias, continuity, normalMode, snapSurface),
+                PlacementCopies.of(copies, copyOffset, revolve, pivot, twist, copyFlags));
     }
 
     /** Fija la semilla si se pidió al azar ({@code -i -1}), para que el cálculo sea reproducible a partir de aquí. */
     public PlacementSettings withSeed(long value) {
         return new PlacementSettings(kind, structure, primary, secondary, dimensions, minimumScale, maximumScale,
                 orientationAxis, orientationAngle, flips, rotationAxis, placeAir, snap, perturb, smooth,
-                value, false, scatter, array);
+                value, false, scatter, array, copies);
     }
 
     public boolean needsNormal() {

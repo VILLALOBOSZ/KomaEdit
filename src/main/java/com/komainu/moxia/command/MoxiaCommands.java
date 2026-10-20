@@ -50,6 +50,7 @@ import com.komainu.moxia.sculpt.SculptManager;
 import com.komainu.moxia.sculpt.SculptPreviewManager;
 import com.komainu.moxia.sculpt.SculptProfile;
 import com.komainu.moxia.sculpt.SculptSettings;
+import com.komainu.moxia.sculpt.model.ModelMaterial;
 import com.komainu.moxia.weathering.WeatheringService;
 import com.komainu.moxia.weathering.WeatheringSettings;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -246,6 +247,7 @@ public final class MoxiaCommands {
                 .then(BrushCommands.superwand("supervarita"))
                 .then(jobCommand())
                 .then(projectCommand())
+                .then(sculptCommand().requires(source -> can(source, "komaedit.build.brush.sculpt")))
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(tweakCommand("tweak").requires(MoxiaCommands::canTweak))
                 .then(tweakCommand("retocar").requires(MoxiaCommands::canTweak))
@@ -268,6 +270,7 @@ public final class MoxiaCommands {
         CapabilityCommands.register(root);
         SymmetryCommands.register(root);
         BuilderCommands.register(root);
+        ClipboardCommands.register(root);
         PreviewCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
@@ -1216,7 +1219,8 @@ public final class MoxiaCommands {
             return previous.get().pattern();
         }
         Optional<SculptProfile> sculpt = SculptManager.profile(player.getUuid());
-        if (sculpt.isPresent() && !sculpt.get().pattern().equalsIgnoreCase("hand")) {
+        if (sculpt.isPresent() && !sculpt.get().pattern().equalsIgnoreCase("hand")
+                && !ModelMaterial.surrounding(sculpt.get().pattern())) {
             return sculpt.get().pattern();
         }
         throw new IllegalArgumentException("Para usar hand, sostén un bloque en la mano principal o secundaria");
@@ -1284,7 +1288,15 @@ public final class MoxiaCommands {
                     player,
                     StringArgumentType.getString(context, "sculpt_pattern")
             );
-            WorldEditService.validatePattern(player, pattern);
+            if (ModelMaterial.surrounding(pattern)) {
+                // «auto»: el material de alrededor; solo lo entienden los pinceles de modelado.
+                if (type.category() != SculptBrushType.Category.MODEL) {
+                    throw new IllegalArgumentException("«auto» (el material de alrededor) solo vale con draw, rock,"
+                            + " weld, melt, roughen y shatter");
+                }
+            } else {
+                WorldEditService.validatePattern(player, pattern);
+            }
             int radius = IntegerArgumentType.getInteger(context, "sculpt_radius");
             SculptSettings defaults = SculptSettings.defaults(type);
             SculptSettings settings = defaults.withGeometry(
@@ -1503,7 +1515,9 @@ public final class MoxiaCommands {
         String name = StringArgumentType.getString(context, "preset_load_name");
         try {
             SculptProfile profile = SculptPresetStore.load(player.getUuid(), name);
-            WorldEditService.validatePattern(player, profile.pattern());
+            if (!ModelMaterial.surrounding(profile.pattern())) {
+                WorldEditService.validatePattern(player, profile.pattern());
+            }
             BrushManager.deactivate(player.getUuid());
             SculptManager.activate(player, profile);
             context.getSource().sendFeedback(

@@ -1,5 +1,7 @@
 package com.komainu.moxia.sculpt;
 
+import com.komainu.moxia.sculpt.model.ModelMode;
+
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -22,7 +24,14 @@ public enum SculptBrushType {
     PAINT("paint", "Pintar", Category.VOLUME, "pintar"),
     BLEND("blend", "Mezclar", Category.VOLUME, "mezclar"),
     EROSION("erosion", "Erosión", Category.HEIGHT, "erosion", "erosión"),
-    NOISE("noise", "Ruido", Category.HEIGHT, "ruido");
+    NOISE("noise", "Ruido", Category.HEIGHT, "ruido"),
+    // Modelado (paquete sculpt.model): los pinceles de Axiom que faltaban.
+    DRAW("draw", "Esculpir", Category.MODEL, "esculpir", "dibujar"),
+    ROCK("rock", "Roca", Category.MODEL, "roca"),
+    WELD("weld", "Soldar", Category.MODEL, "soldar"),
+    MELT("melt", "Fundir", Category.MODEL, "fundir"),
+    ROUGHEN("roughen", "Rugosidad", Category.MODEL, "rugosidad", "rugoso"),
+    SHATTER("shatter", "Grietas", Category.MODEL, "grietas");
 
     private final String id;
     private final String displayName;
@@ -52,6 +61,11 @@ public enum SculptBrushType {
         return category != Category.LINE;
     }
 
+    /** El pincel de modelado de este tipo, o {@code null} si no es de modelado. */
+    public ModelMode modelMode() {
+        return category == Category.MODEL ? ModelMode.byId(id) : null;
+    }
+
     public static SculptBrushType byId(String input) {
         String normalized = input.toLowerCase(Locale.ROOT);
         return Arrays.stream(values())
@@ -65,6 +79,8 @@ public enum SculptBrushType {
         SHAPE,
         LINE,
         VOLUME,
-        HEIGHT
+        HEIGHT,
+        /** Esculpir, roca, soldar, fundir, rugosidad y grietas: van por {@code SculptManager.run}. */
+        MODEL
     }
 }

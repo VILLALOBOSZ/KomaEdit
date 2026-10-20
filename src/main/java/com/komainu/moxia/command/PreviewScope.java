@@ -23,7 +23,7 @@ final class PreviewScope {
             "pincel", "ezbrush", "superwand", "supervarita", "job", "project", "help", "ayuda", "info", "reload",
             "recargar", "permissions", "permisos", "noise", "ruido", "sel", "seleccion", "quiet", "silencio", "wiki",
             "symmetry", "simetria", "sym", "capability", "capacidad", "color", "colour", "analyze", "analizar",
-            "materiales", "biome", "bioma", "gradient");
+            "materiales", "biome", "bioma", "gradient", "clipboard", "portapapeles");
     private static final Set<String> PALETTE = Set.of("palette", "paleta");
     /** De las paletas solo editan el mundo estas. */
     private static final Set<String> PALETTE_EDITS = Set.of("swap", "place");
