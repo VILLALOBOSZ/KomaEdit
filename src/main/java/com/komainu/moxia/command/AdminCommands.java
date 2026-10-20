@@ -1,12 +1,15 @@
 package com.komainu.moxia.command;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.capability.CapabilityConfig;
+import com.komainu.moxia.capability.CapabilityService;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.gradient.ServerPalettes;
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.permission.PermissionNodes;
+import com.komainu.moxia.persistence.QuietMode;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -28,8 +31,9 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 /**
- * Órdenes generales y de administración, como {@code /ezedits info} y {@code /ezedits reload}:
- * {@code /komaedit info}, {@code /komaedit reload} y {@code /komaedit permisos}.
+ * Órdenes generales y de administración, como {@code /ezedits info}, {@code quiet}, {@code wiki} y
+ * {@code reload}: {@code /komaedit info}, {@code /komaedit quiet}, {@code /komaedit wiki}, {@code /komaedit reload}
+ * y {@code /komaedit permisos}.
  */
 public final class AdminCommands {
     private AdminCommands() {
@@ -37,6 +41,9 @@ public final class AdminCommands {
 
     public static void register(LiteralCommandNode<ServerCommandSource> root) {
         root.addChild(literal("info").executes(AdminCommands::info).build());
+        root.addChild(quiet("quiet").build());
+        root.addChild(quiet("silencio").build());
+        root.addChild(literal("wiki").executes(AdminCommands::wiki).build());
         root.addChild(reload("reload").build());
         root.addChild(reload("recargar").build());
         root.addChild(permissions("permissions").build());
@@ -61,11 +68,57 @@ public final class AdminCommands {
         return 1;
     }
 
+    /** {@code /komaedit quiet [on|off]}: sin argumento alterna; se guarda en el proyecto del jugador. */
+    private static LiteralArgumentBuilder<ServerCommandSource> quiet(String name) {
+        return literal(name)
+                .executes(context -> quiet(context, null))
+                .then(argument("state", StringArgumentType.word())
+                        .suggests(EzCommandSupport.words(List.of("on", "off")))
+                        .executes(context -> quiet(context, StringArgumentType.getString(context, "state"))));
+    }
+
+    private static int quiet(CommandContext<ServerCommandSource> context, String state) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        Boolean quiet = state == null ? Boolean.valueOf(!QuietMode.isQuiet(player.getUuid())) : onOff(state);
+        if (quiet == null) {
+            return EzCommandSupport.fail(context.getSource(), "Usa /komaedit quiet on u off (o sin nada para alternar)");
+        }
+        try {
+            QuietMode.set(player.getUuid(), quiet);
+        } catch (IllegalStateException | IllegalArgumentException exception) {
+            return EzCommandSupport.fail(context.getSource(), "No se pudo guardar: " + exception.getMessage());
+        }
+        EzCommandSupport.ok(player, quiet
+                ? "Modo silencioso: solo verás errores, avisos y el resultado de cada edición"
+                : "Modo silencioso desactivado: vuelven los mensajes informativos");
+        return 1;
+    }
+
+    private static Boolean onOff(String state) {
+        return switch (state.toLowerCase(Locale.ROOT)) {
+            case "on", "si", "sí", "true", "1" -> Boolean.TRUE;
+            case "off", "no", "false", "0" -> Boolean.FALSE;
+            default -> null;
+        };
+    }
+
+    /** {@code /komaedit wiki}: la documentación de KomaEdit va dentro del juego. */
+    private static int wiki(CommandContext<ServerCommandSource> context) {
+        context.getSource().sendFeedback(() -> EzCommandSupport.prefix()
+                .append(Text.literal("La ayuda está en el juego: ").formatted(Formatting.GRAY))
+                .append(EzCommandSupport.button("/komaedit help", "/komaedit help", Formatting.YELLOW))
+                .append(Text.literal(" (por temas: /komaedit help <tema>) · versión y datos: ").formatted(Formatting.GRAY))
+                .append(EzCommandSupport.button("/komaedit info", "/komaedit info", Formatting.YELLOW)), false);
+        return 1;
+    }
+
     private static LiteralArgumentBuilder<ServerCommandSource> reload(String name) {
         return literal(name)
                 .requires(source -> EzCommandSupport.can(source, KomaPermissions.ADMIN_RELOAD))
                 .executes(context -> {
                     KomaEditConfig.load();
+                    CapabilityConfig.load();
+                    CapabilityService.resyncAll(context.getSource().getServer());
                     int palettes = ServerPalettes.load(KomaEditConfig.palettesFile());
                     KomaEditConfig.Settings settings = KomaEditConfig.settings();
                     context.getSource().sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal(

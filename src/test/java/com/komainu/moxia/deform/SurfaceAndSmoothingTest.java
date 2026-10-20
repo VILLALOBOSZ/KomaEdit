@@ -62,7 +62,7 @@ class SurfaceAndSmoothingTest {
     void maskLimitsWhatCanBeCarved() {
         Volume volume = cube();
         SurfaceOps.Settings onlyGrass = new SurfaceOps.Settings(3, SurfaceOps.Displacement.white(1), 0, 0,
-                true, false, rawId -> rawId == Shapes.GRASS, false);
+                true, false, (x, y, z) -> volume.materialAt(x, y, z) == Shapes.GRASS, false);
         Shapes.Result result = Shapes.apply(volume, SurfaceOps.apply(volume, onlyGrass, Shapes.NO_CANCEL));
         assertTrue(result.stats.total() > 0);
         for (int index = 0; index < result.ids.length; index++) {

@@ -8,6 +8,8 @@ import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.PendingBuilds;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.region.RegionEdits;
 import com.komainu.moxia.region.RegionMasks;
 import com.komainu.moxia.region.RegionOperationService;
@@ -26,7 +28,8 @@ import java.util.concurrent.CancellationException;
  * Lanza las herramientas de terreno sobre el motor común: lee la zona repartiendo la lectura entre ticks
  * ({@link RegionOperationService#capture}), calcula en un worker de {@link AsyncEngine}, enseña la estimación del
  * motor ({@link BuildEstimate}, con la confirmación de {@link PendingBuilds} si es grande) y escribe por lotes con
- * {@link BatchEditService}: una sola entrada de //undo y solo donde el bloque no haya cambiado mientras tanto.
+ * {@link BatchEditService}: una sola entrada de //undo y solo donde el bloque no haya cambiado mientras tanto. Con
+ * {@code -v} (o «previsualizar siempre») el plan pasa por la vista previa del motor común antes de colocarse.
  */
 public final class TerrainService {
     private static volatile StampCatalog catalog;
@@ -82,23 +85,33 @@ public final class TerrainService {
         RegionMasks.Bound mask = maskText == null || maskText.isBlank() ? null : RegionMasks.parse(player, maskText);
         MinecraftServer server = player.getServer();
         UUID playerId = player.getUuid();
-        RegionOperationService.capture(player, region, padding, description,
-                snapshot -> compute(server, playerId, description, snapshot, mask, blocks, estimateOnly, job));
+        Region frozen = region.clone();
+        // Si al confirmar una vista previa la zona ha cambiado, se vuelve a leer y calcular entero.
+        Runnable recompute = () -> {
+            ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
+            if (current != null) {
+                submit(current, frozen, padding, description, maskText, blocks, false, job);
+            }
+        };
+        RegionOperationService.capture(player, frozen, padding, description,
+                snapshot -> compute(server, playerId, description, snapshot, mask, blocks, estimateOnly, job,
+                        recompute));
     }
 
     private record Outcome(RegionEdits edits, TerrainJobs.Summary summary) {
     }
 
     private static void compute(MinecraftServer server, UUID playerId, String description, RegionSnapshot snapshot,
-                                RegionMasks.Bound mask, TerrainBlocks blocks, boolean estimateOnly, Job job) {
+                                RegionMasks.Bound mask, TerrainBlocks blocks, boolean estimateOnly, Job job,
+                                Runnable recompute) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerId);
         if (player == null) {
             return;
         }
-        player.sendMessage(message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY),
-                false);
+        QuietMode.info(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
         AsyncEngine.submit(
                 playerId,
+                description,
                 () -> {
                     if (mask != null) {
                         mask.bind(snapshot);
@@ -108,7 +121,8 @@ public final class TerrainService {
                     TerrainJobs.Summary summary = job.run(view, blocks.region(edits, snapshot), CANCELLATION);
                     return new Outcome(edits, summary);
                 },
-                outcome -> server.execute(() -> finish(server, playerId, description, estimateOnly, outcome)),
+                outcome -> server.execute(() -> finish(server, playerId, description, estimateOnly, outcome,
+                        recompute)),
                 throwable -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
                     if (current != null && !(throwable instanceof CancellationException)) {
@@ -119,7 +133,7 @@ public final class TerrainService {
     }
 
     private static void finish(MinecraftServer server, UUID playerId, String description, boolean estimateOnly,
-                               Outcome outcome) {
+                               Outcome outcome, Runnable recompute) {
         ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
         if (current == null) {
             return;
@@ -140,15 +154,20 @@ public final class TerrainService {
         }
         Runnable submit = () -> {
             try {
-                int queued = BatchEditService.submit(current, plan, "air", description);
-                current.sendMessage(message(description + ": " + queued + " bloques en cola · "
-                        + outcome.summary().columns() + " columnas" + (detail.isBlank() ? "" : " · " + detail)
-                        + " · //undo para deshacer", Formatting.GREEN), false);
+                // Con -v o «previsualizar siempre», BatchEditService deja el plan en vista previa en lugar de
+                // encolarlo; las vigilancias de la zona son las de las posiciones que cambian.
+                int queued = PlanPreviews.withExtras(new PlanPreviews.Extras(recompute, null),
+                        () -> BatchEditService.submit(current, plan, "air", description));
+                if (!PlanPreviews.holds(playerId, plan)) {
+                    QuietMode.info(current, message(description + ": " + queued + " bloques en cola · "
+                            + outcome.summary().columns() + " columnas" + (detail.isBlank() ? "" : " · " + detail)
+                            + " · //undo para deshacer", Formatting.GREEN));
+                }
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 current.sendMessage(message(description + ": " + readable(exception), Formatting.RED), false);
             }
         };
-        PendingBuilds.submitOrHold(current, description, estimate, submit);
+        PendingBuilds.submitOrHold(current, description, estimate, submit, true);
     }
 
     /** Lo mismo que avisa {@code /komaedit estimate}: si pasa del límite o si pedirá confirmación. */

@@ -63,6 +63,8 @@ public final class BrushCommands {
                         "-t"};
                 case ARRAY -> new String[]{"Clipboard", "Sh(S:Cylinder,P:stone)", "Tangential", "Orthogonal",
                         "Constant", "-g", "-q", "-y", "-b", "-n", "-p", "-s"};
+                case BIOME -> new String[]{"cherry_grove", "snowy_plains", "desert", "8", "16", "-v", "-m",
+                        "grass_block"};
                 case HEIGHTMAP -> heightmapExamples();
             };
         } catch (IllegalArgumentException exception) {
@@ -180,7 +182,7 @@ public final class BrushCommands {
         var brush = id == null ? java.util.Optional.<EzBrush>empty() : EzBrushManager.brush(player.getUuid(), id);
         if (brush.isEmpty()) {
             feedback(context, Text.literal("Pinceles: paletteshift, gradient, gradientstroke, petalpainter, place,"
-                    + " scatter, array, heightmap. Ejemplo: /komaedit pincel gradient ##Magma 8 tapered 0.6")
+                    + " scatter, array, biome, heightmap. Ejemplo: /komaedit pincel gradient ##Magma 8 tapered 0.6")
                     .formatted(Formatting.GRAY));
             return 1;
         }

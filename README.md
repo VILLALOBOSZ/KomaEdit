@@ -272,4 +272,8 @@ Usa `/komaedit job status`, `/komaedit job cancel`, `/komaedit project status`, 
 - WorldEdit `7.3.8` o posterior
 - Java `21`
 
+## Fuentes de terceros
+
+`/komaedit text` incluye las fuentes Lato (© tyPoland Łukasz Dziedzic) y JetBrains Mono (© The JetBrains Mono Project Authors), sin modificar y bajo la SIL Open Font License 1.1; sus licencias están en `src/main/resources/komaedit/fonts/` y dentro del jar.
+
 KomaEdit no es un producto oficial de Minecraft y no está aprobado ni asociado con Mojang o Microsoft.

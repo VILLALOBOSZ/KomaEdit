@@ -5,6 +5,7 @@ import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.noise.SavedNoises;
 import com.komainu.moxia.path.PathSnapshot;
@@ -14,6 +15,7 @@ import com.komainu.moxia.recipe.StructureBendService;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeGenerator;
 import com.komainu.moxia.shape.tube.EzSpline;
+import com.komainu.moxia.shape.tube.TubeBender;
 import com.komainu.moxia.shape.tube.TubeCurve;
 import com.komainu.moxia.shape.tube.TubeFigures;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -128,8 +130,11 @@ final class EzSplineCommands {
                             return palette.state(index, 0);
                         }, description);
                         int pieces = planned.plan().pieceCount();
-                        EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
-                                + (pieces > 0 ? " · " + pieces + " losas/escaleras" : "") + " · //undo para deshacer");
+                        if (!PlanPreviews.holds(playerId, planned.plan())) {
+                            EzCommandSupport.ok(current, description + " en cola: " + queued + " bloques"
+                                    + (pieces > 0 ? " · " + pieces + " losas/escaleras" : "")
+                                    + " · //undo para deshacer");
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         EzCommandSupport.fail(current.getCommandSource(), readable(exception));
                     }
@@ -162,10 +167,9 @@ final class EzSplineCommands {
         }
         StructureSource source = StructureSources.parse(spline.source());
         PlacementTemplate template = source.prepare(player, ThreadLocalRandom.current().nextLong());
-        double scale = Double.isNaN(spline.radius()) ? 1.0
-                : spline.radius() / StructureBendService.inherentRadius(template);
-        StructureBendService.Captured captured = StructureBendService.fromPlacement(template, scale,
-                scale * spline.stretch());
+        // La escala, el giro y la torsión se aplican al doblar, punto a punto: la plantilla va a su tamaño.
+        TubeBender.Section section = spline.section(StructureBendService.inherentRadius(template));
+        StructureBendService.Captured captured = StructureBendService.fromPlacement(template, 1.0, 1.0);
         PathSnapshot path = WorldEditService.resolvePath(player);
         UUID playerId = player.getUuid();
         var server = player.getServer();
@@ -174,7 +178,7 @@ final class EzSplineCommands {
                 + "recorrido…");
         AsyncEngine.submit(
                 playerId,
-                () -> StructureBendService.plan(captured, path, spline.bend()),
+                () -> StructureBendService.plan(captured, path, spline.bend(), section),
                 plan -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
                     if (current == null) {
@@ -182,8 +186,10 @@ final class EzSplineCommands {
                     }
                     try {
                         int queued = BatchEditService.submit(current, plan, "air", description);
-                        EzCommandSupport.ok(current, description + " en cola: " + queued
-                                + " bloques · //undo para deshacer");
+                        if (!PlanPreviews.holds(playerId, plan)) {
+                            EzCommandSupport.ok(current, description + " en cola: " + queued
+                                    + " bloques · //undo para deshacer");
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         EzCommandSupport.fail(current.getCommandSource(), readable(exception));
                     }
