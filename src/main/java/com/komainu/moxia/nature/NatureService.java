@@ -7,6 +7,7 @@ import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.permission.KomaPermissions;
+import com.komainu.moxia.persistence.QuietMode;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.SculptManager;
@@ -151,8 +152,8 @@ public final class NatureService {
             if (PlanPreviews.holds(playerId, plan)) {
                 return;
             }
-            player.sendMessage(message(operation.displayName() + " en cola: " + queued + " bloques · //undo para "
-                    + "deshacer", Formatting.GREEN), false);
+            QuietMode.info(player, message(operation.displayName() + " en cola: " + queued + " bloques · //undo para "
+                    + "deshacer", Formatting.GREEN));
         } catch (IllegalArgumentException | IllegalStateException exception) {
             player.sendMessage(message(operation.displayName() + ": " + exception.getMessage(), Formatting.RED), false);
         }

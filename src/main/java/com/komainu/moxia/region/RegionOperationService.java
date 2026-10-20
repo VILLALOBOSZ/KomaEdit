@@ -57,6 +57,11 @@ public final class RegionOperationService {
     private static final long WATCH_SNAPSHOT_UP_TO = 2_000_000L;
     private static final int BLOCKS_PER_SLICE = 32_768;
     private static final long NANOS_PER_TICK = 4_000_000L;
+    /**
+     * Lo que se calculó sobre la foto de un mundo no se aplica en otro: si el jugador cambia de dimensión antes de
+     * que termine, se descarta con este aviso.
+     */
+    public static final String OTHER_WORLD = "cambiaste de mundo antes de que terminara; no se ha cambiado nada";
     private static final Map<UUID, CaptureJob> JOBS = new LinkedHashMap<>();
 
     private RegionOperationService() {
@@ -208,6 +213,11 @@ public final class RegionOperationService {
             try {
                 if (job.step(deadline)) {
                     JOBS.remove(job.playerId);
+                    // Quien recibe la foto (onCaptured) decide al terminar; las operaciones se descartan ya.
+                    if (job.onCaptured == null && player.getServerWorld() != job.world) {
+                        player.sendMessage(message(job.description + ": " + OTHER_WORLD, Formatting.YELLOW), false);
+                        continue;
+                    }
                     RegionSnapshot snapshot = job.builder.build();
                     // La petición de la orden (vista previa…) vuelve a estar activa para lo que salga de la foto.
                     EditRequests.within(job.request, () -> {
@@ -246,6 +256,10 @@ public final class RegionOperationService {
                 edits -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
                     if (current == null) {
+                        return;
+                    }
+                    if (current.getServerWorld() != job.world) {
+                        current.sendMessage(message(description + ": " + OTHER_WORLD, Formatting.YELLOW), false);
                         return;
                     }
                     if (edits.changes() == 0) {

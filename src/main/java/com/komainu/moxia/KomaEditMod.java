@@ -162,6 +162,9 @@ public final class KomaEditMod implements ModInitializer {
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             BatchEditService.cancel(handler.player.getUuid(), false);
+            // Lo que aún se lee o se calcula para él ya no tiene a quién entregarse.
+            SnapshotCaptureService.cancel(handler.player.getUuid());
+            AsyncEngine.cancel(handler.player.getUuid());
             FastPaintService.remove(handler.player.getUuid());
             IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
@@ -172,6 +175,7 @@ public final class KomaEditMod implements ModInitializer {
             com.komainu.moxia.persistence.QuietMode.forget(handler.player.getUuid());
             PlanPreviews.forget(handler.player.getUuid());
             ProgressBars.remove(handler.player);
+            com.komainu.moxia.command.ColorCommands.forget(handler.player.getUuid());
         });
         // La vista previa es solo para quien edita y en su dimensión: se descarta al cambiar de mundo o reaparecer.
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) ->
@@ -202,6 +206,7 @@ public final class KomaEditMod implements ModInitializer {
             PlanPreviews.clearAll();
             ProgressBars.clearAll();
             PreviewDisplays.clearOrphans();
+            com.komainu.moxia.command.ColorCommands.clearAll();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");
     }

@@ -87,6 +87,15 @@ public final class ColorCommands {
     private ColorCommands() {
     }
 
+    /** El jugador se fue: su barra de antes ya no se puede recuperar. */
+    public static void forget(UUID player) {
+        PREVIOUS_HOTBARS.remove(player);
+    }
+
+    public static void clearAll() {
+        PREVIOUS_HOTBARS.clear();
+    }
+
     public static void register(LiteralCommandNode<ServerCommandSource> root) {
         root.addChild(color("color").build());
         root.addChild(color("colour").build());
