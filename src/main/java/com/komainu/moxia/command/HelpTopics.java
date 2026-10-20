@@ -249,6 +249,24 @@ public final class HelpTopics {
                     new Entry("/komaedit symmetry info", "Estado, centro y botones"),
                     new Entry("/komaedit sym on radial 8 y", "Ejemplo: rosetón de 8 brazos reflejado arriba y abajo")
             )),
+            new Topic("nature", "Árboles y rocas", List.of("arboles", "arbol", "tree", "trees", "rocas", "roca",
+                    "rock", "rocks", "naturaleza", "vegetacion"), List.of(
+                    new Entry("/komaedit tree [especie|#preset] [altura] [banderas]",
+                            "Árbol donde miras o en cada punto P (alias arbol): oak, spruce, birch, jungle, acacia, "
+                                    + "cherry, willow, dark_oak, dead, palm, baobab, fantasy"),
+                    new Entry("/komaedit tree oak 22 -g 1.3 -i 12 -h oak_leaves,azalea_leaves",
+                            "-g grosor, -b ramas, -d densidad, -w ancho, -i inclinación, -c curvatura, -s semilla, "
+                                    + "-t tronco, -h hojas, -r raíces, -m máscara, -x variación, -v vista previa"),
+                    new Entry("/komaedit rock [tipo|#preset] [tamaño] [banderas]",
+                            "Roca, peñasco o aguja hundida en el terreno (alias roca): boulder, crag, spire"),
+                    new Entry("/komaedit rock crag 9 -u 0.5 -e 2",
+                            "-b bloques de oscuro a claro, -u musgo, -a alto, -e alargado, -r rugosidad, -g grietas, "
+                                    + "-c caras, -h hundido, -i inclinación, -s semilla, -m máscara, -x, -v"),
+                    new Entry("/komaedit tree save|list|delete <nombre> [ajustes] [-f]",
+                            "Presets: guarda unos ajustes y úsalos con #nombre (también rock save|list|delete)"),
+                    new Entry("/komaedit pincel tree|rock <ajustes> [-x variación] [-p]",
+                            "Pinceles: un árbol o una roca en cada clic derecho, distinto cada vez")
+            )),
             new Topic("palette", "Paletas guardadas", List.of("paleta", "paletas", "palettes"), List.of(
                     new Entry("/komaedit palette list [all|default|mine]", "Paletas de serie y tuyas; pulsa una para verla"),
                     new Entry("/komaedit palette save <nombre> <paleta> [-f]", "Guarda una paleta para usarla con #nombre"),
