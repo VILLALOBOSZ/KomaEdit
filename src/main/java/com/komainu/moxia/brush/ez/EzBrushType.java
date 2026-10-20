@@ -23,7 +23,10 @@ public enum EzBrushType {
             com.komainu.moxia.blueprint.StampSettings.VALUED, "estampar", "planos", "st"),
     /** Propio de KomaEdit: el modelado de Axiom (esculpir, roca, soldar, fundir, rugosidad y grietas). */
     SCULPT("sculpt", "Modelado", Set.of('p', 'n'),
-            Set.of('f', 'm', 'b', 's', 'g', 'k', 'z', 'w', 'e', 'd', 'i'), "modelar", "modelado", "sk");
+            Set.of('f', 'm', 'b', 's', 'g', 'k', 'z', 'w', 'e', 'd', 'i'), "modelar", "modelado", "sk"),
+    /** Propio de KomaEdit: pintar el terreno con un degradado, arrastrando (paquete {@code brush.paint}). */
+    PAINT("paint", "Pintar", com.komainu.moxia.brush.paint.PaintConfig.SWITCHES,
+            com.komainu.moxia.brush.paint.PaintConfig.VALUED, "pintar", "pt");
 
     private final String id;
     private final String displayName;
@@ -75,6 +78,6 @@ public enum EzBrushType {
         }
         throw new IllegalArgumentException("Pincel desconocido: " + input
                 + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array, tree, rock,"
-                + " biome, heightmap, sculpt, stamp)");
+                + " biome, heightmap, sculpt, stamp, paint)");
     }
 }

@@ -10,6 +10,9 @@ import com.komainu.moxia.brush.place.PlacementOperation;
 import com.komainu.moxia.brush.place.PlacementTemplate;
 import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
+import com.komainu.moxia.brush.paint.PaintBrush;
+import com.komainu.moxia.brush.paint.PaintOperation;
+import com.komainu.moxia.brush.paint.PaintStrokes;
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.nature.NaturePresets;
 import com.komainu.moxia.nature.NatureService;
@@ -75,6 +78,14 @@ public abstract sealed class EzBrush {
     public abstract String controls();
 
     abstract void handle(EzBrushManager.Session session, BrushInput input);
+
+    /**
+     * El pincel que sustituye a {@code previous} al cambiar los ajustes desde el Studio ({@code pincel actualizar});
+     * cada pincel decide qué conserva del anterior. De serie, nada.
+     */
+    public EzBrush adopt(EzBrush previous) {
+        return this;
+    }
 
     public static EzBrush create(ServerPlayerEntity player, EzBrushType type, String input) {
         if (type == EzBrushType.TREE) {
@@ -151,6 +162,7 @@ public abstract sealed class EzBrush {
                 yield new Relief(config, preview);
             }
             case SCULPT -> Sculpt.parse(player, options);
+            case PAINT -> new Paint(PaintBrush.create(player, options));
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -900,6 +912,53 @@ public abstract sealed class EzBrush {
                     return !solid || parsed.matches(world, x, y, z);
                 }
             };
+        }
+    }
+
+    /**
+     * Pintar: recolorea la superficie con un degradado de la paleta, sin cambiar alturas (paquete
+     * {@code brush.paint}). Clic derecho, o mantenerlo y arrastrar: un trazo, una sola edición de //undo; clic
+     * izquierdo: un toque con la paleta al revés; F: semilla nueva; Mayús + F: bloquea o libera la semilla.
+     */
+    static final class Paint extends EzBrush {
+        private final PaintBrush brush;
+
+        Paint(PaintBrush brush) {
+            super(EzBrushType.PAINT, brush.config().radius(), brush.config().preview());
+            this.brush = brush;
+        }
+
+        @Override
+        public String controls() {
+            return brush.controls();
+        }
+
+        /** Sin semilla escrita, sigue con la del pincel de antes: mover otro ajuste no cambia el dibujo. */
+        @Override
+        public EzBrush adopt(EzBrush previous) {
+            if (previous instanceof Paint old) {
+                brush.adopt(old.brush);
+            }
+            return this;
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            switch (input) {
+                case SWAP -> session.info("Pintar: semilla " + brush.reroll()
+                        + (brush.locked() ? " (bloqueada: cada clic pinta igual)" : ""));
+                case SNEAK_SWAP -> session.info(brush.toggleLock()
+                        ? "Pintar: semilla " + brush.seed() + " bloqueada; cada clic pinta igual"
+                        : "Pintar: semilla " + brush.seed() + " libre; cada clic gira la huella");
+                default -> {
+                    BlockHitResult hit = session.hit();
+                    if (preview()) {
+                        session.run(PaintOperation.single(brush, hit, input.left(), session.player()));
+                        return;
+                    }
+                    PaintStrokes.input(session.player(), brush, hit, input.left());
+                }
+            }
         }
     }
 }
