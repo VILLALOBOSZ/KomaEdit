@@ -52,7 +52,10 @@ class ToolCardsTest {
             Set<String> params = new HashSet<>();
             card.params().forEach(param -> assertTrue(params.add(param.id()), card.id() + "." + param.id()));
             assertFalse(card.command(card.defaults(), false).startsWith("/"), "sin barra: " + card.id());
-            assertTrue(card.command(card.defaults(), false).startsWith("komaedit "), card.id());
+            // Las del cliente (la regla, las vistas) mandan /kegui, que atiende el propio cliente.
+            assertTrue(card.command(card.defaults(), false).startsWith(card.clientOnly(card.defaults()) ? "kegui "
+                    : "komaedit "),
+                    card.id());
         }
         // Las de este catálogo, en su orden; una tarjeta nueva se añade en ToolCatalog sin tocar esta lista.
         List<String> known = List.of("tree", "rock", "roof", "loft", "text", "stamp", "paint", "ramp", "river",
@@ -523,6 +526,72 @@ class ToolCardsTest {
 
     private static ToolPreset preset(ToolCard card, String id) {
         return card.presets().stream().filter(preset -> preset.id().equals(id)).findFirst().orElseThrow();
+    }
+
+    @Test
+    void waterCommandsMatchTheDocumentedSyntax() {
+        ToolCard water = card("water");
+        ToolValues fill = water.defaults();
+        assertEquals("komaedit fluido rellenar agua", water.command(fill, false));
+        assertEquals("komaedit fluido rellenar lava borde -v", water.command(fill.with("liquid", "lava")
+                .with("fill_level", "borde"), true));
+        assertEquals("komaedit fluido rellenar agua clic+2 -d hbe -r 48 -w", water.command(fill.with("fill_offset", 2)
+                .with("corners", true).with("reach", 48).with("waterlog", true), false));
+        assertEquals("komaedit fluido rellenar agua 62 -d h -l 2000", water.command(fill.with("fill_level", "fijo")
+                .with("spread_down", false).with("limit", 2_000), false));
+        assertEquals("komaedit fluido rellenar lava clic-1", water.command(fill.with("liquid", "lava")
+                .with("fill_offset", -1).with("waterlog", true), false), "la lava no anega");
+        assertTrue(water.validate(fill.with("spread_sides", false).with("spread_down", false)).stream()
+                .anyMatch(ToolProblem::blocking), "sin ninguna dirección no se puede rellenar");
+        assertEquals(ToolTarget.LOOK, water.target(fill));
+
+        ToolValues ball = water.defaults().with(WaterCard.MODE, WaterCard.BALL);
+        assertEquals("komaedit fluido bola agua 4 -a -c", water.command(ball, false));
+        assertEquals("komaedit fluido bola nieve 6.5 -s -v", water.command(ball.with("fluid_kind", "nieve")
+                .with("radius", 65).with("air_only", false).with("close_edges", false).with("sources_only", true),
+                true));
+        assertEquals(List.of(WaterCard.BALL_NODE), water.permissions(ball));
+
+        ToolValues fall = water.defaults().with(WaterCard.MODE, WaterCard.FALL);
+        assertEquals("komaedit fluido cascada agua", water.command(fall, false));
+        assertEquals("komaedit fluido cascada lava -n -a 3 -b -r 5 -v", water.command(fall.with("liquid", "lava")
+                .with("pool", false).with("width", 3).with("banks", false).with("margin", 5), true));
+        assertEquals("komaedit fluido cascada agua -o 3", water.command(fall.with("pool_radius", 3), false));
+        assertEquals(ToolTarget.PATH_OR_LOOK, water.target(fall), "la cascada sigue los puntos si los hay");
+        assertEquals("gui.komaedit.tools.water.build.cascada", water.buildKey(fall));
+        for (String mode : WaterCard.MODES) {
+            ToolValues values = water.defaults().with(WaterCard.MODE, mode);
+            assertFalse(water.presets(values).isEmpty(), mode);
+            water.presets(values).forEach(preset -> assertEquals(mode, preset.values().get(WaterCard.MODE)));
+        }
+
+        ToolCard touchUp = card("touchup");
+        ToolValues loose = touchUp.defaults().with(TouchUpCard.MODE, TouchUpCard.LOOSE);
+        assertEquals("komaedit retocar sueltos todo -v", touchUp.command(loose, true));
+        assertEquals("komaedit retocar sueltos lava -m #existing", touchUp.command(loose.with("loose_target", "lava")
+                .with("mask", "#existing"), false));
+        assertEquals(List.of(TouchUpCard.LOOSE_NODE), touchUp.permissions(loose));
+        assertEquals("komaedit pincel retocar 8 sueltos agua", touchUp.command(loose.with(ToolUse.PARAM, "brush")
+                .with("loose_target", "agua"), false), "y con el pincel, alrededor de cada clic");
+    }
+
+    /** Lo esencial arriba también en cada modo: como mucho cuatro controles antes de «Más ajustes». */
+    @Test
+    void everyModeOfWaterAndTouchUpShowsAtMostFourControls() {
+        for (ToolCard card : List.of(card("water"), card("touchup"))) {
+            ToolParam.Choice modes = (ToolParam.Choice) card.params().stream()
+                    .filter(param -> param.id().equals(card.modeParam())).findFirst().orElseThrow();
+            for (String mode : modes.options()) {
+                ToolValues values = card.defaults().with(card.modeParam(), mode);
+                long shown = card.params().stream()
+                        .filter(param -> card.essential(param) && param.visible(values))
+                        .filter(param -> !(param instanceof ToolParam.Choice choice
+                                && (choice.style() == ToolParam.Choice.Style.SWITCH
+                                || choice.style() == ToolParam.Choice.Style.SEARCH)))
+                        .count();
+                assertTrue(shown <= 4, card.id() + "/" + mode + " enseña " + shown);
+            }
+        }
     }
 
     @Test

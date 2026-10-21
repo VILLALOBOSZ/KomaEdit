@@ -11,10 +11,10 @@ import java.util.Set;
  * Mundo de texto para probar la gravedad, la nieve y el agua sin Minecraft: cada posición guarda un estado como
  * texto ({@code minecraft:oak_stairs[waterlogged=false]}) y se convierte en una {@link RegionSnapshot}.
  */
-final class TestWorld {
-    static final String AIR = "minecraft:air";
-    static final String WATER = "minecraft:water[level=0]";
-    static final String LAVA = "minecraft:lava[level=0]";
+public final class TestWorld {
+    public static final String AIR = "minecraft:air";
+    public static final String WATER = "minecraft:water[level=0]";
+    public static final String LAVA = "minecraft:lava[level=0]";
     /** Bloques sin cara de arriba entera (o que no son sólidos) en estas pruebas. */
     private static final Set<String> NOT_FULL = Set.of("minecraft:air", "minecraft:water", "minecraft:lava",
             "minecraft:short_grass", "minecraft:fern", "minecraft:dandelion", "minecraft:oak_fence",
@@ -23,17 +23,17 @@ final class TestWorld {
     private static final Set<String> LIQUIDS = Set.of("minecraft:water", "minecraft:lava", "minecraft:bubble_column",
             "minecraft:kelp", "minecraft:kelp_plant", "minecraft:seagrass", "minecraft:tall_seagrass");
 
-    final int minX;
-    final int minY;
-    final int minZ;
-    final int sizeX;
-    final int sizeY;
-    final int sizeZ;
+    public final int minX;
+    public final int minY;
+    public final int minZ;
+    public final int sizeX;
+    public final int sizeY;
+    public final int sizeZ;
     private final String[] blocks;
     private final boolean[] selected;
     private RegionSnapshot snapshot;
 
-    TestWorld(int minX, int minY, int minZ, int sizeX, int sizeY, int sizeZ) {
+    public TestWorld(int minX, int minY, int minZ, int sizeX, int sizeY, int sizeZ) {
         this.minX = minX;
         this.minY = minY;
         this.minZ = minZ;
@@ -45,25 +45,25 @@ final class TestWorld {
         Arrays.fill(blocks, AIR);
     }
 
-    int maxX() {
+    public int maxX() {
         return minX + sizeX - 1;
     }
 
-    int maxY() {
+    public int maxY() {
         return minY + sizeY - 1;
     }
 
-    int maxZ() {
+    public int maxZ() {
         return minZ + sizeZ - 1;
     }
 
-    TestWorld set(int x, int y, int z, String block) {
+    public TestWorld set(int x, int y, int z, String block) {
         blocks[index(x, y, z)] = normalize(block);
         snapshot = null;
         return this;
     }
 
-    TestWorld fill(int x1, int y1, int z1, int x2, int y2, int z2, String block) {
+    public TestWorld fill(int x1, int y1, int z1, int x2, int y2, int z2, String block) {
         for (int y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
             for (int z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
                 for (int x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
@@ -74,7 +74,7 @@ final class TestWorld {
         return this;
     }
 
-    TestWorld select(int x1, int y1, int z1, int x2, int y2, int z2) {
+    public TestWorld select(int x1, int y1, int z1, int x2, int y2, int z2) {
         for (int y = y1; y <= y2; y++) {
             for (int z = z1; z <= z2; z++) {
                 for (int x = x1; x <= x2; x++) {
@@ -87,29 +87,29 @@ final class TestWorld {
     }
 
     /** Todo menos un borde de {@code margin} bloques (el margen capturado alrededor de la selección). */
-    TestWorld selectInside(int margin) {
+    public TestWorld selectInside(int margin) {
         return select(minX + margin, minY + margin, minZ + margin, maxX() - margin, maxY() - margin, maxZ() - margin);
     }
 
-    String at(int x, int y, int z) {
+    public String at(int x, int y, int z) {
         return blocks[index(x, y, z)];
     }
 
-    String id(int x, int y, int z) {
+    public String id(int x, int y, int z) {
         String block = at(x, y, z);
         int bracket = block.indexOf('[');
         return bracket < 0 ? block : block.substring(0, bracket);
     }
 
-    long count(String id) {
+    public long count(String id) {
         return Arrays.stream(blocks).filter(block -> block.equals(id) || block.startsWith(id + "[")).count();
     }
 
-    boolean selected(int x, int y, int z) {
+    public boolean selected(int x, int y, int z) {
         return selected[index(x, y, z)];
     }
 
-    RegionSnapshot snapshot() {
+    public RegionSnapshot snapshot() {
         if (snapshot != null) {
             return snapshot;
         }
@@ -133,18 +133,18 @@ final class TestWorld {
     }
 
     /** Clasificación de texto con las caras de arriba de estas pruebas. */
-    BlockKinds kinds() {
+    public BlockKinds kinds() {
         return BlockKinds.fromText(snapshot(), (id, properties) -> !NOT_FULL.contains(id) && !id.endsWith("_fence")
                 && !(id.endsWith("_slab") && properties.contains("type=bottom")));
     }
 
     /** Estado de texto de un id crudo de la última foto. */
-    String state(int rawId) {
+    public String state(int rawId) {
         RegionSnapshot.StateInfo info = snapshot().stateInfo(rawId);
         return info.properties().isEmpty() ? info.blockId() : info.blockId() + "[" + info.properties() + "]";
     }
 
-    static String withProperty(String block, String key, String value) {
+    public static String withProperty(String block, String key, String value) {
         int bracket = block.indexOf('[');
         if (bracket < 0) {
             return block;

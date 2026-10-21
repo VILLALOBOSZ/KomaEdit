@@ -17,10 +17,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 /**
- * Rasterizador en perspectiva para los renders del fantasma con gizmo: la cámara de Minecraft (guiñada y cabeceo, campo
- * de visión vertical), z-buffer, caras con la textura del jar de cliente si {@code KOMAEDIT_MC_JAR} lo indica (si no,
- * colores lisos) y la transparencia de una sola capa de la vista previa. El gizmo se pinta encima de todo, como en el
- * juego.
+ * Rasterizador en perspectiva para los renders del fantasma con gizmo, de la regla y de las notas: la cámara de
+ * Minecraft (guiñada y cabeceo, campo de visión vertical), z-buffer, caras con la textura del jar de cliente si
+ * {@code KOMAEDIT_MC_JAR} lo indica (si no, colores lisos) y la transparencia de una sola capa de la vista previa. El
+ * gizmo se pinta encima de todo, como en el juego.
  */
 public final class PerspectiveRaster implements AutoCloseable {
     public static final double[] SHADE = {0.6, 0.6, 0.5, 1.0, 0.8, 0.8};
@@ -31,13 +31,14 @@ public final class PerspectiveRaster implements AutoCloseable {
     private final Vec3 right;
     private final Vec3 up;
     private final double focal;
-    public final double fov;
+    final double fov;
     private final int[] color;
     private final double[] depth;
     private final TextureTiles tiles;
 
     /** @param yaw y {@code pitch} en grados, como en Minecraft (guiñada 0 = sur, cabeceo positivo = abajo) */
-    public PerspectiveRaster(int width, int height, Vec3 eye, double yaw, double pitch, double fov) throws IOException {
+    public PerspectiveRaster(int width, int height, Vec3 eye, double yaw, double pitch, double fov)
+            throws IOException {
         this.width = width;
         this.height = height;
         this.eye = eye;
@@ -67,7 +68,7 @@ public final class PerspectiveRaster implements AutoCloseable {
         return tiles.real();
     }
 
-    public void clear() {
+    void clear() {
         for (int y = 0; y < height; y++) {
             double t = y / (double) (height - 1);
             int rgb = lerp(0x8DB6F0, 0xC9DCF2, t);
@@ -156,12 +157,12 @@ public final class PerspectiveRaster implements AutoCloseable {
     }
 
     /** Nueva capa de fantasma: profundidades vacías. */
-    public double[] layer() {
+    double[] layer() {
         return new double[width * height];
     }
 
     /** Lo que tapa la capa del fantasma pasa a tapar también las líneas (sus aristas de detrás no se ven). */
-    public void mergeDepth(double[] layer) {
+    void mergeDepth(double[] layer) {
         for (int index = 0; index < depth.length; index++) {
             if (Double.isFinite(layer[index])) {
                 depth[index] = Math.max(depth[index], layer[index]);
@@ -249,7 +250,7 @@ public final class PerspectiveRaster implements AutoCloseable {
     }
 
     /** El gizmo encima de todo (sin profundidad), con antialias. */
-    void gizmo(GizmoGeometry.Shape shape, double alpha) {
+    public void gizmo(GizmoGeometry.Shape shape, double alpha) {
         BufferedImage image = image();
         Graphics2D graphics = image.createGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -330,6 +331,21 @@ public final class PerspectiveRaster implements AutoCloseable {
         return image;
     }
 
+    /** Pinta encima de lo que hay con un {@link BufferedImage} (textos de la fuente del juego, iconos). */
+    public void paint(java.util.function.Consumer<BufferedImage> painter) {
+        BufferedImage image = image();
+        painter.accept(image);
+        load(image);
+    }
+
+    public int width() {
+        return width;
+    }
+
+    public int height() {
+        return height;
+    }
+
     private void load(BufferedImage image) {
         image.getRGB(0, 0, width, height, color, 0, width);
         for (int index = 0; index < color.length; index++) {
@@ -348,7 +364,7 @@ public final class PerspectiveRaster implements AutoCloseable {
 
     // ---------------------------------------------------------------- utilidades
 
-    public static Vec3[] corners(double x0, double y0, double z0, double x1, double y1, double z1, int face) {
+    static Vec3[] corners(double x0, double y0, double z0, double x1, double y1, double z1, int face) {
         // Las esquinas de cada cara en sentido antihorario visto desde fuera, empezando abajo a la izquierda.
         return switch (face) {
             case 0 -> new Vec3[]{new Vec3(x0, y0, z0), new Vec3(x0, y0, z1), new Vec3(x0, y1, z1), new Vec3(x0, y1, z0)};
@@ -360,7 +376,7 @@ public final class PerspectiveRaster implements AutoCloseable {
         };
     }
 
-    public static Vec3 normal(int face) {
+    static Vec3 normal(int face) {
         return switch (face) {
             case 0 -> new Vec3(-1, 0, 0);
             case 1 -> new Vec3(1, 0, 0);
@@ -380,7 +396,7 @@ public final class PerspectiveRaster implements AutoCloseable {
         return new Color(value >> 16 & 0xFF, value >> 8 & 0xFF, value & 0xFF, Math.clamp(a, 0, 255));
     }
 
-    public static int lerp(int from, int to, double amount) {
+    static int lerp(int from, int to, double amount) {
         int r = (int) Math.round((from >> 16 & 0xFF) + ((to >> 16 & 0xFF) - (from >> 16 & 0xFF)) * amount);
         int g = (int) Math.round((from >> 8 & 0xFF) + ((to >> 8 & 0xFF) - (from >> 8 & 0xFF)) * amount);
         int b = (int) Math.round((from & 0xFF) + ((to & 0xFF) - (from & 0xFF)) * amount);

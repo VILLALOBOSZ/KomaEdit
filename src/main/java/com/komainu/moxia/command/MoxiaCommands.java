@@ -274,8 +274,11 @@ public final class MoxiaCommands {
         BuilderCommands.register(root);
         RetouchCommands.register(root);
         SelectionBrushCommands.register(root);
+        FluidCommands.register(root);
         BlueprintCommands.register(root);
         ShareCommands.register(root);
+        ViewCommands.register(root);
+        NoteCommands.register(root);
         ClipboardCommands.register(root);
         PasteCommands.register(root);
         PreviewCommands.register(root);

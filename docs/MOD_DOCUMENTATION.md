@@ -15,6 +15,8 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 - **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Barras guardadas](#barras-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selección a mano: lazo y pincel](#selección-a-mano-lazo-y-pincel) · [Selecciones](#selecciones)
 - **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Reconstrucción animada](#reconstrucción-animada)
+- **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Vistas, regla y notas](#vistas-regla-y-notas)
+- **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Agua y lava](#agua-y-lava)
 - **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
 - **Servidor y proyecto:** [Compartir entre servidores](#compartir-entre-servidores) · [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
@@ -208,13 +210,17 @@ Son quince tarjetas, cada una con un nombre que dice lo que hace y un icono prop
 | Naturaleza | Plantar árbol, Poner roca | `tree`, `rock`; con el pincel, `pincel tree`, `pincel rock` (y `tree save`) |
 | Edificios | Poner tejado, Unir curvas, Escribir texto, Decorar (displays) | `roof`, `loft` (y `-e` para estimar), `text`, `display block\|item\|text` (y `display edit`, `display set all …`; `/kedisplay ajustes …`, del cliente) |
 | Terreno | Estampar relieve, Pintar, Hacer rampa, Excavar río, Erosionar | `pincel heightmap` o `relieve`, `pincel paint` o `pintar`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion` (con el pincel, `pincel zona`) |
+| Utilidades | Retocar, Contar materiales, Guardar barras | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`, `hotbar <fuente>` (lo demás de las barras va por su paquete, no por el chat) |
+| Utilidades | Retocar, Contar materiales, Reconstruir paso a paso | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`, `rebuild` (y sus mandos) |
+| Utilidades | Retocar, Contar materiales, Medir y anotar | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`; Medir y anotar: `/kegui regla <modo>` y `/kegui vista guardar <nombre>` (del cliente) o `nota poner …` |
+| Utilidades | Retocar, Poner agua o lava, Contar materiales | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `fluido rellenar`, `fluido bola`, `fluido cascada`, `analyze` |
 | Utilidades | Seleccionar, Retocar, Contar materiales, Guardar barras, Reconstruir paso a paso | `sel grow\|shrink\|complement\|box\|clear` (y `sel undo`), `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`, `hotbar <fuente>` (lo demás de las barras va por su paquete, no por el chat), `rebuild` (y sus mandos) |
 | Modos | Simetría, Construir a mano | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Menos tarjetas, lo mismo de antes:** «Pintar terreno» y «Pintar superficie» son ahora **Pintar**, y Nieve, Drenar, Inundar, Gravedad y Bioma, modos de **Retocar**, que trae además los cuatro retoques de supervivencia que solo tenían orden (desinfestar, fijar las hojas, anegar y encerar). Lo que cambió de nombre, en [Lo que cambió de nombre](#lo-que-cambió-de-nombre).
 - **Elegir:** sin herramienta elegida, la etapa es una cuadrícula de iconos con su nombre entero (en dos líneas si hace falta), agrupada como en la tabla (con ★ Favoritas arriba si hay) y con un buscador (`Ctrl+F` o `/`) por nombre, orden, alias y descripción, sin tildes: «nieve», «drenar» o «superficie» encuentran la tarjeta que ahora lo hace. Al elegir una, la cuadrícula se pliega en una fila con su icono y su nombre (pulsarla la vuelve a abrir), sus **recientes** para cambiar de un clic, la ★ y **copiar la orden** al portapapeles.
 - **Cómo se usa** (el interruptor de arriba): las herramientas que valen de dos maneras lo dicen en dos botones bajo el nombre, **Pincel** y **Selección** (o **Con un clic**). Ver [Pincel o selección](#pincel-o-selección).
-- **Lo primero, qué hace:** en las tarjetas con modos (Pintar y Retocar), el modo sale antes que nada, porque decide qué paleta, qué presets y qué ajustes se ven.
+- **Lo primero, qué hace:** en las tarjetas con modos (Pintar, Retocar y Medir y anotar), el modo sale antes que nada, porque decide qué paleta, qué presets y qué ajustes se ven.
 - **Miniaturas:** lo que se elige viendo sale como galería de miniaturas con el nombre debajo, dibujadas por el propio generador: las especies de árbol (con `TreeGrower`), los tipos de roca (`RockShaper`), los tipos de tejado sobre una casa de 9×7 (`RoofGenerator`) y los 80 sellos de relieve (con los colores de su categoría: nieve en las montañas, arena en las dunas, agua alrededor de las islas). Se pintan en segundo plano la primera vez y luego se reutilizan. Bajo cada una, su nombre entero: la galería pone tantas columnas como dejen caber cada nombre en dos líneas como mucho («Cuatro aguas», «Roble oscuro»). Con un panel alto (380 píxeles de contenido o más, como 1080p con GUI 2) se ven todas las opciones a la vez; si no, dos filas (una en compacto) y ‹ › para pasar de página, que empieza siempre por la elegida.
 - **Ajustes esenciales** a la vista y el resto en **Más ajustes**, plegado, con cuántos hay o cuántos has cambiado («2 cambiados»). Solo salen los ajustes que usa la opción elegida (la altura de la cúpula no sale en un tejado a dos aguas; el radio, solo con el pincel). Los números **auto** no llevan bandera: vale el de la herramienta (la altura de la especie, el radio del tipo de roca…) y se ve en gris junto a «auto».
 - **Presets** (una fila de pastillas: Joven, Viejo, Azotado, Pelado; Empinado, Con buhardillas…; el tooltip dice qué cambian). Cada preset deja la herramienta en un **estado completo y conocido**: lo que no define vuelve al de serie (el de la especie o el tipo), así que nada se queda con lo de un preset anterior («Pelado» y luego «Joven» vuelve a tener copa). Se conservan qué es (la especie, el tipo de roca o de tejado, el sello), los materiales, los textos (el del rótulo, la máscara, la paleta), la semilla, cómo se usa (pincel o selección) y los interruptores de cómo se coloca que ningún preset toca (vista previa en cada clic, reemplazar, raíces). La pastilla del preset que hay puesto sale marcada. En Retocar solo salen los del modo elegido. **Azar** (`R`) para una semilla nueva y, en árboles y rocas, los **presets guardados** del jugador (`#nombre`). En **Más ajustes**, las acciones: **Estimar** (tejado, loft, rampa, río, erosión y la superficie natural de Pintar, con `-e`), **Guardar preset** y, en simetría, **Desactivar**, **Centro aquí**, **Entre bloques** y **Centro de la selección**.
@@ -292,6 +298,7 @@ En negrita, la de serie.
 | **Nevar** (de serie) | capas de nieve que siguen la pendiente | `retocar nieve` | tarjeta Nieve, `snow` |
 | **Drenar** | quita el agua, la lava o las dos | `retocar drenar` | tarjeta Drenar, `drain` |
 | **Inundar** | inunda por debajo de un nivel | `retocar inundar` | tarjeta Inundar, `waterlog` |
+| **Quitar flujos sueltos** | quita las corrientes que no salen de ninguna fuente (ver [Quitar flujos sueltos](#quitar-flujos-sueltos)) | `retocar sueltos` | nueva, también `fluido limpiar` |
 | **Dejar caer** | los bloques caen por columnas | `retocar gravedad` | tarjeta Gravedad, `gravity` |
 | **Desinfestar** | los bloques infestados vuelven a ser normales | `retocar desinfestar` | solo orden, `tweak deinfest` |
 | **Fijar hojas** | que las hojas no se caigan (o que vuelvan a caerse) | `retocar hojas on\|off` | solo orden, `tweak persist` |
@@ -302,6 +309,26 @@ En negrita, la de serie.
 - Presets: Nevar, **Polvo de nieve**, **Ventisqueros** y **Cumbres**; Drenar, **Secar todo**; Inundar, **Mar a nivel 62**.
 - **Con el pincel**, el radio (8 de serie) y el mismo modo alrededor de cada clic, en un cilindro que sube y baja doce bloques (o el radio, si es más). Inundar con el pincel llena por debajo del bloque pulsado («Arriba del todo» es el clic). Cambiar bioma con el pincel es el pincel de biomas de siempre (clic izquierdo, cuentagotas de bioma).
 - Cambiar bioma no tiene vista previa (no hay bloques que enseñar); los demás, sí.
+
+![Quitar flujos sueltos en Retocar: qué líquido y, en Más ajustes, la máscara](renders/studio/agua/1080p_gui3_retocar_sueltos_es.png)
+
+#### Poner agua o lava en el Studio
+
+**Poner agua o lava** reúne lo que pone líquido **donde haces clic** (ver [Agua y lava](#agua-y-lava)). Lo primero es **Qué poner**; cada modo enseña solo sus ajustes, sus presets y su botón:
+
+| Modo | Qué hace | Orden | Presets |
+| --- | --- | --- | --- |
+| **Rellenar hueco** (de serie) | llena el hueco del clic hasta un nivel, solo si está cerrado; si se escaparía, señala por dónde | `fluido rellenar` | Piscina, Una capa, Lago de lava |
+| **Bola** | una esfera de agua, lava o nieve en polvo; con Cerrar bordes, sin flujos sueltos | `fluido bola` | Charca, Excavar, Nieve en polvo |
+| **Cascada** | desde el borde que pulsas, con poza abajo; con puntos (P), un río corto | `fluido cascada` | Manantial, Ancha, De lava |
+
+- A la vista, como mucho cuatro controles por modo: en Rellenar hueco, el líquido, **Hasta dónde** (el clic, hasta el borde o una altura) y lo que sube sobre el clic; en Bola, el fluido, el radio y **Cerrar bordes**; en Cascada, el líquido, la poza y su radio. Lo demás (anegar, direcciones, alcance y límite; solo el aire y solo fuentes; ancho, orillas y margen), en Más ajustes.
+- El pie dice sobre qué trabaja: el clic en Rellenar hueco y en Bola; en Cascada, los puntos de la trayectoria si los hay («3 puntos») y si no, el clic.
+- Quitar los flujos sueltos es un arreglo de lo que ya hay: va en [Retocar](#retocar-en-el-studio), con la selección o con el pincel.
+
+![Poner agua o lava: Rellenar hueco con el líquido y hasta dónde](renders/studio/agua/1080p_gui3_rellenar_es.png)
+
+![Cascada con tres puntos marcados: el pie dice que sigue los puntos](renders/studio/agua/1080p_gui3_cascada_es.png)
 
 #### Lo que cambió de nombre
 
@@ -691,7 +718,7 @@ La geometría ya está calculada, así que se construye exactamente lo estimado.
 
 ### Objetivo y acceso
 
-Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y pararlas a medias. La vista previa vale para cualquier orden que calcule un plan de bloques con el motor común: figuras y tubos (`build`, `sweep`, `braid`, `expr`…), `ezspline`, `bend`, colocación (`place`, `array`, `scatter`), `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `texture` y sus modos (`vines`, `moss`, `slabmerge`…), la vidriera, `image`, los generadores (`shape`, `noisegen`, `flowfield`, `flowline`), `weather`, `ivy`, `retocar` (menos el bioma), `pintar`, `relieve`, `palette swap`, los tejados (`roof`), los lofts (`loft`), los árboles y rocas (`tree`, `rock`), el terraformado (`terreno`), `shade` y las utilidades que cambian bloques (`text` y los nombres de antes de `retocar`: `gravity`, `snow`, `drain`, `waterlog`, `tweak`).
+Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y pararlas a medias. La vista previa vale para cualquier orden que calcule un plan de bloques con el motor común: figuras y tubos (`build`, `sweep`, `braid`, `expr`…), `ezspline`, `bend`, colocación (`place`, `array`, `scatter`), `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `texture` y sus modos (`vines`, `moss`, `slabmerge`…), la vidriera, `image`, los generadores (`shape`, `noisegen`, `flowfield`, `flowline`), `weather`, `ivy`, `retocar` (menos el bioma), `pintar`, `relieve`, `palette swap`, los tejados (`roof`), los lofts (`loft`), los árboles y rocas (`tree`, `rock`), el terraformado (`terreno`), `shade` y las utilidades que cambian bloques (`text` y los nombres de antes de `retocar`: `gravity`, `snow`, `drain`, `waterlog`, `tweak`) y las de [agua y lava](#agua-y-lava) (`fluido rellenar`, `bola`, `cascada` y `limpiar`).
 
 ```text
 /komaedit <orden> … -v                  calcula y enseña sin colocar nada (también --preview)
@@ -1086,6 +1113,9 @@ Todas están en **Controles → KomaEdit** y se pueden cambiar.
 | Cuentagotas de bloque | Sin asignar | El bloque que miras, hasta 192 bloques (ver abajo). |
 | Ajustes de KomaEdit en el mundo | Sin asignar | Abre los ajustes. |
 | Fantasma: mover, girar, voltear, opciones, pegar | Sin asignar (atajos de serie) | Ver [Colocar con gizmo · Teclas](#colocar-con-gizmo). Intro y Retroceso también colocan y quitan el fantasma. |
+| Regla (poner o quitar) | Sin asignar | La regla del cliente; con ella puesta, Ctrl+C copia y Supr borra (ver [Regla](#regla)). |
+| Vista fija (ir y volver) · Volver tras un salto · Lista de vistas | Sin asignar | Ver [Vistas guardadas](#vistas-guardadas). |
+| Lista de notas | Sin asignar | `/kegui notas` (ver [Notas en el mundo](#notas-en-el-mundo)). |
 
 Al llegar una vista previa, la barra de acción recuerda las teclas: «12 300 cambios · Intro aplicar · Retroceso descartar».
 
@@ -4902,12 +4932,13 @@ Una sola orden para los arreglos sobre lo que ya hay, con un modo para cada uno;
 | `nieve` | `snow`, `nieve` | [Nieve](#nieve) |
 | `drenar` (`agua`, `lava`, `todo`) | `drain`, `drenar` | [Drenar e inundar](#drenar-e-inundar) |
 | `inundar` | `waterlog`, `inundar` | [Drenar e inundar](#drenar-e-inundar) |
+| `sueltos` (`agua`, `lava`, `todo`) | `fluido limpiar` | [Quitar flujos sueltos](#quitar-flujos-sueltos) |
 | `gravedad` | `gravity`, `gravedad` | [Gravedad](#gravedad) |
 | `desinfestar`, `hojas`, `anegar`, `encerar` | `tweak deinfest\|persist\|waterlog\|wax` | [Retoques sobre la selección](#retoques-sobre-la-selección) |
 | `bioma` | `biome`, `bioma` | [Pintar biomas](#pintar-biomas) |
 
 - Alias: `/komaedit touchup`; los modos también se escriben con el nombre de antes (`snow`, `drain`, `gravity`, `biome`, `deinfest`, `persist`, `wax`). `retocar waterlog` sigue siendo anegar bloques, como cuando `retocar` era otro nombre de `tweak`.
-- Permisos: los de cada orden de antes (`komaedit.build.snow`, `.drain`, `.waterlog`, `.gravity`, `.biome`, `.tweak.<modo>`); `/komaedit retocar` sale en el autocompletado con cualquier permiso de construir.
+- Permisos: los de cada orden de antes (`komaedit.build.snow`, `.drain`, `.waterlog`, `.gravity`, `.biome`, `.tweak.<modo>`; `sueltos`, `.fluid.clean`); `/komaedit retocar` sale en el autocompletado con cualquier permiso de construir.
 - **Con el pincel**, `pincel retocar` repite el modo en un cilindro de radio (8 de serie) alrededor de cada clic, que sube y baja doce bloques o el radio si es más (ver [Pincel de zona](#pincel-de-zona)); `inundar` sin nivel llena por debajo del bloque pulsado. `pincel retocar <radio> bioma` es igual que el pincel de biomas.
 - En el Studio, tarjeta **Retocar** (ver [Retocar en el Studio](#retocar-en-el-studio)).
 
@@ -5038,6 +5069,253 @@ Antes `biome` (`bioma`), que sigue valiendo; el pincel es también `/komaedit pi
 - **Deshacer y clientes:** el cambio se escribe con WorldEdit (`setBiome`) repartido entre ticks y queda en **una sola entrada de `//undo`**; al terminar, WorldEdit reenvía los biomas de los chunks tocados a los jugadores, así que se ve el color nuevo de la hierba, las hojas y el agua **sin volver a entrar**. Al deshacer pasa lo mismo.
 - Rendimiento: el límite de bloques por operación cuenta celdas (cada celda es una escritura). Con `-v` una zona de 100×100 son unas 60 000 celdas en un mundo de 384 de alto. Los chunks deben estar cargados (WorldEdit los carga si hace falta). La bossbar enseña el avance y `/komaedit cancel` lo para (lo ya pintado se deshace con `//undo`).
 - Limitaciones: la hierba, las hojas y el agua cambian de color en cuanto el cliente recibe el bioma; la nieve, el hielo y la vegetación de cada bioma no aparecen solos (usa `retocar nieve`). Las máscaras de bioma de WorldEdit (`$plains`) no sirven en `-m`.
+
+## Vistas, regla y notas
+
+Tres utilidades de Axiom que se usan a diario en obra: guardar dónde está la cámara para volver de un salto, medir con clics y dejar notas en el mundo para uno mismo o para el equipo. Renders de cómo se ven en `docs/renders/utilities/`.
+
+### Objetivo y acceso
+
+| Utilidad | Dónde | Necesita |
+| --- | --- | --- |
+| Vistas guardadas | `/kegui vistas` (lista), `/kegui vista …`, **Medir y anotar** del Studio (modo Vista), teclas en Controles | KomaEdit en el cliente; para saltar y compartir, también en el servidor |
+| Vistas del equipo | `/komaedit vista …` | Solo el servidor (sin el mod en el cliente, por el chat) |
+| Regla | `/kegui regla`, **Medir y anotar** del Studio (modo Regla), tecla en Controles | Solo el cliente: funciona en cualquier servidor |
+| Notas | `/komaedit nota …`, `/kegui notas` (lista), **Medir y anotar** del Studio (modo Nota) | El servidor las guarda; el cliente con el mod las dibuja |
+
+```text
+/kegui vista guardar Mirador          guarda dónde estás y hacia dónde miras
+/kegui vistas                         la lista: ir, fijar, compartir, borrar
+/kegui vista fijar Mirador            la vista fija de esta dimensión (su tecla va y vuelve)
+/kegui vista volver                   a donde estabas antes del último salto
+/komaedit vista compartir Plaza       comparte con el equipo la vista de donde estás
+/kegui regla caja                     regla en modo caja (/kegui regla la pone o la quita)
+/komaedit nota poner Falta el tejado -c rojo -i aviso -e
+/komaedit nota lista equipo
+```
+
+### Vistas guardadas
+
+- **Guardar.** `/kegui vista guardar <nombre>`, el botón **Guardar aquí** de la lista o **Medir y anotar** del Studio (modo Vista) guardan la posición de tus pies, hacia dónde miras y la dimensión. Se guardan **en tu equipo**, en `config/komaedit/views.json`, una lista por sitio: cada mundo de un jugador por el nombre de su carpeta y cada servidor por su dirección (sin el `:25565` de serie). Hasta 100 por sitio. Nombres de hasta 32 letras, números, espacios y `. _ - '`; guardar con un nombre que ya existe (sin mirar mayúsculas) la reemplaza y conserva si era la fija.
+- **La lista** (`/kegui vistas`, `/kegui vista` o su tecla): primero las tuyas, con la fija marcada con ★, y luego las del equipo con su autor. Cada una dice a cuántos bloques está o en qué dimensión. Botones: **Ir**, **Fijar**/**Soltar**, **Compartir** y **Borrar** (en las del equipo, **Quitar** si es tuya o puedes gestionarlas). Arriba, el nombre y **Guardar aquí**, y **Volver**.
+- **Saltar.** El cliente propone adónde ir y **el servidor lo comprueba todo** antes de llevarte: el permiso `komaedit.view.teleport`, que estés en creativo o espectador (si `creativeOnly`, de serie; `komaedit.view.anymode` se lo salta), que la dimensión exista y, si es otra, `komaedit.view.dimension`; que el sitio esté dentro del borde del mundo y de su altura (hasta 256 bloques por encima del techo, para vistas desde el cielo, y 16 por debajo del suelo), la distancia máxima si el servidor pone una y una espera mínima entre saltos (400 ms de serie). En creativo te deja volando, porque las vistas suelen estar en el aire. Si no se puede, la barra de acción dice por qué. Sin KomaEdit en el servidor no se salta: lo dice y no manda nada.
+- **Vista fija.** Una por dimensión (fijar otra suelta la anterior). Su tecla (**Vista fija (ir y volver)**, sin asignar de serie) o `/kegui vista fija`: la primera vez te lleva a la vista y apunta dónde estabas; si sigues en ella (a 3 bloques o menos), la siguiente te devuelve; si te has movido lejos, vuelve a llevarte a la vista. Sirve para comparar la obra desde el mismo punto mientras trabajas.
+- **Volver.** `/kegui vista volver` o su tecla deshace el último salto (se recuerdan los 16 últimos mientras estás conectado). Los saltos de la vista fija y de volver no se apuntan, así no se vuelve en círculo.
+- **Compartir con el equipo.** **Compartir** en la lista manda una vista tuya; `/komaedit vista compartir <nombre>` comparte la de donde estás. El servidor la guarda en `<mundo>/komaedit/views.json` con tu nombre y la fecha, y la ven todos los que tienen `komaedit.view.shared`, en su lista y con `/komaedit vista lista`. Un nombre por mundo: si ya lo usa otro jugador, compártela con otro nombre (quien tiene `komaedit.admin.views` puede reemplazarla). La tuya se reemplaza al volver a compartirla.
+
+```text
+/komaedit vista lista [página]       las del equipo, con [ir] y [quitar] (alias vistas, view, views)
+/komaedit vista ir <nombre>          salta a una del equipo, con las mismas reglas
+/komaedit vista compartir <nombre>   comparte la de donde estás
+/komaedit vista borrar <nombre>      deja de compartir una tuya (o de otro, con komaedit.admin.views)
+/kegui vista ir|borrar|fijar|soltar|compartir <nombre>
+```
+
+### Regla
+
+Solo del cliente: mide con clics sobre el mundo y no manda nada al servidor, así que funciona en cualquier servidor. `/kegui regla` la pone o la quita (también su tecla **Regla**, sin asignar de serie, o **Medir y anotar** del Studio, en el modo Regla); `/kegui regla linea|circulo|caja` la pone en ese modo.
+
+| Con la regla puesta | Hace |
+| --- | --- |
+| Clic derecho | Un punto en el bloque que miras (hasta 256 bloques). Mantenerlo no pone más. |
+| Mayús + clic derecho | El punto en el bloque de al lado de la cara que miras (para medir un hueco). |
+| Clic izquierdo | Quita el último punto (no rompe el bloque). |
+| Ctrl + clic | Cambia de modo: recorrido → círculo → caja. |
+| Ctrl + C | Copia las medidas al portapapeles (también `/kegui regla copiar`). |
+| Supr | Quita todos los puntos (también `/kegui regla borrar`). |
+
+Se mide como se cuenta al construir: **de centro a centro de bloque** (del bloque al de al lado hay 1) y **las cajas cuentan los bloques de los dos extremos** (de 0 a 11 son 12).
+
+| Modo | Puntos | Qué mide |
+| --- | --- | --- |
+| Recorrido | De 2 a 32 | Cada tramo: distancia en línea recta (euclídea), Manhattan (yendo solo por los ejes), lo que se avanza en X, Y y Z y los bloques que pondría una línea de WorldEdit. El total del recorrido (suma de tramos, euclídea y Manhattan, y por ejes) y, con varios tramos, del primero al último en línea recta. |
+| Círculo | Centro y un punto del borde | El plano es el de los dos ejes en que más se separan (a la misma altura, horizontal; en una fachada, de pie). Radio, diámetro, bloques de lado a lado de un círculo de bloques (2r + 1, como `//cyl`), circunferencia, área y cuánto se sale el borde del plano. |
+| Caja | Dos esquinas | Ancho (X) × alto (Y) × largo (Z), bloques que caben y la diagonal. |
+
+En el círculo y la caja, el tercer clic empieza otra medida desde ese punto. Al cambiar de modo se quedan los puntos que quepan.
+
+**En el mundo:** los puntos con su contorno y su número; los tramos en amarillo con su medida, que se ven a través de los bloques; el último tramo descompuesto en sus patas por ejes (X rojo, Z azul, Y verde) con su largo; el total debajo del número del último punto. El círculo con el radio y el diámetro (este más tenue); la caja con cada lado en la arista más cercana a la cámara y el total encima. Mientras apuntas, lo que mediría el siguiente clic sale a media luz. La barra de acción lleva siempre el resumen («Regla · recorrido · 3 puntos · 15,4 · Manhattan 17»).
+
+Lo que copia Ctrl+C, con el separador decimal del idioma del juego:
+
+```text
+Regla · recorrido · 3 puntos
+1 → 2: 10 · Manhattan 10 · X 10 · Y 0 · Z 0 · 11 bloques
+2 → 3: 5,4 · Manhattan 7 · X 0 · Y 2 · Z 5 · 6 bloques
+Recorrido: 15,4 · Manhattan 17 · X 10 · Y 2 · Z 5
+En línea recta (1 → 3): 11,4 · Manhattan 17 · X 10 · Y 2 · Z 5
+Puntos: (0, 64, 0) (10, 64, 0) (10, 66, 5)
+```
+
+### Notas en el mundo
+
+Un texto anclado a un bloque o a un punto, con color, icono y la distancia desde la que se ve. Las guarda el servidor, en `<mundo>/komaedit/notes.json`, con su autor y fecha.
+
+```text
+/komaedit nota poner <texto> [-c color] [-i icono] [-d distancia] [-e] [-p]   (alias nueva, add)
+/komaedit nota lista [abiertas|todas|resueltas|mias|equipo] [página]
+/komaedit nota ir <id>            salta junto a la nota (mismas reglas que las vistas)
+/komaedit nota resolver <id>      la marca como resuelta; reabrir la vuelve a abrir
+/komaedit nota borrar <id>        borra una tuya (o del equipo, con komaedit.admin.notes)
+/komaedit nota limpiar            borra tus notas resueltas
+/komaedit nota ver <id>           el texto entero, autor, fecha y dónde está
+/kegui notas                      la lista en pantalla; /kegui notas ocultar|mostrar|resueltas
+```
+
+- **Dónde.** En el bloque que miras (hasta 128 bloques; con el Studio abierto, donde hiciste clic) y **sale de la cara que pulsaste**: encima si fue la de arriba, delante si fue una pared. Con `-p`, en el aire donde estás, a la altura de los ojos.
+- **Texto.** Suelto o entre comillas (`"…"`, con `\"` dentro); lo que va entre comillas es texto aunque empiece por un guion. Hasta 200 caracteres de serie (`maxLength`), sin `§` ni caracteres de control. En el mundo se parte en renglones de 30 caracteres, cuatro como mucho.
+- **Color** (`-c`): `amarillo` (de serie), `naranja`, `rojo`, `rosa`, `morado`, `azul`, `cian`, `verde`, `blanco` o `#RRGGBB`; también en inglés.
+- **Icono** (`-i`): `nota` (de serie), `aviso`, `tarea`, `idea`, `pregunta`, `aqui`, `estrella`, `error`. Son de píxeles, dibujados por el mod: se ven igual con cualquier paquete de recursos.
+- **Distancia** (`-d`): de 4 a 256 bloques (`maxDistance`), 48 de serie. En el último 20 % se va apagando; a 24 bloques o menos se ven también el autor y la fecha, y el contorno del bloque.
+- **Privada o del equipo.** Sin `-e`, solo la ves tú. Con `-e` (`komaedit.notes.share`), la ve quien tiene `komaedit.notes.team`, que también puede marcarla como resuelta. Una nota privada no la ve nadie más, ni quien gestiona las notas.
+- **Resueltas.** No se dibujan en el mundo (`/kegui notas resueltas` las enseña apagadas, con una marca); siguen en la lista con quién la resolvió. `limpiar` borra las tuyas.
+- **La lista** (`/kegui notas` o su tecla): las de tu dimensión, de la más cercana a la más lejana, con filtros por estado (abiertas, todas, resueltas) y por autor (todos, mías, equipo), y un interruptor para verlas o no en el mundo. Arriba, poner una nota en lo que mirabas, privada o del equipo; color, icono y distancia, con **Medir y anotar** del Studio (modo Nota) o la orden.
+- Sin el mod en el cliente, las órdenes funcionan por el chat (con botones [ir], [resolver] y [borrar]); solo falta el dibujo.
+
+### En el Studio: Medir y anotar
+
+Una sola tarjeta en **Utilidades**, con tres modos arriba (**Qué hacer**):
+
+| Modo | A la vista | Botón | Sobre qué | En Más ajustes |
+| --- | --- | --- | --- | --- |
+| Regla | Qué medir (recorrido, círculo, caja) | **Medir** (pone la regla en ese modo) | En tu cliente | Copiar, Borrar puntos, Quitar la regla |
+| Nota | El texto, el icono y si es para el equipo | **Poner nota** (`/komaedit nota poner …`) | Donde haces clic | Color, distancia, «donde estoy», Lista y Ver resueltas |
+| Vista | El nombre | **Guardar aquí** | Donde estás | Ir, Fijar, Compartir aquí, Volver y Lista |
+
+La regla y las vistas son del cliente: el Studio manda `/kegui …`, que atiende el propio cliente, y la tarjeta nunca sale apagada. Poner una nota pide `komaedit.notes.private` (o `.share` si es para el equipo); Ir y Compartir aquí, los permisos de las vistas. Sin nombre, Ir, Fijar y Compartir aquí abren la lista.
+
+### Permisos y límites de vistas y notas
+
+| Nodo | Paquete | Qué da |
+| --- | --- | --- |
+| `komaedit.view.teleport` | básico (o `komaedit.use`) | Saltar a una vista o a una nota en la misma dimensión. |
+| `komaedit.view.shared` | básico (o `komaedit.use`) | Ver las vistas del equipo. |
+| `komaedit.notes.private` | básico (o `komaedit.use`) | Notas privadas: ponerlas, verlas, resolverlas y borrarlas. |
+| `komaedit.notes.team` | básico (o `komaedit.use`) | Ver las notas del equipo y marcarlas como resueltas. |
+| `komaedit.view.share` | intermedio (o `komaedit.build`) | Compartir vistas y quitar las propias. |
+| `komaedit.notes.share` | intermedio (o `komaedit.build`) | Poner notas para el equipo. |
+| `komaedit.view.dimension` | avanzado (o `komaedit.build`) | Saltar a una vista o nota de otra dimensión. |
+| `komaedit.view.anymode` | admin | Saltar también en supervivencia o aventura. |
+| `komaedit.admin.views` | admin | Quitar o reemplazar las vistas compartidas de otros, sin límite de número. |
+| `komaedit.admin.notes` | admin | Borrar las notas del equipo de otros y poner notas sin límite de número. |
+
+`komaedit.view` y `komaedit.notes` dan todos sus hijos. La regla no pide permiso: no toca el servidor.
+
+Las reglas están en `config/komaedit/utilities.json`, que se crea solo y se recarga con `/komaedit reload`:
+
+```json
+{
+  "format": 1,
+  "views": {
+    "teleport": true,
+    "creativeOnly": true,
+    "maxTeleportDistance": 0.0,
+    "cooldownMillis": 400,
+    "allowSharing": true,
+    "maxSharedPerPlayer": 25,
+    "maxShared": 300
+  },
+  "notes": {
+    "maxPerPlayer": 64,
+    "maxTeam": 1000,
+    "maxLength": 200,
+    "maxDistance": 256,
+    "allowTeam": true
+  }
+}
+```
+
+- `teleport`: con `false` nadie salta a vistas ni a notas. `creativeOnly`: solo en creativo o espectador (salvo `komaedit.view.anymode`). `maxTeleportDistance`: bloques como mucho desde donde estás (`0`, sin límite; no cuenta al cambiar de dimensión). `cooldownMillis`: espera entre dos saltos.
+- `allowSharing`, `maxSharedPerPlayer` y `maxShared`: si se pueden compartir vistas, cuántas por jugador y en todo el mundo; reemplazar una no cuenta.
+- `maxPerPlayer`: notas de un jugador (abiertas o resueltas, privadas o del equipo). `maxTeam`: notas del equipo en todo el mundo. `maxLength`: caracteres del texto (como mucho 256). `maxDistance`: distancia máxima de una nota (de 4 a 512). `allowTeam`: si se pueden poner notas del equipo.
+- Lo que falte toma su valor de serie; si no se puede leer, se usan los de serie y se avisa en `latest.log`.
+
+### Rendimiento y limitaciones
+
+- Las vistas privadas viven en tu equipo: no pasan a otro PC ni las ve el servidor (solo el sitio al que quieres ir, al saltar). Cambiar la dirección con la que entras a un servidor es otro sitio.
+- El salto usa el teleporte normal de Minecraft: lo que pase al cambiar de dimensión (cargar chunks) es lo de siempre. Un salto denegado no cambia nada.
+- La regla no se guarda: al salir del mundo se pierde, y hay una sola a la vez. Los puntos son bloques; no mide entre puntos sueltos con decimales.
+- El servidor manda a cada cliente con el mod solo las notas de su dimensión que puede ver, en páginas de 128, y cada cambio a quien le afecta. El cliente las dibuja hasta su distancia, con un fondo casi opaco para que la de delante tape a la de detrás; muchas notas juntas se solapan (no se reordenan para no taparse).
+- Si el dibujo de la regla o de las notas falla (un mod de shaders incompatible), se ocultan en lugar de cerrar el juego y se apunta en `latest.log`.
+- Nada de esto se ha probado aún dentro de Minecraft: las medidas, los almacenes, la validación del salto y de compartir y los límites tienen pruebas, y el dibujo, renders con el mismo código.
+## Agua y lava
+
+### Objetivo y acceso
+
+Herramientas para lagos, ríos, piscinas y cascadas, como el Floodfill y la Fluid Ball de Axiom: rellenar un hueco **solo si está cerrado**, una bola de fluido sin derrames, cascadas y ríos cortos que no inundan alrededor y quitar las corrientes sueltas. Todas leen la zona en el hilo del servidor repartiendo el trabajo entre ticks, calculan en un worker y escriben por el motor común: [vista previa](#vista-previa-progreso-y-cancelación) con `-v`, confirmación si es grande, barra de progreso, `/komaedit cancel` y **una sola entrada de `//undo`** (también las corrientes que se ponen). Lo que no se puede hacer bien **no escribe nada**: lo dice y lo señala en el mundo.
+
+```text
+/komaedit fluido rellenar [agua|lava] [nivel|clic|clic+n|borde|~] [-d hbe] [-l límite] [-r radio] [-w] [-p x,y,z]
+/komaedit fluido bola [agua|lava|nieve] [radio] [-s] [-a] [-c] [-p x,y,z]
+/komaedit fluido cascada [agua|lava] [-o radio de la poza] [-n] [-r margen] [-a ancho] [-b] [-p x,y,z]
+/komaedit fluido limpiar [agua|lava|todo] [-m máscara]
+```
+
+Alias: `fluid` para la familia; `fill`/`floodfill`, `ball`/`fluidball`, `waterfall`/`fall`/`rio` y `clean`/`sueltos` para los modos; `water`, `snow`/`powder_snow` para los fluidos. Permisos `komaedit.build.fluid.fill` y `komaedit.build.fluid.clean` (paquete básico), `komaedit.build.fluid.ball` y `komaedit.build.fluid.fall` (intermedio); `komaedit.build.fluid` los da todos. Ayuda en el juego: `/komaedit help fluidos`. En el Studio: etapa [Herramientas](#herramientas), tarjeta **Poner agua o lava** (modos Rellenar hueco, Bola y Cascada; ver [Poner agua o lava en el Studio](#poner-agua-o-lava-en-el-studio)), y quitar los flujos sueltos es el modo **Quitar flujos sueltos** de **Retocar**.
+
+El punto es **donde haces clic** con el Studio abierto o, si no, el bloque que miras (hasta 160 bloques); `-p x,y,z` da uno exacto (lo usan los botones del chat para repetir sobre el mismo sitio).
+
+![Rellenar hueco en Más ajustes: anegar, direcciones, alcance y límite](renders/studio/agua/1080p_gui3_rellenar_mas_ajustes_es.png)
+
+### Rellenar (Floodfill)
+
+Haz clic en el hueco (en el suelo de una piscina, en la cara de dentro de su muro…): el líquido entra por la cara pulsada y se extiende **como en el juego**, de lado y hacia abajo, nunca hacia arriba, hasta el nivel.
+
+- **Nivel:** sin nada, la altura del clic; `clic+2` o `clic-1` desde el clic; `borde` llena hasta **lo más alto que aguanta el hueco sin derramarse** (clic en el fondo y `borde` llena la piscina entera); `~` o `~-1` desde tus pies; o una altura (`62`).
+- **Solo si está cerrado** por los lados y por debajo hasta ese nivel. Si el líquido llegaría al borde de lo leído (`-r`, 32 bloques de serie y hasta 128), al fondo del mundo, bajaría más de lo leído o tendría más bloques que el límite (`-l`, 50 000 de serie, y nunca más que tu límite del servidor), **no se pone nada** y el chat dice:
+  - **por dónde se escapa:** lo más estrecho del camino del líquido desde el clic hasta la salida (un agujero en el suelo, un hueco en el muro, la parte más baja de la orilla), comprobado tapándolo: si dice «tápalo y cerrará», basta con ese bloque (o esos pocos);
+  - **hasta qué altura sí cierra**, con un botón **[llenar hasta y=…]** que lo hace sobre el mismo hueco.
+- **En el mundo**, durante 10 s y solo para ti, partículas rojas en el hueco, naranjas por el camino del agua y amarillas donde se pierde.
+- **Direcciones** (`-d`): `h` de lado, `b` hacia abajo, `e` también en diagonal por las esquinas (el agua del juego no pasa en diagonal, así que de serie una esquina abierta no es una fuga). De serie `hb`. Lo que no se extiende tiene que estar cerrado igual: con `-d h` solo se llena la capa del nivel y, si debajo hay hueco, lo dice («hay hueco debajo»).
+- **Anegar** (`-w`, solo agua): las losas, escaleras, vallas y demás bloques que lo admiten se anegan como con un cubo y forman parte del relleno; sin `-w` hacen de pared (el agua del juego no entra en ellos). Ojo: una valla anegada en la orilla deja salir el agua, y así lo cuenta el relleno.
+- El aire y lo que el agua se lleva (hierba, flores, antorchas, capas de nieve) pasan a ser fuente; el agua corriente de dentro, también; las algas, las columnas de burbujas y lo ya anegado se quedan. Con lava, el agua hace de pared y se avisa de cuántos sitios toca (saldría piedra u obsidiana).
+- Ejemplos: `/komaedit fluido rellenar agua borde` (la piscina entera), `/komaedit fluido rellenar lava clic+3 -r 64`, `/komaedit fluido rellenar agua 62 -d h -w`.
+
+![Un cuenco en la ladera rellenado «hasta el borde»: el agua para donde el terreno deja de cerrarlo](renders/fluidos/lago.png)
+
+![El mismo lago con un canal abierto en la orilla: no pone nada y señala el hueco y el camino del agua](renders/fluidos/lago_fuga.png)
+
+### Bola de fluido
+
+Una esfera de **agua, lava o nieve en polvo** en el clic (el centro es la cara pulsada), de radio 4 de serie y hasta 32 (admite medios: `4.5`).
+
+- De serie sustituye **todo** lo que hay dentro, salvo cofres y demás bloques con datos: abre una poza redonda en la roca.
+- **`-a` solo aire:** llena solo el aire y lo que el agua se lleva; con agua, anega lo que lo admite.
+- **`-c` cerrar bordes:** quita de la bola cada fuente que se derramaría (con un hueco al lado o debajo fuera de la bola), una y otra vez, hasta que todo lo que queda lo aguanta el terreno: **ningún flujo suelto**. Con `-a -c` en un hoyo, la bola lo llena sin salirse aunque sea más grande que él.
+- **`-s` solo fuentes:** pone las fuentes y nada más. Sin `-s`, con agua o lava se ponen también las corrientes que saldrán de ella, ya quietas (salen de la simulación del juego, ver abajo): se ven en la vista previa y se van con `//undo`. Si el líquido seguiría corriendo más allá de lo leído, el chat lo dice (el juego lo extenderá).
+- La nieve en polvo no corre: `-c` y `-s` no le hacen nada.
+- Ejemplos: `/komaedit fluido bola agua 6 -a -c` (charca sin derrames), `/komaedit fluido bola lava 3`, `/komaedit fluido bola nieve 5 -a`.
+
+### Cascada y río corto
+
+**Desde un punto:** haz clic en el **borde de un saliente** (o en una pared que dé al vacío): ese bloque pasa a ser la fuente, metida en la roca, y el agua sale por su lado abierto, cae y, abajo, entra en una **poza**: unas fuentes en el suelo, cerradas por el terreno por los lados y por debajo, que se tragan la caída en lugar de dejar que se extienda siete bloques. La poza es un disco de radio `-o` (2 de serie, de 0 a 4) y, si en ese radio no queda cerrada, se busca uno más pequeño; en pendiente se hunde uno o dos bloques (se corta la columna de encima). `-n` la quita. Si la fuente no tiene por dónde salir, lo dice («haz clic en el borde»).
+
+**Por la trayectoria:** con dos puntos o más marcados (P), un **río corto** del punto más alto al más bajo: un cauce de un bloque de hondo a ras del terreno (`-a` de ancho, 1 de serie y hasta 7), sin pasos en diagonal y que **nunca sube**: si el terreno sube, se corta (hasta 4 bloques; si sube más, lo dice). En cada escalón el agua salta al tramo de abajo y donde el terreno de al lado queda más bajo pone **orilla** con el mismo bloque del suelo (`-b` la quita). Si el cauce pasa sobre un vacío, cae a una poza. Para un río largo con su valle, [`terreno rio` o `terreno arroyo`](#terraformado).
+
+- Las corrientes salen de la **simulación del juego** (ver abajo), así que son las que haría Minecraft al tocarlas.
+- **Sin inundar:** si alguna corriente se aleja más de `-r` bloques (2 de serie, hasta 16) de la fuente, la caída, el cauce o la poza, o seguiría corriendo fuera de lo leído, **no se pone nada** y se señala dónde llegaría.
+- El chat dice la altura de la caída, las fuentes, las corrientes, la poza, las orillas y lo cortado.
+- Ejemplos: `/komaedit fluido cascada` (desde el borde que miras), `/komaedit fluido cascada lava -o 1`, con puntos `/komaedit fluido cascada agua -a 3`.
+
+![Cascada desde el borde del acantilado con su poza abajo: nada se extiende por el suelo](renders/fluidos/cascada.png)
+
+![Río corto de tres bloques por una ladera con escalones: el agua nunca sube y salta en cada escalón](renders/fluidos/rio.png)
+
+### Quitar flujos sueltos
+
+`/komaedit fluido limpiar` o **`/komaedit retocar sueltos`** (y con el pincel, `pincel retocar <radio> sueltos`, alrededor de cada clic) quita de la **selección** las corrientes de agua o de lava (`todo` de serie) que no salen de ninguna fuente: las que el juego secaría en cuanto algo las tocara (un charco que quedó tras quitar una fuente, restos de una cascada borrada…). Desde cada fuente (también lo anegado, las algas y las columnas de burbujas) se reparte el nivel como lo recalcula el juego: debajo de un líquido hay cascada y de lado se pierde un nivel por bloque (la lava del mundo normal, dos). Lee 8 bloques de margen para ver las fuentes de alrededor, y las corrientes del borde de lo leído cuentan como alimentadas (su fuente puede quedar fuera). `-m` limita a una máscara.
+
+### Simulación del agua
+
+Bola y cascada calculan las corrientes con las reglas de `FlowableFluid` del juego, sin Minecraft: cae si puede; si no (o si es una fuente) se extiende de lado perdiendo un nivel por bloque (la lava del mundo normal, dos; en el Nether, uno) y prefiere los lados que llevan a un desnivel cerca (a 4 bloques el agua, a 2 la lava); debajo de otro líquido hay cascada (nivel 8) y dos fuentes de agua junto a un hueco con suelo forman otra. Solo se simula donde algo cambia, por turnos como los ticks del juego.
+
+### Rendimiento y limitaciones
+
+- Rellenar lee una caja de `2·radio+1` de lado alrededor del clic, desde `radio` bloques por debajo hasta el nivel (con `borde`, también `radio` por encima): de serie 65×65 de planta y entre 34 y 66 de alto, de 140 000 a 280 000 bloques; bola y cascada, la esfera o la caída con su margen (la cascada mira hasta 96 bloques hacia abajo). Si tu límite del servidor es menor, la caja se encoge para caber. La lectura se reparte entre ticks y el cálculo va en un worker.
+- Buscar por dónde se escapa vuelve a rellenar unas pocas veces (la altura que cierra y hasta ocho sitios estrechos tapados): en un hueco enorme puede tardar un par de segundos, siempre fuera del hilo del servidor.
+- Las formas de los bloques no se miran: una losa o una valla es pared entera para el agua que corre (el juego deja pasar el agua por algunas caras que no son enteras).
+- Se escribe con WorldEdit: si después algo actualiza el agua de un hueco que no estaba cerrado, correrá como en vanilla. Las corrientes que se ponen son las que el juego dejaría quietas, pero el juego puede recalcularlas al tocarlas.
+- Renders de comprobación fuera del juego en `docs/renders/fluidos/` (se regeneran con `KOMAEDIT_FLUID_RENDER=<carpeta>`, y con `KOMAEDIT_MC_JAR` llevan las texturas del juego).
 
 ## Biblioteca de planos
 
@@ -5474,6 +5752,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`, `.rebuild` ([Reconstrucción animada](#reconstrucción-animada)).
+   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
+   - `komaedit.build.fluid.fill`, `.fluid.ball`, `.fluid.fall` y `.fluid.clean` ([Agua y lava](#agua-y-lava)).
    - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
    - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
    - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
@@ -5482,6 +5762,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.display` (intermedio) y `komaedit.build.display_others` (avanzado); de admin, `komaedit.limit.displays` (ver [Decorar con displays](#lo-que-decide-el-servidor)).
    - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
    - Paquetes compartidos: `komaedit.share.export` (la da también `komaedit.use`), `komaedit.share.import` (propio), `komaedit.share.file` y, de admin, `komaedit.limit.share` (ver [Compartir entre servidores](#permisos-y-límites-de-los-paquetes)).
+   - Vistas y notas: `komaedit.view.teleport`, `.shared`, `.share`, `.dimension` y `.anymode`; `komaedit.notes.private`, `.team` y `.share`; de admin, `komaedit.admin.views` y `komaedit.admin.notes` (ver [Permisos y límites de vistas y notas](#permisos-y-límites-de-vistas-y-notas)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.debug.loadingbar` (`/komaedit debug clearloadingbars`; la da también `komaedit.use`). `komaedit.debug` da las dos órdenes de `/komaedit debug`.
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
@@ -5493,8 +5774,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 
 | Paquete | Incluye |
 | --- | --- |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`), `debug clearloadingbars` y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, rellenar y quitar flujos sueltos (`fluido rellenar`, `fluido limpiar`, `retocar sueltos`), supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`), `debug clearloadingbars` y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, la bola de fluido y las cascadas (`fluido bola`, `fluido cascada`), tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
 | `komaedit.permpack.admin` | `reload`, `jobs`, `debugprint`, `debug removevisualiserentities`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 | `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), barras guardadas (`hotbar`), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
@@ -5535,6 +5816,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa, `arraySnapRadius` ni los del presupuesto por tick y el plan) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
 
 `config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
+
+`config/komaedit/utilities.json` guarda las reglas de las [vistas y las notas](#vistas-regla-y-notas) (saltos, compartir, número y longitud de las notas); también se recarga con `/komaedit reload`.
 
 `config/komaedit/blueprints.json` guarda los límites de la [biblioteca de planos](#permisos-y-límites) (planos por jugador, compartidos, tamaño y si se puede compartir); también se recarga con `/komaedit reload`.
 

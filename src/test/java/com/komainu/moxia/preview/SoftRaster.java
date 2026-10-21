@@ -17,13 +17,13 @@ import java.util.List;
  * juego: el z-buffer decide qué tapa qué, el «polygon offset» es un pequeño sesgo de profundidad y el brillo de las
  * entidades de vanilla (glow) se dibuja encima de todo.
  */
-final class SoftRaster implements AutoCloseable {
+public final class SoftRaster implements AutoCloseable {
     /** Desde dónde se mira (hacia el origen): este, arriba y sur. */
     private static final double[] VIEW = normalize(1.0, 1.15, 1.35);
     private static final double[] RIGHT = normalize(1.0, 0.0, -VIEW[0] / VIEW[2]);
     private static final double[] UP = cross(VIEW, RIGHT);
     /** Brillo de cada cara como en Minecraft: oeste, este, abajo, arriba, norte, sur. */
-    static final double[] SHADE = {0.6, 0.6, 0.5, 1.0, 0.8, 0.8};
+    public static final double[] SHADE = {0.6, 0.6, 0.5, 1.0, 0.8, 0.8};
 
     private final int width;
     private final int height;
@@ -34,7 +34,7 @@ final class SoftRaster implements AutoCloseable {
     private final double[] depth;
     private final TextureTiles tiles;
 
-    SoftRaster(int width, int height, double scale, double centerX, double centerY, double centerZ)
+    public SoftRaster(int width, int height, double scale, double centerX, double centerY, double centerZ)
             throws IOException {
         this.width = width;
         this.height = height;
@@ -48,7 +48,7 @@ final class SoftRaster implements AutoCloseable {
         this.tiles = new TextureTiles();
     }
 
-    void clear(int top, int bottom) {
+    public void clear(int top, int bottom) {
         for (int y = 0; y < height; y++) {
             int rgb = lerp(top, bottom, y / (double) (height - 1));
             for (int x = 0; x < width; x++) {
@@ -58,14 +58,14 @@ final class SoftRaster implements AutoCloseable {
         java.util.Arrays.fill(depth, Double.NEGATIVE_INFINITY);
     }
 
-    boolean real() {
+    public boolean real() {
         return tiles.real();
     }
 
     // ---------------------------------------------------------------- texturas
 
     /** 16×16 ARGB de {@code textures/block/<name>.png} con un tinte, o un color liso ({@link TextureTiles}). */
-    int[] texture(String name, int fallback, int tint) {
+    public int[] texture(String name, int fallback, int tint) {
         return tiles.tile(name, fallback, tint);
     }
 
@@ -80,7 +80,7 @@ final class SoftRaster implements AutoCloseable {
      * @param zFighting mezcla al azar con {@code under} donde coincide con lo que ya hay, como el parpadeo de dos
      *                  caras en el mismo sitio
      */
-    void face(double x0, double y0, double z0, double x1, double y1, double z1, int face, int[] texture,
+    public void face(double x0, double y0, double z0, double x1, double y1, double z1, int face, int[] texture,
               double shade, double alpha, double bias, int[] under, boolean zFighting) {
         double[][] corners = corners(x0, y0, z0, x1, y1, z1, face);
         if (dot(normal(face), VIEW) <= 0.0) {
@@ -111,9 +111,11 @@ final class SoftRaster implements AutoCloseable {
      * caras y otra de color en la que solo pinta la más cercana de cada píxel. Deja esa profundidad escrita, así lo
      * que queda detrás de la vista previa (sus propias aristas de atrás) no se ve.
      *
-     * @param faces cada una {x, y, z, cara} con su textura en {@code textures} y su tinte en {@code tints}
+     * @param faces cada una {x, y, z, cara} (o {x, y, z, cara, alto} para un bloque más bajo, como el agua) con su
+     *              textura en {@code textures} y su tinte en {@code tints}
      */
-    void singleLayer(List<double[]> faces, List<int[]> textures, List<Integer> tints, double alpha, double bias) {
+    public void singleLayer(List<double[]> faces, List<int[]> textures, List<Integer> tints, double alpha,
+                            double bias) {
         double[] nearest = new double[width * height];
         java.util.Arrays.fill(nearest, Double.NEGATIVE_INFINITY);
         double[] written = nearest;
@@ -124,7 +126,8 @@ final class SoftRaster implements AutoCloseable {
             for (int index = 0; index < faces.size(); index++) {
                 double[] face = faces.get(index);
                 int direction = (int) face[3];
-                double[][] corners = corners(face[0], face[1], face[2], face[0] + 1, face[1] + 1, face[2] + 1,
+                double top = face.length > 4 ? face[4] : 1.0;
+                double[][] corners = corners(face[0], face[1], face[2], face[0] + 1, face[1] + top, face[2] + 1,
                         direction);
                 if (dot(normal(direction), VIEW) <= 0.0) {
                     continue;
@@ -238,7 +241,7 @@ final class SoftRaster implements AutoCloseable {
     // ---------------------------------------------------------------- líneas y etiquetas
 
     /** Una línea de {@code thickness} píxeles; con {@code throughWalls} no mira la profundidad (el brillo). */
-    void line(double[] from, double[] to, int argb, double thickness, boolean throughWalls, double bias) {
+    public void line(double[] from, double[] to, int argb, double thickness, boolean throughWalls, double bias) {
         double[] a = project(from);
         double[] b = project(to);
         double length = Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -326,14 +329,15 @@ final class SoftRaster implements AutoCloseable {
         return new boolean[width * height];
     }
 
-    BufferedImage image() {
+    public BufferedImage image() {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         image.setRGB(0, 0, width, height, color, 0, width);
         return image;
     }
 
     /** Texto con fondo oscuro centrado en un punto del mundo (como las medidas, se ve a través de todo). */
-    static void label(Graphics2D graphics, SoftRaster raster, double[] point, String text, Color color, int size) {
+    public static void label(Graphics2D graphics, SoftRaster raster, double[] point, String text, Color color,
+                             int size) {
         double[] screen = raster.project(point);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -349,7 +353,7 @@ final class SoftRaster implements AutoCloseable {
     }
 
     /** Un título y una nota en la esquina. */
-    static void caption(Graphics2D graphics, String title, String note) {
+    public static void caption(Graphics2D graphics, String title, String note) {
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
         graphics.setColor(new Color(0, 0, 0, 140));

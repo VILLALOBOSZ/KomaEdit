@@ -31,6 +31,19 @@ public interface BlockKinds extends GravityEngine.Kinds {
     /** Planta pequeña que la nieve puede tapar ({@code -p}): hierba, helechos, arbustos secos. */
     boolean smallPlant(int rawId);
 
+    /**
+     * Lo que el agua o la lava ocupan llevándoselo por delante: el aire, la hierba, las flores, las antorchas… La
+     * misma regla que {@code FlowableFluid.canFill} de Minecraft para un bloque sin líquido: no vale lo que se
+     * anega, las puertas, carteles, escaleras de mano, cañas, portales ni lo que frena el paso.
+     */
+    boolean washable(int rawId);
+
+    /**
+     * La propiedad {@code level} de un bloque de agua o de lava (0 fuente, 1–7 corriente, 8–15 cayendo), o -1 si el
+     * bloque no es agua ni lava (las columnas de burbujas y lo anegado cuentan como fuentes de agua sin nivel).
+     */
+    int fluidLevel(int rawId);
+
     @Override
     default boolean fluid(int rawId) {
         return water(rawId) || lava(rawId);
@@ -45,6 +58,10 @@ public interface BlockKinds extends GravityEngine.Kinds {
             "minecraft:furnace", "minecraft:spawner");
     /** Bloques donde la nieve no se sostiene aunque su cara de arriba sea entera. */
     Set<String> NO_SNOW = Set.of("minecraft:ice", "minecraft:packed_ice", "minecraft:barrier");
+    /** Lo que se lleva el agua en la versión de texto (además del aire). */
+    Set<String> WASHABLE = Set.of("minecraft:short_grass", "minecraft:grass", "minecraft:fern",
+            "minecraft:dead_bush", "minecraft:dandelion", "minecraft:poppy", "minecraft:torch", "minecraft:snow",
+            "minecraft:vine");
 
     /**
      * Versión de texto, sin Minecraft: se guía por el id y las propiedades de la foto. {@code fullTop} dice qué
@@ -136,6 +153,20 @@ public interface BlockKinds extends GravityEngine.Kinds {
             @Override
             public boolean blockEntity(int rawId) {
                 return BLOCK_ENTITIES.contains(id(rawId));
+            }
+
+            @Override
+            public boolean washable(int rawId) {
+                return snapshot.stateInfo(rawId).air() || WASHABLE.contains(id(rawId));
+            }
+
+            @Override
+            public int fluidLevel(int rawId) {
+                if (!id(rawId).equals("minecraft:water") && !id(rawId).equals("minecraft:lava")) {
+                    return -1;
+                }
+                String level = property(rawId, "level");
+                return level == null ? 0 : Integer.parseInt(level);
             }
         };
     }

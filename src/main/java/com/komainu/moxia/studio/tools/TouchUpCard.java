@@ -11,8 +11,8 @@ import java.util.regex.Pattern;
 
 /**
  * «Retocar»: los arreglos sobre lo que ya hay, como modos de una sola tarjeta y de una sola orden
- * ({@code /komaedit retocar <modo>}): nevar, drenar, inundar, dejar caer, desinfestar, fijar las hojas, anegar,
- * encerar y cambiar el bioma. Antes eran cinco tarjetas (nieve, drenar, inundar, gravedad y bioma) y los cuatro
+ * ({@code /komaedit retocar <modo>}): nevar, drenar, inundar, quitar los flujos sueltos, dejar caer, desinfestar,
+ * fijar las hojas, anegar, encerar y cambiar el bioma. Antes eran cinco tarjetas (nieve, drenar, inundar, gravedad y bioma) y los cuatro
  * {@code tweak} solo tenían orden.
  *
  * <p>Sobre la selección o con el pincel ({@code /komaedit pincel retocar <radio> <modo>}), con los mismos ajustes;
@@ -24,6 +24,8 @@ public final class TouchUpCard extends ToolCard {
     public static final String SNOW = "nieve";
     public static final String DRAIN = "drenar";
     public static final String FLOOD = "inundar";
+    /** Quitar las corrientes que no salen de ninguna fuente ({@code /komaedit fluido limpiar}). */
+    public static final String LOOSE = "sueltos";
     public static final String GRAVITY = "gravedad";
     public static final String DEINFEST = "desinfestar";
     public static final String LEAVES = "hojas";
@@ -31,12 +33,13 @@ public final class TouchUpCard extends ToolCard {
     public static final String WAX = "encerar";
     public static final String BIOME = "bioma";
     /** Los modos, en el orden de sus botones. */
-    public static final List<String> MODES = List.of(SNOW, DRAIN, FLOOD, GRAVITY, DEINFEST, LEAVES, WATERLOG, WAX,
-            BIOME);
+    public static final List<String> MODES = List.of(SNOW, DRAIN, FLOOD, LOOSE, GRAVITY, DEINFEST, LEAVES, WATERLOG,
+            WAX, BIOME);
 
     public static final String SNOW_NODE = KomaPermissions.BUILD + ".snow";
     public static final String DRAIN_NODE = KomaPermissions.BUILD + ".drain";
     public static final String FLOOD_NODE = KomaPermissions.BUILD + ".waterlog";
+    public static final String LOOSE_NODE = KomaPermissions.BUILD + ".fluid.clean";
     public static final String GRAVITY_NODE = KomaPermissions.BUILD + ".gravity";
     public static final String BIOME_NODE = KomaPermissions.BUILD + ".biome";
     public static final String BIOME_BRUSH_NODE = KomaPermissions.BUILD + ".brush.biome";
@@ -46,14 +49,14 @@ public final class TouchUpCard extends ToolCard {
     static final Map<String, String> TWEAKS = Map.of(DEINFEST, "deinfest", LEAVES, "persist", WATERLOG, "waterlog",
             WAX, "wax");
     /** Lo que se ve con {@code -m}: los {@code tweak} no tienen máscara. */
-    private static final Set<String> MASKED = Set.of(SNOW, DRAIN, FLOOD, GRAVITY, BIOME);
+    private static final Set<String> MASKED = Set.of(SNOW, DRAIN, FLOOD, LOOSE, GRAVITY, BIOME);
     private static final Pattern BIOME_ID = Pattern.compile("[a-z0-9_.\\-]+(:[a-z0-9_./\\-]+)?");
 
     TouchUpCard() {
         super("touchup", ToolTarget.SELECTION,
                 List.of("retocar", "retoques", "touchup", "tweak", "survival", "nieve", "snow", "nevar", "invierno",
                         "drenar", "drain", "secar", "vaciar", "agua", "water", "lava", "inundar", "waterlog", "flood",
-                        "nivel", "gravedad", "gravity", "caer", "arena", "desinfestar", "deinfest", "hojas",
+                        "nivel", "sueltos", "flujos", "corrientes", "loose", "gravedad", "gravity", "caer", "arena", "desinfestar", "deinfest", "hojas",
                         "leaves", "persist", "anegar", "encerar", "wax", "cera", "cobre", "bioma", "biome", "clima"),
                 List.of(
                         use(ToolUse.SELECTION, ToolUse.BRUSH),
@@ -76,6 +79,8 @@ public final class TouchUpCard extends ToolCard {
                         in(FLOOD, when(values -> values.choice("level").equals("feet"),
                                 number("offset", -16, 16, 1, 4, 0).unit(ValueUnit.BLOCKS))),
                         in(FLOOD, toggle("blocks_only", false)),
+                        // Quitar los flujos sueltos.
+                        in(LOOSE, choice("loose_target", ToolParam.Choice.Style.BUTTONS, "todo", "agua", "lava")),
                         // Dejar caer.
                         in(GRAVITY, toggle("unsupported", false)),
                         // Los retoques de supervivencia: encender o quitar.
@@ -104,7 +109,7 @@ public final class TouchUpCard extends ToolCard {
     @Override
     public List<String> essentials() {
         return List.of(ToolUse.PARAM, MODE, "radius", "layers", "plants", "fluid", "keep_plants", "level", "level_y",
-                "offset", "unsupported", "leaves", "wet", "wax", "biome");
+                "offset", "loose_target", "unsupported", "leaves", "wet", "wax", "biome");
     }
 
     /** Lo que va detrás de {@code retocar} (y de {@code pincel retocar <radio>}): el modo y sus ajustes. */
@@ -120,6 +125,7 @@ public final class TouchUpCard extends ToolCard {
                     .flag("-p", values.toggle("plants"));
             case DRAIN -> line.word(values.choice("fluid")).flag("-k", values.toggle("keep_plants"));
             case FLOOD -> line.word(level(values)).flag("-b", values.toggle("blocks_only"));
+            case LOOSE -> line.word(values.choice("loose_target"));
             case GRAVITY -> line.flag("-a", values.toggle("unsupported"));
             case LEAVES -> line.word(values.choice("leaves"));
             case WATERLOG -> line.word(values.choice("wet"));
@@ -199,6 +205,7 @@ public final class TouchUpCard extends ToolCard {
             case SNOW -> SNOW_NODE;
             case DRAIN -> DRAIN_NODE;
             case FLOOD -> FLOOD_NODE;
+            case LOOSE -> LOOSE_NODE;
             case GRAVITY -> GRAVITY_NODE;
             case BIOME -> BIOME_NODE;
             default -> KomaPermissions.BUILD + ".tweak." + TWEAKS.get(mode);
