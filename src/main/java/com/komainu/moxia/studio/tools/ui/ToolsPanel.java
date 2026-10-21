@@ -120,6 +120,14 @@ public final class ToolsPanel {
         /** Una acción de las barras guardadas, por su paquete (no por el chat). */
         default void hotbar(HotbarAction action, String name) {
         }
+
+        /**
+         * «Compartir»: pide al servidor el código de {@code things} ({@code arbol:abeto}); el cliente lo copia al
+         * portapapeles cuando llega.
+         */
+        default void shareExport(String things) {
+            send("komaedit share export " + things);
+        }
     }
 
     public enum Key {
@@ -849,8 +857,13 @@ public final class ToolsPanel {
             labels.add(host.tr("gui.komaedit.preset.random"));
         }
         List<String> names = new ArrayList<>(saved.keySet());
-        names.forEach(name -> labels.add("#" + name));
-        int[] widths = labels.stream().mapToInt(label -> ui.chipWidth(label)).toArray();
+        // Cada preset guardado lleva detrás su botón «Compartir» (un icono): la pastilla sigue aplicándolo.
+        names.forEach(name -> {
+            labels.add("#" + name);
+            labels.add("");
+        });
+        int[] widths = labels.stream().mapToInt(label -> label.isEmpty() ? SHARE_WIDTH : ui.chipWidth(label))
+                .toArray();
         List<Rect> cells = column.flow(widths, 14);
         String kind = host.tr("gui.komaedit.palette.kind.preset");
         for (int index = 0; index < presets.size(); index++) {
@@ -877,12 +890,23 @@ public final class ToolsPanel {
         for (int index = 0; index < names.size(); index++) {
             String name = names.get(index);
             String settings = saved.get(name);
-            ui.chip(cells.get(next + index), "#" + name, false, FAVORITE)
+            ui.chip(cells.get(next + 2 * index), "#" + name, false, FAVORITE)
                     .tooltip("#" + name + "\n" + settings)
                     .group("tools:preset")
                     .onClick(() -> applySaved(card, name, settings, host));
+            ui.iconButton(cells.get(next + 2 * index + 1), StudioIcons.Icon.SHARE, "", StudioUi.Tone.SECONDARY)
+                    .tooltip(host.tr("gui.komaedit.share.preset", "#" + name) + "\n"
+                            + host.tr("gui.komaedit.help.share.button"))
+                    .group("tools:share")
+                    .onClick(() -> {
+                        host.shareExport(card.id() + ":" + name);
+                        host.status(host.tr("gui.komaedit.status.share.preparing", "#" + name));
+                    });
         }
     }
+
+    /** Ancho del botón «Compartir» de un preset guardado: el icono y un poco de aire. */
+    private static final int SHARE_WIDTH = 16;
 
     /** Aplica un preset de la tarjeta elegida por su id (lo usa la paleta de órdenes). */
     public void applyPreset(ToolCard card, ToolPreset preset, Host host) {

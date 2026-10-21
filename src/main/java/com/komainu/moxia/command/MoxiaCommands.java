@@ -275,6 +275,7 @@ public final class MoxiaCommands {
         RetouchCommands.register(root);
         SelectionBrushCommands.register(root);
         BlueprintCommands.register(root);
+        ShareCommands.register(root);
         ClipboardCommands.register(root);
         PasteCommands.register(root);
         PreviewCommands.register(root);

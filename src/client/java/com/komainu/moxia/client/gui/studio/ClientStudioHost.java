@@ -6,10 +6,13 @@ import com.komainu.moxia.client.preview.PathHologramRenderer;
 import com.komainu.moxia.client.preview.ProceduralPreviewRenderer;
 import com.komainu.moxia.client.recipe.ClientInstanceCatalog;
 import com.komainu.moxia.client.recipe.ClientRecipeCatalog;
+import com.komainu.moxia.client.share.ClientShare;
 import com.komainu.moxia.editor.EditorActionPayload;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeActionPayload;
+import com.komainu.moxia.share.ShareCodePayload;
+import com.komainu.moxia.share.ShareOfferPayload;
 import com.komainu.moxia.studio.BlockNames;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.net.JobStatusPayload;
@@ -115,6 +118,37 @@ public final class ClientStudioHost implements StudioHost {
         if (client != null) {
             client.keyboard.setClipboard(text);
         }
+    }
+
+    @Override
+    public void shareExport(String things) {
+        ClientShare.expect();
+        send("komaedit share export " + things);
+    }
+
+    @Override
+    public Map<String, String> savedPalettes() {
+        return ToolClientState.palettes();
+    }
+
+    @Override
+    public String clipboard() {
+        return client == null ? "" : client.keyboard.getClipboard();
+    }
+
+    @Override
+    public boolean shareImport(String code) {
+        return client != null && ClientShare.importCode(client, code);
+    }
+
+    @Override
+    public Optional<ShareOfferPayload> takeShareOffer() {
+        return ClientShare.takeOffer();
+    }
+
+    @Override
+    public Optional<ShareCodePayload> takeShareResult() {
+        return ClientShare.takeResult();
     }
 
     @Override

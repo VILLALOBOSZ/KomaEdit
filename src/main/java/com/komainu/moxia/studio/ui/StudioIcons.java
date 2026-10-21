@@ -29,7 +29,9 @@ public final class StudioIcons {
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
-        GIZMO
+        GIZMO,
+        // Compartir con otro servidor (un código para copiar).
+        SHARE
     }
 
     private static final Map<Icon, String[]> MASKS = new EnumMap<>(Icon.class);
@@ -711,6 +713,22 @@ public final class StudioIcons {
     }
 
     private StudioIcons() {
+    }
+
+    static {
+        // Una flecha que sale de la caja: lo que se lleva a otro servidor.
+        mask(Icon.SHARE,
+                ".....##.....",
+                "....####....",
+                "...##..##...",
+                ".....##.....",
+                ".....##.....",
+                ".##..##..##.",
+                ".#...##...#.",
+                ".#........#.",
+                ".#........#.",
+                ".##########.",
+                "............");
     }
 
     private static void mask(Icon icon, String... rows) {

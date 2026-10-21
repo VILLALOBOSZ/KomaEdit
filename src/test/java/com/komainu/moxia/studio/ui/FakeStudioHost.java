@@ -6,6 +6,8 @@ import com.google.gson.JsonParser;
 import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
+import com.komainu.moxia.share.ShareCodePayload;
+import com.komainu.moxia.share.ShareOfferPayload;
 import com.komainu.moxia.studio.BlockNames;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.net.JobStatusPayload;
@@ -110,6 +112,15 @@ public final class FakeStudioHost implements StudioHost {
     public List<ProceduralInstanceSummary> instances = new ArrayList<>();
     public final FakeBlueprints blueprints = new FakeBlueprints();
     public Consumer<String> picker;
+    /** Lo que hay en el portapapeles. */
+    public String clipboard = "";
+    /** Los códigos que el Studio mandó a importar. */
+    public final List<String> imported = new ArrayList<>();
+    /** Las paletas guardadas del jugador (nombre → bloques). */
+    public Map<String, String> palettes = Map.of();
+    /** Lo próximo que «llega» del servidor al compartir; se entrega una vez. */
+    public ShareOfferPayload offer;
+    public ShareCodePayload shareResult;
 
     public FakeStudioHost(String language) {
         this(language, true);
@@ -438,6 +449,36 @@ public final class FakeStudioHost implements StudioHost {
 
     public String last() {
         return sent.isEmpty() ? null : sent.getLast();
+    }
+
+    @Override
+    public String clipboard() {
+        return clipboard;
+    }
+
+    @Override
+    public boolean shareImport(String code) {
+        imported.add(code);
+        return true;
+    }
+
+    @Override
+    public Map<String, String> savedPalettes() {
+        return palettes;
+    }
+
+    @Override
+    public Optional<ShareOfferPayload> takeShareOffer() {
+        ShareOfferPayload current = offer;
+        offer = null;
+        return Optional.ofNullable(current);
+    }
+
+    @Override
+    public Optional<ShareCodePayload> takeShareResult() {
+        ShareCodePayload current = shareResult;
+        shareResult = null;
+        return Optional.ofNullable(current);
     }
 
     /** Planos de mentira, con miniaturas ya hechas. */
