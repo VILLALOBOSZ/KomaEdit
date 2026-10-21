@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -258,6 +259,28 @@ class TubeBenderTest {
             return new int[]{0, 0};
         }
         return new int[]{maxY - minY, maxZ - minZ};
+    }
+
+    /**
+     * El giro de cada bloque doblado es el de {@code rotateY} de WorldEdit (de este a norte) y se pasa a sus estados
+     * con la transformación de la simetría: así giran también los raíles, que el giro de WorldEdit deja como estaban
+     * (una vía doblada por una curva seguía de norte a sur).
+     */
+    @Test
+    void quarterTurnsTurnTheStatesLikeRotateY() {
+        assertTrue(TubeBender.symmetry(0).identity());
+        assertArrayEquals(new int[]{0, -1}, TubeBender.symmetry(1).direction(1, 0), "rotateY(90): +X a -Z");
+        assertArrayEquals(new int[]{-1, 0}, TubeBender.symmetry(2).direction(1, 0));
+        assertArrayEquals(new int[]{0, 1}, TubeBender.symmetry(3).direction(1, 0), "rotateY(270): +X a +Z");
+        java.util.Map<String, List<String>> rail = java.util.Map.of("shape", List.of("north_south", "east_west",
+                "ascending_east", "ascending_west", "ascending_north", "ascending_south", "south_east", "south_west",
+                "north_west", "north_east"), "waterlogged", List.of("true", "false"));
+        assertEquals("east_west", com.komainu.moxia.symmetry.StateTransform.apply(
+                java.util.Map.of("shape", "north_south", "waterlogged", "false"), rail, TubeBender.symmetry(1))
+                .get("shape"));
+        assertEquals("ascending_north", com.komainu.moxia.symmetry.StateTransform.apply(
+                java.util.Map.of("shape", "ascending_east", "waterlogged", "false"), rail, TubeBender.symmetry(1))
+                .get("shape"));
     }
 
     private static TubeBender.Template wall(int length, int height, int marker) {

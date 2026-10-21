@@ -88,7 +88,7 @@ Paquete `capability` (y `client.capability`). La lógica pura no toca Minecraft 
 1. El servidor manda `CapabilityStatePayload` al entrar y en cada cambio (y lo recomprueba cada 2 s por si cambian el modo de juego o los permisos). Sin ese estado el cliente no intercepta nada.
 2. El cliente intercepta el clic derecho con un mixin en `MinecraftClient.doItemUse`, el izquierdo con `ClientPreAttackCallback` y la `F` al empezar el tick, y manda la intención (`CapabilityActionPayload`) con el bloque, la cara y el punto pulsados, como el paquete de uso de Minecraft.
 3. `CapabilityService` comprueba permiso, modo de juego, que la capacidad esté activa, distancia y freno, y convierte la intención en una lista de `HandEdit`.
-4. `HandEditApplier` deja que `HandEditEvents.COLLECT` añada bloques (simetría), descarta las posiciones donde el jugador no puede construir y escribe con una `EditSession` (sin los efectos `NEIGHBORS` y `UPDATE` con «Sin actualizaciones»). Si cambia más de un bloque, la sesión va al historial de WorldEdit.
+4. `HandEditApplier` deja que `HandEditEvents.COLLECT` añada bloques (simetría), descarta las posiciones donde el jugador no puede construir y escribe con una `EditSession` (sin los efectos `NEIGHBORS` y `UPDATE` con «Sin actualizaciones»). Si cambia más de un bloque, o se pierde lo que guardaba uno con entidad de bloque (reemplazar o romper un cofre), la sesión va al historial de WorldEdit. Un cambio de estado del mismo bloque lleva sus datos (`edit.KeptData`): WorldEdit vacía los contenedores al escribir encima.
 
 «Alcance largo» es un modificador temporal del atributo `block_interaction_range`, y la velocidad de vuelo, las habilidades del jugador: los dos los sincroniza Minecraft y no necesitan el mod en el cliente.
 

@@ -235,6 +235,12 @@ class StateTransformTest {
                 "triggered", "false"), crafter, new SymmetryTransform(true, false, true, 0, 1)).get("orientation"));
         assertEquals("south_up", StateTransform.apply(state("orientation", "east_up", "crafting", "false",
                 "triggered", "false"), crafter, QUARTER).get("orientation"));
+        // Uno que mira de lado no puede tener arriba abajo: reflejado en X y en Y, su frente (por donde suelta lo que
+        // fabrica) sigue al espejo y el arriba se queda arriba, igual que si se refleja en dos pasos.
+        assertEquals("east_up", StateTransform.apply(state("orientation", "west_up", "crafting", "false",
+                "triggered", "false"), crafter, new SymmetryTransform(true, false, true, 0, 1)).get("orientation"));
+        assertEquals("west_up", StateTransform.apply(state("orientation", "west_up", "crafting", "false",
+                "triggered", "false"), crafter, MIRROR_Y).get("orientation"));
     }
 
     @Test

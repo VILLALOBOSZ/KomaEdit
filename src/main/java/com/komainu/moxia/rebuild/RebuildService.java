@@ -1090,6 +1090,21 @@ public final class RebuildService {
                     PackedBlockPlan.unpackY(position), PackedBlockPlan.unpackZ(position)),
                     palette == RebuildModel.AIR ? worldEditAir() : job.blocks.get(palette));
         }
+
+        /**
+         * Un bloque con datos se relee al quitarlo: un cofre que alguien vació (o que una tolva llenó) desde la
+         * lectura vuelve con lo que llevaba al quitarse, sin duplicar ni perder objetos. Cada bloque con datos tiene su
+         * propia entrada de la paleta ({@link Job#worldPalette}).
+         */
+        @Override
+        public void taking(long position, int palette) {
+            int x = PackedBlockPlan.unpackX(position);
+            int y = PackedBlockPlan.unpackY(position);
+            int z = PackedBlockPlan.unpackZ(position);
+            if (job.world.getBlockState(job.cursor.set(x, y, z)).hasBlockEntity()) {
+                job.blocks.set(palette, FabricAdapter.adapt(job.world).getFullBlock(BlockVector3.at(x, y, z)));
+            }
+        }
     }
 
     private static void writeSnapshot(Path target, RebuildRecovery.Snapshot snapshot) throws IOException {

@@ -1514,7 +1514,7 @@ Curva un módulo copiado con WorldEdit (un tramo de muro, puente, calzada, vía 
 - **Estirar:** una sola copia ocupa todo el recorrido.
 - Igual que las figuras de tubo, se trabaja al revés: cada bloque del mundo cercano al eje pregunta qué bloque del módulo le toca. Por fuera de las curvas el módulo se estira sin abrir huecos; por dentro se comprime y puede perder algún detalle fino.
 - **Normales `upright` (por defecto):** el módulo se asocia a la vertical de cada punto del recorrido, así que en una cuesta los postes y muros quedan a plomo y la altura se mide en bloques del mundo. Con `horizontal` o `consistent` la sección se inclina con la pendiente.
-- Escaleras, troncos, vallas y demás bloques con dirección se giran en cuartos de vuelta para seguir la curva.
+- Escaleras, troncos, vallas, raíles (también en curva y en rampa) y demás bloques con dirección se giran en cuartos de vuelta para seguir la curva, con la misma transformación que la [simetría](#simetría).
 
 ### Parámetros
 
@@ -1541,6 +1541,7 @@ Ejemplos:
 - El portapapeles admite hasta 100 000 bloques y como mucho 128 bloques de alto o de lado desde el origen.
 - Un tramo de puente de 7×3×6 doblado sobre 85 bloques de curva (unos 850 bloques) se calcula en menos de 0,1 s en un worker.
 - Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
+- Los bloques con datos salen sin ellos, como en la [colocación](#colocar-estructuras): cofres vacíos, carteles en blanco, estandartes sin dibujo. Para conservarlos, `//paste`.
 - El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
 
 ## Escalar y girar el portapapeles
@@ -3383,7 +3384,7 @@ Nodos y paquetes:
 
 ### Historial
 
-Las acciones de más de un bloque (extruir, encoger, arrastrar y cualquiera que otro mod amplíe, como la simetría) son una sola operación de `//undo`. Las de un bloque (reemplazar, retocar, colocar, romper) no entran en el historial, igual que la colocación normal, para no echar del historial de WorldEdit las operaciones grandes.
+Las acciones de más de un bloque (extruir, encoger, arrastrar y cualquiera que otro mod amplíe, como la simetría) son una sola operación de `//undo`. Las de un bloque (reemplazar, retocar, colocar, romper) no entran en el historial, igual que la colocación normal, para no echar del historial de WorldEdit las operaciones grandes. La excepción es un bloque con contenido (cofre, barril, horno, tolva, atril…) que se reemplaza o se rompe: eso sí entra, para poder recuperar lo que guardaba con `//undo`. Retocarlo (girarlo, anegarlo…) conserva lo que lleva.
 
 ### Configuración de las capacidades
 
@@ -4215,7 +4216,7 @@ Con `/komaedit symmetry worldedit on`, cada bloque que escribe una edición tuya
 - Todo queda en **un solo `//undo`**, y `//undo` y `//redo` no se vuelven a reflejar.
 - Las copias pasan por la máscara global (`//gmask`) y cuentan para el límite de bloques de WorldEdit.
 - Como mucho `maxBlocksPerOperation` copias por edición (1.500.000 de serie; sin límite con `komaedit.limit.unrestricted`). Al pasarlo, la edición termina sin más copias y se avisa una vez.
-- Los bloques con datos (cofres, carteles) copian sus datos, como `//paste`. Una copia que cae fuera de la altura del mundo o del borde se salta.
+- Los bloques con datos (cofres, carteles) copian sus datos, como `//paste`, salvo una copia que cae sobre el mismo contenedor (cofre, barril, horno…): ese conserva lo suyo, así retocar un cofre no copia su contenido al de enfrente. Una copia que cae fuera de la altura del mundo o del borde se salta.
 - Una orden que lee lo que va escribiendo (`//smooth`, `//move`) lee el mundo tal cual: las copias no cambian lo que ve.
 
 ### Marcas en el mundo
@@ -5555,7 +5556,7 @@ Ejemplos:
 Comportamiento:
 
 - **Dónde:** los huecos se reparten como un disco de Poisson: puntos al azar dentro del círculo, cada uno a la separación mínima de todos los demás, y de lo estampado con ese pincel en el último minuto (hasta 256 puntos); con radio 0 el plano va donde miras aunque haya otro cerca. Cada hueco sale con la probabilidad de `-n` y elige plano según los pesos.
-- **Giro y volteo:** se aplican a los bloques y a su estado (escaleras, troncos, puertas…), como `//rotate` y `//flip`.
+- **Giro y volteo:** se aplican a los bloques y a su estado (escaleras con su esquina, troncos, puertas con su bisagra, raíles, cofres dobles…), con la misma transformación que la [simetría](#simetría).
 - **Suelo:** sostienen los cubos enteros, las losas y las escaleras; la hierba alta, las flores, la nieve en capa y los líquidos no. Se busca el suelo más cercano a la altura del clic, hasta 24 bloques por encima (una ladera que sube) o por debajo.
 - **`apoyar`:** el plano cae hasta que alguna de sus columnas toca el suelo de la suya, así que no se mete en la ladera; en pendiente puede quedar un hueco por debajo del lado bajo (`-y -1` lo entierra). **`centro`:** la base del plano queda sobre el suelo que hay bajo su centro. **`no`:** a la altura del bloque de delante de la cara que miras. Un hueco sin suelo (o que no cumple `-m`) se salta.
 - Cada clic vuelve a leer la lista: los planos nuevos de una etiqueta entran solos. Un nombre o una etiqueta que no existe da error al ponerlo en la mano.
