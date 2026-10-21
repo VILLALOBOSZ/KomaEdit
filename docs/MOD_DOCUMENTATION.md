@@ -314,7 +314,7 @@ En negrita, la de serie.
 | --- | --- | --- | --- |
 | **Rellenar hueco** (de serie) | llena el hueco del clic hasta un nivel, solo si está cerrado; si se escaparía, señala por dónde | `fluido rellenar` | Piscina, Una capa, Lago de lava |
 | **Bola** | una esfera de agua, lava o nieve en polvo; con Cerrar bordes, sin flujos sueltos | `fluido bola` | Charca, Excavar, Nieve en polvo |
-| **Cascada** | desde el borde que pulsas, con poza abajo; con puntos (P), un río corto | `fluido cascada` | Manantial, Ancha, De lava |
+| **Cascada** | desde el borde que pulsas, con poza abajo; con puntos (Ctrl+P), un río corto | `fluido cascada` | Manantial, Ancha, De lava |
 
 - A la vista, como mucho cuatro controles por modo: en Rellenar hueco, el líquido, **Hasta dónde** (el clic, hasta el borde o una altura) y lo que sube sobre el clic; en Bola, el fluido, el radio y **Cerrar bordes**; en Cascada, el líquido, la poza y su radio. Lo demás (anegar, direcciones, alcance y límite; solo el aire y solo fuentes; ancho, orillas y margen), en Más ajustes.
 - El pie dice sobre qué trabaja: el clic en Rellenar hueco y en Bola; en Cascada, los puntos de la trayectoria si los hay («3 puntos») y si no, el clic.
@@ -526,7 +526,7 @@ Las trayectorias se crean con puntos colocados mediante `P` o desde Procedural S
 Requiere el permiso `komaedit.path`. Todos los subcomandos aceptan también el alias `ruta` (`/komaedit ruta …`, `/ke ruta …`).
 
 ```text
-/komaedit path mode toggle            captura con clic derecho (como la tecla P)
+/komaedit path mode toggle            captura con clic derecho (como Ctrl+P)
 /komaedit path add                    punto en la cara del bloque que miras
 /komaedit path here                   punto en tu posición
 /komaedit path point 120 64 -40       punto en coordenadas exactas
@@ -3391,7 +3391,7 @@ Las capacidades no pasan por `BlockItem.place` ni por el paquete de uso de bloqu
 - Cada clic es una edición pequeña en el hilo del servidor; las capas grandes de Extruir se buscan en el momento (4 096 bloques son unos pocos milisegundos). La vista previa de la capa en el cliente se recalcula solo cuando cambia el bloque, la cara o la opción, y con más de 256 celdas se dibuja como una caja.
 - Las ediciones pasan por WorldEdit: respetan su máscara global (`//gmask`) y su límite de bloques, y los registros que no ven WorldEdit (Ledger, CoreProtect) tampoco las ven.
 - Con Arrastrar activo, todos los clics derechos son suyos: desactívalo para colocar normal.
-- Mientras capturas una trayectoria con `P`, Reemplazar o Retocar se quedan los clics derechos sobre bloques.
+- Mientras capturas una trayectoria con `Ctrl+P`, Reemplazar o Retocar se quedan los clics derechos sobre bloques.
 - La celda de Colocar en el aire y el final del arrastre los calcula el cliente con su mirada (para que coincidan con la vista previa); el servidor comprueba la distancia, no que se vea.
 - La colocación rápida la decide el cliente cuando el servidor dice que está activa; Minecraft no limita el ritmo de colocación en el servidor.
 
@@ -4350,8 +4350,8 @@ Se usan con `##murallas` en cualquier sitio que acepte una paleta y salen en `/k
 
 Como el Hotbar Swapper de Axiom: guardar la barra rápida con un nombre y un icono, tener muchas y cambiar de una a otra en un momento. Se guardan los nueve huecos con todo lo que llevan (encantamientos, nombres, durabilidad, libros escritos, cajas con contenido, el pincel de KomaEdit ligado a un objeto…). Son de cada jugador y de cada mundo.
 
-- **La tecla** (Alt izquierdo de serie, como en Axiom; en Controles → KomaEdit, «Barras guardadas»): **mantenla** y sale la tira con tus barras sobre la barra de verdad, la que llevas marcada en verde; **la rueda** elige otra (hacia abajo, la siguiente) y **al soltar** cambias a ella. Si vuelves a la que llevabas, no pasa nada. La rueda no cambia de casilla mientras mantienes la tecla.
-- **Tocar la tecla** (soltarla antes de un cuarto de segundo sin mover la rueda) abre el **menú circular**: tus barras alrededor, con su icono y su nombre; al pasar el ratón por una, en el centro salen sus nueve huecos. Clic: usarla; clic derecho: copiar su código; rueda: página (12 por página). Abajo, escribe un nombre y pulsa **Guardar** para guardar la barra que llevas (si ya existe una con ese nombre, el segundo clic la sustituye), **Pegar código** importa un código `kh1:` del portapapeles y **Copiar todas** copia el de todas. El menú tiene también su propia tecla («Menú de barras guardadas», sin asignar de serie).
+- **La tecla** (Alt izquierdo de serie, como en Axiom; en Controles → KomaEdit, «Barras guardadas», sale sin asignar para no quitarle Alt izquierdo al «mirar libre» de Cobblemon al montar, y montado no hace nada; si le asignas otra, vale esa): **mantenla** y sale la tira con tus barras sobre la barra de verdad, la que llevas marcada en verde; **la rueda** elige otra (hacia abajo, la siguiente) y **al soltar** cambias a ella. Si vuelves a la que llevabas, no pasa nada. La rueda no cambia de casilla mientras mantienes la tecla.
+- **Tocar la tecla** (soltarla antes de un cuarto de segundo sin mover la rueda ni pulsar otra tecla o el ratón: Alt+clic en un display o Ctrl+Alt+R del fantasma no lo abren) abre el **menú circular**: tus barras alrededor, con su icono y su nombre; al pasar el ratón por una, en el centro salen sus nueve huecos. Clic: usarla; clic derecho: copiar su código; rueda: página (12 por página). Abajo, escribe un nombre y pulsa **Guardar** para guardar la barra que llevas (si ya existe una con ese nombre, el segundo clic la sustituye), **Pegar código** importa un código `kh1:` del portapapeles y **Copiar todas** copia el de todas. El menú tiene también su propia tecla («Menú de barras guardadas», sin asignar de serie).
 - **El Studio**: la tarjeta **Guardar barras** (Herramientas → Utilidades) enseña tus barras con sus nueve huecos (clic para usarla, clic derecho para copiar su código, la × la borra con un segundo clic), guarda la que llevas con el nombre de arriba, pega y copia códigos, enciende o apaga el guardado al cambiar y crea barras nuevas desde una paleta, un degradado, la selección, un sello o un tejado.
 
 ![La tarjeta Guardar barras del Studio](renders/hotbars/1080p_gui2_studio_es.png)
@@ -4438,7 +4438,7 @@ En todas, `-l` la pone ya en tu barra y `-f` sustituye una que se llame igual. U
 - Hasta 64 barras por jugador y mundo, de 32 KiB cada una como mucho y 512 KiB entre todas (en JSON: una barra de bloques ocupa menos de 1 KiB; lo que pesa son los libros y las cajas llenas). Se guardan en `<mundo>/komaedit/players/<uuid>/hotbars/hotbars.json` con escritura atómica; si el archivo se daña, se aparta como `hotbars.broken-N.json` (no se pisa) y se empieza de cero.
 - Cada cambio escribe ese archivo; el servidor admite como mucho uno cada 2 ticks por jugador. Cambiar va por un paquete propio y no por una orden de chat, así que no suma al antispam de Minecraft.
 - El servidor guarda los objetos con el códec de Minecraft, también los componentes que no se mandan al cliente; la tira y el menú pintan la versión que manda el servidor.
-- Si otro mod usa Alt izquierdo, cambia la tecla en Controles. Con Alt+Tab no se cambia de barra ni se abre el menú.
+- Si otro mod usa Alt izquierdo fuera de montar, asigna otra tecla a «Barras guardadas» en Controles. Con Alt+Tab no se cambia de barra ni se abre el menú.
 - Permisos: `komaedit.hotbar` (lo da `komaedit.use`; paquete básico) y `komaedit.admin.hotbar.give` (paquete de administrador).
 
 ## Ruidos guardados
@@ -5285,7 +5285,7 @@ Una esfera de **agua, lava o nieve en polvo** en el clic (el centro es la cara p
 
 **Desde un punto:** haz clic en el **borde de un saliente** (o en una pared que dé al vacío): ese bloque pasa a ser la fuente, metida en la roca, y el agua sale por su lado abierto, cae y, abajo, entra en una **poza**: unas fuentes en el suelo, cerradas por el terreno por los lados y por debajo, que se tragan la caída en lugar de dejar que se extienda siete bloques. La poza es un disco de radio `-o` (2 de serie, de 0 a 4) y, si en ese radio no queda cerrada, se busca uno más pequeño; en pendiente se hunde uno o dos bloques (se corta la columna de encima). `-n` la quita. Si la fuente no tiene por dónde salir, lo dice («haz clic en el borde»).
 
-**Por la trayectoria:** con dos puntos o más marcados (P), un **río corto** del punto más alto al más bajo: un cauce de un bloque de hondo a ras del terreno (`-a` de ancho, 1 de serie y hasta 7), sin pasos en diagonal y que **nunca sube**: si el terreno sube, se corta (hasta 4 bloques; si sube más, lo dice). En cada escalón el agua salta al tramo de abajo y donde el terreno de al lado queda más bajo pone **orilla** con el mismo bloque del suelo (`-b` la quita). Si el cauce pasa sobre un vacío, cae a una poza. Para un río largo con su valle, [`terreno rio` o `terreno arroyo`](#terraformado).
+**Por la trayectoria:** con dos puntos o más marcados (Ctrl+P), un **río corto** del punto más alto al más bajo: un cauce de un bloque de hondo a ras del terreno (`-a` de ancho, 1 de serie y hasta 7), sin pasos en diagonal y que **nunca sube**: si el terreno sube, se corta (hasta 4 bloques; si sube más, lo dice). En cada escalón el agua salta al tramo de abajo y donde el terreno de al lado queda más bajo pone **orilla** con el mismo bloque del suelo (`-b` la quita). Si el cauce pasa sobre un vacío, cae a una poza. Para un río largo con su valle, [`terreno rio` o `terreno arroyo`](#terraformado).
 
 - Las corrientes salen de la **simulación del juego** (ver abajo), así que son las que haría Minecraft al tocarlas.
 - **Sin inundar:** si alguna corriente se aleja más de `-r` bloques (2 de serie, hasta 16) de la fuente, la caída, el cauce o la poza, o seguiría corriendo fuera de lo leído, **no se pone nada** y se señala dónde llegaría.

@@ -25,8 +25,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Las barras guardadas en el cliente: la tecla (Alt izquierdo de serie, como en Axiom; mantener y rueda para la tira,
- * tocar para el menú circular), otra opcional solo para el menú, los paquetes del servidor y el cambio de barra.
+ * Las barras guardadas en el cliente: la tecla (Alt izquierdo de serie, como en Axiom, sin quitársela a nadie en
+ * Controles; mantener y rueda para la tira, tocar para el menú circular), otra opcional solo para el menú, los paquetes
+ * del servidor y el cambio de barra.
  *
  * <p>En creativo la barra se pone al instante en el cliente y el servidor la confirma con la suya (o devuelve la de
  * antes si no se podía). En supervivencia se espera al servidor, que es quien sabe qué hay en el inventario.</p>
@@ -53,8 +54,10 @@ public final class HotbarControls {
             SWITCHER.cancel();
             exportListener = null;
         });
+        // Sin asignar en Controles: Alt izquierdo es también el «mirar libre» de Cobblemon al montar y Minecraft solo
+        // atiende una entrada por tecla. Mientras siga sin asignar vale Alt izquierdo, leído aparte (stripDown).
         stripKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.komaedit.hotbar_strip",
-                InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, "category.komaedit"));
+                InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), "category.komaedit"));
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.komaedit.hotbar_menu",
                 InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), "category.komaedit"));
         ClientTickEvents.END_CLIENT_TICK.register(HotbarControls::tick);
@@ -63,7 +66,7 @@ public final class HotbarControls {
 
     private static void tick(MinecraftClient client) {
         boolean usable = client.player != null && client.currentScreen == null && ClientHotbars.known();
-        boolean down = usable && stripKey.isPressed();
+        boolean down = usable && stripDown(client);
         if (SWITCHER.held() && client.currentScreen != null) {
             SWITCHER.cancel();
         }
@@ -97,6 +100,24 @@ public final class HotbarControls {
         }
     }
 
+    /**
+     * La tecla de la tira mantenida: la de Controles o, mientras siga sin asignar, Alt izquierdo; montado no, que con
+     * Cobblemon es el «mirar libre».
+     */
+    private static boolean stripDown(MinecraftClient client) {
+        if (!stripKey.isUnbound()) {
+            return stripKey.isPressed();
+        }
+        return client.player != null && !client.player.hasVehicle()
+                && InputUtil.isKeyPressed(client.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_ALT);
+    }
+
+    /** La tecla que hace de tecla de la tira ahora mismo. */
+    private static InputUtil.Key stripBinding() {
+        return stripKey.isUnbound() ? InputUtil.Type.KEYSYM.createFromCode(GLFW.GLFW_KEY_LEFT_ALT)
+                : KeyBindingHelper.getBoundKeyOf(stripKey);
+    }
+
     /** Los nombres con los que trabaja la tira, para no confundir índices si llega otro catálogo. */
     private static void remember() {
         seenNames = ClientHotbars.entries().stream().map(ClientHotbars.Entry::name).toList();
@@ -111,7 +132,7 @@ public final class HotbarControls {
         if (action != GLFW.GLFW_PRESS || stripKey == null) {
             return;
         }
-        InputUtil.Key bound = KeyBindingHelper.getBoundKeyOf(stripKey);
+        InputUtil.Key bound = stripBinding();
         if (bound.getCategory() != type || bound.getCode() != code) {
             SWITCHER.usedAsModifier();
         }
