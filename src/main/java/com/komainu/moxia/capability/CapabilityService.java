@@ -275,7 +275,7 @@ public final class CapabilityService {
         HandEditApplier.Result result = HandEditApplier.apply(player,
                 List.of(new HandEdit(pos, BlockStates.withValue(state, active.name(), next))), updates);
         requireChanged(result);
-        message(player, "Retocar · " + active.name() + ": " + next);
+        message(player, "Cambiar estado · " + active.name() + ": " + next);
     }
 
     private static void tweakProperty(ServerPlayerEntity player, CapabilitySettings settings, BlockPos pos,
@@ -289,7 +289,7 @@ public final class CapabilityService {
         String name = PropertyCycle.switchProperty(ordered, active.name(), back ? -1 : 1);
         store(player, settings.withTweakProperty(name));
         PropertyCycle.Property chosen = PropertyCycle.active(ordered, name);
-        message(player, "Retocar · propiedad " + (ordered.indexOf(chosen) + 1) + "/" + ordered.size() + ": "
+        message(player, "Cambiar estado · propiedad " + (ordered.indexOf(chosen) + 1) + "/" + ordered.size() + ": "
                 + chosen.name() + " = " + chosen.value());
         sync(player);
     }

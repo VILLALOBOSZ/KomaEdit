@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Maquetas de la tarjeta «Pintar terreno» con el mismo código que el juego, como {@link StudioMockupsTest}: la
+ * Maquetas de la tarjeta «Pintar» con el mismo código que el juego, como {@link StudioMockupsTest}: la
  * tarjeta de serie, con «Más ajustes» abierto y en inglés. Solo con {@code KOMAEDIT_STUDIO_MOCKUPS=<carpeta>}.
  */
 class PaintCardMockupTest {
@@ -56,7 +56,7 @@ class PaintCardMockupTest {
         driver.host.preferences.pushToolRecent("stamp");
         driver.view.tools().select(ToolCatalog.byId("paintbrush"), driver.host);
         if (more) {
-            driver.host.preferences.setExpanded("tools:more:paintbrush", true);
+            driver.host.preferences.setExpanded("tools:more:paint", true);
             for (int step = 0; step < 14 && !driver.has("Vista previa en cada clic"); step++) {
                 driver.view.mouseScrolled(driver.view.frame().innerLeft() + 4, 200, -1, driver.host);
             }

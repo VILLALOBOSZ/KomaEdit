@@ -99,7 +99,7 @@ public final class FakeStudioHost implements StudioHost {
     public boolean creative = true;
     /** Donde se hizo clic en el mundo, o {@code null}. */
     public int[] clickedSpot;
-    /** Las barras guardadas que enseña la tarjeta Barras rápidas ({@code null}: el servidor no las manda). */
+    /** Las barras guardadas que enseña la tarjeta Guardar barras ({@code null}: el servidor no las manda). */
     public com.komainu.moxia.hotbar.ui.HotbarDeck hotbarDeck = com.komainu.moxia.hotbar.ui.HotbarDeck.EMPTY;
     public boolean hotbarAutosave = true;
     /** Lo que pidió la tarjeta de barras, como {@code ACCIÓN nombre}. */

@@ -13,6 +13,7 @@ import com.komainu.moxia.text.TextService;
 import com.komainu.moxia.utility.FluidEngine;
 import com.komainu.moxia.utility.SnowEngine;
 import com.komainu.moxia.utility.UtilityOperations;
+import com.komainu.moxia.worldedit.SelectionOverride;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -49,29 +50,41 @@ public final class BuilderCommands {
             root.addChild(command(name, player -> KomaPermissions.can(player, AnalyzeService.PERMISSION),
                     BuilderCommands::analyze, "-m", "#existing", "-n", "20").build());
         }
+        // Gravedad, nieve, drenar, inundar y bioma son ahora modos de /komaedit retocar; sus órdenes de antes siguen,
+        // con un aviso la primera vez.
         for (String name : List.of("gravity", "gravedad")) {
             root.addChild(command(name, player -> KomaPermissions.canBuild(player, "gravity"),
-                    BuilderCommands::gravity, "-a", "-m", "sand,gravel", "!#existing").build());
+                    renamed(name, "gravedad", BuilderCommands::gravity), "-a", "-m", "sand,gravel", "!#existing")
+                    .build());
         }
         for (String name : List.of("snow", "nieve")) {
-            root.addChild(command(name, player -> KomaPermissions.canBuild(player, "snow"), BuilderCommands::snow,
-                    "1", "2", "3", "4", "-r", "-f", "-s", "-h", "-p", "-m", "grass_block,stone").build());
+            root.addChild(command(name, player -> KomaPermissions.canBuild(player, "snow"),
+                    renamed(name, "nieve", BuilderCommands::snow), "1", "2", "3", "4", "-r", "-f", "-s", "-h", "-p",
+                    "-m", "grass_block,stone").build());
         }
         for (String name : List.of("drain", "drenar")) {
-            root.addChild(command(name, player -> KomaPermissions.canBuild(player, "drain"), BuilderCommands::drain,
-                    "water", "lava", "all", "-k", "-m").build());
+            root.addChild(command(name, player -> KomaPermissions.canBuild(player, "drain"),
+                    renamed(name, "drenar", BuilderCommands::drain), "water", "lava", "all", "-k", "-m").build());
         }
         for (String name : List.of("waterlog", "inundar")) {
             root.addChild(command(name, player -> KomaPermissions.canBuild(player, "waterlog"),
-                    BuilderCommands::flood, "62", "~", "~-1", "-b", "-m").build());
+                    renamed(name, "inundar", BuilderCommands::flood), "62", "~", "~-1", "-b", "-m").build());
         }
         for (String name : List.of("biome", "bioma")) {
             root.addChild(biomeCommand(name).build());
         }
     }
 
+    /** La orden de antes, con el aviso de cómo se llama ahora ({@code /komaedit retocar <modo>}). */
+    private static Action renamed(String old, String mode, Action action) {
+        return (player, arguments) -> {
+            Renamed.notice(player, "/komaedit " + old, "/komaedit retocar " + mode);
+            return action.run(player, arguments);
+        };
+    }
+
     @FunctionalInterface
-    private interface Action {
+    interface Action {
         String run(ServerPlayerEntity player, String arguments) throws IncompleteRegionException;
     }
 
@@ -167,10 +180,10 @@ public final class BuilderCommands {
 
     // ---------------------------------------------------------------- gravity
 
-    private static String gravity(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+    static String gravity(ServerPlayerEntity player, String text) throws IncompleteRegionException {
         KomaPermissions.requireBuild(player, "gravity");
         DeformArguments args = DeformArguments.parse(text, Set.of("m"), "a");
-        args.expectAtMost(0, "gravity [-a] [-m máscara]");
+        args.expectAtMost(0, "retocar gravedad [-a] [-m máscara]");
         RegionMasks.Bound mask = mask(player, args.value("m"));
         boolean unsupported = args.has('a');
         RegionOperationService.submit(player, 1, unsupported ? "Gravedad (solo sin apoyo)" : "Gravedad",
@@ -180,10 +193,11 @@ public final class BuilderCommands {
 
     // ---------------------------------------------------------------- snow
 
-    private static String snow(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+    static String snow(ServerPlayerEntity player, String text) throws IncompleteRegionException {
         KomaPermissions.requireBuild(player, "snow");
         DeformArguments args = DeformArguments.parse(text, Set.of("r", "f", "s", "h", "m"), "p");
-        args.expectAtMost(1, "snow [capas 1–8] [-r radio] [-f relleno] [-s sombra] [-h altura] [-p] [-m máscara]");
+        args.expectAtMost(1, "retocar nieve [capas 1–8] [-r radio] [-f relleno] [-s sombra] [-h altura] [-p]"
+                + " [-m máscara]");
         SnowEngine.Settings settings = new SnowEngine.Settings(
                 (int) args.number(0, 2.0, 1.0, 8.0, "Las capas"),
                 (int) args.value("r", 2.0, 0.0, 16.0, "El radio"),
@@ -200,10 +214,10 @@ public final class BuilderCommands {
 
     // ---------------------------------------------------------------- drain / waterlog
 
-    private static String drain(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+    static String drain(ServerPlayerEntity player, String text) throws IncompleteRegionException {
         KomaPermissions.requireBuild(player, "drain");
         DeformArguments args = DeformArguments.parse(text, Set.of("m"), "k");
-        args.expectAtMost(1, "drain [water|lava|all] [-k] [-m máscara]");
+        args.expectAtMost(1, "retocar drenar [agua|lava|todo] [-k] [-m máscara]");
         String modeText = args.text(0) == null ? "water" : args.text(0).toLowerCase(Locale.ROOT);
         FluidEngine.Drain mode = switch (modeText) {
             case "water", "agua" -> FluidEngine.Drain.WATER;
@@ -222,11 +236,13 @@ public final class BuilderCommands {
         return null;
     }
 
-    private static String flood(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+    static String flood(ServerPlayerEntity player, String text) throws IncompleteRegionException {
         KomaPermissions.requireBuild(player, "waterlog");
         DeformArguments args = DeformArguments.parse(text, Set.of("m"), "b");
-        args.expectAtMost(1, "waterlog [nivel|~] [-b] [-m máscara]");
-        int top = WorldEditService.selection(player).getMaximumPoint().y();
+        args.expectAtMost(1, "retocar inundar [nivel|~] [-b] [-m máscara]");
+        // Sin nivel, lo alto de la selección; con el pincel, el bloque pulsado (inunda lo que queda por debajo).
+        int top = SelectionOverride.current(player.getUuid()).map(zone -> zone.anchor().y())
+                .orElse(WorldEditService.selection(player).getMaximumPoint().y());
         int level = level(args.text(0), top, player.getBlockY());
         RegionMasks.Bound mask = mask(player, args.value("m"));
         RegionOperationService.submit(player, 0, "Inundar hasta y=" + level,
@@ -252,7 +268,23 @@ public final class BuilderCommands {
     // ---------------------------------------------------------------- biome
 
     private static LiteralArgumentBuilder<ServerCommandSource> biomeCommand(String name) {
-        SuggestionProvider<ServerCommandSource> biomes = (context, builder) -> {
+        SuggestionProvider<ServerCommandSource> biomes = biomeSuggestions();
+        return literal(name)
+                .requires(source -> source.getEntity() instanceof ServerPlayerEntity player
+                        && KomaPermissions.canBuild(player, "biome"))
+                .executes(context -> execute(context, player -> "Uso: /komaedit retocar bioma <bioma> [-v]"
+                        + " [-m máscara]"))
+                .then(argument("arguments", StringArgumentType.greedyString())
+                        .suggests(biomes)
+                        .executes(context -> execute(context, player -> {
+                            Renamed.notice(player, "/komaedit " + name, "/komaedit retocar bioma");
+                            return biome(player, StringArgumentType.getString(context, "arguments"));
+                        })));
+    }
+
+    /** Las sugerencias de los biomas del servidor (sin {@code minecraft:}) y, tras el bioma, sus banderas. */
+    static SuggestionProvider<ServerCommandSource> biomeSuggestions() {
+        return (context, builder) -> {
             String remaining = builder.getRemaining();
             var tail = builder.createOffset(builder.getStart() + remaining.lastIndexOf(' ') + 1);
             if (remaining.indexOf(' ') < 0) {
@@ -268,19 +300,13 @@ public final class BuilderCommands {
             }
             return tail.buildFuture();
         };
-        return literal(name)
-                .requires(source -> source.getEntity() instanceof ServerPlayerEntity player
-                        && KomaPermissions.canBuild(player, "biome"))
-                .executes(context -> execute(context, player -> "Uso: /komaedit biome <bioma> [-v] [-m máscara]"))
-                .then(argument("arguments", StringArgumentType.greedyString())
-                        .suggests(biomes)
-                        .executes(context -> execute(context, player -> {
-                            DeformArguments args = DeformArguments.parse(
-                                    StringArgumentType.getString(context, "arguments"), Set.of("m"), "v");
-                            args.expectAtMost(1, "biome <bioma> [-v] [-m máscara]");
-                            return BiomeService.paintSelection(player, BiomeService.parse(args.text(0)),
-                                    args.has('v'), args.value("m"));
-                        })));
+    }
+
+    /** {@code bioma <bioma> [-v] [-m máscara]}: pinta el bioma de la selección. */
+    static String biome(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+        DeformArguments args = DeformArguments.parse(text, Set.of("m"), "v");
+        args.expectAtMost(1, "retocar bioma <bioma> [-v] [-m máscara]");
+        return BiomeService.paintSelection(player, BiomeService.parse(args.text(0)), args.has('v'), args.value("m"));
     }
 
     // ---------------------------------------------------------------- comunes

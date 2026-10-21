@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * La tarjeta Barras rápidas del Studio: la orden de Crear barra, la lista (clic para usar), guardar la que se lleva
+ * La tarjeta Guardar barras del Studio: la orden de Crear barra, la lista (clic para usar), guardar la que se lleva
  * (sustituir pide un segundo clic), borrar con dos clics y las maquetas ({@code KOMAEDIT_STUDIO_MOCKUPS}).
  */
 class HotbarCardTest {

@@ -19,7 +19,7 @@ public final class HotbarCard extends ToolCard {
     private static final Pattern NAME = Pattern.compile("[a-z0-9_-]{1,32}");
 
     HotbarCard() {
-        super("hotbars", ToolFamily.UTILITIES, ToolTarget.MODE,
+        super("hotbars", ToolTarget.MODE,
                 List.of("hotbar", "hotbars", "barra", "barras", "barra rapida", "swapper", "axiom", "inventario",
                         "guardar barra", "paleta", "degradado"),
                 List.of(

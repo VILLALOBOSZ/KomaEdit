@@ -7,21 +7,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/** Utilidades de obra: texto, lista de materiales, gravedad, nieve, drenar, inundar y biomas. */
+/**
+ * Utilidades de obra: texto en bloques y lista de materiales. Nieve, drenar, inundar, gravedad y biomas son modos de
+ * {@link TouchUpCard}.
+ */
 public final class UtilityCards {
     public static final String TEXT_NODE = KomaPermissions.BUILD + ".text";
     public static final String ANALYZE_NODE = "komaedit.analyze";
-    public static final String GRAVITY_NODE = KomaPermissions.BUILD + ".gravity";
-    public static final String SNOW_NODE = KomaPermissions.BUILD + ".snow";
-    public static final String DRAIN_NODE = KomaPermissions.BUILD + ".drain";
-    public static final String WATERLOG_NODE = KomaPermissions.BUILD + ".waterlog";
-    public static final String BIOME_NODE = KomaPermissions.BUILD + ".biome";
-    public static final String BIOME_BRUSH_NODE = KomaPermissions.BUILD + ".brush.biome";
     /** Fuentes de serie de {@code /komaedit text}; las propias del servidor llegan con su estado. */
     public static final List<String> BUILTIN_FONTS = List.of("sans", "fina", "mono");
     public static final int MAX_TEXT = 256;
     public static final int MAX_LINES = 16;
-    private static final Pattern BIOME = Pattern.compile("[a-z0-9_.\\-]+(:[a-z0-9_./\\-]+)?");
     private static final Pattern FONT = Pattern.compile("[a-z0-9_.\\-]{1,64}");
 
     private UtilityCards() {
@@ -30,8 +26,9 @@ public final class UtilityCards {
     /** {@code /komaedit text}: texto, material, fuente, tamaño, grosor, borde, orientación y piezas. */
     public static final class Text extends ToolCard {
         Text() {
-            super("text", ToolFamily.UTILITIES, ToolTarget.LOOK,
-                    List.of("text", "texto", "letras", "letter", "rotulo", "cartel", "fuente", "font", "sign"),
+            super("text", ToolTarget.LOOK,
+                    List.of("text", "texto", "escribir", "letras", "letter", "rotulo", "cartel", "fuente", "font",
+                            "sign"),
                     List.of(
                             new ToolParam.Text("text", "KomaEdit", MAX_TEXT, true, null),
                             block("material", "stone"),
@@ -132,9 +129,8 @@ public final class UtilityCards {
     /** {@code /komaedit analyze}: cuenta la selección; la lista llega a la tarjeta. */
     public static final class Analyze extends ToolCard {
         Analyze() {
-            super("analyze", ToolFamily.UTILITIES, ToolTarget.SELECTION,
-                    List.of("analyze", "analizar", "materiales", "materials", "lista", "coste", "survival", "contar",
-                            "count"),
+            super("analyze", ToolTarget.SELECTION,
+                    List.of("analyze", "analizar", "materiales", "materials", "lista", "coste", "contar", "count"),
                     List.of(number("lines", 1, 100, 1, 10, 10), mask()));
         }
 
@@ -159,242 +155,6 @@ public final class UtilityCards {
         @Override
         public List<ToolProblem> validate(ToolValues values) {
             List<ToolProblem> problems = new ArrayList<>();
-            noSpaces(values, "mask", problems);
-            return problems;
-        }
-    }
-
-    /** {@code /komaedit gravity}: deja caer los bloques de la selección por columnas. */
-    public static final class Gravity extends ToolCard {
-        Gravity() {
-            super("gravity", ToolFamily.UTILITIES, ToolTarget.SELECTION,
-                    List.of("gravity", "gravedad", "caer", "fall", "arena", "sand"),
-                    List.of(toggle("unsupported", false), mask()));
-        }
-
-        @Override
-        public String command(ToolValues values, boolean preview) {
-            return new CommandLine("komaedit gravity")
-                    .flag("-a", values.toggle("unsupported"))
-                    .flag("-m", values.text("mask"))
-                    .flag(previewFlag(), preview)
-                    .build();
-        }
-
-        @Override
-        public List<String> permissions(ToolValues values) {
-            return List.of(GRAVITY_NODE);
-        }
-
-        @Override
-        public List<ToolProblem> validate(ToolValues values) {
-            List<ToolProblem> problems = new ArrayList<>();
-            noSpaces(values, "mask", problems);
-            return problems;
-        }
-    }
-
-    /** {@code /komaedit snow}: capas de nieve que siguen la pendiente. */
-    public static final class Snow extends ToolCard {
-        Snow() {
-            super("snow", ToolFamily.UTILITIES, ToolTarget.SELECTION,
-                    List.of("snow", "nieve", "nevar", "invierno", "winter"),
-                    List.of(
-                            number("layers", 1, 8, 1, 2, 2).unit(ValueUnit.LAYERS),
-                            number("radius", 0, 16, 1, 2, 2).unit(ValueUnit.BLOCKS),
-                            decimal("fill", 0, 10, 1, 5, 10, 1).unit(ValueUnit.PERCENT),
-                            number("shade", 0, 8, 1, 2, 2).unit(ValueUnit.LAYERS),
-                            number("height", 0, 8, 1, 2, 0).unit(ValueUnit.LAYERS),
-                            toggle("plants", false),
-                            mask()
-                    ));
-        }
-
-        @Override
-        public List<String> essentials() {
-            return List.of("layers", "plants");
-        }
-
-        @Override
-        public String command(ToolValues values, boolean preview) {
-            return new CommandLine("komaedit snow " + values.formatted("layers"))
-                    .changed(values, "radius", "-r")
-                    .changed(values, "fill", "-f")
-                    .changed(values, "shade", "-s")
-                    .changed(values, "height", "-h")
-                    .flag("-p", values.toggle("plants"))
-                    .flag("-m", values.text("mask"))
-                    .flag(previewFlag(), preview)
-                    .build();
-        }
-
-        @Override
-        public List<String> permissions(ToolValues values) {
-            return List.of(SNOW_NODE);
-        }
-
-        @Override
-        public List<ToolPreset> presets() {
-            return List.of(
-                    ToolPreset.of("dusting", "layers", 1, "radius", 0, "shade", 0),
-                    ToolPreset.of("drifts", "layers", 3, "radius", 4, "shade", 4, "plants", true),
-                    ToolPreset.of("peaks", "layers", 1, "height", 6));
-        }
-
-        @Override
-        public List<ToolProblem> validate(ToolValues values) {
-            List<ToolProblem> problems = new ArrayList<>();
-            noSpaces(values, "mask", problems);
-            return problems;
-        }
-    }
-
-    /** {@code /komaedit drain}: quita agua, lava o las dos y desanega. */
-    public static final class Drain extends ToolCard {
-        Drain() {
-            super("drain", ToolFamily.UTILITIES, ToolTarget.SELECTION,
-                    List.of("drain", "drenar", "secar", "agua", "water", "lava", "vaciar"),
-                    List.of(choice("mode", ToolParam.Choice.Style.BUTTONS, "water", "lava", "all"),
-                            toggle("keep_plants", false), mask()));
-        }
-
-        @Override
-        public String command(ToolValues values, boolean preview) {
-            return new CommandLine("komaedit drain " + values.choice("mode"))
-                    .flag("-k", values.toggle("keep_plants"))
-                    .flag("-m", values.text("mask"))
-                    .flag(previewFlag(), preview)
-                    .build();
-        }
-
-        @Override
-        public List<String> permissions(ToolValues values) {
-            return List.of(DRAIN_NODE);
-        }
-
-        @Override
-        public List<ToolProblem> validate(ToolValues values) {
-            List<ToolProblem> problems = new ArrayList<>();
-            noSpaces(values, "mask", problems);
-            return problems;
-        }
-    }
-
-    /** {@code /komaedit waterlog}: inunda por debajo de un nivel. */
-    public static final class Waterlog extends ToolCard {
-        Waterlog() {
-            super("waterlog", ToolFamily.UTILITIES, ToolTarget.SELECTION,
-                    List.of("waterlog", "inundar", "anegar", "flood", "agua", "water", "nivel"),
-                    List.of(
-                            choice("level", ToolParam.Choice.Style.BUTTONS, "top", "feet", "fixed"),
-                            when(values -> values.choice("level").equals("fixed"),
-                                    number("level_y", -2_048, 2_047, 1, 8, 62).unit(ValueUnit.Y)),
-                            when(values -> values.choice("level").equals("feet"),
-                                    number("offset", -16, 16, 1, 4, 0).unit(ValueUnit.BLOCKS)),
-                            toggle("blocks_only", false),
-                            mask()
-                    ));
-        }
-
-        @Override
-        public List<String> essentials() {
-            return List.of("level", "level_y", "offset");
-        }
-
-        /** El nivel tal como lo lee la orden: nada (lo alto de la selección), {@code ~}, {@code ~-2} o una altura. */
-        static String level(ToolValues values) {
-            return switch (values.choice("level")) {
-                case "feet" -> {
-                    int offset = values.number("offset", 0);
-                    yield offset == 0 ? "~" : "~" + offset;
-                }
-                case "fixed" -> values.formatted("level_y");
-                default -> null;
-            };
-        }
-
-        @Override
-        public String command(ToolValues values, boolean preview) {
-            return new CommandLine("komaedit waterlog")
-                    .word(level(values))
-                    .flag("-b", values.toggle("blocks_only"))
-                    .flag("-m", values.text("mask"))
-                    .flag(previewFlag(), preview)
-                    .build();
-        }
-
-        @Override
-        public List<String> permissions(ToolValues values) {
-            return List.of(WATERLOG_NODE);
-        }
-
-        @Override
-        public List<ToolProblem> validate(ToolValues values) {
-            List<ToolProblem> problems = new ArrayList<>();
-            noSpaces(values, "mask", problems);
-            return problems;
-        }
-    }
-
-    /** {@code /komaedit biome}: pinta el bioma de la selección; también lo lleva al pincel. */
-    public static final class Biome extends ToolCard {
-        Biome() {
-            super("biome", ToolFamily.UTILITIES, ToolTarget.SELECTION,
-                    List.of("biome", "bioma", "clima", "color hierba", "grass color"),
-                    List.of(
-                            new ToolParam.Choice("biome", List.of(), "minecraft:plains", ToolParam.Choice.Style.SEARCH,
-                                    "biomes", null),
-                            toggle("vertical", false),
-                            number("radius", 1, 32, 1, 4, 8).unit(ValueUnit.BLOCKS),
-                            mask()
-                    ));
-        }
-
-        @Override
-        public List<String> essentials() {
-            return List.of("biome", "radius");
-        }
-
-        private static String biome(ToolValues values) {
-            String id = values.choice("biome");
-            return id.startsWith("minecraft:") ? id.substring("minecraft:".length()) : id;
-        }
-
-        @Override
-        public String command(ToolValues values, boolean preview) {
-            return new CommandLine("komaedit biome " + biome(values))
-                    .flag("-v", values.toggle("vertical"))
-                    .flag("-m", values.text("mask"))
-                    .build();
-        }
-
-        /** El cambio de bioma no pasa por el motor de bloques: no hay vista previa. */
-        @Override
-        public boolean previewable() {
-            return false;
-        }
-
-        @Override
-        public List<String> permissions(ToolValues values) {
-            return List.of(BIOME_NODE);
-        }
-
-        @Override
-        public List<ToolAction> actions() {
-            return List.of(new ToolAction("brush", List.of(BIOME_BRUSH_NODE), false,
-                    values -> new CommandLine("komaedit pincel biome " + biome(values))
-                            .word(values.formatted("radius"))
-                            .flag("-v", values.toggle("vertical"))
-                            .flag("-m", values.text("mask"))
-                            .build()));
-        }
-
-        @Override
-        public List<ToolProblem> validate(ToolValues values) {
-            List<ToolProblem> problems = new ArrayList<>();
-            if (!BIOME.matcher(values.choice("biome")).matches()) {
-                problems.add(ToolProblem.error("biome", values.choice("biome")));
-            }
             noSpaces(values, "mask", problems);
             return problems;
         }

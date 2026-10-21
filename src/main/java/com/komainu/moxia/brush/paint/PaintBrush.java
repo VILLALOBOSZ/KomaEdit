@@ -66,7 +66,12 @@ public final class PaintBrush {
 
     /** Lee las opciones y lo prepara todo; lanza {@link IllegalArgumentException} con lo que esté mal escrito. */
     public static PaintBrush create(ServerPlayerEntity player, BrushOptions options) {
-        PaintConfig config = PaintConfig.parse(options);
+        return create(player, options, false);
+    }
+
+    /** Igual, para pintar la selección ({@code /komaedit pintar}): sin radio ({@link PaintConfig#parse}). */
+    public static PaintBrush create(ServerPlayerEntity player, BrushOptions options, boolean region) {
+        PaintConfig config = PaintConfig.parse(options, region);
         PaintPalette palette = PaintPalette.resolve(player, config.palette());
         PaintFootprint footprint = footprints().get(config.footprint());
         BrushMask blocks = config.blocks() == null ? null : BlockFilter.parse(config.blocks());
@@ -167,9 +172,15 @@ public final class PaintBrush {
 
     /** Los ajustes del pintor; {@code heightLow} {@code NaN} para medir la franja de alturas en este trazo. */
     public PaintPainter.Settings settings(double heightLow, double heightHigh, boolean invert) {
+        return settings(heightLow, heightHigh, invert, footprint, config.hardness(), vertical());
+    }
+
+    /** Los ajustes del pintor con otra huella, dureza y alcance vertical (la selección entera es un toque). */
+    public PaintPainter.Settings settings(double heightLow, double heightHigh, boolean invert,
+                                          PaintFootprint footprint, double hardness, int vertical) {
         return new PaintPainter.Settings(palette.size(), config.gradient(), footprint, config.strength(),
-                config.hardness(), config.jitter(), config.layers(), config.surfaceOnly(), config.shaped(),
-                vertical(), heightLow, heightHigh, config.slopeLow(), config.slopeHigh(), noiseField, jitterField,
+                hardness, config.jitter(), config.layers(), config.surfaceOnly(), config.shaped(),
+                vertical, heightLow, heightHigh, config.slopeLow(), config.slopeHigh(), noiseField, jitterField,
                 invert);
     }
 

@@ -180,7 +180,7 @@ public final class HotbarControls {
         return I18n.translate("gui.komaedit.hotbar.status.importing");
     }
 
-    /** Lo que pide la tarjeta Barras rápidas del Studio; {@code status} recibe los avisos para su pie. */
+    /** Lo que pide la tarjeta Guardar barras del Studio; {@code status} recibe los avisos para su pie. */
     public static void studio(MinecraftClient client, HotbarAction action, String name, Consumer<String> status) {
         switch (action) {
             case APPLY -> apply(client, name);

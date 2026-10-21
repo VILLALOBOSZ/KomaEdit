@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 import static com.komainu.moxia.studio.ui.StudioTheme.*;
 
 /**
- * La parte de arriba de la tarjeta Barras rápidas: qué hace cambiar de barra con el modo de juego de ahora, guardar
+ * La parte de arriba de la tarjeta Guardar barras: qué hace cambiar de barra con el modo de juego de ahora, guardar
  * la que se lleva con el nombre de la tarjeta, pegar un código y copiar todas, y la lista de barras con sus nueve
  * huecos (clic: usarla; clic derecho: copiar su código; la × la borra con un segundo clic). Todo va por el paquete de
  * las barras ({@link ToolsPanel.Host#hotbar}), no por el chat.
