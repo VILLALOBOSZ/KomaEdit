@@ -204,7 +204,7 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 | Naturaleza | Árbol, Roca | `tree`, `rock` (y `pincel tree`/`rock`, `tree save`) |
 | Tejados | Tejado, Loft | `roof`, `loft` (y `-e` para estimar) |
 | Terreno | Sello de relieve, Pintar terreno, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `pincel paint`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
-| Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`) |
+| Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma, Barras rápidas | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`), `hotbar <fuente>` (lo demás de las barras va por su paquete, no por el chat) |
 | Modos | Simetría, Capacidades | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Elegir:** sin herramienta elegida, la etapa es una cuadrícula de iconos con su nombre entero (en dos líneas si hace falta), agrupada como en la tabla (con ★ Favoritas arriba si hay) y con un buscador (`Ctrl+F` o `/`) por nombre, orden, alias y descripción, sin tildes. Al elegir una, la cuadrícula se pliega en una fila con su icono y su nombre (pulsarla la vuelve a abrir), sus **recientes** para cambiar de un clic, la ★ y **copiar la orden** al portapapeles.
@@ -221,6 +221,7 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 - **Materiales:** **Contar** lanza `analyze` y la lista llega a la herramienta: totales (bloques, tipos, objetos, huecos y cofres) y cada objeto con su cantidad y sus pilas, más **Copiar lista** (lo mismo que `[COPIAR]` del chat).
 - **Bioma:** buscador con todos los biomas del registro del servidor (también de datapacks y mods), relleno vertical y radio del pincel.
 - **Simetría:** enseña el estado del servidor (activa o apagada, modo y centro, avisando si el centro está en otra dimensión) y lo sigue si se cambia por el chat. Modo (X, Z, XZ, Y, XY, ZY, XZY y Radial), brazos y espejo arriba ↔ abajo del radial, e interruptor **Reflejar WorldEdit y KomaEdit**. Construir activa con ese modo (o lo aplica si ya estaba activa).
+- **Barras rápidas:** arriba, el **Nombre** y **Guardar la que llevas**; debajo, **Tus barras** con sus nueve huecos (clic: usarla; clic derecho: copiar su código; la × la borra con un segundo clic), **Pegar código**, **Copiar todas**, **La que dejas se guarda sola** y **Volver a la barra de antes**; y al final **Crear una barra** desde una paleta, un degradado de color, la selección, un sello o un tejado (ver [Barras guardadas](#barras-guardadas)). En supervivencia, un aviso dice que cambiar solo mueve lo que llevas. Nada de esto va por el chat salvo Crear barra.
 - **Capacidades:** un interruptor por capacidad (como el menú de la `Z`), apagado con candado y «sin permiso» si falta el nodo, y un aviso si no estás en creativo. Distancia en el aire, alcance, bloques por capa y velocidad de vuelo se mandan al dejar de tocarlos (0,6 s), para no llenar el chat; Reemplazar familia y lo que sigue Extruir, al momento.
 
 ![Tejado sobre la casa seleccionada](renders/studio/1080p_gui3_tejado_es.png)
@@ -3979,6 +3980,10 @@ Como el Hotbar Swapper de Axiom: guardar la barra rápida con un nombre y un ico
 
 - **La tecla** (Alt izquierdo de serie, como en Axiom; en Controles → KomaEdit, «Barras guardadas»): **mantenla** y sale la tira con tus barras sobre la barra de verdad, la que llevas marcada en verde; **la rueda** elige otra (hacia abajo, la siguiente) y **al soltar** cambias a ella. Si vuelves a la que llevabas, no pasa nada. La rueda no cambia de casilla mientras mantienes la tecla.
 - **Tocar la tecla** (soltarla antes de un cuarto de segundo sin mover la rueda) abre el **menú circular**: tus barras alrededor, con su icono y su nombre; al pasar el ratón por una, en el centro salen sus nueve huecos. Clic: usarla; clic derecho: copiar su código; rueda: página (12 por página). Abajo, escribe un nombre y pulsa **Guardar** para guardar la barra que llevas (si ya existe una con ese nombre, el segundo clic la sustituye), **Pegar código** importa un código `kh1:` del portapapeles y **Copiar todas** copia el de todas. El menú tiene también su propia tecla («Menú de barras guardadas», sin asignar de serie).
+- **El Studio**: la tarjeta **Barras rápidas** (Herramientas → Utilidades) enseña tus barras con sus nueve huecos (clic para usarla, clic derecho para copiar su código, la × la borra con un segundo clic), guarda la que llevas con el nombre de arriba, pega y copia códigos, enciende o apaga el guardado al cambiar y crea barras nuevas desde una paleta, un degradado, la selección, un sello o un tejado.
+
+![La tarjeta Barras rápidas del Studio](renders/hotbars/1080p_gui2_studio_es.png)
+
 - **Las órdenes**, para todo lo demás y para servidores donde el cliente no tiene KomaEdit:
 
 ```text
@@ -4006,6 +4011,10 @@ Alias: `/komaedit barra`, y en español `guardar`, `usar` (o `cargar`), `lista`,
 - `save` guarda la barra que llevas. `-i` elige el icono: un hueco del 1 al 9 o un objeto (`-i lantern`); sin él, el del primer hueco con algo. `-f` sustituye una que ya exista. Guardar una barra la deja como «en uso».
 - `load` cambia a esa barra (ver abajo qué hace según el modo de juego).
 - `list` las enseña con lo que llevan; pulsar el nombre la usa, y cada una tiene **[exportar]** y **[borrar]**.
+
+![La tira: Alt mantenido y la rueda](renders/hotbars/1080p_gui3_tira_creativo_es.png)
+
+![El menú circular: tocar Alt](renders/hotbars/1080p_gui3_menu_es.png)
 
 Ejemplos:
 

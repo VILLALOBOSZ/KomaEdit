@@ -6,6 +6,7 @@ import com.komainu.moxia.hotbar.HotbarPayloads.HotbarSyncPayload;
 import com.komainu.moxia.hotbar.HotbarPayloads.HotbarTextPayload;
 import com.komainu.moxia.hotbar.HotbarRules;
 import com.komainu.moxia.hotbar.SavedHotbar;
+import com.komainu.moxia.hotbar.ui.HotbarAction;
 import com.komainu.moxia.hotbar.ui.HotbarSwitcher;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -177,6 +178,21 @@ public final class HotbarControls {
         }
         send(new HotbarActionPayload(HotbarActionPayload.Kind.IMPORT, "", text, 0));
         return I18n.translate("gui.komaedit.hotbar.status.importing");
+    }
+
+    /** Lo que pide la tarjeta Barras rápidas del Studio; {@code status} recibe los avisos para su pie. */
+    public static void studio(MinecraftClient client, HotbarAction action, String name, Consumer<String> status) {
+        switch (action) {
+            case APPLY -> apply(client, name);
+            case SAVE -> save(name, false);
+            case SAVE_OVERWRITE -> save(name, true);
+            case DELETE -> delete(name);
+            case EXPORT -> export(name, status);
+            case IMPORT_CLIPBOARD -> status.accept(importCode(client.keyboard.getClipboard()));
+            case UNDO -> undo();
+            case AUTOSAVE_ON -> autosave(true);
+            case AUTOSAVE_OFF -> autosave(false);
+        }
     }
 
     public static boolean supported() {
