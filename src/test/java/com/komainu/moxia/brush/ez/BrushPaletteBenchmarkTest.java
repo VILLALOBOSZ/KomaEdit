@@ -5,6 +5,7 @@ import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.persistence.NamedDefinitions;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
@@ -25,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@value #RADIUS} (leer la paleta o la máscara, el ruido y recorrer la esfera) y lo que cuesta configurarlo. Sin
  * Minecraft no se miden la captura del terreno ni la colocación, que no dependen de la paleta.
  *
- * <p>Imprime la tabla y, con {@code KOMAEDIT_BRUSH_BENCHMARK=<archivo>}, la escribe ahí. Los márgenes son holgados:
- * la prueba solo falla si algo se dispara.</p>
+ * <p>Solo corre con {@code KOMAEDIT_BRUSH_BENCHMARK=<archivo>}: imprime la tabla y la escribe ahí. Tarda unos
+ * segundos y no aporta en cada build. Los márgenes son holgados: la prueba solo falla si algo se dispara.</p>
  */
 class BrushPaletteBenchmarkTest {
     private static final int RADIUS = 10;
@@ -39,6 +40,7 @@ class BrushPaletteBenchmarkTest {
     Path directory;
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "KOMAEDIT_BRUSH_BENCHMARK", matches = ".+")
     void brushPalettesStayFast() throws IOException {
         NamedDefinitions saved = new NamedDefinitions(directory.resolve("palettes.json"), "paleta");
         saved.put("mia", "stone;andesite;cobblestone;mossy_cobblestone;tuff", false);

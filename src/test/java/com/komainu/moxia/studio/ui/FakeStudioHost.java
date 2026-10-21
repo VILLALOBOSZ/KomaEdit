@@ -133,8 +133,9 @@ public final class FakeStudioHost implements StudioHost {
     }
 
     /**
-     * Los nombres de bloque del juego: el inglés va en el jar; el español, en los recursos que descarga Loom (si no
-     * están, se usa el inglés).
+     * Los nombres de bloque del juego: el inglés va en el jar. El español está en los recursos que descarga Loom, que
+     * no todos los PC tienen (el CI no): solo se leen al pintar las maquetas ({@code KOMAEDIT_STUDIO_MOCKUPS}), para
+     * que las pruebas den lo mismo en cualquier máquina.
      */
     private static Map<String, String> minecraftNames(String language) {
         Map<String, String> names = new HashMap<>();
@@ -146,7 +147,8 @@ public final class FakeStudioHost implements StudioHost {
         } catch (IOException | RuntimeException ignored) {
             // Sin el jar del juego: los ids.
         }
-        if (!language.equals("en_us")) {
+        String mockups = System.getenv("KOMAEDIT_STUDIO_MOCKUPS");
+        if (!language.equals("en_us") && mockups != null && !mockups.isBlank()) {
             Path index = Path.of(System.getProperty("user.home"), ".gradle", "caches", "fabric-loom", "assets",
                     "indexes", "1.21.1-17.json");
             try {

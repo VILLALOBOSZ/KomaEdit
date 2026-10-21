@@ -1,5 +1,6 @@
 package com.komainu.moxia.terrain.stamp;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.terrain.HeightStamp;
 import com.komainu.moxia.terrain.StampLibrary;
 import com.komainu.moxia.terrain.SurfacePalette;
@@ -84,8 +85,10 @@ class StampLibraryTest {
 
     @Test
     void theShippedPngsAreWhatTheRecipesGenerate() {
-        // Si una receta cambia, hay que volver a escribir los PNG (StampResourcesDump) o esto avisa.
-        for (StampRecipe recipe : StampRecipes.all()) {
+        // Si una receta cambia, hay que volver a escribir los PNG (StampResourcesDump) o esto avisa. Generar los 80
+        // cuesta unos 11 s: en cada build, uno de cada 8 (el código común de las recetas sale en todos); con
+        // KOMAEDIT_FULL_TESTS, todos. Pásala entera al tocar una receta.
+        for (StampRecipe recipe : FullTests.sample(StampRecipes.all(), 8)) {
             HeightStamp shipped = StampLibrary.get(recipe.name());
             float[] generated = recipe.generate(StampLibrary.SIZE, recipe.defaultSeed());
             double difference = 0.0;

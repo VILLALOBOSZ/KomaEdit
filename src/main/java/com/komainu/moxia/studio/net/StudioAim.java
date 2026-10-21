@@ -32,12 +32,12 @@ public final class StudioAim {
     }
 
     public static void receive(ServerPlayerEntity player, StudioAimPayload payload) {
-        if (!payload.set()) {
+        BlockPos pos = new BlockPos(payload.x(), payload.y(), payload.z());
+        if (!payload.set() || !player.getWorld().isInBuildLimit(pos)) {
             SPOTS.remove(player.getUuid());
             return;
         }
-        SPOTS.put(player.getUuid(), new Spot(player.getWorld().getRegistryKey(),
-                new BlockPos(payload.x(), payload.y(), payload.z()), Direction.byId(payload.face())));
+        SPOTS.put(player.getUuid(), new Spot(player.getWorld().getRegistryKey(), pos, Direction.byId(payload.face())));
     }
 
     public static void forget(UUID player) {

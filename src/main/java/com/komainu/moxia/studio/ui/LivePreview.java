@@ -7,7 +7,8 @@ package com.komainu.moxia.studio.ui;
  *
  * <ul>
  *     <li>espera {@value #DELAY_MILLIS} ms sin cambios antes de mandar nada;</li>
- *     <li>entre dos envíos pasan al menos {@value #MIN_INTERVAL_MILLIS} ms;</li>
+ *     <li>entre dos envíos pasan al menos {@value #MIN_INTERVAL_MILLIS} ms: cada orden suma un segundo al antispam de
+ *     Minecraft, que echa a quien no es OP al pasar de diez, y descuenta uno por segundo;</li>
  *     <li>no manda mientras el servidor calcula o coloca algo (solo con la vista previa a la vista, que la nueva
  *     sustituye);</li>
  *     <li>no repite una orden ya mandada;</li>
@@ -18,7 +19,7 @@ package com.komainu.moxia.studio.ui;
  */
 public final class LivePreview {
     public static final long DELAY_MILLIS = 350L;
-    public static final long MIN_INTERVAL_MILLIS = 700L;
+    public static final long MIN_INTERVAL_MILLIS = 1_000L;
     /** Lo que puede tardar en verse la vista previa pedida antes de darla por colocada o quitada. */
     public static final long GRACE_MILLIS = 4_000L;
     /** Selecciones más grandes que esto no tienen vista previa en vivo. */

@@ -45,8 +45,9 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `capability` | Capacidades de construcción a mano: reglas puras, red, servidor y aplicación con WorldEdit |
 | `client.gui` | Pantalla no bloqueante del Studio (`ProceduralStudioScreen`: el mundo, la cámara, los clics sobre la trayectoria y el teclado; el panel es `studio.ui`) |
 | `studio.ui` | El Procedural Studio entero sin Minecraft: `StudioView` (estado, ratón y teclado de barra, etapas, contenido, pie, paleta `Ctrl+K`, historial y biblioteca de bloques), las etapas (`FigureStages`, `ColorStage`, `BlueprintStage`), los controles de `StudioUi` (con `NumberView`/`NumberEdit` para los números) y las miniaturas que dibujan los generadores (`ChoiceThumbnails`). Dibuja sobre un `StudioCanvas`: en el juego, `client.gui.studio.DrawContextCanvas`; en las pruebas, una imagen con la fuente y los iconos del juego, de donde salen las maquetas. Lo que pide al juego pasa por `StudioHost` (`ClientStudioHost` en el cliente) |
+| `studio.world` | El ratón en el mundo con el Studio abierto, en Java puro: la caja de selección con sus caras (`BoxSelect`), los puntos que se arrastran (`PathDrag`) y el trazo de pintar manteniendo (`BrushStroke`) |
 | `studio.tools` | Etapa Herramientas del Studio: cada tarjeta (`ToolCard`) declara sus ajustes (con su unidad, `ValueUnit`), arma la orden de chat que manda Construir, sus nodos de permiso y su validación; `ToolsPanel` dibuja la etapa con `StudioUi` |
-| `studio.net` | Red de la etapa: estado de herramientas (permisos, selección, fuentes, presets, simetría y el historial de //undo con el nombre de cada operación, de `worldedit.EditHistory`), progreso para el pie del Studio y lista de materiales, solo hacia clientes con KomaEdit |
+| `studio.net` | Red de la etapa: estado de herramientas (permisos, selección, fuentes, presets, simetría y el historial de //undo con el nombre de cada operación, de `worldedit.EditHistory`), progreso para el pie del Studio y lista de materiales, solo hacia clientes con KomaEdit; y «donde haces clic» (`StudioAim`), el bloque pulsado con el Studio abierto, que el servidor solo acepta en la dimensión del jugador y a su alcance. `NetworkRegistrationTest` comprueba en las fuentes que cada paquete está registrado una vez y tiene receptor |
 
 ## Flujo de una brocha
 
@@ -193,8 +194,15 @@ Todo se prueba con JUnit sin arrancar Minecraft. Dos pruebas de humo vigilan lo 
 
 - `command.CommandTreeSmokeTest` monta el árbol entero con `MoxiaCommands.register(dispatcher)` en un `CommandDispatcher` de Brigadier (no hace falta el servidor: los permisos se miran al ejecutar). Brigadier fusiona en silencio dos hijos con el mismo nombre, así que la prueba apunta cada `addChild` que repite nombre bajo `/komaedit`. Comprueba también los alias `/ke`, `/mx`, `/moxia` y `ruta`, que cada orden tenga su tema en `HelpTopics` (por id, alias o entrada), que la ayuda solo enseñe órdenes que existen y dónde va la bandera `-v`.
 - `config.KomaEditConfigTest` lee `config.json` de serie, uno de la 1.4.0 sin los campos nuevos y uno roto con `KomaEditConfig.load(Path)`.
+- `studio.net.NetworkRegistrationTest` lee las fuentes: cada paquete (`implements CustomPayload`) registrado una sola vez y en un sentido, con su receptor al otro lado. Un paquete del cliente sin registrar no da error: `canSend` dice que no y el cliente se calla.
 
 Una orden nueva necesita, por tanto, su entrada en `HelpTopics` y, si no coloca bloques, su sitio en `PreviewScope`.
+
+Las pruebas no dependen del PC: ni de la hora, ni del idioma del sistema, ni de los recursos que Loom descarga (los nombres de bloque en español solo se leen al pintar las maquetas), ni del orden en que corren (Gradle las reparte entre varias JVM). Lo que tarda y no aporta en cada build va detrás de una variable de entorno:
+
+- **Renders y maquetas**: `KOMAEDIT_<TEMA>_RENDER=<carpeta>` (o `KOMAEDIT_RENDER_DIR`, `KOMAEDIT_STUDIO_MOCKUPS`) escribe los PNG; `KOMAEDIT_MC_JAR=<jar del cliente>` les pone las texturas del juego (`preview.TextureTiles`, común a los rasterizadores).
+- **Benchmarks**: `KOMAEDIT_BRUSH_BENCHMARK=<archivo>` y `KOMAEDIT_PAINT_BENCHMARK=<archivo>` miden y escriben la tabla.
+- **Pruebas enteras**: las que recorren todas las combinaciones (formas de `ezspline`, especies y semillas de árboles, los 80 PNG de sellos frente a sus recetas) pasan en cada build por una muestra fija; con `KOMAEDIT_FULL_TESTS=1`, por todo (`FullTests`). Pásalas enteras al tocar esos generadores.
 
 ## Pinceles de modelado
 

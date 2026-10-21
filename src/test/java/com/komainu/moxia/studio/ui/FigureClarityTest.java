@@ -219,12 +219,12 @@ class FigureClarityTest {
         // Otro radio: el pincel de la mano lo recibe sin volver a pulsar Estampar.
         studio.click("Radio auto");
         studio.advance(10);
-        studio.advance(BrushSync.DELAY_MILLIS + 10);
+        studio.advance(BrushSync.MIN_INTERVAL_MILLIS + 10);
         assertEquals("komaedit pincel actualizar stamp " + casita + " 4", studio.host.last());
         // Otro plano elegido: también.
         studio.view.blueprints().select(BlueprintRef.display("pozo", BlueprintScope.SHARED));
         studio.advance(10);
-        studio.advance(BrushSync.DELAY_MILLIS + 10);
+        studio.advance(BrushSync.MIN_INTERVAL_MILLIS + 10);
         assertEquals("komaedit pincel actualizar stamp " + BlueprintRef.display("pozo", BlueprintScope.SHARED) + " 4",
                 studio.host.last());
         // Con otra cosa en la mano, nada.
@@ -232,7 +232,7 @@ class FigureClarityTest {
         studio.host.heldTool = null;
         studio.click("Radio 4");
         studio.advance(10);
-        studio.advance(BrushSync.DELAY_MILLIS + 10);
+        studio.advance(BrushSync.MIN_INTERVAL_MILLIS + 10);
         assertEquals(sent, studio.host.sent.size());
     }
 }

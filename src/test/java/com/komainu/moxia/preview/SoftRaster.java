@@ -1,6 +1,5 @@
 package com.komainu.moxia.preview;
 
-import javax.imageio.ImageIO;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -9,13 +8,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
  * Rasterizador por software para los renders de comprobación de la vista previa: proyección ortográfica desde el
@@ -39,8 +32,7 @@ final class SoftRaster implements AutoCloseable {
     private final double offsetY;
     private final int[] color;
     private final double[] depth;
-    private final ZipFile jar;
-    private final Map<String, int[]> textures = new HashMap<>();
+    private final TextureTiles tiles;
 
     SoftRaster(int width, int height, double scale, double centerX, double centerY, double centerZ)
             throws IOException {
@@ -53,8 +45,7 @@ final class SoftRaster implements AutoCloseable {
         this.color = new int[width * height];
         this.depth = new double[width * height];
         java.util.Arrays.fill(depth, Double.NEGATIVE_INFINITY);
-        String path = System.getenv("KOMAEDIT_MC_JAR");
-        this.jar = path == null || path.isBlank() ? null : new ZipFile(Path.of(path).toFile());
+        this.tiles = new TextureTiles();
     }
 
     void clear(int top, int bottom) {
@@ -68,43 +59,14 @@ final class SoftRaster implements AutoCloseable {
     }
 
     boolean real() {
-        return jar != null;
+        return tiles.real();
     }
 
     // ---------------------------------------------------------------- texturas
 
-    /** Píxeles ARGB de 16×16 de {@code assets/minecraft/textures/block/<name>.png}, o un color liso. */
+    /** 16×16 ARGB de {@code textures/block/<name>.png} con un tinte, o un color liso ({@link TextureTiles}). */
     int[] texture(String name, int fallback, int tint) {
-        return textures.computeIfAbsent(name + "#" + Integer.toHexString(tint), key -> {
-            int[] pixels = new int[256];
-            BufferedImage image = jar == null ? null : load("assets/minecraft/textures/block/" + name + ".png");
-            for (int index = 0; index < 256; index++) {
-                int argb;
-                if (image == null) {
-                    // Sin jar: color liso con un poco de grano, para que se lean las caras.
-                    int noise = (int) ((index * 73 + 17) * 2654435761L >>> 28 & 7) - 3;
-                    argb = 0xFF000000 | add(fallback, noise * 4);
-                } else {
-                    argb = image.getRGB(index & 15, (index >> 4) % image.getHeight());
-                }
-                pixels[index] = multiply(argb, tint);
-            }
-            return pixels;
-        });
-    }
-
-    private BufferedImage load(String entryName) {
-        try {
-            ZipEntry entry = jar.getEntry(entryName);
-            if (entry == null) {
-                return null;
-            }
-            try (InputStream input = jar.getInputStream(entry)) {
-                return ImageIO.read(input);
-            }
-        } catch (IOException exception) {
-            return null;
-        }
+        return tiles.tile(name, fallback, tint);
     }
 
     // ---------------------------------------------------------------- caras
@@ -220,7 +182,7 @@ final class SoftRaster implements AutoCloseable {
                 if (pass == 0) {
                     nearest[index] = Math.max(nearest[index], z);
                 } else if (Math.abs(z - nearest[index]) < 1.0E-7) {
-                    int shaded = multiply(multiply(texel, gray(shade)), tint);
+                    int shaded = TextureTiles.multiply(TextureTiles.multiply(texel, gray(shade)), tint);
                     color[index] = blend(color[index], shaded, (texel >>> 24) / 255.0 * alpha);
                     nearest[index] = Double.POSITIVE_INFINITY;
                 }
@@ -264,7 +226,7 @@ final class SoftRaster implements AutoCloseable {
                     continue;
                 }
                 double texelAlpha = (texel >>> 24) / 255.0 * alpha;
-                int shaded = multiply(texel, gray(shade));
+                int shaded = TextureTiles.multiply(texel, gray(shade));
                 color[index] = blend(color[index], shaded, texelAlpha);
                 if (alpha >= 0.999 && (texel >>> 24) > 200) {
                     depth[index] = z;
@@ -460,23 +422,9 @@ final class SoftRaster implements AutoCloseable {
         return 0xFF000000 | red << 16 | green << 8 | blue;
     }
 
-    static int multiply(int argb, int rgb) {
-        int red = (argb >> 16 & 0xFF) * (rgb >> 16 & 0xFF) / 255;
-        int green = (argb >> 8 & 0xFF) * (rgb >> 8 & 0xFF) / 255;
-        int blue = (argb & 0xFF) * (rgb & 0xFF) / 255;
-        return argb & 0xFF000000 | red << 16 | green << 8 | blue;
-    }
-
     private static int gray(double shade) {
         int value = (int) Math.round(Math.clamp(shade, 0.0, 1.0) * 255);
         return value << 16 | value << 8 | value;
-    }
-
-    private static int add(int rgb, int amount) {
-        int red = Math.clamp((rgb >> 16 & 0xFF) + amount, 0, 255);
-        int green = Math.clamp((rgb >> 8 & 0xFF) + amount, 0, 255);
-        int blue = Math.clamp((rgb & 0xFF) + amount, 0, 255);
-        return red << 16 | green << 8 | blue;
     }
 
     private static int lerp(int a, int b, double t) {
@@ -485,8 +433,6 @@ final class SoftRaster implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if (jar != null) {
-            jar.close();
-        }
+        tiles.close();
     }
 }

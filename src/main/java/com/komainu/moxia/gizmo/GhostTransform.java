@@ -65,10 +65,6 @@ public record GhostTransform(Orientation orientation, int x, int y, int z) {
         return new GhostTransform(orientation.then(Orientation.mirror(worldAxis)), x, y, z);
     }
 
-    public GhostTransform withOrientation(Orientation value) {
-        return new GhostTransform(value, x, y, z);
-    }
-
     /** La caja local girada, aún relativa al pivote. */
     public BlockBounds oriented(BlockBounds local) {
         int[] first = orientation.apply(local.minimumX(), local.minimumY(), local.minimumZ());
