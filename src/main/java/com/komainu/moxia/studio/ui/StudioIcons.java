@@ -20,7 +20,7 @@ public final class StudioIcons {
         PATH, FIGURE, INSTANCES, RECIPES, COLOR, BLUEPRINTS, TOOLS,
         // Barra de herramientas y controles.
         UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE, LOCK, HISTORY, SEARCH, COMMAND, EYEDROPPER, CHEVRON_DOWN,
-        CHEVRON_RIGHT, COPY, STAR, STAR_EMPTY, EYE, LIVE,
+        CHEVRON_RIGHT, COPY, STAR, STAR_EMPTY, EYE, EYE_OFF, LIVE, LIVE_PAUSED,
         // Sobre qué trabaja una herramienta.
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
@@ -337,6 +337,19 @@ public final class StudioIcons {
                 ".#...##...#.",
                 "..##....##..",
                 "....####....");
+        mask(Icon.EYE_OFF,
+                "x...........",
+                ".x..........",
+                "..x.####....",
+                "..#x....##..",
+                ".#..x##...#.",
+                "#...#x##...#",
+                "#...##x#...#",
+                ".#...##x..#.",
+                "..##....x#..",
+                "....####.x..",
+                "..........x.",
+                "...........x");
         mask(Icon.LIVE,
                 "............",
                 "............",
@@ -350,6 +363,20 @@ public final class StudioIcons {
                 "....####ssss",
                 "........ssss",
                 ".........ss.");
+        // En vivo, pero en pausa: la obra pasa del tamaño elegido y espera a Construir.
+        mask(Icon.LIVE_PAUSED,
+                "............",
+                "............",
+                "....####....",
+                "..##....##..",
+                ".#...##...#.",
+                "#...####...#",
+                "#...####...#",
+                ".#...##...#.",
+                "..##....#ww.",
+                "....####wwww",
+                "........wwww",
+                ".........ww.");
         mask(Icon.LOOK,
                 ".....##.....",
                 ".....##.....",
@@ -859,6 +886,8 @@ public final class StudioIcons {
             case '+' -> StudioTheme.fade(color, 0.5);
             // Lo que está en marcha (en vivo): verde de éxito, nunca rojo, que es solo para el peligro.
             case 's' -> StudioTheme.SUCCESS;
+            // En pausa o con aviso: ámbar.
+            case 'w' -> StudioTheme.WARNING;
             default -> color;
         };
     }

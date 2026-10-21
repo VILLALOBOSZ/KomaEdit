@@ -445,17 +445,23 @@ public final class BlueprintService {
         return summaries;
     }
 
-    /** Lee en el hilo de los planos y entrega en el del servidor. */
+    /**
+     * Lee la miniatura en el hilo de los planos y la entrega en el del servidor: sus bytes, o {@code null} si no hay
+     * (no existe, no la puede ver o no se pudo leer).
+     */
     static void readThumbnail(MinecraftServer server, UUID viewer, String hash, Consumer<byte[]> onRead) {
         IO.execute(() -> {
+            byte[] data = null;
             try {
-                library().thumbnail(viewer, hash).ifPresent(entry -> {
-                    byte[] data = library().readThumbnail(entry);
-                    server.execute(() -> onRead.accept(data));
-                });
+                var entry = library().thumbnail(viewer, hash);
+                if (entry.isPresent()) {
+                    data = library().readThumbnail(entry.get());
+                }
             } catch (RuntimeException exception) {
                 KomaEditMod.LOGGER.warn("KomaEdit could not read a blueprint thumbnail: {}", exception.getMessage());
             }
+            byte[] read = data;
+            server.execute(() -> onRead.accept(read));
         });
     }
 

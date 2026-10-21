@@ -4,7 +4,6 @@ import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
-import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.share.ShareCodePayload;
 import com.komainu.moxia.share.ShareOfferPayload;
@@ -15,6 +14,8 @@ import com.komainu.moxia.studio.WelcomeTour;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.layout.StudioLayout;
+import com.komainu.moxia.studio.live.LivePreviewRequestPayload;
+import com.komainu.moxia.studio.live.LivePreviewResultPayload;
 import com.komainu.moxia.studio.net.JobStatusPayload;
 import com.komainu.moxia.studio.tools.SelectionCard;
 import com.komainu.moxia.studio.tools.ToolCard;
@@ -73,6 +74,8 @@ public final class StudioView {
     private final CommandPalette palette = new CommandPalette();
     private final ShareDialog shareDialog = new ShareDialog();
     private final LivePreview live = new LivePreview();
+    /** Bloques de la obra que tiene en pausa la vista previa en vivo (más que el límite elegido), o 0. */
+    private long liveTooBig;
     private final WelcomeGuide welcome = new WelcomeGuide(this);
 
     private StudioStage stage = StudioStage.FIGURE;
@@ -277,6 +280,7 @@ public final class StudioView {
         }
         tools.syncBrush(bound);
         blueprints.syncBrush(bound);
+        takeLiveAnswers(host, now);
         Optional<JobStatusPayload> job = host.job();
         boolean busy = job.isPresent() && job.get().phaseValue() != ProgressLine.Phase.WAITING;
         boolean figureSide = stage == StudioStage.FIGURE;
@@ -285,18 +289,35 @@ public final class StudioView {
         boolean shown = ghost || !figureSide && job.isPresent()
                 && job.get().phaseValue() == ProgressLine.Phase.WAITING;
         String owner = figureSide ? FIGURE_OWNER : TOOL_OWNER + tools.selected().id();
-        String command = figureSide ? liveFigureKey(bound) : livePreviewCommand(bound);
-        String send = live.tick(owner, command, now, busy, shown);
+        LiveKey key = figureSide ? liveFigureKey(bound) : livePreviewCommand(bound);
+        liveTooBig = owner.equals(live.owner()) ? key.tooBig() : 0;
+        String send = live.tick(owner, key.key(), now, busy, shown, host.liveSupported());
         if (send == null) {
             return;
         }
         host.expectGhost(true);
-        if (figureSide) {
-            host.recipeAction(RecipeActionPayload.BUILD, figure.draft(), "");
-        } else {
-            host.send(send);
-        }
+        host.livePreview(figureSide
+                ? LivePreviewRequestPayload.figure(live.session(), live.seq(), false, figure.draft())
+                : LivePreviewRequestPayload.command(live.session(), live.seq(), false, send));
         status(host.tr("gui.komaedit.preview.live.sent"), now);
+    }
+
+    /** Lo que contestó el servidor a la vista previa en vivo; si no salió, el pie dice por qué. */
+    private void takeLiveAnswers(StudioHost host, long now) {
+        for (Optional<LivePreviewResultPayload> answer = host.takeLiveResult(); answer.isPresent();
+             answer = host.takeLiveResult()) {
+            LivePreviewResultPayload result = answer.get();
+            live.answered(result.session(), result.seq(), now);
+            if (result.session() != live.session() || live.owner() == null) {
+                continue;
+            }
+            switch (result.outcomeValue()) {
+                case FAILED -> status(host.tr("gui.komaedit.preview.live.failed", result.message()), now);
+                case NOTHING -> status(host.tr("gui.komaedit.preview.live.nothing"), now);
+                default -> {
+                }
+            }
+        }
     }
 
     /** Lo que contesta el servidor a «Compartir» y a «Pegar código». */
@@ -336,35 +357,51 @@ public final class StudioView {
     }
 
     /**
-     * Lo que identifica la figura de ahora para la vista previa en vivo, o {@code null} si ahora no toca: se está
-     * tocando un control, faltan puntos o la figura es grande (más de {@value BuildEstimate#LARGE} bloques) o su
-     * holograma aún no tiene el recuento.
+     * Lo que pide ahora la vista previa en vivo: la orden (o lo que identifica a la figura), o {@code null} si ahora no
+     * toca; y, si es por tamaño, cuántos bloques tiene la obra (para avisarlo).
      */
-    String liveFigureKey(StudioHost host) {
-        if (!liveMode(host) || figure.typing() || figure.dragging() || !figure.pathReady(host)
-                || !host.previewSettled() || BuildEstimate.level(host.previewBlocks()) != BuildEstimate.Level.NORMAL) {
-            return null;
-        }
-        return figure.draft().toString();
+    record LiveKey(String key, long tooBig) {
+        static final LiveKey NONE = new LiveKey(null, 0);
     }
 
-    /** La orden de la vista previa en vivo con lo de ahora, o {@code null} si ahora no toca. */
-    String livePreviewCommand(StudioHost host) {
+    /**
+     * Lo que identifica la figura de ahora para la vista previa en vivo, o nada si ahora no toca: se está tocando un
+     * control, faltan puntos, su holograma aún no tiene el recuento o la figura pasa del límite de las preferencias.
+     */
+    LiveKey liveFigureKey(StudioHost host) {
+        if (!liveMode(host) || figure.typing() || figure.dragging() || !figure.pathReady(host)
+                || !host.previewSettled() || host.previewBlocks() < 0) {
+            return LiveKey.NONE;
+        }
+        if (host.previewBlocks() > host.preferences().liveLimit()) {
+            return new LiveKey(null, host.previewBlocks());
+        }
+        return new LiveKey(figure.draft().toString(), 0);
+    }
+
+    /** La orden de la vista previa en vivo con lo de ahora, o nada si ahora no toca. */
+    LiveKey livePreviewCommand(StudioHost host) {
         if (stage != StudioStage.TOOLS || tools.browsing() || tools.typing() || tools.dragging() || !liveMode(host)) {
-            return null;
+            return LiveKey.NONE;
         }
         ToolCard card = tools.selected();
         if (!card.previewable(tools.values(card))) {
-            return null;
+            return LiveKey.NONE;
         }
         ToolContext context = host.context();
         ToolTarget target = tools.target();
         boolean selection = target == ToolTarget.SELECTION
                 || target == ToolTarget.PATH_OR_SELECTION && context.pathPoints() == 0;
-        if (selection && context.selectionVolume() > LivePreview.MAX_VOLUME) {
-            return null;
+        if (selection && context.selectionVolume() > host.preferences().liveLimit()) {
+            return new LiveKey(null, context.selectionVolume());
         }
-        return tools.buildCommand(host, true);
+        return new LiveKey(tools.buildCommand(host, true), 0);
+    }
+
+    /** El aviso de la vista previa en vivo en pausa por tamaño, o vacío. */
+    private String livePausedText(StudioHost host) {
+        return liveTooBig <= 0 || !liveMode(host) ? "" : host.tr("gui.komaedit.preview.live.paused",
+                BuildEstimate.compact(liveTooBig), BuildEstimate.compact(host.preferences().liveLimit()));
     }
 
     // ── Dibujo ──────────────────────────────────────────────────────────────────────────────────────────
@@ -537,7 +574,13 @@ public final class StudioView {
         int left = bar.x() + frame.padding();
         int right = frame.toolButton(buttons.size() - 1).x() - 4;
         ui.icon(stage.icon(), left, bar.centerY() - 6, ACCENT_TEXT);
-        ui.bold(host.tr(stage.titleKey()), left + 17, bar.centerY() - 4, right - left - 17, TEXT_STRONG);
+        String title = host.tr(stage.titleKey());
+        if (ui.boldWidth(title) <= right - left - 17) {
+            ui.bold(title, left + 17, bar.centerY() - 4, right - left - 17, TEXT_STRONG);
+        } else {
+            // Con el panel al mínimo la negrita no cabe: sin ella, «Herramientas» se lee entero.
+            ui.label(title, left + 17, bar.centerY() - 4, right - left - 17, TEXT_STRONG);
+        }
         ui.register(new Rect(left, bar.y(), Math.max(0, right - left), bar.height()))
                 .tooltip(host.tr(stage.titleKey()) + " · " + stage.shortcut() + "\n" + host.tr(stage.subtitleKey()));
 
@@ -782,7 +825,7 @@ public final class StudioView {
                         // rehacer: la vista previa en vivo se olvida sola).
                         live.arm(FIGURE_OWNER, figure.draft().toString(), host.now());
                     }
-                }, host.tr("gui.komaedit.help.build"), false, idle);
+                }, host.tr("gui.komaedit.help.build"), true, idle);
             }
         }
     }
@@ -808,20 +851,32 @@ public final class StudioView {
         // el mundo, los gestos de un control); si no, el aviso de la etapa.
         boolean hinted = !fresh && !pointerHint.isEmpty();
         String detail = fresh ? status : hinted ? pointerHint : footer.idle();
-        if ((!frame.compact() || job.isEmpty() && !fresh && !hinted) && !footer.target().isEmpty()) {
-            // Sobre qué se trabaja: icono, texto y, a la derecha, la estimación.
-            int estimateWidth = footer.estimate().isEmpty() ? 0 : ui.width(footer.estimate()) + 8;
-            ui.icon(footer.icon(), summary.x() - 1, summary.y() - 2, TEXT_SECONDARY);
-            String fitted = FooterText.fit(ui, List.of(footer.target().split(" · ")),
-                    summary.width() - 16 - estimateWidth);
-            ui.label(fitted, summary.x() + 15, summary.y(), TEXT_SECONDARY);
+        // La vista previa en vivo en pausa por tamaño se dice arriba, en ámbar, en lugar de sobre qué se trabaja.
+        String paused = footer.previewSelector() ? livePausedText(host) : "";
+        if ((!frame.compact() || job.isEmpty() && !fresh && !hinted)
+                && (!footer.target().isEmpty() || !paused.isEmpty())) {
+            // Sobre qué se trabaja: icono, texto y, a la derecha, la estimación (o en qué está el ojo).
+            boolean caption = footer.previewSelector() && footer.estimate().isEmpty() && paused.isEmpty();
+            int captionRight = summary.right() - (job.isPresent() ? 16 : 0);
+            int estimateWidth = footer.estimate().isEmpty() ? caption ? ui.width(liveCaption(host)) + 8 + 16 : 0
+                    : ui.width(footer.estimate()) + 8;
+            String target = paused.isEmpty() ? footer.target() : paused;
+            ui.icon(paused.isEmpty() ? footer.icon() : StudioIcons.Icon.LIVE_PAUSED, summary.x() - 1,
+                    summary.y() - 2, paused.isEmpty() ? TEXT_SECONDARY : WARNING);
+            String fitted = FooterText.fit(ui, List.of(target.split(" · ")), summary.width() - 16 - estimateWidth);
+            ui.label(fitted, summary.x() + 15, summary.y(), paused.isEmpty() ? TEXT_SECONDARY : WARNING);
             if (!footer.estimate().isEmpty()) {
                 ui.rightAligned(footer.estimate(), summary.right(), summary.y(), footer.estimateColor());
             }
-            ui.register(summary).tooltip(footer.target() + (footer.estimate().isEmpty() ? ""
-                    : "\n" + footer.estimate()));
+            ui.register(summary).tooltip(target + (footer.estimate().isEmpty() ? "" : "\n" + footer.estimate()));
+            if (caption) {
+                drawLiveCaption(ui, summary, captionRight, host, job.isPresent());
+            }
         }
         if (job.isPresent()) {
+            if (footer.previewSelector() && footer.estimate().isEmpty() && paused.isEmpty()) {
+                drawLiveBadge(ui, summary, host);
+            }
             ProgressLine line = job.get().line();
             List<String> segments = JobStrip.segments(line, job.get().changes(), actions);
             String text = FooterText.fit(ui, segments, statusLine.width());
@@ -892,10 +947,13 @@ public final class StudioView {
         // Arriba qué es (o, si no se pudo colocar, por qué); debajo las opciones y dónde está.
         boolean rejected = !ghost.message().isEmpty();
         String top = rejected ? ghost.message() : title;
-        ui.label(FooterText.fit(ui, List.of(top.split(" · ")), summary.width() - 16), summary.x() + 15,
-                summary.y(), rejected ? WARNING : TEXT_SECONDARY);
+        ui.label(FooterText.fit(ui, List.of(top.split(" · ")), summary.width() - 40
+                - ui.width(liveCaption(host))), summary.x() + 15, summary.y(), rejected ? WARNING : TEXT_SECONDARY);
         ui.register(summary).tooltip((rejected ? ghost.message() + "\n" : "")
                 + host.tr("gui.komaedit.ghost.title", title) + "\n" + ghost.position() + "\n" + help);
+        // Encima de la línea, para que al pasar el ratón gane el ojo pequeño.
+        drawLiveCaption(ui, summary, summary.right() - 16, host, true);
+        drawLiveBadge(ui, summary, host);
         if (!frame.compact()) {
             int x = statusLine.x();
             x = ghostOption(ui, x, statusLine, host.tr("gui.komaedit.ghost.keep.short"), ghost.keepExisting(), true,
@@ -908,9 +966,16 @@ public final class StudioView {
                     ghost.toggleGround(), host.tr("gui.komaedit.ghost.ground"),
                     host.tr("gui.komaedit.ghost.button.ground.tooltip"));
             int space = statusLine.right() - x - 6;
+            // Si la vista previa en vivo está en pausa por tamaño, eso importa más que dónde está.
+            String paused = livePausedText(host);
             if (space > 24) {
-                String fitted = FooterText.fit(ui, List.of(ghost.position().split(" · ")), space);
-                ui.rightAligned(fitted, statusLine.right(), statusLine.y(), MUTED);
+                String text = paused.isEmpty() ? ghost.position() : paused;
+                String fitted = FooterText.fit(ui, List.of(text.split(" · ")), space);
+                ui.rightAligned(fitted, statusLine.right(), statusLine.y(), paused.isEmpty() ? MUTED : WARNING);
+                if (!fitted.equals(text)) {
+                    ui.register(new Rect(statusLine.right() - ui.width(fitted), statusLine.y(), ui.width(fitted),
+                            statusLine.height())).tooltip(text);
+                }
             }
         }
         String cancel = host.tr("gui.komaedit.ghost.button.cancel");
@@ -957,16 +1022,79 @@ public final class StudioView {
         if (mode != StudioPreferences.PreviewMode.OFF) {
             ui.fill(new Rect(rect.x(), rect.bottom() - 2, rect.width(), 2), ACCENT);
         }
-        StudioIcons.Icon icon = mode == StudioPreferences.PreviewMode.LIVE ? StudioIcons.Icon.LIVE
-                : StudioIcons.Icon.EYE;
-        ui.icon(icon, rect.centerX() - 6, rect.centerY() - 6, mode == StudioPreferences.PreviewMode.OFF
-                ? (hovered ? TEXT : MUTED) : ACCENT_TEXT);
+        ui.icon(previewIcon(host), rect.centerX() - 6, rect.centerY() - 6,
+                mode == StudioPreferences.PreviewMode.OFF ? (hovered ? TEXT : MUTED) : ACCENT_TEXT);
         ui.register(rect)
-                .tooltip(host.tr("gui.komaedit.preview.mode." + mode.id()) + "\n"
-                        + host.tr("gui.komaedit.preview.mode." + mode.id() + ".help") + "\n"
-                        + host.tr("gui.komaedit.preview.mode.cycle"))
+                .tooltip(previewTooltip(host) + "\n" + host.tr("gui.komaedit.preview.mode.cycle"))
                 .onReset(() -> setPreviewMode(host, StudioPreferences.PreviewMode.OFF))
                 .onClick(() -> setPreviewMode(host, mode.next()));
+    }
+
+    /** El ojo: tachado sin vista previa, abierto al construir y con su punto en vivo (ámbar si está en pausa). */
+    private StudioIcons.Icon previewIcon(StudioHost host) {
+        return switch (host.preferences().previewMode()) {
+            case OFF -> StudioIcons.Icon.EYE_OFF;
+            case BUILD -> StudioIcons.Icon.EYE;
+            case LIVE -> liveTooBig > 0 ? StudioIcons.Icon.LIVE_PAUSED : StudioIcons.Icon.LIVE;
+        };
+    }
+
+    /** Qué hace el modo de ahora, con el límite de tamaño, y qué está rehaciendo o por qué no. */
+    private String previewTooltip(StudioHost host) {
+        StudioPreferences.PreviewMode mode = host.preferences().previewMode();
+        String text = host.tr("gui.komaedit.preview.mode." + mode.id()) + "\n"
+                + host.tr("gui.komaedit.preview.mode." + mode.id() + ".help",
+                BuildEstimate.compact(host.preferences().liveLimit()));
+        String paused = livePausedText(host);
+        if (!paused.isEmpty()) {
+            text += "\n" + paused;
+        } else if (mode == StudioPreferences.PreviewMode.LIVE && live.owner() != null) {
+            text += "\n" + host.tr("gui.komaedit.preview.live.armed");
+        }
+        return text;
+    }
+
+    /** En qué está el ojo, en dos palabras («en vivo», «al construir»…), para leerlo sin pasar el ratón. */
+    private String liveCaption(StudioHost host) {
+        StudioPreferences.PreviewMode mode = host.preferences().previewMode();
+        return host.tr(mode == StudioPreferences.PreviewMode.LIVE && liveTooBig > 0
+                ? "gui.komaedit.preview.caption.paused" : "gui.komaedit.preview.caption." + mode.id());
+    }
+
+    /**
+     * La etiqueta del ojo, alineada a la derecha en {@code right}: en el acento en vivo, en ámbar en pausa. Un clic
+     * hace lo mismo que el ojo de al lado: con {@code toggle}, enciende o apaga el en vivo (el ojo pequeño); si no,
+     * pasa al siguiente modo.
+     */
+    private void drawLiveCaption(StudioUi ui, Rect line, int right, StudioHost host, boolean toggle) {
+        StudioPreferences.PreviewMode mode = host.preferences().previewMode();
+        int color = mode != StudioPreferences.PreviewMode.LIVE ? MUTED : liveTooBig > 0 ? WARNING : ACCENT_TEXT;
+        String text = liveCaption(host);
+        ui.rightAligned(text, right, line.y(), color);
+        StudioPreferences.PreviewMode next = !toggle ? mode.next() : liveMode(host)
+                ? StudioPreferences.PreviewMode.BUILD : StudioPreferences.PreviewMode.LIVE;
+        ui.register(new Rect(right - ui.width(text), line.y() - 1, ui.width(text), line.height() + 2))
+                .tooltip(previewTooltip(host) + "\n" + host.tr(toggle ? "gui.komaedit.preview.live.badge"
+                        : "gui.komaedit.preview.mode.cycle"))
+                .onClick(() -> setPreviewMode(host, next));
+    }
+
+    /**
+     * El ojo pequeño del pie mientras se ve un fantasma o una vista previa que espera (el selector no cabe): dice si
+     * la vista previa en vivo la está siguiendo y, con un clic, la enciende o la apaga.
+     */
+    private void drawLiveBadge(StudioUi ui, Rect line, StudioHost host) {
+        Rect rect = new Rect(line.right() - 13, line.y() - 2, 13, 12);
+        boolean on = liveMode(host);
+        boolean hovered = ui.hovered(rect);
+        if (hovered) {
+            ui.fill(rect, CARD_HOVER);
+        }
+        ui.icon(on ? previewIcon(host) : StudioIcons.Icon.EYE, rect.x(), rect.y(), on ? ACCENT_TEXT
+                : hovered ? TEXT : MUTED);
+        ui.register(rect).tooltip(previewTooltip(host) + "\n" + host.tr("gui.komaedit.preview.live.badge"))
+                .onClick(() -> setPreviewMode(host, on ? StudioPreferences.PreviewMode.BUILD
+                        : StudioPreferences.PreviewMode.LIVE));
     }
 
     private void setPreviewMode(StudioHost host, StudioPreferences.PreviewMode mode) {
@@ -1319,14 +1447,20 @@ public final class StudioView {
     /** Construir de la herramienta elegida; con la vista previa en vivo, desde ahora sus cambios la rehacen. */
     private void buildTool(StudioHost host) {
         ToolCard card = tools.selected();
-        boolean preview = card.previewable() && host.preferences().toolPreview();
+        boolean preview = card.previewable(tools.values(card)) && host.preferences().toolPreview();
         if (preview) {
             host.expectGhost(false);
         }
-        String sent = tools.build(host);
-        if (sent != null && preview && liveMode(host)) {
-            live.arm(TOOL_OWNER + card.id(), sent, host.now());
+        if (!preview || !liveMode(host)) {
+            tools.build(host);
+            return;
         }
+        // En vivo, el Construir abre la sesión por su red: el servidor apunta dónde cae, y lo que se rehaga después
+        // sale ahí aunque ya se mire a otro lado o se cierre el Studio.
+        tools.build(host, command -> {
+            live.arm(TOOL_OWNER + card.id(), command, host.now(), host.liveSupported());
+            host.livePreview(LivePreviewRequestPayload.command(live.session(), 0, true, command));
+        });
     }
 
     /**
@@ -2033,6 +2167,24 @@ public final class StudioView {
         @Override
         public void expectGhost(boolean refresh) {
             host.expectGhost(refresh);
+        }
+
+        @Override
+        public boolean livePreview(LivePreviewRequestPayload request) {
+            if (!request.figure()) {
+                welcome.tour().sent(request.command());
+            }
+            return host.livePreview(request);
+        }
+
+        @Override
+        public boolean liveSupported() {
+            return host.liveSupported();
+        }
+
+        @Override
+        public Optional<LivePreviewResultPayload> takeLiveResult() {
+            return host.takeLiveResult();
         }
 
         @Override

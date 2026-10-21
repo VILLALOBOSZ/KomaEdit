@@ -3,8 +3,11 @@ package com.komainu.moxia.studio.ui;
 import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
+import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.share.ShareCodePayload;
 import com.komainu.moxia.share.ShareOfferPayload;
+import com.komainu.moxia.studio.live.LivePreviewRequestPayload;
+import com.komainu.moxia.studio.live.LivePreviewResultPayload;
 import com.komainu.moxia.studio.net.JobStatusPayload;
 import com.komainu.moxia.studio.tools.ui.ToolsPanel;
 
@@ -75,6 +78,32 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
      * previa en vivo, que sustituye al fantasma de ahora: el nuevo sale donde el jugador dejó este y con su giro.
      */
     default void expectGhost(boolean refresh) {
+    }
+
+    /**
+     * Manda una petición de la vista previa en vivo: el Construir que la abre o un cambio después. De serie (un
+     * servidor sin la red de la vista previa en vivo) va como siempre: la orden por el chat o la figura con
+     * {@link #recipeAction}.
+     *
+     * @return si fue por la red de la vista previa en vivo (sin antispam, solo cuenta la última y con respuesta)
+     */
+    default boolean livePreview(LivePreviewRequestPayload request) {
+        if (request.figure()) {
+            recipeAction(RecipeActionPayload.BUILD, request.recipe(), "");
+        } else {
+            send(request.command());
+        }
+        return false;
+    }
+
+    /** Si el servidor tiene la red de la vista previa en vivo ({@link #livePreview}). */
+    default boolean liveSupported() {
+        return false;
+    }
+
+    /** Lo próximo que contestó el servidor a la vista previa en vivo, una sola vez. */
+    default Optional<LivePreviewResultPayload> takeLiveResult() {
+        return Optional.empty();
     }
 
     /**

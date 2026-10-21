@@ -51,16 +51,33 @@ public final class NoteBook {
         this.file = file;
     }
 
-    /** Lee el archivo (si existe); las notas rotas se saltan. Devuelve cuántas se saltaron. */
+    /**
+     * Lee el archivo (si existe); las notas rotas se saltan. Devuelve cuántas se saltaron. Si el archivo entero no se
+     * puede leer (a medias o de una versión más nueva), se aparta como {@code notes.broken-N.json} para que las notas
+     * nuevas no lo pisen, y lanza diciendo dónde quedó.
+     */
     public synchronized int load() {
         notes.clear();
         if (file == null || !Files.isRegularFile(file)) {
             return 0;
         }
+        String json;
         try {
-            return read(Files.readString(file, StandardCharsets.UTF_8));
+            json = Files.readString(file, StandardCharsets.UTF_8);
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
+        }
+        try {
+            return read(json);
+        } catch (RuntimeException exception) {
+            notes.clear();
+            try {
+                Path aside = AtomicStorage.setAside(file);
+                throw new IllegalStateException("No se pudo leer " + file.getFileName() + " (" + exception.getMessage()
+                        + "); quedó apartado como " + aside.getFileName(), exception);
+            } catch (IOException moveFailure) {
+                throw new UncheckedIOException(moveFailure);
+            }
         }
     }
 

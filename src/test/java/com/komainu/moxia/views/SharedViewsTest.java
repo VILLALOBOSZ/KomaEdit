@@ -113,4 +113,29 @@ class SharedViewsTest {
         assertEquals(1, views.all().size());
         assertThrows(IllegalArgumentException.class, () -> views.read("{\"format\": 2}"));
     }
+
+    /**
+     * Un {@code views.json} que no se puede leer (a medias, editado a mano o de una versión más nueva del mod tras
+     * volver a una anterior) no se pisa con las vistas nuevas: se aparta para poder recuperarlo.
+     */
+    @Test
+    void anUnreadableFileIsSetAsideInsteadOfOverwritten() throws IOException {
+        String newer = "{\"format\": 2, \"views\": [{\"name\": \"De la versión nueva\"}]}";
+        Path file = folder.resolve("views.json");
+        Files.writeString(file, newer);
+        SharedViews views = new SharedViews(file);
+        assertThrows(RuntimeException.class, views::load);
+        views.share(shared("Plaza", ANA, "Ana", 1), LIMITS, false, false);
+        views.share(shared("Puerto", ANA, "Ana", 2), LIMITS, false, false);
+        java.util.List<String> kept = new java.util.ArrayList<>();
+        try (var files = Files.list(folder)) {
+            for (Path other : files.toList()) {
+                kept.add(Files.readString(other));
+            }
+        }
+        assertTrue(kept.contains(newer), "las vistas de antes se han perdido");
+        SharedViews again = new SharedViews(file);
+        assertEquals(0, again.load());
+        assertEquals(2, again.all().size(), "y las nuevas se guardan");
+    }
 }

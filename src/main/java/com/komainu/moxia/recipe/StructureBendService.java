@@ -5,12 +5,12 @@ import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.tube.TubeBender;
+import com.komainu.moxia.symmetry.SymmetryStates;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
+import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.world.block.BlockState;
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntMaps;
@@ -185,11 +185,12 @@ public final class StructureBendService {
         return bent.size();
     }
 
+    /** Con la transformación de la simetría: el giro de WorldEdit no gira los raíles. */
     private static BlockState rotate(BlockState state, int turns) {
         if (turns == 0) {
             return state;
         }
-        return BlockTransformExtent.transform(state, new AffineTransform().rotateY(90.0 * turns));
+        return FabricAdapter.adapt(SymmetryStates.transform(FabricAdapter.adapt(state), TubeBender.symmetry(turns)));
     }
 
     public record Captured(List<BlockState> palette, TubeBender.Template template) {

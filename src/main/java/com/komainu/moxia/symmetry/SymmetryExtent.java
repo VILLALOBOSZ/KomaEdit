@@ -1,5 +1,6 @@
 package com.komainu.moxia.symmetry;
 
+import com.komainu.moxia.edit.KeptData;
 import com.komainu.moxia.symmetry.SymmetryGeometry.Point;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.AbstractDelegateExtent;
@@ -81,9 +82,23 @@ final class SymmetryExtent extends AbstractDelegateExtent {
                 break;
             }
             copies++;
-            super.setBlock(BlockVector3.at(point.x(), point.y(), point.z()), transform(block, index));
+            BlockVector3 target = BlockVector3.at(point.x(), point.y(), point.z());
+            super.setBlock(target, keepingTargetData(target, transform(block, index)));
         }
         return changed;
+    }
+
+    /** Sobre el mismo contenedor, la copia conserva lo suyo en vez de llevarle lo del original ({@link KeptData}). */
+    @SuppressWarnings("unchecked")
+    private <B extends BlockStateHolder<B>> B keepingTargetData(BlockVector3 target, B copy) {
+        if (!copy.getBlockType().getMaterial().hasContainer()) {
+            return copy;
+        }
+        BaseBlock current = getExtent().getFullBlock(target);
+        if (!KeptData.copyKeeps(current.getNbtReference() != null, copy.getBlockType(), current.getBlockType())) {
+            return copy;
+        }
+        return (B) copy.toImmutableState().toBaseBlock(current.getNbtReference());
     }
 
     private boolean seen(long key, int count) {

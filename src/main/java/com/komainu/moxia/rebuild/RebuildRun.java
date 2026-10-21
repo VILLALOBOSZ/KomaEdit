@@ -55,6 +55,13 @@ public final class RebuildRun {
 
         /** Escribe la entrada {@code palette} del modelo ({@link RebuildModel#AIR} para vaciar). */
         void write(long position, int palette) throws MaxChangedBlocksException;
+
+        /**
+         * Justo antes de vaciar una posición que sigue como se leyó, con su entrada de lo que había: lo que guarda (lo
+         * de un cofre, el texto de un cartel) puede haber cambiado desde la lectura, y es eso lo que se volverá a poner.
+         */
+        default void taking(long position, int palette) {
+        }
     }
 
     public static final double MIN_SPEED = 1.0 / 16.0;
@@ -237,6 +244,7 @@ public final class RebuildRun {
         int current = world.rawAt(position);
         if (before == RebuildModel.AIR ? world.air(current) : current == model.raw(before)) {
             if (before != RebuildModel.AIR) {
+                world.taking(position, before);
                 world.write(position, RebuildModel.AIR);
                 writes++;
             }

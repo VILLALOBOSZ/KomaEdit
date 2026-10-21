@@ -26,7 +26,7 @@ public final class HelpTopics {
 
     public static final List<Topic> TOPICS = List.of(
             new Topic("path", "Trayectorias", List.of("ruta", "trayectoria", "trayectorias", "puntos"), List.of(
-                    new Entry("/komaedit path mode toggle", "Captura con clic derecho (o la tecla P)"),
+                    new Entry("/komaedit path mode toggle", "Captura con clic derecho (o Ctrl+P)"),
                     new Entry("/komaedit path add", "Punto en la cara del bloque que miras"),
                     new Entry("/komaedit path here", "Punto en tu posición"),
                     new Entry("/komaedit path point <x> <y> <z>", "Punto en coordenadas exactas"),
@@ -496,7 +496,7 @@ public final class HelpTopics {
                     new Entry("/komaedit " + FluidCommands.BALL_USAGE,
                             "Esfera de fluido: -s solo fuentes, -a solo el aire, -c cerrar bordes (sin derrames)"),
                     new Entry("/komaedit " + FluidCommands.FALL_USAGE,
-                            "Cascada desde el borde que pulsas con poza abajo; con puntos (P), un río corto con saltos"),
+                            "Cascada desde el borde que pulsas con poza abajo; con puntos (Ctrl+P), un río corto con saltos"),
                     new Entry("/komaedit " + FluidCommands.CLEAN_USAGE,
                             "Quita de la selección las corrientes que no salen de ninguna fuente")
             )),

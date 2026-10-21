@@ -282,7 +282,7 @@ public final class FluidService {
                         + " hasta " + coordinates(flood.at());
                 current.sendMessage(Feedback.prefix().append(Text.literal("Cascada: no se ha puesto nada, " + text + ".")
                         .formatted(Formatting.YELLOW)).append(Text.literal(" Busca un sitio con suelo llano abajo, deja"
-                        + " la poza (-o 2), da más margen (-r) o marca el cauce con puntos (P).")
+                        + " la poza (-o 2), da más margen (-r) o marca el cauce con puntos (Ctrl+P).")
                         .formatted(Formatting.GRAY)), false);
                 LeakMarkers.show(current, new long[]{flood.at()}, null, flood.at());
             });

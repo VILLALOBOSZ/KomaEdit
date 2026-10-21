@@ -230,6 +230,10 @@ final class RebuildFixtures {
         long read = 1_000L;
         long write = 2_000L;
         int writes;
+        /** Cada aviso de {@link #taking}: posición y entrada de lo que había. */
+        final Long2IntLinkedOpenHashMap taken = new Long2IntLinkedOpenHashMap();
+        /** Vaciados sin el aviso justo antes. */
+        int unannounced;
 
         World(RebuildModel model, Clock clock) {
             this.model = model;
@@ -271,7 +275,15 @@ final class RebuildFixtures {
         public void write(long position, int palette) {
             clock.spend(write);
             writes++;
+            if (palette == RebuildModel.AIR && (taken.isEmpty() || taken.lastLongKey() != position)) {
+                unannounced++;
+            }
             buffer.put(position, palette == RebuildModel.AIR ? AIR_RAW : model.raw(palette));
+        }
+
+        @Override
+        public void taking(long position, int palette) {
+            taken.put(position, palette);
         }
 
         void flush() {

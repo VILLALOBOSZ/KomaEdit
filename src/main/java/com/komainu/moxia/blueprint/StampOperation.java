@@ -6,9 +6,10 @@ import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.WorldSnapshot;
-import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
+import com.komainu.moxia.symmetry.SymmetryStates;
+import com.komainu.moxia.symmetry.SymmetryTransform;
+import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.world.block.BlockState;
 
 import java.util.HashMap;
@@ -66,13 +67,13 @@ public record StampOperation(StampSettings settings, List<BlueprintTemplate> tem
                 throw new IllegalStateException("Cálculo cancelado");
             }
             int[] m = stamp.matrix();
-            AffineTransform transform = new AffineTransform(m[0], m[1], m[2], 0, m[3], m[4], m[5], 0, m[6], m[7], m[8],
-                    0);
+            SymmetryTransform transform = stamp.symmetry();
             Map<BlockState, BlockState> states = transformed.computeIfAbsent(stamp.blueprint() + ":"
                     + java.util.Arrays.toString(m), key -> new IdentityHashMap<>());
             templates.get(stamp.blueprint()).forEach(settings.placeAir(), (x, y, z, state) -> {
-                BlockState placed = states.computeIfAbsent(state,
-                        value -> BlockTransformExtent.transform(value, transform));
+                // Con la transformación de la simetría: la de WorldEdit no gira los raíles ni las bisagras.
+                BlockState placed = states.computeIfAbsent(state, value -> transform.identity() ? value
+                        : FabricAdapter.adapt(SymmetryStates.transform(FabricAdapter.adapt(value), transform)));
                 builder.addOverride(
                         stamp.x() + m[0] * x + m[1] * y + m[2] * z,
                         stamp.y() + m[3] * x + m[4] * y + m[5] * z,
