@@ -2,6 +2,7 @@ package com.komainu.moxia.client.gui;
 
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.brush.BrushToolPayload;
+import com.komainu.moxia.client.display.DisplayEditorClient;
 import com.komainu.moxia.client.gizmo.GhostClient;
 import com.komainu.moxia.client.gui.studio.ClientStudioAim;
 import com.komainu.moxia.client.gui.studio.ClientStudioHost;
@@ -140,6 +141,7 @@ public final class ProceduralStudioScreen extends Screen {
         sendCommand("komaedit path mode off");
         // Fuera del Studio todo vuelve a ir donde se mira.
         ClientStudioAim.clear();
+        DisplayEditorClient.studioClosed();
     }
 
     @Override
@@ -148,6 +150,9 @@ public final class ProceduralStudioScreen extends Screen {
         updateHover(mouseX, mouseY);
         if (GhostClient.active() && overWorld(mouseX)) {
             GhostClient.studioHover(gizmoRay(mouseX, mouseY));
+        }
+        if (DisplayEditorClient.active()) {
+            DisplayEditorClient.studioHover(overWorld(mouseX) ? gizmoRay(mouseX, mouseY) : null);
         }
         view.render(ui, width, height, mouseX, mouseY, host);
     }
@@ -182,6 +187,10 @@ public final class ProceduralStudioScreen extends Screen {
             return;
         }
         if (GhostClient.studioPress(gizmoRay(mouseX, mouseY))) {
+            return;
+        }
+        // Con el editor de displays abierto, el clic elige un display o agarra su gizmo.
+        if (DisplayEditorClient.studioPress(gizmoRay(mouseX, mouseY))) {
             return;
         }
         switch (view.worldAction(host)) {
@@ -382,6 +391,10 @@ public final class ProceduralStudioScreen extends Screen {
             GhostClient.studioDrag(gizmoRay(mouseX, mouseY));
             return true;
         }
+        if (DisplayEditorClient.studioDragging() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            DisplayEditorClient.studioDrag(gizmoRay(mouseX, mouseY));
+            return true;
+        }
         if (GhostClient.studioTerrainDragging() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             GhostClient.studioTerrain(cursorHit(mouseX, mouseY));
             return true;
@@ -450,6 +463,7 @@ public final class ProceduralStudioScreen extends Screen {
         view.mouseReleased(mouseX, mouseY, studioButton(button), host);
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             GhostClient.studioRelease();
+            DisplayEditorClient.studioRelease();
             draggingPoint = false;
             draggedPoint = -1;
             draggedAxis = -1;
@@ -501,6 +515,9 @@ public final class ProceduralStudioScreen extends Screen {
         // Las teclas del fantasma van antes que las del panel (salvo escribiendo en un campo): Intro lo coloca y
         // Esc lo quita sin cerrar el Studio.
         if (!view.typing() && !view.modal() && GhostClient.studioKey(keyCode, modifiers)) {
+            return true;
+        }
+        if (!view.typing() && !view.modal() && DisplayEditorClient.studioKey(keyCode, modifiers)) {
             return true;
         }
         StudioKey key = studioKey(keyCode, control, shift);

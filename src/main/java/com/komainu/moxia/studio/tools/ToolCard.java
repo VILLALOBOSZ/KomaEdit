@@ -152,6 +152,14 @@ public abstract class ToolCard {
         return actions();
     }
 
+    /**
+     * La orden que manda la tarjeta al elegirla en el Studio, o {@code null}: el editor de displays se abre solo, así
+     * un clic en un display lo elige sin buscar el botón.
+     */
+    public String selectCommand() {
+        return null;
+    }
+
     /** Ajustes rápidos («Joven», «Viejo»…): cada uno cambia unos pocos valores sobre los de serie. */
     public List<ToolPreset> presets() {
         return List.of();
