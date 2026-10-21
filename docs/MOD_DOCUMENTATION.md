@@ -179,17 +179,30 @@ El botón del reloj de la barra abre la lista de los últimos cambios en el mund
 
 ### Vista previa
 
-El ojo del pie elige qué hace el botón principal en las herramientas que admiten la vista previa universal; un clic pasa al siguiente modo y el clic derecho la apaga:
+El ojo del pie elige qué hace el botón principal en las herramientas que admiten la vista previa universal y en Figuras; un clic pasa al siguiente modo y el clic derecho la apaga. A su lado, arriba a la derecha del pie, dice en qué está en dos palabras: **en vivo** (en el color de acento), **al construir** o **sin vista previa**. El ojo cambia de dibujo en cada modo: tachado sin vista previa, abierto al construir y con un punto verde en vivo (ámbar si está en pausa).
 
-- **Vista previa en vivo** (la de serie): Construir enseña la vista previa (con el [fantasma del gizmo](#colocar-con-gizmo) si es un objeto: árbol, roca, texto, tejado…) y, **mientras se vea**, cada cambio de un ajuste la rehace sola con lo nuevo. El fantasma nuevo sale donde dejaste el anterior, con su giro y sus opciones: puedes moverlo con el ratón y seguir ajustando sin perder el sitio. Espera 0,35 s sin cambios, deja al menos 1 s entre dos envíos (más deprisa, el antispam de Minecraft acabaría echando a quien no es OP), no manda nada mientras el servidor calcula la anterior ni repite una orden igual, y solo vale en obras pequeñas: selecciones de hasta 64 000 bloques y, en Figuras, menos de 250 000 bloques en el holograma. Al arrastrar un número o escribir no se manda nada hasta soltar. No abre ninguna vista previa por su cuenta: solo rehace la que pediste; al colocarla o quitarla, se acaba hasta el próximo Construir.
+- **Vista previa en vivo** (la de serie): Construir enseña la vista previa (con el [fantasma del gizmo](#colocar-con-gizmo) si es un objeto: árbol, roca, texto, tejado…) y, **mientras se vea**, cada cambio de un ajuste la rehace sola con lo nuevo en unas décimas de segundo: sale a los 0,25 s de dejar de tocar, más lo que tarde el servidor en calcularla. El fantasma nuevo sale donde dejaste el anterior, con su giro y sus opciones: puedes moverlo con el ratón y seguir ajustando sin perder el sitio. Al arrastrar un número o escribir no se manda nada hasta soltar. No abre ninguna vista previa por su cuenta: solo rehace la que pediste; al colocarla o quitarla, se acaba hasta el próximo Construir.
 - **Vista previa al construir:** Construir enseña la vista previa (en la orden, `-v` o `--preview`) y espera a **Confirmar** (`Intro`); cambiar un ajuste no la rehace.
 - **Sin vista previa:** Construir cambia el mundo en el acto (lo que es un objeto sale igualmente como fantasma si **Colocar con gizmo** está en **Siempre**).
 
+Con un fantasma a la vista (o una vista previa esperando a **Confirmar**), el pie cambia y el ojo grande no cabe: queda un **ojo pequeño** arriba a la derecha con su etiqueta, que dice si la vista previa en vivo lo sigue y, con un clic, la enciende o la apaga sin quitar el fantasma.
+
+**Cómo viaja.** Con un servidor de esta versión, cada petición de la vista previa en vivo (el Construir que la abre y cada cambio después) va por un paquete propio de KomaEdit, no por el chat:
+
+- **No cuenta para el antispam de Minecraft**, que echa a quien no es OP si manda más de una orden por segundo de media.
+- **Solo cuenta la última.** El servidor calcula una como mucho por jugador; si llegan más mientras tanto, se queda solo con la última y las de en medio se descartan sin calcular. Nunca choca con la lectura de la selección de la anterior («ya hay una operación leyendo tu selección»).
+- **Cae en el mismo sitio.** Lo que se coloca «donde miras» (árbol, roca, texto, agua) sale donde cayó el Construir, aunque después gires la cámara o cierres y vuelvas a abrir el Studio (al cerrarlo se olvida el clic en el mundo). Antes el objeto nuevo se calculaba donde mirases en ese momento y el fantasma saltaba a otra parte.
+- **Contesta.** Si no se pudo rehacer (un ajuste no vale, falta un permiso), el pie lo dice; lo de antes sigue a la vista. Al rehacerla, el chat no repite el aviso de cada vista previa ni el «Creando instancia…» de cada figura.
+
+Con un servidor anterior (sin esa red) va por el chat como antes: espera 0,35 s sin cambios, deja al menos 1 s entre dos órdenes y no manda nada mientras el servidor calcula la anterior.
+
+**Obras grandes.** Solo se rehace sola hasta el tamaño elegido en los [ajustes del cliente](#ajustes-del-cliente) (**Vista previa en vivo hasta**, 250 000 bloques de serie; también 64 000, 1 000 000 o 4 000 000): la selección en las herramientas que trabajan sobre ella y el recuento del holograma en Figuras. Por encima, el pie lo dice en ámbar («En vivo en pausa: 300 k bloques, más que tu límite de 250 k») y el ojo pasa a ámbar; **Construir** la rehace a mano. Antes el límite era fijo (64 000 en la selección) y por encima se apagaba sin decir nada.
+
 En **Figuras**, el holograma ya sigue cada cambio (también «Pegar al terreno» al suelo o al techo, que lo calcula el cliente); tras **Construir**, si la figura sale como fantasma, cambiar la figura, su tamaño, sus variaciones o su material rehace también el fantasma (con la vista previa en vivo encendida).
 
-Al rehacerse el fantasma en vivo, el de antes sigue a la vista, quieto donde estaba, hasta que el nuevo llega y está armado; ya no parpadea un fotograma vacío entre los dos. Si el nuevo no llega en 3 s, el viejo se quita.
+Al rehacerse en vivo, lo de antes sigue a la vista hasta que lo nuevo está listo: el fantasma, quieto donde estaba, hasta que llega el nuevo y está armado (si no llega en 3 s, el viejo se quita); la vista previa de bloques de las herramientas sobre la selección (Pintar, Retocar, Erosionar…), hasta que llega la nueva, que la sustituye de golpe (si no llega, se quita entonces). Antes la de bloques desaparecía al descartarse y no se veía nada hasta que llegaba la otra.
 
-El modo se recuerda para todas las herramientas en `studio.json`. Quien tenía guardado «sin vista previa» de una versión anterior (era lo de serie y se guardaba igual que si se hubiera elegido) pasa una vez a en vivo; si se vuelve a apagar, se queda apagada. Sin vista previa: el sello (que va al pincel), Materiales, Bioma, Simetría y Capacidades.
+El modo y el límite se recuerdan para todas las herramientas en `studio.json` (`"preview"` y `"liveLimit"`). Quien tenía guardado «sin vista previa» de una versión anterior (era lo de serie y se guardaba igual que si se hubiera elegido) pasa una vez a en vivo; si se vuelve a apagar, se queda apagada. Sin vista previa: el sello (que va al pincel), Materiales, Bioma, Simetría y Capacidades.
 
 ### Antes de construir
 
@@ -510,6 +523,7 @@ Todo el Studio (barra, etapas, contenido, pie, paleta, historial y biblioteca de
 - Lo que explica cada control es `ControlHelp` (qué hace y sus extremos, de `gui.komaedit.tools.<herramienta>.ends.<ajuste>` o `gui.komaedit.ends.<control>`); `ControlHelpTest` exige que cada ajuste de herramienta diga lo que hace sin repetir su etiqueta, que los números lleven sus extremos (salvo semilla, rumbo y altura absoluta) y que ninguna herramienta enseñe más de cuatro ajustes antes de Más ajustes (las galerías, los buscadores y el interruptor no cuentan).
 - La [bienvenida guiada](#bienvenida-guiada) es `WelcomeTour` (la máquina de estados, sin Minecraft ni dibujo: pasos, golpes, cuándo avanza, permisos y supervivencia), `WelcomeGuide` (la engancha a `StudioView`: le cuenta lo que se ve, prepara cada golpe y sostiene la vista previa) y `WelcomeBubble` (la burbuja, la tarjeta y el borde). Señala con **anclas con nombre** de `StudioUi` (`tool:tree`, `stamp:montana`, `preset:random`, `footer:build`, `ghost:place`, `top:history`, `history:undo`…), registradas enteras aunque el recorte las tape, para poder desplazar hasta ellas. `WelcomeTourTest` prueba la máquina (avanzar con la acción de verdad, saltar, sin permiso, en supervivencia y relanzar), `StudioWelcomeTest` la hace entera pulsando los controles del Studio (y comprueba que nada se manda sin vista previa ni sin Aplicar, que se guarda que ya se vio y que al cerrar vuelve lo de antes) y `StudioWelcomeMockupsTest` pinta sus maquetas; `StudioThemeContrastTest` mide sus textos en los cuatro temas.
 - El ratón en el mundo son modelos sin Minecraft que usa la pantalla: `StudioView.worldAction` (qué hace un clic en cada etapa), `BoxSelect` (la caja, sus caras y el doble clic), `PathDrag` (agarrar, meter y añadir puntos) y `BrushStroke` (el ritmo del pincel). El relevo de mallas del fantasma en vivo es `MeshHandover`.
+- La vista previa en vivo, de punta a punta: `LivePreview` (cuándo manda el Studio), `LivePreviewRequestPayload` y `LivePreviewResultPayload` (su red), `LiveService` con `LiveQueue` (solo la última por jugador), `LiveRequests` (qué admite) y `LiveAnchors` (el sitio del Construir, a través de `StudioAim`) en el servidor, `PreviewHandover` (la vista previa de bloques que sigue a la vista mientras llega la nueva) y `StudioGhostLink` (qué fantasma es del Studio, en el cliente). `LivePreviewEndToEndTest` lo recorre entero con un servidor y un cliente de prueba (`LiveLoop`) que usan esas mismas piezas.
 
 ## Trayectorias y hologramas
 
@@ -1077,7 +1091,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 
 ### Ajustes del cliente
 
-`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera (también el tema del Studio). Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
+`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera (también el tema del Studio y el límite de la vista previa en vivo). Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
 
 | Ajuste | De serie | Qué hace |
 | --- | --- | --- |
@@ -1094,6 +1108,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 | Colocar con gizmo | Siempre | Cuándo sale el fantasma con gizmo: **Siempre**, **Con -v** o **Nunca** (ver [Colocar con gizmo](#colocar-con-gizmo)). Se guarda aparte, en `config/komaedit-gizmo.json`, y el cliente se lo dice al servidor al entrar y al cambiarlo. |
 | Rueda mueve el fantasma | Sí | Con un fantasma en pantalla, la rueda lo acerca o lo aleja en lugar de cambiar de casilla. |
 | Tema del Studio | Pizarra | Los colores del Studio: Pizarra, Prismarina, Bosque o Clásico (ver [Temas de color](#temas-de-color)). Se guarda con las preferencias del Studio, en `config/komaedit/studio.json`, y también se cambia dentro del Studio. |
+| Vista previa en vivo hasta | 250 000 bloques | Hasta qué tamaño se rehace sola la [vista previa en vivo](#vista-previa) del Studio: 64 000, 250 000, 1 000 000 o 4 000 000 bloques. Más grande, el Studio lo avisa y espera a Construir. Se guarda con las preferencias del Studio (`"liveLimit"`). |
 
 ### Teclas
 
