@@ -54,8 +54,9 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named("test") {
     useJUnitPlatform()
-    // Las clases de prueba se reparten entre varias JVM (la mitad de los núcleos, como mucho 4): ninguna depende de
-    // lo que deje otra.
+    // Las clases de prueba se reparten entre varias JVM: la mitad de los núcleos (una en una máquina de 2 o 3, como el
+    // CI de un repositorio privado) y como mucho 4, que cada una se lleva su memoria. Ninguna prueba depende de lo que
+    // deje otra ni del reloj de verdad.
     maxParallelForks = Math.max(1, Math.min(4, Runtime.runtime.availableProcessors().intdiv(2)))
     testLogging {
         events "failed", "skipped"

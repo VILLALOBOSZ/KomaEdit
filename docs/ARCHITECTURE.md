@@ -198,11 +198,11 @@ Todo se prueba con JUnit sin arrancar Minecraft. Dos pruebas de humo vigilan lo 
 
 Una orden nueva necesita, por tanto, su entrada en `HelpTopics` y, si no coloca bloques, su sitio en `PreviewScope`.
 
-Las pruebas no dependen del PC: ni de la hora, ni del idioma del sistema, ni de los recursos que Loom descarga (los nombres de bloque en español solo se leen al pintar las maquetas), ni del orden en que corren (Gradle las reparte entre varias JVM). Lo que tarda y no aporta en cada build va detrás de una variable de entorno:
+Las pruebas no dependen del PC: ni de la hora, ni del idioma del sistema, ni de los recursos que Loom descarga (los nombres de bloque en español solo se leen al pintar las maquetas), ni del orden en que corren (Gradle las reparte entre varias JVM), ni de lo rápida o cargada que esté la máquina. Lo que reparte trabajo entre ticks con un presupuesto en nanosegundos recibe el reloj (`SnapshotCaptureService.tick(online, clock)`, `WorldSnapshot.Capture.step(…, clock)`, `EditRequests.clock`) y sus pruebas le pasan uno falso que avanza lo mismo por lectura. Lo que tarda y no aporta en cada build va detrás de una variable de entorno:
 
 - **Renders y maquetas**: `KOMAEDIT_<TEMA>_RENDER=<carpeta>` (o `KOMAEDIT_RENDER_DIR`, `KOMAEDIT_STUDIO_MOCKUPS`) escribe los PNG; `KOMAEDIT_MC_JAR=<jar del cliente>` les pone las texturas del juego (`preview.TextureTiles`, común a los rasterizadores).
 - **Benchmarks**: `KOMAEDIT_BRUSH_BENCHMARK=<archivo>` y `KOMAEDIT_PAINT_BENCHMARK=<archivo>` miden y escriben la tabla.
-- **Pruebas enteras**: las que recorren todas las combinaciones (formas de `ezspline`, especies y semillas de árboles, los 80 PNG de sellos frente a sus recetas) pasan en cada build por una muestra fija; con `KOMAEDIT_FULL_TESTS=1`, por todo (`FullTests`). Pásalas enteras al tocar esos generadores.
+- **Pasada entera** (`KOMAEDIT_FULL_TESTS=1`, `FullTests`): las que recorren todas las combinaciones (formas de `ezspline`, especies y semillas de árboles, los 80 PNG de sellos frente a sus recetas) pasan en cada build por una muestra fija y aquí por todo; y los límites de tiempo de reloj («figuras grandes en menos de 8 s», `FullTests.assertFasterThan`) solo se comprueban aquí: en una máquina cargada fallan sin que nada esté mal. Pásala al tocar esos generadores o su rendimiento.
 
 ## Pinceles de modelado
 

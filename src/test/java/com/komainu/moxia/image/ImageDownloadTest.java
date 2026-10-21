@@ -79,8 +79,10 @@ class ImageDownloadTest {
             exchange.close();
         });
         server.createContext("/slow", exchange -> {
+            // Mucho más que el plazo del cliente (1 s), para que el margen no dependa de la máquina. Al acabar la
+            // prueba, shutdownNow lo interrumpe.
             try {
-                Thread.sleep(4000);
+                Thread.sleep(30_000);
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
             }
@@ -141,12 +143,10 @@ class ImageDownloadTest {
 
     @Test
     void givesUpAfterTheTimeout() {
-        long start = System.nanoTime();
+        // Lo corta el plazo (lo dice el mensaje), no la respuesta del servidor, que tarda 30 s.
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> local(1024 * 1024, 1).download(base + "/slow"));
-        long millis = (System.nanoTime() - start) / 1_000_000;
         assertTrue(error.getMessage().contains("tardó más de 1 s"), error.getMessage());
-        assertTrue(millis < 3000, "tardó " + millis + " ms");
     }
 
     @Test

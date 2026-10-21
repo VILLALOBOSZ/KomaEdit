@@ -1,5 +1,6 @@
 package com.komainu.moxia.shape.tube;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
@@ -270,7 +271,8 @@ class ClassicTubeEngineTest {
                 Map.of()), LIMIT);
         long elapsed = (System.nanoTime() - start) / 1_000_000L;
         assertTrue(blocks.size() > 20_000, "nudos: " + blocks.size());
-        assertTrue(elapsed < 10_000, "demasiado lento: " + elapsed + " ms para " + blocks.size() + " bloques");
+        FullTests.assertFasterThan(elapsed, 10_000, "demasiado lento: " + elapsed + " ms para " + blocks.size()
+                + " bloques");
     }
 
     // ---------------------------------------------------------------------------------------------------------

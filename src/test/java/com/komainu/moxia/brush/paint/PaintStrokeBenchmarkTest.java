@@ -1,5 +1,6 @@
 package com.komainu.moxia.brush.paint;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.brush.ez.BrushNoise;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -98,7 +99,7 @@ class PaintStrokeBenchmarkTest {
         }
         double again = (System.nanoTime() - start) / 1.0E6 / 1_000;
         System.out.printf(Locale.ROOT, "Huella montana: %.2f ms la primera vez, %.4f ms después%n", prepare, again);
-        assertTrue(again < 0.5, "pedir otra vez la huella ya medida no cuesta: " + again + " ms");
+        FullTests.assertFasterThan(again, 0.5, "pedir otra vez la huella ya medida no cuesta: " + again + " ms");
     }
 
     private static PaintPainter.Settings settings(PaintGradient gradient, int radius) {
