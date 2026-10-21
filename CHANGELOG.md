@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.9.0 (estable, 2026-10-21)
+
 ### Temas de color del Studio (el rojo ya solo es peligro)
 
 - **Cuatro temas, Pizarra de serie.** El acento rosa sobre gris muy oscuro deja paso a **Pizarra** (grises azulados y acento azul lapislázuli). Se pueden elegir también **Prismarina** (azul de mar y turquesa), **Bosque** (musgo y verde salvia) y **Clásico** (claro, con la piedra y el texto del inventario y el morado de los encantamientos). Pizarra va de serie porque el azul no se confunde con ningún estado, se aleja de la madera, la tierra y la hierba del mundo de al lado y es el acento que se espera en un editor.
