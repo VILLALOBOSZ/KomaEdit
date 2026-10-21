@@ -9,6 +9,7 @@ import com.komainu.moxia.permission.PermissionNodes;
 import com.komainu.moxia.roof.RoofSettings;
 import com.komainu.moxia.roof.RoofType;
 import com.komainu.moxia.symmetry.SymmetryMode;
+import com.komainu.moxia.studio.ui.StudioIcons;
 import com.komainu.moxia.text.TextRequest;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,12 +54,27 @@ class ToolCardsTest {
             assertFalse(card.command(card.defaults(), false).startsWith("/"), "sin barra: " + card.id());
             assertTrue(card.command(card.defaults(), false).startsWith("komaedit "), card.id());
         }
-        assertEquals(List.of("tree", "rock", "roof", "loft", "stamp", "paintbrush", "ramp", "river", "erosion", "paint",
-                "text", "analyze", "gravity", "snow", "drain", "waterlog", "biome", "symmetry", "capabilities"),
-                ToolCatalog.ALL.stream().map(ToolCard::id).toList());
-        for (ToolFamily family : ToolFamily.values()) {
-            assertFalse(ToolCatalog.family(family).isEmpty(), family.id());
+        // Las de este catálogo, en su orden; una tarjeta nueva se añade en ToolCatalog sin tocar esta lista.
+        List<String> known = List.of("tree", "rock", "roof", "loft", "text", "stamp", "paint", "ramp", "river",
+                "erosion", "touchup", "analyze", "symmetry", "capabilities");
+        assertEquals(known, ToolCatalog.ALL.stream().map(ToolCard::id).filter(known::contains).toList());
+        for (ToolCategory category : ToolCategory.values()) {
+            assertFalse(ToolCatalog.category(category).isEmpty(), category.id());
         }
+    }
+
+    /** Una tarjeta nueva es una línea del catálogo: su grupo, ella y su icono, que no se repite. */
+    @Test
+    void everyCardIsRegisteredOnceInACategoryWithItsOwnIcon() {
+        Set<StudioIcons.Icon> icons = new HashSet<>();
+        int previous = -1;
+        for (ToolCard card : ToolCatalog.ALL) {
+            assertTrue(icons.add(ToolCatalog.icon(card)), card.id() + " repite icono");
+            assertTrue(ToolCatalog.categoryOf(card).ordinal() >= previous, card.id() + ": salen por categoría");
+            previous = ToolCatalog.categoryOf(card).ordinal();
+        }
+        assertEquals(ToolCatalog.ENTRIES.size(), ToolCatalog.ALL.size());
+        assertNotEquals(StudioIcons.Icon.TOOLS, ToolCatalog.icon(card("touchup")));
     }
 
     @Test
@@ -79,14 +96,11 @@ class ToolCardsTest {
         assertEquals("komaedit terreno rio natural", card("river").command(card("river").defaults(), false));
         assertEquals("komaedit terreno erosion hidraulica natural",
                 card("erosion").command(card("erosion").defaults(), false));
-        assertEquals("komaedit terreno pintar natural", card("paint").command(card("paint").defaults(), false));
+        assertEquals("komaedit pincel paint hierba_piedra 8 pendiente 60",
+                card("paint").command(card("paint").defaults(), false));
         assertEquals("komaedit text \"KomaEdit\" stone", card("text").command(card("text").defaults(), false));
         assertEquals("komaedit analyze", card("analyze").command(card("analyze").defaults(), false));
-        assertEquals("komaedit gravity", card("gravity").command(card("gravity").defaults(), false));
-        assertEquals("komaedit snow 2", card("snow").command(card("snow").defaults(), false));
-        assertEquals("komaedit drain water", card("drain").command(card("drain").defaults(), false));
-        assertEquals("komaedit waterlog", card("waterlog").command(card("waterlog").defaults(), false));
-        assertEquals("komaedit biome plains", card("biome").command(card("biome").defaults(), false));
+        assertEquals("komaedit retocar nieve 2", card("touchup").command(card("touchup").defaults(), false));
         assertEquals("komaedit symmetry on x", card("symmetry").command(card("symmetry").defaults(), false));
     }
 
@@ -96,10 +110,16 @@ class ToolCardsTest {
         assertEquals("komaedit roof gable spruce_planks -v", card("roof").command(card("roof").defaults(), true));
         // En el texto -v es «de pie»: la vista previa va con la bandera larga.
         assertTrue(card("text").command(card("text").defaults(), true).endsWith(" --preview"));
-        for (String id : List.of("stamp", "analyze", "biome", "symmetry", "capabilities")) {
-            assertFalse(card(id).previewable(), id);
+        for (String id : List.of("stamp", "analyze", "symmetry", "capabilities")) {
+            assertFalse(card(id).previewable(card(id).defaults()), id);
             assertEquals(card(id).command(card(id).defaults(), false), card(id).command(card(id).defaults(), true));
         }
+        ToolValues biome = card("touchup").defaults().with("touch", "bioma");
+        assertFalse(card("touchup").previewable(biome), "el bioma no tiene bloques que enseñar");
+        assertEquals(card("touchup").command(biome, false), card("touchup").command(biome, true));
+        // Con el interruptor en el pincel no hay vista previa universal: el pincel tiene la suya.
+        assertFalse(card("tree").previewable(card("tree").defaults().with("use", "brush")));
+        assertTrue(card("paint").previewable(card("paint").defaults().with("use", "selection")));
     }
 
     @Test
@@ -140,9 +160,12 @@ class ToolCardsTest {
     void theTreeBrushAndPresetUseTheSameSettings() {
         ToolCard tree = card("tree");
         ToolValues values = tree.defaults().with("species", "spruce").with("height", 30);
-        ToolAction brush = tree.actions().getFirst();
-        assertEquals("komaedit pincel tree spruce 30", brush.command().apply(values));
-        ToolAction save = tree.actions().get(1);
+        assertEquals("komaedit pincel tree spruce 30", tree.command(values.with("use", "brush"), false),
+                "con el interruptor en el pincel, los mismos ajustes");
+        assertEquals("komaedit tree spruce 30", tree.command(values, false));
+        assertEquals(ToolTarget.HAND, tree.target(values.with("use", "brush")));
+        assertEquals(List.of(TreeCard.BRUSH_NODE), tree.permissions(values.with("use", "brush")));
+        ToolAction save = tree.actions().getFirst();
         assertTrue(save.needsName());
         assertEquals("komaedit tree save bosque spruce 30 -f",
                 ToolCard.withName(save.command().apply(values), "bosque"));
@@ -274,30 +297,42 @@ class ToolCardsTest {
                 stamp.command(stamp.defaults().with("stamp", "pico").with("radius", 20), false));
     }
 
+    /**
+     * Cada modo de Retocar manda los mismos argumentos que la orden de antes (la de la tarjeta suelta), detrás de
+     * {@code retocar <modo>}: el servidor los lee con el mismo código.
+     */
     @Test
     void utilityCommandsMatchTheDocumentedSyntax() {
-        ToolCard snow = card("snow");
-        assertEquals("komaedit snow 3 -r 4 -s 4 -p", snow.command(snow.defaults().with("layers", 3)
-                .with("radius", 4).with("shade", 4).with("plants", true), false));
-        ToolCard waterlog = card("waterlog");
-        assertEquals("komaedit waterlog ~-2 -b", waterlog.command(waterlog.defaults().with("level", "feet")
+        ToolCard touchUp = card("touchup");
+        ToolValues snow = touchUp.defaults();
+        assertEquals("komaedit retocar nieve 3 -r 4 -s 4 -p", touchUp.command(snow.with("layers", 3)
+                .with("drift", 4).with("shade", 4).with("plants", true), false));
+        ToolValues flood = touchUp.defaults().with("touch", "inundar");
+        assertEquals("komaedit retocar inundar ~-2 -b", touchUp.command(flood.with("level", "feet")
                 .with("offset", -2).with("blocks_only", true), false));
-        assertEquals("komaedit waterlog 62 -v", waterlog.command(waterlog.defaults().with("level", "fixed"), true));
-        ToolCard drain = card("drain");
-        assertEquals("komaedit drain all -k -m stone", drain.command(drain.defaults().with("mode", "all")
+        assertEquals("komaedit retocar inundar 62 -v", touchUp.command(flood.with("level", "fixed"), true));
+        ToolValues drain = touchUp.defaults().with("touch", "drenar");
+        assertEquals("komaedit retocar drenar all -k -m stone", touchUp.command(drain.with("fluid", "all")
                 .with("keep_plants", true).with("mask", "stone"), false));
-        ToolCard biome = card("biome");
-        ToolValues cherry = biome.defaults().with("biome", "minecraft:cherry_grove").with("vertical", true)
-                .with("radius", 12);
-        assertEquals("komaedit biome cherry_grove -v", biome.command(cherry, false));
-        assertEquals("komaedit pincel biome cherry_grove 12 -v", biome.actions().getFirst().command().apply(cherry));
-        assertEquals("komaedit biome terralith:moonlight_grove",
-                biome.command(biome.defaults().with("biome", "terralith:moonlight_grove"), false));
+        ToolValues cherry = touchUp.defaults().with("touch", "bioma").with("biome", "minecraft:cherry_grove")
+                .with("vertical", true).with("radius", 12);
+        assertEquals("komaedit retocar bioma cherry_grove -v", touchUp.command(cherry, false));
+        assertEquals("komaedit pincel biome cherry_grove 12 -v", touchUp.command(cherry.with("use", "brush"), false),
+                "el bioma con el pincel es el pincel de biomas de siempre");
+        assertEquals("komaedit retocar bioma terralith:moonlight_grove",
+                touchUp.command(touchUp.defaults().with("touch", "bioma").with("biome", "terralith:moonlight_grove"),
+                        false));
+        ToolValues gravity = touchUp.defaults().with("touch", "gravedad");
+        assertEquals("komaedit retocar gravedad -a -v", touchUp.command(gravity.with("unsupported", true), true));
+        assertEquals("komaedit retocar desinfestar", touchUp.command(touchUp.defaults().with("touch", "desinfestar"),
+                false));
+        assertEquals("komaedit retocar hojas off", touchUp.command(touchUp.defaults().with("touch", "hojas")
+                .with("leaves", "off"), false));
+        assertEquals("komaedit retocar encerar on", touchUp.command(touchUp.defaults().with("touch", "encerar"),
+                false));
         ToolCard analyze = card("analyze");
         assertEquals("komaedit analyze -n 25 -m #existing",
                 analyze.command(analyze.defaults().with("lines", 25).with("mask", "#existing"), false));
-        ToolCard gravity = card("gravity");
-        assertEquals("komaedit gravity -a -v", gravity.command(gravity.defaults().with("unsupported", true), true));
     }
 
     @Test
@@ -387,8 +422,11 @@ class ToolCardsTest {
         assertTrue(erosion.blocked(erosion.defaults().with("iterations", 100), EVERYTHING), "más de 64 gotas");
         assertFalse(erosion.blocked(erosion.defaults().with("kind", "termica").with("iterations", 100), EVERYTHING));
         assertTrue(erosion.blocked(erosion.defaults().with("kind", "termica").with("strength", 30), EVERYTHING));
-        ToolCard biome = card("biome");
-        assertTrue(biome.blocked(biome.defaults().with("biome", "Not A Biome"), EVERYTHING));
+        ToolCard touchUp = card("touchup");
+        assertTrue(touchUp.blocked(touchUp.defaults().with("touch", "bioma").with("biome", "Not A Biome"),
+                EVERYTHING));
+        assertFalse(touchUp.blocked(touchUp.defaults().with("biome", "Not A Biome"), EVERYTHING),
+                "el bioma solo cuenta en su modo");
         ToolCard stamp = card("stamp");
         assertTrue(stamp.blocked(stamp.defaults().with("custom", "../secreto"), EVERYTHING));
     }
@@ -473,9 +511,14 @@ class ToolCardsTest {
         ToolCard roof = card("roof");
         assertTrue(roof.apply(roof.defaults().with("replace", true), preset(roof, "steep")).toggle("replace"));
         // Un interruptor que algún preset sí pone es parte de la forma: los demás lo devuelven al de serie.
-        ToolCard snow = card("snow");
+        ToolCard snow = card("touchup");
         assertFalse(snow.apply(snow.apply(snow.defaults(), preset(snow, "drifts")), preset(snow, "dusting"))
                 .toggle("plants"));
+        // Y lo que no es la forma, tampoco el interruptor de cómo se usa: un preset no cambia el pincel por la
+        // selección.
+        ToolCard paint = card("paint");
+        assertEquals("selection", paint.apply(paint.defaults().with("use", "selection"), preset(paint, "paint_peaks"))
+                .choice("use"));
     }
 
     private static ToolPreset preset(ToolCard card, String id) {
@@ -489,16 +532,17 @@ class ToolCardsTest {
         assertEquals("tree", search(all, "árbol").getFirst().id());
         assertEquals("river", search(all, "canon").getFirst().id());
         assertEquals("roof", search(all, "tejado").getFirst().id());
-        assertEquals("biome", search(all, "bioma").getFirst().id());
+        assertEquals("touchup", search(all, "bioma").getFirst().id());
         assertEquals("capabilities", search(all, "extruir").getFirst().id());
-        assertEquals("snow", search(all, "nieve").getFirst().id());
-        assertTrue(search(all, "agua").stream().map(ToolCard::id).toList().containsAll(List.of("drain", "waterlog",
-                "river")));
+        assertEquals("touchup", search(all, "nieve").getFirst().id());
+        assertEquals("touchup", search(all, "drenar").getFirst().id());
+        assertEquals("paint", search(all, "superficie").getFirst().id(), "Pintar superficie es ahora Pintar");
+        assertTrue(search(all, "agua").stream().map(ToolCard::id).toList().containsAll(List.of("touchup", "river")));
         assertTrue(search(all, "zzzz").isEmpty());
         assertEquals(all.size(), search(all, "").size());
     }
 
     private static List<ToolCard> search(List<ToolCard> cards, String query) {
-        return ToolCatalog.search(cards, query, card -> card.id(), card -> "", ToolFamily::id);
+        return ToolCatalog.search(cards, query, card -> card.id(), card -> "", ToolCategory::id);
     }
 }

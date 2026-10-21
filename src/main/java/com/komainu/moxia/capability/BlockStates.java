@@ -36,7 +36,7 @@ public final class BlockStates {
         return identifier == null ? Optional.empty() : Registries.BLOCK.getOrEmpty(identifier);
     }
 
-    /** Propiedades del estado para «Retocar», en el orden del bloque. */
+    /** Propiedades del estado para «Cambiar estado», en el orden del bloque. */
     public static List<PropertyCycle.Property> properties(BlockState state) {
         List<PropertyCycle.Property> properties = new ArrayList<>();
         for (Property<?> property : state.getProperties()) {

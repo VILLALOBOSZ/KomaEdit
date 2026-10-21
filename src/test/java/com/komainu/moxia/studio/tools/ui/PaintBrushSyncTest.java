@@ -5,7 +5,7 @@ import com.komainu.moxia.brush.paint.FootprintLibrary;
 import com.komainu.moxia.brush.paint.PaintConfig;
 import com.komainu.moxia.brush.paint.PaintGradient;
 import com.komainu.moxia.studio.StudioPreferences;
-import com.komainu.moxia.studio.tools.PaintBrushCard;
+import com.komainu.moxia.studio.tools.PaintCard;
 import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
 import com.komainu.moxia.studio.tools.ToolContext;
@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * La tarjeta «Pintar terreno»: lo que manda Construir lo entiende el pincel, cada ajuste llega al pincel de la mano
+ * La tarjeta «Pintar» con el pincel: lo que manda Construir lo entiende el pincel, cada ajuste llega al pincel de la mano
  * con {@code pincel actualizar} y las galerías tienen sus miniaturas (la huella y la muestra del degradado).
  */
 class PaintBrushSyncTest {
@@ -42,37 +42,42 @@ class PaintBrushSyncTest {
 
     @Test
     void theDefaultCardPaintsGrassToStoneBySlopeWithNothingToLearn() {
-        ToolCard card = ToolCatalog.byId("paintbrush");
+        ToolCard card = ToolCatalog.byId("paint");
         assertNotNull(card, "la tarjeta está en el catálogo, junto al sello de relieve");
         List<String> ids = ToolCatalog.ALL.stream().map(ToolCard::id).toList();
-        assertEquals(ids.indexOf("stamp") + 1, ids.indexOf("paintbrush"));
+        assertEquals(ids.indexOf("stamp") + 1, ids.indexOf("paint"));
+        assertEquals(card, ToolCatalog.byId("paintbrush"), "el id de antes lleva a la misma tarjeta");
         String command = card.command(card.defaults(), false);
         assertEquals("komaedit pincel paint hierba_piedra 8 pendiente 60", command);
         PaintConfig config = parse(command);
         assertEquals(PaintConfig.defaults(), config, "lo de serie de la tarjeta es lo de serie del pincel");
-        assertEquals(List.of("paint_palette", "custom_palette", "stamp", "gradient", "radius", "strength", "seed"),
-                card.essentials(), "a la vista solo lo de empezar; bloquear la semilla, en Más ajustes");
+        assertEquals(List.of("use", "gradient", "paint_palette", "custom_palette", "palette", "stamp", "radius",
+                "strength", "seed"), card.essentials(), "a la vista solo lo de empezar; bloquear la semilla, en Más"
+                + " ajustes");
         assertTrue(card.problems(card.defaults(), ALL).isEmpty());
     }
 
     @Test
     void everyPresetAndGalleryOptionBuildsABrushTheServerUnderstands() {
-        ToolCard card = ToolCatalog.byId("paintbrush");
+        ToolCard card = ToolCatalog.byId("paint");
         for (ToolPreset preset : card.presets()) {
-            parse(card.command(card.apply(card.defaults(), preset), false));
+            String command = card.command(card.apply(card.defaults(), preset), false);
+            if (!command.contains(" " + PaintCard.NATURAL)) {
+                parse(command);
+            }
         }
         ToolParam.Choice palettes = (ToolParam.Choice) card.defaults().param("paint_palette");
         for (String option : palettes.options()) {
             ToolValues values = card.defaults().with("paint_palette", option);
-            assertEquals(option.equals(PaintBrushCard.CUSTOM) ? "##Grayscale" : option,
+            assertEquals(option.equals(PaintCard.CUSTOM) ? "##Grayscale" : option,
                     parse(card.command(values, false)).palette(), option);
-            assertNotNull(ChoiceThumbnails.get("paintbrush", "paint_palette", option), "muestra de " + option);
+            assertNotNull(ChoiceThumbnails.get("paint", "paint_palette", option), "muestra de " + option);
         }
         ToolParam.Choice stamps = (ToolParam.Choice) card.defaults().param("stamp");
         assertEquals(FootprintLibrary.builtIn().names(), stamps.options());
         for (String option : stamps.options()) {
             assertEquals(option, parse(card.command(card.defaults().with("stamp", option), false)).footprint());
-            assertNotNull(ChoiceThumbnails.get("paintbrush", "stamp", option), "miniatura de " + option);
+            assertNotNull(ChoiceThumbnails.get("paint", "stamp", option), "miniatura de " + option);
         }
         for (String gradient : List.of("pendiente", "altura", "ruido", "huella")) {
             assertEquals(PaintGradient.byId(gradient),
@@ -82,7 +87,7 @@ class PaintBrushSyncTest {
 
     @Test
     void everyOptionReachesThePaintBrushInTheHand() {
-        ToolCard card = ToolCatalog.byId("paintbrush");
+        ToolCard card = ToolCatalog.byId("paint");
         StudioDriver studio = studio();
         ToolsPanel panel = studio.view.tools();
         panel.select(card, studio.host);
@@ -98,7 +103,7 @@ class PaintBrushSyncTest {
         // Primero la paleta propia (para que su texto cuente) y los modos que enseñan sus ajustes.
         for (String gradient : List.of("pendiente", "altura", "ruido")) {
             panel.setValues(card, panel.values(card).with("gradient", gradient).with("paint_palette",
-                    PaintBrushCard.CUSTOM));
+                    PaintCard.CUSTOM));
             studio.advance(10);
             studio.advance(BrushSync.MIN_INTERVAL_MILLIS);
             for (ToolParam param : card.params()) {
@@ -143,7 +148,8 @@ class PaintBrushSyncTest {
                 yield values.with(number.id(), base + step <= number.range().max() ? base + step : base - step);
             }
             case ToolParam.Choice choice -> {
-                if (choice.id().equals("gradient") || choice.id().equals("paint_palette")) {
+                if (choice.id().equals("gradient") || choice.id().equals("paint_palette")
+                        || choice.id().equals("use")) {
                     yield null;
                 }
                 int index = choice.options().indexOf(values.choice(choice.id()));
@@ -163,7 +169,7 @@ class PaintBrushSyncTest {
     /** Lo que entiende el pincel de la orden: lleva el valor nuevo de cada ajuste que se ve. */
     private static void assertBrushUses(ToolValues values, String command, String label) {
         PaintConfig config = parse(command);
-        String palette = values.choice("paint_palette").equals(PaintBrushCard.CUSTOM)
+        String palette = values.choice("paint_palette").equals(PaintCard.CUSTOM)
                 ? values.text("custom_palette").strip() : values.choice("paint_palette");
         assertEquals(palette, config.palette(), label);
         assertEquals((int) values.number("radius"), config.radius(), label);

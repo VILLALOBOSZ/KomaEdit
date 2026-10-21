@@ -56,11 +56,61 @@ public record PaintConfig(String palette, int radius, PaintGradient gradient, do
     /** Banderas con valor. */
     public static final Set<Character> VALUED = Set.of('h', 's', 'e', 'u', 'j', 'd', 'b', 'm', 'y', 'a', 'n', 'z');
 
+    /** Las palabras del modo Natural: la superficie por reglas de una paleta de superficie, no un degradado. */
+    public static final Set<String> NATURAL_WORDS = Set.of("natural", "superficie", "surface");
+
     public static PaintConfig defaults() {
         return parse(BrushOptions.parse("", SWITCHES, VALUED));
     }
 
+    /** Si los posicionales piden el modo Natural ({@code pincel pintar natural 10 natural}). */
+    public static boolean natural(BrushOptions options) {
+        for (int index = 0; index < options.count(); index++) {
+            if (NATURAL_WORDS.contains(BrushOptions.normalize(options.positional(index)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * El pincel del modo Natural como pincel de zona ({@code <radio> pintar <paleta> natural [-m máscara]}): el
+     * primer número es el radio y la otra palabra, la paleta de superficie (de serie, {@code natural}).
+     */
+    public static String naturalZone(BrushOptions options) {
+        int radius = DEFAULT_RADIUS;
+        String palette = null;
+        boolean numbered = false;
+        for (int index = 0; index < options.count(); index++) {
+            String token = options.positional(index);
+            if (BrushOptions.isNumber(token) && !numbered) {
+                radius = options.integer(index, DEFAULT_RADIUS, 1, MAX_RADIUS, "El radio");
+                numbered = true;
+            } else if (!NATURAL_WORDS.contains(BrushOptions.normalize(token)) && palette == null) {
+                palette = token;
+            } else if (!NATURAL_WORDS.contains(BrushOptions.normalize(token))) {
+                throw new IllegalArgumentException("No entiendo «" + token + "»: la paleta ya es " + palette);
+            }
+        }
+        StringBuilder command = new StringBuilder().append(radius).append(" pintar ")
+                .append(palette == null ? com.komainu.moxia.terrain.SurfacePalette.DEFAULT : palette)
+                .append(" natural");
+        if (options.has('m')) {
+            String mask = options.flag('m').strip();
+            command.append(" -m ").append(mask.contains(" ") ? "\"" + mask + "\"" : mask);
+        }
+        return command.toString();
+    }
+
     public static PaintConfig parse(BrushOptions options) {
+        return parse(options, false);
+    }
+
+    /**
+     * @param region sobre la selección ({@code /komaedit pintar}): no hay radio, así que el único número es la
+     *               fuerza
+     */
+    public static PaintConfig parse(BrushOptions options, boolean region) {
         String palette = null;
         int radius = DEFAULT_RADIUS;
         int strength = DEFAULT_STRENGTH;
@@ -71,13 +121,14 @@ public record PaintConfig(String palette, int radius, PaintGradient gradient, do
             String token = options.positional(index);
             PaintGradient mode = PaintGradient.find(token);
             if (BrushOptions.isNumber(token)) {
-                if (numbers == 0) {
+                if (numbers == 0 && !region) {
                     radius = options.integer(index, DEFAULT_RADIUS, 1, MAX_RADIUS, "El radio");
-                } else if (numbers == 1) {
+                } else if (numbers == (region ? 0 : 1)) {
                     strength = options.integer(index, DEFAULT_STRENGTH, 1, 100, "La fuerza (%)");
                 } else {
-                    throw new IllegalArgumentException("Sobra el número " + token
-                            + " (pincel paint [paleta] [radio] [degradado] [fuerza])");
+                    throw new IllegalArgumentException("Sobra el número " + token + (region
+                            ? " (pintar [paleta] [degradado] [fuerza])"
+                            : " (pincel paint [paleta] [radio] [degradado] [fuerza])"));
                 }
                 numbers++;
             } else if (mode != null && !gradientGiven) {

@@ -177,6 +177,20 @@ public final class StudioDriver {
         host.shift = false;
     }
 
+    /**
+     * Pulsa la zona con nombre {@code anchor} por su lado izquierdo: una herramienta de la cuadrícula por su icono
+     * ({@code tool:tree}), lejos de la estrella de favorita (con el nombre en dos líneas, buscarlo por su texto daría
+     * con la estrella, que lleva la misma ayuda), o el botón principal del pie ({@code footer:build}).
+     */
+    public void press(String anchor) {
+        render();
+        StudioUi.Anchor zone = ui.anchor(anchor);
+        if (zone == null || zone.visible().isEmpty()) {
+            throw new AssertionError(anchor + " no se ve: " + texts());
+        }
+        clickAt(zone.visible().x() + 8, zone.visible().centerY());
+    }
+
     /** Pulsa lo que dice {@code label} dentro de un grupo de controles ({@code tools:stamp}…). */
     public void click(String label, String group) {
         render();

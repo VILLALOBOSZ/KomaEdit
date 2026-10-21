@@ -127,8 +127,8 @@ public final class HelpTopics {
                     new Entry("/komaedit job status", "Progreso de la construcción en curso"),
                     new Entry("/komaedit job cancel", "Cancela la construcción en curso")
             )),
-            new Topic("region", "Sobre lo construido", List.of("hiedra", "ivy", "envejecer", "weather", "retocar", "tweak",
-                    "survival", "enredaderas", "musgo", "unirlosas", "ciclarestado"),
+            new Topic("region", "Sobre lo construido", List.of("hiedra", "ivy", "envejecer", "weather",
+                    "enredaderas", "musgo", "unirlosas", "ciclarestado"),
                     List.of(
                             new Entry("/komaedit ivy [estilo] [-l largo] [-b ramas 0–1] [-g cuelgue 0–1] [-n tallos] [-seed semilla]",
                                     "Hiedra viva desde los puntos P o el bloque que miras (alias hiedra)"),
@@ -136,8 +136,6 @@ public final class HelpTopics {
                             new Entry("/komaedit weather [intensidad 0–100] [clima] [-d derrumbe] [-v vida] [-seed semilla] [-agua]",
                                     "Envejece la selección (alias envejecer)"),
                             new Entry("/komaedit envejecer 70 nevado -d 40", "Ejemplo: ruina nevada con derrumbe"),
-                            new Entry("/komaedit tweak deinfest|persist|waterlog|wax [on|off]",
-                                    "Retoques sobre la selección (alias retocar, survival); wax encera cobre y carteles"),
                             new Entry("/komaedit vines <máscara> <patrón> [porcentaje] [mínimo] [máximo] [-s semilla]",
                                     "Cuelga enredaderas bajo los bloques (alias enredaderas)"),
                             new Entry("/komaedit moss <patrón> [cantidad] [radios] [iteraciones] [-s semilla]",
@@ -241,7 +239,7 @@ public final class HelpTopics {
                             "Ejemplo: vela suave entre tres curvas, de 2 de grosor y con piezas")
             )),
             new Topic("terrain", "Terraformado", List.of("terreno", "terraformar", "rampa", "rio", "canon",
-                    "relieve", "sellos", "heightmap"), List.of(
+                    "relieve", "relief", "paint", "sellos", "heightmap"), List.of(
                     new Entry("/komaedit pincel heightmap <sello> [radio] [altura] [sumar|restar|maximo|aplanar|"
                             + "suavizar] [paleta|auto] [-i intensidad] [-r mirada|azar|grados] [-x variación] "
                             + "[-s semilla] [-k] [-m máscara] [-c neutro] [-p]",
@@ -268,8 +266,14 @@ public final class HelpTopics {
                             "Río o cañón por la trayectoria; el fondo y el agua nunca suben"),
                     new Entry("/komaedit terreno erosion hidraulica|termica|completa [iteraciones] [fuerza] [paleta] "
                             + "[-a ángulo] [-s semilla] [-m máscara] [-e]", "Erosión física de la selección"),
-                    new Entry("/komaedit terreno pintar [paleta] [-m máscara]",
-                            "Repinta la superficie de la selección por pendiente y altura"),
+                    new Entry("/komaedit pintar [paleta] [pendiente|altura|ruido|huella|natural] [fuerza] [banderas]",
+                            "Pinta la selección con los ajustes del pincel de pintura, sin radio (alias paint)"),
+                    new Entry("/komaedit pintar natural natural [-m máscara] [-e]",
+                            "La superficie de la selección con una paleta de superficie (antes terreno pintar)"),
+                    new Entry("/komaedit relieve <sello> [altura] [modo] [paleta] [-i] [-r] [-x] [-s] [-c] [-m]",
+                            "Un sello estirado hasta cubrir la selección, sin tocar nada fuera (alias relief)"),
+                    new Entry("/komaedit pincel zona <radio> terreno erosion …",
+                            "Cualquier orden de la selección (retocar, pintar, erosionar…) como pincel"),
                     new Entry("/komaedit terreno paletas", "Paletas de superficie: natural, desierto, mesa, nevado…")
             )),
             new Topic("placement", "Colocación", List.of("colocar", "colocacion", "place", "array", "hilera",
@@ -331,7 +335,7 @@ public final class HelpTopics {
                     new Entry("/komaedit pincel <tipo> [opciones]",
                             "Liga un pincel al objeto de la mano (alias ezbrush): paletteshift, gradient, "
                                     + "gradientstroke, petalpainter, place, scatter, array, tree, rock, biome, "
-                                    + "heightmap, stamp, sculpt, paint"),
+                                    + "heightmap, stamp, sculpt, paint, zone y retocar"),
                     new Entry("/komaedit pincel gradient ##Magma 8 tapered linear bezier 0.5 -p",
                             "Ejemplo: degradado con holograma; -p deja verlo antes de aplicarlo"),
                     new Entry("/komaedit pincel aplicar|cancelar", "Aplica o descarta el holograma del pincel"),
@@ -425,8 +429,9 @@ public final class HelpTopics {
                             "Pausa, reanuda o cancela los trabajos de un jugador (admin)")
             )),
             new Topic("utilidades", "Utilidades de obra", List.of("utilities", "texto", "text", "materiales",
-                    "analyze", "analizar", "gravedad", "gravity", "nieve", "snow", "agua", "drain", "drenar", "waterlog",
-                    "inundar", "biomas", "biome", "bioma"), List.of(
+                    "analyze", "analizar", "retocar", "touchup", "retoques", "tweak", "survival", "gravedad",
+                    "gravity", "nieve", "snow", "agua", "drain", "drenar", "waterlog", "inundar", "biomas", "biome",
+                    "bioma"), List.of(
                     new Entry("/komaedit text \"<texto>\" [material] [-f fuente] [-s tamaño] [-d grosor] [-b borde]"
                             + " [-o material del borde]", "Texto en bloques donde miras (alias texto)"),
                     new Entry("/komaedit text \"Año Nuevo\" ##Magma -s 12 -b 1 -o black_concrete -w SlabsAndStairs",
@@ -434,16 +439,20 @@ public final class HelpTopics {
                     new Entry("/komaedit text fonts", "Fuentes de serie y las de config/komaedit/fonts"),
                     new Entry("/komaedit analyze [-m máscara] [-n líneas]",
                             "Lista de materiales: coste en survival, pilas y cofres, CSV (alias analizar, materiales)"),
-                    new Entry("/komaedit gravity [-a] [-m máscara]",
-                            "Deja caer los bloques por columnas; -a solo lo que no se apoya (alias gravedad)"),
-                    new Entry("/komaedit snow [capas] [-r radio] [-s sombra] [-h altura] [-p] [-m máscara]",
-                            "Nieve en capas que sigue la pendiente (alias nieve)"),
-                    new Entry("/komaedit drain [water|lava|all] [-k] [-m máscara]",
-                            "Quita el agua o la lava y desanega (alias drenar)"),
-                    new Entry("/komaedit waterlog [nivel|~] [-b] [-m máscara]",
-                            "Inunda y anega por debajo de un nivel (alias inundar)"),
-                    new Entry("/komaedit biome <bioma> [-v] [-m máscara]",
-                            "Pinta el bioma de la selección (alias bioma)"),
+                    new Entry("/komaedit retocar nieve [capas] [-r radio] [-f relleno] [-s sombra] [-h altura] [-p]"
+                            + " [-m máscara]", "Nieve en capas que sigue la pendiente (antes snow)"),
+                    new Entry("/komaedit retocar drenar [agua|lava|todo] [-k] [-m máscara]",
+                            "Quita el agua o la lava y desanega (antes drain)"),
+                    new Entry("/komaedit retocar inundar [nivel|~] [-b] [-m máscara]",
+                            "Inunda y anega por debajo de un nivel (antes waterlog)"),
+                    new Entry("/komaedit retocar gravedad [-a] [-m máscara]",
+                            "Deja caer los bloques por columnas; -a solo lo que no se apoya (antes gravity)"),
+                    new Entry("/komaedit retocar desinfestar|hojas|anegar|encerar [on|off]",
+                            "Retoques de supervivencia (antes tweak): encerar encera el cobre y los carteles"),
+                    new Entry("/komaedit retocar bioma <bioma> [-v] [-m máscara]",
+                            "Cambia el bioma de la selección (antes biome)"),
+                    new Entry("/komaedit pincel retocar [radio] <modo> …",
+                            "Lo mismo con el pincel, alrededor de cada clic (alias de pincel zona <radio> retocar)"),
                     new Entry("/komaedit pincel biome <bioma> [radio] [-v] [-m máscara]",
                             "Pincel de biomas; el clic izquierdo toma el bioma del bloque")
             )),
