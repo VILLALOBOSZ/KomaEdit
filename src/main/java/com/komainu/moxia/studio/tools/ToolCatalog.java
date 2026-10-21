@@ -40,6 +40,7 @@ public final class ToolCatalog {
             entry(ToolCategory.UTILITIES, new UtilityCards.Analyze(), StudioIcons.Icon.ANALYZE),
             entry(ToolCategory.UTILITIES, new HotbarCard(), StudioIcons.Icon.HOTBARS),
             entry(ToolCategory.UTILITIES, new RebuildCard(), StudioIcons.Icon.REBUILD),
+            entry(ToolCategory.UTILITIES, new MeasureCard(), StudioIcons.Icon.RULER),
             entry(ToolCategory.MODES, new SymmetryCard(), StudioIcons.Icon.SYMMETRY),
             entry(ToolCategory.MODES, new CapabilityCard(), StudioIcons.Icon.CAPABILITIES)
     );

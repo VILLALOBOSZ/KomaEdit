@@ -52,7 +52,10 @@ class ToolCardsTest {
             Set<String> params = new HashSet<>();
             card.params().forEach(param -> assertTrue(params.add(param.id()), card.id() + "." + param.id()));
             assertFalse(card.command(card.defaults(), false).startsWith("/"), "sin barra: " + card.id());
-            assertTrue(card.command(card.defaults(), false).startsWith("komaedit "), card.id());
+            // Las del cliente (la regla, las vistas) mandan /kegui, que atiende el propio cliente.
+            assertTrue(card.command(card.defaults(), false).startsWith(card.clientOnly(card.defaults()) ? "kegui "
+                    : "komaedit "),
+                    card.id());
         }
         // Las de este catálogo, en su orden; una tarjeta nueva se añade en ToolCatalog sin tocar esta lista.
         List<String> known = List.of("tree", "rock", "roof", "loft", "text", "stamp", "paint", "ramp", "river",

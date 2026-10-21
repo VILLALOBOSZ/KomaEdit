@@ -1,0 +1,5 @@
+1_de_cerca: aaa234 (alfa 100 %, 2 renglones), bbb234 (alfa 100 %, 3 renglones), ccc234 (alfa 100 %, 1 renglones), eee234 (alfa 100 %, 1 renglones)
+2_de_lejos: aaa234 (alfa 100 %, 2 renglones), ccc234 (alfa 9 %, 1 renglones)
+3_con_resueltas: aaa234 (alfa 100 %, 3 renglones), bbb234 (alfa 100 %, 3 renglones), ccc234 (alfa 100 %, 2 renglones), ddd234 (alfa 100 %, 2 renglones), eee234 (alfa 100 %, 1 renglones)
+4_en_su_distancia: aaa234 (alfa 100 %, 2 renglones), ccc234 (alfa 100 %, 1 renglones), eee234 (alfa 97 %, 1 renglones)
+Texturas de Minecraft: sí

@@ -12,8 +12,10 @@ public enum ToolTarget {
     SELECTION("selection"),
     /** Queda en un pincel en la mano: se usa con clic derecho en el mundo. */
     HAND("hand"),
-    /** Un modo que se activa y se queda (simetría, capacidades). */
-    MODE("mode");
+    /** Un modo que se activa y se queda (simetría, capacidades, la regla). */
+    MODE("mode"),
+    /** Donde está el jugador y hacia dónde mira (guardar una vista). */
+    SELF("self");
 
     private final String id;
 

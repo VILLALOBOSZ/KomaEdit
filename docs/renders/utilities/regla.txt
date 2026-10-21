@@ -1,0 +1,21 @@
+1_recorrido: Regla · recorrido · 3 puntos · 17 · Manhattan 23
+2_recorrido_apuntando: Regla · recorrido · 3 puntos · 17 · Manhattan 23
+3_caja_casa: Regla · caja · 12 × 6 × 8 · 576
+4_circulo_plaza: Regla · círculo · radio 6 · diámetro 12
+5_circulo_de_pie: Regla · círculo · radio 3,6 · diámetro 7,2
+
+Portapapeles del recorrido:
+Regla · recorrido · 3 puntos
+1 → 2: 5,4 · Manhattan 7 · X 5 · Y 0 · Z 2 · 6 bloques
+2 → 3: 11,7 · Manhattan 16 · X 0 · Y 6 · Z 10 · 11 bloques
+Recorrido: 17 · Manhattan 23 · X 5 · Y 6 · Z 12
+En línea recta (1 → 3): 14,3 · Manhattan 23 · X 5 · Y 6 · Z 12
+Puntos: (11, 64, 0) (16, 64, 2) (16, 70, 12)
+
+Portapapeles de la caja:
+Regla · caja
+De (0, 64, 0) a (11, 69, 7)
+12 × 6 × 8 (ancho × alto × largo)
+576 bloques · diagonal 15,6
+
+Texturas de Minecraft: sí

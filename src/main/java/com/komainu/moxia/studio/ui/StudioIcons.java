@@ -25,7 +25,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
-        TOUCH_UP, HOTBARS, REBUILD, DISPLAY,
+        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER,
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
@@ -505,6 +505,20 @@ public final class StudioIcons {
                 ".....##.....",
                 ".....##.....",
                 "....####....");
+        // Medir y anotar: una regla, con sus marcas y la de en medio más larga.
+        mask(Icon.RULER,
+                "............",
+                "............",
+                "............",
+                "############",
+                "#..........#",
+                "#.#.#.#.#.##",
+                "#.#.#.#.#.##",
+                "#.#...#...##",
+                "############",
+                "............",
+                "............",
+                "............");
         mask(Icon.ANALYZE,
                 "..........##",
                 "..........##",

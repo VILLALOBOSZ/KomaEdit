@@ -566,6 +566,30 @@ public final class HelpTopics {
                             "Que mire siempre a la cámara (center) o no (fixed)"),
                     new Entry("/komaedit display set glow on [color]|off", "Brillo del contorno (ajustes contorno)")
             )),
+            new Topic("view", "Vistas", List.of("vista", "vistas", "views", "camara", "teleporte",
+                    "fija", "regla", "medir", "ruler"), List.of(
+                    new Entry("/komaedit vista compartir <nombre>", "Comparte con el equipo la vista de donde estás;"
+                            + " las tuyas se guardan en tu cliente con /kegui vista guardar <nombre>"),
+                    new Entry("/komaedit vista lista [página]", "Las vistas del equipo con [ir] y [quitar]; la lista"
+                            + " de todas, fijas incluidas, es /kegui vistas"),
+                    new Entry("/komaedit vista ir <nombre>", "Salta a una vista del equipo (creativo o espectador,"
+                            + " según el servidor)"),
+                    new Entry("/komaedit vista borrar <nombre>", "Deja de compartir una vista tuya"),
+                    new Entry("/komaedit vista", "Con KomaEdit en el cliente: /kegui regla mide con clics (recorrido,"
+                            + " círculo o caja) y Ctrl+C copia las medidas")
+            )),
+            new Topic("note", "Notas", List.of("nota", "notas", "notes", "apuntes", "marcas", "tareas"), List.of(
+                    new Entry("/komaedit nota poner <texto> [-c color] [-i icono] [-d distancia] [-e] [-p]",
+                            "En el bloque que miras (-p: donde estás); -e para el equipo (alias nueva, add)"),
+                    new Entry("/komaedit nota lista [abiertas|todas|resueltas|mias|equipo] [página]",
+                            "Con [ir], [resolver] y [borrar]"),
+                    new Entry("/komaedit nota ir <id>", "Salta junto a la nota"),
+                    new Entry("/komaedit nota resolver <id>", "La marca como resuelta (reabrir la vuelve a abrir)"),
+                    new Entry("/komaedit nota borrar <id>", "Borra una nota tuya"),
+                    new Entry("/komaedit nota limpiar", "Borra tus notas resueltas"),
+                    new Entry("/komaedit nota ver <id>", "El texto entero, el autor y la fecha; con KomaEdit en el"
+                            + " cliente, la lista en pantalla es /kegui notas")
+            )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup", "menu", "quick", "gui", "quiet",
                     "silencio", "permisos", "permissions", "reload", "recargar", "tutorial", "bienvenida", "debug",
                     "debugprint", "depuracion"), List.of(

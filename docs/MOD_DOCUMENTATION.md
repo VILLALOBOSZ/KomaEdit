@@ -15,6 +15,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 - **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Barras guardadas](#barras-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
 - **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Reconstrucción animada](#reconstrucción-animada)
+- **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Vistas, regla y notas](#vistas-regla-y-notas)
 - **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
 - **Servidor y proyecto:** [Compartir entre servidores](#compartir-entre-servidores) · [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
@@ -210,12 +211,13 @@ Son quince tarjetas, cada una con un nombre que dice lo que hace y un icono prop
 | Terreno | Estampar relieve, Pintar, Hacer rampa, Excavar río, Erosionar | `pincel heightmap` o `relieve`, `pincel paint` o `pintar`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion` (con el pincel, `pincel zona`) |
 | Utilidades | Retocar, Contar materiales, Guardar barras | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`, `hotbar <fuente>` (lo demás de las barras va por su paquete, no por el chat) |
 | Utilidades | Retocar, Contar materiales, Reconstruir paso a paso | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`, `rebuild` (y sus mandos) |
+| Utilidades | Retocar, Contar materiales, Medir y anotar | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`; Medir y anotar: `/kegui regla <modo>` y `/kegui vista guardar <nombre>` (del cliente) o `nota poner …` |
 | Modos | Simetría, Construir a mano | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Menos tarjetas, lo mismo de antes:** «Pintar terreno» y «Pintar superficie» son ahora **Pintar**, y Nieve, Drenar, Inundar, Gravedad y Bioma, modos de **Retocar**, que trae además los cuatro retoques de supervivencia que solo tenían orden (desinfestar, fijar las hojas, anegar y encerar). Lo que cambió de nombre, en [Lo que cambió de nombre](#lo-que-cambió-de-nombre).
 - **Elegir:** sin herramienta elegida, la etapa es una cuadrícula de iconos con su nombre entero (en dos líneas si hace falta), agrupada como en la tabla (con ★ Favoritas arriba si hay) y con un buscador (`Ctrl+F` o `/`) por nombre, orden, alias y descripción, sin tildes: «nieve», «drenar» o «superficie» encuentran la tarjeta que ahora lo hace. Al elegir una, la cuadrícula se pliega en una fila con su icono y su nombre (pulsarla la vuelve a abrir), sus **recientes** para cambiar de un clic, la ★ y **copiar la orden** al portapapeles.
 - **Cómo se usa** (el interruptor de arriba): las herramientas que valen de dos maneras lo dicen en dos botones bajo el nombre, **Pincel** y **Selección** (o **Con un clic**). Ver [Pincel o selección](#pincel-o-selección).
-- **Lo primero, qué hace:** en las tarjetas con modos (Pintar y Retocar), el modo sale antes que nada, porque decide qué paleta, qué presets y qué ajustes se ven.
+- **Lo primero, qué hace:** en las tarjetas con modos (Pintar, Retocar y Medir y anotar), el modo sale antes que nada, porque decide qué paleta, qué presets y qué ajustes se ven.
 - **Miniaturas:** lo que se elige viendo sale como galería de miniaturas con el nombre debajo, dibujadas por el propio generador: las especies de árbol (con `TreeGrower`), los tipos de roca (`RockShaper`), los tipos de tejado sobre una casa de 9×7 (`RoofGenerator`) y los 80 sellos de relieve (con los colores de su categoría: nieve en las montañas, arena en las dunas, agua alrededor de las islas). Se pintan en segundo plano la primera vez y luego se reutilizan. Bajo cada una, su nombre entero: la galería pone tantas columnas como dejen caber cada nombre en dos líneas como mucho («Cuatro aguas», «Roble oscuro»). Con un panel alto (380 píxeles de contenido o más, como 1080p con GUI 2) se ven todas las opciones a la vez; si no, dos filas (una en compacto) y ‹ › para pasar de página, que empieza siempre por la elegida.
 - **Ajustes esenciales** a la vista y el resto en **Más ajustes**, plegado, con cuántos hay o cuántos has cambiado («2 cambiados»). Solo salen los ajustes que usa la opción elegida (la altura de la cúpula no sale en un tejado a dos aguas; el radio, solo con el pincel). Los números **auto** no llevan bandera: vale el de la herramienta (la altura de la especie, el radio del tipo de roca…) y se ve en gris junto a «auto».
 - **Presets** (una fila de pastillas: Joven, Viejo, Azotado, Pelado; Empinado, Con buhardillas…; el tooltip dice qué cambian). Cada preset deja la herramienta en un **estado completo y conocido**: lo que no define vuelve al de serie (el de la especie o el tipo), así que nada se queda con lo de un preset anterior («Pelado» y luego «Joven» vuelve a tener copa). Se conservan qué es (la especie, el tipo de roca o de tejado, el sello), los materiales, los textos (el del rótulo, la máscara, la paleta), la semilla, cómo se usa (pincel o selección) y los interruptores de cómo se coloca que ningún preset toca (vista previa en cada clic, reemplazar, raíces). La pastilla del preset que hay puesto sale marcada. En Retocar solo salen los del modo elegido. **Azar** (`R`) para una semilla nueva y, en árboles y rocas, los **presets guardados** del jugador (`#nombre`). En **Más ajustes**, las acciones: **Estimar** (tejado, loft, rampa, río, erosión y la superficie natural de Pintar, con `-e`), **Guardar preset** y, en simetría, **Desactivar**, **Centro aquí**, **Entre bloques** y **Centro de la selección**.
@@ -1084,6 +1086,9 @@ Todas están en **Controles → KomaEdit** y se pueden cambiar.
 | Cuentagotas de bloque | Sin asignar | El bloque que miras, hasta 192 bloques (ver abajo). |
 | Ajustes de KomaEdit en el mundo | Sin asignar | Abre los ajustes. |
 | Fantasma: mover, girar, voltear, opciones, pegar | Sin asignar (atajos de serie) | Ver [Colocar con gizmo · Teclas](#colocar-con-gizmo). Intro y Retroceso también colocan y quitan el fantasma. |
+| Regla (poner o quitar) | Sin asignar | La regla del cliente; con ella puesta, Ctrl+C copia y Supr borra (ver [Regla](#regla)). |
+| Vista fija (ir y volver) · Volver tras un salto · Lista de vistas | Sin asignar | Ver [Vistas guardadas](#vistas-guardadas). |
+| Lista de notas | Sin asignar | `/kegui notas` (ver [Notas en el mundo](#notas-en-el-mundo)). |
 
 Al llegar una vista previa, la barra de acción recuerda las teclas: «12 300 cambios · Intro aplicar · Retroceso descartar».
 
@@ -4935,6 +4940,175 @@ Antes `biome` (`bioma`), que sigue valiendo; el pincel es también `/komaedit pi
 - Rendimiento: el límite de bloques por operación cuenta celdas (cada celda es una escritura). Con `-v` una zona de 100×100 son unas 60 000 celdas en un mundo de 384 de alto. Los chunks deben estar cargados (WorldEdit los carga si hace falta). La bossbar enseña el avance y `/komaedit cancel` lo para (lo ya pintado se deshace con `//undo`).
 - Limitaciones: la hierba, las hojas y el agua cambian de color en cuanto el cliente recibe el bioma; la nieve, el hielo y la vegetación de cada bioma no aparecen solos (usa `retocar nieve`). Las máscaras de bioma de WorldEdit (`$plains`) no sirven en `-m`.
 
+## Vistas, regla y notas
+
+Tres utilidades de Axiom que se usan a diario en obra: guardar dónde está la cámara para volver de un salto, medir con clics y dejar notas en el mundo para uno mismo o para el equipo. Renders de cómo se ven en `docs/renders/utilities/`.
+
+### Objetivo y acceso
+
+| Utilidad | Dónde | Necesita |
+| --- | --- | --- |
+| Vistas guardadas | `/kegui vistas` (lista), `/kegui vista …`, **Medir y anotar** del Studio (modo Vista), teclas en Controles | KomaEdit en el cliente; para saltar y compartir, también en el servidor |
+| Vistas del equipo | `/komaedit vista …` | Solo el servidor (sin el mod en el cliente, por el chat) |
+| Regla | `/kegui regla`, **Medir y anotar** del Studio (modo Regla), tecla en Controles | Solo el cliente: funciona en cualquier servidor |
+| Notas | `/komaedit nota …`, `/kegui notas` (lista), **Medir y anotar** del Studio (modo Nota) | El servidor las guarda; el cliente con el mod las dibuja |
+
+```text
+/kegui vista guardar Mirador          guarda dónde estás y hacia dónde miras
+/kegui vistas                         la lista: ir, fijar, compartir, borrar
+/kegui vista fijar Mirador            la vista fija de esta dimensión (su tecla va y vuelve)
+/kegui vista volver                   a donde estabas antes del último salto
+/komaedit vista compartir Plaza       comparte con el equipo la vista de donde estás
+/kegui regla caja                     regla en modo caja (/kegui regla la pone o la quita)
+/komaedit nota poner Falta el tejado -c rojo -i aviso -e
+/komaedit nota lista equipo
+```
+
+### Vistas guardadas
+
+- **Guardar.** `/kegui vista guardar <nombre>`, el botón **Guardar aquí** de la lista o **Medir y anotar** del Studio (modo Vista) guardan la posición de tus pies, hacia dónde miras y la dimensión. Se guardan **en tu equipo**, en `config/komaedit/views.json`, una lista por sitio: cada mundo de un jugador por el nombre de su carpeta y cada servidor por su dirección (sin el `:25565` de serie). Hasta 100 por sitio. Nombres de hasta 32 letras, números, espacios y `. _ - '`; guardar con un nombre que ya existe (sin mirar mayúsculas) la reemplaza y conserva si era la fija.
+- **La lista** (`/kegui vistas`, `/kegui vista` o su tecla): primero las tuyas, con la fija marcada con ★, y luego las del equipo con su autor. Cada una dice a cuántos bloques está o en qué dimensión. Botones: **Ir**, **Fijar**/**Soltar**, **Compartir** y **Borrar** (en las del equipo, **Quitar** si es tuya o puedes gestionarlas). Arriba, el nombre y **Guardar aquí**, y **Volver**.
+- **Saltar.** El cliente propone adónde ir y **el servidor lo comprueba todo** antes de llevarte: el permiso `komaedit.view.teleport`, que estés en creativo o espectador (si `creativeOnly`, de serie; `komaedit.view.anymode` se lo salta), que la dimensión exista y, si es otra, `komaedit.view.dimension`; que el sitio esté dentro del borde del mundo y de su altura (hasta 256 bloques por encima del techo, para vistas desde el cielo, y 16 por debajo del suelo), la distancia máxima si el servidor pone una y una espera mínima entre saltos (400 ms de serie). En creativo te deja volando, porque las vistas suelen estar en el aire. Si no se puede, la barra de acción dice por qué. Sin KomaEdit en el servidor no se salta: lo dice y no manda nada.
+- **Vista fija.** Una por dimensión (fijar otra suelta la anterior). Su tecla (**Vista fija (ir y volver)**, sin asignar de serie) o `/kegui vista fija`: la primera vez te lleva a la vista y apunta dónde estabas; si sigues en ella (a 3 bloques o menos), la siguiente te devuelve; si te has movido lejos, vuelve a llevarte a la vista. Sirve para comparar la obra desde el mismo punto mientras trabajas.
+- **Volver.** `/kegui vista volver` o su tecla deshace el último salto (se recuerdan los 16 últimos mientras estás conectado). Los saltos de la vista fija y de volver no se apuntan, así no se vuelve en círculo.
+- **Compartir con el equipo.** **Compartir** en la lista manda una vista tuya; `/komaedit vista compartir <nombre>` comparte la de donde estás. El servidor la guarda en `<mundo>/komaedit/views.json` con tu nombre y la fecha, y la ven todos los que tienen `komaedit.view.shared`, en su lista y con `/komaedit vista lista`. Un nombre por mundo: si ya lo usa otro jugador, compártela con otro nombre (quien tiene `komaedit.admin.views` puede reemplazarla). La tuya se reemplaza al volver a compartirla.
+
+```text
+/komaedit vista lista [página]       las del equipo, con [ir] y [quitar] (alias vistas, view, views)
+/komaedit vista ir <nombre>          salta a una del equipo, con las mismas reglas
+/komaedit vista compartir <nombre>   comparte la de donde estás
+/komaedit vista borrar <nombre>      deja de compartir una tuya (o de otro, con komaedit.admin.views)
+/kegui vista ir|borrar|fijar|soltar|compartir <nombre>
+```
+
+### Regla
+
+Solo del cliente: mide con clics sobre el mundo y no manda nada al servidor, así que funciona en cualquier servidor. `/kegui regla` la pone o la quita (también su tecla **Regla**, sin asignar de serie, o **Medir y anotar** del Studio, en el modo Regla); `/kegui regla linea|circulo|caja` la pone en ese modo.
+
+| Con la regla puesta | Hace |
+| --- | --- |
+| Clic derecho | Un punto en el bloque que miras (hasta 256 bloques). Mantenerlo no pone más. |
+| Mayús + clic derecho | El punto en el bloque de al lado de la cara que miras (para medir un hueco). |
+| Clic izquierdo | Quita el último punto (no rompe el bloque). |
+| Ctrl + clic | Cambia de modo: recorrido → círculo → caja. |
+| Ctrl + C | Copia las medidas al portapapeles (también `/kegui regla copiar`). |
+| Supr | Quita todos los puntos (también `/kegui regla borrar`). |
+
+Se mide como se cuenta al construir: **de centro a centro de bloque** (del bloque al de al lado hay 1) y **las cajas cuentan los bloques de los dos extremos** (de 0 a 11 son 12).
+
+| Modo | Puntos | Qué mide |
+| --- | --- | --- |
+| Recorrido | De 2 a 32 | Cada tramo: distancia en línea recta (euclídea), Manhattan (yendo solo por los ejes), lo que se avanza en X, Y y Z y los bloques que pondría una línea de WorldEdit. El total del recorrido (suma de tramos, euclídea y Manhattan, y por ejes) y, con varios tramos, del primero al último en línea recta. |
+| Círculo | Centro y un punto del borde | El plano es el de los dos ejes en que más se separan (a la misma altura, horizontal; en una fachada, de pie). Radio, diámetro, bloques de lado a lado de un círculo de bloques (2r + 1, como `//cyl`), circunferencia, área y cuánto se sale el borde del plano. |
+| Caja | Dos esquinas | Ancho (X) × alto (Y) × largo (Z), bloques que caben y la diagonal. |
+
+En el círculo y la caja, el tercer clic empieza otra medida desde ese punto. Al cambiar de modo se quedan los puntos que quepan.
+
+**En el mundo:** los puntos con su contorno y su número; los tramos en amarillo con su medida, que se ven a través de los bloques; el último tramo descompuesto en sus patas por ejes (X rojo, Z azul, Y verde) con su largo; el total debajo del número del último punto. El círculo con el radio y el diámetro (este más tenue); la caja con cada lado en la arista más cercana a la cámara y el total encima. Mientras apuntas, lo que mediría el siguiente clic sale a media luz. La barra de acción lleva siempre el resumen («Regla · recorrido · 3 puntos · 15,4 · Manhattan 17»).
+
+Lo que copia Ctrl+C, con el separador decimal del idioma del juego:
+
+```text
+Regla · recorrido · 3 puntos
+1 → 2: 10 · Manhattan 10 · X 10 · Y 0 · Z 0 · 11 bloques
+2 → 3: 5,4 · Manhattan 7 · X 0 · Y 2 · Z 5 · 6 bloques
+Recorrido: 15,4 · Manhattan 17 · X 10 · Y 2 · Z 5
+En línea recta (1 → 3): 11,4 · Manhattan 17 · X 10 · Y 2 · Z 5
+Puntos: (0, 64, 0) (10, 64, 0) (10, 66, 5)
+```
+
+### Notas en el mundo
+
+Un texto anclado a un bloque o a un punto, con color, icono y la distancia desde la que se ve. Las guarda el servidor, en `<mundo>/komaedit/notes.json`, con su autor y fecha.
+
+```text
+/komaedit nota poner <texto> [-c color] [-i icono] [-d distancia] [-e] [-p]   (alias nueva, add)
+/komaedit nota lista [abiertas|todas|resueltas|mias|equipo] [página]
+/komaedit nota ir <id>            salta junto a la nota (mismas reglas que las vistas)
+/komaedit nota resolver <id>      la marca como resuelta; reabrir la vuelve a abrir
+/komaedit nota borrar <id>        borra una tuya (o del equipo, con komaedit.admin.notes)
+/komaedit nota limpiar            borra tus notas resueltas
+/komaedit nota ver <id>           el texto entero, autor, fecha y dónde está
+/kegui notas                      la lista en pantalla; /kegui notas ocultar|mostrar|resueltas
+```
+
+- **Dónde.** En el bloque que miras (hasta 128 bloques; con el Studio abierto, donde hiciste clic) y **sale de la cara que pulsaste**: encima si fue la de arriba, delante si fue una pared. Con `-p`, en el aire donde estás, a la altura de los ojos.
+- **Texto.** Suelto o entre comillas (`"…"`, con `\"` dentro); lo que va entre comillas es texto aunque empiece por un guion. Hasta 200 caracteres de serie (`maxLength`), sin `§` ni caracteres de control. En el mundo se parte en renglones de 30 caracteres, cuatro como mucho.
+- **Color** (`-c`): `amarillo` (de serie), `naranja`, `rojo`, `rosa`, `morado`, `azul`, `cian`, `verde`, `blanco` o `#RRGGBB`; también en inglés.
+- **Icono** (`-i`): `nota` (de serie), `aviso`, `tarea`, `idea`, `pregunta`, `aqui`, `estrella`, `error`. Son de píxeles, dibujados por el mod: se ven igual con cualquier paquete de recursos.
+- **Distancia** (`-d`): de 4 a 256 bloques (`maxDistance`), 48 de serie. En el último 20 % se va apagando; a 24 bloques o menos se ven también el autor y la fecha, y el contorno del bloque.
+- **Privada o del equipo.** Sin `-e`, solo la ves tú. Con `-e` (`komaedit.notes.share`), la ve quien tiene `komaedit.notes.team`, que también puede marcarla como resuelta. Una nota privada no la ve nadie más, ni quien gestiona las notas.
+- **Resueltas.** No se dibujan en el mundo (`/kegui notas resueltas` las enseña apagadas, con una marca); siguen en la lista con quién la resolvió. `limpiar` borra las tuyas.
+- **La lista** (`/kegui notas` o su tecla): las de tu dimensión, de la más cercana a la más lejana, con filtros por estado (abiertas, todas, resueltas) y por autor (todos, mías, equipo), y un interruptor para verlas o no en el mundo. Arriba, poner una nota en lo que mirabas, privada o del equipo; color, icono y distancia, con **Medir y anotar** del Studio (modo Nota) o la orden.
+- Sin el mod en el cliente, las órdenes funcionan por el chat (con botones [ir], [resolver] y [borrar]); solo falta el dibujo.
+
+### En el Studio: Medir y anotar
+
+Una sola tarjeta en **Utilidades**, con tres modos arriba (**Qué hacer**):
+
+| Modo | A la vista | Botón | Sobre qué | En Más ajustes |
+| --- | --- | --- | --- | --- |
+| Regla | Qué medir (recorrido, círculo, caja) | **Medir** (pone la regla en ese modo) | En tu cliente | Copiar, Borrar puntos, Quitar la regla |
+| Nota | El texto, el icono y si es para el equipo | **Poner nota** (`/komaedit nota poner …`) | Donde haces clic | Color, distancia, «donde estoy», Lista y Ver resueltas |
+| Vista | El nombre | **Guardar aquí** | Donde estás | Ir, Fijar, Compartir aquí, Volver y Lista |
+
+La regla y las vistas son del cliente: el Studio manda `/kegui …`, que atiende el propio cliente, y la tarjeta nunca sale apagada. Poner una nota pide `komaedit.notes.private` (o `.share` si es para el equipo); Ir y Compartir aquí, los permisos de las vistas. Sin nombre, Ir, Fijar y Compartir aquí abren la lista.
+
+### Permisos y límites de vistas y notas
+
+| Nodo | Paquete | Qué da |
+| --- | --- | --- |
+| `komaedit.view.teleport` | básico (o `komaedit.use`) | Saltar a una vista o a una nota en la misma dimensión. |
+| `komaedit.view.shared` | básico (o `komaedit.use`) | Ver las vistas del equipo. |
+| `komaedit.notes.private` | básico (o `komaedit.use`) | Notas privadas: ponerlas, verlas, resolverlas y borrarlas. |
+| `komaedit.notes.team` | básico (o `komaedit.use`) | Ver las notas del equipo y marcarlas como resueltas. |
+| `komaedit.view.share` | intermedio (o `komaedit.build`) | Compartir vistas y quitar las propias. |
+| `komaedit.notes.share` | intermedio (o `komaedit.build`) | Poner notas para el equipo. |
+| `komaedit.view.dimension` | avanzado (o `komaedit.build`) | Saltar a una vista o nota de otra dimensión. |
+| `komaedit.view.anymode` | admin | Saltar también en supervivencia o aventura. |
+| `komaedit.admin.views` | admin | Quitar o reemplazar las vistas compartidas de otros, sin límite de número. |
+| `komaedit.admin.notes` | admin | Borrar las notas del equipo de otros y poner notas sin límite de número. |
+
+`komaedit.view` y `komaedit.notes` dan todos sus hijos. La regla no pide permiso: no toca el servidor.
+
+Las reglas están en `config/komaedit/utilities.json`, que se crea solo y se recarga con `/komaedit reload`:
+
+```json
+{
+  "format": 1,
+  "views": {
+    "teleport": true,
+    "creativeOnly": true,
+    "maxTeleportDistance": 0.0,
+    "cooldownMillis": 400,
+    "allowSharing": true,
+    "maxSharedPerPlayer": 25,
+    "maxShared": 300
+  },
+  "notes": {
+    "maxPerPlayer": 64,
+    "maxTeam": 1000,
+    "maxLength": 200,
+    "maxDistance": 256,
+    "allowTeam": true
+  }
+}
+```
+
+- `teleport`: con `false` nadie salta a vistas ni a notas. `creativeOnly`: solo en creativo o espectador (salvo `komaedit.view.anymode`). `maxTeleportDistance`: bloques como mucho desde donde estás (`0`, sin límite; no cuenta al cambiar de dimensión). `cooldownMillis`: espera entre dos saltos.
+- `allowSharing`, `maxSharedPerPlayer` y `maxShared`: si se pueden compartir vistas, cuántas por jugador y en todo el mundo; reemplazar una no cuenta.
+- `maxPerPlayer`: notas de un jugador (abiertas o resueltas, privadas o del equipo). `maxTeam`: notas del equipo en todo el mundo. `maxLength`: caracteres del texto (como mucho 256). `maxDistance`: distancia máxima de una nota (de 4 a 512). `allowTeam`: si se pueden poner notas del equipo.
+- Lo que falte toma su valor de serie; si no se puede leer, se usan los de serie y se avisa en `latest.log`.
+
+### Rendimiento y limitaciones
+
+- Las vistas privadas viven en tu equipo: no pasan a otro PC ni las ve el servidor (solo el sitio al que quieres ir, al saltar). Cambiar la dirección con la que entras a un servidor es otro sitio.
+- El salto usa el teleporte normal de Minecraft: lo que pase al cambiar de dimensión (cargar chunks) es lo de siempre. Un salto denegado no cambia nada.
+- La regla no se guarda: al salir del mundo se pierde, y hay una sola a la vez. Los puntos son bloques; no mide entre puntos sueltos con decimales.
+- El servidor manda a cada cliente con el mod solo las notas de su dimensión que puede ver, en páginas de 128, y cada cambio a quien le afecta. El cliente las dibuja hasta su distancia, con un fondo casi opaco para que la de delante tape a la de detrás; muchas notas juntas se solapan (no se reordenan para no taparse).
+- Si el dibujo de la regla o de las notas falla (un mod de shaders incompatible), se ocultan en lugar de cerrar el juego y se apunta en `latest.log`.
+- Nada de esto se ha probado aún dentro de Minecraft: las medidas, los almacenes, la validación del salto y de compartir y los límites tienen pruebas, y el dibujo, renders con el mismo código.
+
 ## Biblioteca de planos
 
 ### Objetivo y acceso
@@ -5378,6 +5552,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.display` (intermedio) y `komaedit.build.display_others` (avanzado); de admin, `komaedit.limit.displays` (ver [Decorar con displays](#lo-que-decide-el-servidor)).
    - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
    - Paquetes compartidos: `komaedit.share.export` (la da también `komaedit.use`), `komaedit.share.import` (propio), `komaedit.share.file` y, de admin, `komaedit.limit.share` (ver [Compartir entre servidores](#permisos-y-límites-de-los-paquetes)).
+   - Vistas y notas: `komaedit.view.teleport`, `.shared`, `.share`, `.dimension` y `.anymode`; `komaedit.notes.private`, `.team` y `.share`; de admin, `komaedit.admin.views` y `komaedit.admin.notes` (ver [Permisos y límites de vistas y notas](#permisos-y-límites-de-vistas-y-notas)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.debug.loadingbar` (`/komaedit debug clearloadingbars`; la da también `komaedit.use`). `komaedit.debug` da las dos órdenes de `/komaedit debug`.
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
@@ -5431,6 +5606,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa, `arraySnapRadius` ni los del presupuesto por tick y el plan) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
 
 `config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
+
+`config/komaedit/utilities.json` guarda las reglas de las [vistas y las notas](#vistas-regla-y-notas) (saltos, compartir, número y longitud de las notas); también se recarga con `/komaedit reload`.
 
 `config/komaedit/blueprints.json` guarda los límites de la [biblioteca de planos](#permisos-y-límites) (planos por jugador, compartidos, tamaño y si se puede compartir); también se recarga con `/komaedit reload`.
 

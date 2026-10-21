@@ -3,6 +3,8 @@ package com.komainu.moxia.permission;
 import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.capability.BuildCapability;
 import com.komainu.moxia.share.SharePermissions;
+import com.komainu.moxia.notes.NotePermissions;
+import com.komainu.moxia.views.ViewPermissions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -116,6 +118,11 @@ public final class PermissionNodes {
             add(select + "." + entry[0], Pack.BASIC, select, "ezedits.selection." + entry[1],
                     "/komaedit sel " + entry[0]);
         }
+        add(ViewPermissions.TELEPORT, Pack.BASIC, use, null,
+                "Saltar a una vista guardada o a una nota en la misma dimensión");
+        add(ViewPermissions.SEE_SHARED, Pack.BASIC, use, null, "Ver las vistas que comparte el equipo");
+        add(NotePermissions.PRIVATE, Pack.BASIC, use, null, "Notas privadas en el mundo (/komaedit nota)");
+        add(NotePermissions.TEAM, Pack.BASIC, use, null, "Ver las notas del equipo y marcarlas como resueltas");
 
         // Intermedio.
         add(KomaPermissions.PAINT, Pack.INTERMEDIATE, null, null, "Pintura rápida del editor");
@@ -202,6 +209,8 @@ public final class PermissionNodes {
                 "Importar paquetes de otros servidores (/komaedit share import); además, el de guardar cada tipo");
         add(build + ".display", Pack.INTERMEDIATE, build, null,
                 "Editor de displays: crear y editar los displays propios (/komaedit display)");
+        add(ViewPermissions.SHARE, Pack.INTERMEDIATE, build, null, "Compartir vistas con el equipo (/komaedit vista)");
+        add(NotePermissions.SHARE, Pack.INTERMEDIATE, build, null, "Poner notas para el equipo (/komaedit nota -e)");
 
         // Avanzado.
         add(build + ".display_others", Pack.ADVANCED, build, null,
@@ -220,6 +229,8 @@ public final class PermissionNodes {
                 "Compartir planos propios con todo el servidor (/komaedit blueprint share)");
         add(SharePermissions.FILE, Pack.ADVANCED, null, null,
                 "Exportar paquetes a un archivo .kpack en config/komaedit/exports (/komaedit share export … -f)");
+        add(ViewPermissions.DIMENSION, Pack.ADVANCED, build, null,
+                "Saltar a una vista o a una nota de otra dimensión");
 
         // Capacidades de construcción a mano (menú rápido y /komaedit capability).
         for (BuildCapability capability : BuildCapability.values()) {
@@ -259,6 +270,12 @@ public final class PermissionNodes {
                 "Sin el límite de importaciones y exportaciones por hora de share.json");
         add("komaedit.limit.displays", Pack.ADMIN, null, null,
                 "Sin los límites de displays por chunk y por jugador de displays.json");
+        add(ViewPermissions.ANY_MODE, Pack.ADMIN, null, null,
+                "Saltar a vistas y notas también en supervivencia (si utilities.json pide creativo)");
+        add(ViewPermissions.MANAGE, Pack.ADMIN, null, null,
+                "Quitar o reemplazar las vistas compartidas de otros, sin límite de número");
+        add(NotePermissions.MANAGE, Pack.ADMIN, null, null,
+                "Borrar las notas del equipo de otros y poner notas sin límite de número");
     }
 
     private PermissionNodes() {
