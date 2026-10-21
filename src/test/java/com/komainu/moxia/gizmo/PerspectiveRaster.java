@@ -157,7 +157,7 @@ public final class PerspectiveRaster implements AutoCloseable {
     }
 
     /** Nueva capa de fantasma: profundidades vacías. */
-    double[] layer() {
+    public double[] layer() {
         return new double[width * height];
     }
 
@@ -396,7 +396,7 @@ public final class PerspectiveRaster implements AutoCloseable {
         return new Color(value >> 16 & 0xFF, value >> 8 & 0xFF, value & 0xFF, Math.clamp(a, 0, 255));
     }
 
-    static int lerp(int from, int to, double amount) {
+    public static int lerp(int from, int to, double amount) {
         int r = (int) Math.round((from >> 16 & 0xFF) + ((to >> 16 & 0xFF) - (from >> 16 & 0xFF)) * amount);
         int g = (int) Math.round((from >> 8 & 0xFF) + ((to >> 8 & 0xFF) - (from >> 8 & 0xFF)) * amount);
         int b = (int) Math.round((from & 0xFF) + ((to & 0xFF) - (from & 0xFF)) * amount);
