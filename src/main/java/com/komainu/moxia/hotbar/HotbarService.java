@@ -5,6 +5,7 @@ import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.hotbar.HotbarPayloads.HotbarActionPayload;
 import com.komainu.moxia.hotbar.HotbarPayloads.HotbarSyncPayload;
 import com.komainu.moxia.hotbar.HotbarPayloads.HotbarTextPayload;
+import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.permission.KomaPermissions;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -42,6 +43,11 @@ public final class HotbarService {
     private static final Map<UUID, HotbarBook> BOOKS = new ConcurrentHashMap<>();
     private static final Map<UUID, Previous> UNDO = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> LAST_APPLY = new ConcurrentHashMap<>();
+    /**
+     * Lo demás que llega por paquete (guardar, borrar, importar, exportar, sincronizar…) escribe el archivo o manda
+     * todas las barras: un cliente modificado no lo puede pedir sin parar.
+     */
+    private static final RequestBudget REQUESTS = new RequestBudget(8, 2.0);
     /** Entradas por atender en el próximo tick, cuando el proyecto del jugador ya está abierto. */
     private static final Set<UUID> PENDING_JOINS = ConcurrentHashMap.newKeySet();
 
@@ -82,6 +88,7 @@ public final class HotbarService {
         UNDO.remove(player);
         LAST_APPLY.remove(player);
         PENDING_JOINS.remove(player);
+        REQUESTS.forget(player);
     }
 
     public static void clearAll() {
@@ -89,6 +96,7 @@ public final class HotbarService {
         UNDO.clear();
         LAST_APPLY.clear();
         PENDING_JOINS.clear();
+        REQUESTS.clear();
     }
 
     private static void tick(MinecraftServer server) {
@@ -111,6 +119,9 @@ public final class HotbarService {
     // ---- Paquetes del cliente ----------------------------------------------------------------------------------
 
     private static void handle(ServerPlayerEntity player, HotbarActionPayload payload) {
+        if (payload.kind() != HotbarActionPayload.Kind.APPLY && !REQUESTS.allow(player.getUuid(), System.nanoTime())) {
+            return;
+        }
         try {
             switch (payload.kind()) {
                 case SYNC -> sync(player, true, List.of());
