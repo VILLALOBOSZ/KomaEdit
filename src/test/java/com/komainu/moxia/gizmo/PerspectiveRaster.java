@@ -124,6 +124,16 @@ final class PerspectiveRaster implements AutoCloseable {
     }
 
     /**
+     * Una cara cualquiera de color liso, con sus cuatro esquinas en sentido antihorario vistas desde fuera (las de un
+     * bloque girado, como un block display).
+     */
+    void quad(Vec3[] corners, int rgb, double shade) {
+        int[] flat = new int[256];
+        Arrays.fill(flat, 0xFF000000 | rgb);
+        quad(corners, flat, shade);
+    }
+
+    /**
      * Un cuadrilátero cualquiera con su textura (la cara de un display girado o escalado), si mira a la cámara. Las
      * esquinas van en sentido antihorario vistas desde fuera, empezando abajo a la izquierda, como en {@link #corners}.
      */

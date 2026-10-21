@@ -18,7 +18,9 @@ import java.util.Locale;
  * {@code -f} simetrías aleatorias, {@code -r} giros de 90° aleatorios, {@code -a} colocar aire, {@code -j} ajuste
  * de direcciones, {@code -x} perturbar la secundaria, {@code -w} perfil de smoothblocks ({@link SmoothProfile}) e {@code -i}
  * semilla. Solo en {@code place}: {@code -copias}, {@code -desplazar}, {@code -revolver}, {@code -pivote} y
- * {@code -torcer} ({@link PlacementCopies}).</p>
+ * {@code -torcer} ({@link PlacementCopies}). Solo en los pinceles: {@code -mirada fija|clic}, si las direcciones
+ * fijas que dependen de la mirada ({@code Constant(D:aim)}, {@code -k aim}) se toman al configurar el pincel, como en
+ * ezEdits, o en cada clic.</p>
  */
 public record PlacementSettings(
         Kind kind,
@@ -40,7 +42,8 @@ public record PlacementSettings(
         boolean randomSeed,
         Scatter scatter,
         Array array,
-        PlacementCopies copies
+        PlacementCopies copies,
+        boolean aimEachClick
 ) {
     public enum Kind {
         PLACE("place"), SCATTER("scatter"), ARRAY("array");
@@ -155,6 +158,7 @@ public record PlacementSettings(
         Vec3 pivot = new Vec3(0, 0, 0);
         double twist = 0.0;
         boolean copyFlags = false;
+        boolean aimEachClick = false;
 
         for (int index = 1; index < words.size(); index++) {
             String word = words.get(index);
@@ -282,6 +286,13 @@ public record PlacementSettings(
                     twist = ParamText.number(value, -3_600, 3_600, flag);
                     copyFlags = true;
                 }
+                case "-mirada", "-aim" -> {
+                    if (!brush) {
+                        throw new IllegalArgumentException(flag + " solo vale en los pinceles: una orden usa siempre "
+                                + "la mirada del momento");
+                    }
+                    aimEachClick = eachClick(value);
+                }
                 case "-p" -> {
                     only(kind, Kind.ARRAY, flag);
                     String[] parts = value.split("[:,]");
@@ -312,14 +323,29 @@ public record PlacementSettings(
                 randomSeed ? 0 : seed, randomSeed,
                 new Scatter(region, List.copyOf(directions), threshold, mask, density, iterations, cover, trim),
                 new Array(gap, maxOffset, progression, tension, bias, continuity, normalMode, snapSurface),
-                PlacementCopies.of(copies, copyOffset, revolve, pivot, twist, copyFlags));
+                PlacementCopies.of(copies, copyOffset, revolve, pivot, twist, copyFlags), aimEachClick);
     }
 
     /** Fija la semilla si se pidió al azar ({@code -i -1}), para que el cálculo sea reproducible a partir de aquí. */
     public PlacementSettings withSeed(long value) {
         return new PlacementSettings(kind, structure, primary, secondary, dimensions, minimumScale, maximumScale,
                 orientationAxis, orientationAngle, flips, rotationAxis, placeAir, snap, perturb, smooth,
-                value, false, scatter, array, copies);
+                value, false, scatter, array, copies, aimEachClick);
+    }
+
+    /**
+     * Al configurar un pincel: las direcciones fijas que dependen de la mirada ({@code Constant(D:aim)},
+     * {@code C(D:left)}, {@code -k aim}…) se calculan ya con {@code view} y no cambian en cada clic, como en
+     * ezEdits. {@code Aim}, {@code Upward} y los demás modos siguen la mirada de cada clic. Con
+     * {@code -mirada clic} no se fija nada.
+     */
+    public PlacementSettings bindAim(DirectionExpr.Context view) {
+        if (aimEachClick) {
+            return this;
+        }
+        return new PlacementSettings(kind, structure, primary.bind(view), secondary.bind(view), dimensions,
+                minimumScale, maximumScale, orientationAxis.bind(view), orientationAngle, flips, rotationAxis,
+                placeAir, snap, perturb, smooth, seed, randomSeed, scatter, array, copies, false);
     }
 
     public boolean needsNormal() {
@@ -328,6 +354,15 @@ public record PlacementSettings(
 
     public boolean needsViewDiff() {
         return primary.needsViewDiff() || secondary.needsViewDiff();
+    }
+
+    private static boolean eachClick(String value) {
+        return switch (ParamText.normalize(value)) {
+            case "clic", "click", "cadaclic", "eachclick" -> true;
+            case "fija", "fijo", "bind", "binding", "configurar" -> false;
+            default -> throw new IllegalArgumentException("-mirada espera fija (la del momento de configurar el "
+                    + "pincel, como ezEdits) o clic (la de cada clic)");
+        };
     }
 
     private static void only(Kind kind, Kind expected, String flag) {

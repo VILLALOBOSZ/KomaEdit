@@ -28,6 +28,12 @@ public final class KomaPermissions {
     public static final String ADMIN_STAMP_EXPORT = "komaedit.admin.stamps.export";
     /** {@code /komaedit jobs}: ver, pausar y cancelar los trabajos de todos los jugadores. */
     public static final String ADMIN_JOBS = "komaedit.admin.jobs";
+    /** {@code /komaedit debugprint}: datos para diagnosticar (versiones, configuración, motor). */
+    public static final String ADMIN_DEBUG = "komaedit.admin.debug";
+    /** {@code /komaedit debug clearloadingbars}: quitar la barra de progreso propia. */
+    public static final String DEBUG_LOADING_BAR = "komaedit.debug.loadingbar";
+    /** {@code /komaedit debug removevisualiserentities}: retirar displays del visualizador y de la vista previa. */
+    public static final String DEBUG_VISUALISER = "komaedit.debug.visualiser";
     /** Imágenes por URL en {@code /komaedit image} cuando {@code urlsRequireAdmin} está activo. */
     public static final String ADMIN_IMAGE_URL = "komaedit.admin.image.url";
 
