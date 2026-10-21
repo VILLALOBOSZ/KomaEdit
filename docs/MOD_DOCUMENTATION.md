@@ -14,7 +14,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 - **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Pinceles de modelado](#pinceles-de-modelado) · [Supervarita](#supervarita) · [Simetría](#simetría)
 - **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
 - **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
-- **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
+- **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Imagen de referencia](#imagen-de-referencia)
 - **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
 
 ## Procedural Studio
@@ -204,7 +204,7 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 | Naturaleza | Árbol, Roca | `tree`, `rock` (y `pincel tree`/`rock`, `tree save`) |
 | Tejados | Tejado, Loft | `roof`, `loft` (y `-e` para estimar) |
 | Terreno | Sello de relieve, Pintar terreno, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `pincel paint`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
-| Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`) |
+| Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma, Referencias | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`); Referencias abre `/keref`, del cliente (ver [Imagen de referencia](#imagen-de-referencia)) |
 | Modos | Simetría, Capacidades | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Elegir:** sin herramienta elegida, la etapa es una cuadrícula de iconos con su nombre entero (en dos líneas si hace falta), agrupada como en la tabla (con ★ Favoritas arriba si hay) y con un buscador (`Ctrl+F` o `/`) por nombre, orden, alias y descripción, sin tildes. Al elegir una, la cuadrícula se pliega en una fila con su icono y su nombre (pulsarla la vuelve a abrir), sus **recientes** para cambiar de un clic, la ★ y **copiar la orden** al portapapeles.
@@ -818,6 +818,7 @@ Todas están en **Controles → KomaEdit** y se pueden cambiar.
 | Cuentagotas de bloque | Sin asignar | El bloque que miras, hasta 192 bloques (ver abajo). |
 | Ajustes de KomaEdit en el mundo | Sin asignar | Abre los ajustes. |
 | Fantasma: mover, girar, voltear, opciones, pegar | Sin asignar (atajos de serie) | Ver [Colocar con gizmo · Teclas](#colocar-con-gizmo). Intro y Retroceso también colocan y quitan el fantasma. |
+| Imágenes de referencia: mostrar u ocultar, abrir | Sin asignar (Ctrl+I, Ctrl+Mayús+I) | Ver [Imagen de referencia](#imagen-de-referencia). |
 
 Al llegar una vista previa, la barra de acción recuerda las teclas: «12 300 cambios · Intro aplicar · Retroceso descartar».
 
@@ -4469,6 +4470,141 @@ Alias: `bioma`. Permisos `komaedit.build.biome` y `komaedit.build.brush.biome` (
 - **Deshacer y clientes:** el cambio se escribe con WorldEdit (`setBiome`) repartido entre ticks y queda en **una sola entrada de `//undo`**; al terminar, WorldEdit reenvía los biomas de los chunks tocados a los jugadores, así que se ve el color nuevo de la hierba, las hojas y el agua **sin volver a entrar**. Al deshacer pasa lo mismo.
 - Rendimiento: el límite de bloques por operación cuenta celdas (cada celda es una escritura). Con `-v` una zona de 100×100 son unas 60 000 celdas en un mundo de 384 de alto. Los chunks deben estar cargados (WorldEdit los carga si hace falta). La bossbar enseña el avance y `/komaedit cancel` lo para (lo ya pintado se deshace con `//undo`).
 - Limitaciones: la hierba, las hojas y el agua cambian de color en cuanto el cliente recibe el bioma; la nieve, el hielo y la vegetación de cada bioma no aparecen solos (usa `snow`). Las máscaras de bioma de WorldEdit (`$plains`) no sirven en `-m`.
+
+## Imagen de referencia
+
+### Objetivo y acceso
+
+Abrir una foto, un plano o un pixel art para **calcarlo**, como «Open Reference Image» de Axiom: una fachada, una estatua, un mapa. La imagen se ve **en pantalla**, en una ventana flotante, o **en el mundo**, como un plano fijo que se mueve, se gira y se escala con el gizmo. Lleva una rejilla opcional en la que cada celda es un bloque, para contar al calcar.
+
+Es **solo del cliente**: no cambia el mundo, no pasa por el servidor, no pide permisos y solo la ves tú. Funciona igual en un servidor sin KomaEdit.
+
+```text
+/keref             abre la lista de imágenes de referencia
+/keref alternar    enseña u oculta todas (también Ctrl+I en el juego)
+/keref listo       deja de mover con el gizmo la que se esté editando
+```
+
+- **Ctrl+Mayús+I** abre la lista y **Ctrl+I** enseña u oculta todas (ver «Teclas», más abajo).
+- En el Studio, etapa [Herramientas](#herramientas): la tarjeta **Referencias** de Utilidades. **Abrir** abre la lista; al cerrarla se vuelve al Studio. **Mostrar u ocultar**, en Más ajustes.
+
+### Abrir imágenes
+
+- **La carpeta:** las imágenes van en `config/komaedit/references/` de tu equipo, en PNG o JPG (se reconocen por sus primeros bytes, no por la extensión), con una subcarpeta como mucho. **Abrir carpeta** la abre en el explorador del sistema y **Recargar** vuelve a mirarla y relee las imágenes que hayas cambiado.
+- **La lista:** a la izquierda, las imágenes de la carpeta con su miniatura y su nombre; **un clic abre una** como referencia nueva, en pantalla y encima de las demás. A la derecha, las abiertas en este mundo, con su miniatura: un cuadradito de color dice si está en pantalla o en el mundo, y las ocultas salen veladas. Debajo de la elegida, su archivo, sus medidas en píxeles, sus medidas en bloques y su postura (en el mundo) y sus celdas (con rejilla).
+- **Arrastrar archivos:** con la lista abierta, se pueden arrastrar PNG o JPG desde el explorador a la ventana del juego. Se copian a la carpeta (con su nombre sin espacios ni símbolos; si ya hay otro igual, con `_2`, `_3`…) y se abren. Lo que no es una imagen PNG o JPG no se copia y se dice por qué.
+
+### En pantalla
+
+La imagen es una **ventana flotante** que no se mueve con la cámara.
+
+- **Jugando** (sin ninguna pantalla abierta) se ve tal cual, sin barra: no estorba al ratón.
+- **Con una pantalla abierta** (la de **Colocar ventanas**, el chat, el Studio, el inventario) lleva su barra con el nombre y dos botones:
+  - **»** la deja **«a través»**: sin barra y el ratón la ignora; los clics van a lo de debajo.
+  - **×** la oculta.
+- **Moverla:** arrastrándola por la barra o por la imagen.
+- **Tamaño:** arrastrando la esquina de abajo a la derecha (sin deformarla), o con la **rueda** sobre ella, que agranda o encoge alrededor del ratón.
+- **Opacidad:** **Mayús+rueda** sobre ella la cambia de 5 en 5 %.
+- **Contar:** con la rejilla encendida, el ratón sobre la imagen dice la columna y la fila de la celda («Columna 15 · fila 9»).
+- **Colocar ventanas** (en la lista) abre una pantalla transparente, sin velo, para colocarlas sobre el juego tal como se verán. En ella todas llevan barra, también las «a través»: es donde se recuperan. Esc vuelve a la lista.
+- La posición y el tamaño se guardan en fracciones de la pantalla: siguen en su sitio al cambiar el tamaño de la ventana del juego o la escala de la interfaz. Siempre queda un trozo dentro de la pantalla para poder agarrarla.
+
+![Colocar ventanas: barra, botones, rejilla y la celda bajo el ratón](renders/referencias/pantalla_1_colocar_ventanas.png)
+
+![Jugando: las mismas ventanas sin barra; la fachada al 60 %](renders/referencias/pantalla_2_jugando.png)
+
+### En el mundo
+
+La imagen es un **plano fijo** en una posición y con un giro, que se ve por las dos caras.
+
+- **Al pasarla al mundo** queda donde se abrió: de pie, delante de quien la abrió, de cara a él y a la altura de sus ojos.
+  - **Traer delante** la vuelve a poner de pie delante de ti, de cara a ti.
+  - **Tumbar en el suelo** la pone boca arriba a tus pies, delante de ti, con su parte de arriba hacia donde miras: para calcar una planta o un pixel art en el suelo.
+- **Tamaño de serie:** un píxel por bloque si parece pixel art (ningún lado pasa de 128 píxeles); si no, unos 32 bloques por su lado largo.
+- **Profundidad:**
+  - **No** (de serie): se ve siempre, encima de todo, aunque haya bloques delante.
+  - **Sí:** lo que tenga delante la tapa. Va un pelo adelantada, así que no parpadea contra la cara de un bloque.
+- **Filtro:**
+  - **Nítido** deja ver cada píxel al agrandarla (pixel art);
+  - **Suave** la difumina (fotos).
+  - Se abre nítida si es pequeña (hasta 256 píxeles de lado) y suave si no.
+
+![Con y sin profundidad: a la izquierda el árbol tapa la imagen; a la derecha la imagen va encima](renders/referencias/mundo_3_con_y_sin_profundidad.png)
+
+![Pixel art tumbado en el suelo, con profundidad: lo ya colocado lo tapa y la rejilla marca cada 8 celdas](renders/referencias/mundo_2_pixel_art_en_el_suelo.png)
+
+### Mover, girar y escalar con el gizmo
+
+**Mover con el gizmo** (en la lista) cierra la pantalla y pone el gizmo del [fantasma](#colocar-con-gizmo) en el centro de la imagen, con un cuadradito blanco en cada esquina y su contorno. Como con el fantasma, el punto de mira es el puntero: apuntas a una pieza (se pone amarilla), mantienes el **clic izquierdo** y giras la cámara.
+
+| Pieza | Qué hace | Pasos (con **Ctrl**, más finos) |
+| --- | --- | --- |
+| Flechas (roja X, verde Y, azul Z) | Mueve por ese eje | De bloque en bloque (1/16 de bloque) |
+| Cubo del centro | La arrastra por su propio plano (de canto, por el suelo) | De bloque en bloque por su ancho y su alto (1/16) |
+| Anillos (los tres) | Giran alrededor de ese eje del mundo | De 15° en 15° (de grado en grado) |
+| Esquinas | Agrandan o encogen alrededor del centro, sin deformarla | La anchura en bloques enteros (en 1/16) |
+| Rueda | Agranda o encoge | Un bloque de anchura (1/16) |
+
+- **La barra de acción** dice su nombre y sus medidas en bloques; mientras arrastras, lo que cambia: «Girando +20°», «Moviendo +3, 0, -1», «Escalando a bloques enteros».
+- **Terminar:** Intro, Esc o el clic derecho (o `/keref listo`). Se guarda al momento.
+- Mientras se edita no se rompen bloques al arrastrar. Fuera de las piezas, el clic izquierdo hace lo de siempre.
+- Si sale un fantasma de colocar, manda él: el gizmo de la imagen espera a que lo coloques o lo canceles.
+- **1 celda = 1 bloque** ajusta el tamaño para que cada celda de la rejilla mida justo un bloque, y enciende la rejilla. Con una foto de una fachada a 20 píxeles por bloque y celdas de 20 píxeles, los bloques de la foto caen justo sobre los del mundo.
+
+![La fachada de pie con la rejilla a un bloque por celda, el gizmo y la esquina de arriba a la derecha bajo el punto de mira](renders/referencias/mundo_1_fachada_con_gizmo.png)
+
+![Girando con el anillo Y: el anillo agarrado en amarillo y lo demás atenuado](renders/referencias/mundo_4_girando_con_el_anillo.png)
+
+### Rejilla
+
+Líneas encima de la imagen, en los dos modos, para contar bloques al calcar.
+
+| Ajuste | De serie | Qué hace |
+| --- | --- | --- |
+| Rejilla | No | La enciende o la apaga. |
+| Celda | 1 px (imágenes pequeñas) o 16 px | Cuántos píxeles de la imagen son una celda, es decir, un bloque. De 1 a 512. |
+| Color | Blanco | Blanco, negro, rojo o cian, para que se vea sobre cualquier foto. |
+| Marcada | Ninguna | Una línea más gruesa cada 4, 5, 8, 10 o 16 celdas, para contar de 5 en 5 o de 10 en 10. |
+| Desfase X, Desfase Y | 0 | Dónde empieza la primera columna y la primera fila, en píxeles. Sirve para que cuadre con un pixel art que trae borde; la tira de antes cuenta como celda 1. |
+
+- La rejilla se dibuja con su contorno.
+- Si las celdas salen demasiado pequeñas para distinguirse (menos de 3 unidades en pantalla, menos de 1/32 de bloque en el mundo), solo se dibujan las marcadas.
+- Con más de 1 024 líneas por lado, solo las marcadas, y si aun así sobran, ninguna.
+
+### Varias a la vez, por mundo y ocultar
+
+- Hasta **16 referencias** abiertas a la vez, en pantalla y en el mundo mezcladas. La última tocada se dibuja encima.
+- Se recuerdan **por mundo o servidor**, cada uno en `config/komaedit/references/.worlds/<clave>.json`:
+  - un mundo de un jugador, por el nombre de su carpeta;
+  - un servidor, por su dirección (un Realm, por su nombre).
+  - Al volver a ese mundo o servidor salen como las dejaste. Se guarda un segundo después de cada cambio y al salir.
+- **Visible** (en la lista) oculta solo esa, sin quitarla.
+- **Ctrl+I**, `/keref alternar` o **A la vista** (arriba en la lista) enseñan u ocultan todas sin tocar cada una; la barra de acción dice cuántas hay.
+- **Quitar** la cierra en este mundo; el archivo sigue en la carpeta.
+
+### Teclas
+
+Están en **Controles → KomaEdit** y vienen **sin asignar**, como las del fantasma, para no quitarle la tecla a nadie. Mientras no las asignes valen los atajos de serie; si asignas una tecla, esa tecla sola hace la acción.
+
+| Acción | De serie |
+| --- | --- |
+| Mostrar u ocultar las imágenes de referencia | Ctrl+I |
+| Abrir las imágenes de referencia | Ctrl+Mayús+I |
+| Terminar de mover con el gizmo | Intro, Esc o clic derecho |
+
+### Rendimiento y limitaciones
+
+- **Lectura de las imágenes:**
+  - Se leen en otro hilo y se suben a la tarjeta gráfica con 2 048 píxeles por su lado más largo como mucho: una foto más grande se lee saltando píxeles. Las medidas, la rejilla y el tamaño en bloques usan siempre las del archivo original.
+  - Las miniaturas de la lista son de 96 píxeles.
+  - Un archivo de más de 40 MB no se abre.
+  - Mientras llega, la ventana dice «Cargando…» y en el mundo se ve un velo gris donde va. Si el archivo falta o no se puede leer, lo dice en la lista y en la ventana.
+- **Dibujo:** cada referencia en el mundo son dos triángulos y sus líneas: no cuestan nada aunque haya 16.
+- **F1** oculta las ventanas en pantalla junto con el resto del HUD. Las del mundo se siguen viendo.
+- Arrastrar archivos solo funciona con la lista abierta: Minecraft solo pasa los archivos a la pantalla que esté abierta.
+- **Nada de esto se ha probado aún dentro de Minecraft.**
+  - Las pruebas son JUnit: giros, plano y píxeles, rejilla, ventana, gizmo y arrastre, guardado y carga, archivos y que los textos caben.
+  - Las maquetas, fuera del juego, en `docs/renders/referencias/`. Se regeneran con `KOMAEDIT_REFERENCE_MOCKUPS=<carpeta>` y, para las texturas, `KOMAEDIT_MC_JAR`; la tarjeta del Studio, con `KOMAEDIT_STUDIO_MOCKUPS`.
 
 ## Biblioteca de planos
 

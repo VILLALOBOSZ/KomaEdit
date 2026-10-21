@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Imagen de referencia, como en Axiom
+
+- **Calcar una foto, un plano o un pixel art.** `/keref` (Ctrl+Mayús+I, o la tarjeta **Referencias** de Utilidades en el Studio) abre las imágenes PNG y JPG de `config/komaedit/references/` con su miniatura. Un clic abre una; también se pueden arrastrar archivos a la ventana del juego, que se copian a la carpeta. Es solo del cliente: no cambia el mundo, no pasa por el servidor y funciona en cualquiera.
+- **En pantalla:** una ventana flotante que no se mueve con la cámara.
+  - Con una pantalla abierta lleva barra: se arrastra, se agranda por la esquina o con la rueda, cambia de opacidad con Mayús+rueda y se oculta.
+  - Se puede dejar **«a través»**: el ratón la ignora y se recupera en **Colocar ventanas**.
+  - Jugando se ve sin barra.
+- **En el mundo:** un plano fijo, de pie delante de ti o tumbado en el suelo.
+  - **Mover con el gizmo** pone el gizmo del fantasma en su centro: flechas y cubo para moverla (de bloque en bloque), los tres anillos para girarla (de 15° en 15°) y una esquina en cada punta para escalarla (anchura en bloques enteros). Con Ctrl, todo afinado (1/16 de bloque, 1°).
+  - La barra de acción dice lo que cambia mientras arrastras.
+  - **Profundidad** (los bloques de delante la tapan) o encima de todo.
+  - **Filtro** nítido para pixel art o suave para fotos.
+- **Rejilla para contar bloques**, en los dos modos: una celda cada N píxeles (= un bloque), con color, líneas marcadas cada 4, 5, 8, 10 o 16 celdas y desfase para cuadrarla con un borde. Con el ratón encima, en pantalla, dice la columna y la fila. **1 celda = 1 bloque** ajusta el plano para que cada celda mida un bloque.
+- **Varias a la vez** (hasta 16), recordadas **por mundo o servidor** en `config/komaedit/references/.worlds/`. **Ctrl+I** (o `/keref alternar`) las enseña u oculta todas. Las teclas vienen sin asignar en Controles, con esos atajos de serie, como las del fantasma.
+- **Código:**
+  - Paquete `reference`, lógica pura con 43 pruebas: giro como cuaternión, plano y píxeles, rejilla, ventana, arrastre del gizmo con sus pasos, guardado y carga, la carpeta y que los textos caben con la fuente del juego.
+  - Cliente en `client.reference`, y `client.world.ReferenceWorldRenderer`, que dibuja con el `GizmoRenderer` del #62.
+  - `KeyboardMixin`, `MouseMixin` y `MinecraftClientMixin` pasan también por las referencias, después del fantasma.
+- **Maquetas** de los dos modos y de la tarjeta, en `docs/renders/referencias/`. Nada probado aún dentro de Minecraft.
+
 ## 1.9.1 (estable, 2026-10-21)
 
 ### Bienvenida guiada: lo primero que ve quien abre el Studio
