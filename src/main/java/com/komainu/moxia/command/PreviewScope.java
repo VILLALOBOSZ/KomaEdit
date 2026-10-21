@@ -32,8 +32,13 @@ final class PreviewScope {
     private static final Set<String> BLUEPRINT = Set.of("blueprint", "blueprints", "planos", "plano");
     /** De la biblioteca de planos solo coloca bloques {@code place}. */
     private static final Set<String> BLUEPRINT_EDITS = Set.of("place", "colocar");
-    /** Subórdenes de gestión dentro de familias que sí editan (la segunda palabra). */
+    /**
+     * Subórdenes sin vista previa dentro de familias que sí editan (la segunda palabra): las de gestión y el bioma de
+     * {@code retocar}, que no tiene bloques que enseñar (y ahí {@code -v} es el relleno vertical).
+     */
     private static final Map<String, Set<String>> MANAGEMENT_MODES = Map.of(
+            "retocar", Set.of("bioma", "biome"),
+            "touchup", Set.of("bioma", "biome"),
             "tree", Set.of("save", "guardar", "list", "lista", "delete", "borrar", "cancel", "cancelar"),
             "arbol", Set.of("save", "guardar", "list", "lista", "delete", "borrar", "cancel", "cancelar"),
             "rock", Set.of("save", "guardar", "list", "lista", "delete", "borrar", "cancel", "cancelar"),

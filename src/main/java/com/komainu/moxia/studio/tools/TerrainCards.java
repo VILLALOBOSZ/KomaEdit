@@ -12,13 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/** Terraformado: pincel de relieve con sellos, rampa, río o cañón, erosión y pintar la superficie. */
+/**
+ * Terraformado: estampar relieve (con el pincel o sobre la selección), rampa, río o cañón y erosión (sobre la
+ * selección o con el pincel). Pintar la superficie es {@link PaintCard}.
+ */
 public final class TerrainCards {
     public static final String STAMP_NODE = KomaPermissions.BUILD + ".brush.heightmap";
     public static final String RAMP_NODE = KomaPermissions.BUILD + ".terrain.ramp";
     public static final String RIVER_NODE = KomaPermissions.BUILD + ".terrain.river";
     public static final String CANYON_NODE = KomaPermissions.BUILD + ".terrain.canyon";
-    public static final String PAINT_NODE = KomaPermissions.BUILD + ".terrain.paint";
     public static final String HYDRAULIC_NODE = KomaPermissions.BUILD + ".terrain.erode.hydraulic";
     public static final String THERMAL_NODE = KomaPermissions.BUILD + ".terrain.erode.thermal";
     private static final Pattern FILE_NAME = Pattern.compile("[a-z0-9_\\-]{1,64}");
@@ -49,26 +51,28 @@ public final class TerrainCards {
         static final int DEFAULT_VARIATION = 60;
 
         Stamp() {
-            super("stamp", ToolFamily.TERRAIN, ToolTarget.HAND,
-                    List.of("heightmap", "sello", "relieve", "stamp", "montana", "monte", "colina", "crater",
-                            "volcan", "duna", "isla", "acantilado", "meseta", "terreno", "terrain", "brush", "pincel"),
+            super("stamp", ToolTarget.SELECTION,
+                    List.of("heightmap", "sello", "relieve", "stamp", "estampar", "montana", "monte", "colina",
+                            "crater", "volcan", "duna", "isla", "acantilado", "meseta", "terreno", "terrain", "brush",
+                            "pincel"),
                     List.of(
+                            use(ToolUse.BRUSH, ToolUse.SELECTION),
                             new ToolParam.Choice("stamp", List.copyOf(StampLibrary.descriptions().keySet()),
                                     "montana", ToolParam.Choice.Style.GALLERY, "", null),
                             new ToolParam.Text("custom", "", 64, false, null),
-                            number("radius", 1, 32, 1, 4, 12).unit(ValueUnit.BLOCKS),
+                            only(ToolUse.BRUSH, number("radius", 1, 32, 1, 4, 12).unit(ValueUnit.BLOCKS)),
                             auto("height", 0, 96, 1, 5, 0, 12).unit(ValueUnit.BLOCKS),
                             choice("mode", ToolParam.Choice.Style.BUTTONS, "sumar", "restar", "maximo", "aplanar",
                                     "suavizar"),
                             autoPalette(),
                             number("variation", 0, 100, 5, 25, DEFAULT_VARIATION).unit(ValueUnit.PERCENT_POINTS),
-                            toggle("lock_seed", false),
+                            only(ToolUse.BRUSH, toggle("lock_seed", false)),
                             seed(),
                             number("intensity", 1, 100, 5, 25, 100).unit(ValueUnit.PERCENT_POINTS),
                             choice("rotation", ToolParam.Choice.Style.CYCLE, "mirada", "azar", "0", "45", "90", "135",
                                     "180", "225", "270", "315"),
                             auto("neutral", 0, 100, 5, 25, 2, 0).unit(ValueUnit.PERCENT),
-                            toggle("brush_preview", false),
+                            only(ToolUse.BRUSH, toggle("brush_preview", false)),
                             mask()
                     ));
         }
@@ -85,7 +89,7 @@ public final class TerrainCards {
         @Override
         public List<String> essentials() {
             // La paleta y la variación ya funcionan de serie (la de la categoría y un 60 %): van en «Más ajustes».
-            return List.of("stamp", "radius", "height", "mode");
+            return List.of(ToolUse.PARAM, "stamp", "radius", "height", "mode");
         }
 
         /** El sello que se usa: el propio escrito o el elegido en la galería. */
@@ -94,16 +98,26 @@ public final class TerrainCards {
             return custom.isEmpty() ? values.choice("stamp") : custom;
         }
 
-        /** La altura que se manda: la escrita o, en automático, la natural del sello para ese radio. */
+        /**
+         * La altura que se manda: la escrita o, en automático, la natural del sello para ese radio. Sobre la
+         * selección, en automático no se manda: el servidor la saca del tamaño de la selección.
+         */
         static String height(ToolValues values) {
-            return values.number("height") != null ? values.formatted("height")
-                    : Integer.toString(HeightmapBrush.naturalHeight(stamp(values), values.number("radius", 12)));
+            if (values.number("height") != null) {
+                return values.formatted("height");
+            }
+            if (values.choice(ToolUse.PARAM).equals(ToolUse.SELECTION.id())) {
+                return null;
+            }
+            return Integer.toString(HeightmapBrush.naturalHeight(stamp(values), values.number("radius", 12)));
         }
 
         @Override
         public String command(ToolValues values, boolean preview) {
-            CommandLine line = new CommandLine("komaedit pincel heightmap " + stamp(values))
-                    .word(values.formatted("radius"))
+            boolean brush = use(values) == ToolUse.BRUSH;
+            CommandLine line = new CommandLine((brush ? "komaedit pincel heightmap " : "komaedit relieve ")
+                    + stamp(values))
+                    .word(brush ? values.formatted("radius") : null)
                     .word(height(values))
                     .word(values.choice("mode"))
                     .word(values.choice("palette"))
@@ -111,18 +125,15 @@ public final class TerrainCards {
             if (!values.choice("rotation").equals("mirada")) {
                 line.flag("-r", values.choice("rotation"));
             }
-            return line.changed(values, "variation", "-x")
-                    .flag("-s", values.formatted("seed"))
-                    .flag("-k", values.toggle("lock_seed"))
-                    .flag("-c", values.formatted("neutral"))
-                    .flag("-m", values.text("mask"))
-                    .flag("-p", values.toggle("brush_preview"))
-                    .build();
-        }
-
-        @Override
-        public boolean previewable() {
-            return false;
+            line.changed(values, "variation", "-x")
+                    .flag("-s", values.formatted("seed"));
+            if (brush) {
+                line.flag("-k", values.toggle("lock_seed"));
+            }
+            line.flag("-c", values.formatted("neutral"))
+                    .flag("-m", values.text("mask"));
+            return brush ? line.flag("-p", values.toggle("brush_preview")).build()
+                    : line.flag(previewFlag(), preview).build();
         }
 
         @Override
@@ -154,7 +165,7 @@ public final class TerrainCards {
                 return format(StampLibrary.info(values.choice("stamp")).neutral());
             }
             if (paramId.equals("height")) {
-                return height(values.with("height", null));
+                return use(values) == ToolUse.BRUSH ? height(values.with("height", null)) : null;
             }
             return null;
         }
@@ -174,7 +185,7 @@ public final class TerrainCards {
     /** {@code /komaedit terreno rampa}: del primer al último punto. */
     public static final class Ramp extends ToolCard {
         Ramp() {
-            super("ramp", ToolFamily.TERRAIN, ToolTarget.PATH_OR_SELECTION,
+            super("ramp", ToolTarget.PATH_OR_SELECTION,
                     List.of("rampa", "ramp", "cuesta", "pendiente", "terraplen", "slope", "terreno", "terrain"),
                     List.of(
                             choice("profile", ToolParam.Choice.Style.BUTTONS, "plano", "cono"),
@@ -233,7 +244,7 @@ public final class TerrainCards {
     /** {@code /komaedit terreno rio|arroyo|canon|barranco}: cauce a lo largo de la trayectoria. */
     public static final class River extends ToolCard {
         River() {
-            super("river", ToolFamily.TERRAIN, ToolTarget.PATH_OR_SELECTION,
+            super("river", ToolTarget.PATH_OR_SELECTION,
                     List.of("rio", "río", "river", "arroyo", "stream", "canon", "cañon", "cañón", "canyon",
                             "barranco", "gully", "cauce", "foso", "agua", "terreno", "terrain"),
                     List.of(
@@ -336,11 +347,13 @@ public final class TerrainCards {
     /** {@code /komaedit terreno erosion}: hidráulica, térmica o completa sobre la selección. */
     public static final class Erosion extends ToolCard {
         Erosion() {
-            super("erosion", ToolFamily.TERRAIN, ToolTarget.SELECTION,
+            super("erosion", ToolTarget.SELECTION,
                     List.of("erosion", "erosión", "erode", "erosionar", "hidraulica", "termica", "lluvia",
-                            "terreno", "terrain"),
+                            "terreno", "terrain", "pincel", "brush"),
                     List.of(
+                            use(ToolUse.SELECTION, ToolUse.BRUSH),
                             choice("kind", ToolParam.Choice.Style.BUTTONS, "hidraulica", "termica", "completa"),
+                            only(ToolUse.BRUSH, number("radius", 2, 32, 1, 4, 10).unit(ValueUnit.BLOCKS)),
                             auto("iterations", 1, 2_000, 1, 10, 0, 3).unit(ValueUnit.TIMES),
                             decimal("strength", 1, 80, 1, 5, 10, 1).unit(ValueUnit.MULTIPLIER),
                             when(values -> !values.choice("kind").equals("hidraulica"), auto("angle", 5, 85, 1, 5, 0,
@@ -353,11 +366,23 @@ public final class TerrainCards {
 
         @Override
         public List<String> essentials() {
-            return List.of("kind", "iterations", "strength");
+            return List.of(ToolUse.PARAM, "kind", "radius", "iterations", "strength");
         }
 
+        /**
+         * Sobre la selección, la orden de siempre; con el pincel, la misma orden repetida en un cilindro alrededor de
+         * cada clic ({@code /komaedit pincel zona}).
+         */
         @Override
         public String command(ToolValues values, boolean preview) {
+            if (use(values) == ToolUse.BRUSH) {
+                return "komaedit pincel zona " + values.formatted("radius") + " " + selectionCommand(values, false)
+                        .substring("komaedit ".length());
+            }
+            return selectionCommand(values, preview);
+        }
+
+        private String selectionCommand(ToolValues values, boolean preview) {
             CommandLine line = new CommandLine("komaedit terreno erosion " + values.choice("kind"));
             Integer iterations = values.number("iterations");
             boolean strength = !values.isDefault("strength");
@@ -377,21 +402,32 @@ public final class TerrainCards {
 
         @Override
         public List<String> permissions(ToolValues values) {
-            return switch (values.choice("kind")) {
-                case "hidraulica" -> List.of(HYDRAULIC_NODE);
-                case "termica" -> List.of(THERMAL_NODE);
-                default -> List.of(HYDRAULIC_NODE, THERMAL_NODE);
-            };
+            List<String> nodes = new ArrayList<>();
+            if (use(values) == ToolUse.BRUSH) {
+                nodes.add(TouchUpCard.ZONE_NODE);
+            }
+            switch (values.choice("kind")) {
+                case "hidraulica" -> nodes.add(HYDRAULIC_NODE);
+                case "termica" -> nodes.add(THERMAL_NODE);
+                default -> nodes.addAll(List.of(HYDRAULIC_NODE, THERMAL_NODE));
+            }
+            return nodes;
         }
 
         @Override
         public java.util.Set<String> allPermissions() {
-            return new java.util.LinkedHashSet<>(List.of(HYDRAULIC_NODE, THERMAL_NODE));
+            return new java.util.LinkedHashSet<>(List.of(HYDRAULIC_NODE, THERMAL_NODE, TouchUpCard.ZONE_NODE));
         }
 
         @Override
         public List<ToolAction> actions() {
             return List.of(new ToolAction("estimate", List.of(), false, values -> command(values, false) + " -e"));
+        }
+
+        /** Estimar solo sobre la selección: el pincel no sabe cuánto va a tocar hasta el clic. */
+        @Override
+        public List<ToolAction> actions(ToolValues values) {
+            return use(values) == ToolUse.BRUSH ? List.of() : actions();
         }
 
         @Override
@@ -413,41 +449,6 @@ public final class TerrainCards {
             if (thermal && values.decimal("strength") > 2.0) {
                 problems.add(ToolProblem.error("thermal_strength", "2"));
             }
-            noSpaces(values, "mask", problems);
-            return problems;
-        }
-    }
-
-    /** {@code /komaedit terreno pintar}: repinta la superficie de la selección sin cambiar alturas. */
-    public static final class Paint extends ToolCard {
-        Paint() {
-            super("paint", ToolFamily.TERRAIN, ToolTarget.SELECTION,
-                    List.of("pintar", "paint", "superficie", "surface", "paleta", "hierba", "terreno", "terrain"),
-                    List.of(palette(), mask()));
-        }
-
-        @Override
-        public String command(ToolValues values, boolean preview) {
-            return new CommandLine("komaedit terreno pintar " + values.choice("palette"))
-                    .flag("-m", values.text("mask"))
-                    .flag(previewFlag(), preview)
-                    .build();
-        }
-
-        @Override
-        public List<String> permissions(ToolValues values) {
-            return List.of(PAINT_NODE);
-        }
-
-        @Override
-        public List<ToolAction> actions() {
-            return List.of(new ToolAction("estimate", List.of(PAINT_NODE), false,
-                    values -> command(values, false) + " -e"));
-        }
-
-        @Override
-        public List<ToolProblem> validate(ToolValues values) {
-            List<ToolProblem> problems = new ArrayList<>();
             noSpaces(values, "mask", problems);
             return problems;
         }

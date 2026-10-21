@@ -71,8 +71,8 @@ public final class ChoiceThumbnails {
     /** Si la opción tiene miniatura: árboles, tejados, rocas y sellos. */
     public static boolean supports(String card, String param) {
         return switch (card + "/" + param) {
-            case "tree/species", "roof/type", "rock/type", "stamp/stamp", "paintbrush/stamp",
-                 "paintbrush/paint_palette" -> true;
+            case "tree/species", "roof/type", "rock/type", "stamp/stamp", "paint/stamp",
+                 "paint/paint_palette" -> true;
             default -> false;
         };
     }
@@ -117,7 +117,7 @@ public final class ChoiceThumbnails {
             case "roof" -> voxels(roof(option));
             case "rock" -> voxels(rock(option));
             case "stamp" -> StampPreview.argb(option, SIZE);
-            case "paintbrush" -> param.equals("stamp") ? PaintPreview.footprint(option, SIZE)
+            case "paint" -> param.equals("stamp") ? PaintPreview.footprint(option, SIZE)
                     : PaintPreview.palette(option, SIZE);
             default -> new int[0];
         };

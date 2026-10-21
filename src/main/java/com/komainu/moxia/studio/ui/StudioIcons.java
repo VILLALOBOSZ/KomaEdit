@@ -24,8 +24,10 @@ public final class StudioIcons {
         // Sobre qué trabaja una herramienta.
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
-        TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, PAINT, TEXT, ANALYZE, GRAVITY, SNOW, DRAIN, WATERLOG,
-        BIOME, SYMMETRY, CAPABILITIES, PAINT_BRUSH, VIEWS, RULER, NOTE,
+        TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
+        TOUCH_UP, RULER,
+        // Los modos de Retocar.
+        GRAVITY, SNOW, DRAIN, WATERLOG, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
         GIZMO
     }
@@ -477,18 +479,6 @@ public final class StudioIcons {
                 "#####.######",
                 "############",
                 "############");
-        mask(Icon.PAINT,
-                "............",
-                ".##########.",
-                ".#########+#",
-                ".##########.",
-                "..........#.",
-                ".....######.",
-                ".....#......",
-                "....###.....",
-                "....###.....",
-                "....###.....",
-                "....###.....");
         mask(Icon.TEXT,
                 "............",
                 ".##########.",
@@ -500,21 +490,7 @@ public final class StudioIcons {
                 ".....##.....",
                 ".....##.....",
                 "....####....");
-        // Vistas guardadas: una cámara con su objetivo.
-        mask(Icon.VIEWS,
-                "............",
-                "............",
-                ".##.........",
-                "########....",
-                "#......#.###",
-                "#..##..####.",
-                "#.#..#.###..",
-                "#..##..####.",
-                "#......#.###",
-                "########....",
-                "............",
-                "............");
-        // La regla: una cinta con sus marcas, la de en medio más larga.
+        // Medir y anotar: una regla, con sus marcas y la de en medio más larga.
         mask(Icon.RULER,
                 "............",
                 "............",
@@ -527,20 +503,6 @@ public final class StudioIcons {
                 "############",
                 "............",
                 "............",
-                "............");
-        // Una nota: un papel con la esquina doblada y dos renglones.
-        mask(Icon.NOTE,
-                "..#######...",
-                "..#.....##..",
-                "..#.....#.#.",
-                "..#.....####",
-                "..#.####...#",
-                "..#........#",
-                "..#.######.#",
-                "..#........#",
-                "..#.####...#",
-                "..#........#",
-                "..##########",
                 "............");
         mask(Icon.ANALYZE,
                 "..........##",
@@ -664,6 +626,76 @@ public final class StudioIcons {
                 "+++.........",
                 "............",
                 "####++++####");
+        // Una llana de albañil: el mango arriba y la hoja abajo.
+        mask(Icon.TOUCH_UP,
+                ".........##.",
+                "........##..",
+                ".......##...",
+                "......##....",
+                ".....+#.....",
+                "....+###+...",
+                "...+#####+..",
+                "..+#######+.",
+                ".+#########+",
+                "..+#######+.",
+                "...+#####+..",
+                "....+###+...");
+        // Un bloque con una grieta que se cierra: lo infestado vuelve a ser piedra.
+        mask(Icon.DEINFEST,
+                "############",
+                "#..........#",
+                "#...#......#",
+                "#....#.....#",
+                "#.....#....#",
+                "#....#.....#",
+                "#...#......#",
+                "#..........#",
+                "#......+++.#",
+                "#.....+#+..#",
+                "#.....+++..#",
+                "############");
+        // Una hoja con su nervio.
+        mask(Icon.LEAVES,
+                ".......#####",
+                ".....###++##",
+                "....##+##+##",
+                "...##+##++##",
+                "..##+##+++#.",
+                "..#+##++++#.",
+                ".##+#+++##..",
+                ".#+#++###...",
+                ".#+####.....",
+                ".##.........",
+                "#...........",
+                "............");
+        // Una losa con agua dentro.
+        mask(Icon.WET,
+                "............",
+                ".....#......",
+                "....###.....",
+                "...#####....",
+                "...#####....",
+                "....###.....",
+                "............",
+                "############",
+                "#++++++++++#",
+                "#++++++++++#",
+                "#++++++++++#",
+                "############");
+        // Un panal: la cera de abeja.
+        mask(Icon.WAX,
+                "...##..##...",
+                "..#++##++#..",
+                "..#++##++#..",
+                "...##..##...",
+                ".##..##..##.",
+                "#++##++##++#",
+                "#++##++##++#",
+                ".##..##..##.",
+                "...##..##...",
+                "..#++##++#..",
+                "..#++##++#..",
+                "...##..##...");
     }
 
     private StudioIcons() {
