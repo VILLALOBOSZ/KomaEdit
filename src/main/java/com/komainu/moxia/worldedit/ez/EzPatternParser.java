@@ -1,6 +1,9 @@
 package com.komainu.moxia.worldedit.ez;
 
+import com.komainu.moxia.command.ResultSuggestions;
+import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.noise.NoiseSpec;
+import com.komainu.moxia.placement.DirectionExpr;
 import com.komainu.moxia.progress.ProgressLine;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.extension.input.InputParseException;
@@ -49,6 +52,12 @@ public final class EzPatternParser extends InputParser<Pattern> {
 
     @Override
     public Stream<String> getSuggestions(String input, ParserContext context) {
+        if (input.endsWith("=")) {
+            // El = de ezEdits: #palette[##Ice= se despliega en sus bloques.
+            UUID playerId = EzContext.playerId(context);
+            return ResultSuggestions.complete(input, playerId == null ? null : SavedPalettes.resolver(playerId),
+                    DirectionExpr.Context.NONE).stream();
+        }
         if (!input.startsWith("#") || input.startsWith("##") || input.indexOf('[') >= 0) {
             return Stream.empty();
         }
