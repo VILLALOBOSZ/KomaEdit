@@ -40,6 +40,16 @@ Lo que un cliente modificado podía hacer con los paquetes del Studio y que ahor
 - **Llenar el disco de recetas.** Guardar no tenía tope; ahora son como mucho 64 por jugador, las que enseña el Studio.
 - **Repetir sin fin peticiones caras.** Barras guardadas (cada una escribe el archivo, de hasta 512 KiB), compartir vistas (avisa a todos los jugadores), empezar un trazo del pincel de selección (copia la selección entera) y las acciones de recetas llevan un freno por jugador: `RequestBudget`, unas cuantas seguidas y unas pocas por segundo.
 - Pruebas nuevas: `EditorActionPermissionTest`, `MagicAreaTest`, `FastPaintLimitsTest`, `RequestBudgetTest`, `RecipeStoreLimitTest` y dos casos más en `ThumbnailChunksTest`.
+### Auditoría de hilos, ciclo de vida y arranque
+
+- **Una caída con una reconstrucción a medias dejaba WorldEdit sin bloques.** Fabric inicia los mods por orden de id, así que el `SERVER_STARTED` de KomaEdit corre antes que el de WorldEdit, que es el que llena sus registros. La recuperación leía su archivo ahí: todas las constantes de `BlockTypes` quedaban a `null` para el resto del proceso (fallaban `//copy`, `//paste`, `//cut`, `//move` y las ediciones de KomaEdit que ponen aire), la obra no se terminaba y el archivo se quedaba, así que volvía a pasar en cada arranque. Ahora se lee en el primer tick.
+- **La bitácora de trabajos ya no crece sin fin.** Cada edición dejaba su archivo en `<mundo>/komaedit/players/<uuid>/jobs/` para siempre, y al entrar el jugador se leían todos en el hilo del servidor. Un trabajo que termina o se cancela borra el suyo (también su `.bak`, que si no lo resucitaba como interrumpido al abrir el proyecto). Los que dejaron versiones anteriores se borran la próxima vez que entra el jugador, y uno ilegible ya no impide marcar los demás. `/komaedit project status` cuenta solo los que quedan en disco: los que una caída dejó a medias.
+- **La brocha de esculpir y su vista previa se olvidan al desconectarse y al parar el servidor.** La vista previa, con su plan entero, seguía en memoria y, en un solo jugador, pasaba al siguiente mundo, donde `/komaedit sculpt apply` la colocaba: los dos mundos son `minecraft:overworld` y la comprobación de dimensión no lo paraba.
+- **La pintura rápida se cierra al cambiar de dimensión o al reaparecer.** Escribía con la sesión del mundo donde empezó y leía el del jugador: los toques pendientes pintaban el mundo anterior según el terreno del nuevo. Lo pintado queda en `//undo`.
+- **Pruebas nuevas que siguen el bytecode compilado** (`InitReach`, con ASM):
+  - `InitOrderTest` sigue de forma transitiva (inicializadores estáticos incluidos) lo que corre en `onInitialize`, al registrar las órdenes y en `SERVER_STARTING`/`SERVER_STARTED`, y vigila también `onInitializeClient` (aún sin ventana, opciones, texturas, fuente ni idiomas).
+  - `ThreadConfinementTest`: nada de lo que se manda a otro hilo (ejecutores, `AsyncEngine.submit` y lo que entrega) toca el mundo, un jugador, el servidor ni una sesión de WorldEdit.
+  - `LifecycleCleanupTest`: lo de cada jugador se olvida al desconectarse, nada de un servidor parado llega al siguiente mundo, y lo que tiene una `EditSession` abierta para un jugador se cierra al cambiar de mundo.
 
 ## 2.0.1 (estable, 2026-10-21)
 

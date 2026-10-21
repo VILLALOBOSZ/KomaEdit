@@ -181,6 +181,8 @@ public final class KomaEditMod implements ModInitializer {
             PathManager.remove(handler.player.getUuid());
             com.komainu.moxia.edit.PendingBuilds.remove(handler.player.getUuid());
             BrushManager.remove(handler.player.getUuid());
+            // La brocha de esculpir y su vista previa (con su plan entero), que si no seguían ahí al volver.
+            com.komainu.moxia.sculpt.SculptManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
             RegionOperationService.cancel(handler.player.getUuid());
             ServerWork.forget(handler.player.getUuid());
@@ -194,10 +196,16 @@ public final class KomaEditMod implements ModInitializer {
             com.komainu.moxia.fluid.LeakMarkers.forget(handler.player.getUuid());
         });
         // La vista previa es solo para quien edita y en su dimensión: se descarta al cambiar de mundo o reaparecer.
-        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) ->
-                PlanPreviews.discard(player, "al cambiar de dimensión"));
-        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
-                PlanPreviews.discard(newPlayer, "al reaparecer"));
+        // El trazo de pintura rápida escribe con la EditSession del mundo donde empezó y lee el del jugador: se cierra
+        // al cambiar de mundo (lo pintado queda en //undo), o pintaría en el anterior según el terreno del nuevo.
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
+            PlanPreviews.discard(player, "al cambiar de dimensión");
+            FastPaintService.remove(player.getUuid());
+        });
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            PlanPreviews.discard(newPlayer, "al reaparecer");
+            FastPaintService.remove(newPlayer.getUuid());
+        });
         // Los displays de vista previa solo existen en el cliente; si alguno llegara al mundo, se borra al cargar.
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> PreviewDisplays.onEntityLoad(entity));
         // Todo lo que KomaEdit hace en el hilo del servidor sale de un mismo presupuesto por tick: lo ligero primero
@@ -240,6 +248,7 @@ public final class KomaEditMod implements ModInitializer {
             PathManager.clearAll();
             com.komainu.moxia.edit.PendingBuilds.clearAll();
             BrushManager.clearAll();
+            com.komainu.moxia.sculpt.SculptManager.clearAll();
             ProjectStorage.clearBindings();
             RegionOperationService.clearAll();
             ServerWork.clearAll();
