@@ -68,23 +68,23 @@ class LassoDrawTest {
         ToolCard card = ToolCatalog.byId("select");
         ToolValues values = card.defaults();
         assertEquals("komaedit sel grow 1 sphere -s", card.command(values, false));
-        assertEquals("komaedit sel shrink 3 cube", card.command(values.with("operation", "shrink")
-                .with("amount", 3).with("shape", "cube").with("surface", false), false));
-        assertEquals("komaedit sel complement -s -n", card.command(values.with("operation", "complement")
-                .with("non_solid", true), false));
-        assertEquals("komaedit sel box", card.command(values.with("operation", "box"), false));
-        assertEquals("komaedit sel clear", card.command(values.with("operation", "clear"), false));
+        assertEquals("komaedit sel shrink 3 cube", card.command(values.with(SelectionCard.OPERATION, "shrink")
+                .with(SelectionCard.AMOUNT, 3).with(SelectionCard.SHAPE, "cube").with(SelectionCard.SURFACE, false), false));
+        assertEquals("komaedit sel complement -s -n", card.command(values.with(SelectionCard.OPERATION, "complement")
+                .with(SelectionCard.NON_SOLID, true), false));
+        assertEquals("komaedit sel box", card.command(values.with(SelectionCard.OPERATION, "box"), false));
+        assertEquals("komaedit sel clear", card.command(values.with(SelectionCard.OPERATION, "clear"), false));
         assertEquals("komaedit sel undo", card.actions().getFirst().command().apply(values));
 
-        SelectionCard.Settings lasso = SelectionCard.settings(values.with("depth", "layers").with("layers", 5));
+        SelectionCard.Settings lasso = SelectionCard.settings(values.with(SelectionCard.DEPTH, "layers").with(SelectionCard.LAYERS, 5));
         assertTrue(lasso.lassoTool());
         assertEquals(5, lasso.lasso().reach());
-        SelectionCard.Settings brush = SelectionCard.settings(values.with("tool", "brush").with("radius", 4)
-                .with("shape", "octahedron"));
+        SelectionCard.Settings brush = SelectionCard.settings(values.with(SelectionCard.TOOL, "brush").with(SelectionCard.RADIUS, 4)
+                .with(SelectionCard.SHAPE, "octahedron"));
         assertTrue(brush.brushTool());
         assertEquals(4, brush.radius());
         assertEquals("octahedron", brush.shape().id());
-        assertFalse(card.params().stream().filter(param -> param.id().equals("depth")).findFirst().orElseThrow()
-                .visible(values.with("tool", "brush")), "la profundidad es solo del lazo");
+        assertFalse(card.params().stream().filter(param -> param.id().equals(SelectionCard.DEPTH)).findFirst().orElseThrow()
+                .visible(values.with(SelectionCard.TOOL, "brush")), "la profundidad es solo del lazo");
     }
 }

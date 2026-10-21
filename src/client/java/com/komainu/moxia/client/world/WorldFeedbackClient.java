@@ -1,6 +1,7 @@
 package com.komainu.moxia.client.world;
 
 import com.komainu.moxia.client.gui.studio.ToolClientState;
+import com.komainu.moxia.feedback.AlignmentGuidePayload;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.feedback.FeedbackEventPayload;
 import com.komainu.moxia.feedback.SelectionPayload;
@@ -42,7 +43,7 @@ import org.lwjgl.glfw.GLFW;
  *
  * <ul>
  *     <li>Recibe y dibuja la vista previa ({@link PlanPreviewRenderer}), la selección y la simetría
- *     ({@link WorldOverlayRenderer}).</li>
+ *     ({@link WorldOverlayRenderer}) y la alineación del pincel de colocación ({@link AlignmentGuideRenderer}).</li>
  *     <li>Teclas: aplicar o descartar la vista previa (Intro y Retroceso, solo cuando hay una esperando), repetir la
  *     última operación donde estás, cuentagotas de bloque y los ajustes; todas configurables en Controles.</li>
  *     <li>Sonidos sutiles al confirmar, al terminar una edición larga y al fallar, si están activados.</li>
@@ -71,6 +72,8 @@ public final class WorldFeedbackClient {
                 WorldOverlayRenderer.selection(payload));
         ClientPlayNetworking.registerGlobalReceiver(SymmetryGuidePayload.ID, (payload, context) ->
                 WorldOverlayRenderer.symmetry(payload));
+        ClientPlayNetworking.registerGlobalReceiver(AlignmentGuidePayload.ID, (payload, context) ->
+                AlignmentGuideRenderer.receive(payload));
         ClientPlayNetworking.registerGlobalReceiver(SelectionPayloads.Outline.ID, (payload, context) ->
                 WorldOverlayRenderer.outline(payload));
         ClientPlayNetworking.registerGlobalReceiver(FeedbackEventPayload.ID, (payload, context) ->
@@ -78,9 +81,12 @@ public final class WorldFeedbackClient {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(() -> {
             PlanPreviewRenderer.clear();
             WorldOverlayRenderer.clear();
+            AlignmentGuideRenderer.clear();
         }));
         WorldRenderEvents.LAST.register(PlanPreviewRenderer::render);
         WorldRenderEvents.AFTER_ENTITIES.register(WorldOverlayRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(AlignmentGuideRenderer::renderLabels);
+        WorldRenderEvents.LAST.register(AlignmentGuideRenderer::render);
 
         confirm = key("preview_confirm", GLFW.GLFW_KEY_ENTER);
         discard = key("preview_discard", GLFW.GLFW_KEY_BACKSPACE);

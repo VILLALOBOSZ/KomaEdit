@@ -1,5 +1,6 @@
 package com.komainu.moxia.studio.ui;
 
+import com.komainu.moxia.studio.tools.SelectionCard;
 import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
 import com.komainu.moxia.studio.tools.ToolContext;
@@ -65,7 +66,7 @@ class SelectCardMockupTest {
         driver.view.selectStage(StudioStage.TOOLS, driver.host);
         ToolCard card = ToolCatalog.byId("select");
         driver.view.tools().select(card, driver.host);
-        driver.view.tools().setValues(card, driver.view.tools().values(card).with("tool", tool));
+        driver.view.tools().setValues(card, driver.view.tools().values(card).with(SelectionCard.TOOL, tool));
         assertEquals(tool.equals("lasso") ? StudioView.WorldAction.LASSO : StudioView.WorldAction.FREEHAND,
                 driver.view.worldAction(driver.host));
         if (more) {

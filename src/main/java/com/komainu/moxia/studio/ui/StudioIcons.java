@@ -25,16 +25,31 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
-        TOUCH_UP, LASSO,
+        TOUCH_UP, HOTBARS, REBUILD, LASSO,
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
-        GIZMO
+        GIZMO,
+        // Compartir con otro servidor (un código para copiar).
+        SHARE
     }
 
     private static final Map<Icon, String[]> MASKS = new EnumMap<>(Icon.class);
 
     static {
+        mask(Icon.HOTBARS,
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............",
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............",
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............");
         mask(Icon.PATH,
                 "............",
                 "###.........",
@@ -626,6 +641,19 @@ public final class StudioIcons {
                 "..+#######+.",
                 "...+#####+..",
                 "....+###+...");
+        // Una casa a medio levantar: la mitad de abajo ya puesta y lo que falta, con el tejado, aún apagado.
+        mask(Icon.REBUILD,
+                ".....++.....",
+                "....++++....",
+                "...++++++...",
+                "..++++++++..",
+                ".++++++++++.",
+                "..++++++++..",
+                "..++++++++..",
+                "..########..",
+                "..###..###..",
+                "..###..###..",
+                "############");
         // Un lazo: el contorno cerrado que rodea lo que se selecciona, con su nudo y la cuerda que cuelga.
         mask(Icon.LASSO,
                 "...######...",
@@ -699,6 +727,22 @@ public final class StudioIcons {
     }
 
     private StudioIcons() {
+    }
+
+    static {
+        // Una flecha que sale de la caja: lo que se lleva a otro servidor.
+        mask(Icon.SHARE,
+                ".....##.....",
+                "....####....",
+                "...##..##...",
+                ".....##.....",
+                ".....##.....",
+                ".##..##..##.",
+                ".#...##...#.",
+                ".#........#.",
+                ".#........#.",
+                ".##########.",
+                "............");
     }
 
     private static void mask(Icon icon, String... rows) {

@@ -123,6 +123,30 @@ public final class PerspectiveRaster implements AutoCloseable {
                 texture, shade, alpha, ghost);
     }
 
+    /**
+     * Una cara cualquiera de color liso, con sus cuatro esquinas en sentido antihorario vistas desde fuera (las de un
+     * bloque girado, como un block display).
+     */
+    void quad(Vec3[] corners, int rgb, double shade) {
+        Vec3 normal = corners[1].subtract(corners[0]).cross(corners[2].subtract(corners[0]));
+        if (normal.dot(corners[0].subtract(eye)) >= 0.0) {
+            return;
+        }
+        double[][] screen = new double[4][];
+        for (int corner = 0; corner < 4; corner++) {
+            screen[corner] = project(corners[corner]);
+            if (screen[corner] == null) {
+                return;
+            }
+        }
+        int[] flat = new int[256];
+        Arrays.fill(flat, 0xFF000000 | rgb);
+        triangle(screen[0], screen[1], screen[2], new double[]{0, 1}, new double[]{1, 1}, new double[]{1, 0},
+                flat, shade, 1.0, null);
+        triangle(screen[0], screen[2], screen[3], new double[]{0, 1}, new double[]{1, 0}, new double[]{0, 0},
+                flat, shade, 1.0, null);
+    }
+
     /** Nueva capa de fantasma: profundidades vacías. */
     public double[] layer() {
         return new double[width * height];

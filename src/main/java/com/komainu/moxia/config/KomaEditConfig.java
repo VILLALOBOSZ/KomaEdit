@@ -11,6 +11,8 @@ import com.komainu.moxia.image.ImageConfig;
 import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.performance.TickBudget;
 import com.komainu.moxia.persistence.AtomicStorage;
+import com.komainu.moxia.placement.AlignmentGuideSettings;
+import com.komainu.moxia.share.ShareConfig;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -29,6 +31,9 @@ public final class KomaEditConfig {
     public static void load() {
         ImageConfig.load(directory());
         BlueprintConfig.load(directory());
+        AlignmentGuideSettings.load(directory());
+        com.komainu.moxia.rebuild.RebuildConfig.load(directory());
+        ShareConfig.load(directory());
         settings = load(file());
         apply(settings);
     }

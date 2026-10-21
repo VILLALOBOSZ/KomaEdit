@@ -2,6 +2,7 @@ package com.komainu.moxia.studio.net;
 
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.analysis.MaterialReport;
+import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.nature.NaturePresets;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.preview.PlanPreviews;
@@ -20,6 +21,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +39,8 @@ import java.util.UUID;
 public final class StudioToolsNetwork {
     /** Jugadores a los que se les dijo que había algo en marcha: al terminar reciben un último paquete vacío. */
     private static final Set<UUID> BUSY = new HashSet<>();
+    /** Caracteres de cada paleta guardada que llegan al Studio. */
+    private static final int PALETTE_PREVIEW = 160;
 
     private StudioToolsNetwork() {
     }
@@ -78,9 +82,17 @@ public final class StudioToolsNetwork {
         }
         Map<String, String> trees = Map.of();
         Map<String, String> rocks = Map.of();
+        Map<String, String> palettes = Map.of();
         try {
             trees = NaturePresets.trees(player.getUuid()).all();
             rocks = NaturePresets.rocks(player.getUuid()).all();
+            // Solo se enseñan (en el tooltip de «Compartir»): este estado va cada segundo, así que corto.
+            palettes = new LinkedHashMap<>();
+            for (Map.Entry<String, String> entry : SavedPalettes.store(player.getUuid()).all().entrySet()) {
+                String value = entry.getValue();
+                palettes.put(entry.getKey(), value.length() <= PALETTE_PREVIEW ? value
+                        : value.substring(0, PALETTE_PREVIEW - 1) + "…");
+            }
         } catch (RuntimeException ignored) {
             // Sin proyecto abierto no hay presets guardados.
         }
@@ -93,7 +105,7 @@ public final class StudioToolsNetwork {
         } catch (RuntimeException ignored) {
             // Sin sesión de WorldEdit no hay historial que enseñar.
         }
-        return new ToolStatePayload(granted, selection, fonts, trees, rocks, symmetry.active(),
+        return new ToolStatePayload(granted, selection, fonts, trees, rocks, palettes, symmetry.active(),
                 symmetry.mode().id(), symmetry.mode().arms(),
                 symmetry.center() == null ? "" : symmetry.center().describe(), symmetry.worldEdit(), elsewhere,
                 history.lines(), history.undone());

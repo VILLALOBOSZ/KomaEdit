@@ -109,6 +109,12 @@ public final class ToolClientState {
                 current.rockPresets(), symmetry, capabilities, biomes(client), report);
     }
 
+    /** Las paletas guardadas del jugador que contó el servidor (nombre → bloques), para compartirlas. */
+    public static java.util.Map<String, String> palettes() {
+        ToolStatePayload current = state;
+        return current == null ? java.util.Map.of() : current.palettes();
+    }
+
     /** Biomas del registro que el servidor mandó al entrar (también los de datapacks y mods), ordenados. */
     private static List<String> biomes(MinecraftClient client) {
         if (client == null || client.world == null) {

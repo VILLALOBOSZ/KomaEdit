@@ -11,10 +11,24 @@ import java.util.Set;
 
 /**
  * Seleccionar a mano, como en Axiom: con el ratón en el mundo, una caja, un lazo o un pincel (lo elige
- * {@code tool}); Mayús suma, Ctrl resta y Alt interseca con lo que ya había. Construir aplica la operación elegida a la
+ * {@link #TOOL}); Mayús suma, Ctrl resta y Alt interseca con lo que ya había. Construir aplica la operación elegida a la
  * selección (ampliar, reducir, invertir, pasar a caja o quitar) y «Deshacer trazo» vuelve atrás un trazo.
  */
 public final class SelectionCard extends ToolCard {
+    /*
+     * Los ids de los ajustes llevan el prefijo de la tarjeta: la etiqueta (gui.komaedit.tools.param.<id>) y las
+     * opciones (gui.komaedit.tools.option.<id>.<opción>) se comparten entre tarjetas, y «superficie» o «forma» ya
+     * significan otra cosa en otras.
+     */
+    public static final String TOOL = "select_tool";
+    public static final String DEPTH = "select_depth";
+    public static final String LAYERS = "select_layers";
+    public static final String RADIUS = "select_radius";
+    public static final String SHAPE = "select_shape";
+    public static final String NON_SOLID = "select_non_solid";
+    public static final String OPERATION = "select_operation";
+    public static final String AMOUNT = "select_amount";
+    public static final String SURFACE = "select_surface";
     public static final List<String> TOOLS = List.of("box", "lasso", "brush");
     public static final List<String> OPERATIONS = List.of("grow", "shrink", "complement", "box", "clear");
 
@@ -23,34 +37,34 @@ public final class SelectionCard extends ToolCard {
                 List.of("select", "seleccionar", "selección", "seleccion", "lasso", "lazo", "freehand", "mano alzada",
                         "pincel de selección", "invertir", "ampliar", "reducir", "grow", "shrink", "axiom"),
                 List.of(
-                        new ToolParam.Choice("tool", TOOLS, "lasso", ToolParam.Choice.Style.BUTTONS, "", null),
-                        when(SelectionCard::lasso, choice("depth", ToolParam.Choice.Style.BUTTONS, "surface",
+                        new ToolParam.Choice(TOOL, TOOLS, "lasso", ToolParam.Choice.Style.BUTTONS, "", null),
+                        when(SelectionCard::lasso, choice(DEPTH, ToolParam.Choice.Style.BUTTONS, "surface",
                                 "layers", "through")),
-                        when(values -> lasso(values) && values.choice("depth").equals("layers"),
-                                number("layers", 1, LassoSettings.MAX_LAYERS, 1, 4, 3).unit(ValueUnit.BLOCKS)),
-                        when(SelectionCard::brush, number("radius", 0, BrushShape.MAX_RADIUS, 1, 2, 2)
+                        when(values -> lasso(values) && values.choice(DEPTH).equals("layers"),
+                                number(LAYERS, 1, LassoSettings.MAX_LAYERS, 1, 4, 3).unit(ValueUnit.BLOCKS)),
+                        when(SelectionCard::brush, number(RADIUS, 0, BrushShape.MAX_RADIUS, 1, 2, 2)
                                 .unit(ValueUnit.BLOCKS)),
-                        when(values -> brush(values) || resizing(values), choice("shape",
+                        when(values -> brush(values) || resizing(values), choice(SHAPE,
                                 ToolParam.Choice.Style.BUTTONS, "sphere", "cube", "octahedron")),
-                        when(values -> !values.choice("tool").equals("box"), toggle("non_solid", false)),
-                        new ToolParam.Choice("operation", OPERATIONS, "grow", ToolParam.Choice.Style.BUTTONS, "",
+                        when(values -> !values.choice(TOOL).equals("box"), toggle(NON_SOLID, false)),
+                        new ToolParam.Choice(OPERATION, OPERATIONS, "grow", ToolParam.Choice.Style.BUTTONS, "",
                                 null),
-                        when(SelectionCard::resizing, number("amount", 1, 16, 1, 2, 1).unit(ValueUnit.BLOCKS)),
-                        when(values -> resizing(values) || values.choice("operation").equals("complement"),
-                                toggle("surface", true))
+                        when(SelectionCard::resizing, number(AMOUNT, 1, 16, 1, 2, 1).unit(ValueUnit.BLOCKS)),
+                        when(values -> resizing(values) || values.choice(OPERATION).equals("complement"),
+                                toggle(SURFACE, true))
                 ));
     }
 
     private static boolean lasso(ToolValues values) {
-        return values.choice("tool").equals("lasso");
+        return values.choice(TOOL).equals("lasso");
     }
 
     private static boolean brush(ToolValues values) {
-        return values.choice("tool").equals("brush");
+        return values.choice(TOOL).equals("brush");
     }
 
     private static boolean resizing(ToolValues values) {
-        String operation = values.choice("operation");
+        String operation = values.choice(OPERATION);
         return operation.equals("grow") || operation.equals("shrink");
     }
 
@@ -70,25 +84,25 @@ public final class SelectionCard extends ToolCard {
     }
 
     public static Settings settings(ToolValues values) {
-        boolean nonSolid = values.toggle("non_solid");
-        LassoSettings lasso = new LassoSettings(LassoSettings.Depth.byId(values.choice("depth")),
-                values.number("layers", 3), nonSolid);
-        return new Settings(values.choice("tool"), lasso, values.number("radius", 2),
-                BrushShape.byId(values.choice("shape")), nonSolid);
+        boolean nonSolid = values.toggle(NON_SOLID);
+        LassoSettings lasso = new LassoSettings(LassoSettings.Depth.byId(values.choice(DEPTH)),
+                values.number(LAYERS, 3), nonSolid);
+        return new Settings(values.choice(TOOL), lasso, values.number(RADIUS, 2),
+                BrushShape.byId(values.choice(SHAPE)), nonSolid);
     }
 
     @Override
     public List<String> essentials() {
-        return List.of("tool", "depth", "layers", "radius", "operation", "amount");
+        return List.of(TOOL, DEPTH, LAYERS, RADIUS, OPERATION, AMOUNT);
     }
 
     /** Construir: la operación elegida sobre la selección de ahora. */
     @Override
     public String command(ToolValues values, boolean preview) {
-        String flags = (values.toggle("surface") ? " -s" : "") + (values.toggle("non_solid") ? " -n" : "");
-        return switch (values.choice("operation")) {
-            case "grow", "shrink" -> "komaedit sel " + values.choice("operation") + " " + values.formatted("amount")
-                    + " " + values.choice("shape") + flags;
+        String flags = (values.toggle(SURFACE) ? " -s" : "") + (values.toggle(NON_SOLID) ? " -n" : "");
+        return switch (values.choice(OPERATION)) {
+            case "grow", "shrink" -> "komaedit sel " + values.choice(OPERATION) + " " + values.formatted(AMOUNT)
+                    + " " + values.choice(SHAPE) + flags;
             case "complement" -> "komaedit sel complement" + flags;
             case "box" -> "komaedit sel box";
             default -> "komaedit sel clear";
@@ -102,7 +116,7 @@ public final class SelectionCard extends ToolCard {
 
     @Override
     public List<String> permissions(ToolValues values) {
-        return List.of(switch (values.choice("operation")) {
+        return List.of(switch (values.choice(OPERATION)) {
             case "grow" -> SelectionToolService.GROW;
             case "shrink" -> SelectionToolService.SHRINK;
             case "complement" -> SelectionToolService.COMPLEMENT;
