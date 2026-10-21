@@ -208,6 +208,7 @@ public final class KomaEditMod implements ModInitializer {
             PlanPreviews.clearAll();
             ProgressBars.clearAll();
             PreviewDisplays.clearOrphans();
+            com.komainu.moxia.studio.net.StudioToolsNetwork.clearAll();
             com.komainu.moxia.command.ColorCommands.clearAll();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");

@@ -1,5 +1,6 @@
 package com.komainu.moxia.shape.tube;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeExpression;
@@ -165,7 +166,8 @@ class TubeExpressionTest {
         Set<BlockVector3> blocks = TubeFigures.generate(path, parameters, LIMIT);
         long elapsed = (System.nanoTime() - start) / 1_000_000L;
         assertTrue(blocks.size() > 10_000, "celosía con muy pocos bloques: " + blocks.size());
-        assertTrue(elapsed < 8_000, "demasiado lento: " + elapsed + " ms para " + blocks.size() + " bloques");
+        FullTests.assertFasterThan(elapsed, 8_000, "demasiado lento: " + elapsed + " ms para " + blocks.size()
+                + " bloques");
     }
 
     private static void assertCommandError(String input, String fragment) {

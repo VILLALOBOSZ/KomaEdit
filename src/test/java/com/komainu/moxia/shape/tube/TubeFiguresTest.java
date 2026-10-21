@@ -1,5 +1,6 @@
 package com.komainu.moxia.shape.tube;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeOptions;
@@ -165,7 +166,8 @@ class TubeFiguresTest {
         Set<BlockVector3> blocks = TubeFigures.generate(path, sweep(14, Map.of()), LIMIT);
         long elapsed = (System.nanoTime() - start) / 1_000_000L;
         assertTrue(blocks.size() > 100_000);
-        assertTrue(elapsed < 8_000, "demasiado lento: " + elapsed + " ms para " + blocks.size() + " bloques");
+        FullTests.assertFasterThan(elapsed, 8_000, "demasiado lento: " + elapsed + " ms para " + blocks.size()
+                + " bloques");
     }
 
     private static ShapeParameters sweep(int radius, Map<String, Double> options) {

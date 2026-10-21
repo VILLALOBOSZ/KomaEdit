@@ -1,5 +1,6 @@
 package com.komainu.moxia.blueprint;
 
+import com.komainu.moxia.FullTests;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -86,7 +87,7 @@ class BlueprintThumbnailTest {
         long start = System.nanoTime();
         BlueprintThumbnail.png(plaza);
         long millis = (System.nanoTime() - start) / 1_000_000;
-        assertTrue(millis < 5_000, "la miniatura de 64×40×64 tardó " + millis + " ms");
+        FullTests.assertFasterThan(millis, 5_000, "la miniatura de 64×40×64 tardó " + millis + " ms");
     }
 
     @Test

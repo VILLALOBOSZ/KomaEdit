@@ -100,7 +100,7 @@ class PaintBrushSyncTest {
             panel.setValues(card, panel.values(card).with("gradient", gradient).with("paint_palette",
                     PaintBrushCard.CUSTOM));
             studio.advance(10);
-            studio.advance(BrushSync.DELAY_MILLIS);
+            studio.advance(BrushSync.MIN_INTERVAL_MILLIS);
             for (ToolParam param : card.params()) {
                 ToolValues before = panel.values(card);
                 ToolValues next = changed(card, param, before);
@@ -109,7 +109,7 @@ class PaintBrushSyncTest {
                 }
                 panel.setValues(card, next);
                 studio.advance(10);
-                studio.advance(BrushSync.DELAY_MILLIS);
+                studio.advance(BrushSync.MIN_INTERVAL_MILLIS);
                 String expected = ToolsPanel.brushCommand(card, "", next);
                 if (expected.equals(previous)) {
                     continue;

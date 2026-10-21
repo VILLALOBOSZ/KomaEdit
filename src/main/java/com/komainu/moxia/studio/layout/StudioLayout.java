@@ -24,8 +24,6 @@ public final class StudioLayout {
     public static final int COMPACT_TOOLBAR_HEIGHT = 22;
     public static final int FOOTER_HEIGHT = 54;
     public static final int COMPACT_FOOTER_HEIGHT = 40;
-    /** La cabecera de la etapa va en la barra de herramientas: el contenido empieza justo debajo. */
-    public static final int HEADER_HEIGHT = 0;
     public static final int PADDING = 10;
     public static final int COMPACT_PADDING = 7;
     public static final int NAV_LABEL_WIDTH = 112;

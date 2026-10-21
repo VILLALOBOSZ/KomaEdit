@@ -5,15 +5,15 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 ## Índice
 
 - **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación) · [Colocar con gizmo](#colocar-con-gizmo) · [En el mundo: ajustes, teclas y mensajes](#en-el-mundo-ajustes-teclas-y-mensajes)
-- **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Variaciones de la figura](#variaciones-de-la-figura) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
+- **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Escalar y girar el portapapeles](#escalar-y-girar-el-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Variaciones de la figura](#variaciones-de-la-figura) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
 - **Sobre lo construido:** [Envejecer (orden avanzada)](#envejecer) · [Hiedra viva](#hiedra-viva) · [Retoques sobre la selección](#retoques-sobre-la-selección) · [Enredaderas, musgo, losas y estados](#enredaderas-musgo-losas-y-estados) · [Vidriera degradada](#vidriera-degradada)
 - **Edificios y naturaleza:** [Árboles y rocas](#árboles-y-rocas) · [Tejados](#tejados) · [Loft entre curvas](#loft-entre-curvas)
 - **Deformar, texturizar y suavizar:** [Deformar la selección](#deformar-la-selección) · [Superficie](#superficie) · [Texturizado](#texturizado) · [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región) · [Suavizado](#suavizado) · [Smoothblocks: perfiles de -w](#smoothblocks-perfiles-de--w)
 - **Color e imagen:** [Color y sombreado](#color-y-sombreado) · [Imagen en bloques](#imagen-en-bloques)
 - **Generadores y terreno:** [Formas sueltas](#formas-sueltas) · [Terreno con ruido](#terreno-con-ruido) · [Campos y líneas de flujo](#campos-y-líneas-de-flujo) · [Terraformado](#terraformado)
-- **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Supervarita](#supervarita) · [Simetría](#simetría)
+- **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Pinceles de modelado](#pinceles-de-modelado) · [Supervarita](#supervarita) · [Simetría](#simetría)
 - **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
-- **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria)
+- **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
 - **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
 
@@ -110,7 +110,7 @@ Con una figura elegida, la etapa **Figuras** tiene, de arriba abajo, lo que se t
 1. Su nombre (pulsarlo abre la cuadrícula), su descripción y los presets (**Compacto**, **De serie**, **Amplio**, **Robusto**, **Azar**). Si faltan puntos, encima, en amarillo: «Faltan 2 puntos: ponlos con un clic en el mundo.»
 2. **Tamaño:** radio, espaciado y grosor (con el nombre que les da cada figura: «Paso de trenza», «Grosor de hebra»), y la altura en las que la tienen. En Perfil 2D, el perfil y si va hueco; en Expresión, la fórmula.
 3. **Material:** el bloque, con su biblioteca y su cuentagotas, y el interruptor **Degradado**. Con él encendido, la fila del bloque pasa a ser la **Paleta** (‹ › o la rueda); al apagarlo vuelve el bloque y al encenderlo otra vez, la misma paleta.
-4. **Variaciones:** lo que era la etapa Modificadores (ver [Variaciones de la figura](#variaciones-de-la-figura)). Cada una es una fila con su **dibujo**, su nombre, una frase de lo que hace y un interruptor; toda la fila la pone o la quita y el clic derecho la quita. Puesta, sus controles salen justo debajo. El título dice cuántas hay puestas.
+4. **Variaciones** (ver [Variaciones de la figura](#variaciones-de-la-figura)). Cada una es una fila con su **dibujo**, su nombre, una frase de lo que hace y un interruptor; toda la fila la pone o la quita y el clic derecho la quita. Puesta, sus controles salen justo debajo. El título dice cuántas hay puestas.
 5. **Más ajustes**, plegado (con cuántos ya no están de serie): el giro de la figura sobre el camino, el resto del tubo (motor, extremos, normales, piezas), **Cómo cambia** (si afinar o retorcer van parejos o se notan más al principio o al final), la dirección, mezcla, sentido y reparto del degradado, **Cerrar huecos**, **Quitar bloques sueltos** y **Quitar todas las variaciones**.
 
 | Variación | Qué hace | Sus controles | Se pone con |
@@ -134,13 +134,9 @@ Con una figura elegida, la etapa **Figuras** tiene, de arriba abajo, lo que se t
 
 ![El material bajo el tamaño](renders/studio/1080p_gui3_material_es.png)
 
-Antes, Modificadores era una etapa aparte con nombres abstractos (escala inicial y final, espaciado inicial y final, torsión total, curva, fusión, conformado, kitbash, limpieza) y ningún control decía qué cambiaba:
-
-![Modificadores en la 1.8.0](renders/studio/antes/1080p_gui3_modificadores_es.png)
-
 ### Ajustar rápido
 
-Todos los controles numéricos del Studio (figuras, modificadores, herramientas y color) son iguales: la etiqueta a la izquierda, el valor **con su unidad** (`18 bloques`, `50 %`, `45°`, `×1,5`, `Y 64`; en corto si no cabe, `18 bl.`) entre `−` y `+`, y debajo una barra con el rango, llena hasta el valor y con una marca en el de serie. Un punto del color del acento delante de la etiqueta dice que el valor ya no es el de serie.
+Todos los controles numéricos del Studio (figuras, variaciones, herramientas y color) son iguales: la etiqueta a la izquierda, el valor **con su unidad** (`18 bloques`, `50 %`, `45°`, `×1,5`, `Y 64`; en corto si no cabe, `18 bl.`) entre `−` y `+`, y debajo una barra con el rango, llena hasta el valor y con una marca en el de serie. Un punto del color del acento delante de la etiqueta dice que el valor ya no es el de serie.
 
 - **Rueda** sobre los botones o el valor: sube o baja un paso. Sobre la etiqueta o fuera de los controles, la rueda desplaza el panel, para no cambiar valores sin querer. Con **Mayús**, `−` `+` y la rueda dan un paso grande (×5, o el propio del control: 45° el giro, 90° la torsión, 25 % las escalas).
 - **Arrastrar** el número en horizontal lo cambia como un deslizador: recorrer el rango entero cuesta unos 240 píxeles, y nunca menos de 6 píxeles por paso. Con **Mayús**, fino: un paso cada 12 píxeles.
@@ -183,7 +179,7 @@ El botón del reloj de la barra abre la lista de los últimos cambios en el mund
 
 El ojo del pie elige qué hace el botón principal en las herramientas que admiten la vista previa universal; un clic pasa al siguiente modo y el clic derecho la apaga:
 
-- **Vista previa en vivo** (la de serie): Construir enseña la vista previa (con el [fantasma del gizmo](#colocar-con-gizmo) si es un objeto: árbol, roca, texto, tejado…) y, **mientras se vea**, cada cambio de un ajuste la rehace sola con lo nuevo. El fantasma nuevo sale donde dejaste el anterior, con su giro y sus opciones: puedes moverlo con el ratón y seguir ajustando sin perder el sitio. Espera 0,35 s sin cambios, deja al menos 0,7 s entre dos envíos, no manda nada mientras el servidor calcula la anterior ni repite una orden igual, y solo vale en obras pequeñas: selecciones de hasta 64 000 bloques y, en Figuras, menos de 250 000 bloques en el holograma. Al arrastrar un número o escribir no se manda nada hasta soltar. No abre ninguna vista previa por su cuenta: solo rehace la que pediste; al colocarla o quitarla, se acaba hasta el próximo Construir.
+- **Vista previa en vivo** (la de serie): Construir enseña la vista previa (con el [fantasma del gizmo](#colocar-con-gizmo) si es un objeto: árbol, roca, texto, tejado…) y, **mientras se vea**, cada cambio de un ajuste la rehace sola con lo nuevo. El fantasma nuevo sale donde dejaste el anterior, con su giro y sus opciones: puedes moverlo con el ratón y seguir ajustando sin perder el sitio. Espera 0,35 s sin cambios, deja al menos 1 s entre dos envíos (más deprisa, el antispam de Minecraft acabaría echando a quien no es OP), no manda nada mientras el servidor calcula la anterior ni repite una orden igual, y solo vale en obras pequeñas: selecciones de hasta 64 000 bloques y, en Figuras, menos de 250 000 bloques en el holograma. Al arrastrar un número o escribir no se manda nada hasta soltar. No abre ninguna vista previa por su cuenta: solo rehace la que pediste; al colocarla o quitarla, se acaba hasta el próximo Construir.
 - **Vista previa al construir:** Construir enseña la vista previa (en la orden, `-v` o `--preview`) y espera a **Confirmar** (`Intro`); cambiar un ajuste no la rehace.
 - **Sin vista previa:** Construir cambia el mundo en el acto (lo que es un objeto sale igualmente como fantasma si **Colocar con gizmo** está en **Siempre**).
 
@@ -266,7 +262,7 @@ Con puntos de trayectoria, las herramientas que los usan (árbol, roca, río, ra
 
 ### El pincel sigue al Studio
 
-**Al pincel** (árbol, roca, bioma), el **Sello de relieve** y **Pintar terreno** dejan un pincel en la mano. Desde entonces, cualquier cambio en esa tarjeta del Studio llega a ese pincel al momento (0,3 s después de dejar de tocarlo), aunque luego mires otra herramienta: quitar **Vista previa en cada clic** la quita del pincel, cambiar el radio o la especie cambia lo que pinta el siguiente clic.
+**Al pincel** (árbol, roca, bioma), el **Sello de relieve** y **Pintar terreno** dejan un pincel en la mano. Desde entonces, cualquier cambio en esa tarjeta del Studio llega a ese pincel al momento (0,3 s después de dejar de tocarlo y, entre dos cambios seguidos, al menos 1 s, por el antispam de Minecraft), aunque luego mires otra herramienta: quitar **Vista previa en cada clic** la quita del pincel, cambiar el radio o la especie cambia lo que pinta el siguiente clic.
 
 - El Studio manda `/komaedit pincel actualizar <tipo> <ajustes>`, que solo cambia el pincel que ya tienes en la mano y es de ese tipo: nunca marca ni entrega otro objeto, y lo dice en la barra de acción, sin llenar el chat.
 - Si cambias de objeto en la mano, no se manda nada; al volver a coger el pincel le llega lo último.
@@ -378,7 +374,7 @@ Con menos de 300 píxeles de alto escalado (854×480 con GUI 2, 1080p con GUI 4)
 
 Todo el Studio (barra, etapas, contenido, pie, paleta, historial y biblioteca de bloques) es código común, sin Minecraft: `StudioView` guarda el estado y atiende el ratón y el teclado, `StudioLayout` reparte la pantalla y `StudioUi` dibuja sobre un `StudioCanvas`. En el juego, el lienzo es el `DrawContext` (`DrawContextCanvas`); en las pruebas, una imagen con la fuente de Minecraft y los iconos de los objetos del propio juego (`ImageCanvas`). Por eso las maquetas son el Studio de verdad y no un dibujo aparte:
 
-- `StudioMockupsTest` pinta las maquetas PNG con `KOMAEDIT_STUDIO_MOCKUPS=<carpeta>`. Las revisadas están en `docs/renders/studio/` (1080p con GUI 3 y 4 y 854×480 con GUI 2, en español e inglés) y las de la versión anterior, en `docs/renders/studio/antes/`.
+- `StudioMockupsTest` pinta las maquetas PNG con `KOMAEDIT_STUDIO_MOCKUPS=<carpeta>`. Las revisadas están en `docs/renders/studio/` (1080p con GUI 3 y 4 y 854×480 con GUI 2, en español e inglés).
 - `StudioDriver` maneja el Studio como un jugador (pulsar por texto, arrastrar, rueda, escribir, teclas) y lo usan `ToolsPanelTest`, `StudioViewTest`, `CompactModeTest`, `NumberControlTest`, `CommandPaletteTest`, `FigureClarityTest` y `TaskClicksTest`, que cuenta los clics de las tareas típicas.
 - Las variaciones son `FigureVariation` (cuándo está puesta cada una, con qué se pone, qué deja al quitarla y dónde sirve) y sus dibujos, `VariationThumbnails`; «Pegar al terreno» es `SurfaceConform`, sin Minecraft, con un `Terrain` que dan el servidor, el cliente o las pruebas.
 - Lo que explica cada control es `ControlHelp` (qué hace y sus extremos, de `gui.komaedit.tools.<herramienta>.ends.<ajuste>` o `gui.komaedit.ends.<control>`); `ControlHelpTest` exige que cada ajuste de herramienta diga lo que hace sin repetir su etiqueta, que los números lleven sus extremos (salvo semilla, rumbo y altura absoluta) y que ninguna herramienta enseñe más de cuatro ajustes antes de Más ajustes.
@@ -1198,7 +1194,7 @@ Curva un módulo copiado con WorldEdit (un tramo de muro, puente, calzada, vía 
 /komaedit doblar [repetir|estirar] [banderas]
 ```
 
-- En recetas: en **Modificadores → Kitbash**, la fila **Colocar** tiene dos modos nuevos, **Doblar** (repetir) y **Estirar**, que se suman a la figura de la receta y quedan dentro de la instancia, así que se pueden actualizar o retirar.
+- En recetas: la variación **Repetir lo copiado** de la etapa Figuras, con **Dónde** en «Doblado a lo largo» o «Estirado a lo largo», se suma a la figura de la receta y queda dentro de la instancia, así que se puede actualizar o retirar.
 
 ### Comportamiento
 
@@ -1291,7 +1287,7 @@ Ejemplos:
 
 ## Envejecer
 
-> **Orden avanzada.** Ya no está en el Studio (era la etapa Envejecer): queda la orden para quien la use.
+> **Orden avanzada.** No está en el Studio: se usa con la orden.
 
 ### Objetivo y acceso
 
@@ -1999,7 +1995,7 @@ Ejemplos:
 
 ## Variaciones de la figura
 
-En el Studio son las **Variaciones** de la etapa Figuras (ver [Tamaño, material y variaciones](#tamaño-material-y-variaciones)); antes eran la etapa Modificadores. Por debajo son los mismos números de la receta (`RecipeExtensions`), así que las recetas, los paquetes `.krecipe` y las instancias de antes se leen igual:
+En el Studio son las **Variaciones** de la etapa Figuras (ver [Tamaño, material y variaciones](#tamaño-material-y-variaciones)). Por debajo son los mismos números de la receta (`RecipeExtensions`), así que las recetas, los paquetes `.krecipe` y las instancias de antes se leen igual:
 
 | Variación | Números de la receta |
 | --- | --- |
@@ -2208,6 +2204,8 @@ Banderas:
 /komaedit surface noisify 3 Ce(F:0.1,cR:sub) 1 1 4 -m stone,andesite -t
 /komaedit surface rockify 2 -m ">stone"
 /komaedit surface rockify 3 -w SlabsAndStairs
+```
+
 ## Texturizado
 
 ### Objetivo y acceso

@@ -1,5 +1,6 @@
 package com.komainu.moxia.shape.tube;
 
+import com.komainu.moxia.FullTests;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -164,7 +165,8 @@ class TubeFormulaTest {
     @Test
     void evaluationIsCheapEnoughForMillionsOfSamples() {
         TubeFormula.Runner runner = TubeFormulaPreset.LATTICE.formula().runner(1L, 6);
-        int samples = 2_000_000;
+        // Medir solo vale en la pasada entera; en cada build basta con que evalúe.
+        int samples = FullTests.ENABLED ? 2_000_000 : 20_000;
         double sink = 0;
         // Calentamiento para que el JIT compile el árbol antes de medir.
         for (int index = 0; index < samples; index++) {
@@ -177,7 +179,7 @@ class TubeFormulaTest {
         double nanos = (System.nanoTime() - start) / (double) samples;
         assertTrue(sink >= 0);
         // En un portátil ronda los 60 ns; el margen cubre máquinas de CI lentas.
-        assertTrue(nanos < 1_000, "evaluar la celosía cuesta " + nanos + " ns por punto");
+        FullTests.assertFasterThan(nanos, 1_000, "evaluar la celosía cuesta " + nanos + " ns por punto");
     }
 
     private static double bound(String source) {

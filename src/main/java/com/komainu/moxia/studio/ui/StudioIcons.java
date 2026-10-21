@@ -10,15 +10,14 @@ import java.util.Map;
  * que el paquete de recursos del servidor puede no tener (las flechas ↶ ↷ salían vacías con fuentes personalizadas).
  *
  * <p>Cada icono es una rejilla de texto: {@code #} es el color del icono, {@code +} el mismo color a media luz y
- * {@code .} vacío. Los que llevan colores propios usan letras ({@code r} rosa, {@code y} amarillo, {@code b} azul,
- * {@code x} rojo de peligro).</p>
+ * {@code .} vacío; {@code s} es el verde de lo que está en marcha.</p>
  */
 public final class StudioIcons {
     public static final int SIZE = 12;
 
     public enum Icon {
         // Etapas.
-        PATH, FIGURE, MODIFIERS, MATERIAL, INSTANCES, RECIPES, COLOR, BLUEPRINTS, TOOLS,
+        PATH, FIGURE, INSTANCES, RECIPES, COLOR, BLUEPRINTS, TOOLS,
         // Barra de herramientas y controles.
         UNDO, REDO, HOLOGRAM, HOLOGRAM_OFF, HELP, CLOSE, LOCK, HISTORY, SEARCH, COMMAND, EYEDROPPER, CHEVRON_DOWN,
         CHEVRON_RIGHT, COPY, STAR, STAR_EMPTY, EYE, LIVE,
@@ -59,31 +58,6 @@ public final class StudioIcons {
                 "#.......#...",
                 "#.......#...",
                 "#########...");
-        mask(Icon.MODIFIERS,
-                "...##.......",
-                "...##.......",
-                "############",
-                "...##.......",
-                "...##...##..",
-                "........##..",
-                "############",
-                "........##..",
-                ".....##.##..",
-                ".....##.....",
-                "############",
-                ".....##.....");
-        mask(Icon.MATERIAL,
-                "............",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb",
-                "rrrryyyybbbb");
         mask(Icon.INSTANCES,
                 "########....",
                 "#......#....",
@@ -699,9 +673,6 @@ public final class StudioIcons {
     private static int color(char symbol, int color) {
         return switch (symbol) {
             case '+' -> StudioTheme.fade(color, 0.5);
-            case 'r' -> StudioTheme.PIGMENT_RED;
-            case 'y' -> StudioTheme.PIGMENT_YELLOW;
-            case 'b' -> StudioTheme.PIGMENT_BLUE;
             // Lo que está en marcha (en vivo): verde de éxito, nunca rojo, que es solo para el peligro.
             case 's' -> StudioTheme.SUCCESS;
             default -> color;
