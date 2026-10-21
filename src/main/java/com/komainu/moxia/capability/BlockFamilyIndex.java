@@ -73,6 +73,11 @@ public final class BlockFamilyIndex {
         return Optional.ofNullable(family.block(membership.variant()));
     }
 
+    /** La familia del bloque (de la que es base o, si no, en la que aparece), o vacío. */
+    public Optional<Family> family(String block) {
+        return Optional.ofNullable(asHeld.get(block));
+    }
+
     /** Variante del bloque como bloque apuntado ({@code stairs}, {@code base}…), o {@code null}. */
     public String variantOf(String block) {
         Membership membership = asTarget.get(block);

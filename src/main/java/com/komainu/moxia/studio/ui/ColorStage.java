@@ -8,8 +8,10 @@ import com.komainu.moxia.color.ColorGradient;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -36,6 +38,16 @@ public final class ColorStage {
         String blockName(String id);
 
         String lookedAtBlock();
+
+        /** Las paletas guardadas del jugador (nombre → bloques), para compartirlas. */
+        default Map<String, String> savedPalettes() {
+            return Map.of();
+        }
+
+        /** «Compartir»: pide el código de {@code things} ({@code paleta:rocas}); llega al portapapeles. */
+        default void shareExport(String things) {
+            send("komaedit share export " + things);
+        }
     }
 
     private static final List<String> LIGHTS = List.of("sol", "jugador", "mirada", "arriba", "ne", "no", "se", "so");
@@ -134,6 +146,29 @@ public final class ColorStage {
         ui.cycle(column.next(), host.tr("gui.komaedit.color.dither"), dither + " %",
                         direction -> dither = Math.clamp(dither + direction * 10, 0, 100))
                 .tooltip(host.tr("gui.komaedit.color.dither") + "\n" + host.tr("gui.komaedit.help.color.dither"));
+        savedPalettes(ui, column, host);
+    }
+
+    /** Las paletas guardadas del jugador, cada una con su «Compartir» (un código para otro servidor). */
+    private static void savedPalettes(StudioUi ui, Column column, Host host) {
+        Map<String, String> palettes = host.savedPalettes();
+        if (palettes.isEmpty()) {
+            return;
+        }
+        ui.section(column, host.tr("gui.komaedit.color.saved"));
+        List<String> names = new ArrayList<>(palettes.keySet());
+        int[] widths = names.stream().mapToInt(name -> ui.chipWidth("#" + name) + StudioIcons.SIZE + 4).toArray();
+        List<Rect> cells = column.flow(widths, 14);
+        for (int index = 0; index < names.size(); index++) {
+            String name = names.get(index);
+            ui.iconButton(cells.get(index), StudioIcons.Icon.SHARE, "#" + name, StudioUi.Tone.SECONDARY)
+                    .tooltip(host.tr("gui.komaedit.share.preset", "#" + name) + "\n" + palettes.get(name) + "\n"
+                            + host.tr("gui.komaedit.help.share.button"))
+                    .onClick(() -> {
+                        host.shareExport("paleta:" + name);
+                        host.status(host.tr("gui.komaedit.status.share.preparing", "#" + name));
+                    });
+        }
     }
 
     /** El sombreado de la selección: lo que hace el botón del pie en esta etapa. */

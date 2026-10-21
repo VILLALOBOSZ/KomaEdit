@@ -2,6 +2,7 @@ package com.komainu.moxia.permission;
 
 import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.capability.BuildCapability;
+import com.komainu.moxia.share.SharePermissions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -107,6 +108,8 @@ public final class PermissionNodes {
         for (String color : List.of("similar", "gradient", "palette", "hotbar")) {
             add("komaedit.color." + color, Pack.BASIC, use, null, "/komaedit color " + color);
         }
+        add(com.komainu.moxia.hotbar.HotbarRules.PERMISSION, Pack.BASIC, use, null,
+                "Barras guardadas (/komaedit hotbar): guardar, cambiar, compartir; en supervivencia solo reordena");
         for (String[] entry : new String[][]{{"next", "next"}, {"here", "here"}, {"invert", "invert"},
                 {"delpos2", "delpos"}, {"encapsulate", "encapsulate"}, {"encapsulatenear", "encapsulatenear"},
                 {"catenary", "catenary"}}) {
@@ -191,6 +194,12 @@ public final class PermissionNodes {
                 "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
         add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
         add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
+        add(KomaPermissions.REBUILD, Pack.INTERMEDIATE, build, null,
+                "/komaedit rebuild (reconstrucción animada de la selección, el portapapeles o un plano)");
+        add(SharePermissions.EXPORT, Pack.INTERMEDIATE, use, null,
+                "Exportar paletas, ruidos, presets, recetas y planos a un código (/komaedit share export)");
+        add(SharePermissions.IMPORT, Pack.INTERMEDIATE, null, null,
+                "Importar paquetes de otros servidores (/komaedit share import); además, el de guardar cada tipo");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
@@ -205,6 +214,8 @@ public final class PermissionNodes {
         add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
         add(BlueprintPermissions.SHARE, Pack.ADVANCED, null, null,
                 "Compartir planos propios con todo el servidor (/komaedit blueprint share)");
+        add(SharePermissions.FILE, Pack.ADVANCED, null, null,
+                "Exportar paquetes a un archivo .kpack en config/komaedit/exports (/komaedit share export … -f)");
 
         // Capacidades de construcción a mano (menú rápido y /komaedit capability).
         for (BuildCapability capability : BuildCapability.values()) {
@@ -221,6 +232,8 @@ public final class PermissionNodes {
         // Administración.
         add(BuildCapability.GAMEMODE_PERMISSION, Pack.ADMIN, null, null, "Cambiar el modo de juego desde el menú rápido");
         add(BuildCapability.ANY_MODE_PERMISSION, Pack.ADMIN, null, null, "Usar las capacidades fuera de creativo");
+        add(com.komainu.moxia.hotbar.HotbarRules.GIVE_PERMISSION, Pack.ADMIN, null, null,
+                "Poner barras guardadas como en creativo en cualquier modo (crea objetos)");
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
         add(KomaPermissions.ADMIN_DEBUG, Pack.ADMIN, null, "ezedits.admin.debug", "/komaedit debugprint");
         add(KomaPermissions.DEBUG_VISUALISER, Pack.ADMIN, null, "ezedits.debug",
@@ -238,6 +251,8 @@ public final class PermissionNodes {
                 "Borrar o reemplazar los planos compartidos de otros jugadores");
         add(BlueprintPermissions.UNLIMITED, Pack.ADMIN, null, null,
                 "Sin los límites de número y tamaño de planos de blueprints.json");
+        add(SharePermissions.UNLIMITED, Pack.ADMIN, null, null,
+                "Sin el límite de importaciones y exportaciones por hora de share.json");
     }
 
     private PermissionNodes() {

@@ -12,10 +12,12 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 - **Color e imagen:** [Color y sombreado](#color-y-sombreado) · [Imagen en bloques](#imagen-en-bloques)
 - **Generadores y terreno:** [Formas sueltas](#formas-sueltas) · [Terreno con ruido](#terreno-con-ruido) · [Campos y líneas de flujo](#campos-y-líneas-de-flujo) · [Terraformado](#terraformado)
 - **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel de zona](#pincel-de-zona) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Pinceles de modelado](#pinceles-de-modelado) · [Supervarita](#supervarita) · [Simetría](#simetría)
-- **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
+- **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Barras guardadas](#barras-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
 - **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
-- **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Imagen de referencia](#imagen-de-referencia)
+- **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Reconstrucción animada](#reconstrucción-animada) · [Imagen de referencia](#imagen-de-referencia)
 - **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
+- **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
+- **Servidor y proyecto:** [Compartir entre servidores](#compartir-entre-servidores) · [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
 
 ## Procedural Studio
 
@@ -199,14 +201,14 @@ El modo se recuerda para todas las herramientas en `studio.json`. Quien tenía g
 
 La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo tenían orden. **Construir** manda exactamente la orden que se escribiría en el chat; el servidor la analiza, comprueba los permisos y la ejecuta como siempre: el Studio no repite ninguna lógica.
 
-Son quince tarjetas, cada una con un nombre que dice lo que hace y un icono propio, en cinco grupos:
+Son diecisiete tarjetas, cada una con un nombre que dice lo que hace y un icono propio, en cinco grupos:
 
 | Grupo | Herramientas | Orden que manda |
 | --- | --- | --- |
 | Naturaleza | Plantar árbol, Poner roca | `tree`, `rock`; con el pincel, `pincel tree`, `pincel rock` (y `tree save`) |
 | Edificios | Poner tejado, Unir curvas, Escribir texto | `roof`, `loft` (y `-e` para estimar), `text` |
 | Terreno | Estampar relieve, Pintar, Hacer rampa, Excavar río, Erosionar | `pincel heightmap` o `relieve`, `pincel paint` o `pintar`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion` (con el pincel, `pincel zona`) |
-| Utilidades | Retocar, Contar materiales, Calcar imagen | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`; Calcar imagen abre `/keref`, del cliente (ver [Imagen de referencia](#imagen-de-referencia)) |
+| Utilidades | Retocar, Contar materiales, Guardar barras, Reconstruir paso a paso, Calcar imagen | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`, `hotbar <fuente>` (lo demás de las barras va por su paquete, no por el chat), `rebuild` (y sus mandos); Calcar imagen abre `/keref`, del cliente (ver [Imagen de referencia](#imagen-de-referencia)) |
 | Modos | Simetría, Construir a mano | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Menos tarjetas, lo mismo de antes:** «Pintar terreno» y «Pintar superficie» son ahora **Pintar**, y Nieve, Drenar, Inundar, Gravedad y Bioma, modos de **Retocar**, que trae además los cuatro retoques de supervivencia que solo tenían orden (desinfestar, fijar las hojas, anegar y encerar). Lo que cambió de nombre, en [Lo que cambió de nombre](#lo-que-cambió-de-nombre).
@@ -225,7 +227,9 @@ Son quince tarjetas, cada una con un nombre que dice lo que hace y un icono prop
 - **Retocar:** ver [Retocar](#retocar-en-el-studio).
 - **Escribir texto:** campo de texto (`\n` parte líneas), fuente (las de serie y las del servidor, `config/komaedit/fonts/`) y tamaño a la vista; grosor, borde, orientación, alineación, espaciado, interlineado y losas y escaleras, en Más ajustes.
 - **Contar materiales:** **Contar** lanza `analyze` y la lista llega a la herramienta: totales (bloques, tipos, objetos, huecos y cofres) y cada objeto con su cantidad y sus pilas, más **Copiar lista** (lo mismo que `[COPIAR]` del chat).
+- **Reconstruir paso a paso:** la [reconstrucción animada](#reconstrucción-animada). Qué se levanta (la selección, el portapapeles o un plano por su nombre), el orden en botones (Constructor, Capas, Ondas, Eje, Al azar, Historial; con Eje, el sentido del barrido), bloques por tick y duración total a la vista; pausa entre capas, retrasos entre bloques iguales o distintos, espera al empezar, partículas, sonido y, fuera de la selección, **Sin su aire**, en Más ajustes. Presets **Timelapse** (constructor en un minuto), **Impresora** (capas despacio), **Magia** (ondas con partículas y sonido) y **Rápida**; **Azar** solo sale con el orden al azar. En Más ajustes, los botones de la que está en marcha: **Pausar**, **Seguir**, **×2**, **Al final** y **Cancelar**.
 - **Simetría:** enseña el estado del servidor (activa o apagada, modo y centro, avisando si el centro está en otra dimensión) y lo sigue si se cambia por el chat. Modo (X, Z, XZ, Y, XY, ZY, XZY y Radial), brazos y espejo arriba ↔ abajo del radial, e interruptor **Reflejar WorldEdit y KomaEdit**. Construir activa con ese modo (o lo aplica si ya estaba activa).
+- **Guardar barras:** arriba, el **Nombre** y **Guardar la que llevas**; debajo, **Tus barras** con sus nueve huecos (clic: usarla; clic derecho: copiar su código; la × la borra con un segundo clic), **Pegar código**, **Copiar todas**, **La que dejas se guarda sola** y **Volver a la barra de antes**; y al final **Crear una barra** desde una paleta, un degradado de color, la selección, un sello o un tejado (ver [Barras guardadas](#barras-guardadas)). En supervivencia, un aviso dice que cambiar solo mueve lo que llevas. Nada de esto va por el chat salvo Crear barra.
 - **Construir a mano:** un interruptor por capacidad (como el menú de la `Z`), apagado con candado y «sin permiso» si falta el nodo, y un aviso si no estás en creativo. Distancia en el aire, alcance, bloques por capa y velocidad de vuelo se mandan al dejar de tocarlos (0,6 s), para no llenar el chat; Reemplazar familia y lo que sigue Extruir, al momento.
 - **Añadir una tarjeta** (para quien programa): una línea en el catálogo con su grupo y su icono; ver [docs/ARCHITECTURE.md](ARCHITECTURE.md#herramientas-del-studio-catálogo-y-categorías).
 
@@ -4153,6 +4157,103 @@ Se usan con `##murallas` en cualquier sitio que acepte una paleta y salen en `/k
 - `swap` y `fetch` solo admiten bloques (no porcentajes ni patrones) en las paletas; `save`, `place` y `print` admiten cualquier patrón de WorldEdit.
 - `place` y `swap` necesitan `komaedit.build` (o `komaedit.build.palette.place` / `.swap`); el resto, `komaedit.use` (o `komaedit.palette.<orden>`). Ver [Permisos](#permisos).
 
+## Barras guardadas
+
+### Objetivo y acceso
+
+Como el Hotbar Swapper de Axiom: guardar la barra rápida con un nombre y un icono, tener muchas y cambiar de una a otra en un momento. Se guardan los nueve huecos con todo lo que llevan (encantamientos, nombres, durabilidad, libros escritos, cajas con contenido, el pincel de KomaEdit ligado a un objeto…). Son de cada jugador y de cada mundo.
+
+- **La tecla** (Alt izquierdo de serie, como en Axiom; en Controles → KomaEdit, «Barras guardadas»): **mantenla** y sale la tira con tus barras sobre la barra de verdad, la que llevas marcada en verde; **la rueda** elige otra (hacia abajo, la siguiente) y **al soltar** cambias a ella. Si vuelves a la que llevabas, no pasa nada. La rueda no cambia de casilla mientras mantienes la tecla.
+- **Tocar la tecla** (soltarla antes de un cuarto de segundo sin mover la rueda) abre el **menú circular**: tus barras alrededor, con su icono y su nombre; al pasar el ratón por una, en el centro salen sus nueve huecos. Clic: usarla; clic derecho: copiar su código; rueda: página (12 por página). Abajo, escribe un nombre y pulsa **Guardar** para guardar la barra que llevas (si ya existe una con ese nombre, el segundo clic la sustituye), **Pegar código** importa un código `kh1:` del portapapeles y **Copiar todas** copia el de todas. El menú tiene también su propia tecla («Menú de barras guardadas», sin asignar de serie).
+- **El Studio**: la tarjeta **Guardar barras** (Herramientas → Utilidades) enseña tus barras con sus nueve huecos (clic para usarla, clic derecho para copiar su código, la × la borra con un segundo clic), guarda la que llevas con el nombre de arriba, pega y copia códigos, enciende o apaga el guardado al cambiar y crea barras nuevas desde una paleta, un degradado, la selección, un sello o un tejado.
+
+![La tarjeta Guardar barras del Studio](renders/hotbars/1080p_gui2_studio_es.png)
+
+- **Las órdenes**, para todo lo demás y para servidores donde el cliente no tiene KomaEdit:
+
+```text
+/komaedit hotbar save <nombre> [-i hueco|objeto] [-f]
+/komaedit hotbar load <nombre>
+/komaedit hotbar list
+/komaedit hotbar palette <nombre> <paleta> [-f] [-l]
+/komaedit hotbar gradient <nombre> <A> <B> [-c] [-s] [-o] [-u] [-x] [-v variante] [-f] [-l]
+/komaedit hotbar selection <nombre> [-f] [-l]
+/komaedit hotbar stamp <nombre> [paleta de superficie] [-f] [-l]
+/komaedit hotbar paint <nombre> [paleta] [-f] [-l]
+/komaedit hotbar roof <nombre> <material> [-f] [-l]
+/komaedit hotbar export [nombre|all]
+/komaedit hotbar import <código> [nombre] [-f]
+/komaedit hotbar undo
+/komaedit hotbar autosave [on|off]
+/komaedit hotbar rename <nombre> <nuevo>
+/komaedit hotbar icon <nombre> <hueco|objeto>
+/komaedit hotbar move <nombre> <posición>
+/komaedit hotbar delete <nombre>
+```
+
+Alias: `/komaedit barra`, y en español `guardar`, `usar` (o `cargar`), `lista`, `paleta`, `degradado`, `seleccion`, `sello`, `pintura`, `tejado`, `exportar`, `importar`, `deshacer`, `autoguardado`, `renombrar`, `icono`, `mover` y `borrar`. `/komaedit help hotbar` las enseña con su explicación.
+
+- `save` guarda la barra que llevas. `-i` elige el icono: un hueco del 1 al 9 o un objeto (`-i lantern`); sin él, el del primer hueco con algo. `-f` sustituye una que ya exista. Guardar una barra la deja como «en uso».
+- `load` cambia a esa barra (ver abajo qué hace según el modo de juego).
+- `list` las enseña con lo que llevan; pulsar el nombre la usa, y cada una tiene **[exportar]** y **[borrar]**.
+
+![La tira: Alt mantenido y la rueda](renders/hotbars/1080p_gui3_tira_creativo_es.png)
+
+![El menú circular: tocar Alt](renders/hotbars/1080p_gui3_menu_es.png)
+
+Ejemplos:
+
+```text
+/komaedit hotbar save castillo -i 4
+/komaedit hotbar palette mar ##GlowBlue -l
+/komaedit hotbar gradient atardecer red_terracotta yellow_concrete -c -o
+/komaedit hotbar roof pizarra deepslate_tiles -l
+/komaedit hotbar selection fachada
+```
+
+### Creativo y supervivencia
+
+Lo que hace cambiar de barra lo decide el servidor, según el modo de juego:
+
+- **Creativo: al instante.** El cliente pone la barra en ese momento y el servidor la confirma con la suya. El cliente solo dice **qué barra** quiere: el servidor pone su copia guardada, así que nadie puede colar objetos con un paquete hecho a mano. Lo que no existe en el servidor (de un mod que ya no está, o desactivado) sale vacío y se avisa; las cantidades no pasan del máximo de cada objeto.
+- **Supervivencia y aventura: solo reordena, nunca crea.** Busca cada objeto de la barra guardada en tu inventario y lo cambia de sitio con lo que hubiera en ese hueco. Prefiere el mismo objeto con los mismos componentes y, si no lo hay, el mismo objeto con otros (un pico gastado vale por el nuevo que guardaste); entre los que valen, los del inventario antes que los de la barra, la pila más grande y el hueco más bajo. Los huecos vacíos de la barra guardada no piden nada. Lo que no llevas se queda como estaba y se avisa («no llevas: …»).
+- **Espectador:** no se cambia de barra.
+
+Por qué así en supervivencia: no ofrecerlo dejaba fuera a quien construye en supervivencia, y lo único seguro era no crear nada. Reordenar es lo que el jugador podría hacer a mano con el inventario abierto: el inventario tiene exactamente las mismas pilas antes y después (lo comprueban las pruebas con miles de inventarios al azar), así que no hay forma de sacar objetos con ello. En la tira y en el menú se avisa en amarillo de que solo se mueve lo que llevas.
+
+Un administrador puede dar `komaedit.admin.hotbar.give` para poner las barras como en creativo en cualquier modo: eso **crea objetos**, así que va en el paquete de administrador. Los operadores lo tienen, como todos los nodos: fuera de creativo, la tira y el menú les avisan en naranja de que la barra se pone tal cual y crea objetos.
+
+### La barra que dejas se guarda sola
+
+Como en Axiom: en creativo, al cambiar de barra, la que dejas se guarda en la que estabas usando, así que al volver la encuentras como la dejaste (con el bloque que cogiste con la rueda del ratón, por ejemplo). Si no estabas usando ninguna, no se guarda nada. Se apaga con `/komaedit hotbar autosave off` y se enciende con `on`. En supervivencia no se guarda sola: ahí la barra guardada es un orden de objetos, no lo que llevas.
+
+`/komaedit hotbar undo` vuelve a la barra de antes del último cambio (solo en creativo, un paso, y se pierde al salir del servidor).
+
+### Crear barras desde otras cosas
+
+- `palette <nombre> <paleta>`: los bloques de una paleta: de serie (`##Magma`), del servidor (`##murallas`), guardada (`#mia`), una lista (`stone,andesite,tuff`) o un código `kp1:`. Si tiene más de nueve bloques, se reparten de la primera a la última.
+- `gradient <nombre> <A> <B>`: el degradado de color de [Color y sombreado](#color-y-sombreado) en nueve pasos, con sus mismos filtros (`-c` solo cubos, `-s` sólidos, `-o` opacos, `-u` uniformes, `-x` cualquiera) y `-v` para otra variante. La salida de `/komaedit color gradient` y de `/komaedit color palette` lleva también **[guardar barra]**, que escribe la orden.
+- `selection <nombre>`: los nueve bloques más usados de la selección de WorldEdit (sin aire ni líquidos), de más a menos. Lee la selección repartida entre ticks, como las demás operaciones de región.
+- `stamp <nombre> [paleta]`: los bloques de la paleta de superficie de un [sello de relieve](#terraformado) (`natural`, `desierto`, `nevado`… o una escrita), en su orden: llano, pendiente, cumbre, relleno…
+- `paint <nombre> [paleta]`: una paleta del [pincel de pintura](#pinceles) (`hierba_piedra`, `bosque`…) o cualquier otra.
+- `roof <nombre> <material>`: el material de un [tejado](#tejados) con sus piezas, en el orden en que se usan: el bloque, sus escaleras y losas, y después muro, valla, puerta de valla, trampilla, puerta… (las familias de bloques de Minecraft).
+
+En todas, `-l` la pone ya en tu barra y `-f` sustituye una que se llame igual. Un bloque con estado en la paleta (`oak_log[axis=x]`, `snow[layers=3]`) da su objeto con el componente `block_state`, que lo coloca con ese estado. Los bloques sin objeto (el agua, el fuego) y los patrones (`50%stone`) se saltan y se dicen.
+
+### Compartir
+
+- `export [nombre]` da un código `kh1:…` que se copia al pulsarlo; sin nombre (o con `all`), el de todas. Lleva los objetos con sus componentes, comprimido. Si la orden de importar cabe en el chat (256 letras; una barra de bloques sin componentes suele caber), también sale **[copiar orden]**.
+- `import <código> [nombre] [-f]` las guarda. Si ya tienes una con ese nombre, la nueva se llama `nombre_2` (con `-f`, la sustituye). Los objetos que no existen en este servidor se quitan y se avisa. Un código que no cabe en el chat se importa con **Pegar código** del menú o del Studio (hasta 32 000 letras).
+- El formato es propio de KomaEdit, como el `kp1:` de las paletas: no es el de Axiom.
+
+### Rendimiento y limitaciones
+
+- Hasta 64 barras por jugador y mundo, de 32 KiB cada una como mucho y 512 KiB entre todas (en JSON: una barra de bloques ocupa menos de 1 KiB; lo que pesa son los libros y las cajas llenas). Se guardan en `<mundo>/komaedit/players/<uuid>/hotbars/hotbars.json` con escritura atómica; si el archivo se daña, se aparta como `hotbars.broken-N.json` (no se pisa) y se empieza de cero.
+- Cada cambio escribe ese archivo; el servidor admite como mucho uno cada 2 ticks por jugador. Cambiar va por un paquete propio y no por una orden de chat, así que no suma al antispam de Minecraft.
+- El servidor guarda los objetos con el códec de Minecraft, también los componentes que no se mandan al cliente; la tira y el menú pintan la versión que manda el servidor.
+- Si otro mod usa Alt izquierdo, cambia la tecla en Controles. Con Alt+Tab no se cambia de barra ni se abre el menú.
+- Permisos: `komaedit.hotbar` (lo da `komaedit.use`; paquete básico) y `komaedit.admin.hotbar.give` (paquete de administrador).
+
 ## Ruidos guardados
 
 ### Objetivo y acceso
@@ -4915,7 +5016,8 @@ La etapa **Planos** (`5`) es la biblioteca con miniaturas. El plano elegido se c
 
 - **Buscador** (clic o `/` en la etapa): lo mismo que `search`. `Esc` lo borra y `Intro` elige el primero. A su lado, **Mostrar**: Todos, Míos o Servidor (un clic o la rueda).
 - **Etiquetas:** una fila de pastillas con las más usadas que caben: un clic filtra por la etiqueta y otro la quita.
-- **Plano elegido**, en una tarjeta de alto fijo encima de la cuadrícula (así no salta al elegir; si sus botones no caben en una fila, la tarjeta tiene dos): nombre, tamaño, bloques y autor, y los botones **Estampar** (el pincel en la mano con ese plano), **Radio** (auto, o el del pincel, con un clic o la rueda), **Cargar** (al portapapeles) y **Compartir** (en los tuyos, si puedes compartir). Sin plano elegido y con una sola etiqueta activa sale **Estampar #etiqueta**, para estamparla entera. Sin permiso, el botón sale apagado y lo dice al pasar el ratón.
+- **Plano elegido**, en una tarjeta de alto fijo encima de la cuadrícula (así no salta al elegir; si sus botones no caben en una fila, la tarjeta tiene dos): nombre, tamaño, bloques y autor, y los botones **Estampar** (el pincel en la mano con ese plano), **Radio** (auto, o el del pincel, con un clic o la rueda), **Cargar** (al portapapeles), **Al servidor** (lo copia a los planos del servidor; en los tuyos, si puedes) y **Compartir** (un código para llevarlo a otro servidor, ver [Compartir entre servidores](#compartir-entre-servidores)). Sin plano elegido y con una sola etiqueta activa sale **Estampar #etiqueta**, para estamparla entera. Sin permiso, el botón sale apagado y lo dice al pasar el ratón.
+- **Pegar código de otro servidor**, debajo de la tarjeta: importa lo que tengas copiado (planos, paletas, presets…), enseñando antes qué trae.
 - **Cuadrícula** de miniaturas con el nombre (en dos líneas, partido tras `_` o `-`, si no cabe en una) y el tamaño debajo, tantas columnas como quepan (como poco dos); los compartidos llevan una estrella dorada. Un clic elige el plano.
 - La biblioteca se pide al abrir la etapa. Sin planos, **Guardar el portapapeles…** abre el chat con `/komaedit blueprint save ` escrito.
 - En el modo compacto no salen las pastillas de etiquetas y la tarjeta del plano elegido enseña el nombre y el tamaño en una sola línea (el resto, en su tooltip).
@@ -4964,12 +5066,240 @@ Los límites están en `config/komaedit/blueprints.json`, que se crea solo y se 
 - La miniatura pinta cada bloque como un cubo de su color medio: no enseña losas, escaleras, entidades ni el contenido de los bloques.
 - Compartir copia el plano: si luego cambias el tuyo, el compartido no cambia hasta que lo vuelvas a compartir.
 
+## Reconstrucción animada
+
+### Objetivo y acceso
+
+Ver una obra levantarse bloque a bloque, como la «Animated Rebuild» de Axiom: para grabar vídeos y timelapses o enseñar una construcción en el servidor. KomaEdit quita la obra (o deja vacío el sitio donde va) y la vuelve a poner con el orden y el ritmo que elijas. Los bloques son de verdad: los ven todos los jugadores, con o sin el mod.
+
+```text
+/komaedit rebuild [orden] [banderas]
+/komaedit rebuild portapapeles [orden] [banderas]
+/komaedit rebuild plano <plano> [orden] [banderas]
+/komaedit rebuild pausar | seguir | velocidad <factor> | acelerar | frenar | terminar | cancelar | estado
+```
+
+Alias: `reconstruir`; `clipboard` y `blueprint` para el origen; `pause`, `resume`/`reanudar`, `speed`, `faster`, `slower`, `finish`/`final`/`skip`, `cancel` y `status` para los mandos. Permiso `komaedit.build.rebuild` (paquete intermedio; también lo da `komaedit.build`); un plano pide además `komaedit.blueprint.load`. Ayuda en el juego: `/komaedit help rebuild`. En el Studio, etapa [Herramientas](#herramientas), grupo Utilidades: **Reconstruir paso a paso**.
+
+### Qué se levanta
+
+- **La selección** (`/komaedit rebuild`): lee lo que hay (con sus datos: cofres con lo que guardan, carteles con su texto, cabezas, estandartes…), lo quita y lo vuelve a levantar. Al acabar el mundo queda exactamente como estaba, así que no deja entrada en `//undo`.
+- **El portapapeles** (`portapapeles`): donde lo pondría `//paste` (el origen del portapapeles en tus pies; con `//rotate` y `//flip` aplicados), o donde digas con `-l x,y,z`. Vacía primero toda su caja, también donde el portapapeles tiene aire, como `//paste`; con `-a` solo vacía donde el portapapeles pone un bloque. Queda una entrada de `//undo` que lo quita y devuelve el terreno.
+- **Un plano** de la [biblioteca](#biblioteca-de-planos) (`plano <nombre>`, con `servidor/…` para los compartidos): con el centro de su base encima del bloque que miras (o del último clic del Studio, hasta 128 bloques; si no miras nada, a tus pies), o en `-l x,y,z`. Igual que el portapapeles, con su `//undo`.
+- Solo bloques: las entidades (marcos, soportes de armadura, cuadros) no se quitan ni se ponen. Lo que no puedes tocar (fuera de la altura del mundo o del borde, o la protección del spawn) se deja como está y se dice cuánto.
+
+### Orden de aparición
+
+La primera palabra tras el origen; sin ella, **como un constructor**.
+
+| Orden | Cómo aparece |
+| --- | --- |
+| `capas` | De abajo arriba, capa a capa; cada capa en zigzag seguido, como una impresora 3D (cada fila al revés que la anterior y cada capa al revés que la de debajo, así el frente de obra nunca salta de un lado a otro). |
+| `ondas` | Desde un punto hacia fuera, por distancia. El centro es `-c x,y,z` o, sin él, el bloque que miras si está en la obra; si no, el centro de su base. |
+| `eje` | Un barrido por el eje de `-e` (`x`, `-x`, `y`, `-y`, `z`, `-z`; también `este`, `oeste`, `arriba`, `abajo`, `sur`, `norte`), por rodajas en zigzag. De serie, `x`. `-e` solo ya elige este orden. |
+| `azar` | Al azar con la semilla de `-s` (un número o una palabra); sin ella, una nueva cada vez, que el chat dice para repetirla. |
+| `constructor` | Por fases, como trabajaría alguien: **cimientos** (lo macizo del suelo de la obra, desde abajo hasta la última capa seguida que cubre al menos el 60 % de sus columnas; la primera capa siempre), **estructura** (troncos y pilares), **paredes** (los demás cubos enteros, cristal y barrotes), **tejado** (escaleras y losas sin nada macizo encima), **detalles** (vallas, puertas, antorchas, faroles, alfombras, muebles, cofres, líquidos y las escaleras y losas bajo techo) y **vegetación** (hojas, flores, hierba, enredaderas, cultivos). Dentro de cada fase, de abajo arriba. |
+| `historial` | En el orden en que se colocó cada bloque, si está apuntado (ver [Historial de colocación](#historial-de-colocación)): primero lo que ya estaba antes de apuntarse nada, por capas, y luego lo apuntado, del más antiguo al más reciente. Si nada de la obra está apuntado (o es un plano), va por capas y lo dice. |
+
+Ejemplos:
+
+```text
+/komaedit rebuild
+/komaedit rebuild capas -b 2
+/komaedit rebuild ondas -c ~,~,~ -t 20 -f -n
+/komaedit rebuild eje -e -z -b 8 -p 0.5
+/komaedit rebuild azar -s 42 -t 45
+/komaedit rebuild constructor -t 60 -p 1 -d 0.2 -f
+/komaedit rebuild historial -b 1
+/komaedit rebuild portapapeles constructor -l 120,64,-30 -a
+/komaedit rebuild plano casa_roble -t 30 -f
+/komaedit rebuild velocidad 0.5
+```
+
+### Ritmo
+
+| Bandera | Qué hace | Por defecto |
+| --- | --- | --- |
+| `-b <n>` | Bloques por tick (20 ticks por segundo); con decimales, de 0,01 a 4096. Menos de 1 es un bloque cada varios ticks (`-b 0.25`: uno cada 4) | `4` |
+| `-t <tiempo>` | Duración total; manda sobre `-b`. El intervalo entre bloques se ajusta para acabar justo a tiempo contando pausas y retrasos; si no caben, se encogen todos en proporción | — |
+| `-p <tiempo>` | Pausa al empezar cada capa, rodaja, onda, fase del constructor o el historial | `0` |
+| `-i <tiempo>` | Retraso extra cuando el bloque es el mismo que el anterior (como en Axiom); «el mismo» es el mismo bloque, aunque esté girado | `0` |
+| `-d <tiempo>` | Retraso extra cuando el bloque cambia respecto al anterior | `0` |
+| `-w <tiempo>` | Cuánto se ve el sitio vacío antes del primer bloque | `1` s |
+| `-e`, `-c`, `-s` | Eje, centro y semilla (ver la tabla de órdenes) | — |
+| `-l x,y,z` | Dónde va el portapapeles o el plano | `//paste` / lo que miras |
+| `-a` | Portapapeles y planos: no vaciar donde tienen aire | vacía su caja entera |
+| `-f` | Partículas discretas del bloque al ponerlo | no |
+| `-n` | Sonido de colocación, flojo | no |
+
+Los tiempos van en segundos (`2`, `1.5`, `1,5`, `2s`) o en ticks con `t` (`10t`). Las coordenadas admiten `~` relativo a tus pies (`~,~2,~-3`). Partículas y sonido son pocos a propósito: como mucho tres por tick (`effectsPerTick`), repartidos entre lo que se pone, para que se oiga y se vea la obra crecer sin ruido.
+
+### Mandos
+
+- **`pausar`** congela la animación donde va (el reloj también); **`seguir`** la reanuda al mismo ritmo, sin soltar de golpe lo de la pausa.
+- **`velocidad <factor>`** la acelera o la frena (`2`, `0.5`, `x4`, `1/4`; de ×1/16 a ×64); **`acelerar`** la dobla y **`frenar`** la parte por la mitad. Lo que queda se cuenta a la velocidad nueva.
+- **`terminar`** salta al final: pone lo que falta lo antes que deje el presupuesto del servidor, sin animación ni efectos.
+- **`cancelar`** (también `/komaedit cancel`) lo deja todo como estaba: en la selección, la obra vuelve a estar entera al momento; con el portapapeles o un plano, vuelve el terreno de antes. Si aún leía u ordenaba, se olvida sin haber tocado nada.
+- **`estado`**: fase, bloques puestos, velocidad, el grupo que se levanta («paredes», «capa 64») y lo que queda.
+- La barra de progreso (y el pie del Studio) dice la fase, el avance y lo que queda; el mensaje del principio trae los botones **[pausar] [×2] [al final] [cancelar]**. Un administrador la ve en `/komaedit jobs` y puede pausarla o cancelarla como cualquier trabajo.
+- Una por jugador. Si quien la lanzó se desconecta, la reconstrucción salta al final sola (si aún leía, se olvida).
+
+### Lo que se cambia mientras tanto
+
+Cada posición se escribe solo si sigue como se dejó: al vaciar, si sigue como se leyó; al levantar, si sigue vacía; al deshacer, si sigue con lo que se puso. Lo que alguien cambie mientras tanto (o lo que coloques tú en el hueco) se respeta y no se reconstruye; el mensaje final dice cuántos bloques se dejaron así. Durante la animación los bloques se escriben **sin actualizaciones** (ni vecinos, ni la llamada al colocarse, ni validación): la arena no cae, las antorchas y las puertas no saltan aunque su apoyo aún no esté, y el agua no corre. Al acabar, la obra queda como era.
+
+### Reinicios y caídas
+
+Una obra no se queda a medias por un reinicio. Antes de vaciar nada, la reconstrucción guarda en `<mundo>/komaedit/rebuilds/<id>.bin` lo que tiene que quedar y lo que había (con sus datos), y lo borra al terminar o cancelar.
+
+- **Al parar el servidor** (`/stop`, cerrar el mundo), cada reconstrucción en marcha **termina al momento**, sin animación ni presupuesto, antes de que se guarde el mundo; la que se estaba cancelando termina de deshacerse. Lo que aún leía u ordenaba se olvida (no había tocado nada).
+- **Si el servidor se cae** sin pararse, al arrancar se encuentra el archivo y la obra se termina sola, repartida entre ticks, antes de que nadie pueda empezar otra: cada chunk está como se guardó por última vez (con la obra entera, vaciada o a medio levantar), así que se mira posición a posición: si tiene lo que debe quedar, nada; si está vacía o tiene lo de antes, se pone la obra; si tiene otra cosa, alguien la cambió y se deja. Si se estaba cancelando (queda una marca `<id>.restore`), se deja como estaba antes en vez de acabarla. Quien la lanzó recibe un aviso al terminar si está conectado, y queda en `latest.log`.
+- Si una reconstrucción falla a medias en el juego, se termina igual, sin animación, con lo guardado.
+- Lo recuperado tras una caída no deja `//undo` (la sesión de WorldEdit no sobrevive al reinicio). Un archivo de una dimensión que ya no existe se queda en disco y se avisa en `latest.log`.
+
+### Historial de colocación
+
+Para el orden `historial`, KomaEdit apunta por mundo en qué orden se colocan los bloques: lo que los jugadores ponen a mano (también la otra mitad de una puerta o una cama), lo que ponen las [capacidades](#construir-a-mano-capacidades) y las ediciones pequeñas de WorldEdit y de KomaEdit (hasta `historyMaxEditBlocks`, 4 096 de serie: un relleno de terreno no es «cómo se construyó», y una orden de WorldEdit más grande no apunta nada). Romper o vaciar un bloque lo olvida; volver a ponerlo lo pone al final. Se recuerdan las últimas `historyBlocksPerWorld` colocaciones de cada mundo (500 000 de serie, unos 20 MB de memoria si se llenan; 0 lo apaga) y se guardan en `<mundo>/komaedit/placements/` cada cinco minutos (en otro hilo) y al parar el servidor. Solo posiciones: ni quién ni qué. Lo colocado antes de instalar esta versión no está apuntado y sale primero, por capas.
+
+### Configuración de la reconstrucción
+
+`config/komaedit/rebuild.json` se crea con los valores de serie y se recarga con `/komaedit reload`:
+## Compartir entre servidores
+
+### Objetivo y acceso
+
+Pasar a otro servidor (o a otro builder) lo que uno se ha preparado: paletas, ruidos, presets de árbol, roca y escultura, recetas del Studio y planos. Todo viaja en un **paquete de KomaEdit** con su nombre, su autor, la versión del mod que lo hizo y la versión del formato, y sale de dos formas:
+
+- **Código de texto** (`kpack1:…`), para lo pequeño: cabe en el chat de Minecraft (hasta unos 239 caracteres, una paleta o un par de presets) o en un mensaje de Discord; lo que no cabe en el chat se pega en el Studio.
+- **Archivo `.kpack`** en `config/komaedit/exports/`, para lo grande (los planos).
+
+```text
+/komaedit share
+/komaedit share export <tipo:nombre…> [-n nombre] [-f]
+/komaedit share import <código>
+/komaedit share import archivo <nombre>
+/komaedit share files
+/komaedit share accept [renombrar|reemplazar|saltar]
+/komaedit share cancel
+```
+
+Alias: `compartir` para la orden; `exportar`, `importar`, `file`, `archivos`, `aceptar` y `cancelar` para las subórdenes. Ayuda: `/komaedit help share`. En el Studio, los botones **Compartir** y **Pegar código de otro servidor** (ver [Compartir en el Studio](#compartir-en-el-studio)).
+
+### Exportar
+
+- **Qué:** `tipo:nombre`, con los tipos `paleta` (`palette`), `ruido` (`noise`), `arbol` (`tree`), `roca` (`rock`), `escultura` (`sculpt`, los presets de `/komaedit sculpt preset`), `receta` (`recipe`) y `plano` (`blueprint`; también los compartidos, `plano:servidor/torre`). `tipo:*` mete todos los de ese tipo y se pueden juntar varios: `/ke share export paleta:rocas arbol:abeto plano:torre -n "Casas de Villa"`.
+- **`-n`** pone nombre al paquete (si no, el de la única cosa que lleva o «Paquete de <jugador>»); **`-f`** lo guarda como archivo aunque quepa en un código.
+- **La respuesta**, en el chat: **[Copiar código]** lo copia al portapapeles, y una línea dice si cabe en el chat o hay que pegarlo en el Studio. Si el código pasa de `maxCodeChars` (32 000 caracteres), va a un archivo (hace falta `komaedit.share.file`).
+- `/komaedit share` sin más lista lo que tienes guardado de cada tipo, con un botón por cosa y **[todos]**.
+- Los planos llevan su esquema, su autor y sus etiquetas; la miniatura no viaja: se pinta al importarlo.
+
+### Importar
+
+1. `/komaedit share import <código>`, o `import archivo <nombre>` para un `.kpack` de `config/komaedit/imports/` (vale también un `.txt` con un código pegado de Discord). `/komaedit share files` lista esos archivos con un botón cada uno.
+2. **Antes de guardar nada** dice qué trae, de quién y de qué versión de KomaEdit, cada cosa con su estado: **+** nueva, **!** choca con algo que ya tienes (mismo tipo y nombre, o repetida en el paquete), **×** no se puede importar (con el motivo: te falta el permiso, datos que no valen…) y **?** un tipo de una versión más nueva del mod. Debajo de cada una, lo que hubo que cambiar para este servidor (bloques que faltan, biomas…).
+3. Lo que choca: **[Importar con otro nombre]** (`torre` → `torre_2`), **[Reemplazar]** o **[Saltar]** (se queda lo tuyo); sin choques, **[Importar]**. **[Cancelar]** no guarda nada. La importación pendiente caduca a los 10 minutos.
+4. Cada cosa se guarda donde va (paletas con tus paletas, planos en tu biblioteca…) y se dice qué pasó con cada una. Los planos se leen con WorldEdit y se les pinta la miniatura en el hilo de los planos; el aviso llega al terminar.
+
+Se lee también lo de antes: los códigos de paleta `kp1:` de `/komaedit palette encode` (entran como la paleta `importada`) y los paquetes de receta `.krecipe` que se exportaban a `config/komaedit/packages/` (en el otro servidor van, como los `.kpack`, a `config/komaedit/imports/`).
+
+### Compartir en el Studio
+
+![Importar un paquete en el Studio](renders/studio/1080p_gui3_compartir_es.png)
+
+- **Compartir:** en la tarjeta del plano elegido (etapa Planos), en el icono de flecha que va detrás de cada preset guardado de **Plantar árbol** y **Poner roca** (etapa Herramientas) y en **Tus paletas: compartir**, al final de la etapa Color. Piden el código y, al llegar, **se copia solo al portapapeles**; el pie lo dice, con su tamaño. Si es demasiado grande para un código, se guarda como archivo y el pie dice dónde.
+- **Pegar código de otro servidor** (etapa Planos, debajo de la tarjeta del plano elegido) o **`Ctrl+V`** en el Studio sin ningún campo abierto: manda el código que tengas copiado (hasta 32 000 caracteres, mucho más de lo que deja el chat) y abre la ventana **Importar «…»** con lo que trae y los botones **Con otro nombre**, **Reemplazar**, **Saltar** y **Cancelar** (o **Importar** y **Cancelar** si nada choca). `Intro` hace el primero y `Esc` cancela.
+- El portapapeles solo se toca cuando el código llega justo después de pulsar **Compartir** en el Studio; lo exportado desde el chat se copia con su botón.
+- El botón de la tarjeta del plano que copia el plano a los planos del servidor se llama ahora **Al servidor** (antes, **Compartir**).
+
+### Qué se comprueba
+
+Un paquete es solo datos: nada de lo que trae se ejecuta, y cada cosa se revisa como si viniera de un desconocido.
+
+- **Tamaños:** código de hasta `maxCodeChars` caracteres, JSON de hasta `maxPackKilobytes` ya descomprimido, archivo de hasta `maxFileKilobytes`, como mucho `maxItems` cosas y esquemas de hasta `maxSchematicKilobytes` descomprimidos. Se corta antes de descomprimir de más: un código o un ZIP «bomba» no llena la memoria.
+- **Archivos:** solo se lee de `config/komaedit/imports/` y solo se escribe en `config/komaedit/exports/`; un nombre con `..`, barras, unidades o un enlace que apunta fuera no vale. Del `.kpack` solo se leen `pack.json` y los adjuntos de `blobs/`; una entrada con una ruta rara (`../`, `/`, `\`) rechaza el archivo, y nunca se escribe nada en disco con los nombres del ZIP.
+- **Nombres y textos:** cada tipo aplica sus reglas de nombre (`a-z`, `0-9`, `_`, `-`…); el nombre del paquete y el autor, que solo se enseñan, pierden los códigos de color `§` y los caracteres invisibles que cambian el orden del texto.
+- **Bloques:** los que no existen en este servidor (de un mod que no está o de otra versión) pasan al **más parecido por su nombre**: primero el mismo nombre en Minecraft y después la misma forma (escalera, losa, muro, tronco…) con más palabras en común (`biomesoplenty:fir_stairs` → `oak_stairs`, `create:andesite_casing` → `andesite`); si no se parece a nada, aire. Las propiedades que el nuevo bloque no tiene se quitan. Los bloques de órdenes, de estructura y de puzle pasan a aire siempre.
+- **Fórmulas:** la de las recetas con la figura Expresión pasa por el compilador de la figura, que solo conoce números, las variables de la figura y funciones matemáticas (ver [Figura Expresión](#figura-expresión)). Las expresiones de WorldEdit (`=…`) no se aceptan en patrones ni máscaras.
+- **Presets:** se leen con el mismo lector que su orden; uno que apunte a otro preset (`#base`) no entra.
+- **Planos:** el esquema se revisa entero antes de que lo lea WorldEdit: que el tamaño y los datos cuadren, los bloques que faltan y, fuera, todo lo que hace algo al colocarlo. Los bloques de órdenes, los generadores de criaturas, las bóvedas, los portales del End y los bloques con datos de otros mods llegan vacíos; los carteles, sin clics, selectores ni lecturas de datos (el texto y su color sí); los cofres, sin tabla de botín, y sus objetos, sin componentes (sin nombre, encantamientos ni libros escritos); de las entidades solo viajan las de decorado (cuadros, marcos, soportes de armadura, vagonetas y barcas), sin pasajeros, etiquetas ni atributos. Los biomas que no existen pasan a llanura.
+- **Versiones:** un tipo que esta versión no conoce (de una más nueva) se salta sin estropear el resto; un paquete con un formato más nuevo que el del mod pide actualizarlo.
+
+### Permisos y límites de los paquetes
+
+| Nodo | Paquete | Qué da |
+| --- | --- | --- |
+| `komaedit.share.export` | intermedio (o `komaedit.use`) | Exportar lo propio a un código. |
+| `komaedit.share.import` | intermedio | Importar. Es propio: no lo da `komaedit.use`. Además hace falta el de guardar cada tipo (`komaedit.palette.save`, `komaedit.noise.save`, `komaedit.build.tree`, `komaedit.build.rock`, `komaedit.build.brush.sculpt`, `komaedit.recipe` o `komaedit.blueprint.save`); lo que no se puede guardar sale como «te falta el permiso». |
+| `komaedit.share.file` | avanzado | Exportar a un archivo de `config/komaedit/exports/` (escribe en el disco del servidor). |
+| `komaedit.limit.share` | admin | Sin el límite de importaciones y exportaciones por hora. |
+
+Los planos importados cuentan para los límites de `blueprints.json` (número, tamaño y archivo), con `komaedit.limit.blueprints` como siempre. Los límites de los paquetes están en `config/komaedit/share.json`, que se crea solo y se recarga con `/komaedit reload`:
+
+```json
+{
+  "format": 1,
+  "historyBlocksPerWorld": 500000,
+  "historyMaxEditBlocks": 4096,
+  "effectsPerTick": 3
+}
+```
+
+### Rendimiento y limitaciones
+
+- Leer la obra va en el hilo del servidor, repartido entre ticks con el [presupuesto común](#rendimiento); ordenarla y guardar el archivo de recuperación, en su propio hilo («KomaEdit reconstrucción»). La animación es un trabajo pesado más del presupuesto por tick: cada tick pone los bloques a los que les toca, por ventanas que pasan al mundo con su luz y su envío a los clientes dentro de su parte del tick, por turnos con las ediciones de los demás.
+- Si el servidor no da para el ritmo pedido (o hay mucho trabajo de otros), la animación **va más despacio** en vez de bajar los TPS: el reloj de la animación espera a que se ponga lo que tocaba y no suelta luego los bloques de golpe. `estado` dice en cuántos ticks pasó.
+- Hasta 16 millones de bloques de caja de lectura (`EditLimits`), y la obra (sus bloques sin el aire) cuenta para el límite de bloques por operación (`maxBlocksPerOperation`) y para tu `//limit`. Cada bloque se escribe dos veces (vaciar y poner).
+- La selección no guarda historial de WorldEdit mientras se anima (no hay nada que deshacer); el portapapeles y los planos sí, para su `//undo`.
+- Un plano lleva sus bloques con sus datos (al contrario que `blueprint place`), así que un cofre sale con lo que guardaba.
+- Sin vista previa `-v`: lo que se ve es la propia obra levantándose. Los bloques con datos se quitan sin soltar lo que guardan (como `//set`) y vuelven con ello.
+- La reconstrucción no se ha probado aún dentro de Minecraft: lo de arriba está comprobado con pruebas fuera del juego (cada orden pone cada bloque una vez, ritmo con reloj de mentira, pausar, acelerar, saltar al final, cancelar, cambios a mano y recuperación tras reiniciar).
+
+Render de comprobación fuera del juego (se regenera con `KOMAEDIT_REBUILD_RENDER=<carpeta>`): la casa de las pruebas levantándose como un constructor, el final de cada fase y los órdenes a un cuarto, la mitad y tres cuartos.
+
+![La casa de prueba levantándose como un constructor](renders/rebuild/constructor.gif)
+
+![El final de cada fase: cimientos, estructura, paredes, tejado, detalles y vegetación](renders/rebuild/constructor_tira.png)
+
+![Capas, ondas, eje, azar y constructor a un 25, 50 y 75 %](renders/rebuild/ordenes.png)
+  "maxCodeChars": 32000,
+  "maxPackKilobytes": 1024,
+  "maxFileKilobytes": 16384,
+  "maxItems": 64,
+  "maxSchematicKilobytes": 65536,
+  "importsPerHour": 30,
+  "exportsPerHour": 60,
+  "allowFiles": true
+}
+```
+
+- `importsPerHour` y `exportsPerHour`: por jugador. Cuenta cada paquete leído, también si luego se cancela; `0` no deja.
+- `allowFiles`: con `false` nadie exporta a archivo (importar los de `imports/` sigue valiendo).
+- Si el archivo no se puede leer se usan los valores de serie y se avisa en `latest.log`.
+
+### El formato
+
+Para quien quiera escribir herramientas que lean o hagan paquetes:
+
+- **Código:** `kpack1:` y, en Base64 apto para URL sin relleno, los bytes del JSON comprimidos con Deflate sin cabecera y con un diccionario fijo de palabras frecuentes (`ShareCodec.DICTIONARY`, que no cambia nunca: otro diccionario sería `kpack2:`).
+- **Archivo `.kpack`:** un ZIP con `pack.json` (el mismo JSON) y los adjuntos en `blobs/<n>.bin`.
+- **JSON**, con claves cortas para que el código ocupe poco: `{"f": 1, "n": "nombre", "a": "autor", "m": "versión del mod", "t": fecha en ms, "i": [{"k": "palette", "n": "rocas", "v": 1, "d": {…}, "b": adjunto}]}`. `f` es la versión del formato; `v`, la de los datos de cada tipo; `b`, el esquema de un plano (en Base64 dentro del código, la ruta del adjunto en el archivo).
+- **Datos de cada tipo:** paleta `{"e": "stone;andesite"}` (sin `minecraft:`); ruido, árbol y roca `{"t": "<el texto guardado>"}`; escultura y receta, el mismo JSON que se guarda en disco; plano `{"size": [x, y, z], "blocks": n, "tags": […], "author": "…"}` y el esquema `sponge.3` como adjunto.
+- Cada versión escribe su formato y sigue leyendo los anteriores (una prueba lee un código de la primera versión en cada build).
+
+### Rendimiento y limitaciones
+
+- Leer, revisar y montar los paquetes va en su propio hilo («KomaEdit paquetes»); en el del servidor solo se miran los permisos y se guarda lo aceptado.
+- El chat de Minecraft no deja escribir más de 256 caracteres: un código más largo se pega en el Studio o se guarda como `.txt` en `config/komaedit/imports/` (en un servidor, eso lo hace quien tenga acceso a sus archivos).
+- Los bloques que faltan se cambian por su nombre, no por cómo se ven: un bloque de un mod con un nombre raro puede acabar en aire. El aviso de cada cosa dice qué se cambió por qué.
+- Los planos llegan sin lo descrito arriba: cofres con sus objetos pero sin nombres ni encantamientos, carteles con su texto pero sin clics y sin criaturas.
+- Nada de esto se ha probado aún dentro de Minecraft: las pruebas son de JUnit (ida y vuelta de cada tipo, versiones, choques, bloques que faltan, límites y entradas dañadas o maliciosas).
+
 ## Recetas, instancias y paquetes
 
 - Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
 - Las instancias conservan receta, trayectoria, estados colocados y checksum; permiten actualizar o retirar una construcción sin borrar bloques modificados manualmente.
 - Seleccionar una instancia vuelve a cargar sus puntos en el editor antes de actualizarla.
-- Los paquetes exportables conservan configuraciones compartibles en `config/komaedit/packages/`.
+- Los paquetes exportables conservan configuraciones compartibles en `config/komaedit/packages/`; en otro servidor se dejan en `config/komaedit/imports/` y se importan con `/komaedit share import archivo` (ver [Compartir entre servidores](#compartir-entre-servidores)), que es también la forma de pasar recetas, paletas, presets y planos juntos.
 - Las recetas e instancias guardan figuras procedurales (parámetros y trayectoria); para guardar y compartir bloques ya construidos están los [planos](#biblioteca-de-planos).
 - Los datos se aíslan por mundo y UUID de jugador para evitar contaminación entre proyectos.
 
@@ -4991,6 +5321,7 @@ El proyecto persistente evita perder recetas e instancias al desconectarse y per
 - Cada reemplazo conserva el archivo anterior como `.bak` y utiliza un `.tmp` recuperable si el proceso se interrumpe.
 - La geometría comprimida de una instancia incluye SHA-256 en sus metadatos. Una discrepancia detiene la carga en vez de aplicar datos dañados.
 - `project backup` crea un ZIP en `<mundo>/komaedit/backups/` y conserva las copias más recientes según `backupRetention`.
+- Del mundo, no de un jugador: `<mundo>/komaedit/rebuilds/` (las [reconstrucciones animadas](#reinicios-y-caídas) en marcha, para terminarlas tras una caída) y `<mundo>/komaedit/placements/` (el [historial de colocación](#historial-de-colocación)).
 
 ### Comportamiento y limitaciones
 
@@ -5014,17 +5345,19 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.debug` (`/komaedit debugprint`), `komaedit.debug.visualiser` (`/komaedit debug removevisualiserentities`), `komaedit.admin.jobs` (`/komaedit jobs`: ver, pausar y cancelar los trabajos de todos), `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
-   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
+   - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`, `.rebuild` ([Reconstrucción animada](#reconstrucción-animada)).
    - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
    - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
    - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
    - `komaedit.build.brush.sculpt` ([Pinceles de modelado](#pinceles-de-modelado)); escalar y girar el portapapeles va con `komaedit.clipboard`.
    - `komaedit.build.brush.paint` ([Pincel de pintura](#pincel-de-pintura)) y `komaedit.build.brush.zone` ([Pincel de zona](#pincel-de-zona), también `pincel retocar`), los dos del paquete intermedio.
    - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
+   - Paquetes compartidos: `komaedit.share.export` (la da también `komaedit.use`), `komaedit.share.import` (propio), `komaedit.share.file` y, de admin, `komaedit.limit.share` (ver [Compartir entre servidores](#permisos-y-límites-de-los-paquetes)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.debug.loadingbar` (`/komaedit debug clearloadingbars`; la da también `komaedit.use`). `komaedit.debug` da las dos órdenes de `/komaedit debug`.
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
+   - `komaedit.hotbar` ([barras guardadas](#barras-guardadas); lo da también `komaedit.use`) y `komaedit.admin.hotbar.give` (ponerlas como en creativo en cualquier modo, que crea objetos; solo el paquete de administrador).
    - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…) y `komaedit.select.superwand`.
    - `komaedit.capability.<capacidad>` y `komaedit.capability.flyspeed` (ver [Construir a mano: capacidades](#construir-a-mano-capacidades)); los da también `komaedit.build`.
 3. **Paquetes** (`permpack` de ezEdits):
@@ -5035,6 +5368,18 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
 | `komaedit.permpack.admin` | `reload`, `jobs`, `debugprint`, `debug removevisualiserentities`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), barras guardadas (`hotbar`), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
+| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`), usar las capacidades fuera de creativo (`komaedit.admin.anymode`) y poner barras guardadas como en creativo en cualquier modo (`komaedit.admin.hotbar.give`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
+| `komaedit.permpack.admin` | `reload`, `jobs`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`), usar las capacidades fuera de creativo (`komaedit.admin.anymode`) y poner barras guardadas como en creativo en cualquier modo (`komaedit.admin.hotbar.give`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), exportar e importar paquetes, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, exportar paquetes a archivo, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
+| `komaedit.permpack.admin` | `reload`, `jobs`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos ni de paquetes por hora, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
@@ -5063,6 +5408,9 @@ Los campos que falten (un `config.json` de una versión anterior, como el de la 
 `config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
 
 `config/komaedit/blueprints.json` guarda los límites de la [biblioteca de planos](#permisos-y-límites) (planos por jugador, compartidos, tamaño y si se puede compartir); también se recarga con `/komaedit reload`.
+
+`config/komaedit/rebuild.json` guarda los ajustes de la [reconstrucción animada](#configuración-de-la-reconstrucción) (cuántas colocaciones recuerda el historial por mundo, desde qué tamaño una edición no se apunta y cuántas partículas y sonidos por tick); también se recarga con `/komaedit reload`.
+`config/komaedit/share.json` guarda los límites de los [paquetes compartidos](#permisos-y-límites-de-los-paquetes) (tamaños, cosas por paquete, importaciones y exportaciones por hora y si se exporta a archivo); también se recarga con `/komaedit reload`.
 
 `config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `config/komaedit/images.json` configura `/komaedit image` (ver [Configuración de imágenes](#configuración-de-imágenes)) y también se recarga. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
 

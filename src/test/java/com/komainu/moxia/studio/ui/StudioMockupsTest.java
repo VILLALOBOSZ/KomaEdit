@@ -7,6 +7,8 @@ import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.blueprint.BlueprintThumbnail;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.share.ShareImport;
+import com.komainu.moxia.share.ShareOfferPayload;
 import com.komainu.moxia.studio.FigureVariation;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.layout.Rect;
@@ -92,6 +94,7 @@ class StudioMockupsTest {
             driver.view.selectStage(StudioStage.PATH, driver.host);
         }));
         scenes.add(new Scene("1080p_gui3_planos_es.png", 640, 360, 3, "es_es", StudioMockupsTest::blueprints));
+        scenes.add(new Scene("1080p_gui3_compartir_es.png", 640, 360, 3, "es_es", StudioMockupsTest::shareOffer));
         scenes.add(new Scene("1080p_gui3_bloques_es.png", 640, 360, 3, "es_es", driver -> {
             tools(driver, "roof");
             driver.host.lookedAt = "minecraft:stone_bricks";
@@ -340,6 +343,7 @@ class StudioMockupsTest {
             tools(driver, "river");
         }));
         scenes.add(new Scene("854_gui2_planos_es.png", 427, 240, 2, "es_es", StudioMockupsTest::blueprints));
+        scenes.add(new Scene("854_gui2_compartir_es.png", 427, 240, 2, "es_es", StudioMockupsTest::shareOffer));
         for (Scene scene : scenes) {
             ImageIO.write(paint(scene, StudioPalette.DEFAULT, null), "png", folder.resolve(scene.file()).toFile());
         }
@@ -595,6 +599,22 @@ class StudioMockupsTest {
         driver.view.selectStage(StudioStage.BLUEPRINTS, driver.host);
         driver.view.blueprints().select(BlueprintRef.display("casita", BlueprintScope.SHARED));
         driver.host.status = "";
+    }
+
+    /** La ventana «Importar» con un paquete que trae de todo: nuevo, con bloques cambiados, que choca y que no entra. */
+    static void shareOffer(StudioDriver driver) {
+        blueprints(driver);
+        driver.host.offer = new ShareOfferPayload("Casas de Villa", "VILLALOBOSZ", "1.9.1", 1, List.of(
+                new ShareOfferPayload.Line(ShareImport.Status.NEW.ordinal(), "paleta «rocas»", ""),
+                new ShareOfferPayload.Line(ShareImport.Status.NEW.ordinal(), "preset de árbol «abeto»",
+                        "Bloques que no hay en este servidor: biomesoplenty:fir_log → oak_log"),
+                new ShareOfferPayload.Line(ShareImport.Status.CONFLICT.ordinal(), "plano «casita»",
+                        "ya tienes plano con ese nombre"),
+                new ShareOfferPayload.Line(ShareImport.Status.INVALID.ordinal(), "receta «arco»",
+                        "La fórmula es demasiado larga (300 caracteres; máximo 256)"),
+                new ShareOfferPayload.Line(ShareImport.Status.UNKNOWN.ordinal(), "hotbar «obra»",
+                        "tipo «hotbar» que esta versión de KomaEdit no conoce")));
+        driver.tick();
     }
 
     private static void add(FakeStudioHost.FakeBlueprints catalog, String name, BlueprintThumbnail.Grid grid,

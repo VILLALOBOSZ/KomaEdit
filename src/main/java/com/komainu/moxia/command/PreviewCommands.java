@@ -214,6 +214,7 @@ final class PreviewCommands {
         if (AsyncEngine.cancel(id) | IvyService.cancel(id)) {
             stopped.add("cálculo");
         }
+        com.komainu.moxia.rebuild.RebuildService.cancel(id).ifPresent(stopped::add);
         if (BiomeEditService.cancel(id)) {
             stopped.add("pintado de bioma (lo ya pintado, en //undo)");
         }
