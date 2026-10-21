@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Auditoría de red, permisos y seguridad del servidor
+
+Lo que un cliente modificado podía hacer con los paquetes del Studio y que ahora no:
+
+- **Borrar o reemplazar la selección sin permiso de construir.** El paquete del editor reemplazaba, borraba o pintaba toda la selección con solo `komaedit.select`; ahora pide `komaedit.build`. El cliente normal no manda esas acciones.
+- **Llenar la memoria del servidor con la pintura rápida.** Cada paquete con un centro lejano añadía hasta 128 pasadas a una cola sin tope. Ahora la cola tiene un máximo de 1 024, y un trazo se para en `maxBlocksPerOperation` (antes solo en el `//limit` de WorldEdit, sin límite de serie).
+- **Atascar el servidor pidiendo miniaturas de planos.** Cada petición se leía del disco y se le calculaba la huella en el hilo del servidor, aunque ya estuviera en camino. Ahora lo pedido no se repite y hay como mucho 1 024 lecturas pendientes por jugador.
+- **Cargar o generar chunks lejanos** con la selección mágica: el bloque pulsado tiene que estar cargado.
+- **Llenar el disco de recetas.** Guardar no tenía tope; ahora son como mucho 64 por jugador, las que enseña el Studio.
+- **Repetir sin fin peticiones caras.** Barras guardadas (cada una escribe el archivo, de hasta 512 KiB), compartir vistas (avisa a todos los jugadores), empezar un trazo del pincel de selección (copia la selección entera) y las acciones de recetas llevan un freno por jugador: `RequestBudget`, unas cuantas seguidas y unas pocas por segundo.
+- Pruebas nuevas: `EditorActionPermissionTest`, `MagicAreaTest`, `FastPaintLimitsTest`, `RequestBudgetTest`, `RecipeStoreLimitTest` y dos casos más en `ThumbnailChunksTest`.
+
 ## 2.0.1 (estable, 2026-10-21)
 
 - Corrige el arranque de la 2.0.0: la reconstrucción animada pedía el aire de WorldEdit al cargar el mod, antes de que WorldEdit tuviera sus registros, y el servidor y el cliente se caían con «WorldEdit is not initialized yet». Una prueba nueva (`InitOrderTest`) vigila que ninguna clase que se carga al iniciar tenga constantes con registros de WorldEdit.
