@@ -275,6 +275,7 @@ public final class MoxiaCommands {
         CapabilityCommands.register(root);
         SymmetryCommands.register(root);
         BuilderCommands.register(root);
+        FluidCommands.register(root);
         BlueprintCommands.register(root);
         ClipboardCommands.register(root);
         PasteCommands.register(root);

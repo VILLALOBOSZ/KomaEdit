@@ -4,6 +4,9 @@ import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.DoorBlock;
+import net.minecraft.block.FluidBlock;
+import net.minecraft.block.FluidFillable;
 import net.minecraft.block.SnowBlock;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.state.property.Properties;
@@ -27,7 +30,10 @@ public final class MinecraftKinds implements BlockKinds {
     private static final int SNOWY = 1 << 7;
     private static final int SMALL_PLANT = 1 << 8;
     private static final int BLOCK_ENTITY = 1 << 9;
+    private static final int WASHABLE = 1 << 10;
     private static final int LAYERS_SHIFT = 12;
+    /** El nivel del líquido más uno (0: no es agua ni lava), en cinco bits. */
+    private static final int LEVEL_SHIFT = 16;
 
     private final Int2IntOpenHashMap flags = new Int2IntOpenHashMap();
 
@@ -86,6 +92,16 @@ public final class MinecraftKinds implements BlockKinds {
         return has(rawId, BLOCK_ENTITY);
     }
 
+    @Override
+    public boolean washable(int rawId) {
+        return has(rawId, WASHABLE);
+    }
+
+    @Override
+    public int fluidLevel(int rawId) {
+        return (flags(rawId) >>> LEVEL_SHIFT & 31) - 1;
+    }
+
     private boolean has(int rawId, int flag) {
         return (flags(rawId) & flag) != 0;
     }
@@ -138,7 +154,29 @@ public final class MinecraftKinds implements BlockKinds {
         if (state.isOf(Blocks.SNOW)) {
             result |= state.get(SnowBlock.LAYERS) << LAYERS_SHIFT;
         }
+        if (washable(state)) {
+            result |= WASHABLE;
+        }
+        if (state.isOf(Blocks.WATER) || state.isOf(Blocks.LAVA)) {
+            result |= (state.get(FluidBlock.LEVEL) + 1) << LEVEL_SHIFT;
+        }
         return result;
+    }
+
+    /** {@code FlowableFluid.canFill} para un bloque sin líquido que no se anega. */
+    private static boolean washable(BlockState state) {
+        if (state.isAir()) {
+            return true;
+        }
+        Block block = state.getBlock();
+        if (!state.getFluidState().isEmpty() || block instanceof FluidFillable || block instanceof DoorBlock
+                || state.isIn(BlockTags.SIGNS) || state.isOf(Blocks.LADDER) || state.isOf(Blocks.SUGAR_CANE)
+                || state.isOf(Blocks.BUBBLE_COLUMN) || state.isOf(Blocks.NETHER_PORTAL)
+                || state.isOf(Blocks.END_PORTAL) || state.isOf(Blocks.END_GATEWAY)
+                || state.isOf(Blocks.STRUCTURE_VOID)) {
+            return false;
+        }
+        return !state.blocksMovement();
     }
 
     /** La misma regla que {@code SnowBlock.canPlaceAt} sobre el bloque de debajo. */

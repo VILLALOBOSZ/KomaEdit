@@ -102,6 +102,8 @@ public final class PermissionNodes {
         add(build + ".snow", Pack.BASIC, build, null, "/komaedit snow");
         add(build + ".drain", Pack.BASIC, build, null, "/komaedit drain");
         add(build + ".waterlog", Pack.BASIC, build, null, "/komaedit waterlog");
+        add(build + ".fluid.fill", Pack.BASIC, build, null, "/komaedit fluido rellenar (Floodfill)");
+        add(build + ".fluid.clean", Pack.BASIC, build, null, "/komaedit fluido limpiar (flujos sueltos)");
         for (String color : List.of("similar", "gradient", "palette", "hotbar")) {
             add("komaedit.color." + color, Pack.BASIC, use, null, "/komaedit color " + color);
         }
@@ -164,6 +166,8 @@ public final class PermissionNodes {
                 "/komaedit symmetry radial");
         add(build + ".text", Pack.INTERMEDIATE, build, null, "/komaedit text");
         add(build + ".biome", Pack.INTERMEDIATE, build, null, "/komaedit biome");
+        add(build + ".fluid.ball", Pack.INTERMEDIATE, build, null, "/komaedit fluido bola");
+        add(build + ".fluid.fall", Pack.INTERMEDIATE, build, null, "/komaedit fluido cascada");
         add(build + ".brush.biome", Pack.INTERMEDIATE, build, null, "/komaedit pincel biome");
         add(build + ".shade", Pack.INTERMEDIATE, build, null, "/komaedit shade");
         add(build + ".tree", Pack.INTERMEDIATE, build, null, "/komaedit tree");
