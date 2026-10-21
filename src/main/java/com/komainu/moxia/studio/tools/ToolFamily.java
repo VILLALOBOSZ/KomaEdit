@@ -6,6 +6,8 @@ public enum ToolFamily {
     ROOFS("roofs"),
     TERRAIN("terrain"),
     UTILITIES("utilities"),
+    /** Decorar con displays (bloques, objetos y textos sueltos, girados y escalados). */
+    DECORATE("decorate"),
     SYMMETRY("symmetry"),
     CAPABILITIES("capabilities");
 

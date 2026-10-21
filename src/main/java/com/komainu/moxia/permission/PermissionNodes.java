@@ -187,8 +187,12 @@ public final class PermissionNodes {
                 "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
         add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
         add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
+        add(build + ".display", Pack.INTERMEDIATE, build, null,
+                "Editor de displays: crear y editar los displays propios (/komaedit display)");
 
         // Avanzado.
+        add(build + ".display_others", Pack.ADVANCED, build, null,
+                "Editar los displays de otros jugadores y los que no creó KomaEdit");
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
         add(KomaPermissions.INSTANCE, Pack.ADVANCED, null, null, "Instancias procedurales");
         add(build + ".array", Pack.ADVANCED, build, "ezedits.array", "/komaedit array");
@@ -231,6 +235,8 @@ public final class PermissionNodes {
                 "Borrar o reemplazar los planos compartidos de otros jugadores");
         add(BlueprintPermissions.UNLIMITED, Pack.ADMIN, null, null,
                 "Sin los límites de número y tamaño de planos de blueprints.json");
+        add("komaedit.limit.displays", Pack.ADMIN, null, null,
+                "Sin los límites de displays por chunk y por jugador de displays.json");
     }
 
     private PermissionNodes() {

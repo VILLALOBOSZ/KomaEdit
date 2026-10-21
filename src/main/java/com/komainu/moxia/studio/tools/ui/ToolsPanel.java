@@ -231,6 +231,11 @@ public final class ToolsPanel {
             namingAction = null;
             biomeSearch = "";
             stampSearch = "";
+            // Las tarjetas que trabajan en un modo (el editor de displays) lo abren al elegirlas.
+            String command = card.selectCommand();
+            if (command != null && card.missingPermission(card.defaults(), host.context()) == null) {
+                send(host, command);
+            }
         }
         browsing = false;
         search = "";

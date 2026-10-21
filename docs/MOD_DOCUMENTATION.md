@@ -4,7 +4,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 ## Índice
 
-- **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación) · [Colocar con gizmo](#colocar-con-gizmo) · [En el mundo: ajustes, teclas y mensajes](#en-el-mundo-ajustes-teclas-y-mensajes)
+- **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación) · [Colocar con gizmo](#colocar-con-gizmo) · [Decorar con displays](#decorar-con-displays) · [En el mundo: ajustes, teclas y mensajes](#en-el-mundo-ajustes-teclas-y-mensajes)
 - **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Escalar y girar el portapapeles](#escalar-y-girar-el-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Variaciones de la figura](#variaciones-de-la-figura) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
 - **Sobre lo construido:** [Envejecer (orden avanzada)](#envejecer) · [Hiedra viva](#hiedra-viva) · [Retoques sobre la selección](#retoques-sobre-la-selección) · [Enredaderas, musgo, losas y estados](#enredaderas-musgo-losas-y-estados) · [Vidriera degradada](#vidriera-degradada)
 - **Edificios y naturaleza:** [Árboles y rocas](#árboles-y-rocas) · [Tejados](#tejados) · [Loft entre curvas](#loft-entre-curvas)
@@ -205,6 +205,7 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 | Tejados | Tejado, Loft | `roof`, `loft` (y `-e` para estimar) |
 | Terreno | Sello de relieve, Pintar terreno, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `pincel paint`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
 | Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`) |
+| Decorar | Decorar (displays) | `display block\|item\|text`, `display edit on\|off`, `display set all …`, `display duplicate\|group\|ungroup\|reset\|delete`; `/kedisplay ajustes …` (del cliente) |
 | Modos | Simetría, Capacidades | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Elegir:** sin herramienta elegida, la etapa es una cuadrícula de iconos con su nombre entero (en dos líneas si hace falta), agrupada como en la tabla (con ★ Favoritas arriba si hay) y con un buscador (`Ctrl+F` o `/`) por nombre, orden, alias y descripción, sin tildes. Al elegir una, la cuadrícula se pliega en una fila con su icono y su nombre (pulsarla la vuelve a abrir), sus **recientes** para cambiar de un clic, la ★ y **copiar la orden** al portapapeles.
@@ -220,6 +221,7 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 - **Texto:** campo de texto (`\n` parte líneas), fuente (las de serie y las del servidor, `config/komaedit/fonts/`) y tamaño a la vista; grosor, borde, orientación, alineación, espaciado, interlineado y losas y escaleras, en Más ajustes.
 - **Materiales:** **Contar** lanza `analyze` y la lista llega a la herramienta: totales (bloques, tipos, objetos, huecos y cofres) y cada objeto con su cantidad y sus pilas, más **Copiar lista** (lo mismo que `[COPIAR]` del chat).
 - **Bioma:** buscador con todos los biomas del registro del servidor (también de datapacks y mods), relleno vertical y radio del pincel.
+- **Decorar (displays):** al elegirla se abre el [editor de displays](#decorar-con-displays): un clic en un display lo elige y su gizmo se arrastra con el ratón; un clic en un bloque (o **Poner**) crea uno contra su cara. A la vista, el tipo (**Bloque**, **Objeto**, **Texto**), el bloque («El de la mano» si no eliges ninguno), la vista del objeto o el texto con su color, y el paso de mover. En **Más ajustes**, el fondo, la sombra y la alineación del texto, el paso de girar, los ejes del objeto (local), brillo, sombra en el suelo, distancia de vista, mirar a la cámara y contorno brillante, y los botones **Usar estos pasos**, **Aplicar ajustes**, **Duplicar**, **Agrupar**, **Desagrupar**, **Enderezar**, **Borrar** y **Cerrar el editor**.
 - **Simetría:** enseña el estado del servidor (activa o apagada, modo y centro, avisando si el centro está en otra dimensión) y lo sigue si se cambia por el chat. Modo (X, Z, XZ, Y, XY, ZY, XZY y Radial), brazos y espejo arriba ↔ abajo del radial, e interruptor **Reflejar WorldEdit y KomaEdit**. Construir activa con ese modo (o lo aplica si ya estaba activa).
 - **Capacidades:** un interruptor por capacidad (como el menú de la `Z`), apagado con candado y «sin permiso» si falta el nodo, y un aviso si no estás en creativo. Distancia en el aire, alcance, bloques por capa y velocidad de vuelo se mandan al dejar de tocarlos (0,6 s), para no llenar el chat; Reemplazar familia y lo que sigue Extruir, al momento.
 
@@ -774,6 +776,164 @@ Están en **Controles → KomaEdit** («Fantasma: …»). Vienen **sin asignar a
 - Moverlo no lo recalcula: si el objeto dependía de algo del sitio donde se calculó (la normal del suelo con `SurfaceNormal`, las raíces de un árbol), se mueve tal como se calculó. Lo único que lo recalcula es la [vista previa en vivo](#vista-previa) del Studio al cambiar un ajuste, que lo deja donde estaba.
 - Apoyar en el suelo mira como mucho 2 048 columnas de la huella y 256 bloques hacia abajo; el agua y las plantas no cuentan como suelo.
 - Nada de esto se ha probado aún dentro de Minecraft: las pruebas son JUnit (matemática del gizmo, giros de estados, colocación, servidor y máquina de estados) y renders fuera del juego (`docs/renders/gizmo/`).
+
+## Decorar con displays
+
+### Objetivo y acceso
+
+Decorar con detalle sin bloques enteros, como el editor de display entities de Axiom: una planta en una maceta, un libro tumbado sobre una mesa, un cuadro en la pared, un cartel flotante o una pieza girada a medio bloque. Los **displays** de Minecraft (de bloque, de objeto y de texto) no tienen caja de colisión ni se alinean con la rejilla: se ponen donde quieras, girados en los tres ejes y escalados a cualquier tamaño.
+
+- **En el Studio**: la tarjeta **Decorar (displays)** de la etapa Herramientas (familia **Decorar**). Al elegirla se abre el editor; **Poner** (o un clic en un bloque del mundo) crea el display contra la cara de ese bloque.
+- **Con órdenes**: `/komaedit display` (alias `displays` y `decorar`). Sin argumentos dice qué tienes elegido, con botones.
+- **Sin el mod en el cliente** se crea y se edita igual con las órdenes (`select`, `move`, `rotate`, `scale`…), pero sin gizmo ni contorno.
+
+```text
+/komaedit display edit [on|off]                        abre o cierra el editor (alias editar)
+/komaedit display block [bloque]                       el bloque de la mano, o el escrito (alias bloque)
+/komaedit display item [fixed|none|gui|ground|head|mano]   el objeto de la mano, con su vista (alias objeto)
+/komaedit display text [-c color] [-f fondo] [-s] [-a izq|centro|der] [-w ancho] [-t] <texto>   (alias texto)
+```
+
+### Crear
+
+Cada display nuevo sale **contra la cara del bloque que miras** (o en la que haces clic con el Studio abierto), hasta 48 bloques, y queda elegido con el editor abierto para moverlo enseguida.
+
+- **Bloque**: ocupa justo la celda de al lado de la cara, como un bloque puesto a mano. Vale cualquier estado: `/komaedit display block minecraft:oak_stairs[facing=east,half=top]`. Sin bloque escrito usa el que llevas en la mano.
+- **Objeto**: el que llevas en la mano (una unidad; la mano no se vacía), centrado en la celda de al lado y mirándote, de 90° en 90°. La vista es la de Minecraft: `fixed` (como en un marco, de serie), `none` (el modelo tal cual), `gui` (como en el inventario), `ground` (tirado en el suelo), `head` (en la cabeza) y `mano` (en la mano, en tercera persona). En el Studio: **Marco**, **Tal cual**, **Icono**, **Suelo** y **Cabeza**.
+- **Texto**: en una pared, pegado a ella (a 1/64 para que no parpadee), mirando hacia fuera y centrado en el punto que miras; encima de algo, de pie sobre ese punto y mirándote; debajo, colgando. El punto se ajusta a 1/16. Banderas, antes del texto:
+  - `-c`: color del texto, `#RRGGBB` o un nombre (`blanco`, `amarillo`, `dorado`, `rojo`, `verde`, `azul`, `celeste`, `rosa`, `gris`, `negro`… o los de Minecraft en inglés, `gold`, `dark_red`…).
+  - `-f`: fondo, `#AARRGGBB`, `#RRGGBB` (con el 25 % de serie), `no` (sin fondo) o `serie` (el de Minecraft, que sigue el ajuste de fondo de texto de cada jugador).
+  - `-s`: sombra en las letras; `-t`: se ve a través de los bloques; `-a`: alineación de las líneas (`izq`, `centro`, `der`); `-w`: ancho de línea en píxeles (de 10 a 2000; 200 de serie).
+  - En el texto, `\n` parte la línea y `&` da formato como en los carteles de muchos servidores: `&c` rojo (los 16 colores con `&0`…`&f`), `&l` negrita, `&o` cursiva, `&n` subrayado, `&m` tachado, `&k` ilegible y `&r` quita el formato; `&&` es un `&`.
+
+Ejemplos:
+
+- `/komaedit display block minecraft:flower_pot` sobre la mesa, y después la flor con `/komaedit display item` (la amapola en la mano) sobre la maceta.
+- `/komaedit display text -c dorado -f no -s &lTienda\nabierta` en la fachada.
+- `/komaedit display item ground` con un pan en la mano, para dejarlo tirado sobre la mesa.
+
+### Elegir
+
+Con el editor abierto (lo dice la barra de acción), el punto de mira (o el cursor en el Studio) apunta a los displays aunque no tengan caja de colisión: el rayo va contra **el volumen de su modelo**, girado y escalado (el bloque entero; el modelo del objeto con su vista; el cartel con su fondo, medido con la fuente del juego). Un bloque delante lo tapa.
+
+- El que está bajo el puntero sale con el **contorno amarillo**; los elegidos, en **cian** (el activo, más claro).
+- **Clic izquierdo** en uno: elegirlo. **Mayús+clic**: sumarlo a lo elegido o quitarlo. **Alt+clic**: solo él, sin su grupo.
+- **Clic en el vacío** (en el mundo): soltar lo elegido. Sin nada elegido, el clic rompe bloques como siempre; mantenerlo sobre un display o el gizmo no rompe el bloque de detrás.
+- El **activo** es el último pulsado: el gizmo sale en su centro y todo gira y escala alrededor de él.
+- Sin el mod: `/komaedit display select` elige el que miras (`add` suma, `toggle` suma o quita, `clear` suelta).
+
+### Mover, girar y escalar con el gizmo
+
+El gizmo tiene tres herramientas (**Ctrl+1**, **Ctrl+2** y **Ctrl+3**, o los botones **[Mover]**, **[Girar]** y **[Escalar]** de la línea del chat que sale al abrir el editor). Se agarra igual que el del fantasma: apunta a una pieza, mantén el clic izquierdo y gira la cámara (en el Studio, arrastra con el ratón). La pieza bajo el puntero se pone amarilla y, mientras se arrastra, las demás se apagan. Lo que se arrastra se ve al momento en tu cliente; al soltar, el servidor lo comprueba y lo aplica (si no lo acepta, vuelve a donde estaba y dice por qué).
+
+- **Mover**: las flechas (roja X, verde Y, azul Z) mueven por un eje y el cubo del centro por el plano del suelo. En **global**, la esquina de la caja del objeto cae en la rejilla del paso: con paso 1 un bloque entero queda alineado con los bloques; con 1/16, cualquier cosa con los píxeles.
+- **Girar**: los anillos giran alrededor de su eje, de **15°** en 15° o de **5°** en 5°, contando desde donde agarraste. Un clic en un anillo sin arrastrar gira un paso. Mientras giras se dibuja el arco de lo girado y la barra dice los grados.
+- **Escalar**: el cubo del extremo de cada eje escala en ese eje, sobre el centro del objeto; el cubo del centro escala todo por igual alrededor del activo (un grupo crece junto). La escala sube de paso en paso del movimiento (con 1/16, de 0.0625 en 0.0625) y nunca baja de 1/64.
+- **Pasos**: el de mover es **1**, **1/4** o **1/16** de bloque (**Ctrl+5** los recorre, con **libre**); el de girar, **15°**, **5°** o libre (**Ctrl+6**). **Mantener Alt mientras arrastras** va libre, sin pasos.
+- **Local o global** (**Ctrl+4**): en global el gizmo tiene los ejes del mundo; en local, los del objeto girado (mover y girar van por sus ejes). Escalar va siempre en los ejes del objeto.
+- **Varios a la vez**: mover los lleva a todos lo mismo; girar los gira como una pieza alrededor del activo; escalar en un eje escala cada uno en su eje y sobre su centro.
+- **Teclado**: con algo elegido, las flechas lo mueven un paso adelante, atrás o de lado según miras y **RePág**/**AvPág**, arriba y abajo (con Mayús, un bloque); se manda al servidor al dejar de pulsar, en un solo //undo. **Esc** con el gizmo agarrado lo deja como estaba.
+- Mientras arrastras, **la barra de acción** dice dónde está el centro del activo, cuánto ha girado o su escala: «KE · Displays · 1 elegidos · Mover · global · paso 1/16 · giro 15° · 0.8125, 65.19, 0.5000».
+
+Sin el mod: `/komaedit display move <dx> <dy> <dz>` (alias `mover`), `rotate <x|y|z> <grados> [local]` (`girar`, alrededor del activo, en un eje del mundo o, con `local`, del activo), `scale <factor>` o `scale <x> <y> <z>` (`escalar`: con un factor, todo por igual alrededor del activo; con tres, cada uno en sus ejes) y `reset` (`enderezar`: sin giro y con escala 1, sin mover su centro).
+
+### Duplicar, borrar, copiar, pegar y agrupar
+
+| Acción | Atajo | Orden |
+| --- | --- | --- |
+| Duplicar lo elegido en el mismo sitio y elegir las copias (para moverlas) | Ctrl+D | `/komaedit display duplicate` (`duplicar`) |
+| Borrar lo elegido | Supr o Retroceso | `/komaedit display delete` (`borrar`) |
+| Copiar el giro y la escala del activo | Ctrl+C | `/kedisplay copiar` |
+| Pegar ese giro y esa escala en lo elegido (cada uno sobre su centro) | Ctrl+V | `/kedisplay pegar` |
+| Agrupar lo elegido: un clic en uno elige el grupo entero y se mueve junto | Ctrl+G | `/komaedit display group` (`agrupar`) |
+| Desagrupar lo elegido | Ctrl+Mayús+G | `/komaedit display ungroup` (`desagrupar`) |
+| Soltar lo elegido | Esc | `/komaedit display select clear` |
+
+- Un display pertenece a un solo grupo: agrupar lo saca del que tuviera. Al duplicar un grupo, las copias forman un grupo nuevo.
+- Lo copiado con Ctrl+C se queda en tu cliente hasta que copies otra cosa. Sin nada elegido, Ctrl+V sigue pegando el portapapeles como fantasma y Esc y Supr hacen lo de siempre.
+
+### Ajustes avanzados
+
+Plegados en **Más ajustes** de la tarjeta, con **Aplicar ajustes** para ponérselos a todo lo elegido de una vez (`/komaedit display set all brillo=15 sombra=0.5 fuerza=1 vista=2 billboard=center contorno=on color=#ffaa00`). Uno a uno, con `/komaedit display set …` (alias `ajustes`):
+
+| Ajuste | Orden | Qué hace |
+| --- | --- | --- |
+| Brillo | `set brightness <bloque> [cielo]` o `set brightness auto` | Una luz fija de 0 a 15 para que se vea igual de día y de noche (y en una cueva); `auto`, la de su sitio. |
+| Sombra en el suelo | `set shadow <radio> [fuerza]` | La sombra redonda que echa en el suelo, de 0 a 64 bloques, y lo oscura que sale (0 a 1). |
+| Distancia de vista | `set viewrange <multiplicador>` | Hasta dónde se ve (1 es lo normal; de 0.05 a 16). |
+| Mirar a la cámara | `set billboard <fixed\|vertical\|horizontal\|center>` | `fixed` no gira; `vertical` gira de lado para mirarte (carteles); `horizontal`, arriba y abajo; `center`, de frente siempre (hologramas). |
+| Contorno brillante | `set glow on [color]` o `set glow off` | El contorno de las entidades brillantes, que se ve a través de las paredes, con el color que digas. |
+
+En la tarjeta también están el **paso al girar**, los **ejes del objeto (local)** y, con **Usar estos pasos**, se los pasan al gizmo junto con el paso de mover (`/kedisplay ajustes 1/16 15 global`; no pasa por el servidor).
+
+### Lo que decide el servidor
+
+El cliente solo elige y propone cómo quedan los displays; el servidor lo comprueba todo y lo aplica **todo o nada** (si uno de lo elegido no vale, no se toca ninguno):
+
+- **Permisos**: `komaedit.build.display` (paquete intermedio; lo da también `komaedit.build`) para crear y editar los displays propios. `komaedit.build.display_others` (avanzado) para tocar los de otros jugadores y los que no creó KomaEdit (los de `/summon`, otros mods…); sin él, ni se eligen. `komaedit.limit.displays` (admin) quita los límites de número.
+- **Distancia**: el display y su centro, a 48 bloques de ti como mucho (`maxDistance`), al crear, al elegir y al moverlo.
+- **Zonas**: donde no puedes construir (la protección del spawn, el borde del mundo, modo aventura) no se crea, no se elige ni se lleva nada, ni la entidad ni el centro del modelo.
+- **Forma**: la escala de cada eje va de 1/64 a 16 (`maxScale`) y el modelo no puede quedar a más de 8 bloques de su entidad (`maxOffset`), para que nada se salte una zona protegida poniendo la entidad fuera. Números raros (infinitos, giros nulos) se rechazan.
+- **Cuántos**: como mucho 64 displays por chunk (`maxPerChunk`, contando los de cualquiera, vanilla incluidos) y 2000 creados por jugador en todo el servidor (`maxPerPlayer`, 0 sin límite). Mover uno a un chunk lleno tampoco se puede. El recuento por jugador se guarda en `<mundo>/komaedit/displays.json`; si un display desaparece por otro camino (`/kill`, otro mod), deja de contar en cuanto su chunk está cargado.
+- **Lo elegido**: como mucho 256 a la vez (`maxSelection`); un texto, 256 caracteres (`maxTextLength`); y 20 ediciones por segundo y jugador (`maxEditsPerSecond`, las de más se ignoran).
+- **El editor por jugador**: lo elegido vive en el servidor (y se suelta al cambiar de dimensión, al reaparecer y al salir). Quién creó cada display y su grupo van en las etiquetas del propio display (`komaedit.owner.<uuid>`, `komaedit.group.<id>`, las de `/tag`), así sobreviven a los reinicios.
+
+**//undo y //redo** deshacen y rehacen crear, borrar, mover, girar, escalar, pegar, agrupar y los ajustes, en el mismo historial que los bloques y en su orden (el historial del Studio los nombra: «Mover displays», «Borrar displays»…). WorldEdit no guarda entidades que no haya tocado él, así que cada edición de displays va en su historial como un cambio propio con la foto entera de cada display antes y después. Deshacer un borrado lo vuelve a crear con su UUID de siempre; un display que desapareció por otro camino no se resucita, y los de chunks sin cargar no se pueden deshacer (lo dice el chat).
+
+### Configuración
+
+`config/komaedit/displays.json` se crea solo con los límites de serie y se recarga con `/komaedit reload`:
+
+```json
+{
+  "format": 1,
+  "maxPerChunk": 64,
+  "maxPerPlayer": 2000,
+  "maxDistance": 48.0,
+  "maxScale": 16.0,
+  "maxOffset": 8.0,
+  "maxSelection": 256,
+  "maxTextLength": 256,
+  "maxEditsPerSecond": 20
+}
+```
+
+Rangos: `maxPerChunk` 1–4096, `maxPerPlayer` 0–1000000, `maxDistance` 4–512, `maxScale` 1–256, `maxOffset` 1–256, `maxSelection` 1–4096, `maxTextLength` 1–4096, `maxEditsPerSecond` 1–200. Lo que falte toma el de serie; un archivo inválido se rechaza entero y se usan los de serie.
+
+### Teclas
+
+Como las del fantasma, están en **Controles → KomaEdit** («Displays: …») **sin asignar**, y mientras no las asignes valen los atajos de serie; solo actúan con el editor abierto, sin fantasma, y casi todas con algo elegido.
+
+| Acción | De serie |
+| --- | --- |
+| Mover / Girar / Escalar | Ctrl+1 / Ctrl+2 / Ctrl+3 |
+| Local o global | Ctrl+4 |
+| Paso de mover (1, 1/4, 1/16, libre) / de girar (15°, 5°, libre) | Ctrl+5 / Ctrl+6 |
+| Sin pasos mientras arrastras | mantener Alt |
+| Copiar / pegar giro y escala | Ctrl+C / Ctrl+V |
+| Duplicar / Agrupar / Desagrupar | Ctrl+D / Ctrl+G / Ctrl+Mayús+G |
+| Borrar | Supr o Retroceso |
+| Soltar lo elegido (o, arrastrando, deshacer el arrastre) | Esc |
+| Mover un paso | ↑ ↓ ← →, RePág, AvPág (Mayús: un bloque) |
+
+El editor también responde a `/kedisplay` (del cliente, no pasa por el servidor): `herramienta mover|girar|escalar`, `local`, `global`, `paso 1|1/4|1/16|libre`, `giro 15|5|libre`, `ajustes <paso> <giro> <local|global>`, `copiar`, `pegar`, `duplicar`, `borrar`, `agrupar`, `desagrupar` y `soltar`. Lo elegido de herramienta, marco y pasos se guarda en `config/komaedit-displays.json`.
+
+### Rendimiento y limitaciones
+
+- Mientras arrastras no se manda nada: el cliente mueve sus displays él solo y al soltar manda una sola edición con la pose de cada uno (unos 80 bytes por display). El servidor solo trabaja al soltar, con un paso en el historial por edición.
+- Elegir mira los displays a 64 bloques de la cámara; con muchos textos cerca, medir sus líneas con la fuente cuesta algo en cada fotograma.
+- El servidor no tiene la fuente ni los modelos de los objetos: para `/komaedit display select` y para comprobar el centro estima el texto (6 píxeles por carácter) y da a cada objeto el tamaño habitual de su vista. Con el mod en el cliente el rayo usa la medida exacta.
+- Los displays con billboard se eligen como se ven desde tu cámara; girarlos con el gizmo solo se nota en `fixed`.
+- Las ediciones doblan el giro de la entidad (su guiñada y cabeceo) dentro de la transformación: se ve igual y deja un solo giro que tocar. Los displays de otros mods que dependan de esa guiñada la pierden al editarlos.
+- Un grupo se busca a 96 bloques del display pulsado; los miembros más lejos (o que no puedes tocar) no se eligen con él.
+- Duplicar copia en el mismo sitio: las copias quedan justo encima de los originales hasta que las mueves.
+- Nada de esto se ha probado aún dentro de Minecraft: las pruebas son JUnit (cuaterniones, poses, rayo contra el volumen, pasos y arrastre, historial, límites, grupos, textos y la tarjeta del Studio) y renders fuera del juego (`docs/renders/displays/`, `docs/renders/studio/decorar/`).
+
+![El tiesto sin caja de colisión, señalado con el punto de mira](renders/displays/display_1_senalar_sin_caja.png)
+
+![Girar el libro con el anillo Y: 50° de ratón son 45° con el paso de 15°](renders/displays/display_4_girar_anillo_y.png)
+
+![El tiesto y la flor agrupados giran juntos alrededor del tiesto](renders/displays/display_7_grupo_tiesto_y_flor.png)
 
 ## En el mundo: ajustes, teclas y mensajes
 
@@ -4680,6 +4840,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
    - `komaedit.build.brush.sculpt` ([Pinceles de modelado](#pinceles-de-modelado)); escalar y girar el portapapeles va con `komaedit.clipboard`.
    - `komaedit.build.brush.paint` ([Pincel de pintura](#pincel-de-pintura)).
+   - `komaedit.build.display` (intermedio) y `komaedit.build.display_others` (avanzado); de admin, `komaedit.limit.displays` (ver [Decorar con displays](#lo-que-decide-el-servidor)).
    - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
@@ -4727,6 +4888,8 @@ Los campos que falten (un `config.json` de una versión anterior, como el de la 
 `config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
 
 `config/komaedit/blueprints.json` guarda los límites de la [biblioteca de planos](#permisos-y-límites) (planos por jugador, compartidos, tamaño y si se puede compartir); también se recarga con `/komaedit reload`.
+
+`config/komaedit/displays.json` guarda los límites del [editor de displays](#decorar-con-displays) (por chunk, por jugador, distancia, escala, selección, texto y ediciones por segundo); también se recarga con `/komaedit reload`.
 
 `config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `config/komaedit/images.json` configura `/komaedit image` (ver [Configuración de imágenes](#configuración-de-imágenes)) y también se recarga. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
 
