@@ -103,6 +103,20 @@ public final class HotbarControls {
         seenVersion = ClientHotbars.version();
     }
 
+    /**
+     * Otra tecla o un botón del ratón pulsado con la tecla de las barras mantenida: era un modificador (Alt+clic en un
+     * display, Ctrl+Alt+R del fantasma), así que al soltarla no se abre el menú.
+     */
+    public static void otherInput(InputUtil.Type type, int code, int action) {
+        if (action != GLFW.GLFW_PRESS || stripKey == null) {
+            return;
+        }
+        InputUtil.Key bound = KeyBindingHelper.getBoundKeyOf(stripKey);
+        if (bound.getCategory() != type || bound.getCode() != code) {
+            SWITCHER.usedAsModifier();
+        }
+    }
+
     /** La rueda con la tecla mantenida: elige barra en la tira y no cambia de casilla. */
     public static boolean onScroll(double vertical) {
         return SWITCHER.held() && MinecraftClient.getInstance().currentScreen == null && SWITCHER.scroll(vertical);
