@@ -2029,6 +2029,21 @@ public final class StudioView {
         }
 
         @Override
+        public com.komainu.moxia.hotbar.ui.HotbarDeck hotbars() {
+            return host.hotbars();
+        }
+
+        @Override
+        public boolean hotbarAutosave() {
+            return host.hotbarAutosave();
+        }
+
+        @Override
+        public void hotbar(com.komainu.moxia.hotbar.ui.HotbarAction action, String name) {
+            host.hotbar(action, name);
+        }
+
+        @Override
         public void worldUndo() {
             welcome.tour().undone();
             host.worldUndo();

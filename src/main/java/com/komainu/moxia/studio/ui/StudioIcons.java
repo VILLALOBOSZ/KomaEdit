@@ -25,7 +25,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
-        TOUCH_UP,
+        TOUCH_UP, HOTBARS, REBUILD,
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
@@ -37,6 +37,19 @@ public final class StudioIcons {
     private static final Map<Icon, String[]> MASKS = new EnumMap<>(Icon.class);
 
     static {
+        mask(Icon.HOTBARS,
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............",
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............",
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............");
         mask(Icon.PATH,
                 "............",
                 "###.........",
@@ -628,6 +641,19 @@ public final class StudioIcons {
                 "..+#######+.",
                 "...+#####+..",
                 "....+###+...");
+        // Una casa a medio levantar: la mitad de abajo ya puesta y lo que falta, con el tejado, aún apagado.
+        mask(Icon.REBUILD,
+                ".....++.....",
+                "....++++....",
+                "...++++++...",
+                "..++++++++..",
+                ".++++++++++.",
+                "..++++++++..",
+                "..++++++++..",
+                "..########..",
+                "..###..###..",
+                "..###..###..",
+                "############");
         // Un bloque con una grieta que se cierra: lo infestado vuelve a ser piedra.
         mask(Icon.DEINFEST,
                 "############",
