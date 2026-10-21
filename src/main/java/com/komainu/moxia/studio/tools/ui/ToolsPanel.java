@@ -456,6 +456,10 @@ public final class ToolsPanel {
             case "snow" -> StudioIcons.Icon.SNOW;
             case "drain" -> StudioIcons.Icon.DRAIN;
             case "waterlog" -> StudioIcons.Icon.WATERLOG;
+            case "fluid_fill" -> StudioIcons.Icon.FLOODFILL;
+            case "fluid_ball" -> StudioIcons.Icon.FLUID_BALL;
+            case "waterfall" -> StudioIcons.Icon.WATERFALL;
+            case "loose_flows" -> StudioIcons.Icon.LOOSE_FLOWS;
             case "biome" -> StudioIcons.Icon.BIOME;
             case "symmetry" -> StudioIcons.Icon.SYMMETRY;
             case "capabilities" -> StudioIcons.Icon.CAPABILITIES;

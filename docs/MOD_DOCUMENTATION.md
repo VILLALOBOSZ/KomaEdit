@@ -14,7 +14,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 - **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Pinceles de modelado](#pinceles-de-modelado) · [Supervarita](#supervarita) · [Simetría](#simetría)
 - **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
 - **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
-- **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
+- **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Agua y lava](#agua-y-lava)
 - **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
 
 ## Procedural Studio
@@ -204,7 +204,7 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 | Naturaleza | Árbol, Roca | `tree`, `rock` (y `pincel tree`/`rock`, `tree save`) |
 | Tejados | Tejado, Loft | `roof`, `loft` (y `-e` para estimar) |
 | Terreno | Sello de relieve, Pintar terreno, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `pincel paint`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
-| Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`) |
+| Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Rellenar hueco, Bola de fluido, Cascada, Quitar flujos sueltos, Bioma | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `fluido rellenar`, `fluido bola`, `fluido cascada`, `fluido limpiar`, `biome` (y `pincel biome`) |
 | Modos | Simetría, Capacidades | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Elegir:** sin herramienta elegida, la etapa es una cuadrícula de iconos con su nombre entero (en dos líneas si hace falta), agrupada como en la tabla (con ★ Favoritas arriba si hay) y con un buscador (`Ctrl+F` o `/`) por nombre, orden, alias y descripción, sin tildes. Al elegir una, la cuadrícula se pliega en una fila con su icono y su nombre (pulsarla la vuelve a abrir), sus **recientes** para cambiar de un clic, la ★ y **copiar la orden** al portapapeles.
@@ -582,7 +582,7 @@ La geometría ya está calculada, así que se construye exactamente lo estimado.
 
 ### Objetivo y acceso
 
-Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y pararlas a medias. La vista previa vale para cualquier orden que calcule un plan de bloques con el motor común: figuras y tubos (`build`, `sweep`, `braid`, `expr`…), `ezspline`, `bend`, colocación (`place`, `array`, `scatter`), `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `texture` y sus modos (`vines`, `moss`, `slabmerge`…), la vidriera, `image`, los generadores (`shape`, `noisegen`, `flowfield`, `flowline`), `weather`, `ivy`, `tweak`, `palette swap`, los tejados (`roof`), los lofts (`loft`), los árboles y rocas (`tree`, `rock`), el terraformado (`terreno`), `shade` y las utilidades que cambian bloques (`text`, `gravity`, `snow`, `drain`, `waterlog`).
+Ver lo que va a cambiar antes de tocar el mundo, seguir las operaciones largas y pararlas a medias. La vista previa vale para cualquier orden que calcule un plan de bloques con el motor común: figuras y tubos (`build`, `sweep`, `braid`, `expr`…), `ezspline`, `bend`, colocación (`place`, `array`, `scatter`), `deform`, `surface`, `smooth`, `inflate`, `deflate`, `smoothblocks`, `texture` y sus modos (`vines`, `moss`, `slabmerge`…), la vidriera, `image`, los generadores (`shape`, `noisegen`, `flowfield`, `flowline`), `weather`, `ivy`, `tweak`, `palette swap`, los tejados (`roof`), los lofts (`loft`), los árboles y rocas (`tree`, `rock`), el terraformado (`terreno`), `shade` y las utilidades que cambian bloques (`text`, `gravity`, `snow`, `drain`, `waterlog` y las de [agua y lava](#agua-y-lava): `fluido rellenar`, `bola`, `cascada` y `limpiar`).
 
 ```text
 /komaedit <orden> … -v                  calcula y enseña sin colocar nada (también --preview)
@@ -4470,6 +4470,85 @@ Alias: `bioma`. Permisos `komaedit.build.biome` y `komaedit.build.brush.biome` (
 - Rendimiento: el límite de bloques por operación cuenta celdas (cada celda es una escritura). Con `-v` una zona de 100×100 son unas 60 000 celdas en un mundo de 384 de alto. Los chunks deben estar cargados (WorldEdit los carga si hace falta). La bossbar enseña el avance y `/komaedit cancel` lo para (lo ya pintado se deshace con `//undo`).
 - Limitaciones: la hierba, las hojas y el agua cambian de color en cuanto el cliente recibe el bioma; la nieve, el hielo y la vegetación de cada bioma no aparecen solos (usa `snow`). Las máscaras de bioma de WorldEdit (`$plains`) no sirven en `-m`.
 
+## Agua y lava
+
+### Objetivo y acceso
+
+Herramientas para lagos, ríos, piscinas y cascadas, como el Floodfill y la Fluid Ball de Axiom: rellenar un hueco **solo si está cerrado**, una bola de fluido sin derrames, cascadas y ríos cortos que no inundan alrededor y quitar las corrientes sueltas. Todas leen la zona en el hilo del servidor repartiendo el trabajo entre ticks, calculan en un worker y escriben por el motor común: [vista previa](#vista-previa-progreso-y-cancelación) con `-v`, confirmación si es grande, barra de progreso, `/komaedit cancel` y **una sola entrada de `//undo`** (también las corrientes que se ponen). Lo que no se puede hacer bien **no escribe nada**: lo dice y lo señala en el mundo.
+
+```text
+/komaedit fluido rellenar [agua|lava] [nivel|clic|clic+n|borde|~] [-d hbe] [-l límite] [-r radio] [-w] [-p x,y,z]
+/komaedit fluido bola [agua|lava|nieve] [radio] [-s] [-a] [-c] [-p x,y,z]
+/komaedit fluido cascada [agua|lava] [-o radio de la poza] [-n] [-r margen] [-a ancho] [-b] [-p x,y,z]
+/komaedit fluido limpiar [agua|lava|todo] [-m máscara]
+```
+
+Alias: `fluid` para la familia; `fill`/`floodfill`, `ball`/`fluidball`, `waterfall`/`fall`/`rio` y `clean`/`sueltos` para los modos; `water`, `snow`/`powder_snow` para los fluidos. Permisos `komaedit.build.fluid.fill` y `komaedit.build.fluid.clean` (paquete básico), `komaedit.build.fluid.ball` y `komaedit.build.fluid.fall` (intermedio); `komaedit.build.fluid` los da todos. Ayuda en el juego: `/komaedit help fluidos`. En el Studio: etapa [Herramientas](#herramientas), grupo Utilidades (**Rellenar hueco**, **Bola de fluido**, **Cascada** y **Quitar flujos sueltos**).
+
+El punto es **donde haces clic** con el Studio abierto o, si no, el bloque que miras (hasta 160 bloques); `-p x,y,z` da uno exacto (lo usan los botones del chat para repetir sobre el mismo sitio).
+
+![Rellenar hueco en el Studio: líquido, hasta dónde y, en Más ajustes, anegar, direcciones, alcance y límite](renders/studio/agua/1080p_gui3_rellenar_es.png)
+
+### Rellenar (Floodfill)
+
+Haz clic en el hueco (en el suelo de una piscina, en la cara de dentro de su muro…): el líquido entra por la cara pulsada y se extiende **como en el juego**, de lado y hacia abajo, nunca hacia arriba, hasta el nivel.
+
+- **Nivel:** sin nada, la altura del clic; `clic+2` o `clic-1` desde el clic; `borde` llena hasta **lo más alto que aguanta el hueco sin derramarse** (clic en el fondo y `borde` llena la piscina entera); `~` o `~-1` desde tus pies; o una altura (`62`).
+- **Solo si está cerrado** por los lados y por debajo hasta ese nivel. Si el líquido llegaría al borde de lo leído (`-r`, 32 bloques de serie y hasta 128), al fondo del mundo, bajaría más de lo leído o tendría más bloques que el límite (`-l`, 50 000 de serie, y nunca más que tu límite del servidor), **no se pone nada** y el chat dice:
+  - **por dónde se escapa:** lo más estrecho del camino del líquido desde el clic hasta la salida (un agujero en el suelo, un hueco en el muro, la parte más baja de la orilla), comprobado tapándolo: si dice «tápalo y cerrará», basta con ese bloque (o esos pocos);
+  - **hasta qué altura sí cierra**, con un botón **[llenar hasta y=…]** que lo hace sobre el mismo hueco.
+- **En el mundo**, durante 10 s y solo para ti, partículas rojas en el hueco, naranjas por el camino del agua y amarillas donde se pierde.
+- **Direcciones** (`-d`): `h` de lado, `b` hacia abajo, `e` también en diagonal por las esquinas (el agua del juego no pasa en diagonal, así que de serie una esquina abierta no es una fuga). De serie `hb`. Lo que no se extiende tiene que estar cerrado igual: con `-d h` solo se llena la capa del nivel y, si debajo hay hueco, lo dice («hay hueco debajo»).
+- **Anegar** (`-w`, solo agua): las losas, escaleras, vallas y demás bloques que lo admiten se anegan como con un cubo y forman parte del relleno; sin `-w` hacen de pared (el agua del juego no entra en ellos). Ojo: una valla anegada en la orilla deja salir el agua, y así lo cuenta el relleno.
+- El aire y lo que el agua se lleva (hierba, flores, antorchas, capas de nieve) pasan a ser fuente; el agua corriente de dentro, también; las algas, las columnas de burbujas y lo ya anegado se quedan. Con lava, el agua hace de pared y se avisa de cuántos sitios toca (saldría piedra u obsidiana).
+- Ejemplos: `/komaedit fluido rellenar agua borde` (la piscina entera), `/komaedit fluido rellenar lava clic+3 -r 64`, `/komaedit fluido rellenar agua 62 -d h -w`.
+
+![Un cuenco en la ladera rellenado «hasta el borde»: el agua para donde el terreno deja de cerrarlo](renders/fluidos/lago.png)
+
+![El mismo lago con un canal abierto en la orilla: no pone nada y señala el hueco y el camino del agua](renders/fluidos/lago_fuga.png)
+
+### Bola de fluido
+
+Una esfera de **agua, lava o nieve en polvo** en el clic (el centro es la cara pulsada), de radio 4 de serie y hasta 32 (admite medios: `4.5`).
+
+- De serie sustituye **todo** lo que hay dentro, salvo cofres y demás bloques con datos: abre una poza redonda en la roca.
+- **`-a` solo aire:** llena solo el aire y lo que el agua se lleva; con agua, anega lo que lo admite.
+- **`-c` cerrar bordes:** quita de la bola cada fuente que se derramaría (con un hueco al lado o debajo fuera de la bola), una y otra vez, hasta que todo lo que queda lo aguanta el terreno: **ningún flujo suelto**. Con `-a -c` en un hoyo, la bola lo llena sin salirse aunque sea más grande que él.
+- **`-s` solo fuentes:** pone las fuentes y nada más. Sin `-s`, con agua o lava se ponen también las corrientes que saldrán de ella, ya quietas (salen de la simulación del juego, ver abajo): se ven en la vista previa y se van con `//undo`. Si el líquido seguiría corriendo más allá de lo leído, el chat lo dice (el juego lo extenderá).
+- La nieve en polvo no corre: `-c` y `-s` no le hacen nada.
+- Ejemplos: `/komaedit fluido bola agua 6 -a -c` (charca sin derrames), `/komaedit fluido bola lava 3`, `/komaedit fluido bola nieve 5 -a`.
+
+### Cascada y río corto
+
+**Desde un punto:** haz clic en el **borde de un saliente** (o en una pared que dé al vacío): ese bloque pasa a ser la fuente, metida en la roca, y el agua sale por su lado abierto, cae y, abajo, entra en una **poza**: unas fuentes en el suelo, cerradas por el terreno por los lados y por debajo, que se tragan la caída en lugar de dejar que se extienda siete bloques. La poza es un disco de radio `-o` (2 de serie, de 0 a 4) y, si en ese radio no queda cerrada, se busca uno más pequeño; en pendiente se hunde uno o dos bloques (se corta la columna de encima). `-n` la quita. Si la fuente no tiene por dónde salir, lo dice («haz clic en el borde»).
+
+**Por la trayectoria:** con dos puntos o más marcados (P), un **río corto** del punto más alto al más bajo: un cauce de un bloque de hondo a ras del terreno (`-a` de ancho, 1 de serie y hasta 7), sin pasos en diagonal y que **nunca sube**: si el terreno sube, se corta (hasta 4 bloques; si sube más, lo dice). En cada escalón el agua salta al tramo de abajo y donde el terreno de al lado queda más bajo pone **orilla** con el mismo bloque del suelo (`-b` la quita). Si el cauce pasa sobre un vacío, cae a una poza. Para un río largo con su valle, [`terreno rio` o `terreno arroyo`](#terraformado).
+
+- Las corrientes salen de la **simulación del juego** (ver abajo), así que son las que haría Minecraft al tocarlas.
+- **Sin inundar:** si alguna corriente se aleja más de `-r` bloques (2 de serie, hasta 16) de la fuente, la caída, el cauce o la poza, o seguiría corriendo fuera de lo leído, **no se pone nada** y se señala dónde llegaría.
+- El chat dice la altura de la caída, las fuentes, las corrientes, la poza, las orillas y lo cortado.
+- Ejemplos: `/komaedit fluido cascada` (desde el borde que miras), `/komaedit fluido cascada lava -o 1`, con puntos `/komaedit fluido cascada agua -a 3`.
+
+![Cascada desde el borde del acantilado con su poza abajo: nada se extiende por el suelo](renders/fluidos/cascada.png)
+
+![Río corto de tres bloques por una ladera con escalones: el agua nunca sube y salta en cada escalón](renders/fluidos/rio.png)
+
+### Quitar flujos sueltos
+
+Quita de la **selección** las corrientes de agua o de lava (`todo` de serie) que no salen de ninguna fuente: las que el juego secaría en cuanto algo las tocara (un charco que quedó tras quitar una fuente, restos de una cascada borrada…). Desde cada fuente (también lo anegado, las algas y las columnas de burbujas) se reparte el nivel como lo recalcula el juego: debajo de un líquido hay cascada y de lado se pierde un nivel por bloque (la lava del mundo normal, dos). Lee 8 bloques de margen para ver las fuentes de alrededor, y las corrientes del borde de lo leído cuentan como alimentadas (su fuente puede quedar fuera). `-m` limita a una máscara.
+
+### Simulación del agua
+
+Bola y cascada calculan las corrientes con las reglas de `FlowableFluid` del juego, sin Minecraft: cae si puede; si no (o si es una fuente) se extiende de lado perdiendo un nivel por bloque (la lava del mundo normal, dos; en el Nether, uno) y prefiere los lados que llevan a un desnivel cerca (a 4 bloques el agua, a 2 la lava); debajo de otro líquido hay cascada (nivel 8) y dos fuentes de agua junto a un hueco con suelo forman otra. Solo se simula donde algo cambia, por turnos como los ticks del juego.
+
+### Rendimiento y limitaciones
+
+- Rellenar lee una caja de `2·radio+1` de lado alrededor del clic, desde `radio` bloques por debajo hasta el nivel (con `borde`, también `radio` por encima): de serie 65×65 de planta y entre 34 y 66 de alto, de 140 000 a 280 000 bloques; bola y cascada, la esfera o la caída con su margen (la cascada mira hasta 96 bloques hacia abajo). Si tu límite del servidor es menor, la caja se encoge para caber. La lectura se reparte entre ticks y el cálculo va en un worker.
+- Buscar por dónde se escapa vuelve a rellenar unas pocas veces (la altura que cierra y hasta ocho sitios estrechos tapados): en un hueco enorme puede tardar un par de segundos, siempre fuera del hilo del servidor.
+- Las formas de los bloques no se miran: una losa o una valla es pared entera para el agua que corre (el juego deja pasar el agua por algunas caras que no son enteras).
+- Se escribe con WorldEdit: si después algo actualiza el agua de un hueco que no estaba cerrado, correrá como en vanilla. Las corrientes que se ponen son las que el juego dejaría quietas, pero el juego puede recalcularlas al tocarlas.
+- Renders de comprobación fuera del juego en `docs/renders/fluidos/` (se regeneran con `KOMAEDIT_FLUID_RENDER=<carpeta>`, y con `KOMAEDIT_MC_JAR` llevan las texturas del juego).
+
 ## Biblioteca de planos
 
 ### Objetivo y acceso
@@ -4675,6 +4754,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
+   - `komaedit.build.fluid.fill`, `.fluid.ball`, `.fluid.fall` y `.fluid.clean` ([Agua y lava](#agua-y-lava)).
    - `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` (ver [Simetría](#simetría)).
    - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
    - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
@@ -4690,8 +4770,8 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 
 | Paquete | Incluye |
 | --- | --- |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, rellenar y quitar flujos sueltos (`fluido rellenar`, `fluido limpiar`), supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, la bola de fluido y las cascadas (`fluido bola`, `fluido cascada`), tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
 | `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |

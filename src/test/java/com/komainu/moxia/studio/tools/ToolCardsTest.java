@@ -53,7 +53,8 @@ class ToolCardsTest {
             assertTrue(card.command(card.defaults(), false).startsWith("komaedit "), card.id());
         }
         assertEquals(List.of("tree", "rock", "roof", "loft", "stamp", "paintbrush", "ramp", "river", "erosion", "paint",
-                "text", "analyze", "gravity", "snow", "drain", "waterlog", "biome", "symmetry", "capabilities"),
+                "text", "analyze", "gravity", "snow", "drain", "waterlog", "fluid_fill", "fluid_ball", "waterfall",
+                        "loose_flows", "biome", "symmetry", "capabilities"),
                 ToolCatalog.ALL.stream().map(ToolCard::id).toList());
         for (ToolFamily family : ToolFamily.values()) {
             assertFalse(ToolCatalog.family(family).isEmpty(), family.id());
@@ -272,6 +273,36 @@ class ToolCardsTest {
                 stamp.command(stamp.defaults().with("stamp", "colina").with("radius", 20), false));
         assertEquals("komaedit pincel heightmap pico 20 19 sumar auto",
                 stamp.command(stamp.defaults().with("stamp", "pico").with("radius", 20), false));
+    }
+
+    @Test
+    void fluidCommandsMatchTheDocumentedSyntax() {
+        ToolCard fill = card("fluid_fill");
+        assertEquals("komaedit fluido rellenar agua", fill.command(fill.defaults(), false));
+        assertEquals("komaedit fluido rellenar lava borde -v", fill.command(fill.defaults().with("fluid", "lava")
+                .with("fill_level", "borde"), true));
+        assertEquals("komaedit fluido rellenar agua clic+2 -d hbe -r 48 -w", fill.command(fill.defaults()
+                .with("fill_offset", 2).with("corners", true).with("reach", 48).with("waterlog", true), false));
+        assertEquals("komaedit fluido rellenar agua 62 -d h -l 2000", fill.command(fill.defaults()
+                .with("fill_level", "fijo").with("spread_down", false).with("limit", 2_000), false));
+        assertEquals("komaedit fluido rellenar lava clic-1", fill.command(fill.defaults().with("fluid", "lava")
+                .with("fill_offset", -1).with("waterlog", true), false), "la lava no anega");
+        assertTrue(fill.validate(fill.defaults().with("spread_sides", false).with("spread_down", false)).stream()
+                .anyMatch(ToolProblem::blocking), "sin ninguna dirección no se puede rellenar");
+        ToolCard ball = card("fluid_ball");
+        assertEquals("komaedit fluido bola agua 4 -a -c", ball.command(ball.defaults(), false));
+        assertEquals("komaedit fluido bola nieve 6.5 -s -v", ball.command(ball.defaults().with("fluid_kind", "nieve")
+                .with("radius", 65).with("air_only", false).with("close_edges", false).with("sources_only", true),
+                true));
+        ToolCard fall = card("waterfall");
+        assertEquals("komaedit fluido cascada agua", fall.command(fall.defaults(), false));
+        assertEquals("komaedit fluido cascada lava -n -a 3 -b -r 5 -v", fall.command(fall.defaults()
+                .with("fluid", "lava").with("pool", false).with("width", 3).with("banks", false).with("margin", 5),
+                true));
+        assertEquals("komaedit fluido cascada agua -o 3", fall.command(fall.defaults().with("pool_radius", 3), false));
+        ToolCard loose = card("loose_flows");
+        assertEquals("komaedit fluido limpiar lava -m #existing", loose.command(loose.defaults()
+                .with("loose_target", "lava").with("mask", "#existing"), false));
     }
 
     @Test

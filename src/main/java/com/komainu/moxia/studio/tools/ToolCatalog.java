@@ -31,6 +31,10 @@ public final class ToolCatalog {
             new UtilityCards.Snow(),
             new UtilityCards.Drain(),
             new UtilityCards.Waterlog(),
+            new FluidCards.Fill(),
+            new FluidCards.Ball(),
+            new FluidCards.Waterfall(),
+            new FluidCards.Loose(),
             new UtilityCards.Biome(),
             new SymmetryCard(),
             new CapabilityCard()

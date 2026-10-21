@@ -32,7 +32,8 @@ class ToolTranslationsTest {
     /** Problemas que pueden salir en una tarjeta (los de {@link ToolProblem#error}/{@code warning}). */
     private static final List<String> PROBLEMS = List.of("permission", "no_selection", "no_path_or_selection",
             "loft_points", "material", "spaces", "illegal_character", "curve_name", "curve_count", "stamp_name",
-            "drops", "thermal_strength", "text_empty", "text_lines", "font", "biome", "creative_only");
+            "drops", "thermal_strength", "text_empty", "text_lines", "font", "biome", "creative_only",
+            "fluid_directions");
 
     private static JsonObject lang(String name) throws IOException {
         Path file = Path.of("src", "main", "resources", "assets", "komaedit", "lang", name + ".json");
