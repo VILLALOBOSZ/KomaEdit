@@ -3368,7 +3368,7 @@ Nodos y paquetes:
 
 ### Historial
 
-Las acciones de más de un bloque (extruir, encoger, arrastrar y cualquiera que otro mod amplíe, como la simetría) son una sola operación de `//undo`. Las de un bloque (reemplazar, retocar, colocar, romper) no entran en el historial, igual que la colocación normal, para no echar del historial de WorldEdit las operaciones grandes.
+Las acciones de más de un bloque (extruir, encoger, arrastrar y cualquiera que otro mod amplíe, como la simetría) son una sola operación de `//undo`. Las de un bloque (reemplazar, retocar, colocar, romper) no entran en el historial, igual que la colocación normal, para no echar del historial de WorldEdit las operaciones grandes. La excepción es un bloque con contenido (cofre, barril, horno, tolva, atril…) que se reemplaza o se rompe: eso sí entra, para poder recuperar lo que guardaba con `//undo`. Retocarlo (girarlo, anegarlo…) conserva lo que lleva.
 
 ### Configuración de las capacidades
 

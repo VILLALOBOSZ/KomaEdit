@@ -18,6 +18,7 @@ import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.RunContext;
 import com.sk89q.worldedit.function.pattern.Pattern;
@@ -451,7 +452,7 @@ public final class BatchEditService {
                 if (block == null) {
                     placed = false;
                 } else {
-                    job.editSession.setBlock(position, block);
+                    job.editSession.setBlock(position, job.withKeptData(index, position, block));
                 }
             }
             int captureIndex = job.plan.captureIndex(index);
@@ -740,6 +741,25 @@ public final class BatchEditService {
 
         private int rawIdAt(int x, int y, int z) {
             return Block.getRawIdFromState(world.getBlockState(cursor.set(x, y, z)));
+        }
+
+        /**
+         * Un cambio de estado de lo que ya hay (el plan esperaba ese mismo bloque: anegar un cofre, girar un horno)
+         * conserva lo que guarda, que WorldEdit vaciaría al escribir encima ({@link KeptData}). La entrada ya pasó
+         * la comprobación de lo esperado, así que lo esperado es lo que hay.
+         */
+        private BaseBlock withKeptData(int index, BlockVector3 position, BaseBlock block) {
+            int expected = plan.expectedStateId(index);
+            if (expected == PackedBlockPlan.NO_EXPECTED_STATE) {
+                return block;
+            }
+            net.minecraft.block.BlockState current = Block.getStateFromRawId(expected);
+            if (!KeptData.keeps(block.getNbtReference() != null, true, current.hasBlockEntity(),
+                    FabricAdapter.adapt(block.getBlockType()), current.getBlock())) {
+                return block;
+            }
+            BaseBlock full = FabricAdapter.adapt(world).getFullBlock(position);
+            return full.getNbtReference() == null ? block : block.toImmutableState().toBaseBlock(full.getNbtReference());
         }
 
         /** Con la ventana ya en el mundo: el estado que quedó en cada posición capturada (instancias). */
