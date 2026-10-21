@@ -95,6 +95,8 @@ public final class FakeStudioHost implements StudioHost {
     public final List<Boolean> expectedGhosts = new ArrayList<>();
     /** La herramienta de KomaEdit de la mano ({@code pincel:…}), o {@code null}. */
     public String heldTool;
+    /** En creativo (en supervivencia la bienvenida solo enseña). */
+    public boolean creative = true;
     /** Donde se hizo clic en el mundo, o {@code null}. */
     public int[] clickedSpot;
     public WorldHistory history = WorldHistory.EMPTY;
@@ -113,6 +115,8 @@ public final class FakeStudioHost implements StudioHost {
         lang = load(language);
         blockNames = gameNames ? minecraftNames(language) : new HashMap<>();
         blockNames.putAll(TEST_NAMES.getOrDefault(language, TEST_NAMES.get("en_us")));
+        // Las pruebas y las maquetas de siempre son de quien ya vio la bienvenida; las suyas la ponen a 0.
+        preferences.setWelcome(com.komainu.moxia.studio.WelcomeTour.VERSION);
     }
 
     public static Map<String, String> load(String language) {
@@ -353,6 +357,11 @@ public final class FakeStudioHost implements StudioHost {
     @Override
     public int[] clickedSpot() {
         return clickedSpot;
+    }
+
+    @Override
+    public boolean creative() {
+        return creative;
     }
 
     @Override

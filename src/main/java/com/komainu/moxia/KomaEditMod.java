@@ -63,6 +63,8 @@ public final class KomaEditMod implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(RecipeCatalogPayload.ID, RecipeCatalogPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(InstanceCatalogPayload.ID, InstanceCatalogPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PreviewHologramPayload.ID, PreviewHologramPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(com.komainu.moxia.studio.net.StudioWelcomePayload.ID,
+                com.komainu.moxia.studio.net.StudioWelcomePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(EditorActionPayload.ID, EditorActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RecipeActionPayload.ID, RecipeActionPayload.CODEC);
         com.komainu.moxia.studio.net.StudioToolsNetwork.register();

@@ -54,6 +54,7 @@ import com.komainu.moxia.sculpt.SculptPreviewManager;
 import com.komainu.moxia.sculpt.SculptProfile;
 import com.komainu.moxia.sculpt.SculptSettings;
 import com.komainu.moxia.sculpt.model.ModelMaterial;
+import com.komainu.moxia.studio.net.StudioWelcomePayload;
 import com.komainu.moxia.weathering.WeatheringService;
 import com.komainu.moxia.weathering.WeatheringSettings;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -203,6 +204,8 @@ public final class MoxiaCommands {
                 .then(literal("menu").executes(MoxiaCommands::openHudMenu))
                 .then(literal("quick").executes(MoxiaCommands::openHudMenu))
                 .then(literal("gui").executes(MoxiaCommands::guiHint))
+                .then(literal("tutorial").executes(MoxiaCommands::openWelcome))
+                .then(literal("bienvenida").executes(MoxiaCommands::openWelcome))
                 .then(literal("shapes").executes(MoxiaCommands::openHudMenu))
                 .then(generationCommand("build", true))
                 .then(generationCommand("estimate", false))
@@ -2031,6 +2034,17 @@ public final class MoxiaCommands {
             return fail(context.getSource(), "El cliente no tiene disponible la paleta QuickBuild");
         }
         ServerPlayNetworking.send(player, QuickBuildPayload.INSTANCE);
+        return 1;
+    }
+
+    /** {@code tutorial} / {@code bienvenida}: el cliente abre el Studio con la bienvenida guiada desde el principio. */
+    private static int openWelcome(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        if (!ServerPlayNetworking.canSend(player, StudioWelcomePayload.ID)) {
+            return fail(context.getSource(), "La bienvenida va dentro del Procedural Studio: hace falta KomaEdit en el "
+                    + "cliente");
+        }
+        ServerPlayNetworking.send(player, StudioWelcomePayload.INSTANCE);
         return 1;
     }
 
