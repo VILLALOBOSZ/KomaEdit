@@ -86,6 +86,21 @@ class StudioPreferencesTest {
     }
 
     @Test
+    void theWelcomeThatWasSeenIsRememberedOnDisk() throws Exception {
+        StudioPreferences fresh = new StudioPreferences();
+        assertEquals(0, fresh.welcome(), "a quien nunca abrió el Studio le sale la bienvenida");
+        assertFalse(fresh.toJson().contains("welcome"), "sin verla no se escribe nada");
+        fresh.setWelcome(WelcomeTour.VERSION);
+        Path file = directory.resolve("welcome.json");
+        fresh.save(file);
+        assertEquals(WelcomeTour.VERSION, StudioPreferences.load(file).welcome());
+        // Un archivo de antes (sin el campo) es de quien no la ha visto; uno roto, también.
+        assertEquals(0, StudioPreferences.fromJson("{\"favorites\": [\"coil\"]}").welcome());
+        assertEquals(0, StudioPreferences.fromJson("{\"welcome\": \"tres\"}").welcome());
+        assertEquals(0, StudioPreferences.fromJson("{\"welcome\": -4}").welcome());
+    }
+
+    @Test
     void brokenOrMissingFilesGiveEmptyPreferences() throws Exception {
         assertTrue(StudioPreferences.load(directory.resolve("missing.json")).favorites().isEmpty());
         Path broken = directory.resolve("broken.json");

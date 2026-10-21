@@ -371,6 +371,10 @@ class StudioThemeContrastTest {
                     new StudioHost.WorldHistory.Entry("WorldEdit", 3_820)), 1);
             driver.click("Cambios en el mundo: deshacer o rehacer hasta un punto (Ctrl+Z, Ctrl+Y)");
         });
+        scenes.put("bienvenida_entrada", StudioWelcomeMockupsTest::intro);
+        scenes.put("bienvenida_arbol_en", StudioWelcomeMockupsTest::treePick);
+        scenes.put("bienvenida_aplicar", StudioWelcomeMockupsTest::stampApply);
+        scenes.put("bienvenida_supervivencia", StudioWelcomeMockupsTest::survival);
         scenes.put("en_espera", driver -> {
             StudioMockupsTest.tools(driver, "roof");
             driver.host.preferences.setPreviewMode(StudioPreferences.PreviewMode.LIVE);

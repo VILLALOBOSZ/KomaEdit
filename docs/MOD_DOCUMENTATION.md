@@ -21,7 +21,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 Procedural Studio se abre con `K` y permite construir mientras el mundo sigue visible y activo. Tiene siete etapas repartidas en tres grupos: **Crear** (Herramientas, Trayectoria y Figuras), **Ajustar** (Color) y **Biblioteca** (Planos, Recetas e Instancias). Modificadores y Material ya no son etapas: solo valían para la figura y viven dentro de Figuras, como su [material](#tamaño-material-y-variaciones) y sus [variaciones](#tamaño-material-y-variaciones). Envejecer tampoco es una etapa: queda como la orden avanzada [`/komaedit weather`](#envejecer).
 
-Todo se explica en la propia pantalla, sin leer esto: cada control dice al pasar el ratón qué le pasa a lo que construyes y, en los números, sus extremos en palabras («de estrecha a ancha»); el pie dice qué hace cada clic en el mundo en la etapa en la que estás, y al dejar quieto el ratón sobre el mundo sale la leyenda entera. Y todo se hace con el ratón sin cerrar el Studio: seleccionar arrastrando, poner y arrastrar puntos, pintar con el pincel, coger un material con Alt+clic y colocar con un clic (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
+La primera vez que se abre, una [bienvenida guiada](#bienvenida-guiada) de cinco pasos lo enseña sobre el mundo. Todo se explica en la propia pantalla, sin leer esto: cada control dice al pasar el ratón qué le pasa a lo que construyes y, en los números, sus extremos en palabras («de estrecha a ancha»); el pie dice qué hace cada clic en el mundo en la etapa en la que estás, y al dejar quieto el ratón sobre el mundo sale la leyenda entera. Y todo se hace con el ratón sin cerrar el Studio: seleccionar arrastrando, poner y arrastrar puntos, pintar con el pincel, coger un material con Alt+clic y colocar con un clic (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
 
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
 - La cámara puede desplazarse mientras el Studio permanece abierto.
@@ -32,6 +32,48 @@ Todo se explica en la propia pantalla, sin leer esto: cada control dice al pasar
 ![Herramientas con el árbol elegido](renders/studio/1080p_gui3_arbol_es.png)
 
 ![Lo primero que se ve: Figuras sin puntos dice cómo ponerlos](renders/studio/1080p_gui3_primera_vez_es.png)
+
+### Bienvenida guiada
+
+La primera vez que alguien abre el Studio sale una tarjeta, **Primeros pasos en el Studio**: cinco pasos cortos sobre el mundo de verdad que en un par de minutos dejan hecho algo bonito (un árbol y una montaña nevada) y enseñan lo que se usa siempre: elegir una herramienta, ver antes de colocar, confirmar y deshacer. **Empezar** la lanza; **Ahora no** la cierra.
+
+| Paso | Qué se hace | Qué enseña |
+| --- | --- | --- |
+| 1. Planta un árbol | Pulsar **Árbol** en la cuadrícula y hacer clic en el suelo: sale como fantasma, sin colocar. | Las herramientas se eligen en la cuadrícula; un clic en el mundo construye ahí. |
+| 2. Muévelo y colócalo | Arrastrar una flecha del fantasma (o hacer clic en otro sitio) y pulsar **Colocar** (o `Intro`). | Nada se pone hasta confirmarlo, y el gizmo lo deja justo donde se quiere. |
+| 3. Levanta una montaña | **Sello de relieve**, elegir un sello (Montaña, por ejemplo), **Al pincel**, clic en el suelo (se ve antes de cambiar nada), **Azar** y otro clic (otra montaña con la misma forma) y **Aplicar**. | La miniatura es la forma; la semilla da otra variante; el pincel enseña antes de aplicar. |
+| 4. Píntala | **Pintar terreno**, el preset **Cumbres**, **Al pincel**, clic en la montaña y **Aplicar**. | Un preset deja la herramienta lista de un clic. |
+| 5. Deshaz lo que quieras | Abrir el historial (el reloj de la barra) y pulsar **Deshacer** (o `Ctrl+Z`). | Todo lo del mundo se deshace, y se rehace. |
+
+- **Cada golpe, una burbuja.** Junto a lo que hay que tocar sale una burbuja corta: en qué paso va («Paso 2 de 5», con un punto por paso), una frase de qué hacer y por qué y, abajo, **Saltar paso** y **Saltar bienvenida**. Lo que hay que pulsar lleva un borde de acento con una luz que le da la vuelta despacio. La burbuja va sobre el mundo, a la izquierda del panel y a la altura del control, así que no tapa ningún control; lo que se hace en el mundo (un clic en el suelo) va arriba, pegado al panel. Si el mundo no deja sitio (un panel muy ancho en una pantalla pequeña), va sobre el panel, debajo o encima del control. Mientras se ve, la leyenda del mundo no sale, y sus botones responden al primer clic aunque el historial esté abierto.
+- **Avanza solo cuando lo haces.** Cada golpe espera a la acción de verdad: que la herramienta esté elegida, que salga el fantasma tras el clic, que se mueva, que se coloque, que llegue la orden del pincel, que se pinte en el mundo, que cambie la semilla o que se deshaga algo. Si a mitad de un paso vas a otra herramienta, la burbuja pide volver y luego sigue donde ibas. Si quitas el fantasma sin colocarlo (o el servidor no lo coloca), vuelve a pedir el clic: «Cancelado: no se colocó nada».
+- **Prepara lo justo:** abre Herramientas con su cuadrícula para elegir, desplaza el panel hasta lo que hay que tocar y, en el modo compacto, abre **Más ajustes**, donde van los presets y **Azar**. Nunca elige nada por el jugador.
+
+#### Segura en cualquier servidor
+
+- **Nada se coloca sin que lo confirmes.** Mientras dura, Construir va siempre con vista previa (si la tenías apagada, pasa a en vivo) y los pinceles del sello y de la pintura, con la **vista previa en cada clic**: un clic enseña el resultado y la burbuja ofrece **Aplicar** (`/komaedit pincel aplicar`) o **Descartar** (`/komaedit pincel cancelar`). La bienvenida no manda nada que cambie el mundo salvo esos **Aplicar** que pulsa el jugador. Si se salta un paso o la bienvenida con una vista previa del pincel a medias, se descarta.
+- **Se avisa de que todo se deshace:** lo dice la entrada, lo repite el paso de colocar y el último paso enseña a deshacer.
+- **Al acabar, al saltarla o al cerrar el Studio** vuelve lo que tenías (la vista previa apagada, la de cada clic de los pinceles), salvo que lo cambiaras tú durante la bienvenida. En `studio.json` no se queda nada de lo que puso; al volver a abrir el Studio, sigue donde iba y lo vuelve a poner.
+- **Sin el permiso de un paso, se salta solo** y la burbuja siguiente lo dice («Sin permiso para Sello de relieve: ese paso se salta»); sin el del árbol se saltan plantar y colocar. «Paso N de M» cuenta solo los que se hacen. Con un servidor que no contesta qué permisos tienes no se salta nada: decide el servidor al construir.
+- **En supervivencia, o sin ningún permiso de construir, solo enseña**, y la entrada ya lo dice. Se elige igual (la herramienta, el sello, Azar, el preset, abrir el historial), pero lo que tocaría el mundo pasa a ser un golpe de mirar con **Siguiente**: la burbuja señala el botón, sin el borde animado, y explica qué haría. No se manda ninguna orden de construir. Son cuatro pasos (colocar va dentro del primero).
+
+#### Una vez por jugador, y siempre que quieras
+
+- Sale sola **una vez**: al enseñar la entrada queda apuntada en `config/komaedit/studio.json` (`"welcome": 1`), aunque se cierre a medias. Un `studio.json` de una versión anterior no lo tiene, así que a quien ya usaba el Studio también le sale una vez.
+- Se vuelve a lanzar desde la chuleta (`F1` o `?`), con **Bienvenida guiada** arriba a la derecha, y con **`/komaedit tutorial`** o **`/komaedit bienvenida`**, que abren el Studio (si no estaba abierto) con la bienvenida desde la entrada. La orden necesita KomaEdit en el cliente; sin él, lo dice.
+- En español o en inglés, según el idioma del juego, con el mismo tono que la ayuda de los controles.
+
+![La entrada: lo que se va a hacer y que nada se coloca sin confirmar](renders/studio/bienvenida/1080p_gui3_bienvenida_0_entrada_es.png)
+
+![Paso 1: la burbuja junto a Árbol, que lleva el borde](renders/studio/bienvenida/1080p_gui3_bienvenida_1_arbol_es.png)
+
+![Paso 3: la montaña se ve antes; Aplicar o Descartar](renders/studio/bienvenida/1080p_gui3_bienvenida_3_aplicar_es.png)
+
+![A 854×480 con GUI 2: el preset, dentro de Más ajustes](renders/studio/bienvenida/854_gui2_bienvenida_4_pintar_es.png)
+
+Las maquetas de todos los pasos, a 1080p con GUI 3 y a 854×480 con GUI 2, en español e inglés (y en supervivencia), están en `docs/renders/studio/bienvenida/`.
+
+- **Limitaciones:** la vista previa de los pinceles se aplica desde la burbuja; fuera de la bienvenida es `/komaedit pincel aplicar`. Con «Colocar con gizmo: Nunca» (`/kegui ajustes`) el árbol sale como vista previa de bloques, que no se mueve, y el paso 2 pide solo **Confirmar**. Con puntos de trayectoria, el árbol va en cada punto y el paso 1 pide **Plantar**. Si se sale del mundo a mitad, la vista previa queda en vivo (la de serie). Nada se ha probado aún dentro de Minecraft.
 
 ### Disposición de la pantalla
 
@@ -252,7 +294,7 @@ La biblioteca de bloques se abre al pulsar cualquier fila de bloque (material de
 
 ### Lo que se recuerda
 
-En `config/komaedit/studio.json`, por jugador y en su equipo: la etapa y la herramienta en las que lo dejaste, **los ajustes de cada herramienta** (se guardan 2 s después del último cambio y al cerrar), el desplazamiento de cada etapa y de cada herramienta, las secciones abiertas, el modo de vista previa, las favoritas y las recientes (figuras, herramientas y bloques) y la parte de la pantalla del panel. Un archivo de una versión anterior se lee igual; uno roto se ignora.
+En `config/komaedit/studio.json`, por jugador y en su equipo: la etapa y la herramienta en las que lo dejaste, **los ajustes de cada herramienta** (se guardan 2 s después del último cambio y al cerrar), el desplazamiento de cada etapa y de cada herramienta, las secciones abiertas, el modo de vista previa, las favoritas y las recientes (figuras, herramientas y bloques), la parte de la pantalla del panel y si ya salió la [bienvenida guiada](#bienvenida-guiada). Un archivo de una versión anterior se lee igual; uno roto se ignora.
 
 ### Progreso en el pie
 
@@ -296,7 +338,7 @@ Hay más comparativas de los cuatro temas en `docs/renders/studio/temas/`: [Herr
 
 ### Atajos de teclado
 
-`F1` o `?` abren la chuleta dentro del Studio; abajo tiene el selector de [tema de color](#temas-de-color). Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
+`F1` o `?` abren la chuleta dentro del Studio; abajo tiene el selector de [tema de color](#temas-de-color) y, arriba a la derecha, **Bienvenida guiada**, que vuelve a lanzar la [bienvenida](#bienvenida-guiada). Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
 
 | Tecla | Acción |
 | --- | --- |
@@ -340,6 +382,7 @@ Todo el Studio (barra, etapas, contenido, pie, paleta, historial y biblioteca de
 - `StudioDriver` maneja el Studio como un jugador (pulsar por texto, arrastrar, rueda, escribir, teclas) y lo usan `ToolsPanelTest`, `StudioViewTest`, `CompactModeTest`, `NumberControlTest`, `CommandPaletteTest`, `FigureClarityTest` y `TaskClicksTest`, que cuenta los clics de las tareas típicas.
 - Las variaciones son `FigureVariation` (cuándo está puesta cada una, con qué se pone, qué deja al quitarla y dónde sirve) y sus dibujos, `VariationThumbnails`; «Pegar al terreno» es `SurfaceConform`, sin Minecraft, con un `Terrain` que dan el servidor, el cliente o las pruebas.
 - Lo que explica cada control es `ControlHelp` (qué hace y sus extremos, de `gui.komaedit.tools.<herramienta>.ends.<ajuste>` o `gui.komaedit.ends.<control>`); `ControlHelpTest` exige que cada ajuste de herramienta diga lo que hace sin repetir su etiqueta, que los números lleven sus extremos (salvo semilla, rumbo y altura absoluta) y que ninguna herramienta enseñe más de cuatro ajustes antes de Más ajustes.
+- La [bienvenida guiada](#bienvenida-guiada) es `WelcomeTour` (la máquina de estados, sin Minecraft ni dibujo: pasos, golpes, cuándo avanza, permisos y supervivencia), `WelcomeGuide` (la engancha a `StudioView`: le cuenta lo que se ve, prepara cada golpe y sostiene la vista previa) y `WelcomeBubble` (la burbuja, la tarjeta y el borde). Señala con **anclas con nombre** de `StudioUi` (`tool:tree`, `stamp:montana`, `preset:random`, `footer:build`, `ghost:place`, `top:history`, `history:undo`…), registradas enteras aunque el recorte las tape, para poder desplazar hasta ellas. `WelcomeTourTest` prueba la máquina (avanzar con la acción de verdad, saltar, sin permiso, en supervivencia y relanzar), `StudioWelcomeTest` la hace entera pulsando los controles del Studio (y comprueba que nada se manda sin vista previa ni sin Aplicar, que se guarda que ya se vio y que al cerrar vuelve lo de antes) y `StudioWelcomeMockupsTest` pinta sus maquetas; `StudioThemeContrastTest` mide sus textos en los cuatro temas.
 - El ratón en el mundo son modelos sin Minecraft que usa la pantalla: `StudioView.worldAction` (qué hace un clic en cada etapa), `BoxSelect` (la caja, sus caras y el doble clic), `PathDrag` (agarrar, meter y añadir puntos) y `BrushStroke` (el ritmo del pincel). El relevo de mallas del fantasma en vivo es `MeshHandover`.
 
 ## Trayectorias y hologramas
@@ -496,6 +539,7 @@ El tema también se encuentra por el nombre de cualquiera de sus órdenes y alia
 - Los errores de nombre desconocido proponen el más parecido: figuras y sus alias, perfiles, extremos, normales, calidad, piezas, paletas, banderas de tubo, parámetros de figura, temas de ayuda y recorridos guardados. Por ejemplo, `/komaedit build coli stone` responde «Forma 3D desconocida: coli · ¿Quisiste decir «coil»?». Se acepta un error cada cuatro letras (cambiar, sobrar, faltar o intercambiar dos vecinas), sin contar tildes ni mayúsculas, o un prefijo de tres letras o más.
 - Alias: `/ke`, `/mx` y `/moxia` para `/komaedit`; `ruta` para `path`; `ayuda` para `help`; `estimar` para `estimate`; `confirmar` para `confirm`; `cancelar` para `cancel`; `vistaprevia` para `preview`. Casi todas las órdenes tienen además su nombre en español (`tejado`, `arbol`, `terreno`, `bioma`…), que la ayuda indica junto a cada una.
 - `/komaedit wiki` (como `/ezedits wiki`) indica dónde está la ayuda: dentro del juego, con `/komaedit help`.
+- `/komaedit tutorial` (alias `bienvenida`) abre el Procedural Studio con la [bienvenida guiada](#bienvenida-guiada) desde el principio; está en `/komaedit help project`.
 
 ### Mensajes: `/komaedit quiet`
 
