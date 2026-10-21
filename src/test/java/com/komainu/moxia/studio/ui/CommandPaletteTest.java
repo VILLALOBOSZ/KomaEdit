@@ -45,7 +45,7 @@ class CommandPaletteTest {
     @Test
     void findsAToolAndEnterOpensIt() {
         open("teja");
-        assertEquals("Tejado", studio.view.palette().results().getFirst().title());
+        assertEquals("Poner tejado", studio.view.palette().results().getFirst().title());
         studio.key(StudioKey.of(StudioKey.Code.ENTER));
         assertFalse(studio.view.palette().isOpen());
         assertEquals(StudioStage.TOOLS, studio.view.stage());
@@ -92,7 +92,7 @@ class CommandPaletteTest {
         studio.key(StudioKey.of(StudioKey.Code.UP));
         studio.key(StudioKey.of(StudioKey.Code.UP));
         assertEquals(studio.view.palette().results().size() - 1, studio.view.palette().cursor(), "da la vuelta");
-        studio.click("Tejado: Empinado");
+        studio.click("Poner tejado: Empinado");
         assertEquals("roof", studio.view.tools().selected().id());
         assertEquals("2:1", studio.view.tools().values(ToolCatalog.byId("roof")).choice("slope"));
     }

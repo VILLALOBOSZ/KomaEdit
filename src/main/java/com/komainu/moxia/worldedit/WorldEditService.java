@@ -121,7 +121,15 @@ public final class WorldEditService {
         return context.session().redo(null, context.actor()) != null;
     }
 
+    /**
+     * La selección de WorldEdit del jugador (una copia). Mientras una orden se ejecuta como pincel
+     * ({@link SelectionOverride}), la zona alrededor del clic.
+     */
     public static Region selection(ServerPlayerEntity player) throws IncompleteRegionException {
+        var zone = SelectionOverride.current(player.getUuid());
+        if (zone.isPresent()) {
+            return zone.get().region().clone();
+        }
         PlayerContext context = context(player);
         return context.session().getSelection(context.world()).clone();
     }

@@ -47,8 +47,20 @@ class ToolTranslationsTest {
             keys.add(card.nameKey());
             keys.add(card.descriptionKey());
             keys.add(card.buildKey());
+            // El botón con cada valor de lo que lo cambia: el pincel («Al pincel») y los modos de Retocar.
+            for (ToolParam param : card.params()) {
+                if (param instanceof ToolParam.Choice choice && !choice.dynamic()) {
+                    for (String option : choice.options()) {
+                        keys.add(card.buildKey(card.defaults().with(choice.id(), option)));
+                    }
+                }
+            }
+            for (ToolUse use : card.uses()) {
+                keys.add("gui.komaedit.tools.use." + use.id() + ".help");
+            }
             for (ToolParam param : card.params()) {
                 keys.add(param.labelKey());
+                keys.add(card.labelKey(param));
                 keys.add(card.helpKey(param));
                 if (param instanceof ToolParam.Choice choice) {
                     choice.options().forEach(option -> keys.add(choice.optionKey(option)));
@@ -66,11 +78,10 @@ class ToolTranslationsTest {
                 keys.add(action.helpKey());
             }
         }
-        for (ToolFamily family : ToolFamily.values()) {
-            keys.add(family.translationKey());
+        for (ToolCategory category : ToolCategory.values()) {
+            keys.add(category.translationKey());
         }
-        keys.add("gui.komaedit.tools.family.all");
-        keys.add("gui.komaedit.tools.family.favorites");
+        keys.add("gui.komaedit.tools.category.favorites");
         for (ToolTarget target : ToolTarget.values()) {
             keys.add(target.translationKey());
         }
@@ -112,7 +123,7 @@ class ToolTranslationsTest {
                 Matcher matcher = KEY.matcher(Files.readString(file));
                 while (matcher.find()) {
                     String key = matcher.group(1);
-                    // Prefijos que el código completa con un id (gui.komaedit.tools.family.<id>…).
+                    // Prefijos que el código completa con un id (gui.komaedit.tools.use.<id>…).
                     if (!key.endsWith(".")) {
                         keys.add(key);
                     }

@@ -175,7 +175,8 @@ public final class FluidCommands {
         return FluidService.cascade(player, settings, point(args));
     }
 
-    private static String clean(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+    /** También es el modo {@code sueltos} de {@code /komaedit retocar} (y de su pincel). */
+    static String clean(ServerPlayerEntity player, String text) throws IncompleteRegionException {
         KomaPermissions.requireBuild(player, FluidService.CLEAN);
         DeformArguments args = DeformArguments.parse(text, Set.of("m"), "");
         args.expectAtMost(1, CLEAN_USAGE);

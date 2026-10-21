@@ -9,7 +9,7 @@ import java.util.Locale;
 public enum BuildCapability {
     REPLACE("replace", "reemplazar", "Reemplazar",
             "Clic derecho cambia el bloque apuntado por el de la mano y conserva sus propiedades"),
-    TWEAK("tweak", "retocar", "Retocar",
+    TWEAK("tweak", "retocar", "Cambiar estado",
             "Clic derecho con la mano vacía cambia una propiedad del bloque; F elige cuál"),
     EXTRUDE("extrude", "extruir", "Extruir",
             "Con el mismo bloque en la mano: clic derecho copia la capa hacia fuera, izquierdo la encoge"),

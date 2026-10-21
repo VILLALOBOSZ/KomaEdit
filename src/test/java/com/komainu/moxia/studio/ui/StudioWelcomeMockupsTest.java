@@ -160,7 +160,7 @@ class StudioWelcomeMockupsTest {
         stampApply(driver);
         driver.view.welcome().apply();
         settle(driver);
-        StudioWelcomeTest.press(driver, "tool:paintbrush");
+        StudioWelcomeTest.press(driver, "tool:paint");
         settle(driver);
         quiet(driver);
         driver.mouseX = -1;
