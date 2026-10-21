@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public final class CapabilityCard extends ToolCard {
     CapabilityCard() {
-        super("capabilities", ToolFamily.CAPABILITIES, ToolTarget.MODE,
+        super("capabilities", ToolTarget.MODE,
                 List.of("capability", "capacidad", "capacidades", "axiom", "builder", "reemplazar", "replace",
                         "extruir", "extrude", "alcance", "reach", "angel", "aire", "rapida", "fastplace",
                         "sin actualizaciones", "noupdates", "vuelo", "fly"),

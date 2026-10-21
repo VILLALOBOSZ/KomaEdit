@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.komainu.moxia.persistence.AtomicStorage;
+import com.komainu.moxia.studio.tools.ToolMigration;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,8 +36,10 @@ public final class StudioPreferences {
     /**
      * 3: la vista previa en vivo pasa a ser la de serie. Hasta la 2 lo de serie era «sin vista previa» y se guardaba
      * igual que si se hubiera elegido, así que un archivo anterior sin vista previa se lee en vivo.
+     * 4: herramientas unidas («Pintar», «Retocar»): sus ajustes, favoritas y recientes pasan a la tarjeta nueva
+     * ({@link ToolMigration}).
      */
-    private static final int FORMAT = 3;
+    private static final int FORMAT = ToolMigration.FORMAT;
 
     /** Qué hace la vista previa de las herramientas. */
     public enum PreviewMode {
@@ -403,6 +406,9 @@ public final class StudioPreferences {
                 preferences.pushBlockRecent(blocks.get(index));
             }
             strings(root, "expanded").forEach(key -> preferences.setExpanded(key, true));
+            if (format < ToolMigration.FORMAT) {
+                preferences.upgradeTools(format);
+            }
         } catch (RuntimeException ignored) {
             return new StudioPreferences();
         }
@@ -435,6 +441,44 @@ public final class StudioPreferences {
                 preferences.toolValues.put(card.getKey(), values);
             }
         }
+    }
+
+    /**
+     * Un archivo de antes de unir herramientas: los ajustes de las que se unieron pasan a la que las reúne y sus ids,
+     * en favoritas, recientes, la última elegida, secciones abiertas y desplazamiento, al id de ahora.
+     */
+    private void upgradeTools(int format) {
+        Map<String, Map<String, Object>> upgraded = ToolMigration.toolValues(new LinkedHashMap<>(toolValues), format,
+                tool);
+        toolValues.clear();
+        toolValues.putAll(upgraded);
+        List<String> favoriteIds = new ArrayList<>(toolFavorites);
+        toolFavorites.clear();
+        favoriteIds.forEach(id -> toolFavorites.add(ToolMigration.id(id)));
+        List<String> recentIds = new ArrayList<>(toolRecents);
+        toolRecents.clear();
+        recentIds.forEach(id -> {
+            String current = ToolMigration.id(id);
+            if (!toolRecents.contains(current)) {
+                toolRecents.add(current);
+            }
+        });
+        tool = ToolMigration.id(tool);
+        List<String> open = new ArrayList<>(expanded);
+        expanded.clear();
+        open.forEach(key -> expanded.add(renamedKey(key)));
+        Map<String, Integer> scrolled = new LinkedHashMap<>(scroll);
+        scroll.clear();
+        scrolled.forEach((key, value) -> scroll.putIfAbsent(renamedKey(key), value));
+    }
+
+    /** {@code tools:more:snow} → {@code tools:more:touchup}, {@code tool:paintbrush} → {@code tool:paint}. */
+    private static String renamedKey(String key) {
+        int colon = key.lastIndexOf(':');
+        if (colon < 0 || !ToolMigration.renamed(key.substring(colon + 1))) {
+            return key;
+        }
+        return key.substring(0, colon + 1) + ToolMigration.id(key.substring(colon + 1));
     }
 
     public static StudioPreferences load(Path file) {

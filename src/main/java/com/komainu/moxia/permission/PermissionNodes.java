@@ -172,6 +172,8 @@ public final class PermissionNodes {
         add(build + ".brush.tree", Pack.INTERMEDIATE, build, null, "/komaedit pincel tree");
         add(build + ".brush.rock", Pack.INTERMEDIATE, build, null, "/komaedit pincel rock");
         add(build + ".brush.heightmap", Pack.INTERMEDIATE, build, null, "/komaedit pincel heightmap");
+        add(build + ".brush.zone", Pack.INTERMEDIATE, build, null,
+                "/komaedit pincel zona y pincel retocar (una orden de la selección alrededor del clic)");
         add(build + ".brush.paint", Pack.INTERMEDIATE, build, null,
                 "/komaedit pincel paint (pintar el terreno con un degradado)");
         add(build + ".brush.sculpt", Pack.INTERMEDIATE, build, null,

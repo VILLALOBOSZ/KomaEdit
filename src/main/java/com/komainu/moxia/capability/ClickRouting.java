@@ -6,7 +6,7 @@ import java.util.Set;
  * Qué hace cada clic con las capacidades activas. El cliente lo usa para decidir si intercepta el clic y qué
  * intención manda al servidor; lo que no le toca a ninguna capacidad sigue el camino normal de Minecraft.
  *
- * <p>Clic derecho, por orden: «Arrastrar» se queda con todos los clics derechos; con la mano vacía, «Retocar»;
+ * <p>Clic derecho, por orden: «Arrastrar» se queda con todos los clics derechos; con la mano vacía, «Cambiar estado»;
  * con el mismo bloque que el apuntado, «Extruir»; con otro bloque, «Reemplazar»; con un bloque o un cubo de agua
  * o lava, «Sin actualizaciones» coloca en la cara y «Colocar en el aire» coloca mirando al aire.</p>
  *
@@ -54,7 +54,7 @@ public final class ClickRouting {
      *
      * @param sameBlock    el bloque de la mano es el mismo que el apuntado
      * @param smearPending hay un arrastre con el origen fijado
-     * @param offhandEmpty la mano secundaria está vacía (la F de Retocar solo se usa con las dos vacías)
+     * @param offhandEmpty la mano secundaria está vacía (la F de Cambiar estado solo se usa con las dos vacías)
      */
     public record Context(
             Set<BuildCapability> enabled,
@@ -126,7 +126,7 @@ public final class ClickRouting {
         return context.on(BuildCapability.NO_UPDATES) ? Intent.BREAK : Intent.NONE;
     }
 
-    /** Tecla de cambiar de mano (F): con «Retocar», las dos manos vacías y un bloque delante, cambia de propiedad. */
+    /** Tecla de cambiar de mano (F): con «Cambiar estado», las dos manos vacías y un bloque delante, cambia de propiedad. */
     public static Intent swap(Context context) {
         return context.on(BuildCapability.TWEAK) && context.held() == Held.EMPTY && context.offhandEmpty()
                 && context.target() == Target.BLOCK ? Intent.TWEAK_PROPERTY : Intent.NONE;

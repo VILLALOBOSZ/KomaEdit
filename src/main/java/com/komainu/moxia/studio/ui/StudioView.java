@@ -353,12 +353,13 @@ public final class StudioView {
             return null;
         }
         ToolCard card = tools.selected();
-        if (!card.previewable()) {
+        if (!card.previewable(tools.values(card))) {
             return null;
         }
         ToolContext context = host.context();
-        boolean selection = card.target() == ToolTarget.SELECTION
-                || card.target() == ToolTarget.PATH_OR_SELECTION && context.pathPoints() == 0;
+        ToolTarget target = tools.target();
+        boolean selection = target == ToolTarget.SELECTION
+                || target == ToolTarget.PATH_OR_SELECTION && context.pathPoints() == 0;
         if (selection && context.selectionVolume() > LivePreview.MAX_VOLUME) {
             return null;
         }
@@ -1237,7 +1238,7 @@ public final class StudioView {
         String toolKind = host.tr(CommandPalette.Kind.TOOL.translationKey());
         for (ToolCard card : ToolCatalog.ALL) {
             entries.add(new CommandPalette.Entry(CommandPalette.Kind.TOOL, host.tr(card.nameKey()), toolKind,
-                    String.join(" ", card.keywords()) + " " + host.tr(card.family().translationKey()),
+                    String.join(" ", card.keywords()) + " " + host.tr(ToolCatalog.categoryOf(card).translationKey()),
                     ToolsPanel.icon(card), () -> {
                 tools.select(card, bound);
                 selectStage(StudioStage.TOOLS, host);
@@ -1368,9 +1369,8 @@ public final class StudioView {
                 if (tools.browsing()) {
                     yield brush ? WorldAction.PAINT : WorldAction.NONE;
                 }
-                ToolCard card = tools.selected();
                 boolean points = host.context().pathPoints() > 0;
-                yield switch (card.target()) {
+                yield switch (tools.target()) {
                     case LOOK -> WorldAction.PLACE;
                     case PATH_OR_LOOK -> points ? WorldAction.POINTS : WorldAction.PLACE;
                     case SELECTION -> WorldAction.SELECT;
@@ -1395,7 +1395,7 @@ public final class StudioView {
     public String worldHint(StudioHost host) {
         WorldAction action = worldAction(host);
         String key = switch (action) {
-            case NONE -> stage == StudioStage.TOOLS && !tools.browsing() && tools.selected().target() == ToolTarget.HAND
+            case NONE -> stage == StudioStage.TOOLS && !tools.browsing() && tools.target() == ToolTarget.HAND
                     ? "gui.komaedit.hint.world.brush_first" : "gui.komaedit.hint.world.none";
             case GHOST -> "gui.komaedit.hint.world.ghost";
             case POINTS -> "gui.komaedit.hint.world.points";

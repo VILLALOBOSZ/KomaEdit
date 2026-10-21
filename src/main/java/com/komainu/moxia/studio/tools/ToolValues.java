@@ -43,6 +43,11 @@ public final class ToolValues {
         };
     }
 
+    /** Si la tarjeta tiene ese ajuste. */
+    public boolean has(String id) {
+        return params.containsKey(id);
+    }
+
     public ToolParam param(String id) {
         ToolParam param = params.get(id);
         if (param == null) {
