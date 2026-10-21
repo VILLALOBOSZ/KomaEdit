@@ -5849,7 +5849,7 @@ Para quien quiera escribir herramientas que lean o hagan paquetes:
 
 ## Recetas, instancias y paquetes
 
-- Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
+- Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo. Cada jugador guarda como mucho 64 (las que enseña el Studio): para guardar otra hay que borrar alguna; sustituir una ya guardada siempre vale.
 - Las instancias conservan receta, trayectoria, estados colocados y checksum; permiten actualizar o retirar una construcción sin borrar bloques modificados manualmente.
 - Seleccionar una instancia vuelve a cargar sus puntos en el editor antes de actualizarla.
 - Los paquetes exportables conservan configuraciones compartibles en `config/komaedit/packages/`; en otro servidor se dejan en `config/komaedit/imports/` y se importan con `/komaedit share import archivo` (ver [Compartir entre servidores](#compartir-entre-servidores)), que es también la forma de pasar recetas, paletas, presets y planos juntos.
@@ -5942,6 +5942,20 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
 - Las máscaras y patrones de WorldEdit (`#palette`, `#near`…) no piden permiso propio.
 - La tabla completa con su equivalente de ezEdits está en `docs/EZEDITS_PARITY.md`.
+
+### Lo que llega del cliente
+
+El Studio, el gizmo, los displays, las barras, las vistas y el lazo hablan con el servidor por paquetes, y un cliente modificado puede mandarlos a su antojo. El servidor comprueba cada uno como la orden equivalente:
+
+- **Permisos:** reemplazar, borrar o pintar la selección desde el editor pide `komaedit.build`, no `komaedit.select`.
+- **Zonas:** la selección mágica no lee bloques de chunks sin cargar (no los carga ni los genera); el gizmo, los displays y el lazo ya miraban la distancia, el borde y lo cargado.
+- **Límites:** la pintura rápida del editor se para en `maxBlocksPerOperation` como cualquier edición y no acumula más de 1 024 pasadas en espera.
+- **Frenos por jugador** a lo que cuesta en el servidor: unas cuantas peticiones seguidas y unas pocas por segundo; a mano no se nota y las de más se ignoran sin aviso.
+  - Barras guardadas: guardar, borrar, importar, exportar, sincronizar y deshacer (cambiar de barra ya tenía su espera).
+  - Vistas: compartir una y pedir el catálogo.
+  - Pincel de selección: empezar un trazo.
+  - Acciones de recetas e instancias.
+- **Miniaturas de planos:** pedir una que ya se está leyendo o enviando no la vuelve a leer, y hay como mucho 1 024 lecturas pendientes por jugador.
 
 ### Configuración
 

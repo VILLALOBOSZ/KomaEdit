@@ -21,16 +21,38 @@ import java.util.UUID;
 
 public final class RecipeStore {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    /** Recetas guardadas por jugador como mucho: las que enseña el Studio ({@link #list}). */
+    public static final int MAX_RECIPES = 64;
+
     private RecipeStore() {
     }
 
     public static void save(UUID playerId, ProceduralRecipe recipe) {
-        Path target = recipePath(playerId, recipe.name());
+        save(playerDirectory(playerId), recipe);
+    }
+
+    static void save(Path directory, ProceduralRecipe recipe) {
+        Path target = recipePath(directory, recipe.name());
         try {
+            if (!Files.isRegularFile(target) && count(directory) >= MAX_RECIPES) {
+                throw new IllegalArgumentException("Ya tienes " + MAX_RECIPES
+                        + " recetas guardadas, el máximo: borra alguna para guardar otra");
+            }
             Files.createDirectories(target.getParent());
             AtomicStorage.writeString(target, GSON.toJson(toJson(recipe)));
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudo guardar la receta: " + exception.getMessage(), exception);
+        }
+    }
+
+    private static long count(Path directory) throws IOException {
+        if (!Files.isDirectory(directory)) {
+            return 0;
+        }
+        try (var files = Files.list(directory)) {
+            return files.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .count();
         }
     }
 
@@ -44,7 +66,7 @@ public final class RecipeStore {
                     .filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".json"))
                     .sorted()
-                    .limit(64)
+                    .limit(MAX_RECIPES)
                     .toList();
             return TolerantListing.readAll(paths, RecipeStore::read, "la receta");
         } catch (IOException exception) {
@@ -226,10 +248,14 @@ public final class RecipeStore {
     }
 
     private static Path recipePath(UUID playerId, String name) {
+        return recipePath(playerDirectory(playerId), name);
+    }
+
+    private static Path recipePath(Path directory, String name) {
         if (!ProceduralRecipe.VALID_NAME.matcher(name).matches()) {
             throw new IllegalArgumentException("El nombre debe usar 1–32 letras, números, _ o -");
         }
-        return playerDirectory(playerId).resolve(name + ".json");
+        return directory.resolve(name + ".json");
     }
 
     private static Path playerDirectory(UUID playerId) {
