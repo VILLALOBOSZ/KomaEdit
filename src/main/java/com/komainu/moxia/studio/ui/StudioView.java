@@ -1333,7 +1333,7 @@ public final class StudioView {
                     case PATH_OR_LOOK -> points ? WorldAction.POINTS : WorldAction.PLACE;
                     case SELECTION -> WorldAction.SELECT;
                     case PATH_OR_SELECTION -> points ? WorldAction.POINTS : WorldAction.SELECT;
-                    case HAND, MODE -> brush ? WorldAction.PAINT : WorldAction.NONE;
+                    case HAND, MODE, SELF -> brush ? WorldAction.PAINT : WorldAction.NONE;
                 };
             }
             case COLOR -> WorldAction.SELECT;

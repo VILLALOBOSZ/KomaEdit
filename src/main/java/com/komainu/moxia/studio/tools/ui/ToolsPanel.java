@@ -9,6 +9,7 @@ import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
+import com.komainu.moxia.studio.tools.BuilderAidCards;
 import com.komainu.moxia.studio.tools.CapabilityCard;
 import com.komainu.moxia.studio.tools.SymmetryCard;
 import com.komainu.moxia.studio.tools.TerrainCards;
@@ -459,6 +460,9 @@ public final class ToolsPanel {
             case "biome" -> StudioIcons.Icon.BIOME;
             case "symmetry" -> StudioIcons.Icon.SYMMETRY;
             case "capabilities" -> StudioIcons.Icon.CAPABILITIES;
+            case "views" -> StudioIcons.Icon.VIEWS;
+            case "ruler" -> StudioIcons.Icon.RULER;
+            case "note" -> StudioIcons.Icon.NOTE;
             default -> StudioIcons.Icon.TOOLS;
         };
     }
@@ -1700,6 +1704,7 @@ public final class ToolsPanel {
             case LOOK -> StudioIcons.Icon.LOOK;
             case HAND -> StudioIcons.Icon.HAND;
             case MODE -> StudioIcons.Icon.MODE;
+            case SELF -> StudioIcons.Icon.EYE;
         };
     }
 
@@ -1724,8 +1729,10 @@ public final class ToolsPanel {
             case MODE -> card instanceof SymmetryCard
                     ? host.tr(info.symmetry().active() ? "gui.komaedit.tools.footer.on"
                     : "gui.komaedit.tools.footer.off")
+                    : card instanceof BuilderAidCards.Ruler ? host.tr("gui.komaedit.tools.footer.client")
                     : host.tr("gui.komaedit.tools.footer.active", info.capabilities() == null ? 0
                     : Integer.bitCount(info.capabilities().enabled() & info.capabilities().permitted()));
+            case SELF -> host.tr("gui.komaedit.tools.footer.here");
         };
     }
 

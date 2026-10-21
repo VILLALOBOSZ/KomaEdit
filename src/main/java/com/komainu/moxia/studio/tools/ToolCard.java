@@ -90,6 +90,14 @@ public abstract class ToolCard {
     /** Nodos de permiso que necesita Construir con estos valores (todos). */
     public abstract List<String> permissions(ToolValues values);
 
+    /**
+     * Si la herramienta es solo del cliente (la regla, guardar vistas): su orden es {@code kegui …}, que atiende el
+     * propio cliente aunque la mande el Studio, y no pasa por el servidor.
+     */
+    public boolean clientOnly() {
+        return false;
+    }
+
     /** Si Construir admite la vista previa universal ({@code -v}). */
     public boolean previewable() {
         return true;

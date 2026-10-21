@@ -25,7 +25,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, PAINT, TEXT, ANALYZE, GRAVITY, SNOW, DRAIN, WATERLOG,
-        BIOME, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
+        BIOME, SYMMETRY, CAPABILITIES, PAINT_BRUSH, VIEWS, RULER, NOTE,
         // El fantasma con gizmo.
         GIZMO
     }
@@ -500,6 +500,48 @@ public final class StudioIcons {
                 ".....##.....",
                 ".....##.....",
                 "....####....");
+        // Vistas guardadas: una cámara con su objetivo.
+        mask(Icon.VIEWS,
+                "............",
+                "............",
+                ".##.........",
+                "########....",
+                "#......#.###",
+                "#..##..####.",
+                "#.#..#.###..",
+                "#..##..####.",
+                "#......#.###",
+                "########....",
+                "............",
+                "............");
+        // La regla: una cinta con sus marcas, la de en medio más larga.
+        mask(Icon.RULER,
+                "............",
+                "............",
+                "............",
+                "############",
+                "#..........#",
+                "#.#.#.#.#.##",
+                "#.#.#.#.#.##",
+                "#.#...#...##",
+                "############",
+                "............",
+                "............",
+                "............");
+        // Una nota: un papel con la esquina doblada y dos renglones.
+        mask(Icon.NOTE,
+                "..#######...",
+                "..#.....##..",
+                "..#.....#.#.",
+                "..#.....####",
+                "..#.####...#",
+                "..#........#",
+                "..#.######.#",
+                "..#........#",
+                "..#.####...#",
+                "..#........#",
+                "..##########",
+                "............");
         mask(Icon.ANALYZE,
                 "..........##",
                 "..........##",

@@ -32,6 +32,9 @@ public final class ToolCatalog {
             new UtilityCards.Drain(),
             new UtilityCards.Waterlog(),
             new UtilityCards.Biome(),
+            new BuilderAidCards.Views(),
+            new BuilderAidCards.Ruler(),
+            new BuilderAidCards.Note(),
             new SymmetryCard(),
             new CapabilityCard()
     );
