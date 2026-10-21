@@ -23,6 +23,7 @@ import java.util.Objects;
  * @param fonts             fuentes propias de {@code config/komaedit/fonts/}
  * @param treePresets       presets de árbol guardados del jugador (nombre → ajustes)
  * @param rockPresets       presets de roca guardados
+ * @param palettes          paletas guardadas del jugador (nombre → bloques, recortado), para compartirlas
  * @param symmetryMode      modo de simetría ({@code xz}, {@code radial 8 y}…)
  * @param symmetryCenter    centro escrito como en el chat, o vacío sin centro
  * @param symmetryElsewhere el centro está en otra dimensión
@@ -35,6 +36,7 @@ public record ToolStatePayload(
         List<String> fonts,
         Map<String, String> treePresets,
         Map<String, String> rockPresets,
+        Map<String, String> palettes,
         boolean symmetryActive,
         String symmetryMode,
         int symmetryArms,
@@ -57,6 +59,7 @@ public record ToolStatePayload(
         fonts = List.copyOf(fonts);
         treePresets = new LinkedHashMap<>(treePresets);
         rockPresets = new LinkedHashMap<>(rockPresets);
+        palettes = new LinkedHashMap<>(palettes);
         symmetryMode = symmetryMode == null ? "" : symmetryMode;
         symmetryCenter = symmetryCenter == null ? "" : symmetryCenter;
         history = history == null ? List.of() : List.copyOf(history.subList(0, Math.min(MAX_HISTORY, history.size())));
@@ -76,6 +79,7 @@ public record ToolStatePayload(
         return other instanceof ToolStatePayload that && granted.equals(that.granted)
                 && Arrays.equals(selection, that.selection) && fonts.equals(that.fonts)
                 && treePresets.equals(that.treePresets) && rockPresets.equals(that.rockPresets)
+                && palettes.equals(that.palettes)
                 && symmetryActive == that.symmetryActive && symmetryMode.equals(that.symmetryMode)
                 && symmetryArms == that.symmetryArms && symmetryCenter.equals(that.symmetryCenter)
                 && symmetryWorldEdit == that.symmetryWorldEdit && symmetryElsewhere == that.symmetryElsewhere
@@ -84,8 +88,9 @@ public record ToolStatePayload(
 
     @Override
     public int hashCode() {
-        return Objects.hash(granted, Arrays.hashCode(selection), fonts, treePresets, rockPresets, symmetryActive,
-                symmetryMode, symmetryArms, symmetryCenter, symmetryWorldEdit, symmetryElsewhere, history, historyUndone);
+        return Objects.hash(granted, Arrays.hashCode(selection), fonts, treePresets, rockPresets, palettes,
+                symmetryActive, symmetryMode, symmetryArms, symmetryCenter, symmetryWorldEdit, symmetryElsewhere,
+                history, historyUndone);
     }
 
     @Override
@@ -104,6 +109,7 @@ public record ToolStatePayload(
         strings(buffer, payload.fonts());
         presets(buffer, payload.treePresets());
         presets(buffer, payload.rockPresets());
+        presets(buffer, payload.palettes());
         buffer.writeBoolean(payload.symmetryActive());
         buffer.writeString(payload.symmetryMode(), 64);
         buffer.writeVarInt(payload.symmetryArms());
@@ -125,6 +131,7 @@ public record ToolStatePayload(
         List<String> fonts = strings(buffer);
         Map<String, String> trees = presets(buffer);
         Map<String, String> rocks = presets(buffer);
+        Map<String, String> palettes = presets(buffer);
         boolean active = buffer.readBoolean();
         String mode = buffer.readString(64);
         int arms = buffer.readVarInt();
@@ -136,8 +143,8 @@ public record ToolStatePayload(
         for (int index = 0; index < count; index++) {
             history.add(new EditHistory.Line(buffer.readString(64), buffer.readVarLong()));
         }
-        return new ToolStatePayload(granted, selection, fonts, trees, rocks, active, mode, arms, center, worldEdit,
-                elsewhere, history, buffer.readVarInt());
+        return new ToolStatePayload(granted, selection, fonts, trees, rocks, palettes, active, mode, arms, center,
+                worldEdit, elsewhere, history, buffer.readVarInt());
     }
 
     private static void strings(RegistryByteBuf buffer, List<String> values) {
@@ -163,7 +170,9 @@ public record ToolStatePayload(
         buffer.writeVarInt(entries.size());
         for (Map.Entry<String, String> entry : entries) {
             buffer.writeString(entry.getKey(), 64);
-            buffer.writeString(entry.getValue(), 1024);
+            // Solo se enseña: lo que pase del máximo del paquete (una paleta larga) se corta.
+            String value = entry.getValue();
+            buffer.writeString(value.length() <= 1024 ? value : value.substring(0, 1023) + "…", 1024);
         }
     }
 

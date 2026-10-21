@@ -37,15 +37,16 @@ public abstract class ToolCard {
 
     /**
      * Sobre qué trabaja con estos valores: con el interruptor en {@link ToolUse#BRUSH}, el pincel de la mano; si no,
-     * lo de la tarjeta (la selección, donde haces clic…).
+     * lo de la tarjeta (la selección, donde haces clic…) o lo de su modo ({@link #modeTarget}).
      */
     public final ToolTarget target(ToolValues values) {
         return use(values) == ToolUse.BRUSH ? ToolTarget.HAND : modeTarget(values);
     }
 
     /**
-     * Sobre qué trabaja sin el pincel: de serie, lo de la tarjeta. Una tarjeta con modos que trabajan distinto (la
-     * cascada con los puntos, el relleno donde haces clic) lo cambia por modo.
+     * Sobre qué trabaja sin el pincel. De serie, lo de la tarjeta; una tarjeta cuyos modos trabajan sobre cosas
+     * distintas (Medir y anotar: la regla se queda, la nota va donde haces clic y la vista es donde estás; el agua: la
+     * cascada con los puntos y el relleno donde haces clic) lo cambia.
      */
     protected ToolTarget modeTarget(ToolValues values) {
         return target;
@@ -135,6 +136,14 @@ public abstract class ToolCard {
     /** Nodos de permiso que necesita Construir con estos valores (todos). */
     public abstract List<String> permissions(ToolValues values);
 
+    /**
+     * Si con estos valores la herramienta es solo del cliente (la regla, guardar vistas): su orden es
+     * {@code kegui …}, que atiende el propio cliente aunque la mande el Studio, y no pasa por el servidor.
+     */
+    public boolean clientOnly(ToolValues values) {
+        return false;
+    }
+
     /** Si Construir admite la vista previa universal ({@code -v}). */
     public boolean previewable() {
         return true;
@@ -158,6 +167,14 @@ public abstract class ToolCard {
     /** Los botones que se ven con estos valores (estimar solo donde la orden sabe); de serie, todos. */
     public List<ToolAction> actions(ToolValues values) {
         return actions();
+    }
+
+    /**
+     * La orden que manda la tarjeta al elegirla en el Studio, o {@code null}: el editor de displays se abre solo, así
+     * un clic en un display lo elige sin buscar el botón.
+     */
+    public String selectCommand() {
+        return null;
     }
 
     /** Ajustes rápidos («Joven», «Viejo»…): cada uno cambia unos pocos valores sobre los de serie. */
