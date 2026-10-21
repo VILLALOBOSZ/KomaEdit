@@ -95,6 +95,20 @@ public final class FakeStudioHost implements StudioHost {
     public Ghost ghost;
     /** Avisos de que va a salir un fantasma: {@code false} el de Construir, {@code true} el de la vista en vivo. */
     public final List<Boolean> expectedGhosts = new ArrayList<>();
+    /**
+     * La red de la vista previa en vivo del servidor de prueba, o {@code null} si el servidor no la tiene (entonces
+     * va por el chat, como con un servidor anterior). Devuelve si la petición se mandó.
+     */
+    public java.util.function.Predicate<com.komainu.moxia.studio.live.LivePreviewRequestPayload> liveNetwork;
+    /** Lo que contesta el servidor de prueba a la vista previa en vivo, en orden. */
+    public final java.util.Deque<com.komainu.moxia.studio.live.LivePreviewResultPayload> liveResults =
+            new java.util.ArrayDeque<>();
+    /** Las peticiones de la vista previa en vivo que salieron por su red. */
+    public final List<com.komainu.moxia.studio.live.LivePreviewRequestPayload> liveSent = new ArrayList<>();
+    /** Quien escucha lo que sale del Studio (la red de prueba de las pruebas de punta a punta), o {@code null}. */
+    public Consumer<String> onSend;
+    public Consumer<ProceduralRecipe> onRecipeBuild;
+    public Consumer<Boolean> onExpectGhost;
     /** La herramienta de KomaEdit de la mano ({@code pincel:…}), o {@code null}. */
     public String heldTool;
     /** En creativo (en supervivencia la bienvenida solo enseña). */
@@ -238,6 +252,34 @@ public final class FakeStudioHost implements StudioHost {
     @Override
     public void send(String command) {
         sent.add(command);
+        if (onSend != null) {
+            onSend.accept(command);
+        }
+    }
+
+    @Override
+    public boolean livePreview(com.komainu.moxia.studio.live.LivePreviewRequestPayload request) {
+        if (liveNetwork == null) {
+            return StudioHost.super.livePreview(request);
+        }
+        liveSent.add(request);
+        if (!request.figure()) {
+            // Las pruebas de siempre miran la última orden, salga por donde salga.
+            sent.add(request.command());
+        } else {
+            recipeActions.add(com.komainu.moxia.recipe.RecipeActionPayload.BUILD);
+        }
+        return liveNetwork.test(request);
+    }
+
+    @Override
+    public boolean liveSupported() {
+        return liveNetwork != null;
+    }
+
+    @Override
+    public Optional<com.komainu.moxia.studio.live.LivePreviewResultPayload> takeLiveResult() {
+        return Optional.ofNullable(liveResults.pollFirst());
     }
 
     @Override
@@ -308,6 +350,9 @@ public final class FakeStudioHost implements StudioHost {
     @Override
     public void recipeAction(int action, ProceduralRecipe recipe, String instanceId) {
         recipeActions.add(action);
+        if (onRecipeBuild != null && action == com.komainu.moxia.recipe.RecipeActionPayload.BUILD) {
+            onRecipeBuild.accept(recipe);
+        }
     }
 
     @Override
@@ -363,6 +408,9 @@ public final class FakeStudioHost implements StudioHost {
     @Override
     public void expectGhost(boolean refresh) {
         expectedGhosts.add(refresh);
+        if (onExpectGhost != null) {
+            onExpectGhost.accept(refresh);
+        }
     }
 
     @Override

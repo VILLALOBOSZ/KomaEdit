@@ -41,13 +41,22 @@ public final class RecipeBuildService {
 
     public static void submit(ServerPlayerEntity player, ProceduralRecipe recipe)
             throws IncompleteRegionException, InputParseException {
-        submit(player, recipe, "", false);
+        submit(player, recipe, "", false, false);
+    }
+
+    /**
+     * Construir desde la vista previa en vivo del Studio; con {@code quiet} (al rehacerla) no se anuncia en el chat:
+     * el Studio ya lo enseña y saldría una línea por cada ajuste tocado.
+     */
+    public static void submit(ServerPlayerEntity player, ProceduralRecipe recipe, boolean quiet)
+            throws IncompleteRegionException, InputParseException {
+        submit(player, recipe, "", false, quiet);
     }
 
     public static void update(ServerPlayerEntity player, ProceduralRecipe recipe, String instanceId)
             throws InputParseException {
         try {
-            submit(player, recipe, instanceId, true);
+            submit(player, recipe, instanceId, true, false);
         } catch (IncompleteRegionException exception) {
             throw new IllegalStateException("La trayectoria guardada de la instancia está incompleta", exception);
         }
@@ -57,7 +66,8 @@ public final class RecipeBuildService {
             ServerPlayerEntity player,
             ProceduralRecipe recipe,
             String requestedInstanceId,
-            boolean update
+            boolean update,
+            boolean quiet
     ) throws IncompleteRegionException, InputParseException {
         validateMaterials(player, recipe);
         UUID playerId = player.getUuid();
@@ -72,9 +82,12 @@ public final class RecipeBuildService {
         PathSnapshot buildPath = SurfaceConformService.project(player, storedPath, recipe.extensions());
         KitbashSocketService.Template socketTemplate = KitbashSocketService.capture(player, recipe.extensions());
         var server = player.getServer();
-        player.sendMessage(message(
-                (update ? "Actualizando instancia " : "Creando instancia ") + recipe.name() + " fuera del hilo del servidor…"
-        ), false);
+        if (!quiet) {
+            player.sendMessage(message(
+                    (update ? "Actualizando instancia " : "Creando instancia ") + recipe.name()
+                            + " fuera del hilo del servidor…"
+            ), false);
+        }
 
         AsyncEngine.submit(
                 playerId,

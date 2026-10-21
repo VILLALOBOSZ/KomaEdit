@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+### La vista previa en vivo se rehace de verdad
+
+- **Lo que fallaba** al cambiar un ajuste con una vista previa a la vista:
+  - **El fantasma de los objetos «donde miras» (árbol, roca, texto, agua) saltaba a otra parte.** Cada vez que se rehacía, el servidor buscaba de nuevo el sitio: donde mirase el jugador en ese momento o, desde el #74, el último clic en el mundo, que se olvida al cerrar el Studio. Al girar la cámara para ver el árbol, o al cerrar y abrir el Studio, el nuevo salía en otro sitio (o en ninguno, si se miraba al cielo) y el de antes desaparecía: parecía que no se rehacía.
+  - **En las herramientas sobre la selección se apagaba sin decir nada** a partir de 64 000 bloques (una zona de 50×50×26), que es lo normal al pintar o retocar terreno.
+  - **La vista previa de bloques parpadeaba:** el servidor la quitaba del cliente al descartarla y no se veía nada hasta que llegaba la nueva.
+  - **Iba lenta:** por el chat, al menos 1 s entre dos envíos (el antispam de Minecraft) y nada mientras el servidor calculaba la anterior. El chat se llenaba con el aviso de cada vista previa y el «Creando instancia…» de cada figura.
+  - **Por qué no lo vio ninguna prueba:** las del Studio daban por hecho que el servidor rehacía en el mismo sitio, que el fantasma era «del Studio» y que la vista previa seguía a la vista. Esa parte vivía en `GhostClient`, `StudioAim` y `PlanPreviews`, fuera del alcance de las pruebas, y nadie recorría el camino entero.
+- **Cómo va ahora** (con un servidor de esta versión; con uno anterior, como antes por el chat):
+  - Cada petición de la vista previa en vivo va por un paquete propio (`live_preview_request`), no por el chat: no cuenta para el antispam.
+  - Sale a los 0,25 s de dejar de tocar, también mientras el servidor calcula la anterior. El servidor calcula una como mucho por jugador y, detrás, se queda solo con la última: las intermedias se descartan sin calcular y nunca chocan con «ya hay una operación leyendo tu selección».
+  - Lo que se coloca «donde miras» cae donde cayó el Construir de la sesión, mire donde mire el jugador.
+  - El servidor contesta cada petición. Si sale un fantasma, la respuesta llega antes que él y el cliente sabe sin adivinar que sustituye al del Studio (antes, una ventana de 20 s con un solo aviso). Si falla, el pie lo dice.
+  - La vista previa de bloques de antes sigue a la vista hasta que llega la nueva.
+  - Al rehacerla, el chat no repite avisos.
+- **Obras grandes:** el límite se elige en `/kegui ajustes` → **Vista previa en vivo hasta** (64 000, **250 000** de serie, 1 000 000 o 4 000 000 bloques) y vale para la selección y para el holograma de Figuras. Por encima, el pie lo dice en ámbar y Construir la rehace a mano.
+- **El ojo del pie:**
+  - Dice en qué está en dos palabras (en vivo, al construir, sin vista previa).
+  - Sale tachado sin vista previa y en ámbar en pausa.
+  - Ahora también sale en Figuras.
+  - Con un fantasma o una vista previa esperando, en vez de desaparecer queda un ojo pequeño que la enciende o la apaga.
+  - Se recuerda, con el límite, en `studio.json`.
+- **Código:** paquete `studio.live` (`LivePreviewRequestPayload`, `LivePreviewResultPayload`, `LiveQueue`, `LiveAnchors`, `LiveRequests`, `LiveService`), `PreviewHandover`, `StudioGhostLink` (la lógica de «es del Studio» sale de `GhostClient` y se prueba) y `LiveClient`. `StudioAim` fija el sitio de la sesión.
+- **Pruebas:**
+  - `LivePreviewEndToEndTest` recorre el camino entero: el Studio de verdad cambia un ajuste, una red de prueba lo lleva a un servidor de prueba que usa las piezas del de verdad, y lo que vuelve cambia lo que ve un cliente de prueba con las piezas del cliente. Hay una prueba por cada tipo (tarjeta con fantasma, figura, tarjeta sobre la selección), otra de servidor lento y otra de servidor anterior. Con las reglas de staging fallan las tres de los tipos y la del servidor lento; la del servidor anterior pasa en los dos.
+  - Pruebas unitarias de cada pieza y del ojo.
+  - Nada probado aún dentro de Minecraft.
+### Auditoría de red, permisos y seguridad del servidor
+
+Lo que un cliente modificado podía hacer con los paquetes del Studio y que ahora no:
+
+- **Borrar o reemplazar la selección sin permiso de construir.** El paquete del editor reemplazaba, borraba o pintaba toda la selección con solo `komaedit.select`; ahora pide `komaedit.build`. El cliente normal no manda esas acciones.
+- **Llenar la memoria del servidor con la pintura rápida.** Cada paquete con un centro lejano añadía hasta 128 pasadas a una cola sin tope. Ahora la cola tiene un máximo de 1 024, y un trazo se para en `maxBlocksPerOperation` (antes solo en el `//limit` de WorldEdit, sin límite de serie).
+- **Atascar el servidor pidiendo miniaturas de planos.** Cada petición se leía del disco y se le calculaba la huella en el hilo del servidor, aunque ya estuviera en camino. Ahora lo pedido no se repite y hay como mucho 1 024 lecturas pendientes por jugador.
+- **Cargar o generar chunks lejanos** con la selección mágica: el bloque pulsado tiene que estar cargado.
+- **Llenar el disco de recetas.** Guardar no tenía tope; ahora son como mucho 64 por jugador, las que enseña el Studio.
+- **Repetir sin fin peticiones caras.** Barras guardadas (cada una escribe el archivo, de hasta 512 KiB), compartir vistas (avisa a todos los jugadores), empezar un trazo del pincel de selección (copia la selección entera) y las acciones de recetas llevan un freno por jugador: `RequestBudget`, unas cuantas seguidas y unas pocas por segundo.
+- Pruebas nuevas: `EditorActionPermissionTest`, `MagicAreaTest`, `FastPaintLimitsTest`, `RequestBudgetTest`, `RecipeStoreLimitTest` y dos casos más en `ThumbnailChunksTest`.
 ### Auditoría de hilos, ciclo de vida y arranque
 
 - **Una caída con una reconstrucción a medias dejaba WorldEdit sin bloques.** Fabric inicia los mods por orden de id, así que el `SERVER_STARTED` de KomaEdit corre antes que el de WorldEdit, que es el que llena sus registros. La recuperación leía su archivo ahí: todas las constantes de `BlockTypes` quedaban a `null` para el resto del proceso (fallaban `//copy`, `//paste`, `//cut`, `//move` y las ediciones de KomaEdit que ponen aire), la obra no se terminaba y el archivo se quedaba, así que volvía a pasar en cada arranque. Ahora se lee en el primer tick.

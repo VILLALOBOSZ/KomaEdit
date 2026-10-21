@@ -3,6 +3,7 @@ package com.komainu.moxia.recipe;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathManager;
+import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.extension.input.InputParseException;
@@ -11,11 +12,19 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.UUID;
+
 public final class RecipeActionService {
+    /** Cada acción lee o escribe archivos del jugador o calcula una figura: con freno por jugador. */
+    private static final RequestBudget REQUESTS = new RequestBudget(10, 3.0);
+
     private RecipeActionService() {
     }
 
     public static void handle(ServerPlayerEntity player, RecipeActionPayload payload) {
+        if (!REQUESTS.allow(player.getUuid(), System.nanoTime())) {
+            return;
+        }
         try {
             if (!KomaPermissions.canAccess(player)) {
                 throw new IllegalArgumentException("No tienes permiso para usar KomaEdit");
@@ -79,6 +88,10 @@ public final class RecipeActionService {
         } catch (InputParseException | IllegalArgumentException | IllegalStateException exception) {
             player.sendMessage(message(exception.getMessage() == null ? "La receta no es válida" : exception.getMessage()), false);
         }
+    }
+
+    public static void forget(UUID player) {
+        REQUESTS.forget(player);
     }
 
     public static void sync(ServerPlayerEntity player) {

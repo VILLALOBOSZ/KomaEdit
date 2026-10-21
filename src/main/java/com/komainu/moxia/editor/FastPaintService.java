@@ -4,6 +4,7 @@ import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.performance.ServerWork;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -17,7 +18,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.ArrayDeque;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -35,7 +35,7 @@ public final class FastPaintService {
         Stroke existing = STROKES.get(player.getUuid());
         if (existing != null && existing.radius == radius && existing.patternInput.equals(patternInput)) {
             existing.ending = false;
-            existing.lastCenter = null;
+            existing.trail.restart();
             return;
         }
         if (existing != null) {
@@ -44,9 +44,23 @@ public final class FastPaintService {
         WorldEditService.PlayerContext context = WorldEditService.context(player);
         Pattern pattern = WorldEditService.parsePatternUnchecked(context, patternInput);
         EditSession editSession = context.session().createEditSession(context.actor());
+        editSession.setBlockChangeLimit(strokeLimit(editSession.getBlockChangeLimit(),
+                OperationPolicy.limit(player)));
         STROKES.put(player.getUuid(), new Stroke(
                 player.getUuid(), radius, patternInput, pattern, editSession, context
         ));
+    }
+
+    /**
+     * Bloques que puede cambiar un trazo: el {@code //limit} de WorldEdit ({@code -1}, sin límite) y el del servidor
+     * ({@link OperationPolicy#limit}), el menor.
+     */
+    static int strokeLimit(int worldEditLimit, long serverLimit) {
+        if (serverLimit == Long.MAX_VALUE) {
+            return worldEditLimit;
+        }
+        int server = (int) Math.min(serverLimit, Integer.MAX_VALUE);
+        return worldEditLimit < 0 ? server : Math.min(worldEditLimit, server);
     }
 
     public static void dab(ServerPlayerEntity player, BlockPos center, int radius, String patternInput) {
@@ -56,34 +70,14 @@ public final class FastPaintService {
             begin(player, radius, patternInput);
             stroke = STROKES.get(player.getUuid());
         }
-        BlockPos immutableCenter = center.toImmutable();
-        if (stroke.lastCenter == null) {
-            enqueue(stroke, immutableCenter);
-        } else {
-            double distance = Math.sqrt(stroke.lastCenter.getSquaredDistance(immutableCenter));
-            int spacing = Math.max(1, stroke.radius / 2);
-            int steps = Math.clamp((int) Math.ceil(distance / spacing), 1, 128);
-            for (int step = 1; step <= steps; step++) {
-                double progress = step / (double) steps;
-                BlockPos interpolated = new BlockPos(
-                        (int) Math.round(stroke.lastCenter.getX()
-                                + (immutableCenter.getX() - stroke.lastCenter.getX()) * progress),
-                        (int) Math.round(stroke.lastCenter.getY()
-                                + (immutableCenter.getY() - stroke.lastCenter.getY()) * progress),
-                        (int) Math.round(stroke.lastCenter.getZ()
-                                + (immutableCenter.getZ() - stroke.lastCenter.getZ()) * progress)
-                );
-                enqueue(stroke, interpolated);
-            }
-        }
-        stroke.lastCenter = immutableCenter;
+        stroke.trail.add(center);
     }
 
     public static void end(ServerPlayerEntity player) {
         Stroke stroke = STROKES.get(player.getUuid());
         if (stroke != null) {
             stroke.ending = true;
-            if (stroke.current == null && stroke.pending.isEmpty()) {
+            if (stroke.current == null && stroke.trail.isEmpty()) {
                 STROKES.remove(player.getUuid());
                 finish(stroke, player, false);
             }
@@ -106,7 +100,7 @@ public final class FastPaintService {
                 continue;
             }
             process(stroke, player, deadline);
-            if (stroke.ending && stroke.current == null && stroke.pending.isEmpty()) {
+            if (stroke.ending && stroke.current == null && stroke.trail.isEmpty()) {
                 STROKES.remove(stroke.playerId);
                 finish(stroke, player, false);
             }
@@ -127,22 +121,17 @@ public final class FastPaintService {
         STROKES.clear();
     }
 
-    private static void enqueue(Stroke stroke, BlockPos center) {
-        if (stroke.queuedCenters.add(center.asLong())) {
-            stroke.pending.addLast(new Dab(center, stroke.radius));
-        }
-    }
-
     private static void process(Stroke stroke, ServerPlayerEntity player, long deadline) {
         ServerWorld world = player.getServerWorld();
         int candidates = 0;
         try {
             while (candidates < MAX_CANDIDATES_PER_TICK && System.nanoTime() < deadline) {
                 if (stroke.current == null) {
-                    stroke.current = stroke.pending.pollFirst();
-                    if (stroke.current == null) {
+                    BlockPos next = stroke.trail.poll();
+                    if (next == null) {
                         return;
                     }
+                    stroke.current = new Dab(next, stroke.radius);
                 }
                 Dab dab = stroke.current;
                 while (dab.cursor < dab.total && candidates < MAX_CANDIDATES_PER_TICK) {
@@ -210,11 +199,9 @@ public final class FastPaintService {
         private final Pattern pattern;
         private final EditSession editSession;
         private final WorldEditService.PlayerContext context;
-        private final ArrayDeque<Dab> pending = new ArrayDeque<>();
-        private final LongOpenHashSet queuedCenters = new LongOpenHashSet();
+        private final DabTrail trail;
         private final LongOpenHashSet painted = new LongOpenHashSet();
         private Dab current;
-        private BlockPos lastCenter;
         private boolean ending;
 
         private Stroke(
@@ -227,6 +214,7 @@ public final class FastPaintService {
         ) {
             this.playerId = playerId;
             this.radius = radius;
+            this.trail = new DabTrail(radius);
             this.patternInput = patternInput;
             this.pattern = pattern;
             this.editSession = editSession;

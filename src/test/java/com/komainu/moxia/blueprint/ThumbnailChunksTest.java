@@ -121,6 +121,42 @@ class ThumbnailChunksTest {
     }
 
     @Test
+    void aThumbnailBeingReadOrSentIsNotReadAgain() {
+        // Un cliente modificado puede pedir la misma miniatura sin parar: cada lectura se hace en disco y su huella
+        // se calcula en el hilo del servidor.
+        ThumbnailChunks.Queue queue = new ThumbnailChunks.Queue();
+        byte[] png = data(20_000, 6);
+        String hash = BlueprintLibrary.sha256(png);
+        assertTrue(queue.request(hash));
+        for (int repeat = 0; repeat < 1_000; repeat++) {
+            assertFalse(queue.request(hash), "ya se está leyendo");
+        }
+        assertFalse(queue.isEmpty(), "mientras se lee, la cola no se da por terminada");
+        assertTrue(queue.offer(ThumbnailChunks.split(png)));
+        assertFalse(queue.request(hash), "en cola, tampoco");
+        queue.poll(Integer.MAX_VALUE);
+        assertTrue(queue.isEmpty());
+        assertTrue(queue.request(hash), "enviada, se puede volver a pedir");
+    }
+
+    @Test
+    void onlyAFewThumbnailsAreReadAtOnceAndAFinishedReadIsReleased() {
+        ThumbnailChunks.Queue queue = new ThumbnailChunks.Queue();
+        List<String> hashes = new ArrayList<>();
+        for (int index = 0; index < ThumbnailChunks.Queue.MAX_PENDING; index++) {
+            String hash = BlueprintLibrary.sha256(data(16, index));
+            hashes.add(hash);
+            assertTrue(queue.request(hash));
+        }
+        String extra = BlueprintLibrary.sha256(data(16, -1));
+        assertFalse(queue.request(extra), "como mucho " + ThumbnailChunks.Queue.MAX_PENDING + " pendientes");
+        queue.finished(hashes.getFirst());
+        assertTrue(queue.request(extra), "la que terminó sin llegar deja sitio");
+        assertFalse(queue.request(hashes.get(1)), "las demás siguen pendientes");
+        assertFalse(queue.isEmpty());
+    }
+
+    @Test
     void payloadsSurviveTheNetworkCodec() {
         byte[] png = BlueprintThumbnail.png(BlueprintFixtures.well());
         ThumbnailChunks.Chunk chunk = ThumbnailChunks.split(png).getFirst();

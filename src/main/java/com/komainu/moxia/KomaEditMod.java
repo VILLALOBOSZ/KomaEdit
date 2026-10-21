@@ -69,6 +69,7 @@ public final class KomaEditMod implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(EditorActionPayload.ID, EditorActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RecipeActionPayload.ID, RecipeActionPayload.CODEC);
         com.komainu.moxia.studio.net.StudioToolsNetwork.register();
+        com.komainu.moxia.studio.live.LiveService.register();
         com.komainu.moxia.feedback.WorldFeedback.register();
         com.komainu.moxia.gizmo.GhostNetwork.register();
         com.komainu.moxia.display.DisplayNetwork.register();
@@ -175,6 +176,7 @@ public final class KomaEditMod implements ModInitializer {
             SnapshotCaptureService.cancel(handler.player.getUuid());
             AsyncEngine.cancel(handler.player.getUuid());
             FastPaintService.remove(handler.player.getUuid());
+            RecipeActionService.forget(handler.player.getUuid());
             IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());
             com.komainu.moxia.edit.PendingBuilds.remove(handler.player.getUuid());
@@ -189,6 +191,7 @@ public final class KomaEditMod implements ModInitializer {
             PlanPreviews.forget(handler.player.getUuid());
             ProgressBars.remove(handler.player);
             com.komainu.moxia.studio.net.StudioToolsNetwork.forget(handler.player.getUuid());
+            com.komainu.moxia.studio.live.LiveService.forget(handler.player.getUuid());
             com.komainu.moxia.command.ColorCommands.forget(handler.player.getUuid());
             com.komainu.moxia.fluid.LeakMarkers.forget(handler.player.getUuid());
         });
@@ -255,6 +258,7 @@ public final class KomaEditMod implements ModInitializer {
             ProgressBars.clearAll();
             PreviewDisplays.clearOrphans();
             com.komainu.moxia.studio.net.StudioToolsNetwork.clearAll();
+            com.komainu.moxia.studio.live.LiveService.clearAll();
             com.komainu.moxia.command.ColorCommands.clearAll();
             com.komainu.moxia.fluid.LeakMarkers.clearAll();
         });
