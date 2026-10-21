@@ -4,7 +4,7 @@
 
 ### Imagen de referencia, como en Axiom
 
-- **Calcar una foto, un plano o un pixel art.** `/keref` (Ctrl+Mayús+I, o la tarjeta **Referencias** de Utilidades en el Studio) abre las imágenes PNG y JPG de `config/komaedit/references/` con su miniatura. Un clic abre una; también se pueden arrastrar archivos a la ventana del juego, que se copian a la carpeta. Es solo del cliente: no cambia el mundo, no pasa por el servidor y funciona en cualquiera.
+- **Calcar una foto, un plano o un pixel art.** `/keref` (Ctrl+Mayús+I, o la tarjeta **Calcar imagen** de Utilidades en el Studio) abre las imágenes PNG y JPG de `config/komaedit/references/` con su miniatura. Un clic abre una; también se pueden arrastrar archivos a la ventana del juego, que se copian a la carpeta. Es solo del cliente: no cambia el mundo, no pasa por el servidor y funciona en cualquiera.
 - **En pantalla:** una ventana flotante que no se mueve con la cámara.
   - Con una pantalla abierta lleva barra: se arrastra, se agranda por la esquina o con la rueda, cambia de opacidad con Mayús+rueda y se oculta.
   - Se puede dejar **«a través»**: el ratón la ignora y se recupera en **Colocar ventanas**.
@@ -20,7 +20,20 @@
   - Paquete `reference`, lógica pura con 43 pruebas: giro como cuaternión, plano y píxeles, rejilla, ventana, arrastre del gizmo con sus pasos, guardado y carga, la carpeta y que los textos caben con la fuente del juego.
   - Cliente en `client.reference`, y `client.world.ReferenceWorldRenderer`, que dibuja con el `GizmoRenderer` del #62.
   - `KeyboardMixin`, `MouseMixin` y `MinecraftClientMixin` pasan también por las referencias, después del fantasma.
+- **Studio:** una tarjeta sin ajustes enseña su descripción y sus botones a la vista (no plegados en Más ajustes), y una tarjeta del cliente (`ToolCard.clientSide()`) dice en el pie «Solo la ves tú».
 - **Maquetas** de los dos modos y de la tarjeta, en `docs/renders/referencias/`. Nada probado aún dentro de Minecraft.
+
+### Menos herramientas, mejor nombradas y de las dos maneras
+
+- **De diecinueve tarjetas a catorce, sin perder nada.** «Pintar terreno» y «Pintar superficie», que se llamaban casi igual, son ahora **Pintar**, con cinco modos (pendiente, altura, ruido, huella y **Natural**, que es la superficie de antes). Nieve, Drenar, Inundar, Gravedad y Bioma son modos de **Retocar**, que trae también los cuatro retoques de supervivencia que solo tenían orden (desinfestar, fijar las hojas, anegar y encerar).
+- **Pincel o selección, con los mismos ajustes.** Pintar, Estampar relieve, Erosionar y Retocar tienen arriba un interruptor **Pincel / Selección** (Plantar árbol y Poner roca, **Con un clic / Pincel**: el «Al pincel» que estaba plegado en Más ajustes). Lo que solo sirve de una manera (el radio, el espaciado) solo sale en esa, y el botón dice lo que pasa («Al pincel», «Pintar la selección», «Nevar», «Drenar»…). En compacto va en la cabecera, en dos iconos, para no gastar una fila.
+- **Órdenes nuevas para lo que no se podía:** `/komaedit pintar` pinta la selección con los ajustes del pincel de pintura; `/komaedit relieve` estampa un sello que cubre la selección; `/komaedit pincel zona <radio> <orden>` repite cualquier orden de retocar, pintar o erosionar la selección alrededor de cada clic, y `/komaedit pincel retocar` es el pincel de Retocar.
+- **Nombres que dicen lo que hacen:** Plantar árbol, Poner roca, Poner tejado, Unir curvas (antes «Loft»), Escribir texto, Estampar relieve, Pintar, Hacer rampa, Excavar río, Erosionar, Retocar, Contar materiales, Simetría y Construir a mano (antes «Capacidades»), cada una con su icono (nuevo el de Retocar). La capacidad «Retocar» de Construir a mano pasa a **Cambiar estado**, para no llamarse como la tarjeta. Grupos: Naturaleza, Edificios, Terreno, Utilidades y Modos.
+- **El modo primero:** en Pintar y Retocar, lo que hace la herramienta sale arriba, y debajo sus presets y sus ajustes (en Retocar, solo los del modo elegido). En Pintar, la forma del pincel se llama **Huella**.
+- **Lo de antes sigue funcionando:** `snow`, `drain`, `waterlog`, `gravity`, `biome`, `tweak`, `survival` y `terreno pintar` hacen lo mismo y la primera vez en cada sesión dicen cómo se llaman ahora, con un botón que escribe la nueva. Lo guardado en `studio.json` (ajustes de cada tarjeta, favoritas, recientes, la última herramienta) pasa solo a las tarjetas nuevas (formato 4); recetas, instancias y presets guardados no cambian.
+- **Para quien añade tarjetas:** cada una es una línea en `ToolCatalog.ENTRIES` con su categoría y su icono, y las pruebas la recorren sin tocarlas (ver `docs/ARCHITECTURE.md`).
+- Clics de las tareas típicas, antes → ahora: plantar un abeto 4 → 4; tejado 4 → 4; río 7 → 7; figura variada 8 → 8; estampar un plano 3 → 3; pintar una ladera con el pincel 3 → 3; nevar la selección 3 → 3; drenar 3 → 4 (el modo; la siguiente vez, 1); repintar la superficie natural 3 → 5; el pincel de árboles 4 y desplazar → 4; el de biomas 4 y desplazar → 5; y lo que antes no se podía desde el Studio: pintar la selección por pendiente (4), estampar sobre la selección (4), drenar con el pincel (5) y erosionar con el pincel (4).
+- Pruebas: `ToolConsolidationTest` (cada modo manda lo de la tarjeta de antes, los mismos ajustes de las dos maneras, lo guardado de antes carga), `RenamedCommandsTest` (las órdenes de antes y sus avisos), `PaintSelectionTest` (un toque cubre la selección entera y nada fuera), `TaskClicksTest` con las tareas nuevas, `CompactModeTest` con los modos de Retocar, y el catálogo con un icono por tarjeta. Maquetas del antes y el después en `docs/renders/studio/antes/` y `docs/renders/studio/`. Nada probado aún dentro de Minecraft.
 
 ## 1.9.1 (estable, 2026-10-21)
 

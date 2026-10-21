@@ -47,7 +47,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `client.gui` | Pantalla no bloqueante del Studio (`ProceduralStudioScreen`: el mundo, la cámara, los clics sobre la trayectoria y el teclado; el panel es `studio.ui`) |
 | `studio.ui` | El Procedural Studio entero sin Minecraft: `StudioView` (estado, ratón y teclado de barra, etapas, contenido, pie, paleta `Ctrl+K`, historial y biblioteca de bloques), las etapas (`FigureStages`, `ColorStage`, `BlueprintStage`), los controles de `StudioUi` (con `NumberView`/`NumberEdit` para los números) y las miniaturas que dibujan los generadores (`ChoiceThumbnails`). Dibuja sobre un `StudioCanvas`: en el juego, `client.gui.studio.DrawContextCanvas`; en las pruebas, una imagen con la fuente y los iconos del juego, de donde salen las maquetas. Lo que pide al juego pasa por `StudioHost` (`ClientStudioHost` en el cliente) |
 | `studio.world` | El ratón en el mundo con el Studio abierto, en Java puro: la caja de selección con sus caras (`BoxSelect`), los puntos que se arrastran (`PathDrag`) y el trazo de pintar manteniendo (`BrushStroke`) |
-| `studio.tools` | Etapa Herramientas del Studio: cada tarjeta (`ToolCard`) declara sus ajustes (con su unidad, `ValueUnit`), arma la orden de chat que manda Construir, sus nodos de permiso y su validación; `ToolsPanel` dibuja la etapa con `StudioUi` |
+| `studio.tools` | Etapa Herramientas del Studio: cada tarjeta (`ToolCard`) declara sus ajustes (con su unidad, `ValueUnit`), arma la orden de chat que manda Construir, sus nodos de permiso y su validación; `ToolCatalog` las registra por categoría con su icono; `ToolsPanel` dibuja la etapa con `StudioUi` |
 | `studio.net` | Red de la etapa: estado de herramientas (permisos, selección, fuentes, presets, simetría y el historial de //undo con el nombre de cada operación, de `worldedit.EditHistory`), progreso para el pie del Studio y lista de materiales, solo hacia clientes con KomaEdit; y «donde haces clic» (`StudioAim`), el bloque pulsado con el Studio abierto, que el servidor solo acepta en la dimensión del jugador y a su alcance. `NetworkRegistrationTest` comprueba en las fuentes que cada paquete está registrado una vez y tiene receptor |
 
 ## Flujo de una brocha
@@ -275,7 +275,34 @@ int alcance = donde.reach();                                 // bloques desde el
 
 La etapa Herramientas no ejecuta nada en el cliente: cada `ToolCard` convierte sus valores (`ToolValues`) en la misma orden que escribiría el jugador y el Studio la manda con `sendChatCommand`. El servidor la analiza con su analizador de siempre y comprueba los permisos. Para enseñar las tarjetas apagadas, el cliente pide cada segundo `tool_state_request` y el servidor contesta `tool_state` con los nodos de `ToolCatalog.permissionNodes()` que el jugador tiene (`KomaPermissions.can`), su selección, fuentes propias, presets guardados y simetría. `ProgressBars` manda además `job_status` cada 5 ticks a quien tiene el mod, y `AnalyzeService` manda `material_list` al terminar. Las pruebas leen cada orden con el analizador del servidor (`TreeSettings`, `RoofSettings`, `TextRequest`…), así que si cambia una orden y la tarjeta no, falla una prueba.
 
-Para añadir una herramienta: una clase que extienda `ToolCard` (ajustes, `command`, `permissions` y, si hace falta, `validate`, `actions` y `presets`), una línea en `ToolCatalog.ALL` y sus textos en los idiomas (`ToolTranslationsTest` dice cuáles faltan).
+### Catálogo y categorías
+
+Las tarjetas se registran en `ToolCatalog.ENTRIES`, una línea cada una, con su categoría y su icono:
+
+```java
+entry(ToolCategory.UTILITIES, new TouchUpCard(), StudioIcons.Icon.TOUCH_UP),
+```
+
+- **Categoría** (`ToolCategory`): el grupo de la cuadrícula, en este orden: `NATURE` (Naturaleza: lo que crece o se pone en el paisaje), `BUILDINGS` (Edificios: lo que va sobre una obra o junto a ella, y el texto), `TERRAIN` (Terreno: dar forma al terreno y pintarlo), `UTILITIES` (Utilidades: retocar, medir y ayudas de obra) y `MODES` (Modos: lo que se enciende y se queda). Dentro de cada una salen en el orden en que se registran. Una categoría nueva es un valor del enum y su texto `gui.komaedit.tools.category.<id>`; antes de crearla, mejor encajar en una de estas (lo de medir y ver, como una regla, vistas o un lazo, va en Utilidades; lo que se coloca, en Edificios).
+- **Icono:** uno propio por tarjeta (`ToolCardsTest` no deja repetir), pintado como máscara de 12×12 en `StudioIcons`. `ToolsPanel.icon`, la paleta de órdenes y las recientes lo sacan de la entrada.
+- **Nombre:** un verbo que diga lo que pasa («Plantar árbol», «Contar materiales»), sin nombres internos y sin parecerse al de otra tarjeta. `GalleryNamesTest` comprueba que cabe en la cuadrícula en dos líneas.
+- **Textos:** `gui.komaedit.tools.<id>` (nombre), `….description`, `….build` (botón), `….help.<ajuste>` y, en los números, `….ends.<ajuste>` (`bajo|alto`). `ToolTranslationsTest` y `ControlHelpTest` dicen cuáles faltan y que ninguna tarjeta enseñe más de cuatro controles antes de «Más ajustes».
+- **Pruebas:** las de la etapa (`ToolCardsTest`, `ToolTranslationsTest`, `ControlHelpTest`, `GalleryNamesTest`, `StudioThemeContrastTest`…) recorren `ToolCatalog.ALL`: una tarjeta nueva se comprueba con las demás sin tocarlas. Lo propio de la tarjeta (que su orden la lee el servidor con los mismos ajustes) va en su prueba.
+
+Para añadir una herramienta: una clase que extienda `ToolCard` (ajustes, `command`, `permissions` y, si hace falta, `validate`, `actions` y `presets`), su línea en `ToolCatalog.ENTRIES`, su icono en `StudioIcons` y sus textos en los idiomas.
+
+### Pincel o selección
+
+Una herramienta que vale de dos maneras lleva el ajuste `use` (`ToolCard.use(primera, segunda)`, estilo `SWITCH`), que `ToolsPanel` dibuja arriba de la tarjeta como un interruptor (en compacto, dos iconos en la cabecera). Con él:
+
+- `target(values)` es `HAND` con el pincel y el de la tarjeta si no; `buildKey(values)` es «Al pincel» con el pincel; `previewable(values)` no admite la vista previa universal con el pincel (tiene la suya). `ToolsPanel`, `StudioView` y el pie usan siempre estas, nunca un valor fijo.
+- `command` arma una orden u otra con los mismos ajustes. Lo que solo sirve de una manera se declara con `only(ToolUse.BRUSH, …)` (el radio, el espaciado) y se esconde en la otra.
+- El servidor tiene las dos órdenes: los pinceles de pintar y de relieve tienen su versión de selección (`/komaedit pintar`, `/komaedit relieve`: la misma pasada del pincel estirada a la selección, por `SculptManager.runAsCommand`, que la aplica con la petición de la orden para que `-v` y `repeat` funcionen), y cualquier orden de la selección tiene su pincel con `/komaedit pincel zona <radio> <orden>` (`ZoneCommand` y `EzBrush.Zone`: en cada clic ejecuta la orden con un cilindro alrededor del bloque como selección, `worldedit.SelectionOverride`, dentro de `EditRequest.TOOL`). Una herramienta nueva de selección tiene así su pincel sin código nuevo en el servidor: basta con añadir su raíz a `ZoneCommand.ROOTS` si es de las que retocan lo que hay.
+- `modeParam()` dice qué ajuste es el modo (Retocar, Pintar): sale el primero; `presets(values)` y `actions(values)` dejan ver solo los del modo y la manera elegidos; `labelKey(param)` cambia la etiqueta de un ajuste en una tarjeta.
+
+### Herramientas que se unen
+
+Cuando dos tarjetas pasan a ser una (como «Pintar terreno» y «Pintar superficie» en **Pintar**, o nieve, drenar, inundar, gravedad y bioma en **Retocar**), `ToolMigration` lleva el id de antes al nuevo (`ToolCatalog.byId("snow")` da Retocar) y `StudioPreferences` pasa al formato 4 lo guardado: los ajustes de las de antes a la nueva (con los ajustes que cambian de nombre), favoritas, recientes, la última herramienta, secciones abiertas y desplazamiento. Las órdenes de antes se quedan registradas y avisan una vez por jugador con `command.Renamed`. `ToolConsolidationTest` y `RenamedCommandsTest` lo comprueban.
 
 ## Extensiones previstas
 

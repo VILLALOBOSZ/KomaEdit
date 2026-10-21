@@ -49,6 +49,14 @@ public final class HeightmapBrush {
     }
 
     public static Config parse(BrushOptions options) {
+        return parse(options, 0);
+    }
+
+    /**
+     * @param fixedRadius sobre la selección ({@code /komaedit relieve}), el radio que la cubre; entonces el único
+     *                    número es la altura. 0: el pincel, con el radio escrito
+     */
+    public static Config parse(BrushOptions options, int fixedRadius) {
         String name = options.required(0, "el sello (montana, crater, duna… o el nombre de un PNG)");
         HeightStamp stamp;
         try {
@@ -60,11 +68,11 @@ public final class HeightmapBrush {
         if (options.has('c')) {
             stamp = stamp.withNeutral(options.flagDecimal('c', stamp.neutral(), 0.0, 1.0, "El gris neutro"));
         }
-        int radius = DEFAULT_RADIUS;
+        int radius = fixedRadius > 0 ? fixedRadius : DEFAULT_RADIUS;
         Double amplitude = null;
         StampBrush.Mode mode = StampBrush.Mode.RAISE;
         String paletteText = null;
-        int numbers = 0;
+        int numbers = fixedRadius > 0 ? 1 : 0;
         for (int index = 1; index < options.count(); index++) {
             String token = options.positional(index);
             if (BrushOptions.isNumber(token)) {
@@ -73,8 +81,9 @@ public final class HeightmapBrush {
                 } else if (numbers == 1) {
                     amplitude = options.decimal(index, 0.0, 0.0, MAX_HEIGHT, "La altura");
                 } else {
-                    throw new IllegalArgumentException("Sobra el número " + token
-                            + " (pincel heightmap <sello> [radio] [altura] [modo] [paleta])");
+                    throw new IllegalArgumentException("Sobra el número " + token + (fixedRadius > 0
+                            ? " (relieve <sello> [altura] [modo] [paleta])"
+                            : " (pincel heightmap <sello> [radio] [altura] [modo] [paleta])"));
                 }
                 numbers++;
             } else if (isMode(token)) {

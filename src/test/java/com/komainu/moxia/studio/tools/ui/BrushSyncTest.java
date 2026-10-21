@@ -9,6 +9,8 @@ import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
 import com.komainu.moxia.studio.tools.ToolContext;
 import com.komainu.moxia.studio.tools.ToolParam;
+import com.komainu.moxia.studio.tools.ToolUse;
+import com.komainu.moxia.studio.tools.TouchUpCard;
 import com.komainu.moxia.studio.tools.ToolValues;
 import com.komainu.moxia.studio.ui.FakeStudioHost;
 import com.komainu.moxia.studio.ui.StudioDriver;
@@ -102,21 +104,19 @@ class BrushSyncTest {
 
     @Test
     void everyOptionOfEveryBrushReachesTheBrushInTheHand() {
-        for (String id : List.of("tree", "rock", "biome", "stamp")) {
-            ToolCard card = ToolCatalog.byId(id);
+        for (String kind : List.of("tree", "rock", "biome", "stamp")) {
+            ToolCard card = ToolCatalog.byId(kind.equals("biome") ? "touchup" : kind);
             StudioDriver studio = studio();
             ToolsPanel panel = studio.view.tools();
             panel.select(card, studio.host);
+            // Con el interruptor en el pincel; el bioma es un modo de Retocar.
+            ToolValues start0 = panel.values(card).with(ToolUse.PARAM, ToolUse.BRUSH.id());
+            panel.setValues(card, kind.equals("biome") ? start0.with(TouchUpCard.MODE, TouchUpCard.BIOME) : start0);
             studio.render();
-            if (card.id().equals("stamp")) {
-                studio.click("Al pincel");
-            } else {
-                studio.click("MÁS AJUSTES");
-                studio.click("Al pincel");
-            }
+            studio.click("Al pincel");
             String created = studio.host.last();
             assertTrue(created.startsWith("komaedit pincel "), created);
-            String action = card.id().equals("stamp") ? "" : "brush";
+            String action = "";
             studio.host.heldTool = "pincel:k3";
             studio.advance(10);
             int sent = studio.host.sent.size();
@@ -125,7 +125,7 @@ class BrushSyncTest {
             for (ToolParam param : card.params()) {
                 ToolValues before = panel.values(card);
                 ToolValues next = changed(card, param, before);
-                if (next == null) {
+                if (next == null || !param.visible(before)) {
                     continue;
                 }
                 panel.setValues(card, next);
@@ -140,7 +140,7 @@ class BrushSyncTest {
                 sent++;
                 assertEquals(sent, studio.host.sent.size(), card.id() + "." + param.id() + " llega al pincel");
                 assertEquals(BrushSync.update(expected), studio.host.last(), card.id() + "." + param.id());
-                assertBrushUses(card, param, next, expected);
+                assertBrushUses(kind, card, param, next, expected);
                 previous = expected;
             }
             assertTrue(sent - start >= 3, card.id() + ": " + (sent - start) + " cambios llegaron al pincel");
@@ -189,6 +189,10 @@ class BrushSyncTest {
 
     /** Otro valor válido para el ajuste, o {@code null} si no hay ninguno que probar. */
     private static ToolValues changed(ToolCard card, ToolParam param, ToolValues values) {
+        if (param.id().equals(ToolUse.PARAM) || param.id().equals(TouchUpCard.MODE)) {
+            // Otra manera de usarla u otro retoque ya no es el mismo pincel: se prueba aparte.
+            return null;
+        }
         return switch (param) {
             case ToolParam.Number number -> {
                 Integer current = values.number(number.id());
@@ -218,9 +222,10 @@ class BrushSyncTest {
     }
 
     /** Lo que entiende el servidor de la orden: el pincel lleva el valor nuevo. */
-    private static void assertBrushUses(ToolCard card, ToolParam param, ToolValues values, String command) {
-        String label = card.id() + "." + param.id();
-        switch (card.id()) {
+    private static void assertBrushUses(String kind, ToolCard card, ToolParam param, ToolValues values,
+                                        String command) {
+        String label = kind + "." + param.id();
+        switch (kind) {
             case "tree" -> {
                 String settings = arguments(command, "komaedit pincel tree ");
                 TreeSettings.parse(settings);
@@ -270,7 +275,8 @@ class BrushSyncTest {
     /** Lo que se ve en la tarjeta es lo que lleva el pincel (lo oculto, como las raíces sin raíces, no viaja). */
     private static void assertSameVisible(ToolCard card, ToolValues expected, ToolValues parsed, String label) {
         for (ToolParam param : card.params()) {
-            if (param.visible(expected)) {
+            // Cómo se usa no viaja en los ajustes del pincel: es el pincel mismo.
+            if (param.visible(expected) && !param.id().equals(ToolUse.PARAM)) {
                 assertEquals(expected.changed().get(param.id()), parsed.changed().get(param.id()),
                         label + " → " + param.id());
             }

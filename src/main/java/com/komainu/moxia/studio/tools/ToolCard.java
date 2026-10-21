@@ -18,15 +18,13 @@ import java.util.Set;
  */
 public abstract class ToolCard {
     private final String id;
-    private final ToolFamily family;
     private final ToolTarget target;
     private final List<String> keywords;
     private final List<ToolParam> params;
     private final ToolValues defaults;
 
-    protected ToolCard(String id, ToolFamily family, ToolTarget target, List<String> keywords, List<ToolParam> params) {
+    protected ToolCard(String id, ToolTarget target, List<String> keywords, List<ToolParam> params) {
         this.id = id;
-        this.family = family;
         this.target = target;
         this.keywords = List.copyOf(keywords);
         this.params = List.copyOf(params);
@@ -37,12 +35,27 @@ public abstract class ToolCard {
         return id;
     }
 
-    public final ToolFamily family() {
-        return family;
+    /**
+     * Sobre qué trabaja con estos valores: con el interruptor en {@link ToolUse#BRUSH}, el pincel de la mano; si no,
+     * lo de la tarjeta (la selección, donde haces clic…).
+     */
+    public final ToolTarget target(ToolValues values) {
+        return use(values) == ToolUse.BRUSH ? ToolTarget.HAND : target;
     }
 
-    public final ToolTarget target() {
-        return target;
+    /** Cómo se usa con estos valores (el interruptor de arriba), o {@code null} si solo hay una manera. */
+    public final ToolUse use(ToolValues values) {
+        return values.has(ToolUse.PARAM) ? ToolUse.byId(values.choice(ToolUse.PARAM)) : null;
+    }
+
+    /** Las maneras de usarla que ofrece su interruptor; vacío si solo hay una. */
+    public final List<ToolUse> uses() {
+        for (ToolParam param : params) {
+            if (param instanceof ToolParam.Choice choice && choice.id().equals(ToolUse.PARAM)) {
+                return choice.options().stream().map(ToolUse::byId).toList();
+            }
+        }
+        return List.of();
     }
 
     /** Palabras que también la encuentran en el buscador: la orden, sus alias y sinónimos. */
@@ -69,6 +82,30 @@ public abstract class ToolCard {
     /** Texto del botón Construir de esta herramienta («Plantar», «Tallar», «Contar»…). */
     public final String buildKey() {
         return nameKey() + ".build";
+    }
+
+    /** El botón Construir con estos valores: con el pincel, «Al pincel» (lo deja en la mano); si no, el suyo. */
+    public String buildKey(ToolValues values) {
+        return use(values) == ToolUse.BRUSH ? BRUSH_BUILD_KEY : buildKey();
+    }
+
+    /** Texto del botón Construir de cualquier tarjeta con el interruptor en el pincel. */
+    public static final String BRUSH_BUILD_KEY = "gui.komaedit.tools.build.brush";
+
+    /**
+     * La etiqueta de un ajuste en esta tarjeta: de serie la compartida ({@code gui.komaedit.tools.param.<id>}); una
+     * tarjeta la cambia si en ella el ajuste es otra cosa (la huella de Pintar se guarda como {@code stamp}).
+     */
+    public String labelKey(ToolParam param) {
+        return param.labelKey();
+    }
+
+    /**
+     * El ajuste que dice qué hace la herramienta (el modo de Retocar, cómo pinta Pintar): sale el primero, antes de
+     * las galerías y los presets, que dependen de él. {@code null} si no hay.
+     */
+    public String modeParam() {
+        return null;
     }
 
     /** Ayuda de un ajuste en esta tarjeta: {@code gui.komaedit.tools.<id>.help.<ajuste>}. */
@@ -103,19 +140,34 @@ public abstract class ToolCard {
         return true;
     }
 
+    /** Si Construir admite la vista previa universal con estos valores: un pincel nunca (tiene la suya). */
+    public boolean previewable(ToolValues values) {
+        return use(values) != ToolUse.BRUSH && previewable();
+    }
+
     /** Bandera de vista previa: {@code -v} salvo donde la orden ya usa {@code -v} para otra cosa. */
     public String previewFlag() {
         return "-v";
     }
 
-    /** Más botones de la tarjeta. */
+    /** Más botones de la tarjeta (todos los que puede llegar a enseñar). */
     public List<ToolAction> actions() {
         return List.of();
+    }
+
+    /** Los botones que se ven con estos valores (estimar solo donde la orden sabe); de serie, todos. */
+    public List<ToolAction> actions(ToolValues values) {
+        return actions();
     }
 
     /** Ajustes rápidos («Joven», «Viejo»…): cada uno cambia unos pocos valores sobre los de serie. */
     public List<ToolPreset> presets() {
         return List.of();
+    }
+
+    /** Los presets que se ven con estos valores (los del modo elegido); de serie, todos. */
+    public List<ToolPreset> presets(ToolValues values) {
+        return presets();
     }
 
     /**
@@ -199,9 +251,9 @@ public abstract class ToolCard {
         return true;
     }
 
-    /** Lo que falta en el mundo para Construir (selección, puntos), según {@link #target()}. */
+    /** Lo que falta en el mundo para Construir (selección, puntos), según {@link #target(ToolValues)}. */
     public ToolProblem requirement(ToolValues values, ToolContext context) {
-        return switch (target) {
+        return switch (target(values)) {
             case SELECTION -> context.known() && !context.hasSelection()
                     ? ToolProblem.error("no_selection") : null;
             case PATH_OR_SELECTION -> context.known() && context.pathPoints() < 2 && !context.hasSelection()
@@ -282,7 +334,8 @@ public abstract class ToolCard {
     protected boolean keptByPresets(ToolParam param) {
         return switch (param) {
             case ToolParam.Choice choice -> choice.style() == ToolParam.Choice.Style.GALLERY
-                    || choice.style() == ToolParam.Choice.Style.SEARCH;
+                    || choice.style() == ToolParam.Choice.Style.SEARCH
+                    || choice.style() == ToolParam.Choice.Style.SWITCH;
             case ToolParam.Block ignored -> true;
             case ToolParam.Text ignored -> true;
             case ToolParam.Number number -> number.id().equals("seed");
@@ -347,8 +400,9 @@ public abstract class ToolCard {
                 defaultValue, decimals, false, null, null);
     }
 
-    /** El mismo ajuste, visible solo cuando {@code shown} lo dice. */
-    protected static ToolParam when(java.util.function.Predicate<ToolValues> shown, ToolParam param) {
+    /** El mismo ajuste, visible solo cuando {@code condition} lo dice (y lo que ya pidiera antes). */
+    protected static ToolParam when(java.util.function.Predicate<ToolValues> condition, ToolParam param) {
+        java.util.function.Predicate<ToolValues> shown = param.shown().and(condition);
         return switch (param) {
             case ToolParam.Number number -> new ToolParam.Number(number.id(), number.range(), number.defaultValue(),
                     number.decimals(), number.auto(), number.unit(), shown);
@@ -372,6 +426,21 @@ public abstract class ToolCard {
     /** Semilla: en automático, una al azar en cada orden (el chat la dice para repetirla). */
     protected static ToolParam.Number seed() {
         return auto("seed", 0, 999_999_999, 1, 1_000, 0, 0);
+    }
+
+    /**
+     * El interruptor de arriba de la tarjeta: las dos maneras de usarla, la primera de serie. Con él,
+     * {@link #target(ToolValues)}, {@link #buildKey(ToolValues)} y {@link #previewable(ToolValues)} siguen a lo
+     * elegido, y la tarjeta arma una orden u otra en {@link #command}.
+     */
+    protected static ToolParam.Choice use(ToolUse first, ToolUse second) {
+        return new ToolParam.Choice(ToolUse.PARAM, List.of(first.id(), second.id()), first.id(),
+                ToolParam.Choice.Style.SWITCH, "", null);
+    }
+
+    /** El mismo ajuste, visible solo con el interruptor en {@code use}. */
+    protected static ToolParam only(ToolUse use, ToolParam param) {
+        return when(values -> !values.has(ToolUse.PARAM) || values.choice(ToolUse.PARAM).equals(use.id()), param);
     }
 
     protected static ToolParam.Toggle toggle(String id, boolean defaultValue) {

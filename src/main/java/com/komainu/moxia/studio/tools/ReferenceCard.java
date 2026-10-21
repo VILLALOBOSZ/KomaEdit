@@ -15,7 +15,7 @@ public final class ReferenceCard extends ToolCard {
     public static final String TOGGLE = "keref alternar";
 
     ReferenceCard() {
-        super("reference", ToolFamily.UTILITIES, ToolTarget.MODE,
+        super("reference", ToolTarget.MODE,
                 List.of("reference", "referencia", "imagen", "image", "calcar", "trace", "plantilla", "foto", "photo",
                         "pixel", "pixelart", "fachada", "plano", "axiom", "keref"),
                 List.of());

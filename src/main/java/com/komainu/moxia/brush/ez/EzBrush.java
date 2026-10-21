@@ -11,6 +11,7 @@ import com.komainu.moxia.brush.place.PlacementTemplate;
 import com.komainu.moxia.brush.place.StructureSource;
 import com.komainu.moxia.brush.place.StructureSources;
 import com.komainu.moxia.brush.paint.PaintBrush;
+import com.komainu.moxia.brush.paint.PaintConfig;
 import com.komainu.moxia.brush.paint.PaintOperation;
 import com.komainu.moxia.brush.paint.PaintStrokes;
 import com.komainu.moxia.noise.NoiseSpec;
@@ -97,6 +98,9 @@ public abstract sealed class EzBrush {
         if (type == EzBrushType.STAMP) {
             return new Stamp(new BlueprintStamps(player, StampSettings.parse(input)));
         }
+        if (type == EzBrushType.ZONE) {
+            return new Zone(ZoneCommand.parse(input));
+        }
         if (type.placement() && !(type == EzBrushType.PLACE && legacyPreview(input))) {
             PlacementSettings.Kind kind = switch (type) {
                 case SCATTER -> PlacementSettings.Kind.SCATTER;
@@ -146,7 +150,7 @@ public abstract sealed class EzBrush {
                 int maxAmount = maxAmount(block);
                 yield new Petals(block, radius, density, noise, scale, mask, maxAmount, preview);
             }
-            case SCATTER, ARRAY, TREE, ROCK, STAMP -> throw new IllegalStateException(type.id());
+            case SCATTER, ARRAY, TREE, ROCK, STAMP, ZONE -> throw new IllegalStateException(type.id());
             case BIOME -> {
                 BiomeType biome = BiomeService.parse(
                         options.required(0, "el bioma (cherry_grove, snowy_plains…)"));
@@ -162,7 +166,11 @@ public abstract sealed class EzBrush {
                 yield new Relief(config, preview);
             }
             case SCULPT -> Sculpt.parse(player, options);
-            case PAINT -> new Paint(PaintBrush.create(player, options));
+            case PAINT -> PaintConfig.natural(options)
+                    // La superficie natural no es un degradado del pincel: es la orden de pintar la selección,
+                    // repetida alrededor de cada clic.
+                    ? new Zone(ZoneCommand.parse(PaintConfig.naturalZone(options)))
+                    : new Paint(PaintBrush.create(player, options));
             case PLACE -> {
                 StructureSource source = StructureSources.parse(options.required(0, "la estructura (Clipboard)"));
                 Vec3d look = player.getRotationVector();
@@ -972,6 +980,59 @@ public abstract sealed class EzBrush {
                     }
                     PaintStrokes.input(session.player(), brush, hit, input.left());
                 }
+            }
+        }
+    }
+
+    /**
+     * Zona: la orden de la selección de {@link ZoneCommand} en un cilindro alrededor del bloque pulsado, con los
+     * permisos y las comprobaciones de esa orden. La selección de WorldEdit no se toca. Cada clic es su propia
+     * edición de //undo; mientras el anterior aún se lee, el clic espera a que acabe.
+     */
+    static final class Zone extends EzBrush {
+        private final ZoneCommand spec;
+
+        Zone(ZoneCommand spec) {
+            super(EzBrushType.ZONE, spec.radius(), false);
+            this.spec = spec;
+        }
+
+        ZoneCommand spec() {
+            return spec;
+        }
+
+        @Override
+        public String controls() {
+            return "clic derecho (o mantenerlo): /" + spec.full() + " en un cilindro de radio " + spec.radius()
+                    + " alrededor del bloque";
+        }
+
+        @Override
+        void handle(EzBrushManager.Session session, BrushInput input) {
+            if (!input.right()) {
+                return;
+            }
+            ServerPlayerEntity player = session.player();
+            if (com.komainu.moxia.region.RegionOperationService.progress(player.getUuid()).isPresent()) {
+                session.info("Espera: aún se está leyendo la zona del clic anterior");
+                return;
+            }
+            BlockVector3 center = session.target();
+            com.sk89q.worldedit.regions.Region region = new com.sk89q.worldedit.regions.CylinderRegion(
+                    com.komainu.moxia.worldedit.WorldEditService.context(player).world(), center,
+                    com.sk89q.worldedit.math.Vector2.at(spec.radius() + 0.5, spec.radius() + 0.5),
+                    center.y() - spec.halfHeight(), center.y() + spec.halfHeight());
+            com.komainu.moxia.worldedit.SelectionOverride.within(player.getUuid(), region, center,
+                    () -> com.komainu.moxia.preview.EditRequests.within(com.komainu.moxia.preview.EditRequest.TOOL,
+                            () -> execute(player)));
+        }
+
+        private int execute(ServerPlayerEntity player) {
+            try {
+                return player.getServer().getCommandManager().getDispatcher().execute(spec.full(),
+                        player.getCommandSource());
+            } catch (com.mojang.brigadier.exceptions.CommandSyntaxException exception) {
+                throw new IllegalArgumentException("/" + spec.full() + ": " + exception.getRawMessage().getString());
             }
         }
     }

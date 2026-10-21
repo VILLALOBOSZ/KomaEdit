@@ -44,10 +44,7 @@ class StudioWelcomeTest {
      * favorita: con el nombre en dos líneas, buscarlo por su texto daría con la estrella, que lleva la misma ayuda.
      */
     static void press(StudioDriver driver, String anchor) {
-        driver.render();
-        StudioUi.Anchor zone = driver.ui().anchor(anchor);
-        assertTrue(zone != null && !zone.visible().isEmpty(), () -> anchor + " no se ve: " + driver.texts());
-        driver.clickAt(zone.visible().x() + 8, zone.visible().centerY());
+        driver.press(anchor);
     }
 
     /** Pasa un poco de tiempo: la vista mira lo que hay y prepara el golpe que empieza. */
@@ -88,7 +85,7 @@ class StudioWelcomeTest {
                 "durante la bienvenida Construir va siempre con vista previa");
         assertEquals(StudioStage.TOOLS, driver.view.stage(), "abre Herramientas para elegir");
         assertTrue(driver.view.tools().browsing());
-        assertTrue(driver.shows("Pulsa «Árbol»"), () -> "la burbuja dice qué hacer: " + driver.texts());
+        assertTrue(driver.shows("Pulsa «Plantar árbol»"), () -> "la burbuja dice qué hacer: " + driver.texts());
         assertTrue(driver.shows("Paso 1 de 5"));
 
         // 1. Árbol y un clic en el mundo: sale como fantasma (con -v), no se planta.
@@ -145,9 +142,9 @@ class StudioWelcomeTest {
         assertTrue(driver.host.sent.contains(WelcomeTour.APPLY));
         settle(driver);
 
-        // 4. Pintar terreno con «Cumbres», el pincel con vista previa y aplicar.
+        // 4. Pintar con «Cumbres», el pincel con vista previa y aplicar.
         assertEquals(Beat.PAINT_PICK, driver.view.welcome().beat());
-        press(driver, "tool:paintbrush");
+        press(driver, "tool:paint");
         settle(driver);
         assertEquals(Beat.PAINT_PRESET, driver.view.welcome().beat());
         driver.click("Cumbres", "tools:preset");
@@ -222,7 +219,7 @@ class StudioWelcomeTest {
         assertEquals(Beat.STAMP_LOOK, driver.view.welcome().beat());
         driver.click("Siguiente");
         settle(driver);
-        press(driver, "tool:paintbrush");
+        press(driver, "tool:paint");
         settle(driver);
         driver.click("Cumbres", "tools:preset");
         settle(driver);
@@ -254,7 +251,7 @@ class StudioWelcomeTest {
         driver.click("Saltar paso");
         settle(driver);
         assertEquals(Beat.PAINT_PICK, driver.view.welcome().beat(), "sin permiso para el sello, a la pintura");
-        assertTrue(driver.shows("Sin permiso para Sello de"), () -> "y lo dice: " + driver.texts());
+        assertTrue(driver.shows("Sin permiso para Estampar"), () -> "y lo dice: " + driver.texts());
         assertTrue(driver.shows("Paso 3 de 4"), () -> "los pasos que quedan: " + driver.texts());
     }
 
@@ -302,7 +299,7 @@ class StudioWelcomeTest {
             StudioUi.Widget skip = driver.widget("Skip step");
             assertTrue(skip.bounds().right() <= frame.panel().x(), "the bubble does not cover the panel");
             assertTrue(skip.bounds().bottom() <= frame.screen().height());
-            assertTrue(driver.shows("Press “Tree”"), () -> driver.texts().toString());
+            assertTrue(driver.shows("Press “Plant a tree”"), () -> driver.texts().toString());
         }
     }
 }
