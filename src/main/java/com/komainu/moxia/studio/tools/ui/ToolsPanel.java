@@ -1,6 +1,8 @@
 package com.komainu.moxia.studio.tools.ui;
 
 import com.komainu.moxia.capability.BuildCapability;
+import com.komainu.moxia.hotbar.ui.HotbarAction;
+import com.komainu.moxia.hotbar.ui.HotbarDeck;
 import com.komainu.moxia.studio.ControlHelp;
 import com.komainu.moxia.studio.NumericRange;
 import com.komainu.moxia.studio.ParameterHistory;
@@ -10,17 +12,19 @@ import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.tools.CapabilityCard;
+import com.komainu.moxia.studio.tools.HotbarCard;
 import com.komainu.moxia.studio.tools.SymmetryCard;
 import com.komainu.moxia.studio.tools.TerrainCards;
 import com.komainu.moxia.studio.tools.ToolAction;
 import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
+import com.komainu.moxia.studio.tools.ToolCategory;
 import com.komainu.moxia.studio.tools.ToolContext;
-import com.komainu.moxia.studio.tools.ToolFamily;
 import com.komainu.moxia.studio.tools.ToolParam;
 import com.komainu.moxia.studio.tools.ToolPreset;
 import com.komainu.moxia.studio.tools.ToolProblem;
 import com.komainu.moxia.studio.tools.ToolTarget;
+import com.komainu.moxia.studio.tools.ToolUse;
 import com.komainu.moxia.studio.tools.ToolValues;
 import com.komainu.moxia.studio.ui.ChoiceThumbnails;
 import com.komainu.moxia.studio.ui.NumberEdit;
@@ -102,6 +106,28 @@ public final class ToolsPanel {
         default int[] clickedSpot() {
             return null;
         }
+
+        /** Las barras guardadas del jugador (tarjeta Guardar barras), o {@code null} si el servidor no las manda. */
+        default HotbarDeck hotbars() {
+            return null;
+        }
+
+        /** Si la barra que se deja se guarda sola al cambiar. */
+        default boolean hotbarAutosave() {
+            return true;
+        }
+
+        /** Una acción de las barras guardadas, por su paquete (no por el chat). */
+        default void hotbar(HotbarAction action, String name) {
+        }
+
+        /**
+         * «Compartir»: pide al servidor el código de {@code things} ({@code arbol:abeto}); el cliente lo copia al
+         * portapapeles cuando llega.
+         */
+        default void shareExport(String things) {
+            send("komaedit share export " + things);
+        }
     }
 
     public enum Key {
@@ -144,6 +170,7 @@ public final class ToolsPanel {
     private final Map<String, Integer> pages = new HashMap<>();
     private final NumberEdit numbers = new NumberEdit();
     private final BrushSync brush = new BrushSync();
+    private final HotbarsPanel hotbars = new HotbarsPanel();
     /** Alto de una fila de ajuste: 20 normal, 18 en compacto. */
     private int row = Column.ROW;
     private ToolCard selected;
@@ -231,6 +258,11 @@ public final class ToolsPanel {
             namingAction = null;
             biomeSearch = "";
             stampSearch = "";
+            // Las tarjetas que trabajan en un modo (el editor de displays) lo abren al elegirlas.
+            String command = card.selectCommand();
+            if (command != null && card.missingPermission(card.defaults(), host.context()) == null) {
+                send(host, command);
+            }
         }
         browsing = false;
         search = "";
@@ -368,12 +400,12 @@ public final class ToolsPanel {
     public List<ToolCard> visibleCards(Host host) {
         if (!search.isBlank()) {
             return ToolCatalog.search(ToolCatalog.ALL, search, card -> host.tr(card.nameKey()),
-                    card -> host.tr(card.descriptionKey()), family -> host.tr(family.translationKey()));
+                    card -> host.tr(card.descriptionKey()), category -> host.tr(category.translationKey()));
         }
         return ToolCatalog.ALL;
     }
 
-    /** Los grupos de la cuadrícula: favoritas (si hay), y por familia; simetría y capacidades juntas. */
+    /** Los grupos de la cuadrícula: favoritas (si hay) y una por categoría, en el orden del catálogo. */
     List<Group> groups(Host host) {
         List<Group> groups = new ArrayList<>();
         if (!search.isBlank()) {
@@ -383,15 +415,14 @@ public final class ToolsPanel {
         List<ToolCard> favorites = ToolCatalog.ALL.stream()
                 .filter(card -> host.preferences().isToolFavorite(card.id())).toList();
         if (!favorites.isEmpty()) {
-            groups.add(new Group("gui.komaedit.tools.family.favorites", favorites));
+            groups.add(new Group("gui.komaedit.tools.category.favorites", favorites));
         }
-        groups.add(new Group(ToolFamily.NATURE.translationKey(), ToolCatalog.family(ToolFamily.NATURE)));
-        groups.add(new Group(ToolFamily.ROOFS.translationKey(), ToolCatalog.family(ToolFamily.ROOFS)));
-        groups.add(new Group(ToolFamily.TERRAIN.translationKey(), ToolCatalog.family(ToolFamily.TERRAIN)));
-        groups.add(new Group(ToolFamily.UTILITIES.translationKey(), ToolCatalog.family(ToolFamily.UTILITIES)));
-        List<ToolCard> modes = new ArrayList<>(ToolCatalog.family(ToolFamily.SYMMETRY));
-        modes.addAll(ToolCatalog.family(ToolFamily.CAPABILITIES));
-        groups.add(new Group("gui.komaedit.tools.group.modes", modes));
+        for (ToolCategory category : ToolCategory.values()) {
+            List<ToolCard> cards = ToolCatalog.category(category);
+            if (!cards.isEmpty()) {
+                groups.add(new Group(category.translationKey(), cards));
+            }
+        }
         return groups;
     }
 
@@ -437,30 +468,9 @@ public final class ToolsPanel {
         }
     }
 
-    /** Icono de cada herramienta. */
+    /** Icono de cada herramienta: el de su entrada en el catálogo. */
     public static StudioIcons.Icon icon(ToolCard card) {
-        return switch (card.id()) {
-            case "tree" -> StudioIcons.Icon.TREE;
-            case "rock" -> StudioIcons.Icon.ROCK;
-            case "roof" -> StudioIcons.Icon.ROOF;
-            case "loft" -> StudioIcons.Icon.LOFT;
-            case "stamp" -> StudioIcons.Icon.STAMP;
-            case "paintbrush" -> StudioIcons.Icon.PAINT_BRUSH;
-            case "ramp" -> StudioIcons.Icon.RAMP;
-            case "river" -> StudioIcons.Icon.RIVER;
-            case "erosion" -> StudioIcons.Icon.EROSION;
-            case "paint" -> StudioIcons.Icon.PAINT;
-            case "text" -> StudioIcons.Icon.TEXT;
-            case "analyze" -> StudioIcons.Icon.ANALYZE;
-            case "gravity" -> StudioIcons.Icon.GRAVITY;
-            case "snow" -> StudioIcons.Icon.SNOW;
-            case "drain" -> StudioIcons.Icon.DRAIN;
-            case "waterlog" -> StudioIcons.Icon.WATERLOG;
-            case "biome" -> StudioIcons.Icon.BIOME;
-            case "symmetry" -> StudioIcons.Icon.SYMMETRY;
-            case "capabilities" -> StudioIcons.Icon.CAPABILITIES;
-            default -> StudioIcons.Icon.TOOLS;
-        };
+        return ToolCatalog.icon(card);
     }
 
     private void drawToolCell(StudioUi ui, Rect cell, ToolCard card, Host host, ToolContext context) {
@@ -520,23 +530,25 @@ public final class ToolsPanel {
 
     /**
      * La herramienta elegida, plegada: icono y nombre (pulsar abre la cuadrícula), y a la derecha las recientes para
-     * cambiar de un clic, la estrella y copiar la orden.
+     * cambiar de un clic, la estrella y copiar la orden. En compacto, el interruptor de cómo se usa va aquí, en dos
+     * iconos, para no gastar una fila.
      */
     private void drawHeader(StudioUi ui, Column column, Host host, boolean compact) {
         ToolCard card = selected();
         Rect row = column.next(compact ? 20 : 22);
         List<ToolCard> recents = new ArrayList<>();
-        // Las recientes que caben sin cortar el nombre (icono, nombre en negrita y flecha); la estrella y copiar van
-        // siempre.
+        List<ToolUse> uses = compact ? card.uses() : List.of();
+        // Las recientes que caben sin cortar el nombre (icono, nombre en negrita y flecha); la estrella, copiar y, en
+        // compacto, el interruptor van siempre.
         int needed = ui.boldWidth(host.tr(card.nameKey())) + 44;
-        int room = Math.clamp((row.width() - needed) / 19 - 2, 0, compact ? 2 : 3);
+        int room = Math.clamp((row.width() - needed) / 19 - 2 - uses.size(), 0, compact ? 2 : 3);
         for (String id : host.preferences().toolRecents()) {
             ToolCard recent = ToolCatalog.byId(id);
             if (recent != null && recent != card && recents.size() < room) {
                 recents.add(recent);
             }
         }
-        int buttons = recents.size() + 2;
+        int buttons = recents.size() + uses.size() + 2;
         int right = row.right();
         Rect[] icons = new Rect[buttons];
         for (int index = buttons - 1; index >= 0; index--) {
@@ -565,7 +577,20 @@ public final class ToolsPanel {
             ui.register(zone).tooltip(host.tr("gui.komaedit.tools.recent", host.tr(recent.nameKey())))
                     .onClick(() -> select(recent, host));
         }
-        Rect star = icons[recents.size()];
+        ToolUse chosen = card.use(current());
+        for (int index = 0; index < uses.size(); index++) {
+            ToolUse option = uses.get(index);
+            Rect zone = icons[recents.size() + index];
+            boolean over = ui.hovered(zone);
+            boolean on = option == chosen;
+            ui.fill(zone, on ? CARD_ACTIVE : over ? CARD_HOVER : CARD);
+            if (on) {
+                ui.fill(new Rect(zone.x(), zone.bottom() - 2, zone.width(), 2), ACCENT);
+            }
+            ui.icon(useIcon(option), zone.centerX() - 6, zone.centerY() - 6, on ? ACCENT_TEXT : over ? TEXT : MUTED);
+            useWidget(ui, zone, host, card, option);
+        }
+        Rect star = icons[recents.size() + uses.size()];
         boolean favorite = host.preferences().isToolFavorite(card.id());
         boolean overStar = ui.hovered(star);
         if (overStar) {
@@ -575,7 +600,7 @@ public final class ToolsPanel {
                 star.centerY() - 6, favorite ? FAVORITE : overStar ? TEXT : MUTED);
         ui.register(star).tooltip(host.tr(favorite ? "gui.komaedit.tools.unfavorite" : "gui.komaedit.tools.favorite"))
                 .onClick(() -> toggleFavorite(card, host));
-        Rect copy = icons[recents.size() + 1];
+        Rect copy = icons[recents.size() + uses.size() + 1];
         boolean overCopy = ui.hovered(copy);
         if (overCopy) {
             ui.fill(copy, CARD_HOVER);
@@ -590,13 +615,19 @@ public final class ToolsPanel {
     }
 
     private boolean preview(Host host) {
-        return selected().previewable() && host.preferences().toolPreview();
+        return selected().previewable(current()) && host.preferences().toolPreview();
+    }
+
+    /** Sobre qué trabaja la herramienta elegida con sus valores de ahora (el pincel, la selección…). */
+    public ToolTarget target() {
+        return selected().target(current());
     }
 
     private void drawDetail(StudioUi ui, Column column, Host host, ToolContext context, ToolsInfo info,
                             boolean compact) {
         ToolCard card = selected();
         ToolValues values = current();
+        drawUse(ui, column, host, card, compact);
         List<ToolProblem> problems = card.problems(values, context);
         for (ToolProblem problem : problems.subList(0, Math.min(compact ? 1 : 2, problems.size()))) {
             drawProblem(ui, column, host, problem);
@@ -608,15 +639,32 @@ public final class ToolsPanel {
             drawCapabilities(ui, column, host, info);
             return;
         }
+        if (card.params().isEmpty()) {
+            // Sin ajustes (Calcar imagen): lo que hace y sus botones, a la vista y no plegados en Más ajustes.
+            ui.paragraph(column, description(card, host), MUTED, 0);
+            drawActions(ui, column, host, card, values, context, card.actions(values));
+            return;
+        }
+        if (card instanceof HotbarCard) {
+            // El nombre va arriba: con él se guarda la que llevas y se crea la nueva.
+            drawParam(ui, column, host, card, card.params().getFirst(), info);
+            hotbars.draw(ui, column, host, values, compact);
+        }
 
         List<ToolParam> essentials = new ArrayList<>();
         List<ToolParam> others = new ArrayList<>();
         for (ToolParam param : card.params()) {
-            if (param.visible(values)) {
+            if (param.visible(values) && !param.id().equals(ToolUse.PARAM)) {
                 (card.essential(param) ? essentials : others).add(param);
             }
         }
-        // Primero lo que se elige viendo, después el estilo (presets) y los demás ajustes esenciales.
+        // Primero el modo (qué hace la herramienta), luego lo que se elige viendo, después el estilo (presets) y los
+        // demás ajustes esenciales.
+        ToolParam mode = card.modeParam() == null ? null : values.param(card.modeParam());
+        if (mode != null && essentials.remove(mode)) {
+            column.section();
+            drawParam(ui, column, host, card, mode, info);
+        }
         for (ToolParam param : essentials) {
             if (param instanceof ToolParam.Choice choice && choice.style() == ToolParam.Choice.Style.GALLERY) {
                 drawGallery(ui, column, host, card, choice, compact);
@@ -625,9 +673,10 @@ public final class ToolsPanel {
         if (!compact) {
             drawPresets(ui, column, host, card, info);
         }
-        boolean opened = false;
+        boolean opened = card instanceof HotbarCard;
         for (ToolParam param : essentials) {
-            if (param instanceof ToolParam.Choice choice && choice.style() == ToolParam.Choice.Style.GALLERY) {
+            if (param instanceof ToolParam.Choice choice && choice.style() == ToolParam.Choice.Style.GALLERY
+                    || card instanceof HotbarCard && param == card.params().getFirst()) {
                 continue;
             }
             if (!opened) {
@@ -654,10 +703,10 @@ public final class ToolsPanel {
             drawMaterials(ui, column, host, info.materials(), compact);
         }
 
-        List<ToolAction> actions = card.actions().stream()
+        List<ToolAction> actions = card.actions(values).stream()
                 .filter(action -> !action.id().equals("symmetry_off") || info.symmetry().active())
                 .toList();
-        boolean presetsHidden = compact && (!card.presets().isEmpty() || seeded(card));
+        boolean presetsHidden = compact && (!card.presets(values).isEmpty() || seeded(card));
         if (others.isEmpty() && actions.isEmpty() && !presetsHidden) {
             return;
         }
@@ -684,16 +733,73 @@ public final class ToolsPanel {
         drawActions(ui, column, host, card, values, context, actions);
     }
 
+    /**
+     * El interruptor de arriba de la tarjeta, si vale de dos maneras: «Pincel | Selección» (o «Donde hago clic»), con
+     * su icono. Lo demás de la tarjeta se queda igual al cambiarlo; solo salen o se esconden los ajustes que no sirven
+     * en la otra manera (el radio del pincel).
+     */
+    private void drawUse(StudioUi ui, Column column, Host host, ToolCard card, boolean compact) {
+        List<ToolUse> uses = card.uses();
+        if (uses.isEmpty() || compact) {
+            // En compacto va en la cabecera.
+            return;
+        }
+        column.space(2);
+        ToolUse chosen = card.use(current());
+        Rect row = column.next(SMALL_ROW);
+        int half = (row.width() - Column.GAP) / 2;
+        for (int index = 0; index < uses.size(); index++) {
+            ToolUse option = uses.get(index);
+            Rect cell = new Rect(row.x() + index * (half + Column.GAP), row.y(),
+                    index == uses.size() - 1 ? row.right() - row.x() - index * (half + Column.GAP) : half,
+                    row.height());
+            ui.iconButton(cell, useIcon(option), host.tr("gui.komaedit.tools.option.use." + option.id()),
+                    option == chosen ? StudioUi.Tone.SELECTED : StudioUi.Tone.SECONDARY);
+            useWidget(ui, cell, host, card, option);
+        }
+    }
+
+    /** Lo que hace pulsar una de las maneras del interruptor: ponerla (clic derecho, la de serie). */
+    private void useWidget(StudioUi ui, Rect zone, Host host, ToolCard card, ToolUse option) {
+        ToolParam use = current().param(ToolUse.PARAM);
+        String label = host.tr("gui.komaedit.tools.option.use." + option.id());
+        ui.anchor("use:" + option.id(), zone);
+        ui.register(zone)
+                .tooltip(label + "\n" + host.tr("gui.komaedit.tools.use." + option.id() + ".help") + "\n"
+                        + help(host, card, use))
+                .hint(host.tr("gui.komaedit.hint.toggle"))
+                .group("tools:" + ToolUse.PARAM)
+                .onReset(() -> set(current().reset(use.id())))
+                .onClick(() -> set(current().with(use.id(), option.id())));
+    }
+
+    /** El icono de cada manera de usar una herramienta: la mano del pincel, la caja de la selección o el clic. */
+    static StudioIcons.Icon useIcon(ToolUse use) {
+        return switch (use) {
+            case BRUSH -> StudioIcons.Icon.HAND;
+            case SELECTION -> StudioIcons.Icon.SELECTION;
+            case CLICK -> StudioIcons.Icon.LOOK;
+        };
+    }
+
+    /** Cambia cómo se usa la herramienta elegida (el interruptor), si lo tiene. */
+    public void setUse(ToolUse use) {
+        if (selected().uses().contains(use)) {
+            set(current().with(ToolUse.PARAM, use.id()));
+        }
+    }
+
     /** Sobre qué trabaja la herramienta, con lo que hay ahora (selección, puntos). */
     String target(ToolCard card, Host host, ToolContext context, ToolsInfo info) {
-        String key = card.target().translationKey();
-        return switch (card.target()) {
+        ToolTarget target = card.target(values(card));
+        String key = target.translationKey();
+        return switch (target) {
             case SELECTION -> info.hasSelection()
                     ? host.tr(key + ".some", info.selection()[0], info.selection()[1], info.selection()[2])
                     : host.tr(key + ".none");
             case PATH_OR_LOOK, PATH_OR_SELECTION -> context.pathPoints() > 0
                     ? host.tr(key + ".points", context.pathPoints())
-                    : host.tr(key + (card.target() == ToolTarget.PATH_OR_SELECTION && info.hasSelection()
+                    : host.tr(key + (target == ToolTarget.PATH_OR_SELECTION && info.hasSelection()
                     ? ".selection" : ".none"));
             default -> host.tr(key);
         };
@@ -706,7 +812,7 @@ public final class ToolsPanel {
             for (int index = 0; index < arguments.length; index++) {
                 for (ToolParam param : selected().params()) {
                     if (param.id().equals(arguments[index])) {
-                        arguments[index] = host.tr(param.labelKey());
+                        arguments[index] = label(host, param);
                     }
                 }
             }
@@ -740,12 +846,14 @@ public final class ToolsPanel {
         }
     }
 
-    private static boolean seeded(ToolCard card) {
-        return card.params().stream().anyMatch(param -> param.id().equals("seed"));
+    /** Si la tarjeta tiene la semilla a la vista con sus valores (la reconstrucción solo la usa al azar). */
+    private boolean seeded(ToolCard card) {
+        ToolValues values = values(card);
+        return card.params().stream().anyMatch(param -> param.id().equals("seed") && param.visible(values));
     }
 
     private void drawPresets(StudioUi ui, Column column, Host host, ToolCard card, ToolsInfo info) {
-        List<ToolPreset> presets = card.presets();
+        List<ToolPreset> presets = card.presets(current());
         boolean seeded = seeded(card);
         Map<String, String> saved = !card.savedPresets() ? Map.of()
                 : card.id().equals("tree") ? info.treePresets() : info.rockPresets();
@@ -760,8 +868,13 @@ public final class ToolsPanel {
             labels.add(host.tr("gui.komaedit.preset.random"));
         }
         List<String> names = new ArrayList<>(saved.keySet());
-        names.forEach(name -> labels.add("#" + name));
-        int[] widths = labels.stream().mapToInt(label -> ui.chipWidth(label)).toArray();
+        // Cada preset guardado lleva detrás su botón «Compartir» (un icono): la pastilla sigue aplicándolo.
+        names.forEach(name -> {
+            labels.add("#" + name);
+            labels.add("");
+        });
+        int[] widths = labels.stream().mapToInt(label -> label.isEmpty() ? SHARE_WIDTH : ui.chipWidth(label))
+                .toArray();
         List<Rect> cells = column.flow(widths, 14);
         String kind = host.tr("gui.komaedit.palette.kind.preset");
         for (int index = 0; index < presets.size(); index++) {
@@ -788,12 +901,23 @@ public final class ToolsPanel {
         for (int index = 0; index < names.size(); index++) {
             String name = names.get(index);
             String settings = saved.get(name);
-            ui.chip(cells.get(next + index), "#" + name, false, FAVORITE)
+            ui.chip(cells.get(next + 2 * index), "#" + name, false, FAVORITE)
                     .tooltip("#" + name + "\n" + settings)
                     .group("tools:preset")
                     .onClick(() -> applySaved(card, name, settings, host));
+            ui.iconButton(cells.get(next + 2 * index + 1), StudioIcons.Icon.SHARE, "", StudioUi.Tone.SECONDARY)
+                    .tooltip(host.tr("gui.komaedit.share.preset", "#" + name) + "\n"
+                            + host.tr("gui.komaedit.help.share.button"))
+                    .group("tools:share")
+                    .onClick(() -> {
+                        host.shareExport(card.id() + ":" + name);
+                        host.status(host.tr("gui.komaedit.status.share.preparing", "#" + name));
+                    });
         }
     }
+
+    /** Ancho del botón «Compartir» de un preset guardado: el icono y un poco de aire. */
+    private static final int SHARE_WIDTH = 16;
 
     /** Aplica un preset de la tarjeta elegida por su id (lo usa la paleta de órdenes). */
     public void applyPreset(ToolCard card, ToolPreset preset, Host host) {
@@ -843,7 +967,7 @@ public final class ToolsPanel {
             }
             case ToolParam.Toggle toggle -> {
                 boolean on = current().toggle(toggle.id());
-                ui.toggle(column.next(row), host.tr(toggle.labelKey()), on, !current().isDefault(toggle.id()))
+                ui.toggle(column.next(row), label(host, toggle), on, !current().isDefault(toggle.id()))
                         .tooltip(help(host, card, toggle))
                         .hint(host.tr("gui.komaedit.hint.toggle"))
                         .group("tools:" + toggle.id())
@@ -853,6 +977,11 @@ public final class ToolsPanel {
             case ToolParam.Block block -> drawBlock(ui, column, host, card, block);
             case ToolParam.Text text -> drawText(ui, column, host, card, text);
         }
+    }
+
+    /** La etiqueta de un ajuste en la tarjeta elegida (una tarjeta puede llamarlo a su manera). */
+    private String label(Host host, ToolParam param) {
+        return host.tr(selected().labelKey(param));
     }
 
     /** Qué le pasa a lo que se construye con este ajuste (la etiqueta ya se ve en la fila). */
@@ -888,7 +1017,7 @@ public final class ToolsPanel {
         String key = "tools:number:" + number.id();
         NumericRange range = number.range();
         ControlHelp explained = explain(host, card, number);
-        ui.stepper(row, new StudioUi.Stepper(host.tr(number.labelKey()), view.value(), view.shortValue(),
+        ui.stepper(row, new StudioUi.Stepper(label(host, number), view.value(), view.shortValue(),
                 view.fraction(), view.defaultFraction(), view.modified(), view.range(), numbers.editing(key),
                 numbers.dragging(key), numbers.input(),
                 direction -> set(current().with(number.id(), range.stepped(numberView(host, card, number).base(),
@@ -926,7 +1055,7 @@ public final class ToolsPanel {
         }
         List<String> options = options(choice, info);
         String value = current().choice(choice.id());
-        ui.cycle(row, host.tr(choice.labelKey()), optionLabel(choice, value, host), !current().isDefault(choice.id()),
+        ui.cycle(row, label(host, choice), optionLabel(choice, value, host), !current().isDefault(choice.id()),
                         direction -> {
                             int index = Math.max(0, options.indexOf(current().choice(choice.id())));
                             set(current().with(choice.id(),
@@ -948,7 +1077,7 @@ public final class ToolsPanel {
 
     private void drawButtons(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
                              ToolsInfo info) {
-        drawCaption(ui, column, host.tr(choice.labelKey()), !current().isDefault(choice.id()));
+        drawCaption(ui, column, label(host, choice), !current().isDefault(choice.id()));
         List<String> options = options(choice, info);
         String value = current().choice(choice.id());
         int[] widths = new int[options.size()];
@@ -1006,7 +1135,7 @@ public final class ToolsPanel {
         if (!current().isDefault(choice.id())) {
             ui.fill(new Rect(title.x() - 5, title.y() + 4, 2, 2), ACCENT);
         }
-        String caption = host.tr(choice.labelKey()).toUpperCase(Locale.ROOT);
+        String caption = label(host, choice).toUpperCase(Locale.ROOT);
         int arrows = pageCount > 1 ? 36 : 0;
         ui.label(caption, title.x(), title.y() + 1, title.width() - arrows, MUTED);
         int nameX = title.x() + ui.width(caption) + 6;
@@ -1123,7 +1252,7 @@ public final class ToolsPanel {
         if (!current().isDefault(choice.id())) {
             ui.fill(new Rect(title.x() - 5, title.y() + 4, 2, 2), ACCENT);
         }
-        String caption = (compact ? tabLabel : host.tr(choice.labelKey())).toUpperCase(Locale.ROOT);
+        String caption = (compact ? tabLabel : label(host, choice)).toUpperCase(Locale.ROOT);
         int arrows = pageCount > 1 ? 36 : 0;
         int starWidth = custom ? 0 : 14;
         ui.label(caption, title.x(), title.y() + 1, title.width() - arrows - starWidth, MUTED);
@@ -1265,7 +1394,7 @@ public final class ToolsPanel {
 
     private void drawSearchChoice(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
                                   ToolsInfo info) {
-        drawCaption(ui, column, host.tr(choice.labelKey()), !current().isDefault(choice.id()));
+        drawCaption(ui, column, label(host, choice), !current().isDefault(choice.id()));
         String value = current().choice(choice.id());
         Rect box = column.next(18);
         boolean typing = field == Field.BIOME;
@@ -1341,7 +1470,7 @@ public final class ToolsPanel {
             String described = host.tr(autoKey);
             name = described.equals(autoKey) ? host.tr("gui.komaedit.tools.block.none") : described;
         }
-        String label = host.tr(block.labelKey());
+        String label = label(host, block);
         String title = host.tr("gui.komaedit.blocks.for", host.tr(card.nameKey()), label);
         StudioUi.Widget[] zones = ui.blockRow(row, new StudioUi.BlockRow(label, shown, name, value == null,
                 !current().isDefault(block.id()),
@@ -1378,7 +1507,7 @@ public final class ToolsPanel {
         for (ToolParam param : card.params()) {
             if (param instanceof ToolParam.Block block && block.visible(current())) {
                 set(current().with(block.id(), compact(id)));
-                host.status(host.tr("gui.komaedit.status.eyedropper.tool", host.tr(block.labelKey()),
+                host.status(host.tr("gui.komaedit.status.eyedropper.tool", label(host, block),
                         host.blockName(id)));
                 return block.id();
             }
@@ -1401,7 +1530,7 @@ public final class ToolsPanel {
     }
 
     private void drawText(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Text text) {
-        drawCaption(ui, column, host.tr(text.labelKey()), !current().isDefault(text.id()));
+        drawCaption(ui, column, label(host, text), !current().isDefault(text.id()));
         Rect box = column.next(18);
         boolean editing = field == Field.TEXT && fieldParam.equals(text.id());
         String value = editing ? input : current().text(text.id());
@@ -1470,9 +1599,6 @@ public final class ToolsPanel {
         }
         String command = action.command().apply(current());
         send(host, command);
-        if (action.id().equals("brush")) {
-            brush.linked(card.id(), action.id(), command, host.now());
-        }
         host.status(host.tr("gui.komaedit.tools.status.sent", host.tr(action.labelKey())));
     }
 
@@ -1693,13 +1819,14 @@ public final class ToolsPanel {
     /** Icono de sobre qué trabaja la herramienta elegida, para el pie. */
     public StudioIcons.Icon targetIcon(Host host) {
         ToolContext context = host.context();
-        return switch (selected().target()) {
+        return switch (target()) {
             case SELECTION -> StudioIcons.Icon.SELECTION;
             case PATH_OR_LOOK -> context.pathPoints() > 0 ? StudioIcons.Icon.PATH : StudioIcons.Icon.LOOK;
             case PATH_OR_SELECTION -> context.pathPoints() > 0 ? StudioIcons.Icon.PATH : StudioIcons.Icon.SELECTION;
             case LOOK -> StudioIcons.Icon.LOOK;
             case HAND -> StudioIcons.Icon.HAND;
             case MODE -> StudioIcons.Icon.MODE;
+            case SELF -> StudioIcons.Icon.EYE;
         };
     }
 
@@ -1708,7 +1835,7 @@ public final class ToolsPanel {
         ToolsInfo info = host.info();
         ToolContext context = host.context();
         ToolCard card = selected();
-        return switch (card.target()) {
+        return switch (target()) {
             case SELECTION -> info.hasSelection()
                     ? host.tr("gui.komaedit.tools.footer.selection", info.selection()[0], info.selection()[1],
                     info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
@@ -1721,12 +1848,27 @@ public final class ToolsPanel {
             case LOOK -> clicked(host);
             case HAND -> card instanceof TerrainCards.Stamp ? stampTarget(host)
                     : host.tr("gui.komaedit.tools.footer.hand");
-            case MODE -> card instanceof SymmetryCard
+            case MODE -> card instanceof HotbarCard ? hotbarTarget(host)
+                    : card instanceof SymmetryCard
                     ? host.tr(info.symmetry().active() ? "gui.komaedit.tools.footer.on"
                     : "gui.komaedit.tools.footer.off")
+                    // Lo del cliente (la regla, Calcar imagen) no pasa por el servidor.
+                    : card.clientOnly(values(card)) ? host.tr("gui.komaedit.tools.footer.client")
                     : host.tr("gui.komaedit.tools.footer.active", info.capabilities() == null ? 0
                     : Integer.bitCount(info.capabilities().enabled() & info.capabilities().permitted()));
+            case SELF -> host.tr("gui.komaedit.tools.footer.here");
         };
+    }
+
+    /** «12 barras guardadas» o, si se crea desde la selección, la selección. */
+    private String hotbarTarget(Host host) {
+        ToolsInfo info = host.info();
+        if (values(selected()).choice("source").equals("selection")) {
+            return info.hasSelection() ? host.tr("gui.komaedit.tools.footer.selection", info.selection()[0],
+                    info.selection()[1], info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
+        }
+        HotbarDeck deck = host.hotbars();
+        return host.tr("gui.komaedit.tools.hotbars.footer", deck == null ? 0 : deck.size());
     }
 
     /** «Montaña · Sumar · semilla 4217»: el sello, el modo de mezcla y la semilla que llevará el pincel. */
@@ -1772,7 +1914,7 @@ public final class ToolsPanel {
         if (selected() instanceof SymmetryCard && host.info().symmetry().active()) {
             return host.tr("gui.komaedit.tools.symmetry.apply");
         }
-        return host.tr(selected().buildKey());
+        return host.tr(selected().buildKey(current()));
     }
 
     public StudioUi.Tone buildTone(Host host) {
@@ -1782,7 +1924,8 @@ public final class ToolsPanel {
     public String buildHelp(Host host) {
         ToolProblem problem = blocking(host);
         String command = "/" + selected().command(current(), preview(host));
-        return problem == null ? host.tr("gui.komaedit.tools.build.help", host.tr(selected().buildKey()), command)
+        return problem == null ? host.tr("gui.komaedit.tools.build.help", host.tr(selected().buildKey(current())),
+                command)
                 : problemText(host, problem);
     }
 
@@ -1791,7 +1934,7 @@ public final class ToolsPanel {
         if (blocking(host) != null) {
             return null;
         }
-        return selected().command(current(), preview && selected().previewable());
+        return selected().command(current(), preview && selected().previewable(current()));
     }
 
     /**
@@ -1812,7 +1955,7 @@ public final class ToolsPanel {
         boolean preview = preview(host);
         String command = selected().command(current(), preview);
         send(host, command);
-        if (selected().target() == ToolTarget.HAND) {
+        if (target() == ToolTarget.HAND) {
             brush.linked(selected().id(), "", command, host.now());
         }
         host.preferences().pushToolRecent(selected().id());

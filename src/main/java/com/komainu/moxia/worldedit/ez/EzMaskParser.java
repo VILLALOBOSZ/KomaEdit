@@ -1,9 +1,13 @@
 package com.komainu.moxia.worldedit.ez;
 
+import com.komainu.moxia.command.ResultSuggestions;
 import com.komainu.moxia.gradient.BlockSpec;
+import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.noise.NoiseSpec;
+import com.komainu.moxia.placement.DirectionExpr;
 import com.komainu.moxia.progress.ProgressLine;
 import com.sk89q.worldedit.EmptyClipboardException;
+import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
@@ -11,6 +15,7 @@ import com.sk89q.worldedit.extent.Extent;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.function.mask.Mask;
 import com.sk89q.worldedit.function.mask.Masks;
+import com.sk89q.worldedit.function.mask.RegionMask;
 import com.sk89q.worldedit.internal.registry.InputParser;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
@@ -24,6 +29,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
@@ -49,6 +55,7 @@ public final class EzMaskParser extends InputParser<Mask> {
             Map.entry("near", "near"),
             Map.entry("palette", "palette"),
             Map.entry("radialgradientmask", "radialgradientmask"), Map.entry("rgradientm", "radialgradientmask"),
+            Map.entry("savedselection", "savedselection"), Map.entry("savedsel", "savedselection"),
             Map.entry("schemblocks", "schemblocks"), Map.entry("sb", "schemblocks"),
             Map.entry("truelight", "truelight"),
             Map.entry("vectorgradientmask", "vectorgradientmask"), Map.entry("vgradientm", "vectorgradientmask")
@@ -56,7 +63,8 @@ public final class EzMaskParser extends InputParser<Mask> {
     private static final List<String> SUGGESTIONS = List.of("#aim", "#attached", "#blocklight[", "#clipblocks",
             "#current", "#eznoisemask[", "#fullblock", "#fuzzypalette[", "#hotbar", "#infested", "#lightsource",
             "#near[",
-            "#palette[", "#radialgradientmask[", "#schemblocks[", "#truelight[", "#vectorgradientmask[");
+            "#palette[", "#radialgradientmask[", "#savedselection[", "#schemblocks[", "#truelight[",
+            "#vectorgradientmask[");
     private static final int MAX_SCAN = 4_000_000;
 
     public EzMaskParser(WorldEdit worldEdit) {
@@ -65,6 +73,12 @@ public final class EzMaskParser extends InputParser<Mask> {
 
     @Override
     public Stream<String> getSuggestions(String input, ParserContext context) {
+        if (input.endsWith("=")) {
+            // El = de ezEdits: #palette[##Ice= se despliega en sus bloques.
+            UUID playerId = EzContext.playerId(context);
+            return ResultSuggestions.complete(input, playerId == null ? null : SavedPalettes.resolver(playerId),
+                    DirectionExpr.Context.NONE).stream();
+        }
         if (!input.startsWith("#") || input.startsWith("##") || input.indexOf('[') >= 0) {
             return Stream.empty();
         }
@@ -154,6 +168,7 @@ public final class EzMaskParser extends InputParser<Mask> {
                 boolean strict = name.equals("palette") && arguments.bool(1, true);
                 yield new EzMasks.StateMask(context.requireExtent(), EzMasks.palette(entries, strict));
             }
+            case "savedselection" -> savedSelection(arguments.atMost(1), context);
             case "near" -> {
                 arguments.atMost(3);
                 Mask inner = worldEdit.getMaskFactory().parseFromInput(arguments.require(0, "una máscara"), context);
@@ -200,6 +215,30 @@ public final class EzMaskParser extends InputParser<Mask> {
                 target.getZ()));
         Extent extent = context.requireExtent();
         return new EzMasks.StateMask(extent, state::equals);
+    }
+
+    /** {@code #savedselection[nombre]}: los bloques dentro de una selección guardada con {@code /komaedit sel save}. */
+    private static Mask savedSelection(EzArguments arguments, ParserContext context) throws InputParseException {
+        UUID playerId = EzContext.playerId(context);
+        if (playerId == null) {
+            throw EzContext.error("#savedselection solo lo puede usar un jugador");
+        }
+        String name = arguments.require(0, "el nombre de una selección guardada");
+        SelectionShape shape = SavedSelections.load(playerId, name);
+        String world = context.requireWorld().getName();
+        if (shape.world() != null && !shape.world().equals(world)) {
+            throw EzContext.error("La selección " + name + " es de otro mundo (" + shape.world() + ")");
+        }
+        return insideOf(shape);
+    }
+
+    /** Los bloques dentro de la forma de una selección guardada (cuboide, polígono, esfera, cilindro…). */
+    static Mask insideOf(SelectionShape shape) {
+        try {
+            return new RegionMask(SelectionBridge.selector(shape, null).getRegion());
+        } catch (IncompleteRegionException exception) {
+            throw new IllegalArgumentException("La selección guardada está incompleta");
+        }
     }
 
     private static Mask attached(EzArguments arguments, ParserContext context) throws InputParseException {

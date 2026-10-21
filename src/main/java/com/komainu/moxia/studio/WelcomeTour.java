@@ -1,6 +1,6 @@
 package com.komainu.moxia.studio;
 
-import com.komainu.moxia.studio.tools.PaintBrushCard;
+import com.komainu.moxia.studio.tools.PaintCard;
 import com.komainu.moxia.studio.tools.TerrainCards;
 import com.komainu.moxia.studio.tools.ToolContext;
 import com.komainu.moxia.studio.tools.TreeCard;
@@ -31,8 +31,8 @@ public final class WelcomeTour {
     public static final int VERSION = 1;
     public static final String TREE = "tree";
     public static final String STAMP = "stamp";
-    public static final String PAINT = "paintbrush";
-    /** El preset de Pintar terreno que se enseña: nieve arriba, sobre la montaña recién hecha. */
+    public static final String PAINT = "paint";
+    /** El preset de Pintar que se enseña: nieve arriba, sobre la montaña recién hecha. */
     public static final String PEAKS = "paint_peaks";
     /** El grupo de las miniaturas de la galería de sellos (pulsar una es elegir sello). */
     public static final String STAMP_GROUP = "tools:stamp";
@@ -47,7 +47,7 @@ public final class WelcomeTour {
         TREE(TreeCard.NODE, WelcomeTour.TREE),
         PLACE(TreeCard.NODE, WelcomeTour.TREE),
         STAMP(TerrainCards.STAMP_NODE, WelcomeTour.STAMP),
-        PAINT(PaintBrushCard.NODE, WelcomeTour.PAINT),
+        PAINT(PaintCard.NODE, WelcomeTour.PAINT),
         UNDO("", "");
 
         private final String node;
@@ -101,7 +101,7 @@ public final class WelcomeTour {
         STAMP_AGAIN(Step.STAMP, Kind.ACTION),
         STAMP_APPLY(Step.STAMP, Kind.ACTION),
         STAMP_LOOK(Step.STAMP, Kind.LOOK, "footer:build"),
-        PAINT_PICK(Step.PAINT, Kind.ACTION, "tool:paintbrush"),
+        PAINT_PICK(Step.PAINT, Kind.ACTION, "tool:" + PAINT),
         PAINT_PRESET(Step.PAINT, Kind.ACTION, "preset:" + PEAKS),
         PAINT_BRUSH(Step.PAINT, Kind.ACTION, "footer:build"),
         PAINT_CLICK(Step.PAINT, Kind.ACTION),
@@ -143,7 +143,7 @@ public final class WelcomeTour {
      * @param toolsStage     la etapa abierta es Herramientas
      * @param tool           la herramienta elegida (con sus ajustes a la vista), o vacío si se ve la cuadrícula
      * @param stampSeed      la semilla del sello de relieve ({@code null}: al azar)
-     * @param peaks          Pintar terreno tiene puesto el preset «Cumbres»
+     * @param peaks          Pintar tiene puesto el preset «Cumbres»
      * @param ghost          qué fantasma hay y dónde está, o {@code null} sin fantasma
      * @param ghostWaiting   el fantasma está confirmado, esperando al servidor
      * @param previewWaiting hay una vista previa esperando a Confirmar

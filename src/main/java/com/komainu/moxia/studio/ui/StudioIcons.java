@@ -24,15 +24,32 @@ public final class StudioIcons {
         // Sobre qué trabaja una herramienta.
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
-        TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, PAINT, TEXT, ANALYZE, GRAVITY, SNOW, DRAIN, WATERLOG,
-        BIOME, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
+        TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
+        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER, WATER, LASSO, REFERENCE,
+        // Los modos de Retocar.
+        GRAVITY, SNOW, DRAIN, WATERLOG, LOOSE_FLOWS, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
-        GIZMO
+        GIZMO,
+        // Compartir con otro servidor (un código para copiar).
+        SHARE
     }
 
     private static final Map<Icon, String[]> MASKS = new EnumMap<>(Icon.class);
 
     static {
+        mask(Icon.HOTBARS,
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............",
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............",
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............");
         mask(Icon.PATH,
                 "............",
                 "###.........",
@@ -477,18 +494,6 @@ public final class StudioIcons {
                 "#####.######",
                 "############",
                 "############");
-        mask(Icon.PAINT,
-                "............",
-                ".##########.",
-                ".#########+#",
-                ".##########.",
-                "..........#.",
-                ".....######.",
-                ".....#......",
-                "....###.....",
-                "....###.....",
-                "....###.....",
-                "....###.....");
         mask(Icon.TEXT,
                 "............",
                 ".##########.",
@@ -500,6 +505,20 @@ public final class StudioIcons {
                 ".....##.....",
                 ".....##.....",
                 "....####....");
+        // Medir y anotar: una regla, con sus marcas y la de en medio más larga.
+        mask(Icon.RULER,
+                "............",
+                "............",
+                "............",
+                "############",
+                "#..........#",
+                "#.#.#.#.#.##",
+                "#.#.#.#.#.##",
+                "#.#...#...##",
+                "############",
+                "............",
+                "............",
+                "............");
         mask(Icon.ANALYZE,
                 "..........##",
                 "..........##",
@@ -622,9 +641,174 @@ public final class StudioIcons {
                 "+++.........",
                 "............",
                 "####++++####");
+        // Un tiesto con su flor entre las esquinas de una selección: un display elegido.
+        mask(Icon.DISPLAY,
+                "++........++",
+                "+...#..#...+",
+                ".....##.....",
+                "....####....",
+                ".....##.....",
+                "......#.....",
+                "....#.#.....",
+                ".....##.....",
+                "..########..",
+                "...######...",
+                "+...####...+",
+                "++........++");
+        // Una llana de albañil: el mango arriba y la hoja abajo.
+        mask(Icon.WATER,
+                "...######...",
+                "...#++++#...",
+                "....#++#....",
+                ".....##.....",
+                ".....##.....",
+                "............",
+                "#..........#",
+                "#++++++++++#",
+                "#++++++++++#",
+                "#++++++++++#",
+                "############",
+                "............");
+        mask(Icon.LOOSE_FLOWS,
+                "....#.......",
+                "...#+#......",
+                "..#+++#.....",
+                ".#+++++#....",
+                ".#+++++#....",
+                "#+++++++#...",
+                "#+++++++#...",
+                ".#+++++#.#.#",
+                "..#####...#.",
+                ".........#.#",
+                "............",
+                "............");
+        mask(Icon.TOUCH_UP,
+                ".........##.",
+                "........##..",
+                ".......##...",
+                "......##....",
+                ".....+#.....",
+                "....+###+...",
+                "...+#####+..",
+                "..+#######+.",
+                ".+#########+",
+                "..+#######+.",
+                "...+#####+..",
+                "....+###+...");
+        // Calcar imagen: un cuadro con un paisaje y la rejilla de contar bloques encima.
+        mask(Icon.REFERENCE,
+                "############",
+                "#...+...+..#",
+                "#...+..##..#",
+                "#...+..##..#",
+                "#++++++++++#",
+                "#...+...+..#",
+                "#...#...+..#",
+                "#..###..#..#",
+                "#.#####.##.#",
+                "############");
+        // Una casa a medio levantar: la mitad de abajo ya puesta y lo que falta, con el tejado, aún apagado.
+        mask(Icon.REBUILD,
+                ".....++.....",
+                "....++++....",
+                "...++++++...",
+                "..++++++++..",
+                ".++++++++++.",
+                "..++++++++..",
+                "..++++++++..",
+                "..########..",
+                "..###..###..",
+                "..###..###..",
+                "############");
+        // Un lazo: el contorno cerrado que rodea lo que se selecciona, con su nudo y la cuerda que cuelga.
+        mask(Icon.LASSO,
+                "...######...",
+                ".##......##.",
+                "#..........#",
+                "#..........#",
+                "#..........#",
+                ".#........#.",
+                "..##....##..",
+                "....#++#....",
+                ".....##.....",
+                "....#.......",
+                "...#........",
+                "..+.........");
+        // Un bloque con una grieta que se cierra: lo infestado vuelve a ser piedra.
+        mask(Icon.DEINFEST,
+                "############",
+                "#..........#",
+                "#...#......#",
+                "#....#.....#",
+                "#.....#....#",
+                "#....#.....#",
+                "#...#......#",
+                "#..........#",
+                "#......+++.#",
+                "#.....+#+..#",
+                "#.....+++..#",
+                "############");
+        // Una hoja con su nervio.
+        mask(Icon.LEAVES,
+                ".......#####",
+                ".....###++##",
+                "....##+##+##",
+                "...##+##++##",
+                "..##+##+++#.",
+                "..#+##++++#.",
+                ".##+#+++##..",
+                ".#+#++###...",
+                ".#+####.....",
+                ".##.........",
+                "#...........",
+                "............");
+        // Una losa con agua dentro.
+        mask(Icon.WET,
+                "............",
+                ".....#......",
+                "....###.....",
+                "...#####....",
+                "...#####....",
+                "....###.....",
+                "............",
+                "############",
+                "#++++++++++#",
+                "#++++++++++#",
+                "#++++++++++#",
+                "############");
+        // Un panal: la cera de abeja.
+        mask(Icon.WAX,
+                "...##..##...",
+                "..#++##++#..",
+                "..#++##++#..",
+                "...##..##...",
+                ".##..##..##.",
+                "#++##++##++#",
+                "#++##++##++#",
+                ".##..##..##.",
+                "...##..##...",
+                "..#++##++#..",
+                "..#++##++#..",
+                "...##..##...");
     }
 
     private StudioIcons() {
+    }
+
+    static {
+        // Una flecha que sale de la caja: lo que se lleva a otro servidor.
+        mask(Icon.SHARE,
+                ".....##.....",
+                "....####....",
+                "...##..##...",
+                ".....##.....",
+                ".....##.....",
+                ".##..##..##.",
+                ".#...##...#.",
+                ".#........#.",
+                ".#........#.",
+                ".##########.",
+                "............");
     }
 
     private static void mask(Icon icon, String... rows) {

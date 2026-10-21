@@ -1,24 +1,32 @@
 package com.komainu.moxia.command;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.brush.ez.AlignmentGuides;
 import com.komainu.moxia.capability.CapabilityConfig;
 import com.komainu.moxia.capability.CapabilityService;
 import com.komainu.moxia.config.KomaEditConfig;
+import com.komainu.moxia.feedback.AlignmentGuidePayload;
 import com.komainu.moxia.gradient.GradientPalette;
 import com.komainu.moxia.gradient.ServerPalettes;
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.permission.PermissionNodes;
 import com.komainu.moxia.persistence.QuietMode;
+import com.komainu.moxia.placement.AlignmentGuideSettings;
+import com.komainu.moxia.preview.PreviewDisplays;
+import com.komainu.moxia.progress.ProgressBars;
 import com.komainu.moxia.progress.ProgressLine;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -32,9 +40,9 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 /**
- * Órdenes generales y de administración, como {@code /ezedits info}, {@code quiet}, {@code wiki} y
- * {@code reload}: {@code /komaedit info}, {@code /komaedit quiet}, {@code /komaedit wiki}, {@code /komaedit reload}
- * y {@code /komaedit permisos}.
+ * Órdenes generales y de administración, como {@code /ezedits info}, {@code quiet}, {@code wiki}, {@code reload},
+ * {@code debugprint} y {@code //ezdebug}: {@code /komaedit info}, {@code /komaedit quiet}, {@code /komaedit wiki},
+ * {@code /komaedit reload}, {@code /komaedit permisos}, {@code /komaedit debugprint} y {@code /komaedit debug}.
  */
 public final class AdminCommands {
     private AdminCommands() {
@@ -49,12 +57,95 @@ public final class AdminCommands {
         root.addChild(reload("recargar").build());
         root.addChild(permissions("permissions").build());
         root.addChild(permissions("permisos").build());
+        root.addChild(literal("debugprint")
+                .requires(source -> EzCommandSupport.can(source, KomaPermissions.ADMIN_DEBUG))
+                .executes(AdminCommands::debugPrint).build());
+        root.addChild(debug().build());
+    }
+
+    /** {@code /komaedit debugprint}, como {@code /ezedits debugprint}: lo que hace falta para diagnosticar un fallo. */
+    private static int debugPrint(CommandContext<ServerCommandSource> context) {
+        ServerCommandSource source = context.getSource();
+        KomaEditConfig.Settings settings = KomaEditConfig.settings();
+        AlignmentGuideSettings guide = AlignmentGuideSettings.get();
+        Runtime runtime = Runtime.getRuntime();
+        long usedMegabytes = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
+        long maxMegabytes = runtime.maxMemory() / (1024 * 1024);
+        List<ServerPlayerEntity> players = source.getServer().getPlayerManager().getPlayerList();
+        long modded = players.stream().filter(player -> player.networkHandler != null
+                && ServerPlayNetworking.canSend(player, AlignmentGuidePayload.ID)).count();
+        List<String> lines = List.of(
+                "KomaEdit " + version(KomaEditMod.MOD_ID) + " · Minecraft " + version("minecraft") + " · WorldEdit "
+                        + version("worldedit") + " · Fabric Loader " + version("fabricloader") + " · Java "
+                        + Runtime.version(),
+                "Memoria: " + ProgressLine.group(usedMegabytes) + " de " + ProgressLine.group(maxMegabytes) + " MB",
+                "Límites: " + ProgressLine.group(settings.maxBlocksPerOperation()) + " bloques por operación · "
+                        + settings.maxConcurrentJobs() + " colocando a la vez · "
+                        + ProgressLine.decimal(settings.tickBudgetMillis()) + " ms por tick (mínimo "
+                        + ProgressLine.decimal(settings.tickBudgetMinMillis()) + ")",
+                "Visualizador de alineación: " + (guide.enabled() ? "activo, cada " + guide.updateTicks() + " ticks"
+                        + (guide.vanillaDisplays() ? ", con displays para clientes sin el mod" : "") : "apagado"),
+                "Jugadores: " + players.size() + " (" + modded + " con KomaEdit en el cliente)",
+                "Paletas: " + GradientPalette.values().length + " de serie y " + ServerPalettes.all().size()
+                        + " del servidor · configuración en " + KomaEditConfig.directory());
+        source.sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal("Depuración ").formatted(Formatting.AQUA))
+                .append(EzCommandSupport.copyable("[copiar]", String.join("\n", lines), Formatting.YELLOW)), false);
+        for (String line : lines) {
+            source.sendFeedback(() -> Text.literal("  " + line).formatted(Formatting.GRAY), false);
+        }
+        return 1;
+    }
+
+    private static String version(String mod) {
+        return FabricLoader.getInstance().getModContainer(mod)
+                .map(container -> container.getMetadata().getVersion().getFriendlyString())
+                .orElse("?");
+    }
+
+    /**
+     * {@code /komaedit debug}, como {@code //ezdebug}: {@code clearloadingbars} quita tu barra de progreso y
+     * {@code removevisualiserentities} retira los displays del visualizador de la alineación y borra los de la vista
+     * previa que hubieran acabado en el mundo (no debería haber ninguno: solo existen en el cliente de quien edita).
+     */
+    private static LiteralArgumentBuilder<ServerCommandSource> debug() {
+        return literal("debug")
+                .requires(source -> EzCommandSupport.canAny(source, "komaedit.debug"))
+                .executes(context -> EzCommandSupport.fail(context.getSource(),
+                        "Usa /komaedit debug clearloadingbars o removevisualiserentities"))
+                .then(literal("clearloadingbars")
+                        .requires(source -> EzCommandSupport.can(source, KomaPermissions.DEBUG_LOADING_BAR))
+                        .executes(context -> {
+                            ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+                            ProgressBars.remove(player);
+                            EzCommandSupport.ok(player, "Barra de progreso quitada; si una edición sigue, vuelve al"
+                                    + " avanzar");
+                            return 1;
+                        }))
+                .then(literal("removevisualiserentities")
+                        .requires(source -> EzCommandSupport.can(source, KomaPermissions.DEBUG_VISUALISER))
+                        .executes(AdminCommands::removeVisualiserEntities));
+    }
+
+    private static int removeVisualiserEntities(CommandContext<ServerCommandSource> context) {
+        ServerCommandSource source = context.getSource();
+        int guides = source.getEntity() instanceof ServerPlayerEntity player ? AlignmentGuides.clear(player) : 0;
+        List<Entity> orphans = new ArrayList<>();
+        for (ServerWorld world : source.getServer().getWorlds()) {
+            for (Entity entity : world.iterateEntities()) {
+                if (PreviewDisplays.isOrphan(entity)) {
+                    orphans.add(entity);
+                }
+            }
+        }
+        orphans.forEach(Entity::discard);
+        source.sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal("Retirados " + guides
+                + " displays del visualizador y " + orphans.size() + " de la vista previa que habían quedado en el"
+                + " mundo").formatted(Formatting.GREEN)), true);
+        return 1;
     }
 
     private static int info(CommandContext<ServerCommandSource> context) {
-        String version = FabricLoader.getInstance().getModContainer(KomaEditMod.MOD_ID)
-                .map(container -> container.getMetadata().getVersion().getFriendlyString())
-                .orElse("?");
+        String version = version(KomaEditMod.MOD_ID);
         ServerCommandSource source = context.getSource();
         source.sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal("KomaEdit " + version)
                 .formatted(Formatting.AQUA)), false);
@@ -120,6 +211,9 @@ public final class AdminCommands {
                     KomaEditConfig.load();
                     CapabilityConfig.load();
                     CapabilityService.resyncAll(context.getSource().getServer());
+                    // Las reglas de utilities.json (compartir, notas del equipo) cambian lo que puede cada uno.
+                    com.komainu.moxia.views.ViewService.sendCatalogToAll(context.getSource().getServer());
+                    com.komainu.moxia.notes.NoteService.syncAll(context.getSource().getServer());
                     int palettes = ServerPalettes.load(KomaEditConfig.palettesFile());
                     KomaEditConfig.Settings settings = KomaEditConfig.settings();
                     context.getSource().sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal(

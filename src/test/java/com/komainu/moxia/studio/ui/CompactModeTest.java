@@ -23,9 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * ajustar y construir) se ve sin desplazar, sin descripciones y con lo demás plegado.
  */
 class CompactModeTest {
-    /** Herramientas que se usan sobre la marcha; las de listas largas (bioma, capacidades) desplazan, y está bien. */
+    /**
+     * Herramientas que se usan sobre la marcha; las de listas largas (capacidades, el bioma de Retocar) desplazan, y
+     * está bien, como Pintar con el pincel, con sus dos galerías (ya desplazaba como «Pintar terreno»). Retocar, en
+     * sus modos de uso diario, y Pintar, la superficie natural de la selección (lo que era «Pintar superficie»).
+     */
     private static final List<String> ESSENTIAL = List.of("tree", "rock", "roof", "loft", "stamp", "ramp", "river",
-            "erosion", "paint", "text", "gravity", "snow", "drain", "waterlog", "symmetry");
+            "erosion", "text", "touchup", "symmetry");
+    private static final List<String> TOUCH_UPS = List.of("nieve", "drenar", "inundar", "gravedad");
 
     @BeforeAll
     static void thumbnails() {
@@ -55,10 +60,17 @@ class CompactModeTest {
     @Test
     void everyEssentialToolFitsWithoutScrollingAt854x480() {
         for (int[] screen : new int[][]{{427, 240}, {480, 270}}) {
-            for (String id : ESSENTIAL) {
+            List<String> cases = new java.util.ArrayList<>(ESSENTIAL);
+            TOUCH_UPS.forEach(mode -> cases.add("touchup:touch=" + mode));
+            cases.add("paint:gradient=natural:use=selection");
+            for (String id : cases) {
                 StudioDriver studio = studio(screen[0], screen[1]);
-                ToolCard card = ToolCatalog.byId(id);
+                ToolCard card = ToolCatalog.byId(id.split(":")[0]);
                 studio.view.tools().select(card, studio.host);
+                for (String setting : id.contains(":") ? id.substring(id.indexOf(':') + 1).split(":") : new String[0]) {
+                    String[] pair = setting.split("=");
+                    studio.view.tools().setValues(card, studio.view.tools().values(card).with(pair[0], pair[1]));
+                }
                 studio.render();
                 Rect viewport = studio.view.frame().viewport();
                 assertTrue(studio.view.contentHeight() <= viewport.height(), screen[0] + "×" + screen[1] + " · "

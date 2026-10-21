@@ -25,15 +25,21 @@ final class PreviewScope {
             "recargar", "permissions", "permisos", "noise", "ruido", "sel", "seleccion", "quiet", "silencio", "wiki",
             "symmetry", "simetria", "sym", "capability", "capacidad", "color", "colour", "analyze", "analizar",
             "materiales", "biome", "bioma", "gradient", "clipboard", "portapapeles", "repeat", "repetir", "jobs",
-            "trabajos", "trozo", "part");
+            "trabajos", "trozo", "part", "debug", "debugprint", "rebuild", "reconstruir", "share", "compartir",
+            "display", "displays", "decorar", "vista", "vistas", "view", "views", "nota", "notas", "note", "notes");
     private static final Set<String> PALETTE = Set.of("palette", "paleta");
     /** De las paletas solo editan el mundo estas. */
     private static final Set<String> PALETTE_EDITS = Set.of("swap", "place");
     private static final Set<String> BLUEPRINT = Set.of("blueprint", "blueprints", "planos", "plano");
     /** De la biblioteca de planos solo coloca bloques {@code place}. */
     private static final Set<String> BLUEPRINT_EDITS = Set.of("place", "colocar");
-    /** Subórdenes de gestión dentro de familias que sí editan (la segunda palabra). */
+    /**
+     * Subórdenes sin vista previa dentro de familias que sí editan (la segunda palabra): las de gestión y el bioma de
+     * {@code retocar}, que no tiene bloques que enseñar (y ahí {@code -v} es el relleno vertical).
+     */
     private static final Map<String, Set<String>> MANAGEMENT_MODES = Map.of(
+            "retocar", Set.of("bioma", "biome"),
+            "touchup", Set.of("bioma", "biome"),
             "tree", Set.of("save", "guardar", "list", "lista", "delete", "borrar", "cancel", "cancelar"),
             "arbol", Set.of("save", "guardar", "list", "lista", "delete", "borrar", "cancel", "cancelar"),
             "rock", Set.of("save", "guardar", "list", "lista", "delete", "borrar", "cancel", "cancelar"),

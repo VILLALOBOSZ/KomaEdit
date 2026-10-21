@@ -1,0 +1,7 @@
+superficie: 657 bloques, 17693 rayos, 1197526 pasos, 77 ms
+cuatro capas: 2594 bloques; hasta el fondo: 8985
+sumar y restar: 1139 → 1046
+sin lo no sólido: 189; con lo no sólido: 203 (63 de agua y flores)
+pincel: 634 pintados, 52 borrados
+ampliar 3: 1271; reducir 3: 204; invertir: 751
+Texturas de Minecraft: sí

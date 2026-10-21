@@ -135,6 +135,25 @@ public final class StudioTheme {
     public static final int WORLD_PLANE_Z = 0x42A5F5;
     public static final int WORLD_PLANE_Y = 0x66BB6A;
     public static final int WORLD_AXIS = 0xFFCA28;
+    /*
+     * La regla: el recorrido, el círculo y la caja en amarillo pálido (se lee sobre cielo y piedra y no se confunde con
+     * el blanco de la selección); los puntos en blanco; lo que se mediría con el siguiente clic, el mismo amarillo
+     * a media luz. Las patas por ejes usan los colores de los planos.
+     */
+    public static final int WORLD_RULER = 0xF2FFE45C;
+    public static final int WORLD_RULER_POINT = 0xF0FFFFFF;
+    public static final int WORLD_RULER_HOVER = 0x8CFFE45C;
+    /** Las medidas de la regla y el texto de las notas, sobre su fondo oscuro. */
+    public static final int WORLD_LABEL = 0xF2F2F2;
+    /** La línea de autor y fecha de una nota, y las notas resueltas. */
+    public static final int WORLD_LABEL_MUTED = 0xA8B0BA;
+    /** Medidas por ejes en un rótulo: los colores de los ejes, más claros para leerse sobre su fondo oscuro. */
+    public static final int WORLD_LABEL_X = 0xFF9A90;
+    public static final int WORLD_LABEL_Y = 0xA5EBA8;
+    public static final int WORLD_LABEL_Z = 0x97CEFF;
+    /** El lazo mientras se dibuja, a tramos claros y oscuros: se lee sobre cualquier cosa que rodee. */
+    public static final int WORLD_LASSO_LIGHT = 0xFFFFFFFF;
+    public static final int WORLD_LASSO_DARK = 0xFF1A1A1A;
 
     private static StudioPalette current;
 

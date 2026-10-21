@@ -13,7 +13,7 @@ public final class LoftCard extends ToolCard {
     private static final Pattern CURVE = Pattern.compile("[a-z0-9_\\-]{1,32}");
 
     LoftCard() {
-        super("loft", ToolFamily.ROOFS, ToolTarget.PATH_OR_SELECTION,
+        super("loft", ToolTarget.PATH_OR_SELECTION,
                 List.of("loft", "lona", "toldo", "vela", "awning", "canopy", "sail", "puente colgante"),
                 List.of(
                         block("material", "white_wool"),

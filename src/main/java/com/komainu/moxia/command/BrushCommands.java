@@ -39,7 +39,7 @@ public final class BrushCommands {
         for (EzBrushType type : EzBrushType.values()) {
             builder.suggest(type.id());
         }
-        for (String action : new String[]{"aplicar", "cancelar", "quitar", "estado"}) {
+        for (String action : new String[]{"retocar", "aplicar", "cancelar", "quitar", "estado"}) {
             builder.suggest(action);
         }
         return builder.buildFuture();
@@ -59,13 +59,13 @@ public final class BrushCommands {
                 case PETAL_PAINTER -> new String[]{"petals", "wildflowers", "leaves", "8", "0.3", "-n",
                         "Perlin(F:0.05)", "-z", "-m", "#fullblock", "grass_block,moss_block", "-p"};
                 case PLACE -> new String[]{"Clipboard", "Cl(O:C)", "Cl(R:90)", "Sh(S:Cone,P:stone)", "Constant",
-                        "SurfaceNormal", "Aim", "Random", "ViewDiff", "C(D:east)", "-s", "-o", "-j", "-a", "-x", "-w",
-                        "-p"};
+                        "SurfaceNormal", "Aim", "Random", "ViewDiff", "C(D:east)", "C(D:aim)", "-s", "-o", "-j", "-a",
+                        "-x", "-w", "-mirada", "clic", "-p"};
                 case SCATTER -> new String[]{"Clipboard", "Sc(N:arbol_.*)", "Ic(P:stone,R:0.6)", "Constant", "Random",
                         "SurfaceNormal", "-h", "Box(D:\"30,20,30\")", "-n", "-d", "up", "-e", "-m", "-u", "-s", "-o",
-                        "-t"};
+                        "-t", "-mirada", "clic"};
                 case ARRAY -> new String[]{"Clipboard", "Sh(S:Cylinder,P:stone)", "Tangential", "Orthogonal",
-                        "Constant", "-g", "-q", "-y", "-b", "-n", "-p", "-s"};
+                        "Constant", "-g", "-q", "-y", "-b", "-n", "-p", "-s", "-mirada", "clic"};
                 case TREE -> new String[]{"oak", "spruce", "birch", "jungle", "acacia", "cherry", "willow", "dark_oak",
                         "dead", "palm", "baobab", "fantasy", "18", "-g", "-b", "-d", "-w", "-i", "-c", "-x", "-t", "-h",
                         "-r", "-m", "-s", "-p"};
@@ -77,6 +77,7 @@ public final class BrushCommands {
                 case STAMP -> stampExamples(context.getSource());
                 case SCULPT -> sculptExamples(remaining);
                 case PAINT -> paintExamples(remaining);
+                case ZONE -> zoneExamples(remaining);
             };
         } catch (IllegalArgumentException exception) {
             examples = new String[0];
@@ -136,6 +137,14 @@ public final class BrushCommands {
         return examples.toArray(String[]::new);
     }
 
+    /** Sugerencias del pincel de zona: el radio y después las órdenes de la selección que valen como pincel. */
+    private static String[] zoneExamples(String remaining) {
+        if (!remaining.contains(" ")) {
+            return new String[]{"6", "8", "12"};
+        }
+        return new String[]{"retocar", "pintar", "terreno", "erosion", "texture", "smooth", "surface"};
+    }
+
     /** Sugerencias del pincel de relieve: los sellos que hay, los modos, las paletas y las banderas. */
     private static String[] heightmapExamples() {
         java.util.List<String> examples = new java.util.ArrayList<>(
@@ -155,7 +164,7 @@ public final class BrushCommands {
                         .suggests(TYPES)
                         .executes(context -> configure(context, ""))
                         .then(argument("pincel_opciones", StringArgumentType.greedyString())
-                                .suggests(OPTIONS)
+                                .suggests(ResultSuggestions.or(OPTIONS))
                                 .executes(context -> configure(context,
                                         StringArgumentType.getString(context, "pincel_opciones")))));
     }
@@ -206,21 +215,15 @@ public final class BrushCommands {
                 default -> {
                 }
             }
-            EzBrushType type;
-            try {
-                type = EzBrushType.byId(action);
-            } catch (IllegalArgumentException unknown) {
-                // Atajo: el modo de modelado como pincel («/komaedit pincel soldar 8»).
-                try {
-                    ModelMode.byId(action);
-                } catch (IllegalArgumentException notModel) {
-                    throw unknown;
-                }
-                type = EzBrushType.SCULPT;
-                options = action + " " + options;
-            }
+            Resolved resolved = resolve(action, options);
+            EzBrushType type = resolved.type();
+            options = resolved.options();
             KomaPermissions.requireBuild(player, "brush." + type.id());
             EzBrush brush = EzBrush.create(player, type, options);
+            if (brush.type() != type) {
+                // El modo Natural del pincel de pintura es un pincel de zona: también pide su permiso.
+                KomaPermissions.requireBuild(player, "brush." + brush.type().id());
+            }
             String toolId = BrushTool.bind(player, BrushTool.Kind.BRUSH, Items.FEATHER, "Pincel de KomaEdit");
             EzBrushManager.bind(player, toolId, brush);
             BrushTool.setRadius(player, brush.radius());
@@ -246,22 +249,59 @@ public final class BrushCommands {
      */
     private static int update(ServerPlayerEntity player, String input) {
         String[] parts = input.strip().split("\\s+", 2);
-        EzBrushType type = EzBrushType.byId(parts[0]);
+        Resolved resolved = resolve(parts[0], parts.length > 1 ? parts[1] : "");
+        EzBrushType type = resolved.type();
         String toolId = BrushTool.id(player.getMainHandStack());
         java.util.Optional<EzBrush> current = BrushTool.kind(toolId) == BrushTool.Kind.BRUSH
                 ? EzBrushManager.brush(player.getUuid(), toolId) : java.util.Optional.empty();
-        if (current.isEmpty() || current.get().type() != type) {
+        if (current.isEmpty() || !current.get().type().sameCard(type)) {
             Feedback.statusWarn(player, Text.literal("No tienes en la mano el pincel de " + type.displayName()
                     + ": los cambios del Studio no se le pasan"));
             return 0;
         }
         KomaPermissions.requireBuild(player, "brush." + type.id());
-        EzBrush brush = EzBrush.create(player, type, parts.length > 1 ? parts[1] : "").adopt(current.get());
+        EzBrush brush = EzBrush.create(player, type, resolved.options()).adopt(current.get());
+        if (!current.get().type().sameCard(brush.type())) {
+            Feedback.statusWarn(player, Text.literal("El pincel de la mano es de otra herramienta: pulsa «Al pincel»"
+                    + " en el Studio para cambiarlo"));
+            return 0;
+        }
+        KomaPermissions.requireBuild(player, "brush." + brush.type().id());
         EzBrushManager.bind(player, toolId, brush);
         BrushTool.setRadius(player, brush.radius());
         Feedback.status(player, type.displayName() + " al día" + (brush.radius() > 0 ? " · radio " + brush.radius()
                 : "") + (brush.preview() ? " · con vista previa" : " · sin vista previa"));
         return 1;
+    }
+
+    /** El tipo de pincel y sus opciones, con los atajos ya deshechos. */
+    record Resolved(EzBrushType type, String options) {
+    }
+
+    /**
+     * Los atajos de {@code /komaedit pincel}: el modo de modelado como pincel ({@code pincel soldar 8}) y
+     * {@code pincel retocar [radio] <modo> …}, que es el pincel de zona con {@code retocar} ({@code pincel zona 6
+     * retocar nieve 2}).
+     */
+    static Resolved resolve(String action, String options) {
+        String normalized = BrushOptions.normalize(action);
+        if (normalized.equals("retocar") || normalized.equals("touchup")) {
+            String[] words = options.strip().split("\\s+", 2);
+            boolean radius = !options.isBlank() && BrushOptions.isNumber(words[0]);
+            String rest = radius ? (words.length > 1 ? words[1] : "") : options.strip();
+            return new Resolved(EzBrushType.ZONE, (radius ? words[0] : Integer.toString(
+                    com.komainu.moxia.brush.ez.ZoneCommand.DEFAULT_RADIUS)) + " retocar " + rest);
+        }
+        try {
+            return new Resolved(EzBrushType.byId(action), options);
+        } catch (IllegalArgumentException unknown) {
+            try {
+                ModelMode.byId(action);
+            } catch (IllegalArgumentException notModel) {
+                throw unknown;
+            }
+            return new Resolved(EzBrushType.SCULPT, action + " " + options);
+        }
     }
 
     private static int status(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -271,7 +311,7 @@ public final class BrushCommands {
         if (brush.isEmpty()) {
             feedback(context, Text.literal("Pinceles: paletteshift, gradient, gradientstroke, petalpainter, place,"
                     + " scatter, array, tree, rock, biome, heightmap, stamp, sculpt (draw, rock, weld, melt, roughen,"
-                    + " shatter), paint (pintar). Ejemplo: /komaedit pincel pintar")
+                    + " shatter), paint (pintar), zone (zona) y retocar. Ejemplo: /komaedit pincel pintar")
                     .formatted(Formatting.GRAY));
             return 1;
         }

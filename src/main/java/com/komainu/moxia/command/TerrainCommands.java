@@ -133,7 +133,10 @@ public final class TerrainCommands {
                 case "rampa" -> ramp(player, options);
                 case "rio", "arroyo", "canon", "barranco" -> river(player, action, options);
                 case "erosion" -> erosion(player, options);
-                case "pintar" -> paint(player, options);
+                case "pintar" -> {
+                    Renamed.notice(player, "/komaedit terreno pintar", "/komaedit pintar <paleta> natural");
+                    paint(player, options);
+                }
                 case "sellos" -> stamps(context, player, options);
                 case "paletas" -> palettes(context);
                 default -> throw new IllegalArgumentException("Acción desconocida: " + action + " ("
@@ -365,11 +368,15 @@ public final class TerrainCommands {
 
     // ---------------------------------------------------------------- pintar
 
-    private static void paint(ServerPlayerEntity player, String text) throws IncompleteRegionException {
+    /**
+     * Repinta la superficie de la selección con una paleta de superficie: {@code /komaedit pintar <paleta> natural}
+     * (antes {@code terreno pintar <paleta>}).
+     */
+    static void paint(ServerPlayerEntity player, String text) throws IncompleteRegionException {
         KomaPermissions.requireBuild(player, "terrain.paint");
         BrushOptions options = BrushOptions.parse(text, Set.of('e'), Set.of('m'));
         if (options.count() > 1) {
-            throw new IllegalArgumentException("pintar [paleta] [-m máscara]: la paleta va junta, con comas");
+            throw new IllegalArgumentException("pintar [paleta] natural [-m máscara]: la paleta va junta, con comas");
         }
         SurfacePalette palette = SurfacePalette.parse(options.positional(0));
         TerrainBlocks blocks = TerrainBlocks.resolve(palette);

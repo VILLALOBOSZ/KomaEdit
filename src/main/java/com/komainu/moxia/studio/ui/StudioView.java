@@ -6,6 +6,8 @@ import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeActionPayload;
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.share.ShareCodePayload;
+import com.komainu.moxia.share.ShareOfferPayload;
 import com.komainu.moxia.studio.BuildEstimate;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.StudioShortcuts;
@@ -14,6 +16,7 @@ import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.layout.StudioLayout;
 import com.komainu.moxia.studio.net.JobStatusPayload;
+import com.komainu.moxia.studio.tools.SelectionCard;
 import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
 import com.komainu.moxia.studio.tools.ToolContext;
@@ -25,6 +28,7 @@ import com.komainu.moxia.studio.tools.ui.ToolsPanel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -67,6 +71,7 @@ public final class StudioView {
     private final BlueprintStage blueprints = new BlueprintStage();
     private final BlockPicker picker = new BlockPicker();
     private final CommandPalette palette = new CommandPalette();
+    private final ShareDialog shareDialog = new ShareDialog();
     private final LivePreview live = new LivePreview();
     private final WelcomeGuide welcome = new WelcomeGuide(this);
 
@@ -121,6 +126,10 @@ public final class StudioView {
         return palette;
     }
 
+    public ShareDialog shareDialog() {
+        return shareDialog;
+    }
+
     public WelcomeTour welcome() {
         return welcome.tour();
     }
@@ -168,7 +177,7 @@ public final class StudioView {
 
     /** Si alguna ventana tapa el panel (las teclas y el ratón van a ella). */
     public boolean modal() {
-        return picker.isOpen() || palette.isOpen() || cheatSheet;
+        return picker.isOpen() || palette.isOpen() || shareDialog.isOpen() || cheatSheet;
     }
 
     /** Si se está escribiendo en algún campo: las letras no son atajos ni movimiento. */
@@ -255,6 +264,7 @@ public final class StudioView {
         StudioHost bound = bind(host);
         welcome.tick(bound);
         long now = host.now();
+        shareTick(bound, now);
         if (stage == StudioStage.TOOLS) {
             tools.tick(bound);
         } else {
@@ -289,6 +299,37 @@ public final class StudioView {
         status(host.tr("gui.komaedit.preview.live.sent"), now);
     }
 
+    /** Lo que contesta el servidor a «Compartir» y a «Pegar código». */
+    private void shareTick(StudioHost host, long now) {
+        host.takeShareOffer().ifPresent(offer -> {
+            palette.close();
+            historyOpen = false;
+            cheatSheet = false;
+            shareDialog.open(offer);
+        });
+        host.takeShareResult().ifPresent(result -> status(result.code().isEmpty()
+                ? host.tr("gui.komaedit.status.share.file", result.file())
+                : host.tr("gui.komaedit.status.share.copied", result.summary(), result.code().length()), now));
+    }
+
+    /** «Pegar código»: lo del portapapeles, si parece un código de KomaEdit. */
+    public void pasteShareCode(StudioHost host) {
+        StudioHost bound = bind(host);
+        String code = bound.clipboard().strip();
+        if (!shareCode(code)) {
+            bound.status(bound.tr("gui.komaedit.status.share.no_code"));
+            return;
+        }
+        bound.status(bound.tr(bound.shareImport(code) ? "gui.komaedit.status.share.reading"
+                : "gui.komaedit.status.share.unsupported"));
+    }
+
+    /** ¿Empieza por {@code kpack1:} o por {@code kp1:} (aunque venga entre comillas de Discord)? */
+    public static boolean shareCode(String text) {
+        String code = text.replace("`", "").strip();
+        return code.startsWith("kpack") || code.startsWith("kp1:");
+    }
+
     /** Si la vista previa en vivo está encendida (la de serie). */
     private static boolean liveMode(StudioHost host) {
         return host.preferences().previewMode() == StudioPreferences.PreviewMode.LIVE;
@@ -313,12 +354,13 @@ public final class StudioView {
             return null;
         }
         ToolCard card = tools.selected();
-        if (!card.previewable()) {
+        if (!card.previewable(tools.values(card))) {
             return null;
         }
         ToolContext context = host.context();
-        boolean selection = card.target() == ToolTarget.SELECTION
-                || card.target() == ToolTarget.PATH_OR_SELECTION && context.pathPoints() == 0;
+        ToolTarget target = tools.target();
+        boolean selection = target == ToolTarget.SELECTION
+                || target == ToolTarget.PATH_OR_SELECTION && context.pathPoints() == 0;
         if (selection && context.selectionVolume() > LivePreview.MAX_VOLUME) {
             return null;
         }
@@ -368,6 +410,8 @@ public final class StudioView {
             picker.draw(ui, frame.screen(), bound);
         } else if (palette.isOpen()) {
             palette.draw(ui, frame.screen(), bound);
+        } else if (shareDialog.isOpen()) {
+            shareDialog.draw(ui, frame.screen(), bound);
         } else if (cheatSheet) {
             drawCheatSheet(ui, bound);
         }
@@ -1195,7 +1239,7 @@ public final class StudioView {
         String toolKind = host.tr(CommandPalette.Kind.TOOL.translationKey());
         for (ToolCard card : ToolCatalog.ALL) {
             entries.add(new CommandPalette.Entry(CommandPalette.Kind.TOOL, host.tr(card.nameKey()), toolKind,
-                    String.join(" ", card.keywords()) + " " + host.tr(card.family().translationKey()),
+                    String.join(" ", card.keywords()) + " " + host.tr(ToolCatalog.categoryOf(card).translationKey()),
                     ToolsPanel.icon(card), () -> {
                 tools.select(card, bound);
                 selectStage(StudioStage.TOOLS, host);
@@ -1302,7 +1346,11 @@ public final class StudioView {
         /** Seleccionar arrastrando una caja; tirando de sus caras se ajusta; doble clic, lo pegado del mismo bloque. */
         SELECT,
         /** Pintar con el pincel de la mano; manteniendo el botón se sigue pintando. */
-        PAINT
+        PAINT,
+        /** Rodear con el lazo lo que se quiere seleccionar (Mayús suma, Ctrl resta, Alt interseca). */
+        LASSO,
+        /** Pintar la selección con el pincel de selección (las mismas teclas). */
+        FREEHAND
     }
 
     /**
@@ -1326,14 +1374,17 @@ public final class StudioView {
                 if (tools.browsing()) {
                     yield brush ? WorldAction.PAINT : WorldAction.NONE;
                 }
-                ToolCard card = tools.selected();
                 boolean points = host.context().pathPoints() > 0;
-                yield switch (card.target()) {
+                yield switch (tools.target()) {
                     case LOOK -> WorldAction.PLACE;
                     case PATH_OR_LOOK -> points ? WorldAction.POINTS : WorldAction.PLACE;
-                    case SELECTION -> WorldAction.SELECT;
+                    case SELECTION -> tools.selected() instanceof SelectionCard ? switch (selectionTool().tool()) {
+                        case "lasso" -> WorldAction.LASSO;
+                        case "brush" -> WorldAction.FREEHAND;
+                        default -> WorldAction.SELECT;
+                    } : WorldAction.SELECT;
                     case PATH_OR_SELECTION -> points ? WorldAction.POINTS : WorldAction.SELECT;
-                    case HAND, MODE -> brush ? WorldAction.PAINT : WorldAction.NONE;
+                    case HAND, MODE, SELF -> brush ? WorldAction.PAINT : WorldAction.NONE;
                 };
             }
             case COLOR -> WorldAction.SELECT;
@@ -1341,6 +1392,14 @@ public final class StudioView {
                     : blueprints.selectedName(host).isEmpty() ? WorldAction.NONE : WorldAction.PLACE;
             case RECIPES, INSTANCES -> brush ? WorldAction.PAINT : WorldAction.NONE;
         };
+    }
+
+    /**
+     * Los ajustes de la tarjeta Seleccionar (la herramienta del ratón, la profundidad del lazo, el radio y la forma
+     * del pincel), los que usa la pantalla para el lazo y el pincel de selección.
+     */
+    public SelectionCard.Settings selectionTool() {
+        return SelectionCard.settings(tools.values(ToolCatalog.byId("select")));
     }
 
     /** Si lo de la mano es un pincel de KomaEdit (no la supervarita ni otra cosa). */
@@ -1353,7 +1412,7 @@ public final class StudioView {
     public String worldHint(StudioHost host) {
         WorldAction action = worldAction(host);
         String key = switch (action) {
-            case NONE -> stage == StudioStage.TOOLS && !tools.browsing() && tools.selected().target() == ToolTarget.HAND
+            case NONE -> stage == StudioStage.TOOLS && !tools.browsing() && tools.target() == ToolTarget.HAND
                     ? "gui.komaedit.hint.world.brush_first" : "gui.komaedit.hint.world.none";
             case GHOST -> "gui.komaedit.hint.world.ghost";
             case POINTS -> "gui.komaedit.hint.world.points";
@@ -1361,11 +1420,16 @@ public final class StudioView {
                     : "gui.komaedit.hint.world.place";
             case SELECT -> "gui.komaedit.hint.world.select";
             case PAINT -> "gui.komaedit.hint.world.paint";
+            case LASSO -> "gui.komaedit.hint.world.lasso";
+            case FREEHAND -> "gui.komaedit.hint.world.freehand";
         };
         String what = action == WorldAction.PLACE && stage == StudioStage.TOOLS
                 ? host.tr(tools.selected().buildKey()).toLowerCase(java.util.Locale.ROOT)
                 : key.endsWith("brush_first") ? host.tr(tools.selected().buildKey()) : "";
-        return host.tr(key, what) + " · " + host.tr("gui.komaedit.hint.world.common");
+        // En el lazo y el pincel de selección, Alt interseca: ahí no hay cuentagotas.
+        String common = action == WorldAction.LASSO || action == WorldAction.FREEHAND
+                ? "gui.komaedit.hint.world.common_select" : "gui.komaedit.hint.world.common";
+        return host.tr(key, what) + " · " + host.tr(common);
     }
 
     /**
@@ -1443,7 +1507,7 @@ public final class StudioView {
         if (!BlueprintStage.SEARCH_KEY.equals(key)) {
             blueprints.stopEditing();
         }
-        if (picker.isOpen() || palette.isOpen()) {
+        if (picker.isOpen() || palette.isOpen() || shareDialog.isOpen()) {
             if (left && widget != null) {
                 widget.press(x, y);
             }
@@ -1579,6 +1643,9 @@ public final class StudioView {
     }
 
     private boolean handleKey(StudioKey key, StudioHost host) {
+        if (shareDialog.isOpen()) {
+            return shareDialog.key(key, host);
+        }
         if (palette.isOpen()) {
             return palette.key(key);
         }
@@ -1750,6 +1817,9 @@ public final class StudioView {
 
     public boolean charTyped(char character, StudioHost host) {
         StudioHost bound = bind(host);
+        if (shareDialog.isOpen()) {
+            return true;
+        }
         if (palette.isOpen()) {
             return palette.type(character);
         }
@@ -1776,7 +1846,7 @@ public final class StudioView {
         return false;
     }
 
-    /** Pegar (Ctrl+V) en el campo abierto. */
+    /** Pegar (Ctrl+V) en el campo abierto; sin campo, un código de KomaEdit se importa. */
     public void paste(String text, StudioHost host) {
         StudioHost bound = bind(host);
         if (tools.typing()) {
@@ -1787,6 +1857,10 @@ public final class StudioView {
             text.chars().forEach(code -> palette.type((char) code));
         } else if (picker.isOpen()) {
             text.chars().forEach(code -> picker.type((char) code));
+        } else if (!modal() && !blueprints.editing() && shareCode(text)) {
+            // Ctrl+V con un código de otro servidor en el portapapeles: se importa (enseñando antes qué trae).
+            bound.status(bound.tr(bound.shareImport(text.strip()) ? "gui.komaedit.status.share.reading"
+                    : "gui.komaedit.status.share.unsupported"));
         }
     }
 
@@ -1977,6 +2051,21 @@ public final class StudioView {
         }
 
         @Override
+        public com.komainu.moxia.hotbar.ui.HotbarDeck hotbars() {
+            return host.hotbars();
+        }
+
+        @Override
+        public boolean hotbarAutosave() {
+            return host.hotbarAutosave();
+        }
+
+        @Override
+        public void hotbar(com.komainu.moxia.hotbar.ui.HotbarAction action, String name) {
+            host.hotbar(action, name);
+        }
+
+        @Override
         public void worldUndo() {
             welcome.tour().undone();
             host.worldUndo();
@@ -2010,6 +2099,36 @@ public final class StudioView {
         @Override
         public void suggest(String command) {
             host.suggest(command);
+        }
+
+        @Override
+        public void shareExport(String things) {
+            host.shareExport(things);
+        }
+
+        @Override
+        public Map<String, String> savedPalettes() {
+            return host.savedPalettes();
+        }
+
+        @Override
+        public String clipboard() {
+            return host.clipboard();
+        }
+
+        @Override
+        public boolean shareImport(String code) {
+            return host.shareImport(code);
+        }
+
+        @Override
+        public Optional<ShareOfferPayload> takeShareOffer() {
+            return host.takeShareOffer();
+        }
+
+        @Override
+        public Optional<ShareCodePayload> takeShareResult() {
+            return host.takeShareResult();
         }
 
         @Override

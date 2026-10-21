@@ -2,6 +2,8 @@ package com.komainu.moxia.brush.ez;
 
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.placement.PlacementService;
+import com.komainu.moxia.placement.PlacementSettings;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.SculptManager;
 import com.komainu.moxia.studio.net.StudioAim;
@@ -40,6 +42,24 @@ public final class EzBrushManager {
         PlayerState state = PLAYERS.get(playerId);
         ToolState tool = state == null ? null : state.tools.get(toolId);
         return tool == null ? Optional.empty() : Optional.of(tool.brush);
+    }
+
+    /**
+     * Lo que necesita el visualizador de la alineación si la herramienta lleva un pincel de colocación: sus ajustes,
+     * la colocación que espera el clic de {@code ViewDiff} y los puntos del trazo (copiados).
+     */
+    static Optional<PlacementView> placement(UUID playerId, String toolId) {
+        PlayerState state = PLAYERS.get(playerId);
+        ToolState tool = state == null ? null : state.tools.get(toolId);
+        if (tool == null || !(tool.brush instanceof EzBrush.Placing placing)) {
+            return Optional.empty();
+        }
+        return Optional.of(new PlacementView(placing.settings(), placing.pending(),
+                List.copyOf(tool.global ? state.globalStroke : tool.stroke)));
+    }
+
+    record PlacementView(PlacementSettings settings, PlacementService.BrushTarget pending,
+                         List<BlockVector3> stroke) {
     }
 
     public static boolean unbind(UUID playerId, String toolId) {

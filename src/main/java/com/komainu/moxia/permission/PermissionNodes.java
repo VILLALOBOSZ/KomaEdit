@@ -2,6 +2,9 @@ package com.komainu.moxia.permission;
 
 import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.capability.BuildCapability;
+import com.komainu.moxia.share.SharePermissions;
+import com.komainu.moxia.notes.NotePermissions;
+import com.komainu.moxia.views.ViewPermissions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,6 +87,8 @@ public final class PermissionNodes {
         add(use, Pack.BASIC, null, null, "Acceso a /komaedit, la ayuda y la información");
         add(KomaPermissions.PATH, Pack.BASIC, null, null, "Trayectorias (/komaedit path)");
         add(KomaPermissions.HISTORY, Pack.BASIC, null, null, "Historial del editor");
+        add(KomaPermissions.DEBUG_LOADING_BAR, Pack.BASIC, use, "ezedits.debug.loadingbar",
+                "/komaedit debug clearloadingbars: quita tu barra de progreso");
         for (String shape : List.of("cone", "polydome", "polygon", "square", "tetrahedron", "torus")) {
             add(build + ".shape." + shape, Pack.BASIC, build, "ezedits.gen." + shape,
                     "/komaedit shape " + shape);
@@ -102,14 +107,28 @@ public final class PermissionNodes {
         add(build + ".snow", Pack.BASIC, build, null, "/komaedit snow");
         add(build + ".drain", Pack.BASIC, build, null, "/komaedit drain");
         add(build + ".waterlog", Pack.BASIC, build, null, "/komaedit waterlog");
+        add(build + ".fluid.fill", Pack.BASIC, build, null, "/komaedit fluido rellenar (Floodfill)");
+        add(build + ".fluid.clean", Pack.BASIC, build, null, "/komaedit fluido limpiar (flujos sueltos)");
         for (String color : List.of("similar", "gradient", "palette", "hotbar")) {
             add("komaedit.color." + color, Pack.BASIC, use, null, "/komaedit color " + color);
         }
+        add(com.komainu.moxia.hotbar.HotbarRules.PERMISSION, Pack.BASIC, use, null,
+                "Barras guardadas (/komaedit hotbar): guardar, cambiar, compartir; en supervivencia solo reordena");
         for (String[] entry : new String[][]{{"next", "next"}, {"here", "here"}, {"invert", "invert"},
                 {"delpos2", "delpos"}, {"encapsulate", "encapsulate"}, {"encapsulatenear", "encapsulatenear"},
                 {"catenary", "catenary"}}) {
             add(select + "." + entry[0], Pack.BASIC, select, "ezedits.selection." + entry[1],
                     "/komaedit sel " + entry[0]);
+        }
+        add(ViewPermissions.TELEPORT, Pack.BASIC, use, null,
+                "Saltar a una vista guardada o a una nota en la misma dimensión");
+        add(ViewPermissions.SEE_SHARED, Pack.BASIC, use, null, "Ver las vistas que comparte el equipo");
+        add(NotePermissions.PRIVATE, Pack.BASIC, use, null, "Notas privadas en el mundo (/komaedit nota)");
+        add(NotePermissions.TEAM, Pack.BASIC, use, null, "Ver las notas del equipo y marcarlas como resueltas");
+        add(select + ".lasso", Pack.BASIC, select, null, "Lazo del Studio (selección a mano)");
+        add(select + ".brush", Pack.BASIC, select, null, "Pincel de selección del Studio");
+        for (String operation : List.of("grow", "shrink", "complement", "undo", "box", "clear")) {
+            add(select + "." + operation, Pack.BASIC, select, null, "/komaedit sel " + operation);
         }
 
         // Intermedio.
@@ -164,6 +183,8 @@ public final class PermissionNodes {
                 "/komaedit symmetry radial");
         add(build + ".text", Pack.INTERMEDIATE, build, null, "/komaedit text");
         add(build + ".biome", Pack.INTERMEDIATE, build, null, "/komaedit biome");
+        add(build + ".fluid.ball", Pack.INTERMEDIATE, build, null, "/komaedit fluido bola");
+        add(build + ".fluid.fall", Pack.INTERMEDIATE, build, null, "/komaedit fluido cascada");
         add(build + ".brush.biome", Pack.INTERMEDIATE, build, null, "/komaedit pincel biome");
         add(build + ".shade", Pack.INTERMEDIATE, build, null, "/komaedit shade");
         add(build + ".tree", Pack.INTERMEDIATE, build, null, "/komaedit tree");
@@ -171,6 +192,8 @@ public final class PermissionNodes {
         add(build + ".brush.tree", Pack.INTERMEDIATE, build, null, "/komaedit pincel tree");
         add(build + ".brush.rock", Pack.INTERMEDIATE, build, null, "/komaedit pincel rock");
         add(build + ".brush.heightmap", Pack.INTERMEDIATE, build, null, "/komaedit pincel heightmap");
+        add(build + ".brush.zone", Pack.INTERMEDIATE, build, null,
+                "/komaedit pincel zona y pincel retocar (una orden de la selección alrededor del clic)");
         add(build + ".brush.paint", Pack.INTERMEDIATE, build, null,
                 "/komaedit pincel paint (pintar el terreno con un degradado)");
         add(build + ".brush.sculpt", Pack.INTERMEDIATE, build, null,
@@ -187,8 +210,20 @@ public final class PermissionNodes {
                 "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
         add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
         add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
+        add(KomaPermissions.REBUILD, Pack.INTERMEDIATE, build, null,
+                "/komaedit rebuild (reconstrucción animada de la selección, el portapapeles o un plano)");
+        add(SharePermissions.EXPORT, Pack.INTERMEDIATE, use, null,
+                "Exportar paletas, ruidos, presets, recetas y planos a un código (/komaedit share export)");
+        add(SharePermissions.IMPORT, Pack.INTERMEDIATE, null, null,
+                "Importar paquetes de otros servidores (/komaedit share import); además, el de guardar cada tipo");
+        add(build + ".display", Pack.INTERMEDIATE, build, null,
+                "Editor de displays: crear y editar los displays propios (/komaedit display)");
+        add(ViewPermissions.SHARE, Pack.INTERMEDIATE, build, null, "Compartir vistas con el equipo (/komaedit vista)");
+        add(NotePermissions.SHARE, Pack.INTERMEDIATE, build, null, "Poner notas para el equipo (/komaedit nota -e)");
 
         // Avanzado.
+        add(build + ".display_others", Pack.ADVANCED, build, null,
+                "Editar los displays de otros jugadores y los que no creó KomaEdit");
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
         add(KomaPermissions.INSTANCE, Pack.ADVANCED, null, null, "Instancias procedurales");
         add(build + ".array", Pack.ADVANCED, build, "ezedits.array", "/komaedit array");
@@ -201,6 +236,10 @@ public final class PermissionNodes {
         add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
         add(BlueprintPermissions.SHARE, Pack.ADVANCED, null, null,
                 "Compartir planos propios con todo el servidor (/komaedit blueprint share)");
+        add(SharePermissions.FILE, Pack.ADVANCED, null, null,
+                "Exportar paquetes a un archivo .kpack en config/komaedit/exports (/komaedit share export … -f)");
+        add(ViewPermissions.DIMENSION, Pack.ADVANCED, build, null,
+                "Saltar a una vista o a una nota de otra dimensión");
 
         // Capacidades de construcción a mano (menú rápido y /komaedit capability).
         for (BuildCapability capability : BuildCapability.values()) {
@@ -217,7 +256,12 @@ public final class PermissionNodes {
         // Administración.
         add(BuildCapability.GAMEMODE_PERMISSION, Pack.ADMIN, null, null, "Cambiar el modo de juego desde el menú rápido");
         add(BuildCapability.ANY_MODE_PERMISSION, Pack.ADMIN, null, null, "Usar las capacidades fuera de creativo");
+        add(com.komainu.moxia.hotbar.HotbarRules.GIVE_PERMISSION, Pack.ADMIN, null, null,
+                "Poner barras guardadas como en creativo en cualquier modo (crea objetos)");
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
+        add(KomaPermissions.ADMIN_DEBUG, Pack.ADMIN, null, "ezedits.admin.debug", "/komaedit debugprint");
+        add(KomaPermissions.DEBUG_VISUALISER, Pack.ADMIN, null, "ezedits.debug",
+                "/komaedit debug removevisualiserentities: retira los displays del visualizador y de la vista previa");
         add(KomaPermissions.ADMIN_JOBS, Pack.ADMIN, null, null,
                 "Ver, pausar y cancelar los trabajos de todos (/komaedit jobs)");
         add(KomaPermissions.ADMIN_STAMP_EXPORT, Pack.ADMIN, null, null,
@@ -231,6 +275,16 @@ public final class PermissionNodes {
                 "Borrar o reemplazar los planos compartidos de otros jugadores");
         add(BlueprintPermissions.UNLIMITED, Pack.ADMIN, null, null,
                 "Sin los límites de número y tamaño de planos de blueprints.json");
+        add(SharePermissions.UNLIMITED, Pack.ADMIN, null, null,
+                "Sin el límite de importaciones y exportaciones por hora de share.json");
+        add("komaedit.limit.displays", Pack.ADMIN, null, null,
+                "Sin los límites de displays por chunk y por jugador de displays.json");
+        add(ViewPermissions.ANY_MODE, Pack.ADMIN, null, null,
+                "Saltar a vistas y notas también en supervivencia (si utilities.json pide creativo)");
+        add(ViewPermissions.MANAGE, Pack.ADMIN, null, null,
+                "Quitar o reemplazar las vistas compartidas de otros, sin límite de número");
+        add(NotePermissions.MANAGE, Pack.ADMIN, null, null,
+                "Borrar las notas del equipo de otros y poner notas sin límite de número");
     }
 
     private PermissionNodes() {

@@ -7,6 +7,8 @@ import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.blueprint.BlueprintThumbnail;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.shape.PathShape;
+import com.komainu.moxia.share.ShareImport;
+import com.komainu.moxia.share.ShareOfferPayload;
 import com.komainu.moxia.studio.FigureVariation;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.layout.Rect;
@@ -62,6 +64,16 @@ class StudioMockupsTest {
         scenes.add(new Scene("1080p_gui3_herramientas_es.png", 640, 360, 3, "es_es", driver -> tools(driver, null)));
         scenes.add(new Scene("1080p_gui3_arbol_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui3_tejado_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "roof")));
+        // Las herramientas que se unieron: Retocar (nieve sobre la selección, drenar con el pincel) y Pintar (con el
+        // pincel y la superficie natural de la selección), con el interruptor «Pincel / Selección».
+        scenes.add(new Scene("1080p_gui3_retocar_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "touchup")));
+        scenes.add(new Scene("1080p_gui3_retocar_pincel_es.png", 640, 360, 3, "es_es",
+                driver -> tool(driver, "touchup", "touch", "drenar", "use", "brush")));
+        scenes.add(new Scene("1080p_gui3_pintar_natural_es.png", 640, 360, 3, "es_es",
+                driver -> tool(driver, "paint", "use", "selection", "gradient", "natural")));
+        scenes.add(new Scene("1080p_gui3_erosion_pincel_es.png", 640, 360, 3, "es_es",
+                driver -> tool(driver, "erosion", "use", "brush")));
+        scenes.add(new Scene("1080p_gui3_retocar_en.png", 640, 360, 3, "en_us", driver -> tools(driver, "touchup")));
         scenes.add(new Scene("1080p_gui3_navegacion_es.png", 640, 360, 3, "es_es", driver -> {
             // El ratón sobre los iconos: sale la lista con el nombre y la tecla de cada etapa.
             tools(driver, "roof");
@@ -82,6 +94,7 @@ class StudioMockupsTest {
             driver.view.selectStage(StudioStage.PATH, driver.host);
         }));
         scenes.add(new Scene("1080p_gui3_planos_es.png", 640, 360, 3, "es_es", StudioMockupsTest::blueprints));
+        scenes.add(new Scene("1080p_gui3_compartir_es.png", 640, 360, 3, "es_es", StudioMockupsTest::shareOffer));
         scenes.add(new Scene("1080p_gui3_bloques_es.png", 640, 360, 3, "es_es", driver -> {
             tools(driver, "roof");
             driver.host.lookedAt = "minecraft:stone_bricks";
@@ -113,7 +126,7 @@ class StudioMockupsTest {
                     74_000, 90_000, 0, null), 3_412);
         }));
         scenes.add(new Scene("1080p_gui3_colocando_en.png", 640, 360, 3, "en_us", driver -> {
-            tools(driver, "snow");
+            tools(driver, "touchup");
             driver.host.job = JobStatusPayload.of(new ProgressLine("Snow (3 layers)", ProgressLine.Phase.PLACING,
                     41_000, 96_000, 3_000_000_000L, null), 0);
         }));
@@ -208,12 +221,15 @@ class StudioMockupsTest {
         // la fila; y en el pie, sus gestos.
         scenes.add(new Scene("1080p_gui3_ayuda_numero_es.png", 640, 360, 3, "es_es", driver -> {
             tools(driver, "tree");
+            // Con el interruptor de arriba, el ancho de la copa queda justo debajo: se baja un poco, como un jugador.
+            scrollTo(driver, "ESPECIE");
             int[] value = driver.valuePoint("Ancho de copa");
             driver.mouseX = value[0];
             driver.mouseY = value[1];
         }));
         scenes.add(new Scene("1080p_gui3_ayuda_numero_en.png", 640, 360, 3, "en_us", driver -> {
             tools(driver, "tree");
+            scrollTo(driver, "SPECIES");
             int[] value = driver.valuePoint("Crown width");
             driver.mouseX = value[0];
             driver.mouseY = value[1];
@@ -317,11 +333,17 @@ class StudioMockupsTest {
         scenes.add(new Scene("854_gui2_herramientas_es.png", 427, 240, 2, "es_es", driver -> tools(driver, null)));
         scenes.add(new Scene("854_gui2_arbol_es.png", 427, 240, 2, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("854_gui2_tejado_en.png", 427, 240, 2, "en_us", driver -> tools(driver, "roof")));
+        scenes.add(new Scene("854_gui2_retocar_es.png", 427, 240, 2, "es_es", driver -> tools(driver, "touchup")));
+        scenes.add(new Scene("854_gui2_retocar_pincel_es.png", 427, 240, 2, "es_es",
+                driver -> tool(driver, "touchup", "touch", "drenar", "use", "brush")));
+        scenes.add(new Scene("854_gui2_pintar_natural_es.png", 427, 240, 2, "es_es",
+                driver -> tool(driver, "paint", "use", "selection", "gradient", "natural")));
         scenes.add(new Scene("854_gui2_rio_es.png", 427, 240, 2, "es_es", driver -> {
             path(driver, 4);
             tools(driver, "river");
         }));
         scenes.add(new Scene("854_gui2_planos_es.png", 427, 240, 2, "es_es", StudioMockupsTest::blueprints));
+        scenes.add(new Scene("854_gui2_compartir_es.png", 427, 240, 2, "es_es", StudioMockupsTest::shareOffer));
         for (Scene scene : scenes) {
             ImageIO.write(paint(scene, StudioPalette.DEFAULT, null), "png", folder.resolve(scene.file()).toFile());
         }
@@ -359,7 +381,7 @@ class StudioMockupsTest {
         screens.put("planos", StudioMockupsTest::blueprints);
         screens.put("variaciones", driver -> variations(driver, true));
         screens.put("sello", StudioMockupsTest::stampGallery);
-        screens.put("pintar", driver -> tools(driver, "paintbrush"));
+        screens.put("pintar", driver -> tools(driver, "paint"));
         List<String> compared = List.of("herramientas", "arbol", "variaciones", "sello", "pintar");
         Map<String, List<BufferedImage>> comparisons = new LinkedHashMap<>();
         for (StudioPalette palette : StudioPalette.values()) {
@@ -538,6 +560,17 @@ class StudioMockupsTest {
         driver.host.status = "";
     }
 
+    /** Una herramienta con unos ajustes ya puestos ({@code "use", "brush", …}, de dos en dos). */
+    static void tool(StudioDriver driver, String tool, String... settings) {
+        tools(driver, tool);
+        var card = ToolCatalog.byId(tool);
+        var values = driver.view.tools().values(card);
+        for (int index = 0; index + 1 < settings.length; index += 2) {
+            values = values.with(settings[index], settings[index + 1]);
+        }
+        driver.view.tools().setValues(card, values);
+    }
+
     /** El pincel de relieve con dos sellos favoritos marcados. */
     static void stampGallery(StudioDriver driver) {
         driver.host.preferences.toggleStampFavorite("volcan");
@@ -566,6 +599,22 @@ class StudioMockupsTest {
         driver.view.selectStage(StudioStage.BLUEPRINTS, driver.host);
         driver.view.blueprints().select(BlueprintRef.display("casita", BlueprintScope.SHARED));
         driver.host.status = "";
+    }
+
+    /** La ventana «Importar» con un paquete que trae de todo: nuevo, con bloques cambiados, que choca y que no entra. */
+    static void shareOffer(StudioDriver driver) {
+        blueprints(driver);
+        driver.host.offer = new ShareOfferPayload("Casas de Villa", "VILLALOBOSZ", "1.9.1", 1, List.of(
+                new ShareOfferPayload.Line(ShareImport.Status.NEW.ordinal(), "paleta «rocas»", ""),
+                new ShareOfferPayload.Line(ShareImport.Status.NEW.ordinal(), "preset de árbol «abeto»",
+                        "Bloques que no hay en este servidor: biomesoplenty:fir_log → oak_log"),
+                new ShareOfferPayload.Line(ShareImport.Status.CONFLICT.ordinal(), "plano «casita»",
+                        "ya tienes plano con ese nombre"),
+                new ShareOfferPayload.Line(ShareImport.Status.INVALID.ordinal(), "receta «arco»",
+                        "La fórmula es demasiado larga (300 caracteres; máximo 256)"),
+                new ShareOfferPayload.Line(ShareImport.Status.UNKNOWN.ordinal(), "hotbar «obra»",
+                        "tipo «hotbar» que esta versión de KomaEdit no conoce")));
+        driver.tick();
     }
 
     private static void add(FakeStudioHost.FakeBlueprints catalog, String name, BlueprintThumbnail.Grid grid,
