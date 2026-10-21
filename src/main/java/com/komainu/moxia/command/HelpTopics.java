@@ -479,6 +479,21 @@ public final class HelpTopics {
                     new Entry("/komaedit pincel biome <bioma> [radio] [-v] [-m máscara]",
                             "Pincel de biomas; el clic izquierdo toma el bioma del bloque")
             )),
+            new Topic("fluidos", "Agua y lava: rellenar, bola, cascadas", List.of("fluido", "fluid", "fluids",
+                    "rellenar", "floodfill", "fluidball", "cascada", "cascadas", "waterfall", "sueltos", "lagos",
+                    "piscina"), List.of(
+                    new Entry("/komaedit " + FluidCommands.FILL_USAGE,
+                            "Llena el hueco del clic hasta el nivel solo si está cerrado; si se escapa, dice y señala"
+                                    + " por dónde (alias fluid fill)"),
+                    new Entry("/komaedit fluido rellenar agua borde",
+                            "Ejemplo: llena la piscina hasta lo más alto que aguante sin derramarse"),
+                    new Entry("/komaedit " + FluidCommands.BALL_USAGE,
+                            "Esfera de fluido: -s solo fuentes, -a solo el aire, -c cerrar bordes (sin derrames)"),
+                    new Entry("/komaedit " + FluidCommands.FALL_USAGE,
+                            "Cascada desde el borde que pulsas con poza abajo; con puntos (P), un río corto con saltos"),
+                    new Entry("/komaedit " + FluidCommands.CLEAN_USAGE,
+                            "Quita de la selección las corrientes que no salen de ninguna fuente")
+            )),
             new Topic("blueprint", "Planos", List.of("planos", "plano", "blueprints", "biblioteca", "estampar",
                     "stamp"), List.of(
                     new Entry("/komaedit blueprint save <nombre> [etiquetas]",

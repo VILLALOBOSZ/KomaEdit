@@ -45,7 +45,8 @@ public abstract class ToolCard {
 
     /**
      * Sobre qué trabaja sin el pincel. De serie, lo de la tarjeta; una tarjeta cuyos modos trabajan sobre cosas
-     * distintas (Medir y anotar: la regla se queda, la nota va donde haces clic y la vista es donde estás) lo cambia.
+     * distintas (Medir y anotar: la regla se queda, la nota va donde haces clic y la vista es donde estás; el agua: la
+     * cascada con los puntos y el relleno donde haces clic) lo cambia.
      */
     protected ToolTarget modeTarget(ToolValues values) {
         return target;

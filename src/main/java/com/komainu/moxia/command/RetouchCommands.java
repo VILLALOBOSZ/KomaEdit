@@ -33,6 +33,7 @@ import static net.minecraft.server.command.CommandManager.literal;
  * <ul>
  *     <li>{@code nieve} = {@code snow}, {@code drenar} = {@code drain}, {@code inundar} = {@code waterlog},
  *     {@code gravedad} = {@code gravity} y {@code bioma} = {@code biome};</li>
+ *     <li>{@code sueltos} = {@code fluido limpiar} (quitar las corrientes que no salen de ninguna fuente);</li>
  *     <li>{@code desinfestar}, {@code hojas}, {@code anegar} y {@code encerar} = {@code tweak deinfest|persist|
  *     waterlog|wax} (con {@code on} u {@code off}).</li>
  * </ul>
@@ -46,6 +47,7 @@ public final class RetouchCommands {
         SNOW("nieve", "snow", "nevar"),
         DRAIN("drenar", "drain", "secar"),
         FLOOD("inundar", "flood", "inundacion"),
+        LOOSE("sueltos", "loose", "flujos", "corrientes"),
         GRAVITY("gravedad", "gravity", "caer"),
         DEINFEST("desinfestar", "deinfest"),
         LEAVES("hojas", "persist", "persistir", "leaves"),
@@ -119,6 +121,7 @@ public final class RetouchCommands {
             case SNOW -> List.of("1", "2", "3", "-r", "-f", "-s", "-h", "-p", "-m");
             case DRAIN -> List.of("agua", "lava", "todo", "-k", "-m");
             case FLOOD -> List.of("62", "~", "~-1", "-b", "-m");
+            case LOOSE -> List.of("todo", "agua", "lava", "-m");
             case GRAVITY -> List.of("-a", "-m");
             case DEINFEST -> List.of();
             case LEAVES, WATERLOG, WAX -> List.of("on", "off");
@@ -192,6 +195,7 @@ public final class RetouchCommands {
             case SNOW -> BuilderCommands.snow(player, options);
             case DRAIN -> BuilderCommands.drain(player, options);
             case FLOOD -> BuilderCommands.flood(player, options);
+            case LOOSE -> FluidCommands.clean(player, options);
             case GRAVITY -> BuilderCommands.gravity(player, options);
             case BIOME -> BuilderCommands.biome(player, options);
             default -> tweak(player, mode.tweak(), state(options));

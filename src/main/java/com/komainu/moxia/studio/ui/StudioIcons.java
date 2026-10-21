@@ -25,9 +25,9 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
-        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER,
+        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER, WATER,
         // Los modos de Retocar.
-        GRAVITY, SNOW, DRAIN, WATERLOG, BIOME, DEINFEST, LEAVES, WET, WAX,
+        GRAVITY, SNOW, DRAIN, WATERLOG, LOOSE_FLOWS, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
         GIZMO,
         // Compartir con otro servidor (un código para copiar).
@@ -656,6 +656,32 @@ public final class StudioIcons {
                 "+...####...+",
                 "++........++");
         // Una llana de albañil: el mango arriba y la hoja abajo.
+        mask(Icon.WATER,
+                "...######...",
+                "...#++++#...",
+                "....#++#....",
+                ".....##.....",
+                ".....##.....",
+                "............",
+                "#..........#",
+                "#++++++++++#",
+                "#++++++++++#",
+                "#++++++++++#",
+                "############",
+                "............");
+        mask(Icon.LOOSE_FLOWS,
+                "....#.......",
+                "...#+#......",
+                "..#+++#.....",
+                ".#+++++#....",
+                ".#+++++#....",
+                "#+++++++#...",
+                "#+++++++#...",
+                ".#+++++#.#.#",
+                "..#####...#.",
+                ".........#.#",
+                "............",
+                "............");
         mask(Icon.TOUCH_UP,
                 ".........##.",
                 "........##..",
