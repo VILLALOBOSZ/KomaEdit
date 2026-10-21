@@ -84,6 +84,8 @@ public final class PermissionNodes {
         add(use, Pack.BASIC, null, null, "Acceso a /komaedit, la ayuda y la información");
         add(KomaPermissions.PATH, Pack.BASIC, null, null, "Trayectorias (/komaedit path)");
         add(KomaPermissions.HISTORY, Pack.BASIC, null, null, "Historial del editor");
+        add(KomaPermissions.DEBUG_LOADING_BAR, Pack.BASIC, use, "ezedits.debug.loadingbar",
+                "/komaedit debug clearloadingbars: quita tu barra de progreso");
         for (String shape : List.of("cone", "polydome", "polygon", "square", "tetrahedron", "torus")) {
             add(build + ".shape." + shape, Pack.BASIC, build, "ezedits.gen." + shape,
                     "/komaedit shape " + shape);
@@ -105,6 +107,8 @@ public final class PermissionNodes {
         for (String color : List.of("similar", "gradient", "palette", "hotbar")) {
             add("komaedit.color." + color, Pack.BASIC, use, null, "/komaedit color " + color);
         }
+        add(com.komainu.moxia.hotbar.HotbarRules.PERMISSION, Pack.BASIC, use, null,
+                "Barras guardadas (/komaedit hotbar): guardar, cambiar, compartir; en supervivencia solo reordena");
         for (String[] entry : new String[][]{{"next", "next"}, {"here", "here"}, {"invert", "invert"},
                 {"delpos2", "delpos"}, {"encapsulate", "encapsulate"}, {"encapsulatenear", "encapsulatenear"},
                 {"catenary", "catenary"}}) {
@@ -221,7 +225,12 @@ public final class PermissionNodes {
         // Administración.
         add(BuildCapability.GAMEMODE_PERMISSION, Pack.ADMIN, null, null, "Cambiar el modo de juego desde el menú rápido");
         add(BuildCapability.ANY_MODE_PERMISSION, Pack.ADMIN, null, null, "Usar las capacidades fuera de creativo");
+        add(com.komainu.moxia.hotbar.HotbarRules.GIVE_PERMISSION, Pack.ADMIN, null, null,
+                "Poner barras guardadas como en creativo en cualquier modo (crea objetos)");
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
+        add(KomaPermissions.ADMIN_DEBUG, Pack.ADMIN, null, "ezedits.admin.debug", "/komaedit debugprint");
+        add(KomaPermissions.DEBUG_VISUALISER, Pack.ADMIN, null, "ezedits.debug",
+                "/komaedit debug removevisualiserentities: retira los displays del visualizador y de la vista previa");
         add(KomaPermissions.ADMIN_JOBS, Pack.ADMIN, null, null,
                 "Ver, pausar y cancelar los trabajos de todos (/komaedit jobs)");
         add(KomaPermissions.ADMIN_STAMP_EXPORT, Pack.ADMIN, null, null,

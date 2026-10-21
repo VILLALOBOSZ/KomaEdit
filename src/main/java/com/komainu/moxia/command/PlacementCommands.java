@@ -69,7 +69,7 @@ public final class PlacementCommands {
                         && KomaPermissions.canBuild(player, kind.id()))
                 .executes(context -> usage(context, kind))
                 .then(argument("placement", StringArgumentType.greedyString())
-                        .suggests(suggestions(kind))
+                        .suggests(ResultSuggestions.or(suggestions(kind)))
                         .executes(context -> run(context, kind,
                                 StringArgumentType.getString(context, "placement"))));
     }

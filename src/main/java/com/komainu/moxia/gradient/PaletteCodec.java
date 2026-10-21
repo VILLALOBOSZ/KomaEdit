@@ -13,6 +13,10 @@ import java.util.zip.Inflater;
  * Convierte una paleta en un texto corto para compartirla ({@code /komaedit palette encode}) y al revés. El formato es
  * propio de KomaEdit: {@code kp1:} seguido de la lista {@code a;b;c} (sin el espacio de nombres {@code minecraft:})
  * comprimida con Deflate y en Base64 apto para URL. Admite bloques de cualquier mod.
+ *
+ * <p>No lee los códigos de ezEdits: su wiki no documenta el formato, sus notas de versión dicen que depende de la
+ * versión de Minecraft (lo cambiaron para 1.21.5 y otra vez para 1.21.11) y averiguarlo exigiría descompilar el
+ * plugin. Su {@code //ezpalette decode} da la lista de bloques, que sí se pega tal cual en cualquier paleta.</p>
  */
 public final class PaletteCodec {
     public static final String PREFIX = "kp1:";
@@ -47,7 +51,10 @@ public final class PaletteCodec {
     /** Devuelve las entradas de la paleta codificada, sin comprobar que existan los bloques. */
     public static List<String> decode(String encoded) {
         if (encoded == null || !encoded.trim().startsWith(PREFIX)) {
-            throw new IllegalArgumentException("El código de paleta empieza por " + PREFIX);
+            // Los de ezEdits no se pueden leer: su formato no está publicado y cambia con la versión de Minecraft.
+            throw new IllegalArgumentException("El código de paleta de KomaEdit empieza por " + PREFIX
+                    + "; los de ezEdits no se pueden leer (su formato no está publicado): pega la lista de bloques"
+                    + " de su //ezpalette decode");
         }
         byte[] compressed;
         try {

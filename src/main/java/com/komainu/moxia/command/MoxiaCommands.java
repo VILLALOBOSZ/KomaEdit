@@ -265,6 +265,7 @@ public final class MoxiaCommands {
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
         ColorCommands.register(root);
+        HotbarCommands.register(root);
         NoiseCommands.register(root);
         SelectionCommands.register(root);
         AdminCommands.register(root);

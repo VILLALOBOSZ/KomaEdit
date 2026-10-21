@@ -281,6 +281,22 @@ public final class ClientStudioHost implements StudioHost {
     }
 
     @Override
+    public com.komainu.moxia.hotbar.ui.HotbarDeck hotbars() {
+        return client == null || !com.komainu.moxia.client.hotbar.HotbarControls.supported() ? null
+                : com.komainu.moxia.client.hotbar.ClientHotbars.deck(client);
+    }
+
+    @Override
+    public boolean hotbarAutosave() {
+        return com.komainu.moxia.client.hotbar.ClientHotbars.autosave();
+    }
+
+    @Override
+    public void hotbar(com.komainu.moxia.hotbar.ui.HotbarAction action, String name) {
+        com.komainu.moxia.client.hotbar.HotbarControls.studio(client, action, name, text -> view.status(text, now()));
+    }
+
+    @Override
     public boolean creative() {
         return client != null && client.interactionManager != null
                 && client.interactionManager.getCurrentGameMode() == GameMode.CREATIVE;

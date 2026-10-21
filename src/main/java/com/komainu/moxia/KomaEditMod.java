@@ -78,6 +78,7 @@ public final class KomaEditMod implements ModInitializer {
                 context.server().execute(() -> RecipeActionService.handle(context.player(), payload))
         );
         com.komainu.moxia.blueprint.BlueprintNetwork.register();
+        com.komainu.moxia.hotbar.HotbarService.register();
         MoxiaCommands.register();
         com.komainu.moxia.worldedit.EzExtensions.register();
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {

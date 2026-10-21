@@ -540,13 +540,16 @@ public final class ColorCommands {
         }
     }
 
-    /** {@code [a la barra] [guardar] [copiar]} de una lista de bloques. */
+    /** {@code [a la barra] [guardar] [guardar barra] [copiar]} de una lista de bloques. */
     private static MutableText actions(List<String> ids, String joined) {
         return Text.literal("  ")
                 .append(EzCommandSupport.button("[a la barra]", "/komaedit color hotbar "
                         + String.join(",", sample(ids, HOTBAR_SLOTS)), Formatting.GREEN))
                 .append(Text.literal(" "))
                 .append(suggest("[guardar]", "/komaedit palette save nombre " + joined, Formatting.YELLOW))
+                .append(Text.literal(" "))
+                .append(suggest("[guardar barra]", "/komaedit hotbar palette nombre " + joined + " -l",
+                        Formatting.YELLOW))
                 .append(Text.literal(" "))
                 .append(EzCommandSupport.copyable("[copiar]", joined, Formatting.AQUA));
     }
@@ -582,7 +585,7 @@ public final class ColorCommands {
     }
 
     /** Un bloque, un {@code #hex}, {@code mano} o {@code mira}. */
-    private static Reference reference(String input, BlockColorCatalog catalog) {
+    static Reference reference(String input, BlockColorCatalog catalog) {
         if (OkLab.isHex(input)) {
             int rgb = OkLab.parseHex(input);
             return new Reference(null, rgb, OkLab.of(rgb));
@@ -615,7 +618,7 @@ public final class ColorCommands {
         throw new IllegalArgumentException("Di un bloque o un color (#3A7FD2), lleva un bloque en la mano o mira uno");
     }
 
-    private record Reference(BlockColor block, int rgb, double[] lab) {
+    record Reference(BlockColor block, int rgb, double[] lab) {
         String label() {
             return block != null ? block.shortName() : OkLab.hex(rgb);
         }
@@ -632,7 +635,7 @@ public final class ColorCommands {
         }
     }
 
-    private static ColorFilter filter(CommandTokens tokens) {
+    static ColorFilter filter(CommandTokens tokens) {
         return ColorFilter.of(tokens.flag("c"), tokens.flag("s"), tokens.flag("o"), tokens.flag("u"),
                 tokens.flag("x"));
     }

@@ -25,7 +25,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
-        TOUCH_UP, REBUILD,
+        TOUCH_UP, HOTBARS, REBUILD,
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
@@ -35,6 +35,19 @@ public final class StudioIcons {
     private static final Map<Icon, String[]> MASKS = new EnumMap<>(Icon.class);
 
     static {
+        mask(Icon.HOTBARS,
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............",
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............",
+                "############",
+                "#..#..#..#.#",
+                "############",
+                "............");
         mask(Icon.PATH,
                 "............",
                 "###.........",

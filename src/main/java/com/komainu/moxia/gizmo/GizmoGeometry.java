@@ -84,24 +84,40 @@ public final class GizmoGeometry {
             Vec3 start = center.add(direction.multiply(GizmoLayout.ARROW_START * size));
             Vec3 base = center.add(direction.multiply(GizmoLayout.TIP_START * size));
             Vec3 tip = center.add(direction.multiply(size));
-            lines.add(new Line(start, base, color, width));
             Vec3[] basis = basis(axis);
             double radius = GizmoLayout.TIP_RADIUS * size * (lit(handle, hovered, dragged) ? 1.25 : 1.0);
-            for (int segment = 0; segment < TIP_SEGMENTS; segment++) {
-                double first = 2.0 * Math.PI * segment / TIP_SEGMENTS;
-                double second = 2.0 * Math.PI * (segment + 1) / TIP_SEGMENTS;
-                Vec3 a = base.add(basis[0].multiply(Math.cos(first) * radius))
-                        .add(basis[1].multiply(Math.sin(first) * radius));
-                Vec3 b = base.add(basis[0].multiply(Math.cos(second) * radius))
-                        .add(basis[1].multiply(Math.sin(second) * radius));
-                triangles.add(new Triangle(a, b, tip, color));
-                triangles.add(new Triangle(base, b, a, shade(color, 0.7)));
-            }
+            arrow(lines, triangles, start, base, tip, radius, basis[0], basis[1], color, width);
         }
         int cube = color(GizmoHandle.MOVE_PLANE, CENTER, hovered, dragged);
         double half = GizmoLayout.CUBE * size * (lit(GizmoHandle.MOVE_PLANE, hovered, dragged) ? 1.2 : 1.0);
         cube(triangles, center, half, cube);
         return new Shape(List.copyOf(lines), List.copyOf(triangles));
+    }
+
+    /**
+     * Una flecha: el asta de {@code start} a {@code base} y una punta cónica de {@code base} a {@code tip}, con la
+     * base algo más oscura. {@code u} y {@code v} son dos vectores unidad perpendiculares a la flecha (y entre sí).
+     * La usan el gizmo y el visualizador de la alineación de los pinceles.
+     */
+    public static void arrow(List<Line> lines, List<Triangle> triangles, Vec3 start, Vec3 base, Vec3 tip,
+                             double radius, Vec3 u, Vec3 v, int color, float width) {
+        lines.add(new Line(start, base, color, width));
+        for (int segment = 0; segment < TIP_SEGMENTS; segment++) {
+            double first = 2.0 * Math.PI * segment / TIP_SEGMENTS;
+            double second = 2.0 * Math.PI * (segment + 1) / TIP_SEGMENTS;
+            Vec3 a = base.add(u.multiply(Math.cos(first) * radius)).add(v.multiply(Math.sin(first) * radius));
+            Vec3 b = base.add(u.multiply(Math.cos(second) * radius)).add(v.multiply(Math.sin(second) * radius));
+            triangles.add(new Triangle(a, b, tip, color));
+            triangles.add(new Triangle(base, b, a, shade(color, 0.7)));
+        }
+    }
+
+    /** Dos vectores unidad perpendiculares a {@code direction} (y entre sí), para una flecha en cualquier dirección. */
+    public static Vec3[] perpendiculars(Vec3 direction) {
+        Vec3 unit = direction.normalized();
+        Vec3 helper = Math.abs(unit.y()) < 0.9 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+        Vec3 u = unit.cross(helper).normalized();
+        return new Vec3[]{u, unit.cross(u).normalized()};
     }
 
     private static boolean lit(GizmoHandle handle, GizmoHandle hovered, GizmoHandle dragged) {
@@ -127,7 +143,8 @@ public final class GizmoGeometry {
         };
     }
 
-    private static void cube(List<Triangle> triangles, Vec3 center, double half, int color) {
+    /** Un cubo macizo de medio lado {@code half} con el sombreado de las caras de Minecraft. */
+    public static void cube(List<Triangle> triangles, Vec3 center, double half, int color) {
         double[][] corners = new double[8][];
         for (int index = 0; index < 8; index++) {
             corners[index] = new double[]{center.x() + ((index & 1) == 0 ? -half : half),
