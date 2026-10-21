@@ -110,6 +110,7 @@ class DisplayCardTest {
         assertTrue(PermissionNodes.allows(DisplayCard.PERMISSION,
                 node -> node.equals(PermissionNodes.Pack.INTERMEDIATE.node())));
         assertFalse(card.previewable());
-        assertEquals(ToolFamily.DECORATE, card.family());
+        assertEquals(ToolCategory.BUILDINGS, ToolCatalog.categoryOf(card));
+        assertEquals("komaedit display edit on", card.selectCommand(), "elegirla abre el editor");
     }
 }

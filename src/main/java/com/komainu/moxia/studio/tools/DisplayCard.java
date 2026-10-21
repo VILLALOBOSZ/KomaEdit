@@ -24,7 +24,7 @@ public final class DisplayCard extends ToolCard {
             "rosa", "gris", "negro");
 
     DisplayCard() {
-        super("display", ToolFamily.DECORATE, ToolTarget.LOOK,
+        super("display", ToolTarget.LOOK,
                 List.of("display", "displays", "decorar", "decoracion", "decoración", "block display", "item display",
                         "text display", "holograma", "cartel", "maceta", "axiom", "entidad", "gizmo"),
                 List.of(

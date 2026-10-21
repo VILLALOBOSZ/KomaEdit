@@ -336,6 +336,7 @@ public final class StudioUi {
             case DISABLED -> DISABLED;
             case DANGER -> DANGER;
             case WARNING -> WARNING;
+            case SELECTED -> ACCENT_TEXT;
             default -> hovered ? TEXT : TEXT_SECONDARY;
         };
         int textWidth = label.isEmpty() ? 0 : Math.min(width(label), rect.width() - StudioIcons.SIZE - 12);
@@ -344,7 +345,7 @@ public final class StudioUi {
         icon(icon, x, rect.centerY() - StudioIcons.SIZE / 2, color);
         if (!label.isEmpty()) {
             label(label, x + StudioIcons.SIZE + 4, rect.centerY() - 4, textWidth, tone == Tone.PRIMARY ? ON_ACCENT
-                    : tone == Tone.DISABLED ? DISABLED : TEXT);
+                    : tone == Tone.DISABLED ? DISABLED : tone == Tone.SELECTED ? TEXT_STRONG : TEXT);
         }
         return widget;
     }

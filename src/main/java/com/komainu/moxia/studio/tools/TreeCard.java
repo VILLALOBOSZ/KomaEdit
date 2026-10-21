@@ -15,9 +15,11 @@ public final class TreeCard extends ToolCard {
     public static final String BRUSH_NODE = KomaPermissions.BUILD + ".brush.tree";
 
     TreeCard() {
-        super("tree", ToolFamily.NATURE, ToolTarget.PATH_OR_LOOK,
-                List.of("tree", "arbol", "árbol", "bosque", "roble", "abeto", "palmera", "forest", "plant"),
+        super("tree", ToolTarget.PATH_OR_LOOK,
+                List.of("tree", "arbol", "árbol", "bosque", "roble", "abeto", "palmera", "forest", "plant", "plantar",
+                        "pincel", "brush"),
                 List.of(
+                        use(ToolUse.CLICK, ToolUse.BRUSH),
                         new ToolParam.Choice("species", Arrays.stream(TreeSpecies.values()).map(TreeSpecies::id)
                                 .toList(), "oak", ToolParam.Choice.Style.GALLERY, "", null),
                         auto("height", TreeSettings.MIN_HEIGHT, TreeSettings.MAX_HEIGHT, 1, 5, 0, 18).unit(ValueUnit.BLOCKS),
@@ -40,11 +42,8 @@ public final class TreeCard extends ToolCard {
 
 
     @Override
-
     public List<String> essentials() {
-
-        return List.of("species", "height", "thickness", "crown");
-
+        return List.of(ToolUse.PARAM, "species", "height", "thickness", "crown");
     }
 
     /** Lo que va detrás de {@code tree} (y de {@code pincel tree} y {@code tree save <nombre>}). */
@@ -74,19 +73,25 @@ public final class TreeCard extends ToolCard {
 
     @Override
     public String command(ToolValues values, boolean preview) {
+        if (use(values) == ToolUse.BRUSH) {
+            return "komaedit pincel tree " + settings(values);
+        }
         return new CommandLine("komaedit tree " + settings(values)).flag(previewFlag(), preview).build();
     }
 
     @Override
     public List<String> permissions(ToolValues values) {
-        return List.of(NODE);
+        return List.of(use(values) == ToolUse.BRUSH ? BRUSH_NODE : NODE);
+    }
+
+    @Override
+    public java.util.Set<String> allPermissions() {
+        return new java.util.LinkedHashSet<>(List.of(NODE, BRUSH_NODE));
     }
 
     @Override
     public List<ToolAction> actions() {
         return List.of(
-                new ToolAction("brush", List.of(BRUSH_NODE), false,
-                        values -> "komaedit pincel tree " + settings(values)),
                 new ToolAction("save_preset", List.of(NODE), true,
                         values -> "komaedit tree save " + NAME_PLACEHOLDER + " " + settings(values) + " -f"));
     }

@@ -185,7 +185,7 @@ class LivePreviewTest {
         studio.view.tools().select(ToolCatalog.byId("snow"), studio.host);
         studio.render();
         studio.click("Nevar");
-        assertEquals("komaedit snow 2 -v", studio.host.last(), "construir sigue pidiendo la vista previa");
+        assertEquals("komaedit retocar nieve 2 -v", studio.host.last(), "construir sigue pidiendo la vista previa");
         studio.host.job = JobStatusPayload.of(new ProgressLine("Nieve", ProgressLine.Phase.WAITING, 5_000, 90_000, 0,
                 null), 120);
         studio.wheelValue("Capas", 1);

@@ -19,7 +19,7 @@ import java.util.Set;
  * @param angelDistance  distancia a la que «Colocar en el aire» pone el bloque
  * @param reachDistance  alcance con «Alcance largo»
  * @param flySpeed       velocidad de vuelo en décimas de la normal (10 = normal)
- * @param tweakProperty  propiedad que cambia «Retocar» (vacía: la primera del bloque)
+ * @param tweakProperty  propiedad que cambia «Cambiar estado» (vacía: la primera del bloque)
  */
 public record CapabilitySettings(
         Set<BuildCapability> enabled,

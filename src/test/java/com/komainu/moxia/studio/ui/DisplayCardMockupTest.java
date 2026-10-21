@@ -40,6 +40,11 @@ class DisplayCardMockupTest {
                 driver -> display(driver, null, true));
         scene(folder, "1080p_gui2_decorar_en.png", 960, 540, 2, "en_us", driver -> display(driver, "Item", false));
         scene(folder, "854_gui2_decorar_es.png", 427, 240, 2, "es_es", driver -> display(driver, null, false));
+        // La cuadrícula de herramientas: la tarjeta en Edificios, con su icono.
+        scene(folder, "1080p_gui3_herramientas_decorar_es.png", 640, 360, 3, "es_es", driver -> {
+            driver.view.selectStage(StudioStage.TOOLS, driver.host);
+            driver.host.status = "";
+        });
     }
 
     private static void scene(Path folder, String file, int width, int height, int scale, String language,
