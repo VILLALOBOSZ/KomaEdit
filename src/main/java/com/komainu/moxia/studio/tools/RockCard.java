@@ -15,9 +15,11 @@ public final class RockCard extends ToolCard {
     public static final String BRUSH_NODE = KomaPermissions.BUILD + ".brush.rock";
 
     RockCard() {
-        super("rock", ToolFamily.NATURE, ToolTarget.PATH_OR_LOOK,
-                List.of("rock", "roca", "piedra", "boulder", "crag", "spire", "penasco", "aguja", "menhir", "stone"),
+        super("rock", ToolTarget.PATH_OR_LOOK,
+                List.of("rock", "roca", "piedra", "boulder", "crag", "spire", "penasco", "aguja", "menhir", "stone",
+                        "pincel", "brush"),
                 List.of(
+                        use(ToolUse.CLICK, ToolUse.BRUSH),
                         new ToolParam.Choice("type", Arrays.stream(RockType.values()).map(RockType::id).toList(),
                                 "boulder", ToolParam.Choice.Style.GALLERY, "", null),
                         auto("size", 10, (int) (RockSettings.MAX_SIZE * 10), 5, 20, 1, 40).unit(ValueUnit.BLOCKS),
@@ -38,11 +40,8 @@ public final class RockCard extends ToolCard {
 
 
     @Override
-
     public List<String> essentials() {
-
-        return List.of("type", "size", "moss");
-
+        return List.of(ToolUse.PARAM, "type", "size", "moss");
     }
 
     String settings(ToolValues values) {
@@ -65,19 +64,25 @@ public final class RockCard extends ToolCard {
 
     @Override
     public String command(ToolValues values, boolean preview) {
+        if (use(values) == ToolUse.BRUSH) {
+            return "komaedit pincel rock " + settings(values);
+        }
         return new CommandLine("komaedit rock " + settings(values)).flag(previewFlag(), preview).build();
     }
 
     @Override
     public List<String> permissions(ToolValues values) {
-        return List.of(NODE);
+        return List.of(use(values) == ToolUse.BRUSH ? BRUSH_NODE : NODE);
+    }
+
+    @Override
+    public java.util.Set<String> allPermissions() {
+        return new java.util.LinkedHashSet<>(List.of(NODE, BRUSH_NODE));
     }
 
     @Override
     public List<ToolAction> actions() {
         return List.of(
-                new ToolAction("brush", List.of(BRUSH_NODE), false,
-                        values -> "komaedit pincel rock " + settings(values)),
                 new ToolAction("save_preset", List.of(NODE), true,
                         values -> "komaedit rock save " + NAME_PLACEHOLDER + " " + settings(values) + " -f"));
     }

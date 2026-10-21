@@ -75,7 +75,7 @@ public final class CapabilityControls {
         }
 
         ClientPreAttackCallback.EVENT.register(CapabilityControls::onAttack);
-        // Antes de que Minecraft lea la F en este tick: con «Retocar» y las manos vacías, elige propiedad.
+        // Antes de que Minecraft lea la F en este tick: con «Cambiar estado» y las manos vacías, elige propiedad.
         ClientTickEvents.START_CLIENT_TICK.register(CapabilityControls::consumeSwap);
         ClientTickEvents.END_CLIENT_TICK.register(CapabilityControls::endTick);
         WorldRenderEvents.AFTER_ENTITIES.register(CapabilityOverlayRenderer::render);

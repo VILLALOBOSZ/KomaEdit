@@ -317,9 +317,10 @@ class StudioThemeContrastTest {
                 driver.type("isla");
             }
         });
-        scenes.put("pintar", driver -> StudioMockupsTest.tools(driver, "paintbrush"));
+        scenes.put("pintar", driver -> StudioMockupsTest.tools(driver, "paint"));
         scenes.put("ayuda_numero", driver -> {
             StudioMockupsTest.tools(driver, "tree");
+            StudioMockupsTest.scrollTo(driver, "ESPECIE");
             int[] value = driver.valuePoint("Ancho de copa");
             driver.mouseX = value[0];
             driver.mouseY = value[1];
@@ -382,7 +383,7 @@ class StudioThemeContrastTest {
                     74_000, 90_000, 0, null), 3_412);
         });
         scenes.put("colocando_en", driver -> {
-            StudioMockupsTest.tools(driver, "snow");
+            StudioMockupsTest.tools(driver, "touchup");
             driver.host.job = JobStatusPayload.of(new ProgressLine("Snow (3 layers)", ProgressLine.Phase.PLACING,
                     41_000, 96_000, 3_000_000_000L, null), 0);
         });
@@ -407,7 +408,7 @@ class StudioThemeContrastTest {
         scenes.put("sin_seleccion", driver -> {
             driver.host.context = new com.komainu.moxia.studio.tools.ToolContext(true,
                     com.komainu.moxia.studio.tools.ToolCatalog.permissionNodes(), false, 0L, 0, false);
-            StudioMockupsTest.tools(driver, "snow");
+            StudioMockupsTest.tools(driver, "touchup");
         });
         return scenes;
     }

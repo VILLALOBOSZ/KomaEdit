@@ -90,7 +90,12 @@ public sealed interface ToolParam {
             /** Rejilla de miniaturas (sellos). */
             GALLERY,
             /** Buscador con lista (biomas). */
-            SEARCH
+            SEARCH,
+            /**
+             * El interruptor de arriba de la tarjeta, con sus dos maneras de usarla una al lado de la otra
+             * ({@link ToolUse}). No cuenta como ajuste: es cómo se usa la herramienta.
+             */
+            SWITCH
         }
 
         public Choice {

@@ -62,6 +62,16 @@ class StudioMockupsTest {
         scenes.add(new Scene("1080p_gui3_herramientas_es.png", 640, 360, 3, "es_es", driver -> tools(driver, null)));
         scenes.add(new Scene("1080p_gui3_arbol_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui3_tejado_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "roof")));
+        // Las herramientas que se unieron: Retocar (nieve sobre la selección, drenar con el pincel) y Pintar (con el
+        // pincel y la superficie natural de la selección), con el interruptor «Pincel / Selección».
+        scenes.add(new Scene("1080p_gui3_retocar_es.png", 640, 360, 3, "es_es", driver -> tools(driver, "touchup")));
+        scenes.add(new Scene("1080p_gui3_retocar_pincel_es.png", 640, 360, 3, "es_es",
+                driver -> tool(driver, "touchup", "touch", "drenar", "use", "brush")));
+        scenes.add(new Scene("1080p_gui3_pintar_natural_es.png", 640, 360, 3, "es_es",
+                driver -> tool(driver, "paint", "use", "selection", "gradient", "natural")));
+        scenes.add(new Scene("1080p_gui3_erosion_pincel_es.png", 640, 360, 3, "es_es",
+                driver -> tool(driver, "erosion", "use", "brush")));
+        scenes.add(new Scene("1080p_gui3_retocar_en.png", 640, 360, 3, "en_us", driver -> tools(driver, "touchup")));
         scenes.add(new Scene("1080p_gui3_navegacion_es.png", 640, 360, 3, "es_es", driver -> {
             // El ratón sobre los iconos: sale la lista con el nombre y la tecla de cada etapa.
             tools(driver, "roof");
@@ -113,7 +123,7 @@ class StudioMockupsTest {
                     74_000, 90_000, 0, null), 3_412);
         }));
         scenes.add(new Scene("1080p_gui3_colocando_en.png", 640, 360, 3, "en_us", driver -> {
-            tools(driver, "snow");
+            tools(driver, "touchup");
             driver.host.job = JobStatusPayload.of(new ProgressLine("Snow (3 layers)", ProgressLine.Phase.PLACING,
                     41_000, 96_000, 3_000_000_000L, null), 0);
         }));
@@ -208,12 +218,15 @@ class StudioMockupsTest {
         // la fila; y en el pie, sus gestos.
         scenes.add(new Scene("1080p_gui3_ayuda_numero_es.png", 640, 360, 3, "es_es", driver -> {
             tools(driver, "tree");
+            // Con el interruptor de arriba, el ancho de la copa queda justo debajo: se baja un poco, como un jugador.
+            scrollTo(driver, "ESPECIE");
             int[] value = driver.valuePoint("Ancho de copa");
             driver.mouseX = value[0];
             driver.mouseY = value[1];
         }));
         scenes.add(new Scene("1080p_gui3_ayuda_numero_en.png", 640, 360, 3, "en_us", driver -> {
             tools(driver, "tree");
+            scrollTo(driver, "SPECIES");
             int[] value = driver.valuePoint("Crown width");
             driver.mouseX = value[0];
             driver.mouseY = value[1];
@@ -317,6 +330,11 @@ class StudioMockupsTest {
         scenes.add(new Scene("854_gui2_herramientas_es.png", 427, 240, 2, "es_es", driver -> tools(driver, null)));
         scenes.add(new Scene("854_gui2_arbol_es.png", 427, 240, 2, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("854_gui2_tejado_en.png", 427, 240, 2, "en_us", driver -> tools(driver, "roof")));
+        scenes.add(new Scene("854_gui2_retocar_es.png", 427, 240, 2, "es_es", driver -> tools(driver, "touchup")));
+        scenes.add(new Scene("854_gui2_retocar_pincel_es.png", 427, 240, 2, "es_es",
+                driver -> tool(driver, "touchup", "touch", "drenar", "use", "brush")));
+        scenes.add(new Scene("854_gui2_pintar_natural_es.png", 427, 240, 2, "es_es",
+                driver -> tool(driver, "paint", "use", "selection", "gradient", "natural")));
         scenes.add(new Scene("854_gui2_rio_es.png", 427, 240, 2, "es_es", driver -> {
             path(driver, 4);
             tools(driver, "river");
@@ -359,7 +377,7 @@ class StudioMockupsTest {
         screens.put("planos", StudioMockupsTest::blueprints);
         screens.put("variaciones", driver -> variations(driver, true));
         screens.put("sello", StudioMockupsTest::stampGallery);
-        screens.put("pintar", driver -> tools(driver, "paintbrush"));
+        screens.put("pintar", driver -> tools(driver, "paint"));
         List<String> compared = List.of("herramientas", "arbol", "variaciones", "sello", "pintar");
         Map<String, List<BufferedImage>> comparisons = new LinkedHashMap<>();
         for (StudioPalette palette : StudioPalette.values()) {
@@ -536,6 +554,17 @@ class StudioMockupsTest {
             driver.view.tools().select(ToolCatalog.byId(tool), driver.host);
         }
         driver.host.status = "";
+    }
+
+    /** Una herramienta con unos ajustes ya puestos ({@code "use", "brush", …}, de dos en dos). */
+    static void tool(StudioDriver driver, String tool, String... settings) {
+        tools(driver, tool);
+        var card = ToolCatalog.byId(tool);
+        var values = driver.view.tools().values(card);
+        for (int index = 0; index + 1 < settings.length; index += 2) {
+            values = values.with(settings[index], settings[index + 1]);
+        }
+        driver.view.tools().setValues(card, values);
     }
 
     /** El pincel de relieve con dos sellos favoritos marcados. */

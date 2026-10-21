@@ -15,8 +15,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Cuántos clics cuestan cuatro tareas típicas, pulsando el Studio como un jugador (las cifras van en el PR, junto a
- * las de antes). Se cuentan clics de ratón en el panel y en el mundo; no hace falta desplazar en ninguna.
+ * Cuántos clics cuestan las tareas típicas, pulsando el Studio como un jugador (las cifras van en el PR, junto a las
+ * de antes). Se cuentan clics de ratón en el panel y en el mundo; no hace falta desplazar en ninguna. Las herramientas
+ * de la cuadrícula se pulsan por su icono ({@link StudioDriver#press}): con el nombre en dos líneas, su texto entero
+ * solo está en la ayuda, que también lleva la estrella.
  */
 class TaskClicksTest {
     @BeforeAll
@@ -38,7 +40,7 @@ class TaskClicksTest {
     void plantASpruceWhereYouLook() {
         StudioDriver studio = fresh(false, 0);
         studio.click("Herramientas");
-        studio.click("Árbol");
+        studio.press("tool:tree");
         studio.click("Abeto");
         studio.click("Plantar");
         assertEquals("komaedit tree spruce -v", studio.host.last(), "con la vista previa en vivo de serie");
@@ -56,7 +58,7 @@ class TaskClicksTest {
     void roofOverTheSelectedHouse() {
         StudioDriver studio = fresh(true, 0);
         studio.click("Herramientas");
-        studio.click("Tejado");
+        studio.press("tool:roof");
         studio.click("Cuatro");
         studio.click("Construir tejado");
         assertEquals("komaedit roof hip spruce_planks -v", studio.host.last());
@@ -78,7 +80,7 @@ class TaskClicksTest {
     void roofWithoutASelectionYet() {
         StudioDriver studio = fresh(false, 0);
         studio.click("Herramientas");
-        studio.click("Tejado");
+        studio.press("tool:roof");
         studio.click("Cuatro");
         assertEquals(StudioView.WorldAction.SELECT, studio.view.worldAction(studio.host), "arrastrar selecciona");
         // El arrastre en el mundo, como lo hace la pantalla: de una esquina de los muros a la otra.
@@ -111,7 +113,7 @@ class TaskClicksTest {
             studio.host.points.add(new int[]{index * 6, 64, 0});
         }
         studio.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), false, 0L, 4, false);
-        studio.click("Río o cañón");
+        studio.click("Excavar río");
         studio.click("Tallar cauce");
         assertEquals("komaedit terreno rio natural -v", studio.host.last());
         assertEquals(7, studio.clicks(), "etapa, cuatro puntos, «Usar con: Río» y construir");
@@ -155,5 +157,134 @@ class TaskClicksTest {
         assertEquals("komaedit pincel stamp " + BlueprintRef.display("casita", BlueprintScope.SHARED),
                 studio.host.last());
         assertEquals(3, studio.clicks());
+    }
+
+    // ── Las tareas de las herramientas que se unieron ────────────────────────────────────────────────────
+
+    /** Pintar una ladera con el pincel (antes «Pintar terreno»): lo de serie ya es hierba en lo llano y piedra arriba. */
+    @Test
+    void paintAHillsideWithTheBrush() {
+        StudioDriver studio = fresh(false, 0);
+        studio.click("Herramientas");
+        studio.press("tool:paint");
+        studio.click("Al pincel");
+        assertEquals("komaedit pincel paint hierba_piedra 8 pendiente 60", studio.host.last());
+        assertEquals(3, studio.clicks());
+    }
+
+    /** Repintar la superficie de la selección con la paleta natural (antes «Pintar superficie»). */
+    @Test
+    void repaintTheSelectedSurfaceTheNaturalWay() {
+        StudioDriver studio = fresh(true, 0);
+        studio.click("Herramientas");
+        studio.press("tool:paint");
+        studio.press("use:selection");
+        studio.click("Natural", "tools:gradient");
+        studio.click("Pintar la selección");
+        assertEquals("komaedit pintar natural natural -v", studio.host.last());
+        assertEquals(5, studio.clicks(), "la superficie natural es un modo de Pintar, sobre la selección");
+    }
+
+    /** Pintar la selección por pendiente, como el pincel: antes no se podía (solo el pincel). */
+    @Test
+    void paintTheSelectionBySlope() {
+        StudioDriver studio = fresh(true, 0);
+        studio.click("Herramientas");
+        studio.press("tool:paint");
+        studio.press("use:selection");
+        studio.click("Pintar la selección");
+        assertEquals("komaedit pintar hierba_piedra pendiente 60 -v", studio.host.last());
+        assertEquals(4, studio.clicks());
+    }
+
+    /** Nevar la selección (antes «Nieve»): el modo de serie de Retocar. */
+    @Test
+    void snowOverTheSelection() {
+        StudioDriver studio = fresh(true, 0);
+        studio.click("Herramientas");
+        studio.press("tool:touchup");
+        studio.click("Nevar");
+        assertEquals("komaedit retocar nieve 2 -v", studio.host.last());
+        assertEquals(3, studio.clicks());
+    }
+
+    /** Drenar el agua de la selección (antes «Drenar»): un clic más, el del modo. */
+    @Test
+    void drainTheSelection() {
+        StudioDriver studio = fresh(true, 0);
+        studio.click("Herramientas");
+        studio.press("tool:touchup");
+        studio.click("Drenar", "tools:touch");
+        studio.click("Drenar");
+        assertEquals("komaedit retocar drenar water -v", studio.host.last());
+        assertEquals(4, studio.clicks());
+        // La siguiente vez (los ajustes se guardan al cerrar el Studio) Retocar se acuerda del modo.
+        studio.view.tools().saveSoon(studio.host, true);
+        StudioDriver again = new StudioDriver(new StudioView(), studio.host, 960, 540);
+        again.render();
+        again.click("Drenar");
+        assertEquals(1, again.clicks(), "con el modo recordado");
+    }
+
+    /** Drenar con el pincel, alrededor de cada clic: antes solo había orden de selección. */
+    @Test
+    void drainWithTheBrush() {
+        StudioDriver studio = fresh(false, 0);
+        studio.click("Herramientas");
+        studio.press("tool:touchup");
+        studio.click("Drenar", "tools:touch");
+        studio.press("use:brush");
+        studio.click("Al pincel");
+        assertEquals("komaedit pincel retocar 8 drenar water", studio.host.last());
+        assertEquals(5, studio.clicks());
+    }
+
+    /** El pincel de biomas (antes Bioma → Más ajustes → desplazar → Al pincel): un modo de Retocar. */
+    @Test
+    void changeTheBiomeWithTheBrush() {
+        StudioDriver studio = fresh(false, 0);
+        studio.click("Herramientas");
+        studio.press("tool:touchup");
+        studio.click("Cambiar bioma", "tools:touch");
+        studio.press("use:brush");
+        studio.click("Al pincel");
+        assertEquals("komaedit pincel biome plains 8", studio.host.last());
+        assertEquals(5, studio.clicks(), "sin desplazar");
+    }
+
+    /** Estampar un sello que cubra la selección: antes solo con el pincel. */
+    @Test
+    void stampTerrainOverTheSelection() {
+        StudioDriver studio = fresh(true, 0);
+        studio.click("Herramientas");
+        studio.press("tool:stamp");
+        studio.press("use:selection");
+        studio.click("Estampar en la selección");
+        assertEquals("komaedit relieve montana sumar auto -v", studio.host.last());
+        assertEquals(4, studio.clicks());
+    }
+
+    /** Un árbol en cada clic con el pincel: antes «Al pincel» estaba plegado en «Más ajustes». */
+    @Test
+    void plantTreesWithTheBrush() {
+        StudioDriver studio = fresh(false, 0);
+        studio.click("Herramientas");
+        studio.press("tool:tree");
+        studio.press("use:brush");
+        studio.click("Al pincel");
+        assertEquals("komaedit pincel tree oak", studio.host.last());
+        assertEquals(4, studio.clicks());
+    }
+
+    /** Erosionar con el pincel: antes solo sobre la selección. */
+    @Test
+    void erodeWithTheBrush() {
+        StudioDriver studio = fresh(false, 0);
+        studio.click("Herramientas");
+        studio.press("tool:erosion");
+        studio.press("use:brush");
+        studio.click("Al pincel");
+        assertEquals("komaedit pincel zona 10 terreno erosion hidraulica natural", studio.host.last());
+        assertEquals(4, studio.clicks());
     }
 }

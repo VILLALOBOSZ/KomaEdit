@@ -19,7 +19,7 @@ public final class SelectionCard extends ToolCard {
     public static final List<String> OPERATIONS = List.of("grow", "shrink", "complement", "box", "clear");
 
     SelectionCard() {
-        super("select", ToolFamily.UTILITIES, ToolTarget.SELECTION,
+        super("select", ToolTarget.SELECTION,
                 List.of("select", "seleccionar", "selección", "seleccion", "lasso", "lazo", "freehand", "mano alzada",
                         "pincel de selección", "invertir", "ampliar", "reducir", "grow", "shrink", "axiom"),
                 List.of(

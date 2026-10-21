@@ -17,7 +17,7 @@ public final class SymmetryCard extends ToolCard {
     public static final List<String> MODES = List.of("x", "z", "xz", "y", "xy", "zy", "xzy", "radial");
 
     SymmetryCard() {
-        super("symmetry", ToolFamily.SYMMETRY, ToolTarget.MODE,
+        super("symmetry", ToolTarget.MODE,
                 List.of("symmetry", "simetria", "simetría", "sym", "espejo", "mirror", "radial", "reflejo"),
                 List.of(
                         new ToolParam.Choice("mode", MODES, "x", ToolParam.Choice.Style.BUTTONS, "", null),
