@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Corrige el arranque de la 2.0.0: la reconstrucción animada pedía el aire de WorldEdit al cargar el mod, antes de que WorldEdit tuviera sus registros, y el servidor y el cliente se caían con «WorldEdit is not initialized yet». Una prueba nueva (`InitOrderTest`) vigila que ninguna clase que se carga al iniciar tenga constantes con registros de WorldEdit.
+
 ## 2.0.0 (estable, 2026-10-21)
 
 ### Imagen de referencia, como en Axiom
