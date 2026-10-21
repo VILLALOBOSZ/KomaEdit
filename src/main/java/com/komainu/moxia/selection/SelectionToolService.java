@@ -2,6 +2,7 @@ package com.komainu.moxia.selection;
 
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.progress.ProgressLine;
@@ -53,6 +54,8 @@ public final class SelectionToolService {
     public static final int MAX_DABS = 4_096;
     private static final long TICK_NANOS = 8_000_000L;
     private static final Map<UUID, State> STATES = new HashMap<>();
+    /** Empezar un trazo copia la selección entera (hasta un millón de bloques) para poder deshacerlo: con freno. */
+    private static final RequestBudget STARTS = new RequestBudget(8, 4.0);
 
     private SelectionToolService() {
     }
@@ -182,6 +185,9 @@ public final class SelectionToolService {
                 return;
             }
             if (payload.phase() == SelectionPayloads.Brush.START) {
+                if (!STARTS.allow(player.getUuid(), System.nanoTime())) {
+                    return;
+                }
                 finishStroke(player, state);
                 if (payload.radius() < 0 || payload.radius() > BrushShape.MAX_RADIUS) {
                     throw new IllegalArgumentException("El radio del pincel va de 0 a " + BrushShape.MAX_RADIUS);
@@ -471,9 +477,11 @@ public final class SelectionToolService {
 
     public static void forget(UUID player) {
         STATES.remove(player);
+        STARTS.forget(player);
     }
 
     public static void clearAll() {
         STATES.clear();
+        STARTS.clear();
     }
 }

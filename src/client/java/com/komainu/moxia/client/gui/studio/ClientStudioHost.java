@@ -15,6 +15,8 @@ import com.komainu.moxia.share.ShareCodePayload;
 import com.komainu.moxia.share.ShareOfferPayload;
 import com.komainu.moxia.studio.BlockNames;
 import com.komainu.moxia.studio.StudioPreferences;
+import com.komainu.moxia.studio.live.LivePreviewRequestPayload;
+import com.komainu.moxia.studio.live.LivePreviewResultPayload;
 import com.komainu.moxia.studio.net.JobStatusPayload;
 import com.komainu.moxia.studio.tools.ToolContext;
 import com.komainu.moxia.studio.tools.ui.ToolsInfo;
@@ -88,6 +90,16 @@ public final class ClientStudioHost implements StudioHost {
             loadPreferences().save(PREFERENCES_FILE);
         } catch (IOException ignored) {
             // Como el resto de preferencias: si no se puede guardar, sigue puesto hasta cerrar el juego.
+        }
+    }
+
+    /** Hasta qué tamaño se rehace sola la vista previa en vivo, guardado con las preferencias del Studio. */
+    public static void setLiveLimit(long blocks) {
+        loadPreferences().setLiveLimit(blocks);
+        try {
+            loadPreferences().save(PREFERENCES_FILE);
+        } catch (IOException ignored) {
+            // Como el resto de preferencias: si no se puede guardar, vale hasta cerrar el juego.
         }
     }
 
@@ -301,6 +313,22 @@ public final class ClientStudioHost implements StudioHost {
     @Override
     public void expectGhost(boolean refresh) {
         com.komainu.moxia.client.gizmo.GhostClient.expectStudio(refresh);
+    }
+
+    @Override
+    public boolean livePreview(LivePreviewRequestPayload request) {
+        // Un servidor sin la red de la vista previa en vivo: por el chat, como antes.
+        return LiveClient.send(request) || StudioHost.super.livePreview(request);
+    }
+
+    @Override
+    public boolean liveSupported() {
+        return LiveClient.supported();
+    }
+
+    @Override
+    public Optional<LivePreviewResultPayload> takeLiveResult() {
+        return LiveClient.take();
     }
 
     @Override

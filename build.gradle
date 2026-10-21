@@ -58,6 +58,10 @@ tasks.named("test") {
     // CI de un repositorio privado) y como mucho 4, que cada una se lleva su memoria. Ninguna prueba depende de lo que
     // deje otra ni del reloj de verdad.
     maxParallelForks = Math.max(1, Math.min(4, Runtime.runtime.availableProcessors().intdiv(2)))
+    // InitOrderTest, ThreadConfinementTest y LifecycleCleanupTest siguen el bytecode, también el del cliente.
+    inputs.files(sourceSets.client.output.classesDirs).withPropertyName("clientClasses")
+    systemProperty "komaedit.mainClasses", sourceSets.main.java.destinationDirectory.get().asFile.absolutePath
+    systemProperty "komaedit.clientClasses", sourceSets.client.java.destinationDirectory.get().asFile.absolutePath
     testLogging {
         events "failed", "skipped"
         exceptionFormat "full"

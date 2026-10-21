@@ -124,6 +124,8 @@ public final class RebuildService {
     });
     private static MinecraftServer server;
     private static boolean stopping;
+    /** Lo que dejó a medias una caída se lee en el primer tick (ver {@link #started}). */
+    private static boolean recoverPending;
 
     private RebuildService() {
     }
@@ -156,6 +158,10 @@ public final class RebuildService {
         ServerWork.lane(new ServerWork.Lane() {
             @Override
             public void owners(Collection<UUID> into) {
+                if (recoverPending && server != null) {
+                    recoverPending = false;
+                    recover(server);
+                }
                 for (Job job : JOBS.values()) {
                     boolean paused = ServerWork.paused(job.owner);
                     if (!paused) {
@@ -394,10 +400,16 @@ public final class RebuildService {
 
     // ------------------------------------------------------------------ Servidor
 
+    /**
+     * Lo que dejó a medias una caída se lee en el primer tick, no aquí: Fabric inicia los mods por orden de id, así
+     * que este {@code SERVER_STARTED} corre antes que el de WorldEdit, que es el que llena sus registros. Leerlo aquí
+     * dejaba todas las constantes de {@code BlockTypes} a {@code null} para el resto del proceso y la obra no se
+     * recuperaba nunca (el archivo se quedaba y volvía a pasar en cada arranque).
+     */
     public static void started(MinecraftServer started) {
         server = started;
         stopping = false;
-        recover(started);
+        recoverPending = true;
     }
 
     /**
@@ -425,6 +437,7 @@ public final class RebuildService {
         JOBS.clear();
         RECOVERIES.clear();
         server = null;
+        recoverPending = false;
     }
 
     private static void waitForWorker() {
