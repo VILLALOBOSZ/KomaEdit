@@ -16,6 +16,8 @@ import com.komainu.moxia.preview.PreviewPlanCodec;
 import com.komainu.moxia.preview.PreviewSurface;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.studio.live.LivePreviewResultPayload;
+import com.komainu.moxia.studio.live.LiveService;
 import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BaseBlock;
@@ -439,6 +441,9 @@ public final class GhostService {
         Held held = new Held(id, preparing, model, data, parts);
         HELD.put(preparing.player, held);
         GhostOptions options = GhostOptions.DEFAULT;
+        // Si lo pidió la vista previa en vivo del Studio, su respuesta va antes: el cliente sabe así que este fantasma
+        // sustituye al del Studio.
+        LiveService.shown(player, LivePreviewResultPayload.Outcome.GHOST, id);
         ServerPlayNetworking.send(player, new GhostPayloads.Open(id, preparing.description, model.pivotX(),
                 model.pivotY(), model.pivotZ(), model.bounds(), model.size(), model.airCount(), options.bits(),
                 model.palette()));

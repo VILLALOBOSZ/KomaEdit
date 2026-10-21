@@ -68,6 +68,10 @@ public final class StudioPreferences {
         }
     }
 
+    /** Los tamaños entre los que se elige hasta dónde se rehace sola la vista previa en vivo, en bloques. */
+    public static final List<Long> LIVE_LIMITS = List.of(64_000L, 250_000L, 1_000_000L, 4_000_000L);
+    public static final long DEFAULT_LIVE_LIMIT = 250_000L;
+
     private final Set<String> favorites = new LinkedHashSet<>();
     private final List<String> recents = new ArrayList<>();
     private final Set<String> toolFavorites = new LinkedHashSet<>();
@@ -78,6 +82,7 @@ public final class StudioPreferences {
     private final List<String> blockRecents = new ArrayList<>();
     private final Set<String> expanded = new LinkedHashSet<>();
     private PreviewMode previewMode = PreviewMode.LIVE;
+    private long liveLimit = DEFAULT_LIVE_LIMIT;
     private String stage = "";
     private String tool = "";
     private double panelShare;
@@ -186,6 +191,28 @@ public final class StudioPreferences {
 
     public void setPreviewMode(PreviewMode mode) {
         previewMode = mode == null ? PreviewMode.OFF : mode;
+    }
+
+    /**
+     * Hasta cuántos bloques se rehace sola la vista previa en vivo (la selección, la figura o lo que salió la última
+     * vez); con más, el Studio lo avisa y espera a Construir.
+     */
+    public long liveLimit() {
+        return liveLimit;
+    }
+
+    public void setLiveLimit(long blocks) {
+        liveLimit = Math.clamp(blocks, LIVE_LIMITS.getFirst(), LIVE_LIMITS.getLast());
+    }
+
+    /** El siguiente tamaño de {@link #LIVE_LIMITS} (tras el último, el primero). */
+    public long nextLiveLimit() {
+        for (long limit : LIVE_LIMITS) {
+            if (limit > liveLimit) {
+                return limit;
+            }
+        }
+        return LIVE_LIMITS.getFirst();
     }
 
     /** Los últimos ajustes de una herramienta que no son los de serie (vacío si no hay). */
@@ -304,6 +331,9 @@ public final class StudioPreferences {
         // Las versiones anteriores solo leen este interruptor.
         root.addProperty("toolPreview", previewMode != PreviewMode.OFF);
         root.addProperty("preview", previewMode.id());
+        if (liveLimit != DEFAULT_LIVE_LIMIT) {
+            root.addProperty("liveLimit", liveLimit);
+        }
         root.addProperty("stage", stage);
         root.addProperty("tool", tool);
         if (panelShare > 0) {
@@ -388,6 +418,10 @@ public final class StudioPreferences {
             if (root.has("welcome") && root.get("welcome").isJsonPrimitive()
                     && root.getAsJsonPrimitive("welcome").isNumber()) {
                 preferences.setWelcome(root.get("welcome").getAsInt());
+            }
+            if (root.has("liveLimit") && root.get("liveLimit").isJsonPrimitive()
+                    && root.getAsJsonPrimitive("liveLimit").isNumber()) {
+                preferences.setLiveLimit(root.get("liveLimit").getAsLong());
             }
             if (root.has("panelShare") && root.get("panelShare").isJsonPrimitive()
                     && root.getAsJsonPrimitive("panelShare").isNumber()) {
