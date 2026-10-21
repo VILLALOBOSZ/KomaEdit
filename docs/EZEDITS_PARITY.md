@@ -62,7 +62,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `fetch <WORLD\|SELECTION\|HOTBAR> <nombre> [largo] [-d] [-f]` | `/komaedit palette fetch` (`PaletteCommands`) | Completo |
 | `save`, `delete`, `list [ALL\|DEFAULT\|MINE]`, `place`, `print [-v]` | `/komaedit palette …` | Completo (`list default` incluye las del servidor) |
 | `swap <origen> <destino> [-a] [-s] [-f] [-b]` | `/komaedit palette swap` (`PaletteSwapOperation`) | Completo |
-| `encode`, `decode` | `/komaedit palette encode/decode` (`PaletteCodec`) | Parcial, sin arreglo fiable: el código (`kp1:…`) es propio y admite bloques de mods. Los de ezEdits no se leen: la wiki no documenta su formato (solo que es de bloques vanilla), sus notas de versión públicas dicen que lo cambiaron para 1.21.5 y otra vez para 1.21.11 (va atado a la versión de Minecraft) y no hay ejemplos públicos; averiguarlo exigiría descompilar el plugin. `decode` lo explica y pide pegar la lista de bloques de su `//ezpalette decode` |
+| `encode`, `decode` | `/komaedit palette encode` y `decode` (`PaletteCodec`) | Parcial, sin arreglo fiable: el código (`kp1:…`) es propio y admite bloques de mods. Los de ezEdits no se leen: la wiki no documenta su formato (solo que es de bloques vanilla), sus notas de versión públicas dicen que lo cambiaron para 1.21.5 y otra vez para 1.21.11 (va atado a la versión de Minecraft) y no hay ejemplos públicos; averiguarlo exigiría descompilar el plugin. `decode` lo explica y pide pegar la lista de bloques de su `//ezpalette decode` |
 
 ## Noise Explained
 
@@ -165,7 +165,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `hexagonalize [12] [0] [0] [0] [60] [-w]` | `/komaedit deform hexagonalize` (`Deformations`) | Completo |
 | `noise <ruido> [2] [-z 1] [-s -1] [-h] [-v] [-w]` | `/komaedit deform noise` | Completo |
 | `rotate <ángulo> [-o] [-w]` | `/komaedit deform rotate` | Completo |
-| `voronoialize [12] [0] [-s] [-w]`, `voronoialize2 <n> [0] [-s] [-r 15] [-n 5] [-w]` | `/komaedit deform voronoialize(2)` | Completo |
+| `voronoialize [12] [0] [-s] [-w]`, `voronoialize2 <n> [0] [-s] [-r 15] [-n 5] [-w]` | `/komaedit deform voronoialize` y `voronoialize2` | Completo |
 | `voxelize [3] [0] [0] [-i y] [-j -x] [-s] [-h] [-v] [-w]` | `/komaedit deform voxelize` | Completo |
 
 ## Cylindrify & Spherify
@@ -298,7 +298,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 
 | ezEdits | KomaEdit | Estado |
 | --- | --- | --- |
-| `//eztweak` (`//eztw`, antes `//ezsurvival`) `deinfest`, `persist [ON\|OFF]`, `waterlog [True\|False]`, `wax [ON\|OFF]` | `/komaedit tweak …` (alias `retocar` y `survival`; `region/TweakOperation`, `TweakRules`; los carteles, con sus datos en `region/SignWax`) | Completo |
+| `//eztweak` (`//eztw`, antes `//ezsurvival`) `deinfest`, `persist [ON\|OFF]`, `waterlog [True\|False]`, `wax [ON\|OFF]` | `/komaedit retocar desinfestar\|hojas\|anegar\|encerar [on\|off]` (los nombres de antes, `tweak deinfest\|persist\|waterlog\|wax` y `survival`, siguen valiendo y avisan del nuevo; `region/TweakOperation`, `TweakRules`; los carteles, con sus datos en `region/SignWax`) | Completo |
 
 ## Texturing
 

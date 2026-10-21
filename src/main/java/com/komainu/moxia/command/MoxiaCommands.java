@@ -234,9 +234,9 @@ public final class MoxiaCommands {
                 .then(tubeCommand("erosion", PathShape.NOISE_TUBE))
                 .then(expressionCommand("expr"))
                 .then(expressionCommand("expresion"))
-                .then(EzSplineCommands.command("ezspline"))
-                .then(EzSplineCommands.command("ezsp"))
-                .then(EzSplineCommands.command("spline"))
+                .then(EzSplineCommands.command("ezspline").requires(MoxiaCommands::canBuildAnyFigure))
+                .then(EzSplineCommands.command("ezsp").requires(MoxiaCommands::canBuildAnyFigure))
+                .then(EzSplineCommands.command("spline").requires(MoxiaCommands::canBuildAnyFigure))
                 .then(ivyCommand("ivy"))
                 .then(ivyCommand("hiedra"))
                 .then(RoofCommands.roof("roof"))
@@ -298,7 +298,7 @@ public final class MoxiaCommands {
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> bridgeCommand() {
-        return literal("bridge").then(bridgeArguments());
+        return literal("bridge").requires(figure(PathShape.ARCH_BRIDGE)).then(bridgeArguments());
     }
 
     private static RequiredArgumentBuilder<ServerCommandSource, Integer> bridgeArguments() {
@@ -352,7 +352,7 @@ public final class MoxiaCommands {
                         0
                 )));
         radius.then(detail);
-        return literal("pillar").then(radius);
+        return literal("pillar").requires(figure(PathShape.PILLAR)).then(radius);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> pillarArchesCommand() {
@@ -375,7 +375,7 @@ public final class MoxiaCommands {
                         IntegerArgumentType.getInteger(context, "pillar_arches_radius")
                 )));
         height.then(radius);
-        return literal("pillararches").then(height);
+        return literal("pillararches").requires(figure(PathShape.PILLAR_ARCHES)).then(height);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> toriiCommand() {
@@ -404,7 +404,7 @@ public final class MoxiaCommands {
                 )));
         radius.then(detail);
         height.then(radius);
-        return literal("torii").then(height);
+        return literal("torii").requires(figure(PathShape.TORII)).then(height);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> cloudCommand(String commandName) {
@@ -448,7 +448,7 @@ public final class MoxiaCommands {
                         12
                 )));
         radius.then(organicity);
-        return literal(commandName).then(radius);
+        return literal(commandName).requires(figure(PathShape.CLOUDS)).then(radius);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> webCommand() {
@@ -479,7 +479,7 @@ public final class MoxiaCommands {
                         0
                 )));
         elasticity.then(spacing);
-        return literal("web").then(elasticity);
+        return literal("web").requires(figure(PathShape.WEB)).then(elasticity);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> lightningCommand(String commandName) {
@@ -510,7 +510,7 @@ public final class MoxiaCommands {
                         45
                 )));
         amplitude.then(branching);
-        return literal(commandName).then(amplitude);
+        return literal(commandName).requires(figure(PathShape.LIGHTNING)).then(amplitude);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> lightningCircleCommand(String commandName) {
@@ -533,11 +533,11 @@ public final class MoxiaCommands {
                         IntegerArgumentType.getInteger(context, commandName + "_branching")
                 )));
         radius.then(branching);
-        return literal(commandName).then(radius);
+        return literal(commandName).requires(figure(PathShape.LIGHTNING)).then(radius);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> noodlesCommand() {
-        return literal("noodles").then(noodlesArguments());
+        return literal("noodles").requires(figure(PathShape.NOODLES)).then(noodlesArguments());
     }
 
     private static RequiredArgumentBuilder<ServerCommandSource, Integer> noodlesArguments() {
@@ -577,14 +577,14 @@ public final class MoxiaCommands {
                 "sweep_profile", StringArgumentType.word()
         ).suggests(PROFILE_SUGGESTIONS);
         profile.then(tubeArguments(PathShape.SWEEP, "sweep_profile", "stone"));
-        return literal(name).then(profile);
+        return literal(name).requires(figure(PathShape.SWEEP)).then(profile);
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> tubeCommand(String name, PathShape shape) {
         String pattern = shape == PathShape.BRAID
                 ? "stripped_birch_wood"
                 : "60%stone,25%andesite,15%cobblestone";
-        return literal(name).then(tubeArguments(shape, null, pattern));
+        return literal(name).requires(figure(shape)).then(tubeArguments(shape, null, pattern));
     }
 
     /** {@code <radios> [patrón y banderas]}: los radios admiten fotogramas, p. ej. {@code 2,0.3:12,2}. */
@@ -630,6 +630,7 @@ public final class MoxiaCommands {
     /** {@code /komaedit bend [repeat|stretch] [banderas]}: dobla el portapapeles a lo largo de la trayectoria. */
     private static LiteralArgumentBuilder<ServerCommandSource> bendCommand(String name) {
         return literal(name)
+                .requires(source -> can(source, KomaPermissions.BUILD + ".bend"))
                 .executes(context -> generateBend(context, ""))
                 .then(argument("bend_options", StringArgumentType.greedyString())
                         .suggests(BEND_SUGGESTIONS)
@@ -649,12 +650,8 @@ public final class MoxiaCommands {
             UUID playerId = player.getUuid();
             var server = player.getServer();
             String axis = TubeBender.resolvedAxis(captured.template(), settings.axis()).id();
-            context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal("Doblando " + ProgressLine.group(captured.blocks())
-                            + " bloques del portapapeles; avanza por su eje " + axis
-                            + " (cámbialo con -a x|z|-x|-z)…").formatted(Formatting.GRAY)),
-                    false
-            );
+            EzCommandSupport.info(player, "Doblando " + ProgressLine.group(captured.blocks())
+                    + " bloques del portapapeles; avanza por su eje " + axis + " (cámbialo con -a x|z|-x|-z)…");
             AsyncEngine.submit(
                     playerId,
                     () -> StructureBendService.plan(captured, pathSnapshot, settings),
@@ -695,6 +692,7 @@ public final class MoxiaCommands {
      */
     private static LiteralArgumentBuilder<ServerCommandSource> weatherCommand(String name) {
         return literal(name)
+                .requires(source -> can(source, KomaPermissions.BUILD + ".weather"))
                 .executes(context -> weather(context, ""))
                 .then(argument("weather_options", StringArgumentType.greedyString())
                         .suggests(WEATHER_SUGGESTIONS)
@@ -708,12 +706,9 @@ public final class MoxiaCommands {
         try {
             WeatheringSettings settings = WeatheringSettings.parse(options);
             long seed = WeatheringService.start(player, settings);
-            context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal("Envejeciendo la selección (intensidad " + settings.intensity()
-                            + ", derrumbe " + settings.collapse() + ", vida " + settings.vegetation() + ", "
-                            + settings.style().id() + ", semilla " + seed + ")…").formatted(Formatting.GRAY)),
-                    false
-            );
+            EzCommandSupport.info(player, "Envejeciendo la selección (intensidad " + settings.intensity()
+                    + ", derrumbe " + settings.collapse() + ", vida " + settings.vegetation() + ", "
+                    + settings.style().id() + ", semilla " + seed + ")…");
             return 1;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), "Selecciona la construcción con //pos1 y //pos2");
@@ -725,6 +720,7 @@ public final class MoxiaCommands {
     /** {@code ivy [estilo] [banderas]}: la hiedra viva crece desde las semillas sobre lo que ya hay construido. */
     private static LiteralArgumentBuilder<ServerCommandSource> ivyCommand(String name) {
         return literal(name)
+                .requires(source -> can(source, KomaPermissions.BUILD + ".ivy"))
                 .executes(context -> generateIvy(context, ""))
                 .then(argument("ivy_options", StringArgumentType.greedyString())
                         .suggests(IVY_SUGGESTIONS)
@@ -747,11 +743,7 @@ public final class MoxiaCommands {
             return 1;
         }
         try {
-            String started = IvyService.start(player, IvySettings.parse(trimmed));
-            context.getSource().sendFeedback(
-                    () -> prefix().append(Text.literal(started + "…").formatted(Formatting.GRAY)),
-                    false
-            );
+            EzCommandSupport.info(player, IvyService.start(player, IvySettings.parse(trimmed)) + "…");
             return 1;
         } catch (IllegalArgumentException | IllegalStateException exception) {
             return fail(context.getSource(), message(exception));
@@ -766,7 +758,7 @@ public final class MoxiaCommands {
         radii.then(argument("expression", StringArgumentType.greedyString())
                 .suggests(EXPRESSION_SUGGESTIONS)
                 .executes(context -> generateExpression(context, StringArgumentType.getString(context, "expression"))));
-        return literal(name).then(radii);
+        return literal(name).requires(figure(PathShape.EXPRESSION)).then(radii);
     }
 
     private static int generateExpression(CommandContext<ServerCommandSource> context, String expression)
@@ -889,7 +881,7 @@ public final class MoxiaCommands {
         scale.then(spacing);
         pattern.then(scale);
         shape.then(pattern);
-        return literal(name).then(shape);
+        return literal(name).requires(MoxiaCommands::canBuildAnyFigure).then(shape);
     }
 
     /** {@code confirm} lanza el Build grande en espera; {@code confirm cancel} lo descarta. */
@@ -1715,6 +1707,17 @@ public final class MoxiaCommands {
                 && KomaPermissions.can(player, permission);
     }
 
+    /** Quien puede construir la figura: sin su nodo, la orden no sale en el autocompletado. */
+    private static java.util.function.Predicate<ServerCommandSource> figure(PathShape shape) {
+        return source -> can(source, KomaPermissions.BUILD + "." + shape.id());
+    }
+
+    /** Quien puede construir alguna figura: cada una cuelga de {@code komaedit.build.<figura>}, sin familia propia. */
+    private static boolean canBuildAnyFigure(ServerCommandSource source) {
+        return source.getEntity() instanceof ServerPlayerEntity player
+                && Arrays.stream(PathShape.values()).anyMatch(shape -> KomaPermissions.canBuild(player, shape.id()));
+    }
+
     private static int generate(
             CommandContext<ServerCommandSource> context,
             boolean buildNow,
@@ -1921,12 +1924,8 @@ public final class MoxiaCommands {
         PathSnapshot pathSnapshot = WorldEditService.resolvePath(player);
         UUID playerId = player.getUuid();
         var server = player.getServer();
-        context.getSource().sendFeedback(
-                () -> prefix().append(Text.literal((estimateOnly ? "Estimando: " : "")
-                                + "Calculando geometría 3D fuera del hilo del servidor…")
-                        .formatted(Formatting.GRAY)),
-                false
-        );
+        EzCommandSupport.status(player, (estimateOnly ? "Estimando: " : "")
+                + "Calculando geometría 3D fuera del hilo del servidor…");
         AsyncEngine.submit(
                 playerId,
                 () -> {
@@ -2076,21 +2075,11 @@ public final class MoxiaCommands {
     }
 
     private static String message(Exception exception) {
-        String message = exception.getMessage();
-        return message == null || message.isBlank()
-                ? exception.getClass().getSimpleName().toLowerCase(Locale.ROOT)
-                : message;
+        return EzCommandSupport.reason(exception);
     }
 
     private static String throwableMessage(Throwable throwable) {
-        Throwable current = throwable;
-        while (current.getCause() != null && (current.getMessage() == null || current.getMessage().isBlank())) {
-            current = current.getCause();
-        }
-        String message = current.getMessage();
-        return message == null || message.isBlank()
-                ? current.getClass().getSimpleName().toLowerCase(Locale.ROOT)
-                : message;
+        return EzCommandSupport.reason(throwable);
     }
 
     private enum MaskList {

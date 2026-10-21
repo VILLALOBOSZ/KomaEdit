@@ -2,6 +2,7 @@ package com.komainu.moxia.command;
 
 import com.komainu.moxia.noise.NoiseSpec;
 import com.komainu.moxia.noise.SavedNoises;
+import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.NamedDefinitions;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -37,6 +38,7 @@ public final class NoiseCommands {
 
     private static LiteralArgumentBuilder<ServerCommandSource> command(String name) {
         return literal(name)
+                .requires(source -> EzCommandSupport.canAny(source, "komaedit.noise"))
                 .executes(context -> list(context, "all"))
                 .then(literal("list").requires(EzCommandSupport.node("komaedit.noise.list"))
                         .executes(context -> list(context, "all"))
@@ -68,6 +70,8 @@ public final class NoiseCommands {
 
     private static int list(CommandContext<ServerCommandSource> context, String set) throws CommandSyntaxException {
         return EzCommandSupport.run(context, player -> {
+            // También sin subórden («/komaedit noise»), que lista igual.
+            KomaPermissions.require(player, "komaedit.noise.list");
             String which = set.toLowerCase(Locale.ROOT);
             if (!List.of("all", "default", "mine", "todos", "serie", "mios", "míos").contains(which)) {
                 throw new IllegalArgumentException("Usa list all, list default o list mine");

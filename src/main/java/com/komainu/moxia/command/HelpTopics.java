@@ -438,7 +438,7 @@ public final class HelpTopics {
             )),
             new Topic("preview", "Vista previa y progreso", List.of("vistaprevia", "previa", "progreso", "cancelar",
                     "confirmar", "repeat", "repetir", "cola", "jobs", "trabajos", "trozo", "part"), List.of(
-                    new Entry("/komaedit texture rockify stone -v",
+                    new Entry("/komaedit surface rockify 3 -v",
                             "-v (o --preview) en cualquier orden: calcula y enseña sin colocar nada"),
                     new Entry("/komaedit confirm", "Aplica exactamente lo que ves; si la zona cambió, lo recalcula"),
                     new Entry("/komaedit cancel", "Descarta la vista previa o para la lectura, el cálculo y la colocación"),

@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.QuietMode;
@@ -9,6 +10,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.sk89q.worldedit.IncompleteRegionException;
+import com.sk89q.worldedit.WorldEditException;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
@@ -19,6 +21,8 @@ import net.minecraft.util.Formatting;
 
 import java.util.Collection;
 import java.util.Locale;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 
 /** Mensajes y utilidades comunes de las órdenes de paletas, ruidos y selecciones. */
 final class EzCommandSupport {
@@ -40,10 +44,33 @@ final class EzCommandSupport {
         } catch (CommandSyntaxException exception) {
             throw exception;
         } catch (Exception exception) {
-            String message = exception.getMessage();
-            return fail(context.getSource(), message == null || message.isBlank()
-                    ? exception.getClass().getSimpleName().toLowerCase(Locale.ROOT) : message);
+            return fail(context.getSource(), reason(exception));
         }
+    }
+
+    /**
+     * Lo que se le dice al jugador de un error: el texto de los errores de uso ({@link IllegalArgumentException},
+     * {@link IllegalStateException} y los de WorldEdit, que ya dicen qué falta), también cuando llegan de otro hilo
+     * envueltos en otra excepción. De un fallo inesperado (un número que no cabe, un índice, un nulo…) nunca el texto
+     * de Java ni el nombre de la clase: una frase que lo dice, y el detalle al registro del servidor.
+     */
+    static String reason(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && (current instanceof CompletionException
+                || current instanceof ExecutionException || blank(current.getMessage()))) {
+            current = current.getCause();
+        }
+        boolean usage = current instanceof IllegalArgumentException && !(current instanceof NumberFormatException)
+                || current instanceof IllegalStateException || current instanceof WorldEditException;
+        if (usage && !blank(current.getMessage())) {
+            return current.getMessage();
+        }
+        KomaEditMod.LOGGER.error("Unexpected failure in a KomaEdit command", throwable);
+        return "Fallo inesperado de KomaEdit: avisa a un admin (el detalle está en el registro del servidor)";
+    }
+
+    private static boolean blank(String text) {
+        return text == null || text.isBlank();
     }
 
     static boolean can(ServerCommandSource source, String permission) {

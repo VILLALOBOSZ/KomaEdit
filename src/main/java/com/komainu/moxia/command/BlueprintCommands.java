@@ -100,7 +100,7 @@ public final class BlueprintCommands {
             command.then(literal(place).requires(EzCommandSupport.node(BlueprintPermissions.PLACE))
                     .then(argument("args", StringArgumentType.greedyString()).suggests(placeSuggestions())
                             .executes(context -> EzCommandSupport.run(context, player ->
-                                    place(context, player, StringArgumentType.getString(context, "args"))))));
+                                    place(player, StringArgumentType.getString(context, "args"))))));
         }
         for (String delete : new String[]{"delete", "borrar"}) {
             command.then(literal(delete).requires(EzCommandSupport.node(BlueprintPermissions.SAVE))
@@ -230,16 +230,14 @@ public final class BlueprintCommands {
      * Lo mismo que {@code /komaedit place Bp(N:<plano>) …}: alineación, banderas y la vista previa {@code -v} de
      * KomaEdit.
      */
-    private static int place(CommandContext<ServerCommandSource> context, ServerPlayerEntity player, String input)
+    private static int place(ServerPlayerEntity player, String input)
             throws IncompleteRegionException {
         List<String> words = words(input);
         BlueprintRef ref = BlueprintRef.parse(words.getFirst());
         String rest = String.join(" ", words.subList(1, words.size()));
         String structure = "Bp(N:" + (ref.sharedOnly() ? BlueprintRef.SHARED_PREFIX : "") + ref.name() + ")";
-        String started = PlacementService.start(player, PlacementSettings.Kind.PLACE,
-                rest.isBlank() ? structure : structure + " " + rest);
-        context.getSource().sendFeedback(() -> EzCommandSupport.prefix()
-                .append(Text.literal(started).formatted(Formatting.GRAY)), false);
+        EzCommandSupport.info(player, PlacementService.start(player, PlacementSettings.Kind.PLACE,
+                rest.isBlank() ? structure : structure + " " + rest));
         return 1;
     }
 
