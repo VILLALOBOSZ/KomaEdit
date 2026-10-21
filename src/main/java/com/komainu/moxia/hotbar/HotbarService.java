@@ -205,10 +205,13 @@ public final class HotbarService {
         return hotbar;
     }
 
-    /** Guarda una barra hecha de otra cosa (una paleta, un degradado, la selección…). */
+    /**
+     * Guarda una barra hecha de otra cosa (una paleta, un degradado, la selección…), con cada objeto pasado por el
+     * códec de Minecraft: queda escrita igual que si se hubiera guardado de la barra.
+     */
     public static SavedHotbar create(ServerPlayerEntity player, String name, List<HotbarItem> slots, boolean overwrite) {
         requireUse(player);
-        SavedHotbar hotbar = new SavedHotbar(name, "", slots);
+        SavedHotbar hotbar = new SavedHotbar(name, "", normalized(player, slots).slots());
         if (hotbar.isEmpty()) {
             throw new IllegalArgumentException("Ninguno de esos bloques tiene objeto: la barra saldría vacía");
         }
@@ -389,20 +392,13 @@ public final class HotbarService {
             throw new IllegalArgumentException("El código lleva " + hotbars.size() + " barras: no se le puede dar "
                     + "un solo nombre");
         }
-        RegistryWrapper.WrapperLookup registries = player.getRegistryManager();
-        FeatureSet features = player.getWorld().getEnabledFeatures();
         HotbarBook book = book(player);
         List<String> names = new ArrayList<>();
         int dropped = 0;
         for (SavedHotbar hotbar : hotbars) {
-            List<HotbarItem> slots = new ArrayList<>(SavedHotbar.SLOTS);
-            for (HotbarItem item : hotbar.slots()) {
-                Optional<ItemStack> stack = HotbarStacks.stack(item, registries, features);
-                if (stack.isEmpty()) {
-                    dropped++;
-                }
-                slots.add(stack.map(value -> HotbarStacks.item(value, registries)).orElse(HotbarItem.EMPTY));
-            }
+            Normalized normalized = normalized(player, hotbar.slots());
+            List<HotbarItem> slots = normalized.slots();
+            dropped += normalized.dropped();
             String wanted = rename != null && !rename.isBlank() ? rename : hotbar.name();
             String name = overwrite ? wanted : book.freeName(wanted);
             String icon = hotbar.icon();
@@ -414,6 +410,26 @@ public final class HotbarService {
         store(player, book);
         sync(player, false, names);
         return new Imported(List.copyOf(names), dropped);
+    }
+
+    /** Huecos como los escribe el servidor y cuántos objetos se quitaron por no existir aquí. */
+    private record Normalized(List<HotbarItem> slots, int dropped) {
+    }
+
+    /** Cada objeto por el códec de Minecraft: lo que no existe aquí (o no se puede leer) sale vacío. */
+    private static Normalized normalized(ServerPlayerEntity player, List<HotbarItem> slots) {
+        RegistryWrapper.WrapperLookup registries = player.getRegistryManager();
+        FeatureSet features = player.getWorld().getEnabledFeatures();
+        List<HotbarItem> result = new ArrayList<>(slots.size());
+        int dropped = 0;
+        for (HotbarItem item : slots) {
+            Optional<ItemStack> stack = HotbarStacks.stack(item, registries, features);
+            if (stack.isEmpty()) {
+                dropped++;
+            }
+            result.add(stack.map(value -> HotbarStacks.item(value, registries)).orElse(HotbarItem.EMPTY));
+        }
+        return new Normalized(result, dropped);
     }
 
     // ---- Al cliente --------------------------------------------------------------------------------------------
