@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.2 (estable, 2026-10-21)
+
 ### La vista previa en vivo se rehace de verdad
 
 - **Lo que fallaba** al cambiar un ajuste con una vista previa a la vista:
