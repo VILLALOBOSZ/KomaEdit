@@ -366,9 +366,15 @@ public final class DisplayEditorClient {
         return new GizmoMath.Ray(cameraPosition(client), new Vec3(look.x, look.y, look.z));
     }
 
-    /** El rayo con el que se apunta ahora: el cursor en el Studio, el punto de mira en el mundo. */
+    /**
+     * El rayo con el que se apunta ahora: el cursor en el Studio, el punto de mira en el mundo. Nulo con una pantalla
+     * abierta y el cursor fuera del mundo (sobre el panel).
+     */
     private static GizmoMath.Ray ray(MinecraftClient client) {
-        return client.currentScreen != null && studioRay != null ? studioRay : crosshair(client);
+        if (client.currentScreen != null) {
+            return studioRay;
+        }
+        return crosshair(client);
     }
 
     private static DisplayGizmo gizmo(MinecraftClient client, float delta) {
@@ -731,7 +737,12 @@ public final class DisplayEditorClient {
                     updateDrag(ray, Screen.hasAltDown());
                 }
             }
-            hover(client, ray, delta);
+            if (ray != null) {
+                hover(client, ray, delta);
+            } else if (drag == null) {
+                hoveredHandle = DisplayGizmo.Handle.NONE;
+                hoveredDisplay = -1;
+            }
             List<GizmoGeometry.Line> lines = new ArrayList<>();
             List<DisplayDrag.Item> items = drag != null ? drag.current() : items();
             int active = primaryIndex(items);

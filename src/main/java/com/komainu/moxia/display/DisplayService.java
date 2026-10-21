@@ -758,7 +758,12 @@ public final class DisplayService {
                 }
             };
             if (!message.isEmpty()) {
-                Feedback.status(player, message);
+                // Con el mod, el aviso va con lo elegido y se queda en la barra del editor unos segundos.
+                if (hasMod(player)) {
+                    send(player, editor(player), DisplayPayloads.Outcome.APPLIED, message);
+                } else {
+                    Feedback.status(player, message);
+                }
             }
         } catch (IllegalArgumentException exception) {
             Feedback.warn(player, capitalized(exception.getMessage()));
