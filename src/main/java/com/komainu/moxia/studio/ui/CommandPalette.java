@@ -20,7 +20,7 @@ public final class CommandPalette {
 
     /** Lo que se puede abrir desde la paleta. */
     public enum Kind {
-        STAGE, TOOL, PRESET, FIGURE, BLUEPRINT;
+        STAGE, TOOL, PRESET, FIGURE, BLUEPRINT, THEME;
 
         public String translationKey() {
             return "gui.komaedit.palette.kind." + name().toLowerCase(java.util.Locale.ROOT);
@@ -159,10 +159,10 @@ public final class CommandPalette {
             if (chosen) {
                 ui.fill(row.left(2), ACCENT);
             }
-            ui.icon(entry.icon(), row.x() + 6, row.centerY() - 6, chosen ? ACCENT_HOVER : TEXT_SECONDARY);
+            ui.icon(entry.icon(), row.x() + 6, row.centerY() - 6, chosen ? ACCENT_TEXT : TEXT_SECONDARY);
             int detailWidth = ui.width(entry.detail());
             ui.label(entry.title(), row.x() + 24, row.centerY() - 4, row.width() - 34 - detailWidth,
-                    chosen ? WHITE : TEXT);
+                    chosen ? TEXT_STRONG : TEXT);
             ui.rightAligned(entry.detail(), row.right() - 6, row.centerY() - 4, MUTED);
             int position = index;
             ui.register(row).onClick(() -> {

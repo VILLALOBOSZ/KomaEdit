@@ -53,6 +53,9 @@ public final class StudioView {
     static final String TOOL_OWNER = "tool:";
     private static final int HISTORY_WIDTH = 220;
     private static final int HISTORY_ROWS = 10;
+    /** Alto que ocupa en la chuleta la fila para elegir el tema de colores. */
+    private static final int THEME_ROW = 20;
+    private static final String THEME_GROUP = "studio:theme";
     /** Con al menos este alto de contenido las galerías enseñan cuatro filas en vez de dos. */
     static final int TALL_VIEWPORT = 380;
 
@@ -82,6 +85,13 @@ public final class StudioView {
     private boolean navFlyout;
     private String status = "";
     private long statusAt = Long.MIN_VALUE / 2;
+    /** Lo que dice el pie por lo que hay bajo el ratón (qué hace cada clic en el mundo, los gestos de un control). */
+    private String pointerHint = "";
+    /** Lo que tarda en salir la leyenda del mundo con el ratón quieto sobre él. */
+    static final long LEGEND_MILLIS = 500L;
+    private int restX = -1;
+    private int restY = -1;
+    private long restSince;
     /** En Trayectoria, el pie construye la herramienta que llevó allí (no la figura). */
     private boolean toolCreation;
     private long lastHistoryRequest = Long.MIN_VALUE / 2;
@@ -192,7 +202,7 @@ public final class StudioView {
         if (next == StudioStage.TOOLS) {
             tools.refreshSoon();
             toolCreation = true;
-        } else if (next == StudioStage.FIGURE || next == StudioStage.MODIFIERS || next == StudioStage.MATERIAL) {
+        } else if (next == StudioStage.FIGURE) {
             toolCreation = false;
         }
         stage = next;
@@ -246,10 +256,10 @@ public final class StudioView {
             host.requestState();
         }
         tools.syncBrush(bound);
+        blueprints.syncBrush(bound);
         Optional<JobStatusPayload> job = host.job();
         boolean busy = job.isPresent() && job.get().phaseValue() != ProgressLine.Phase.WAITING;
-        boolean figureSide = stage == StudioStage.FIGURE || stage == StudioStage.MODIFIERS
-                || stage == StudioStage.MATERIAL;
+        boolean figureSide = stage == StudioStage.FIGURE;
         boolean ghost = host.ghost().map(StudioHost.Ghost::fromStudio).orElse(false);
         // La figura solo se rehace sobre su fantasma: sin él, Construir la colocaría otra vez.
         boolean shown = ghost || !figureSide && job.isPresent()
@@ -310,6 +320,7 @@ public final class StudioView {
     public void render(StudioUi ui, int width, int height, int mouseX, int mouseY, StudioHost host) {
         this.ui = ui;
         load(host);
+        StudioTheme.use(StudioPalette.byId(host.preferences().theme()));
         StudioHost bound = bind(host);
         int preferred = panelShare > 0 ? (int) Math.round(panelShare * width) : StudioLayout.AUTO;
         frame = StudioLayout.compute(width, height, preferred, StudioStage.groupSizes());
@@ -330,6 +341,7 @@ public final class StudioView {
         if (navFlyout) {
             ui.enableHover();
         }
+        pointerHint = pointerHint(ui, bound, mouseX, mouseY);
         drawFooter(ui, bound);
         drawResizeHandle(ui, bound, mouseX, mouseY);
         if (historyOpen && !modal()) {
@@ -346,13 +358,88 @@ public final class StudioView {
         } else if (cheatSheet) {
             drawCheatSheet(ui, bound);
         }
+        if (worldLegend(mouseX, mouseY, host.now())) {
+            drawWorldLegend(ui, bound);
+        }
         ui.canvas().endOverlay();
         if (!dragging() && !typing() && !cheatSheet) {
             StudioUi.Widget widget = ui.at(mouseX, mouseY);
-            if (widget != null && !widget.tooltip().isEmpty() && !widget.overValue(mouseX, mouseY)) {
-                ui.tooltip(widget.tooltip(), mouseX, mouseY, frame.screen());
+            if (widget != null) {
+                // Sobre el número, la ayuda corta (qué cambia y sus extremos): la entera taparía la fila.
+                boolean brief = widget.overValue(mouseX, mouseY) && !widget.brief().isEmpty();
+                String text = brief ? widget.brief() : widget.tooltip();
+                if (!text.isEmpty() && !brief && widget.tooltipAnchor() != null) {
+                    // Pegado al control (debajo o encima) y dentro del panel: no tapa la fila del ratón.
+                    ui.tooltip(text, widget.tooltipAnchor(), frame.panel());
+                } else if (!text.isEmpty()) {
+                    ui.tooltip(text, mouseX, mouseY, frame.screen());
+                }
             }
         }
+    }
+
+    /**
+     * Si toca enseñar la leyenda del mundo: el ratón lleva {@value #LEGEND_MILLIS} ms quieto sobre el mundo, sin
+     * arrastrar ni ventanas abiertas. Al moverlo se esconde (y el pie sigue diciendo lo principal).
+     */
+    private boolean worldLegend(int mouseX, int mouseY, long now) {
+        boolean overWorld = mouseX >= 0 && mouseY >= 0 && mouseX < frame.panel().x() && !modal() && !dragging()
+                && !historyOpen;
+        if (!overWorld || Math.abs(mouseX - restX) > 3 || Math.abs(mouseY - restY) > 3) {
+            restX = mouseX;
+            restY = mouseY;
+            restSince = now;
+        }
+        return overWorld && now - restSince >= LEGEND_MILLIS;
+    }
+
+    /** La leyenda del mundo, arriba a la izquierda: todo lo que hace el ratón aquí, una cosa por línea. */
+    private void drawWorldLegend(StudioUi ui, StudioHost host) {
+        List<String> lines = new ArrayList<>();
+        for (String part : worldHint(host).split(" · ")) {
+            // Cada gesto en su línea, empezando con mayúscula.
+            lines.add(part.isEmpty() ? part : Character.toUpperCase(part.charAt(0)) + part.substring(1));
+        }
+        String title = host.tr("gui.komaedit.hint.world.legend");
+        int maximum = Math.max(80, frame.panel().x() - 24);
+        int width = ui.boldWidth(title);
+        List<String> wrapped = new ArrayList<>();
+        for (String line : lines) {
+            for (String part : ui.wrap(line, maximum - 12)) {
+                wrapped.add(part);
+                width = Math.max(width, ui.width(part));
+            }
+        }
+        Rect box = new Rect(8, 8, Math.min(maximum, width + 14), 18 + wrapped.size() * StudioUi.LINE);
+        ui.fill(box, PANEL);
+        ui.border(box, OUTLINE);
+        ui.fill(new Rect(box.x(), box.y(), 2, box.height()), ACCENT);
+        ui.bold(title, box.x() + 7, box.y() + 5, box.width() - 10, TEXT_STRONG);
+        for (int index = 0; index < wrapped.size(); index++) {
+            ui.label(wrapped.get(index), box.x() + 7, box.y() + 16 + index * StudioUi.LINE, box.width() - 10,
+                    index == 0 ? TEXT : TEXT_SECONDARY);
+        }
+    }
+
+    /**
+     * La línea del pie según lo que hay bajo el ratón: sobre el mundo, qué hace cada clic en esta etapa; sobre un
+     * control del panel, sus gestos. Vacía con una ventana abierta o mientras se arrastra o se escribe.
+     */
+    private String pointerHint(StudioUi ui, StudioHost host, int mouseX, int mouseY) {
+        if (modal() || dragging() || typing() || mouseX < 0 || mouseY < 0
+                || frame.footer().contains(mouseX, mouseY)) {
+            return "";
+        }
+        if (mouseX < frame.panel().x()) {
+            return worldHint(host);
+        }
+        StudioUi.Widget widget = ui.at(mouseX, mouseY);
+        return widget == null ? "" : widget.hint();
+    }
+
+    /** Lo que dice ahora la línea del pie por el ratón (para las pruebas). */
+    public String pointerHint() {
+        return pointerHint;
     }
 
     /** Cambia el desplazamiento al cambiar de etapa, herramienta o figura, y recuerda el de antes. */
@@ -390,8 +477,8 @@ public final class StudioView {
         List<Integer> buttons = toolbarButtons();
         int left = bar.x() + frame.padding();
         int right = frame.toolButton(buttons.size() - 1).x() - 4;
-        ui.icon(stage.icon(), left, bar.centerY() - 6, ACCENT_HOVER);
-        ui.bold(host.tr(stage.titleKey()), left + 17, bar.centerY() - 4, right - left - 17, WHITE);
+        ui.icon(stage.icon(), left, bar.centerY() - 6, ACCENT_TEXT);
+        ui.bold(host.tr(stage.titleKey()), left + 17, bar.centerY() - 4, right - left - 17, TEXT_STRONG);
         ui.register(new Rect(left, bar.y(), Math.max(0, right - left), bar.height()))
                 .tooltip(host.tr(stage.titleKey()) + " · " + stage.shortcut() + "\n" + host.tr(stage.subtitleKey()));
 
@@ -453,15 +540,15 @@ public final class StudioView {
                 ui.fill(item.left(2), ACCENT);
             }
             int iconY = item.centerY() - StudioIcons.SIZE / 2;
-            int iconColor = selected ? ACCENT : hovered ? TEXT : TEXT_SECONDARY;
+            int iconColor = selected ? ACCENT_TEXT : hovered ? TEXT : TEXT_SECONDARY;
             if (labels) {
                 ui.icon(value.icon(), item.x() + 6, iconY, iconColor);
                 String key = String.valueOf(value.shortcut());
                 int keyX = item.right() - 4 - ui.width(key);
                 int labelX = item.x() + 6 + StudioIcons.SIZE + 5;
                 ui.label(host.tr(value.titleKey()), labelX, item.centerY() - 4, keyX - labelX - 4,
-                        selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
-                ui.label(key, keyX, item.centerY() - 4, selected ? MUTED : DISABLED);
+                        selected ? TEXT_STRONG : hovered ? TEXT : TEXT_SECONDARY);
+                ui.label(key, keyX, item.centerY() - 4, MUTED);
             } else {
                 ui.icon(value.icon(), item.centerX() - StudioIcons.SIZE / 2, iconY, iconColor);
             }
@@ -507,8 +594,8 @@ public final class StudioView {
             String key = String.valueOf(value.shortcut());
             int keyX = row.right() - 4 - ui.width(key);
             ui.label(host.tr(value.titleKey()), row.x() + 5, row.centerY() - 4, keyX - row.x() - 9,
-                    selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
-            ui.label(key, keyX, row.centerY() - 4, selected ? MUTED : DISABLED);
+                    selected ? TEXT_STRONG : hovered ? TEXT : TEXT_SECONDARY);
+            ui.label(key, keyX, row.centerY() - 4, MUTED);
             ui.register(row).onClick(() -> selectStage(value, host)).tooltip(host.tr(value.subtitleKey()));
         }
     }
@@ -530,8 +617,6 @@ public final class StudioView {
             case TOOLS -> tools.draw(ui, column, host, compact);
             case PATH -> figure.drawPath(ui, column, host, compact, target -> useWith(target, host));
             case FIGURE -> figure.drawFigure(ui, column, host, compact);
-            case MODIFIERS -> figure.drawModifiers(ui, column, host, compact);
-            case MATERIAL -> figure.drawMaterial(ui, column, host, compact);
             case COLOR -> color.draw(ui, column, host, compact);
             case BLUEPRINTS -> blueprints.draw(ui, column, host, compact);
             case RECIPES -> figure.drawRecipes(ui, column, host);
@@ -657,14 +742,12 @@ public final class StudioView {
         Rect statusLine = frame.footerStatus();
         JobStrip.Actions actions = jobActions(host);
 
-        String detail = fresh ? status : footer.idle();
-        if ((!frame.compact() || job.isEmpty() && !fresh) && !footer.target().isEmpty()) {
-            // Sobre qué se trabaja: icono, texto y, a la derecha, la estimación. Sin nada debajo, centrado en el
-            // hueco que queda sobre el botón.
-            if (!frame.compact() && job.isEmpty() && detail.isEmpty()) {
-                int space = frame.buildButton().y() - area.y();
-                summary = new Rect(summary.x(), area.y() + (space - 9) / 2 + 1, summary.width(), 9);
-            }
+        // Debajo de sobre qué se trabaja: el último mensaje; si no, lo que hace lo que hay bajo el ratón (cada clic en
+        // el mundo, los gestos de un control); si no, el aviso de la etapa.
+        boolean hinted = !fresh && !pointerHint.isEmpty();
+        String detail = fresh ? status : hinted ? pointerHint : footer.idle();
+        if ((!frame.compact() || job.isEmpty() && !fresh && !hinted) && !footer.target().isEmpty()) {
+            // Sobre qué se trabaja: icono, texto y, a la derecha, la estimación.
             int estimateWidth = footer.estimate().isEmpty() ? 0 : ui.width(footer.estimate()) + 8;
             ui.icon(footer.icon(), summary.x() - 1, summary.y() - 2, TEXT_SECONDARY);
             String fitted = FooterText.fit(ui, List.of(footer.target().split(" · ")),
@@ -740,7 +823,7 @@ public final class StudioView {
         Rect summary = frame.footerSummary();
         Rect statusLine = frame.footerStatus();
         String help = host.tr("gui.komaedit.ghost.studio.help");
-        ui.icon(StudioIcons.Icon.GIZMO, summary.x() - 1, summary.y() - 2, ACCENT_HOVER);
+        ui.icon(StudioIcons.Icon.GIZMO, summary.x() - 1, summary.y() - 2, ACCENT_TEXT);
         String title = ghost.title() + " · " + ghost.summary();
         // Arriba qué es (o, si no se pudo colocar, por qué); debajo las opciones y dónde está.
         boolean rejected = !ghost.message().isEmpty();
@@ -782,7 +865,7 @@ public final class StudioView {
                                    Runnable toggle, String name, String tooltip) {
         int width = ui.width(label) + 8;
         Rect rect = new Rect(x, line.y() - 1, width + 2, line.height() + 2);
-        int color = !enabled ? DISABLED : on ? ACCENT_HOVER : ui.hovered(rect) ? TEXT : MUTED;
+        int color = !enabled ? DISABLED : on ? ACCENT_TEXT : ui.hovered(rect) ? TEXT : MUTED;
         // La casilla, dibujada: llena si est\u00E1 encendido.
         Rect box = new Rect(x, line.y() + 1, 6, 6);
         if (on) {
@@ -812,7 +895,7 @@ public final class StudioView {
         StudioIcons.Icon icon = mode == StudioPreferences.PreviewMode.LIVE ? StudioIcons.Icon.LIVE
                 : StudioIcons.Icon.EYE;
         ui.icon(icon, rect.centerX() - 6, rect.centerY() - 6, mode == StudioPreferences.PreviewMode.OFF
-                ? (hovered ? TEXT : MUTED) : ACCENT_HOVER);
+                ? (hovered ? TEXT : MUTED) : ACCENT_TEXT);
         ui.register(rect)
                 .tooltip(host.tr("gui.komaedit.preview.mode." + mode.id()) + "\n"
                         + host.tr("gui.komaedit.preview.mode." + mode.id() + ".help") + "\n"
@@ -892,7 +975,7 @@ public final class StudioView {
         ui.border(box, OUTLINE);
         ui.fill(new Rect(box.x(), box.y(), 2, box.height()), ACCENT);
         ui.register(box);
-        ui.bold(host.tr("gui.komaedit.history.title"), box.x() + 8, box.y() + 7, box.width() - 16, WHITE);
+        ui.bold(host.tr("gui.komaedit.history.title"), box.x() + 8, box.y() + 7, box.width() - 16, TEXT_STRONG);
         int y = box.y() + 20;
         if (entries.isEmpty()) {
             ui.label(host.tr("gui.komaedit.history.empty"), box.x() + 8, y + 4, box.width() - 16, MUTED);
@@ -910,7 +993,7 @@ public final class StudioView {
             String blocks = host.tr("gui.komaedit.history.blocks", ProgressLine.group(entry.blocks()));
             int blocksWidth = ui.width(blocks);
             ui.label(entry.label(), row.x() + 6, row.y() + 4, row.width() - blocksWidth - 16,
-                    undone ? DISABLED : current ? WHITE : TEXT_SECONDARY);
+                    undone ? DISABLED : current ? TEXT_STRONG : TEXT_SECONDARY);
             ui.rightAligned(blocks, row.right() - 4, row.y() + 4, undone ? DISABLED : MUTED);
             int target = index;
             ui.register(row)
@@ -974,27 +1057,75 @@ public final class StudioView {
             keyWidth = Math.max(keyWidth, ui.width(host.tr(shortcut.keysKey())));
         }
         int columnWidth = Math.min(340, (screen.width() - 40) / columns);
-        int modalWidth = columnWidth * columns + 24;
-        int modalHeight = Math.min(screen.height() - 16, 48 + rows * 12);
+        int modalWidth = Math.min(screen.width() - 16, Math.max(columnWidth * columns, themeRowWidth(ui, host)) + 28);
+        int modalHeight = Math.min(screen.height() - 16, 48 + THEME_ROW + rows * 12);
         Rect modal = new Rect((screen.width() - modalWidth) / 2, (screen.height() - modalHeight) / 2, modalWidth,
                 modalHeight);
         ui.fill(modal, PANEL);
         ui.border(modal, DIVIDER);
         ui.fill(new Rect(modal.x(), modal.y(), 2, modal.height()), ACCENT);
-        ui.bold(host.tr("gui.komaedit.shortcuts.title"), modal.x() + 14, modal.y() + 10, modalWidth - 28, WHITE);
+        ui.bold(host.tr("gui.komaedit.shortcuts.title"), modal.x() + 14, modal.y() + 10, modalWidth - 28, TEXT_STRONG);
         ui.label(host.tr("gui.komaedit.shortcuts.close"), modal.x() + 14, modal.bottom() - 14, modalWidth - 28, MUTED);
         int keyColumn = Math.min(keyWidth, columnWidth / 2);
         for (int index = 0; index < shortcuts.size(); index++) {
             StudioShortcuts.Shortcut shortcut = shortcuts.get(index);
             int x = modal.x() + 14 + index / rows * columnWidth;
             int y = modal.y() + 26 + index % rows * 12;
-            if (y > modal.bottom() - 26) {
+            if (y > modal.bottom() - 26 - THEME_ROW) {
                 continue;
             }
-            ui.label(host.tr(shortcut.keysKey()), x, y, keyColumn, ACCENT_HOVER);
+            ui.label(host.tr(shortcut.keysKey()), x, y, keyColumn, ACCENT_TEXT);
             ui.label(host.tr(shortcut.translationKey()), x + keyColumn + 8, y, columnWidth - keyColumn - 16,
                     TEXT_SECONDARY);
         }
+        drawThemeRow(ui, host, new Rect(modal.x() + 14, modal.bottom() - 18 - THEME_ROW, modalWidth - 28, 14));
+    }
+
+    private int themeRowWidth(StudioUi ui, StudioHost host) {
+        int width = ui.width(host.tr("gui.komaedit.theme")) + 6;
+        for (StudioPalette palette : StudioPalette.values()) {
+            width += themeChipWidth(ui, host, palette) + 4;
+        }
+        return width;
+    }
+
+    private static int themeChipWidth(StudioUi ui, StudioHost host, StudioPalette palette) {
+        return ui.width(host.tr(palette.translationKey())) + 24;
+    }
+
+    /**
+     * El selector de tema de la chuleta: una pastilla por tema con su muestra (fondo y acento) y su nombre. Pulsar una
+     * lo pone al momento, detrás del velo se ve ya con sus colores, y se guarda para la próxima vez.
+     */
+    private void drawThemeRow(StudioUi ui, StudioHost host, Rect row) {
+        String title = host.tr("gui.komaedit.theme");
+        ui.label(title, row.x(), row.centerY() - 4, MUTED);
+        int x = row.x() + ui.width(title) + 6;
+        for (StudioPalette palette : StudioPalette.values()) {
+            int width = Math.min(themeChipWidth(ui, host, palette), row.right() - x);
+            if (width < 24) {
+                break;
+            }
+            Rect chip = new Rect(x, row.y(), width, row.height());
+            boolean chosen = palette == StudioTheme.current();
+            ui.chip(chip, "", chosen, TEXT_SECONDARY).onClick(() -> setTheme(host, palette)).group(THEME_GROUP)
+                    .tooltip(host.tr(palette.translationKey() + ".help"));
+            Rect swatch = new Rect(chip.x() + 5, chip.centerY() - 4, 10, 8);
+            ui.fill(swatch, palette.color(StudioTheme.Token.PANEL));
+            ui.fill(new Rect(swatch.x() + 5, swatch.y(), 5, swatch.height()), palette.color(StudioTheme.Token.ACCENT));
+            ui.border(swatch, OUTLINE);
+            ui.label(host.tr(palette.translationKey()), swatch.right() + 4, chip.centerY() - 4,
+                    chip.right() - swatch.right() - 8, chosen ? TEXT_STRONG : ui.hovered(chip) ? TEXT : TEXT_SECONDARY);
+            x += width + 4;
+        }
+    }
+
+    /** Pone el tema {@code palette}, lo recuerda en las preferencias del jugador y lo dice en la línea de estado. */
+    public void setTheme(StudioHost host, StudioPalette palette) {
+        host.preferences().setTheme(palette.id());
+        StudioTheme.use(palette);
+        host.savePreferences();
+        bind(host).status(host.tr("gui.komaedit.theme.applied", host.tr(palette.translationKey())));
     }
 
     // ── Paleta de órdenes ───────────────────────────────────────────────────────────────────────────────
@@ -1036,6 +1167,13 @@ public final class StudioView {
                 figure.selectShape(bound, shape);
                 selectStage(StudioStage.FIGURE, host);
             }));
+        }
+        String themeKind = host.tr(CommandPalette.Kind.THEME.translationKey());
+        for (StudioPalette value : StudioPalette.values()) {
+            entries.add(new CommandPalette.Entry(CommandPalette.Kind.THEME,
+                    host.tr("gui.komaedit.theme") + ": " + host.tr(value.translationKey()), themeKind,
+                    host.tr(value.translationKey() + ".help") + " " + value.id(), StudioIcons.Icon.COLOR,
+                    () -> setTheme(host, value)));
         }
         String blueprintKind = host.tr(CommandPalette.Kind.BLUEPRINT.translationKey());
         for (BlueprintSummary blueprint : host.blueprints().list()) {
@@ -1096,22 +1234,122 @@ public final class StudioView {
     }
 
     /**
-     * Si un clic en el mundo coloca la herramienta elegida ahí: en la etapa Herramientas, con una herramienta que va
-     * «donde haces clic» (árbol, roca, texto) y sin puntos de trayectoria que manden.
+     * Qué hace el botón izquierdo en el mundo, según la etapa y lo elegido. La pantalla lo pregunta al pulsar y el
+     * pie lo dice mientras el ratón está sobre el mundo, así que siempre se sabe qué va a pasar antes de pulsar.
+     * Alt+clic es siempre el cuentagotas ({@link #eyedropper}) y el clic derecho, girar la cámara.
      */
-    public boolean placesOnClick(StudioHost host) {
-        if (stage != StudioStage.TOOLS || tools.browsing() || modal()) {
-            return false;
-        }
-        ToolCard card = tools.selected();
-        return card.target() == ToolTarget.LOOK
-                || card.target() == ToolTarget.PATH_OR_LOOK && host.context().pathPoints() == 0;
+    public enum WorldAction {
+        /** Nada que hacer con un clic aquí. */
+        NONE,
+        /** Mover el fantasma del gizmo: un clic lo lleva ahí y arrastrando lo pasea por el terreno. */
+        GHOST,
+        /** Puntos de la trayectoria: clic añade, arrastrar un punto lo mueve y arrastrar un tramo mete uno en medio. */
+        POINTS,
+        /** Construir ahí lo elegido (árbol, roca, texto, el plano elegido). */
+        PLACE,
+        /** Seleccionar arrastrando una caja; tirando de sus caras se ajusta; doble clic, lo pegado del mismo bloque. */
+        SELECT,
+        /** Pintar con el pincel de la mano; manteniendo el botón se sigue pintando. */
+        PAINT
     }
 
-    /** Clic en el mundo con {@link #placesOnClick}: la pantalla ya le dijo al servidor dónde; se construye ahí. */
+    /**
+     * Lo que hace ahora un clic izquierdo en el mundo. En Trayectoria siempre son los puntos; en las demás etapas, con
+     * un fantasma a la vista, el clic lo mueve.
+     */
+    public WorldAction worldAction(StudioHost host) {
+        if (modal()) {
+            return WorldAction.NONE;
+        }
+        if (stage == StudioStage.PATH) {
+            return WorldAction.POINTS;
+        }
+        if (host.ghost().isPresent()) {
+            return WorldAction.GHOST;
+        }
+        boolean brush = holdingBrush(host);
+        return switch (stage) {
+            case PATH, FIGURE -> WorldAction.POINTS;
+            case TOOLS -> {
+                if (tools.browsing()) {
+                    yield brush ? WorldAction.PAINT : WorldAction.NONE;
+                }
+                ToolCard card = tools.selected();
+                boolean points = host.context().pathPoints() > 0;
+                yield switch (card.target()) {
+                    case LOOK -> WorldAction.PLACE;
+                    case PATH_OR_LOOK -> points ? WorldAction.POINTS : WorldAction.PLACE;
+                    case SELECTION -> WorldAction.SELECT;
+                    case PATH_OR_SELECTION -> points ? WorldAction.POINTS : WorldAction.SELECT;
+                    case HAND, MODE -> brush ? WorldAction.PAINT : WorldAction.NONE;
+                };
+            }
+            case COLOR -> WorldAction.SELECT;
+            case BLUEPRINTS -> brush ? WorldAction.PAINT
+                    : blueprints.selectedName(host).isEmpty() ? WorldAction.NONE : WorldAction.PLACE;
+            case RECIPES, INSTANCES -> brush ? WorldAction.PAINT : WorldAction.NONE;
+        };
+    }
+
+    /** Si lo de la mano es un pincel de KomaEdit (no la supervarita ni otra cosa). */
+    private static boolean holdingBrush(StudioHost host) {
+        String held = host.heldTool();
+        return held != null && held.startsWith("pincel:");
+    }
+
+    /** La línea del pie con lo que hace cada clic en el mundo ahora mismo. */
+    public String worldHint(StudioHost host) {
+        WorldAction action = worldAction(host);
+        String key = switch (action) {
+            case NONE -> stage == StudioStage.TOOLS && !tools.browsing() && tools.selected().target() == ToolTarget.HAND
+                    ? "gui.komaedit.hint.world.brush_first" : "gui.komaedit.hint.world.none";
+            case GHOST -> "gui.komaedit.hint.world.ghost";
+            case POINTS -> "gui.komaedit.hint.world.points";
+            case PLACE -> stage == StudioStage.BLUEPRINTS ? "gui.komaedit.hint.world.place_blueprint"
+                    : "gui.komaedit.hint.world.place";
+            case SELECT -> "gui.komaedit.hint.world.select";
+            case PAINT -> "gui.komaedit.hint.world.paint";
+        };
+        String what = action == WorldAction.PLACE && stage == StudioStage.TOOLS
+                ? host.tr(tools.selected().buildKey()).toLowerCase(java.util.Locale.ROOT)
+                : key.endsWith("brush_first") ? host.tr(tools.selected().buildKey()) : "";
+        return host.tr(key, what) + " · " + host.tr("gui.komaedit.hint.world.common");
+    }
+
+    /**
+     * Clic en el mundo con {@link WorldAction#PLACE}: la pantalla ya le dijo al servidor en qué bloque fue; se
+     * construye ahí la herramienta elegida o se coloca el plano elegido.
+     */
     public void placeAtClick(StudioHost host) {
         StudioHost bound = bind(host);
-        buildTool(bound);
+        if (stage == StudioStage.BLUEPRINTS) {
+            blueprints.place(bound);
+        } else {
+            buildTool(bound);
+        }
+    }
+
+    /**
+     * El cuentagotas del mundo (Alt+clic en un bloque): el bloque pasa a ser el material de lo que se está haciendo
+     * (la figura, la herramienta elegida o, en Color, el primer bloque del degradado; con Mayús, el último).
+     */
+    public void eyedropper(String blockId, boolean shift, StudioHost host) {
+        StudioHost bound = bind(host);
+        ProceduralRecipe before = figure.draft();
+        ToolsPanel.Snapshot toolsBefore = tools.snapshot();
+        switch (stage) {
+            case TOOLS -> {
+                if (tools.browsing()) {
+                    bound.status(bound.tr("gui.komaedit.status.eyedropper.pick_tool"));
+                } else {
+                    tools.pickMaterial(bound, blockId);
+                }
+            }
+            case COLOR -> color.pickWorld(bound, blockId, shift);
+            default -> figure.pickMaterial(bound, blockId);
+        }
+        figure.track(before, "eyedropper", host.now());
+        tools.track(toolsBefore, "eyedropper", host.now());
     }
 
     // ── Ratón ───────────────────────────────────────────────────────────────────────────────────────────
@@ -1130,7 +1368,12 @@ public final class StudioView {
     private Click click(double x, double y, int button, StudioUi.Widget widget, StudioHost host) {
         boolean left = button == 0;
         if (cheatSheet) {
-            cheatSheet = false;
+            // Cualquier clic la cierra, salvo en el selector de tema: así se prueban los temas uno tras otro.
+            if (left && widget != null && THEME_GROUP.equals(widget.group())) {
+                widget.press(x, y);
+            } else {
+                cheatSheet = false;
+            }
             return Click.HANDLED;
         }
         Object key = widget == null ? null : widget.key();

@@ -41,6 +41,14 @@ public record TextPlacement(int[] anchor, int[] right, int[] up, int[] out) {
         };
     }
 
+    /**
+     * Modo según la cara pulsada (su componente vertical: 1 arriba, -1 abajo, 0 una pared): sobre el suelo, tumbado
+     * en él; bajo un techo, colgado de él; en una pared, pegado a ella.
+     */
+    public static Mode modeForFace(int offsetY) {
+        return offsetY > 0 ? Mode.FLOOR : offsetY < 0 ? Mode.CEILING : Mode.WALL;
+    }
+
     /** Modo según la inclinación de la mirada (positiva hacia abajo, como en Minecraft). */
     public static Mode modeForPitch(double pitch) {
         if (pitch > 50.0) {

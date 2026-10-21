@@ -41,7 +41,7 @@ class ClickToPlaceTest {
             studio.render();
             assertTrue(studio.shows("Donde haces clic"), () -> id + ": " + studio.texts());
             assertEquals(StudioView.Click.WORLD, studio.clickAt(100, 300), "el clic es del mundo");
-            assertTrue(studio.view.placesOnClick(studio.host), id);
+            assertEquals(StudioView.WorldAction.PLACE, studio.view.worldAction(studio.host), id);
             studio.host.clickedSpot = new int[]{12, 64, -30};
             studio.view.placeAtClick(studio.host);
             assertTrue(studio.host.last().startsWith("komaedit " + id + " "), studio.host.last());
@@ -55,17 +55,29 @@ class ClickToPlaceTest {
         StudioDriver withPoints = studio(3);
         withPoints.view.tools().select(ToolCatalog.byId("tree"), withPoints.host);
         withPoints.render();
-        assertFalse(withPoints.view.placesOnClick(withPoints.host), "los puntos de la trayectoria mandan");
+        assertEquals(StudioView.WorldAction.POINTS, withPoints.view.worldAction(withPoints.host),
+                "los puntos de la trayectoria mandan: el clic pone o mueve puntos");
         assertTrue(withPoints.shows("3 puntos"));
 
-        for (String id : List.of("roof", "snow", "stamp", "symmetry")) {
+        for (String id : List.of("roof", "snow")) {
             StudioDriver studio = studio(0);
             studio.view.tools().select(ToolCatalog.byId(id), studio.host);
             studio.render();
-            assertFalse(studio.view.placesOnClick(studio.host), id);
+            assertEquals(StudioView.WorldAction.SELECT, studio.view.worldAction(studio.host),
+                    id + ": lo que trabaja sobre la selección la hace arrastrando");
+        }
+        for (String id : List.of("stamp", "symmetry")) {
+            StudioDriver studio = studio(0);
+            studio.view.tools().select(ToolCatalog.byId(id), studio.host);
+            studio.render();
+            assertEquals(StudioView.WorldAction.NONE, studio.view.worldAction(studio.host), id);
+            studio.host.heldTool = "pincel:12ab";
+            assertEquals(StudioView.WorldAction.PAINT, studio.view.worldAction(studio.host),
+                    id + ": con el pincel en la mano, el clic pinta");
         }
         StudioDriver figure = studio(0);
         figure.view.selectStage(StudioStage.FIGURE, figure.host);
-        assertFalse(figure.view.placesOnClick(figure.host), "las figuras siguen la trayectoria");
+        assertEquals(StudioView.WorldAction.POINTS, figure.view.worldAction(figure.host),
+                "las figuras siguen la trayectoria: el clic pone puntos");
     }
 }

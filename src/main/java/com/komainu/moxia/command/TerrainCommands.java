@@ -12,6 +12,8 @@ import com.komainu.moxia.terrain.SurfacePalette;
 import com.komainu.moxia.terrain.TerrainBlocks;
 import com.komainu.moxia.terrain.TerrainJobs;
 import com.komainu.moxia.terrain.TerrainService;
+import com.komainu.moxia.terrain.stamp.StampCategory;
+import com.komainu.moxia.terrain.stamp.StampInfo;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -31,6 +33,8 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -70,6 +74,7 @@ public final class TerrainCommands {
                     "seco", "-n", "-z", "-y", "-k", "-m", "-e");
             case "erosion" -> List.of("hidraulica", "termica", "completa", "3", "1", "-a", "-s", "-m", "-e");
             case "pintar" -> List.of("-m", "-e");
+            case "sellos" -> stampSuggestions(remaining);
             default -> List.of();
         });
         if (!action.equals("sellos") && !action.equals("paletas")) {
@@ -80,6 +85,20 @@ public final class TerrainCommands {
     };
 
     private TerrainCommands() {
+    }
+
+    /** Las categorías y exportar; tras «exportar», los sellos de serie. */
+    private static List<String> stampSuggestions(String remaining) {
+        String first = remaining.strip().toLowerCase(Locale.ROOT);
+        if (first.startsWith("exportar ") || first.startsWith("export ")) {
+            return List.copyOf(StampLibrary.descriptions().keySet());
+        }
+        List<String> result = new ArrayList<>();
+        for (StampCategory category : StampCategory.values()) {
+            result.add(category.id());
+        }
+        result.add("exportar");
+        return result;
     }
 
     public static void register(LiteralCommandNode<ServerCommandSource> root) {
@@ -115,7 +134,7 @@ public final class TerrainCommands {
                 case "rio", "arroyo", "canon", "barranco" -> river(player, action, options);
                 case "erosion" -> erosion(player, options);
                 case "pintar" -> paint(player, options);
-                case "sellos" -> stamps(context);
+                case "sellos" -> stamps(context, player, options);
                 case "paletas" -> palettes(context);
                 default -> throw new IllegalArgumentException("Acción desconocida: " + action + " ("
                         + String.join(", ", ACTIONS) + ")");
@@ -361,22 +380,69 @@ public final class TerrainCommands {
 
     // ---------------------------------------------------------------- listas
 
-    private static void stamps(CommandContext<ServerCommandSource> context) {
-        List<String> names = TerrainService.catalog().names();
-        Map<String, String> builtIn = StampLibrary.descriptions();
-        feedback(context, Text.literal(names.size() + " sellos en " + TerrainService.catalog().directory()
-                + " (pulsa uno para ponerlo en el pincel):").formatted(Formatting.GRAY));
-        MutableText line = Text.literal("");
-        for (String name : names) {
-            String description = builtIn.getOrDefault(name, "PNG propio");
-            line.append(Text.literal(name).styled(style -> style.withColor(builtIn.containsKey(name)
-                            ? Formatting.AQUA : Formatting.GREEN)
-                    .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                            "/komaedit pincel heightmap " + name + " 12 12"))
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(description)))))
-                    .append(Text.literal("  "));
+    /**
+     * {@code sellos}: los de serie por categoría y los PNG propios; {@code sellos <categoría>}: los de una categoría
+     * con su descripción; {@code sellos exportar <sello>}: copia uno de serie a la carpeta para retocarlo.
+     */
+    private static void stamps(CommandContext<ServerCommandSource> context, ServerPlayerEntity player,
+                               String options) {
+        String[] words = options.strip().isEmpty() ? new String[0] : options.strip().split("\\s+");
+        if (words.length > 0 && (words[0].equalsIgnoreCase("exportar") || words[0].equalsIgnoreCase("export"))) {
+            KomaPermissions.require(player, KomaPermissions.ADMIN_STAMP_EXPORT);
+            if (words.length != 2) {
+                throw new IllegalArgumentException("sellos exportar <sello>, por ejemplo sellos exportar montana");
+            }
+            try {
+                Path file = TerrainService.catalog().export(words[1]);
+                feedback(context, Text.literal("Copiado en " + file + ": retócalo y el pincel usará el tuyo")
+                        .formatted(Formatting.GREEN));
+            } catch (IOException exception) {
+                throw new IllegalArgumentException("No se pudo escribir el sello: " + exception.getMessage(),
+                        exception);
+            }
+            return;
         }
-        feedback(context, line);
+        if (words.length == 1) {
+            StampCategory category = StampCategory.byId(words[0]);
+            feedback(context, Text.literal(category.displayName() + " (paleta " + category.palette()
+                    + "; pulsa uno para ponerlo en el pincel):").formatted(Formatting.GRAY));
+            for (StampInfo info : StampLibrary.of(category)) {
+                feedback(context, stampLink(info.name(), info.description(), Formatting.AQUA)
+                        .append(Text.literal(" · " + info.description()).formatted(Formatting.GRAY)));
+            }
+            return;
+        }
+        if (words.length > 1) {
+            throw new IllegalArgumentException("sellos [categoría] o sellos exportar <sello>");
+        }
+        List<String> names = TerrainService.catalog().names();
+        feedback(context, Text.literal(StampLibrary.all().size() + " sellos de serie en "
+                + StampCategory.values().length + " categorías (pulsa uno para ponerlo en el pincel;"
+                + " «sellos <categoría>»"
+                + " los explica):").formatted(Formatting.GRAY));
+        for (StampCategory category : StampCategory.values()) {
+            MutableText line = Text.literal(category.displayName() + ": ").formatted(Formatting.GRAY);
+            for (StampInfo info : StampLibrary.of(category)) {
+                line.append(stampLink(info.name(), info.description(), Formatting.AQUA)).append(Text.literal(" "));
+            }
+            feedback(context, line);
+        }
+        List<String> own = names.stream().filter(name -> !StampLibrary.has(name)).toList();
+        if (!own.isEmpty()) {
+            MutableText line = Text.literal("Propios en " + TerrainService.catalog().directory() + ": ")
+                    .formatted(Formatting.GRAY);
+            for (String name : own) {
+                line.append(stampLink(name, "PNG propio", Formatting.GREEN)).append(Text.literal(" "));
+            }
+            feedback(context, line);
+        }
+    }
+
+    private static MutableText stampLink(String name, String description, Formatting color) {
+        return Text.literal(name).styled(style -> style.withColor(color)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
+                        "/komaedit pincel heightmap " + name + " 12"))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(description))));
     }
 
     private static void palettes(CommandContext<ServerCommandSource> context) {

@@ -8,19 +8,18 @@ import java.util.Locale;
  *
  * <ul>
  *     <li><b>Crear</b>: qué se construye y dónde (herramientas, trayectoria y figuras).</li>
- *     <li><b>Ajustar</b>: cómo queda lo que se crea o lo que ya hay (modificadores, material y color).</li>
+ *     <li><b>Ajustar</b>: cómo queda lo que ya hay (color).</li>
  *     <li><b>Biblioteca</b>: lo guardado (planos, recetas e instancias).</li>
  * </ul>
  *
- * Cada etapa tiene su tecla, del 1 al 9. Las antiguas «Estructuras» son ahora una familia de Figuras; Envejecer
- * salió del Studio (queda la orden {@code /komaedit weather}).
+ * Cada etapa tiene su tecla, del 1 al 7. Las antiguas «Estructuras» son ahora una familia de Figuras; Envejecer
+ * salió del Studio (queda la orden {@code /komaedit weather}). Modificadores y Material solo valían para la figura y
+ * viven dentro de Figuras (sus variaciones y su material).
  */
 public enum StudioStage {
     TOOLS("tools", Group.CREATE, StudioIcons.Icon.TOOLS),
     PATH("path", Group.CREATE, StudioIcons.Icon.PATH),
     FIGURE("figure", Group.CREATE, StudioIcons.Icon.FIGURE),
-    MODIFIERS("modifiers", Group.ADJUST, StudioIcons.Icon.MODIFIERS),
-    MATERIAL("material", Group.ADJUST, StudioIcons.Icon.MATERIAL),
     COLOR("color", Group.ADJUST, StudioIcons.Icon.COLOR),
     BLUEPRINTS("blueprints", Group.LIBRARY, StudioIcons.Icon.BLUEPRINTS),
     RECIPES("recipes", Group.LIBRARY, StudioIcons.Icon.RECIPES),
@@ -81,9 +80,12 @@ public enum StudioStage {
         return null;
     }
 
-    /** La etapa con ese id (también los de antes: «structures» abre Figuras), o {@code null}. */
+    /**
+     * La etapa con ese id, o {@code null}. Los de antes abren donde quedó lo suyo: «structures», «modifiers» y
+     * «material», Figuras.
+     */
     public static StudioStage byId(String id) {
-        if ("structures".equals(id)) {
+        if ("structures".equals(id) || "modifiers".equals(id) || "material".equals(id)) {
             return FIGURE;
         }
         for (StudioStage stage : values()) {

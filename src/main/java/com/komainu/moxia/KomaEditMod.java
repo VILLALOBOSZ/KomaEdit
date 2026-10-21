@@ -122,6 +122,7 @@ public final class KomaEditMod implements ModInitializer {
             }
         });
         BrushToolInputs.register();
+        com.komainu.moxia.brush.paint.PaintStrokes.register();
         CapabilityConfig.load();
         CapabilityService.register();
         // Lo que se coloca a mano con las capacidades (reemplazar, extruir…) también se replica en simetría.

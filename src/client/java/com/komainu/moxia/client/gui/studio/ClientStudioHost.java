@@ -17,6 +17,8 @@ import com.komainu.moxia.studio.tools.ToolContext;
 import com.komainu.moxia.studio.tools.ui.ToolsInfo;
 import com.komainu.moxia.studio.ui.StudioHost;
 import com.komainu.moxia.studio.ui.StudioImage;
+import com.komainu.moxia.studio.ui.StudioPalette;
+import com.komainu.moxia.studio.ui.StudioTheme;
 import com.komainu.moxia.studio.ui.StudioView;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
@@ -69,8 +71,20 @@ public final class ClientStudioHost implements StudioHost {
     public static StudioPreferences loadPreferences() {
         if (preferences == null) {
             preferences = StudioPreferences.load(PREFERENCES_FILE);
+            StudioTheme.use(StudioPalette.byId(preferences.theme()));
         }
         return preferences;
+    }
+
+    /** Pone el tema de colores del Studio y lo guarda con las preferencias del jugador (ajustes de KomaEdit). */
+    public static void setTheme(StudioPalette palette) {
+        loadPreferences().setTheme(palette.id());
+        StudioTheme.use(palette);
+        try {
+            loadPreferences().save(PREFERENCES_FILE);
+        } catch (IOException ignored) {
+            // Como el resto de preferencias: si no se puede guardar, sigue puesto hasta cerrar el juego.
+        }
     }
 
     @Override

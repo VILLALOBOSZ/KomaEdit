@@ -134,6 +134,20 @@ class TextTest {
         assertArrayEquals(new int[]{8, 61, -3}, wall.shifted(2, 3).anchor());
     }
 
+    /**
+     * Con un clic del Studio el ratón va suelto y la cámara no dice a dónde se apunta: en «según dónde apuntes» manda
+     * la cara pulsada, sea cual sea la inclinación de la cámara.
+     */
+    @Test
+    void clickedFromTheStudioTheFaceDecidesTheOrientation() {
+        assertEquals(TextPlacement.Mode.FLOOR, TextPlacement.modeForFace(1), "la cara de arriba: tumbado en el suelo");
+        assertEquals(TextPlacement.Mode.CEILING, TextPlacement.modeForFace(-1), "la de abajo: colgado del techo");
+        assertEquals(TextPlacement.Mode.WALL, TextPlacement.modeForFace(0), "una pared: pegado a ella");
+        // Mirando casi de frente (inclinación 10) a un suelo pulsado con el ratón, antes salía de pie.
+        assertEquals(TextPlacement.Mode.WALL, TextPlacement.modeForPitch(10));
+        assertEquals(TextPlacement.Mode.FLOOR, TextPlacement.modeForFace(1));
+    }
+
     @Test
     void modelPlacesEveryLetterBlockAndNeverRemovesAnything() {
         TextRaster letters = TextRaster.render(TextFonts.load("sans", null), "Año", EIGHT);

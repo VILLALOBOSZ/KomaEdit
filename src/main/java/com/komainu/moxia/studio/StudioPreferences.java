@@ -24,7 +24,8 @@ import java.util.Set;
  * Se guardan por id de figura; un id que ya no existe se conserva por si vuelve en otra versión.
  * Las herramientas tienen sus propias favoritas y recientes (por id de tarjeta), recuerdan sus últimos ajustes y
  * por dónde se iba, y la vista previa (ninguna, al construir o en vivo). También se recuerdan la última etapa, los
- * bloques elegidos hace poco y qué secciones plegables se dejaron abiertas.
+ * bloques elegidos hace poco, qué secciones plegables se dejaron abiertas y el tema de colores. Los sellos de relieve
+ * tienen sus propias favoritas.
  */
 public final class StudioPreferences {
     public static final int MAX_RECENTS = 6;
@@ -67,6 +68,7 @@ public final class StudioPreferences {
     private final Set<String> favorites = new LinkedHashSet<>();
     private final List<String> recents = new ArrayList<>();
     private final Set<String> toolFavorites = new LinkedHashSet<>();
+    private final Set<String> stampFavorites = new LinkedHashSet<>();
     private final List<String> toolRecents = new ArrayList<>();
     private final Map<String, Map<String, Object>> toolValues = new LinkedHashMap<>();
     private final Map<String, Integer> scroll = new LinkedHashMap<>();
@@ -76,6 +78,7 @@ public final class StudioPreferences {
     private String stage = "";
     private String tool = "";
     private double panelShare;
+    private String theme = "";
 
     public boolean isFavorite(String id) {
         return favorites.contains(id);
@@ -128,6 +131,27 @@ public final class StudioPreferences {
 
     public List<String> toolFavorites() {
         return List.copyOf(toolFavorites);
+    }
+
+    public boolean isStampFavorite(String name) {
+        return stampFavorites.contains(name);
+    }
+
+    /** Marca o desmarca un sello de relieve como favorito; devuelve si queda marcado. */
+    public boolean toggleStampFavorite(String name) {
+        if (stampFavorites.remove(name)) {
+            return false;
+        }
+        if (stampFavorites.size() >= MAX_FAVORITES) {
+            return false;
+        }
+        stampFavorites.add(name);
+        return true;
+    }
+
+    /** Los sellos favoritos, en el orden en que se marcaron. */
+    public List<String> stampFavorites() {
+        return List.copyOf(stampFavorites);
     }
 
     public void pushToolRecent(String id) {
@@ -247,6 +271,15 @@ public final class StudioPreferences {
         panelShare = Double.isFinite(value) ? Math.clamp(value, 0.0, 1.0) : 0.0;
     }
 
+    /** El tema de colores elegido (su id), o vacío para el de serie. */
+    public String theme() {
+        return theme;
+    }
+
+    public void setTheme(String value) {
+        theme = value == null ? "" : value.strip();
+    }
+
     public String toJson() {
         JsonObject root = new JsonObject();
         root.addProperty("format", FORMAT);
@@ -254,6 +287,7 @@ public final class StudioPreferences {
         root.add("recents", array(recents));
         root.add("toolFavorites", array(toolFavorites));
         root.add("toolRecents", array(toolRecents));
+        root.add("stampFavorites", array(stampFavorites));
         // Las versiones anteriores solo leen este interruptor.
         root.addProperty("toolPreview", previewMode != PreviewMode.OFF);
         root.addProperty("preview", previewMode.id());
@@ -261,6 +295,9 @@ public final class StudioPreferences {
         root.addProperty("tool", tool);
         if (panelShare > 0) {
             root.addProperty("panelShare", Math.round(panelShare * 1000) / 1000.0);
+        }
+        if (!theme.isEmpty()) {
+            root.addProperty("theme", theme);
         }
         JsonObject valuesObject = new JsonObject();
         toolValues.forEach((id, values) -> {
@@ -312,6 +349,11 @@ public final class StudioPreferences {
                     preferences.toolFavorites.add(id);
                 }
             }
+            for (String name : strings(root, "stampFavorites")) {
+                if (preferences.stampFavorites.size() < MAX_FAVORITES) {
+                    preferences.stampFavorites.add(name);
+                }
+            }
             List<String> tools = strings(root, "toolRecents");
             for (int index = tools.size() - 1; index >= 0; index--) {
                 preferences.pushToolRecent(tools.get(index));
@@ -326,6 +368,7 @@ public final class StudioPreferences {
             preferences.previewMode = format < 3 && chosen == PreviewMode.OFF ? PreviewMode.LIVE : chosen;
             preferences.stage = string(root, "stage");
             preferences.tool = string(root, "tool");
+            preferences.theme = string(root, "theme");
             if (root.has("panelShare") && root.get("panelShare").isJsonPrimitive()
                     && root.getAsJsonPrimitive("panelShare").isNumber()) {
                 preferences.setPanelShare(root.get("panelShare").getAsDouble());

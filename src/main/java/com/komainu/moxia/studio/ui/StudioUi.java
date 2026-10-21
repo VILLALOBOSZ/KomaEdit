@@ -266,25 +266,30 @@ public final class StudioUi {
 
     public Widget button(Rect rect, String label, Tone tone) {
         boolean hovered = hovered(rect);
-        int background = switch (tone) {
-            case PRIMARY -> hovered ? ACCENT_HOVER : ACCENT;
-            case SELECTED -> CARD_ACTIVE;
-            case DANGER -> hovered ? DANGER_DIM : CARD;
-            case WARNING -> hovered ? 0xFF6B5420 : WARNING_DIM;
-            case DISABLED -> CARD;
-            case SECONDARY -> hovered ? CARD_HOVER : CARD;
-        };
         int color = switch (tone) {
-            case PRIMARY -> WHITE;
-            case SELECTED -> TEXT;
+            case PRIMARY -> ON_ACCENT;
+            case SELECTED -> TEXT_STRONG;
             case DANGER -> DANGER;
             case WARNING -> WARNING;
             case DISABLED -> DISABLED;
             case SECONDARY -> TEXT;
         };
-        fill(rect, background);
-        if (tone == Tone.SELECTED) {
-            fill(new Rect(rect.x(), rect.bottom() - 2, rect.width(), 2), ACCENT);
+        if (tone == Tone.DISABLED) {
+            // Desactivado: hueco, solo el contorno; así no se confunde con uno normal aunque no se distinga el color.
+            border(rect, hovered ? OUTLINE : DIVIDER);
+        } else {
+            fill(rect, switch (tone) {
+                case PRIMARY -> hovered ? ACCENT_HOVER : ACCENT;
+                case SELECTED -> CARD_ACTIVE;
+                case DANGER -> hovered ? DANGER_DIM : CARD;
+                case WARNING -> hovered ? WARNING_HOVER : WARNING_DIM;
+                default -> hovered ? CARD_HOVER : CARD;
+            });
+            if (tone == Tone.SELECTED) {
+                fill(new Rect(rect.x(), rect.bottom() - 2, rect.width(), 2), ACCENT);
+            } else if (hovered && tone != Tone.PRIMARY) {
+                border(rect, OUTLINE);
+            }
         }
         centered(label, rect, color);
         return register(rect);
@@ -295,7 +300,7 @@ public final class StudioUi {
         Widget widget = button(rect, "", tone);
         boolean hovered = hovered(rect);
         int color = switch (tone) {
-            case PRIMARY -> WHITE;
+            case PRIMARY -> ON_ACCENT;
             case DISABLED -> DISABLED;
             case DANGER -> DANGER;
             case WARNING -> WARNING;
@@ -306,7 +311,7 @@ public final class StudioUi {
         int x = rect.centerX() - contentWidth / 2;
         icon(icon, x, rect.centerY() - StudioIcons.SIZE / 2, color);
         if (!label.isEmpty()) {
-            label(label, x + StudioIcons.SIZE + 4, rect.centerY() - 4, textWidth, tone == Tone.PRIMARY ? WHITE
+            label(label, x + StudioIcons.SIZE + 4, rect.centerY() - 4, textWidth, tone == Tone.PRIMARY ? ON_ACCENT
                     : tone == Tone.DISABLED ? DISABLED : TEXT);
         }
         return widget;
@@ -319,7 +324,7 @@ public final class StudioUi {
         if (active) {
             fill(new Rect(rect.x(), rect.bottom() - 2, rect.width(), 2), ACCENT);
         }
-        int color = !enabled ? DISABLED : active ? ACCENT : hovered ? TEXT : TEXT_SECONDARY;
+        int color = !enabled ? DISABLED : active ? ACCENT_TEXT : hovered ? TEXT : TEXT_SECONDARY;
         icon(icon, rect.centerX() - StudioIcons.SIZE / 2, rect.centerY() - StudioIcons.SIZE / 2, color);
         return register(rect);
     }
@@ -328,7 +333,12 @@ public final class StudioUi {
     public Widget chip(Rect rect, String label, boolean selected, int color) {
         boolean hovered = hovered(rect);
         fill(rect, selected ? ACCENT_DIM : hovered ? CARD_HOVER : CARD);
-        centered(label, rect, selected ? WHITE : hovered ? TEXT : color);
+        if (selected) {
+            fill(new Rect(rect.x(), rect.bottom() - 2, rect.width(), 2), ACCENT);
+        } else if (hovered) {
+            border(rect, OUTLINE);
+        }
+        centered(label, rect, selected ? TEXT_STRONG : hovered ? TEXT : color);
         return register(rect);
     }
 
@@ -341,7 +351,7 @@ public final class StudioUi {
     public Widget field(Rect rect, String value, String placeholder, boolean editing, boolean error) {
         boolean hovered = hovered(rect);
         fill(rect, FIELD);
-        border(rect, editing ? (error ? WARNING : ACCENT) : hovered ? OUTLINE : DIVIDER);
+        border(rect, editing ? (error ? WARNING : FOCUS) : hovered ? OUTLINE : DIVIDER);
         int inner = rect.width() - 12;
         int y = rect.centerY() - 4;
         if (editing) {
@@ -363,7 +373,7 @@ public final class StudioUi {
                               Runnable clear) {
         boolean hovered = hovered(rect);
         fill(rect, FIELD);
-        border(rect, editing ? ACCENT : hovered ? OUTLINE : DIVIDER);
+        border(rect, editing ? FOCUS : hovered ? OUTLINE : DIVIDER);
         icon(StudioIcons.Icon.SEARCH, rect.x() + 4, rect.centerY() - 6, editing ? TEXT_SECONDARY : MUTED);
         int textX = rect.x() + 20;
         int right = rect.right() - 4;
@@ -404,7 +414,7 @@ public final class StudioUi {
             fill(rect.left(2), ACCENT);
         }
         int textWidth = rect.width() - 16 - rightReserve;
-        label(title, rect.x() + 8, rect.y() + 5, textWidth, selected ? WHITE : TEXT);
+        label(title, rect.x() + 8, rect.y() + 5, textWidth, selected ? TEXT_STRONG : TEXT);
         label(subtitle, rect.x() + 8, rect.y() + 16, textWidth, MUTED);
         return register(rect);
     }
@@ -419,7 +429,7 @@ public final class StudioUi {
     /**
      * Miniatura con su nombre debajo, en una o más líneas ({@link #nameLines}), para elegir lo que se entiende mejor
      * viéndolo (especies, tejados, sellos). La imagen se ajusta al hueco que queda sobre el nombre; sin imagen, el
-     * icono de reserva. La elegida lleva marco de acento y el nombre en blanco.
+     * icono de reserva. La elegida lleva marco de acento y el nombre resaltado.
      */
     public Widget tile(Rect rect, StudioImage image, StudioIcons.Icon fallback, List<String> lines, boolean selected) {
         boolean hovered = hovered(rect);
@@ -427,18 +437,19 @@ public final class StudioUi {
         int caption = lines.isEmpty() ? 0 : lines.size() * TILE_LINE + 2;
         Rect picture = new Rect(rect.x() + 2, rect.y() + 2, rect.width() - 4, rect.height() - 4 - caption);
         if (image != null) {
+            fill(picture, THUMBNAIL);
             int side = Math.min(picture.width(), picture.height());
             image(image, new Rect(picture.centerX() - side / 2, picture.centerY() - side / 2, side, side));
         } else if (fallback != null) {
             int scale = picture.height() >= 28 ? 2 : 1;
             int size = StudioIcons.SIZE * scale;
             icon(fallback, picture.centerX() - size / 2, picture.centerY() - size / 2,
-                    selected ? ACCENT : TEXT_SECONDARY, scale);
+                    selected ? ACCENT_TEXT : TEXT_SECONDARY, scale);
         }
         int y = rect.bottom() - caption;
         for (String line : lines) {
             String fitted = fit(line, rect.width() - 2);
-            label(fitted, rect.centerX() - width(fitted) / 2, y, selected ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
+            label(fitted, rect.centerX() - width(fitted) / 2, y, selected ? TEXT_STRONG : hovered ? TEXT : TEXT_SECONDARY);
             y += TILE_LINE;
         }
         if (selected) {
@@ -608,7 +619,7 @@ public final class StudioUi {
 
     /**
      * Fila numérica: etiqueta a la izquierda, − valor con su unidad + a la derecha, y debajo una barra fina con
-     * el rango (lleno hasta el valor y una marca en el de serie). Un punto rosa delante de la etiqueta dice que
+     * el rango (lleno hasta el valor y una marca en el de serie). Un punto de acento delante de la etiqueta dice que
      * el valor ya no es el de serie. Rueda o − + cambian el valor; arrastrar el número lo desliza (Mayús: fino),
      * un clic deja escribirlo y el clic derecho lo devuelve al de serie.
      */
@@ -638,17 +649,24 @@ public final class StudioUi {
         if (model.modified()) {
             fill(new Rect(row.x() + 3, row.centerY() - 2, 2, 2), ACCENT);
         }
-        String label = model.editing() && !model.range().isEmpty() ? model.label() + " · " + model.range()
-                : model.label();
-        label(label, labelX, row.centerY() - 5, minus.x() - labelX - 4,
-                model.editing() ? MUTED : hovered ? TEXT : TEXT_SECONDARY);
+        if (model.dragging() && !model.low().isEmpty()) {
+            // Al arrastrar, los extremos en palabras: hacia dónde va cada lado.
+            int right = minus.x() - 6;
+            label(model.low(), labelX, row.centerY() - 5, (right - labelX) / 2 - 4, ACCENT_TEXT);
+            rightAligned(fit(model.high(), (right - labelX) / 2 - 4), right, row.centerY() - 5, ACCENT_TEXT);
+        } else {
+            String label = model.editing() && !model.range().isEmpty() ? model.label() + " · " + model.range()
+                    : model.label();
+            label(label, labelX, row.centerY() - 5, minus.x() - labelX - 4,
+                    model.editing() ? MUTED : hovered ? TEXT : TEXT_SECONDARY);
+        }
         stepButton(minus, "−");
         stepButton(plus, "+");
         boolean valueHovered = hovered(value);
         if (model.editing() || model.dragging() || valueHovered) {
             fill(value, model.editing() ? FIELD : CARD_ACTIVE);
             if (model.editing()) {
-                border(value, ACCENT);
+                border(value, FOCUS);
             }
         }
         if (model.editing()) {
@@ -658,7 +676,7 @@ public final class StudioUi {
             }
             centered(typed, value, TEXT);
         } else {
-            centered(shown, value, model.modified() || valueHovered ? WHITE : TEXT);
+            centered(shown, value, model.modified() || valueHovered ? TEXT_STRONG : TEXT);
         }
 
         Rect zone = new Rect(minus.x(), row.y(), row.right() - minus.x(), row.height());
@@ -676,6 +694,8 @@ public final class StudioUi {
                 .onScroll(model.step())
                 .onReset(model.reset())
                 .tooltip(model.help())
+                .brief(model.brief())
+                .hint(model.hint())
                 .group(model.group())
                 .key(model.key());
     }
@@ -700,7 +720,7 @@ public final class StudioUi {
         label(label, row.x() + 8, row.centerY() - 4, previous.x() - row.x() - 12, hovered ? TEXT : TEXT_SECONDARY);
         stepButton(previous, "‹");
         stepButton(next, "›");
-        centered(fit(value, shown.width() - 2), shown, modified ? WHITE : TEXT);
+        centered(fit(value, shown.width() - 2), shown, modified ? TEXT_STRONG : TEXT);
         Rect zone = new Rect(previous.x(), row.y(), row.right() - previous.x(), row.height());
         return register(row)
                 .valueZone(zone)
@@ -726,11 +746,51 @@ public final class StudioUi {
         fill(track, on ? ACCENT : TRACK);
         Rect knob = on ? new Rect(track.right() - 9, track.y() + 1, 8, 8)
                 : new Rect(track.x() + 1, track.y() + 1, 8, 8);
-        fill(knob, on ? WHITE : TEXT_SECONDARY);
+        fill(knob, on ? ON_ACCENT : TEXT_SECONDARY);
         if (modified) {
             fill(new Rect(row.x() + 3, row.centerY() - 1, 2, 2), ACCENT);
         }
         nameLabel(label, row.x() + 8, row, track.x() - row.x() - 12, on || hovered ? TEXT : TEXT_SECONDARY);
+        return register(row);
+    }
+
+    /**
+     * Fila con dibujo e interruptor: la miniatura a la izquierda (o un hueco mientras se pinta), el nombre en negrita
+     * y debajo, en gris, qué hace; a la derecha el pulsador. Toda la fila lo cambia. Para lo que se enciende viéndolo
+     * (las variaciones de la figura).
+     */
+    public Widget pictureToggle(Rect row, StudioImage image, String title, String subtitle, boolean on) {
+        boolean hovered = hovered(row);
+        fill(row, on ? CARD_ACTIVE : hovered ? CARD_HOVER : CARD);
+        if (on) {
+            fill(row.left(2), ACCENT);
+        }
+        int side = row.height() - 4;
+        Rect picture = new Rect(row.x() + 4, row.y() + 2, side, side);
+        // El fondo de miniatura detrás del dibujo: los materiales oscuros se leen igual sobre la tarjeta.
+        fill(picture, THUMBNAIL);
+        if (image != null) {
+            image(image, picture);
+        } else {
+            border(picture, DIVIDER);
+        }
+        Rect track = new Rect(row.right() - 26, row.centerY() - 5, 20, 10);
+        fill(track, on ? ACCENT : TRACK);
+        fill(on ? new Rect(track.right() - 9, track.y() + 1, 8, 8) : new Rect(track.x() + 1, track.y() + 1, 8, 8),
+                on ? ON_ACCENT : TEXT_SECONDARY);
+        int textX = picture.right() + 6;
+        int room = track.x() - textX - 4;
+        // Qué hace, en dos líneas como mucho: se lee entero sin pasar el ratón.
+        List<String> lines = wrap(subtitle, room);
+        if (lines.size() > 2) {
+            lines = new ArrayList<>(lines.subList(0, 2));
+            lines.set(1, fit(lines.get(1) + ELLIPSIS, room));
+        }
+        int top = row.centerY() - (10 + lines.size() * LINE) / 2;
+        bold(title, textX, top, room, on || hovered ? TEXT_STRONG : TEXT);
+        for (int index = 0; index < lines.size(); index++) {
+            label(lines.get(index), textX, top + 11 + index * LINE, on ? TEXT_SECONDARY : MUTED);
+        }
         return register(row);
     }
 
@@ -752,7 +812,7 @@ public final class StudioUi {
             border(empty, DISABLED);
         }
         if (model.automatic() && model.blockId() != null) {
-            fill(new Rect(row.x() + 3, iconY, 16, 16), 0x66101117);
+            fill(new Rect(row.x() + 3, iconY, 16, 16), fade(PANEL, 0.4));
         }
         if (model.modified()) {
             fill(new Rect(row.x() + 1, row.centerY() - 1, 2, 2), ACCENT);
@@ -772,7 +832,7 @@ public final class StudioUi {
                 fill(dropper, CARD_ACTIVE);
             }
             icon(StudioIcons.Icon.EYEDROPPER, dropper.centerX() - 6, dropper.centerY() - 6,
-                    dropperHovered ? ACCENT_HOVER : MUTED);
+                    dropperHovered ? ACCENT_TEXT : MUTED);
             eyedropper = register(dropper).tooltip(model.eyedropperHelp());
         }
         return new Widget[]{main, eyedropper};
@@ -783,24 +843,56 @@ public final class StudioUi {
         if (hovered) {
             fill(rect, CARD_ACTIVE);
         }
-        centered(glyph, rect, hovered ? ACCENT_HOVER : MUTED);
+        centered(glyph, rect, hovered ? ACCENT_TEXT : MUTED);
     }
 
     // ── Tooltips ────────────────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Tooltip del tema junto al ratón, siempre dentro de {@code screen}: la primera línea en blanco y el resto en
-     * gris. Se pinta por encima de todo.
+     * Tooltip del tema junto al ratón, siempre dentro de {@code screen}: la primera línea en el color del texto y el
+     * resto en el secundario. Se pinta por encima de todo.
      */
     public void tooltip(String text, int x, int y, Rect screen) {
         if (text == null || text.isBlank()) {
             return;
         }
+        Tooltip tip = tooltipLines(text, TOOLTIP_WIDTH);
+        int left = x + 10;
+        int top = y - 6;
+        if (left + tip.width() > screen.right() - 2) {
+            left = Math.max(screen.x() + 2, x - 10 - tip.width());
+        }
+        top = Math.clamp(top, screen.y() + 2, Math.max(screen.y() + 2, screen.bottom() - tip.height() - 2));
+        drawTooltip(tip, left, top);
+    }
+
+    /**
+     * Tooltip pegado a un control y dentro de {@code bounds} (el panel): debajo de {@code anchor} o, si no cabe, encima,
+     * así no tapa la fila donde está el ratón.
+     */
+    public void tooltip(String text, Rect anchor, Rect bounds) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        Tooltip tip = tooltipLines(text, Math.max(60, Math.min(TOOLTIP_WIDTH, bounds.width() - 14)));
+        int left = Math.clamp(anchor.x(), bounds.x() + 2,
+                Math.max(bounds.x() + 2, bounds.right() - tip.width() - 2));
+        int top = anchor.bottom() + 2;
+        if (top + tip.height() > bounds.bottom() - 2) {
+            top = Math.max(bounds.y() + 2, anchor.y() - tip.height() - 2);
+        }
+        drawTooltip(tip, left, top);
+    }
+
+    private record Tooltip(List<String> lines, List<Integer> colors, int width, int height) {
+    }
+
+    private Tooltip tooltipLines(String text, int wrapWidth) {
         List<String> lines = new ArrayList<>();
         List<Integer> colors = new ArrayList<>();
         String[] paragraphs = text.split("\n");
         for (int index = 0; index < paragraphs.length; index++) {
-            for (String line : wrap(paragraphs[index], TOOLTIP_WIDTH)) {
+            for (String line : wrap(paragraphs[index], wrapWidth)) {
                 lines.add(line);
                 colors.add(index == 0 ? TEXT : TEXT_SECONDARY);
             }
@@ -809,21 +901,17 @@ public final class StudioUi {
         for (String line : lines) {
             textWidth = Math.max(textWidth, width(line));
         }
-        int boxWidth = textWidth + 10;
-        int boxHeight = lines.size() * LINE + 7;
-        int left = x + 10;
-        int top = y - 6;
-        if (left + boxWidth > screen.right() - 2) {
-            left = Math.max(screen.x() + 2, x - 10 - boxWidth);
-        }
-        top = Math.clamp(top, screen.y() + 2, Math.max(screen.y() + 2, screen.bottom() - boxHeight - 2));
+        return new Tooltip(lines, colors, textWidth + 10, lines.size() * LINE + 7);
+    }
+
+    private void drawTooltip(Tooltip tip, int left, int top) {
         canvas.beginOverlay();
-        Rect box = new Rect(left, top, boxWidth, boxHeight);
+        Rect box = new Rect(left, top, tip.width(), tip.height());
         fill(box, SURFACE);
         border(box, OUTLINE);
         fill(new Rect(box.x(), box.y(), 2, box.height()), ACCENT);
-        for (int index = 0; index < lines.size(); index++) {
-            label(lines.get(index), box.x() + 6, box.y() + 4 + index * LINE, colors.get(index));
+        for (int index = 0; index < tip.lines().size(); index++) {
+            label(tip.lines().get(index), box.x() + 6, box.y() + 4 + index * LINE, tip.colors().get(index));
         }
         canvas.endOverlay();
     }
@@ -843,6 +931,11 @@ public final class StudioUi {
      * @param fraction        dónde cae el valor en su rango, de 0 a 1
      * @param defaultFraction dónde cae el de serie ({@code NaN} si no tiene, como un automático)
      * @param range           el rango escrito («3–64 bloques»), que se enseña al escribir
+     * @param help            la ayuda entera: qué cambia, los extremos y el rango
+     * @param brief           la ayuda corta sobre el número: qué cambia y los extremos
+     * @param hint            los gestos, para la línea del pie
+     * @param low             el extremo de la izquierda en palabras («fino»), o vacío
+     * @param high            el de la derecha («grueso»)
      */
     public record Stepper(
             String label,
@@ -859,6 +952,10 @@ public final class StudioUi {
             Click press,
             Runnable reset,
             String help,
+            String brief,
+            String hint,
+            String low,
+            String high,
             String group,
             Object key
     ) {
@@ -888,6 +985,9 @@ public final class StudioUi {
         private IntConsumer scroll;
         private Runnable reset;
         private String tooltip = "";
+        private Rect tooltipAnchor;
+        private String brief = "";
+        private String hint = "";
         private String group;
         private Object key;
 
@@ -917,6 +1017,29 @@ public final class StudioUi {
 
         public Widget tooltip(String text) {
             this.tooltip = text == null ? "" : text;
+            return this;
+        }
+
+        /** El tooltip sale pegado a {@code anchor} (debajo o encima) en vez de junto al ratón. */
+        public Widget tooltipBelow(Rect anchor) {
+            this.tooltipAnchor = anchor;
+            return this;
+        }
+
+        /** Dónde se pega el tooltip, o {@code null} para sacarlo junto al ratón. */
+        public Rect tooltipAnchor() {
+            return tooltipAnchor;
+        }
+
+        /** La ayuda corta que sale sobre el valor (donde la entera taparía lo que se está cambiando). */
+        public Widget brief(String text) {
+            this.brief = text == null ? "" : text;
+            return this;
+        }
+
+        /** Lo que dice la línea del pie mientras el ratón está encima: qué gestos tiene. */
+        public Widget hint(String text) {
+            this.hint = text == null ? "" : text;
             return this;
         }
 
@@ -953,6 +1076,14 @@ public final class StudioUi {
 
         public String tooltip() {
             return tooltip;
+        }
+
+        public String brief() {
+            return brief;
+        }
+
+        public String hint() {
+            return hint;
         }
 
         public String group() {

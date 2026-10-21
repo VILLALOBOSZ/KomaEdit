@@ -1,6 +1,7 @@
 package com.komainu.moxia.studio.tools.ui;
 
 import com.komainu.moxia.capability.BuildCapability;
+import com.komainu.moxia.studio.ControlHelp;
 import com.komainu.moxia.studio.NumericRange;
 import com.komainu.moxia.studio.ParameterHistory;
 import com.komainu.moxia.studio.ShapeSearch;
@@ -10,6 +11,7 @@ import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.tools.CapabilityCard;
 import com.komainu.moxia.studio.tools.SymmetryCard;
+import com.komainu.moxia.studio.tools.TerrainCards;
 import com.komainu.moxia.studio.tools.ToolAction;
 import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
@@ -107,7 +109,7 @@ public final class ToolsPanel {
     }
 
     private enum Field {
-        NONE, SEARCH, TEXT, PRESET_NAME, BIOME
+        NONE, SEARCH, TEXT, PRESET_NAME, BIOME, STAMP
     }
 
     /** Un estado del historial de ajustes: la tarjeta y sus valores. */
@@ -153,6 +155,9 @@ public final class ToolsPanel {
     private String fieldParam = "";
     private String input = "";
     private String biomeSearch = "";
+    /** Lo escrito en el buscador de sellos y la pestaña de la galería ({@code null}: la del sello elegido). */
+    private String stampSearch = "";
+    private String stampTab;
     private ToolAction namingAction;
     private long lastRequest = Long.MIN_VALUE / 2;
     private long pendingSince;
@@ -225,6 +230,7 @@ public final class ToolsPanel {
             selected = card;
             namingAction = null;
             biomeSearch = "";
+            stampSearch = "";
         }
         browsing = false;
         search = "";
@@ -439,6 +445,7 @@ public final class ToolsPanel {
             case "roof" -> StudioIcons.Icon.ROOF;
             case "loft" -> StudioIcons.Icon.LOFT;
             case "stamp" -> StudioIcons.Icon.STAMP;
+            case "paintbrush" -> StudioIcons.Icon.PAINT_BRUSH;
             case "ramp" -> StudioIcons.Icon.RAMP;
             case "river" -> StudioIcons.Icon.RIVER;
             case "erosion" -> StudioIcons.Icon.EROSION;
@@ -467,13 +474,13 @@ public final class ToolsPanel {
         if (chosen) {
             ui.fill(cell.left(2), ACCENT);
         }
-        int color = locked ? DISABLED : chosen ? ACCENT_HOVER : hovered ? TEXT : TEXT_SECONDARY;
+        int color = locked ? DISABLED : chosen ? ACCENT_TEXT : hovered ? TEXT : TEXT_SECONDARY;
         ui.icon(icon(card), cell.x() + 5, cell.centerY() - 6, color);
         Rect star = cell.rightPart(14);
         boolean favorite = host.preferences().isToolFavorite(card.id());
         // El sitio de la estrella se guarda siempre, para que el nombre no salte de línea al pasar el ratón.
         ui.nameLabel(host.tr(card.nameKey()), cell.x() + 21, cell, cell.width() - TOOL_NAME_INSET - (locked ? 10 : 0),
-                locked ? DISABLED : chosen ? WHITE : hovered ? TEXT : TEXT_SECONDARY);
+                locked ? DISABLED : chosen ? TEXT_STRONG : hovered ? TEXT : TEXT_SECONDARY);
         if (locked) {
             ui.icon(StudioIcons.Icon.LOCK, star.x() - 11, cell.centerY() - 6, DISABLED);
         }
@@ -539,9 +546,9 @@ public final class ToolsPanel {
         boolean hovered = ui.hovered(name);
         ui.fill(name, hovered ? CARD_HOVER : CARD);
         ui.fill(name.left(2), ACCENT);
-        ui.icon(icon(card), name.x() + 6, name.centerY() - 6, ACCENT_HOVER);
+        ui.icon(icon(card), name.x() + 6, name.centerY() - 6, ACCENT_TEXT);
         ui.icon(StudioIcons.Icon.CHEVRON_DOWN, name.right() - 15, name.centerY() - 5, hovered ? TEXT : MUTED);
-        ui.bold(host.tr(card.nameKey()), name.x() + 22, name.centerY() - 4, name.width() - 40, WHITE);
+        ui.bold(host.tr(card.nameKey()), name.x() + 22, name.centerY() - 4, name.width() - 40, TEXT_STRONG);
         ui.register(name)
                 .tooltip(host.tr(card.nameKey()) + "\n" + description(card, host) + "\n"
                         + host.tr("gui.komaedit.tools.change"))
@@ -835,6 +842,7 @@ public final class ToolsPanel {
                 boolean on = current().toggle(toggle.id());
                 ui.toggle(column.next(row), host.tr(toggle.labelKey()), on, !current().isDefault(toggle.id()))
                         .tooltip(help(host, card, toggle))
+                        .hint(host.tr("gui.komaedit.hint.toggle"))
                         .group("tools:" + toggle.id())
                         .onReset(() -> set(current().reset(toggle.id())))
                         .onClick(() -> set(current().with(toggle.id(), !on)));
@@ -844,8 +852,19 @@ public final class ToolsPanel {
         }
     }
 
+    /** Qué le pasa a lo que se construye con este ajuste (la etiqueta ya se ve en la fila). */
     private static String help(Host host, ToolCard card, ToolParam param) {
-        return host.tr(param.labelKey()) + "\n" + withoutCommand(host.tr(card.helpKey(param)));
+        return withoutCommand(host.tr(card.helpKey(param)));
+    }
+
+    /** Cómo se dicen los extremos de un número («de %s a %s»). */
+    private static String endsFormat(Host host) {
+        return host.tr("gui.komaedit.ends.format", "%s", "%s");
+    }
+
+    /** Lo que explica un ajuste en esta tarjeta: qué le pasa al objeto y, si los tiene, sus extremos en palabras. */
+    static ControlHelp explain(Host host, ToolCard card, ToolParam param) {
+        return ControlHelp.of(help(host, card, param), host.tr(card.endsKey(param)));
     }
 
     /** Lo que se ve de un número de la tarjeta elegida. */
@@ -865,6 +884,7 @@ public final class ToolsPanel {
                 : number.unit().format(number.defaultValue(), number.decimals(), host::tr);
         String key = "tools:number:" + number.id();
         NumericRange range = number.range();
+        ControlHelp explained = explain(host, card, number);
         ui.stepper(row, new StudioUi.Stepper(host.tr(number.labelKey()), view.value(), view.shortValue(),
                 view.fraction(), view.defaultFraction(), view.modified(), view.range(), numbers.editing(key),
                 numbers.dragging(key), numbers.input(),
@@ -872,7 +892,9 @@ public final class ToolsPanel {
                         direction, host.shift()))),
                 (x, y) -> numbers.press(key, numberView(host, card, number).base(), x),
                 () -> set(current().reset(number.id())),
-                view.help(help(host, card, number), defaultText, host::tr), "tools:" + number.id(), key));
+                view.help(explained, defaultText, host::tr), explained.brief(endsFormat(host)),
+                host.tr("gui.komaedit.hint.number"),
+                explained.low(), explained.high(), "tools:" + number.id(), key));
     }
 
     private List<String> options(ToolParam.Choice choice, ToolsInfo info) {
@@ -908,7 +930,8 @@ public final class ToolsPanel {
                                     options.get(Math.floorMod(index + direction, options.size()))));
                         })
                 .onReset(() -> set(current().reset(choice.id())))
-                .tooltip(help(host, card, choice) + "\n" + host.tr("gui.komaedit.help.cycle"))
+                .tooltip(help(host, card, choice))
+                .hint(host.tr("gui.komaedit.hint.cycle"))
                 .group("tools:" + choice.id());
     }
 
@@ -952,6 +975,10 @@ public final class ToolsPanel {
      */
     private void drawGallery(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
                              boolean compact) {
+        if (card.id().equals("stamp")) {
+            drawStampGallery(ui, column, host, card, choice, compact);
+            return;
+        }
         String value = current().choice(choice.id());
         boolean custom = card.id().equals("stamp") && !current().text("custom").isBlank();
         String chosenName = custom ? current().text("custom").strip() : host.tr(choice.optionKey(value));
@@ -960,7 +987,7 @@ public final class ToolsPanel {
         GalleryLayout layout = galleryLayout(ui, labels, column.width());
         int perRow = layout.perRow();
         int tile = layout.tile();
-        int rows = compact ? 1 : galleryRows;
+        int rows = compact ? 1 : Math.clamp(card.galleryRows(choice.id()), 1, galleryRows);
         int tileHeight = (compact ? COMPACT_TILE_PICTURE : TILE_PICTURE) + layout.lines() * StudioUi.TILE_LINE + 6;
         int perPage = perRow * rows;
         int pageCount = (options.size() + perPage - 1) / perPage;
@@ -1018,6 +1045,177 @@ public final class ToolsPanel {
                         });
             }
         }
+    }
+
+    /**
+     * La galería de sellos de relieve: un buscador, la pestaña de categoría (o las favoritas) y sus miniaturas en
+     * color, con una estrella para marcar favoritos. Escribiendo se buscan en todas las categorías a la vez. En
+     * compacto no hay sitio para el buscador ni para la fila de la categoría: el título dice la categoría y sus ‹ ›
+     * pasan de página y, al acabar una categoría, a la siguiente.
+     */
+    private void drawStampGallery(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
+                                  boolean compact) {
+        String value = current().choice(choice.id());
+        boolean custom = !current().text("custom").isBlank();
+        StudioPreferences preferences = host.preferences();
+        List<String> favorites = preferences.stampFavorites();
+        List<String> tabs = StampGallery.tabs(favorites);
+        java.util.function.Function<String, String> text = name -> host.tr(choice.optionKey(name)) + " "
+                + host.tr(choice.optionKey(name) + ".help");
+        String tab = stampTab != null && tabs.contains(stampTab) ? stampTab : StampGallery.tabOf(value);
+        boolean searching = !compact && !stampSearch.isEmpty();
+        List<String> shown;
+        GalleryLayout layout;
+        int perPage;
+        int pageCount;
+        String pageKey;
+        if (compact) {
+            // Una sola fila: cada página es de una categoría y las páginas van seguidas de una a otra.
+            List<String> every = new ArrayList<>();
+            tabs.forEach(each -> every.addAll(StampGallery.visible("", each, favorites, text)));
+            layout = galleryLayout(ui, every.stream().map(name -> host.tr(choice.optionKey(name))).toList(),
+                    column.width());
+            perPage = layout.perRow();
+            List<List<String>> chunks = new ArrayList<>();
+            List<String> chunkTabs = new ArrayList<>();
+            int home = 0;
+            for (String each : tabs) {
+                List<String> names = StampGallery.visible("", each, favorites, text);
+                for (int from = 0; from < names.size(); from += perPage) {
+                    List<String> chunk = names.subList(from, Math.min(names.size(), from + perPage));
+                    if (each.equals(StampGallery.tabOf(value)) && chunk.contains(value)) {
+                        home = chunks.size();
+                    }
+                    chunks.add(chunk);
+                    chunkTabs.add(each);
+                }
+            }
+            pageCount = chunks.size();
+            pageKey = "stamp:compact";
+            int first = home;
+            int at = Math.clamp(pages.computeIfAbsent(pageKey, ignored -> first), 0, pageCount - 1);
+            shown = chunks.get(at);
+            tab = chunkTabs.get(at);
+        } else {
+            shown = StampGallery.visible(stampSearch, tab, favorites, text);
+            List<String> labels = shown.stream().map(name -> host.tr(choice.optionKey(name))).toList();
+            layout = galleryLayout(ui, labels.isEmpty() ? List.of("") : labels, column.width());
+            perPage = layout.perRow() * Math.clamp(card.galleryRows(choice.id()), 1, galleryRows);
+            pageCount = Math.max(1, (shown.size() + perPage - 1) / perPage);
+            pageKey = "stamp:" + (searching ? "?" + stampSearch : tab);
+        }
+        int perRow = layout.perRow();
+        int tile = layout.tile();
+        int tileHeight = (compact ? COMPACT_TILE_PICTURE : TILE_PICTURE) + layout.lines() * StudioUi.TILE_LINE + 6;
+        List<String> page = shown;
+        int pageIndex = Math.clamp(pages.computeIfAbsent(pageKey, ignored -> Math.max(0, page.indexOf(value))
+                / perPage), 0, pageCount - 1);
+        String tabLabel = tab.equals(StampGallery.FAVORITES) ? host.tr("gui.komaedit.tools.stamp.favorites")
+                : host.tr("gui.komaedit.tools.stamp.category." + tab);
+
+        if (!compact) {
+            column.section();
+        }
+        Rect title = column.next(10);
+        if (!current().isDefault(choice.id())) {
+            ui.fill(new Rect(title.x() - 5, title.y() + 4, 2, 2), ACCENT);
+        }
+        String caption = (compact ? tabLabel : host.tr(choice.labelKey())).toUpperCase(Locale.ROOT);
+        int arrows = pageCount > 1 ? 36 : 0;
+        int starWidth = custom ? 0 : 14;
+        ui.label(caption, title.x(), title.y() + 1, title.width() - arrows - starWidth, MUTED);
+        int nameX = title.x() + ui.width(caption) + 6;
+        String chosenName = custom ? current().text("custom").strip() : host.tr(choice.optionKey(value));
+        ui.label(chosenName, nameX, title.y() + 1, title.right() - arrows - starWidth - nameX, TEXT);
+        if (!custom) {
+            boolean favorite = preferences.isStampFavorite(value);
+            Rect star = new Rect(title.right() - arrows - 14, title.y() - 2, 13, 13);
+            ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x(), star.y(),
+                    favorite || ui.hovered(star) ? FAVORITE : MUTED);
+            ui.register(star).tooltip(host.tr("gui.komaedit.tools.stamp.favorite"))
+                    .onClick(() -> toggleStampFavorite(value, host, choice));
+        }
+        if (pageCount > 1) {
+            Rect previous = new Rect(title.right() - 34, title.y() - 2, 16, 13);
+            Rect next = new Rect(title.right() - 16, title.y() - 2, 16, 13);
+            int last = pageCount - 1;
+            ui.button(previous, "‹", pageIndex > 0 ? StudioUi.Tone.SECONDARY : StudioUi.Tone.DISABLED)
+                    .tooltip(host.tr("gui.komaedit.page", pageIndex + 1, pageCount))
+                    .group("tools:stamp:page")
+                    .onClick(() -> pages.put(pageKey, Math.max(0, pageIndex - 1)));
+            ui.button(next, "›", pageIndex < last ? StudioUi.Tone.SECONDARY : StudioUi.Tone.DISABLED)
+                    .tooltip(host.tr("gui.komaedit.page", pageIndex + 1, pageCount))
+                    .group("tools:stamp:page")
+                    .onClick(() -> pages.put(pageKey, Math.min(last, pageIndex + 1)));
+        }
+        if (!compact) {
+            Rect search = column.next(16);
+            ui.searchField(search, stampSearch, host.tr("gui.komaedit.tools.stamp.search"), field == Field.STAMP,
+                            shown.size(), () -> {
+                                stampSearch = "";
+                                stopEditing();
+                            })
+                    .key("tools:stamp_search")
+                    .tooltip(host.tr("gui.komaedit.tools.stamp.search.help"))
+                    .onClick(() -> field = Field.STAMP);
+            if (!searching) {
+                String current = tab;
+                ui.cycle(column.next(this.row), host.tr("gui.komaedit.tools.stamp.category"), tabLabel,
+                                direction -> stampTab = tabs.get(Math.floorMod(tabs.indexOf(current) + direction,
+                                        tabs.size())))
+                        .tooltip(host.tr("gui.komaedit.tools.stamp.category.help"))
+                        .hint(host.tr("gui.komaedit.hint.cycle"))
+                        .group("tools:stamp:category");
+            }
+        }
+        if (shown.isEmpty()) {
+            Rect empty = column.next(tileHeight);
+            ui.label(host.tr(searching ? "gui.komaedit.tools.stamp.no_results"
+                    : "gui.komaedit.tools.stamp.no_favorites"), empty.x() + 2, empty.y() + 4, empty.width() - 4, MUTED);
+            return;
+        }
+        int start = compact ? 0 : pageIndex * perPage;
+        int end = Math.min(shown.size(), start + perPage);
+        for (int rowStart = start; rowStart < end; rowStart += perRow) {
+            Rect row = column.next(tileHeight);
+            for (int index = rowStart; index < Math.min(end, rowStart + perRow); index++) {
+                String option = shown.get(index);
+                Rect cell = new Rect(row.x() + (index - rowStart) * (tile + Column.GAP), row.y(), tile, tileHeight);
+                if (!ui.visible(cell)) {
+                    continue;
+                }
+                boolean chosen = option.equals(value) && !custom;
+                boolean favorite = preferences.isStampFavorite(option);
+                StudioImage image = ChoiceThumbnails.get(card.id(), choice.id(), option);
+                String label = host.tr(choice.optionKey(option));
+                List<String> lines = ui.nameLines(label, tile - 4, layout.lines());
+                // Nombre y una frase, debajo de la miniatura: qué hacen los clics lo dice el pie.
+                String help = label + "\n" + host.tr(choice.optionKey(option) + ".help");
+                ui.tile(cell, image, icon(card), lines != null ? lines : List.of(ui.fit(label, tile - 4)), chosen)
+                        .tooltip(help)
+                        .tooltipBelow(cell)
+                        .hint(host.tr("gui.komaedit.tools.stamp.tile.help"))
+                        .group("tools:" + choice.id())
+                        .onReset(() -> toggleStampFavorite(option, host, choice))
+                        .onClick(() -> set(current().with(choice.id(), option).with("custom", "")));
+                if (favorite || ui.hovered(cell)) {
+                    Rect star = new Rect(cell.right() - 12, cell.y() + 1, 11, 11);
+                    ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x() - 1,
+                            star.y() - 1, favorite || ui.hovered(star) ? FAVORITE : MUTED);
+                    ui.register(star).tooltip(host.tr("gui.komaedit.tools.stamp.favorite") + "\n" + label)
+                            .tooltipBelow(cell)
+                            .hint(host.tr("gui.komaedit.tools.stamp.tile.help"))
+                            .onClick(() -> toggleStampFavorite(option, host, choice));
+                }
+            }
+        }
+    }
+
+    private void toggleStampFavorite(String stamp, Host host, ToolParam.Choice choice) {
+        boolean added = host.preferences().toggleStampFavorite(stamp);
+        host.savePreferences();
+        host.status(host.tr(added ? "gui.komaedit.favorite.added" : "gui.komaedit.favorite.removed",
+                host.tr(choice.optionKey(stamp))));
     }
 
     /** Reparto de una galería: cuántas miniaturas por fila, su ancho, cuántas líneas de nombre y cada nombre. */
@@ -1094,7 +1292,7 @@ public final class ToolsPanel {
                 ui.fill(row.left(2), ACCENT);
             }
             ui.label(optionLabel(choice, option, host), row.x() + 7, row.y() + 4, row.width() - 14,
-                    chosen ? WHITE : TEXT_SECONDARY);
+                    chosen ? TEXT_STRONG : TEXT_SECONDARY);
             ui.register(row).tooltip(option).group("tools:" + choice.id()).onClick(() -> {
                 set(current().with(choice.id(), option));
                 biomeSearch = "";
@@ -1164,6 +1362,25 @@ public final class ToolsPanel {
         String[] parts = list.split(",");
         String first = host.blockName(firstBlock(list));
         return parts.length > 1 ? first + " +" + (parts.length - 1) : first;
+    }
+
+    /**
+     * El cuentagotas del mundo (Alt+clic en un bloque): pasa a ser el primer material de la herramienta elegida (el del
+     * tejado, el tronco del árbol, el de las letras). Devuelve el ajuste que cambió, o {@code null} si la herramienta
+     * no tiene ningún bloque.
+     */
+    public String pickMaterial(Host host, String id) {
+        ToolCard card = selected();
+        for (ToolParam param : card.params()) {
+            if (param instanceof ToolParam.Block block && block.visible(current())) {
+                set(current().with(block.id(), compact(id)));
+                host.status(host.tr("gui.komaedit.status.eyedropper.tool", host.tr(block.labelKey()),
+                        host.blockName(id)));
+                return block.id();
+            }
+        }
+        host.status(host.tr("gui.komaedit.status.eyedropper.none", host.tr(card.nameKey())));
+        return null;
     }
 
     static String firstBlock(String list) {
@@ -1430,6 +1647,7 @@ public final class ToolsPanel {
         String key = "tools:number:" + id;
         NumberView view = NumberView.of(value, null, value, param.defaultValue(), false, range, param.decimals(),
                 param.unit(), host::tr);
+        ControlHelp explained = explain(host, card, param);
         ui.stepper(row, new StudioUi.Stepper(host.tr(param.labelKey()), view.value(), view.shortValue(),
                 view.fraction(), view.defaultFraction(), view.modified(), view.range(), numbers.editing(key),
                 numbers.dragging(key), numbers.input(),
@@ -1437,8 +1655,10 @@ public final class ToolsPanel {
                         direction, host.shift()), host),
                 (x, y) -> numbers.press(key, value, x),
                 () -> queueOption(id, param.defaultValue(), host),
-                view.help(help(host, card, param), param.unit().format(param.defaultValue(), param.decimals(),
-                        host::tr), host::tr), "tools:" + id, key));
+                view.help(explained, param.unit().format(param.defaultValue(), param.decimals(), host::tr),
+                        host::tr), explained.brief(endsFormat(host)), host.tr("gui.komaedit.hint.number"),
+                explained.low(),
+                explained.high(), "tools:" + id, key));
     }
 
     private void queueOption(String id, int value, Host host) {
@@ -1495,13 +1715,31 @@ public final class ToolsPanel {
                     : host.tr(info.hasSelection() ? "gui.komaedit.tools.footer.selection_short"
                     : "gui.komaedit.tools.footer.no_selection");
             case LOOK -> clicked(host);
-            case HAND -> host.tr("gui.komaedit.tools.footer.hand");
+            case HAND -> card instanceof TerrainCards.Stamp ? stampTarget(host)
+                    : host.tr("gui.komaedit.tools.footer.hand");
             case MODE -> card instanceof SymmetryCard
                     ? host.tr(info.symmetry().active() ? "gui.komaedit.tools.footer.on"
                     : "gui.komaedit.tools.footer.off")
                     : host.tr("gui.komaedit.tools.footer.active", info.capabilities() == null ? 0
                     : Integer.bitCount(info.capabilities().enabled() & info.capabilities().permitted()));
         };
+    }
+
+    /** «Montaña · Sumar · semilla 4217»: el sello, el modo de mezcla y la semilla que llevará el pincel. */
+    private String stampTarget(Host host) {
+        ToolValues values = values(selected());
+        String custom = values.text("custom").strip();
+        ToolParam.Choice stamp = (ToolParam.Choice) values.param("stamp");
+        ToolParam.Choice mode = (ToolParam.Choice) values.param("mode");
+        String name = custom.isEmpty() ? host.tr(stamp.optionKey(values.choice("stamp"))) : custom;
+        Integer seed = values.number("seed");
+        boolean locked = values.toggle("lock_seed");
+        String seedText = seed == null
+                ? host.tr(locked ? "gui.komaedit.tools.stamp.footer.seed_locked"
+                : "gui.komaedit.tools.stamp.footer.seed_random")
+                : host.tr(locked ? "gui.komaedit.tools.stamp.footer.seed_locked_number"
+                : "gui.komaedit.tools.stamp.footer.seed", seed);
+        return name + " · " + host.tr(mode.optionKey(values.choice("mode"))) + " · " + seedText;
     }
 
     /** «Donde haces clic» o, tras un clic en el mundo, en qué bloque («Clic en 12, 64, -30»). */
@@ -1645,6 +1883,7 @@ public final class ToolsPanel {
             case TEXT -> ("tools:text:" + fieldParam).equals(key);
             case PRESET_NAME -> "tools:preset_name".equals(key);
             case BIOME -> "tools:biome".equals(key);
+            case STAMP -> "tools:stamp_search".equals(key);
         };
     }
 
@@ -1742,6 +1981,19 @@ public final class ToolsPanel {
                         biomeSearch = "";
                         stopEditing();
                     }
+                    case STAMP -> {
+                        // Intro elige el primero de lo encontrado y vuelve a su categoría.
+                        ToolParam.Choice choice = (ToolParam.Choice) current().param("stamp");
+                        List<String> found = StampGallery.visible(stampSearch, "", host.preferences()
+                                .stampFavorites(), name -> host.tr(choice.optionKey(name)) + " "
+                                + host.tr(choice.optionKey(name) + ".help"));
+                        if (!found.isEmpty() && !stampSearch.isEmpty()) {
+                            set(current().with("stamp", found.getFirst()).with("custom", ""));
+                            stampTab = StampGallery.tabOf(found.getFirst());
+                        }
+                        stampSearch = "";
+                        stopEditing();
+                    }
                     case PRESET_NAME -> saveNamed(host);
                     default -> commitField(host);
                 }
@@ -1762,6 +2014,10 @@ public final class ToolsPanel {
                         biomeSearch = "";
                         stopEditing();
                     }
+                    case STAMP -> {
+                        stampSearch = "";
+                        stopEditing();
+                    }
                     case PRESET_NAME -> {
                         namingAction = null;
                         stopEditing();
@@ -1773,6 +2029,7 @@ public final class ToolsPanel {
                 switch (field) {
                     case SEARCH -> search = erase(search, control);
                     case BIOME -> biomeSearch = erase(biomeSearch, control);
+                    case STAMP -> stampSearch = erase(stampSearch, control);
                     default -> input = erase(input, control);
                 }
             }
@@ -1803,6 +2060,11 @@ public final class ToolsPanel {
             case BIOME -> {
                 if (biomeSearch.length() < 64) {
                     biomeSearch += Character.toLowerCase(character);
+                }
+            }
+            case STAMP -> {
+                if (stampSearch.length() < 32) {
+                    stampSearch += Character.toLowerCase(character);
                 }
             }
             case PRESET_NAME -> {

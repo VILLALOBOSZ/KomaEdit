@@ -171,6 +171,8 @@ public final class PermissionNodes {
         add(build + ".brush.tree", Pack.INTERMEDIATE, build, null, "/komaedit pincel tree");
         add(build + ".brush.rock", Pack.INTERMEDIATE, build, null, "/komaedit pincel rock");
         add(build + ".brush.heightmap", Pack.INTERMEDIATE, build, null, "/komaedit pincel heightmap");
+        add(build + ".brush.paint", Pack.INTERMEDIATE, build, null,
+                "/komaedit pincel paint (pintar el terreno con un degradado)");
         add(build + ".brush.sculpt", Pack.INTERMEDIATE, build, null,
                 "/komaedit pincel sculpt (esculpir, roca, soldar, fundir, rugosidad, grietas)");
         add(build + ".terrain.ramp", Pack.INTERMEDIATE, build, null, "/komaedit terreno rampa");
@@ -216,6 +218,9 @@ public final class PermissionNodes {
         add(BuildCapability.GAMEMODE_PERMISSION, Pack.ADMIN, null, null, "Cambiar el modo de juego desde el menú rápido");
         add(BuildCapability.ANY_MODE_PERMISSION, Pack.ADMIN, null, null, "Usar las capacidades fuera de creativo");
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
+        add(KomaPermissions.ADMIN_STAMP_EXPORT, Pack.ADMIN, null, null,
+                "Copiar un sello de serie a config/komaedit/heightmaps para retocarlo"
+                        + " (/komaedit terreno sellos exportar)");
         add(KomaPermissions.PROJECT_BACKUP, Pack.ADMIN, null, null, "/komaedit project backup");
         add(KomaPermissions.ADMIN_IMAGE_URL, Pack.ADMIN, null, null,
                 "Imágenes por URL en /komaedit image (si urlsRequireAdmin está activo)");

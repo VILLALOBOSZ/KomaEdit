@@ -14,6 +14,7 @@ import com.komainu.moxia.studio.ui.FakeStudioHost;
 import com.komainu.moxia.studio.ui.StudioDriver;
 import com.komainu.moxia.studio.ui.StudioStage;
 import com.komainu.moxia.studio.ui.StudioView;
+import com.komainu.moxia.terrain.HeightmapBrush;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -143,7 +144,7 @@ class BrushSyncTest {
         panel.setValues(stamp, panel.values(stamp).with("radius", 20));
         studio.advance(10);
         studio.advance(BrushSync.DELAY_MILLIS);
-        assertTrue(studio.host.last().startsWith("komaedit pincel actualizar heightmap montana 20 "),
+        assertTrue(studio.host.last().startsWith("komaedit pincel actualizar heightmap montana 20 15 "),
                 studio.host.last());
     }
 
@@ -215,11 +216,18 @@ class BrushSyncTest {
                 String typed = values.text("custom").strip();
                 assertEquals(typed.isEmpty() ? values.choice("stamp") : typed, options.positional(0), label);
                 assertEquals(values.formatted("radius"), options.positional(1), label);
-                assertEquals(values.formatted("height"), options.positional(2), label);
+                assertEquals(values.number("height") == null
+                        ? Integer.toString(HeightmapBrush.naturalHeight(values.choice("stamp"),
+                        values.number("radius")))
+                        : values.formatted("height"), options.positional(2), label);
                 assertEquals(values.choice("mode"), options.positional(3), label);
                 assertEquals(values.choice("palette"), options.positional(4), label);
                 assertEquals(values.number("intensity") == 100 ? null : values.formatted("intensity"),
                         options.has('i') ? options.flag('i') : null, label);
+                assertEquals(values.number("variation") == 60 ? null : values.formatted("variation"),
+                        options.has('x') ? options.flag('x') : null, label);
+                assertEquals(values.formatted("seed"), options.has('s') ? options.flag('s') : null, label);
+                assertEquals(values.toggle("lock_seed"), options.has('k'), label);
                 assertEquals(values.choice("rotation").equals("mirada") ? null : values.choice("rotation"),
                         options.has('r') ? options.flag('r') : null, label);
                 assertEquals(values.formatted("neutral"), options.has('c') ? options.flag('c') : null, label);

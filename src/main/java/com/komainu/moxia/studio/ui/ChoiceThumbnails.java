@@ -17,6 +17,7 @@ import com.komainu.moxia.roof.RoofGenerator;
 import com.komainu.moxia.roof.RoofResult;
 import com.komainu.moxia.roof.RoofSettings;
 import com.komainu.moxia.roof.RoofWorld;
+import com.komainu.moxia.studio.tools.ui.PaintPreview;
 import com.komainu.moxia.studio.tools.ui.StampPreview;
 
 import java.awt.image.BufferedImage;
@@ -49,6 +50,12 @@ public final class ChoiceThumbnails {
     private static final int FOLIAGE = 0x6AA136;
     private static final int SPRUCE = 0x5E8F5E;
     private static final int BIRCH = 0x80A755;
+    /** Colores del mundo que no salen de la tabla de bloques: el suelo bajo árboles y rocas y el cristal. */
+    private static final int DIRT = 0x7A5A3A;
+    private static final int GRASS = 0x6E9A3E;
+    private static final int GLASS = 0xA9C9D9;
+    /** Un bloque sin color medido. */
+    private static final int UNMEASURED = 0x8A8A8A;
     private static final Set<String> TINTED = Set.of("minecraft:oak_leaves", "minecraft:jungle_leaves",
             "minecraft:acacia_leaves", "minecraft:dark_oak_leaves", "minecraft:mangrove_leaves", "minecraft:vine");
     private static volatile boolean blocking;
@@ -64,7 +71,8 @@ public final class ChoiceThumbnails {
     /** Si la opción tiene miniatura: árboles, tejados, rocas y sellos. */
     public static boolean supports(String card, String param) {
         return switch (card + "/" + param) {
-            case "tree/species", "roof/type", "rock/type", "stamp/stamp" -> true;
+            case "tree/species", "roof/type", "rock/type", "stamp/stamp", "paintbrush/stamp",
+                 "paintbrush/paint_palette" -> true;
             default -> false;
         };
     }
@@ -75,17 +83,25 @@ public final class ChoiceThumbnails {
             return null;
         }
         String key = "choice/" + card + "/" + param + "/" + option;
+        return cached(key, () -> render(key, card, param, option));
+    }
+
+    /**
+     * Una miniatura por su clave: la hecha, o {@code null} mientras se pinta en segundo plano (o ya hecha, si se pide
+     * con {@link #setBlocking}). Lo que no se puede pintar se queda sin miniatura.
+     */
+    static StudioImage cached(String key, java.util.function.Supplier<StudioImage> painter) {
         StudioImage ready = READY.get(key);
         if (ready != null || PENDING.contains(key)) {
             return ready;
         }
         if (blocking) {
-            return READY.computeIfAbsent(key, ignored -> render(key, card, option));
+            return READY.computeIfAbsent(key, ignored -> painter.get());
         }
         PENDING.add(key);
         WORKER.execute(() -> {
             try {
-                READY.put(key, render(key, card, option));
+                READY.put(key, painter.get());
             } catch (RuntimeException exception) {
                 // Una opción que no se puede pintar se queda con su icono.
             } finally {
@@ -95,14 +111,17 @@ public final class ChoiceThumbnails {
         return null;
     }
 
-    private static StudioImage render(String key, String card, String option) {
+    private static StudioImage render(String key, String card, String param, String option) {
         int[] pixels = switch (card) {
             case "tree" -> voxels(tree(option));
             case "roof" -> voxels(roof(option));
             case "rock" -> voxels(rock(option));
             case "stamp" -> StampPreview.argb(option, SIZE);
+            case "paintbrush" -> param.equals("stamp") ? PaintPreview.footprint(option, SIZE)
+                    : PaintPreview.palette(option, SIZE);
             default -> new int[0];
         };
+
         return StudioImage.of(key, SIZE, SIZE, () -> pixels);
     }
 
@@ -130,7 +149,7 @@ public final class ChoiceThumbnails {
             int rgb = role.foliage() ? shade(leaves, NatureVoxels.shade(voxels.info(key))) : wood;
             box.set(grid, key, rgb, 1);
         }
-        box.ground(grid, 0x7A5A3A);
+        box.ground(grid, DIRT);
         return grid;
     }
 
@@ -175,7 +194,7 @@ public final class ChoiceThumbnails {
                     / 256))));
             box.set(grid, key, rgb, 1);
         }
-        box.ground(grid, 0x6E9A3E);
+        box.ground(grid, GRASS);
         return grid;
     }
 
@@ -194,13 +213,12 @@ public final class ChoiceThumbnails {
         int roofColor = color("minecraft:spruce_planks");
         int ridge = darker(roofColor, 0.82);
         int gable = color("minecraft:oak_planks");
-        int glass = 0xA9C9D9;
         for (int index = 0; index < positions.length; index++) {
             byte material = result.materials()[index];
             int rgb = switch (material) {
                 case RoofResult.RIDGE -> ridge;
                 case RoofResult.WALL -> gable;
-                case RoofResult.WINDOW_X, RoofResult.WINDOW_Z -> glass;
+                case RoofResult.WINDOW_X, RoofResult.WINDOW_Z -> GLASS;
                 default -> roofColor;
             };
             box.set(grid, positions[index], rgb, 0);
@@ -216,7 +234,7 @@ public final class ChoiceThumbnails {
                         && (z == footprint.minZ() || z == footprint.maxZ());
                 for (int y = -wallHeight; y < 0; y++) {
                     boolean window = !corner && y == -2 && (x + z) % 3 == 0;
-                    box.set(grid, x, y, z, corner ? beam : window ? glass : wall);
+                    box.set(grid, x, y, z, corner ? beam : window ? GLASS : wall);
                 }
             }
         }
@@ -237,7 +255,7 @@ public final class ChoiceThumbnails {
     /** Color medio de la textura del bloque (la tabla de colores medidos), o gris si no está. */
     static int color(String id) {
         BlockColorCatalog.Measured measured = BlockColorCatalog.measured().get(id);
-        return measured == null ? 0x8A8A8A : measured.rgb() & 0xFFFFFF;
+        return measured == null ? UNMEASURED : measured.rgb() & 0xFFFFFF;
     }
 
     private static int multiply(int base, int tint) {

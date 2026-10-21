@@ -28,7 +28,10 @@ public final class TerrainJobs {
         TerrainColumns columns = TerrainColumns.read(view, x - reach, z - reach, x + reach, z + reach, checkCancelled);
         HeightField field = columns.heights();
         StampBrush.apply(field, x + 0.5, z + 0.5, settings, checkCancelled);
-        int changed = TerrainWriter.write(columns, field, null, palette, false, sink, checkCancelled);
+        // La cumbre relativa de la paleta va sobre lo que levanta el sello (de la altura del clic a la del sello):
+        // la nieve sale en lo alto de la montaña estampada, y no en el borde de un hoyo.
+        SurfacePalette resolved = palette.forRange(settings.baseY(), settings.baseY() + settings.amplitude());
+        int changed = TerrainWriter.write(columns, field, null, resolved, false, sink, checkCancelled);
         return new Summary(changed, settings.stamp().name());
     }
 

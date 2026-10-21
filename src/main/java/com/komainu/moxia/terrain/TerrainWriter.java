@@ -40,6 +40,7 @@ public final class TerrainWriter {
      */
     public static int write(TerrainColumns original, HeightField target, Fluids fluids, SurfacePalette palette,
                             boolean repaintAll, BlockSink sink, Runnable checkCancelled) {
+        palette = resolvePeak(palette, target);
         TerrainView view = original.view();
         boolean[] changedMask = new boolean[original.sizeX() * original.sizeZ()];
         int changedColumns = 0;
@@ -71,6 +72,23 @@ public final class TerrainWriter {
             paintExposedWalls(original, target, palette, changedMask, sink, checkCancelled);
         }
         return changedColumns;
+    }
+
+    /** Pone en una Y la cumbre relativa de la paleta, entre lo más bajo y lo más alto de lo editable. */
+    static SurfacePalette resolvePeak(SurfacePalette palette, HeightField target) {
+        if (!palette.relativePeak()) {
+            return palette;
+        }
+        double lowest = Double.POSITIVE_INFINITY;
+        double highest = Double.NEGATIVE_INFINITY;
+        for (int index = 0; index < target.columns(); index++) {
+            double height = target.at(index);
+            if (target.editableAt(index) && !Double.isNaN(height)) {
+                lowest = Math.min(lowest, height);
+                highest = Math.max(highest, height);
+            }
+        }
+        return lowest > highest ? palette : palette.forRange(lowest, highest);
     }
 
     /**

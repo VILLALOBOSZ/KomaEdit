@@ -60,6 +60,20 @@ public final class ColorStage {
     private String similarKey = "";
     private List<BlockColorCatalog.Match> similar = List.of();
 
+    /**
+     * El cuentagotas del mundo (Alt+clic): el bloque pulsado es el primero del degradado; con Mayús, el último.
+     */
+    public void pickWorld(Host host, String id, boolean last) {
+        if (last) {
+            to = id;
+        } else {
+            from = id;
+        }
+        variant = 0;
+        host.status(host.tr(last ? "gui.komaedit.status.eyedropper.color_to" : "gui.komaedit.status.eyedropper.color_from",
+                host.blockName(id)));
+    }
+
     public void draw(StudioUi ui, Column column, Host host, boolean compact) {
         ui.section(column, host.tr("gui.komaedit.color.gradient"));
         blockRow(ui, column, host, from, host.tr("gui.komaedit.color.from"), id -> {

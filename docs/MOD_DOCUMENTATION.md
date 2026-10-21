@@ -5,7 +5,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 ## Índice
 
 - **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación) · [Colocar con gizmo](#colocar-con-gizmo) · [En el mundo: ajustes, teclas y mensajes](#en-el-mundo-ajustes-teclas-y-mensajes)
-- **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Modificadores](#modificadores) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
+- **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Variaciones de la figura](#variaciones-de-la-figura) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
 - **Sobre lo construido:** [Envejecer (orden avanzada)](#envejecer) · [Hiedra viva](#hiedra-viva) · [Retoques sobre la selección](#retoques-sobre-la-selección) · [Enredaderas, musgo, losas y estados](#enredaderas-musgo-losas-y-estados) · [Vidriera degradada](#vidriera-degradada)
 - **Edificios y naturaleza:** [Árboles y rocas](#árboles-y-rocas) · [Tejados](#tejados) · [Loft entre curvas](#loft-entre-curvas)
 - **Deformar, texturizar y suavizar:** [Deformar la selección](#deformar-la-selección) · [Superficie](#superficie) · [Texturizado](#texturizado) · [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región) · [Suavizado](#suavizado) · [Smoothblocks: perfiles de -w](#smoothblocks-perfiles-de--w)
@@ -19,7 +19,9 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 ## Procedural Studio
 
-Procedural Studio se abre con `K` y permite construir mientras el mundo sigue visible y activo. Tiene nueve etapas repartidas en tres grupos: **Crear** (Herramientas, Trayectoria y Figuras), **Ajustar** (Modificadores, Material y Color) y **Biblioteca** (Planos, Recetas e Instancias). Envejecer ya no es una etapa: queda como la orden avanzada [`/komaedit weather`](#envejecer).
+Procedural Studio se abre con `K` y permite construir mientras el mundo sigue visible y activo. Tiene siete etapas repartidas en tres grupos: **Crear** (Herramientas, Trayectoria y Figuras), **Ajustar** (Color) y **Biblioteca** (Planos, Recetas e Instancias). Modificadores y Material ya no son etapas: solo valían para la figura y viven dentro de Figuras, como su [material](#tamaño-material-y-variaciones) y sus [variaciones](#tamaño-material-y-variaciones). Envejecer tampoco es una etapa: queda como la orden avanzada [`/komaedit weather`](#envejecer).
+
+Todo se explica en la propia pantalla, sin leer esto: cada control dice al pasar el ratón qué le pasa a lo que construyes y, en los números, sus extremos en palabras («de estrecha a ancha»); el pie dice qué hace cada clic en el mundo en la etapa en la que estás, y al dejar quieto el ratón sobre el mundo sale la leyenda entera. Y todo se hace con el ratón sin cerrar el Studio: seleccionar arrastrando, poner y arrastrar puntos, pintar con el pincel, coger un material con Alt+clic y colocar con un clic (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
 
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
 - La cámara puede desplazarse mientras el Studio permanece abierto.
@@ -29,14 +31,18 @@ Procedural Studio se abre con `K` y permite construir mientras el mundo sigue vi
 
 ![Herramientas con el árbol elegido](renders/studio/1080p_gui3_arbol_es.png)
 
+![Lo primero que se ve: Figuras sin puntos dice cómo ponerlos](renders/studio/1080p_gui3_primera_vez_es.png)
+
 ### Disposición de la pantalla
 
 Todo el Studio vive en un único panel opaco pegado a la derecha; el resto de la pantalla es el mundo, sin nada encima, así que el chat de abajo a la izquierda queda a la vista y el marcador del servidor no se transparenta por detrás del panel. El panel se lee de arriba abajo: **qué haces** (la barra con la etapa), **qué ajustas** (el contenido) y **qué pasa al pulsar** (el pie).
 
 - **Barra de arriba:** el icono y el nombre de la etapa y, a la derecha, deshacer y rehacer ajustes, el holograma, el **historial del mundo**, la **paleta de órdenes**, la chuleta de atajos y cerrar. Cada botón dice su atajo al pasar el ratón. Con el panel estrecho (menos de 300 píxeles) se quedan los cinco imprescindibles.
-- **Etapas** (columna izquierda): los tres grupos con su nombre encima y cada etapa con su icono, su nombre y su tecla (`1` Herramientas, `2` Trayectoria, `3` Figuras, `4` Modificadores, `5` Material, `6` Color, `7` Planos, `8` Recetas y `9` Instancias). Si el panel no da para los nombres, se quedan los iconos con una raya entre grupo y grupo, y al pasar el ratón por la columna sale a su lado la lista con el nombre y la tecla de cada etapa, a la altura de su icono (un clic en un nombre abre la etapa). La etapa **Color** (degradados, bloques parecidos y sombreado) se explica en [Color y sombreado](#color-y-sombreado), y **Planos**, en [Etapa Planos del Studio](#etapa-planos-del-studio).
+- **Etapas** (columna izquierda): los tres grupos con su nombre encima y cada etapa con su icono, su nombre y su tecla (`1` Herramientas, `2` Trayectoria, `3` Figuras, `4` Color, `5` Planos, `6` Recetas y `7` Instancias). Quien tenía guardada la etapa Modificadores o Material abre en Figuras. Si el panel no da para los nombres, se quedan los iconos con una raya entre grupo y grupo, y al pasar el ratón por la columna sale a su lado la lista con el nombre y la tecla de cada etapa, a la altura de su icono (un clic en un nombre abre la etapa). La etapa **Color** (degradados, bloques parecidos y sombreado) se explica en [Color y sombreado](#color-y-sombreado), y **Planos**, en [Etapa Planos del Studio](#etapa-planos-del-studio).
 - **Contenido:** las secciones de la etapa, desplazables con la rueda (una barra fina a la derecha indica cuánto queda). Las secciones plegables (**Más ajustes**, **Cómo se usa**…) recuerdan si estaban abiertas.
 - **Pie** (abajo, siempre visible): sobre qué se trabaja (la selección con su tamaño, los puntos de la trayectoria o **donde haces clic**), la estimación **≈ N bloques**, el último mensaje unos segundos y el botón principal de la etapa: **Construir**, **Colocar plano** o **Sombrear selección**. Si falta algo, el botón sale apagado y dice qué («Faltan 2 puntos», «Falta la selección», «Elige una herramienta»). Mientras algo tuyo está en marcha, el pie enseña su progreso (ver [Progreso en el pie](#progreso-en-el-pie)). Los textos del pie se acortan quitando lo menos importante, nunca a medias.
+- **Lo que hay bajo el ratón**, en la línea de debajo del pie (tras el último mensaje): sobre el mundo, qué hace cada clic en esta etapa («Clic: punto nuevo · arrastra un punto: moverlo…», «Arrastra: seleccionar…», «Clic: plantar ahí»); sobre un control, sus gestos («Rueda o − +: cambiar · arrastra el número…»). Lo más importante va primero, así que lo que cabe es lo que más ayuda.
+- **Leyenda del mundo:** con el ratón quieto medio segundo sobre el mundo, arriba a la izquierda sale la lista entera de lo que hace el ratón ahí, una cosa por línea («Qué hace el ratón en el mundo»). Al moverlo se esconde.
 - **Ancho del panel:** de serie, el 38 % de la pantalla, para dejar el mundo a la vista (a 1080p con GUI 3, 243 de 640 píxeles de GUI; antes era la mitad). El borde izquierdo, con un asa a media altura, se arrastra entre 230 píxeles y el 45 % de la pantalla (470 como mucho); lo elegido se guarda en `studio.json` como parte de la pantalla, así que vale igual con otra escala de GUI. Clic derecho en el borde: el de serie.
 - **Los nombres se leen enteros:** en las galerías, las cuadrículas de herramientas y figuras y la biblioteca de planos, un nombre que no cabe en una línea va en dos (partido por palabras; los planos, tras `_` o `-`), y si ni así cabe, la cuadrícula pone menos columnas.
 - **Trayectoria** cuenta los nodos (`3 / 32 nodos`), dice si está abierta o cerrada y tiene **Añadir aquí**, **Deshacer punto**, **Cerrar / Abrir trayectoria** y **Limpiar**, la lista de nodos con sus coordenadas (un clic elige el nodo para moverlo con sus flechas) y **Usar con**: Figura, Río, Rampa, Árbol o Loft, que lleva a esa etapa o herramienta con los puntos ya puestos. «Cómo se usa» el puntero queda plegado.
@@ -55,15 +61,52 @@ La etapa **Figuras** funciona como Herramientas: con una figura elegida, arriba 
 - Favoritas y recientes son de cada jugador y se guardan en su equipo en `config/komaedit/studio.json` (no viajan con recetas ni paquetes). Un archivo roto se ignora y se empieza de cero.
 - La descripción completa de cada figura sale en su tooltip; con sitio, la de la elegida se ve también bajo su nombre. En el modo compacto no hay descripciones.
 
+### Tamaño, material y variaciones
+
+Con una figura elegida, la etapa **Figuras** tiene, de arriba abajo, lo que se toca de verdad:
+
+1. Su nombre (pulsarlo abre la cuadrícula), su descripción y los presets (**Compacto**, **De serie**, **Amplio**, **Robusto**, **Azar**). Si faltan puntos, encima, en amarillo: «Faltan 2 puntos: ponlos con un clic en el mundo.»
+2. **Tamaño:** radio, espaciado y grosor (con el nombre que les da cada figura: «Paso de trenza», «Grosor de hebra»), y la altura en las que la tienen. En Perfil 2D, el perfil y si va hueco; en Expresión, la fórmula.
+3. **Material:** el bloque, con su biblioteca y su cuentagotas, y el interruptor **Degradado**. Con él encendido, la fila del bloque pasa a ser la **Paleta** (‹ › o la rueda); al apagarlo vuelve el bloque y al encenderlo otra vez, la misma paleta.
+4. **Variaciones:** lo que era la etapa Modificadores (ver [Variaciones de la figura](#variaciones-de-la-figura)). Cada una es una fila con su **dibujo**, su nombre, una frase de lo que hace y un interruptor; toda la fila la pone o la quita y el clic derecho la quita. Puesta, sus controles salen justo debajo. El título dice cuántas hay puestas.
+5. **Más ajustes**, plegado (con cuántos ya no están de serie): el giro de la figura sobre el camino, el resto del tubo (motor, extremos, normales, piezas), **Cómo cambia** (si afinar o retorcer van parejos o se notan más al principio o al final), la dirección, mezcla, sentido y reparto del degradado, **Cerrar huecos**, **Quitar bloques sueltos** y **Quitar todas las variaciones**.
+
+| Variación | Qué hace | Sus controles | Se pone con |
+| --- | --- | --- | --- |
+| **Afinar** | Más fina (o más gruesa) hacia el final del camino. | Tamaño al final (de más fina a más gruesa) y Separación al final (de más juntas a más separadas). | 40 % al final |
+| **Retorcer** | Gira sobre sí misma a lo largo del camino. | Cuánto gira (de la izquierda a la derecha; 360° es una vuelta). | una vuelta |
+| **Otra figura encima** | Cada pocos tramos, otra figura (anillos en una cuerda, nudos en un cable). | Qué figura (nunca la misma) y Cada (de a menudo a de tarde en tarde). | anillos cada 4 tramos |
+| **Pegar al terreno** | Los puntos bajan al suelo (o suben al techo, o van a lo más cercano) y la figura sigue el relieve. | Suelo, Techo o Lo más cerca; Altura sobre el suelo (de hundida a en el aire) y Busca el suelo hasta. | al suelo |
+| **Repetir lo copiado** | Lo que copiaste con `//copy` (una farola, un poste) a lo largo del camino. | Dónde (en las puntas, en cada punto, cada pocos bloques, doblado o estirado a lo largo) y Cada. | cada pocos bloques |
+
+- **El dibujo** de cada fila sale del mismo generador que construye: un tubo de ejemplo con esa variación puesta, en el color del material de la figura (y unas lomas para «Pegar al terreno», unas farolas para «Repetir lo copiado»), pintado una vez en segundo plano. Lo que hace en **tu** figura se ve en su holograma al momento de encenderla y al mover cualquiera de sus controles; con la vista previa en vivo, también en su fantasma tras Construir.
+- **Al momento** se ven todas menos dos: lo copiado (el portapapeles es del servidor) y «Lo más cerca», que busca en todas direcciones; esas dos se ven en el fantasma al construir y su ayuda lo dice. «Pegar al terreno» al suelo o al techo ya lo calcula el cliente con el mundo que tiene cargado.
+- **Solo lo que sirve:** en las estructuras (pilares, arcos, puentes y torii) solo sale «Pegar al terreno»; afinarlas o retorcerlas las rompería. Si una receta ya lleva otra variación, sale igual, para poder quitarla.
+- **Las recetas de antes** se leen igual: las variaciones son una forma de ver los mismos números. Si una receta cambiaba también el principio (escala o separación inicial), Afinar enseña además **Tamaño al principio** o **Separación al principio**, para poder devolverlos a 100 %.
+- En el modo compacto las variaciones son filas con interruptor, sin dibujo ni frase (que salen en su ayuda).
+- Deshacer ajustes (`Z`) vale también para las variaciones.
+
+![Figuras con Afinar y Retorcer puestas](renders/studio/1080p_gui3_variaciones_es.png)
+
+![Las variaciones apagadas, con su dibujo y lo que hace cada una](renders/studio/1080p_gui3_variaciones_apagadas_es.png)
+
+![El material bajo el tamaño](renders/studio/1080p_gui3_material_es.png)
+
+Antes, Modificadores era una etapa aparte con nombres abstractos (escala inicial y final, espaciado inicial y final, torsión total, curva, fusión, conformado, kitbash, limpieza) y ningún control decía qué cambiaba:
+
+![Modificadores en la 1.8.0](renders/studio/antes/1080p_gui3_modificadores_es.png)
+
 ### Ajustar rápido
 
-Todos los controles numéricos del Studio (figuras, modificadores, herramientas y color) son iguales: la etiqueta a la izquierda, el valor **con su unidad** (`18 bloques`, `50 %`, `45°`, `×1,5`, `Y 64`; en corto si no cabe, `18 bl.`) entre `−` y `+`, y debajo una barra con el rango, llena hasta el valor y con una marca en el de serie. Un punto rosa delante de la etiqueta dice que el valor ya no es el de serie.
+Todos los controles numéricos del Studio (figuras, modificadores, herramientas y color) son iguales: la etiqueta a la izquierda, el valor **con su unidad** (`18 bloques`, `50 %`, `45°`, `×1,5`, `Y 64`; en corto si no cabe, `18 bl.`) entre `−` y `+`, y debajo una barra con el rango, llena hasta el valor y con una marca en el de serie. Un punto del color del acento delante de la etiqueta dice que el valor ya no es el de serie.
 
 - **Rueda** sobre los botones o el valor: sube o baja un paso. Sobre la etiqueta o fuera de los controles, la rueda desplaza el panel, para no cambiar valores sin querer. Con **Mayús**, `−` `+` y la rueda dan un paso grande (×5, o el propio del control: 45° el giro, 90° la torsión, 25 % las escalas).
 - **Arrastrar** el número en horizontal lo cambia como un deslizador: recorrer el rango entero cuesta unos 240 píxeles, y nunca menos de 6 píxeles por paso. Con **Mayús**, fino: un paso cada 12 píxeles.
 - **Un clic** sin mover abre el campo para escribirlo, con el rango al lado de la etiqueta; se puede escribir con la unidad o sin ella (`18`, `18 bloques`, `50 %`). `Intro` o pulsar fuera lo aplica (ajustado al rango), `Esc` lo cancela.
-- **Clic derecho** lo devuelve al de serie: el de la figura para radio, espaciado, grosor, giro y altura; el de los modificadores para el resto; en las herramientas, el de la herramienta (o «auto»).
-- **Ayuda corta** al pasar el ratón: qué hace, el rango, el de serie y los gestos.
+- **Clic derecho** lo devuelve al de serie: el de la figura para radio, espaciado, grosor, giro y altura; el de las variaciones para el resto; en las herramientas, el de la herramienta (o «auto»).
+- **Qué hace, al pasar el ratón:** una frase de lo que le pasa a lo que construyes («Lo ancha que se abre la copa», «Cuántas ramas salen del tronco»), no el nombre del parámetro ni su bandera, y debajo sus extremos en palabras («de estrecha a ancha», «de pocas a muchas») y el rango con el de serie. Sobre el propio número sale la versión corta (qué hace y sus extremos), para no tapar la fila. Los gestos, iguales en todos, los dice la línea del pie.
+- **Al arrastrar**, la etiqueta deja sitio a los extremos: a la izquierda hacia dónde va el valor bajo y a la derecha el alto («bajo … alto»), así se sabe hacia qué lado tirar sin mirar la ayuda.
+- Lo mismo en las filas de ciclo y los interruptores: su ayuda dice qué hacen y el pie, sus gestos.
 - Las filas de ciclo (‹ valor ›) cambian con un clic en ‹ o en el valor y con la rueda; en las herramientas, el clic derecho también las devuelve a la de serie.
 
 ### Presets y variantes
@@ -92,7 +135,7 @@ El botón del reloj de la barra abre la lista de los últimos cambios en el mund
 
 ### Paleta de órdenes
 
-`Ctrl+K` (o el botón de la barra) abre un buscador encima de todo para ir a cualquier sitio sin recorrer etapas: **etapas**, **herramientas**, **presets** de cada herramienta, **figuras** y **planos**. Busca sin tildes ni mayúsculas por nombre y por tipo (`tejado`, `azotado`, `planos`); las flechas eligen, `Intro` abre y `Esc` cierra. Elegir un preset abre su herramienta con él aplicado; elegir un plano lo selecciona en Planos.
+`Ctrl+K` (o el botón de la barra) abre un buscador encima de todo para ir a cualquier sitio sin recorrer etapas: **etapas**, **herramientas**, **presets** de cada herramienta, **figuras**, **planos** y **temas** de color. Busca sin tildes ni mayúsculas por nombre y por tipo (`tejado`, `azotado`, `planos`, `tema`); las flechas eligen, `Intro` abre y `Esc` cierra. Elegir un preset abre su herramienta con él aplicado; elegir un plano lo selecciona en Planos; elegir un tema lo pone.
 
 ### Vista previa
 
@@ -102,7 +145,9 @@ El ojo del pie elige qué hace el botón principal en las herramientas que admit
 - **Vista previa al construir:** Construir enseña la vista previa (en la orden, `-v` o `--preview`) y espera a **Confirmar** (`Intro`); cambiar un ajuste no la rehace.
 - **Sin vista previa:** Construir cambia el mundo en el acto (lo que es un objeto sale igualmente como fantasma si **Colocar con gizmo** está en **Siempre**).
 
-En **Figuras**, el holograma ya sigue cada cambio; tras **Construir**, si la figura sale como fantasma, cambiar la figura, sus proporciones, modificadores o material rehace también el fantasma (con la vista previa en vivo encendida).
+En **Figuras**, el holograma ya sigue cada cambio (también «Pegar al terreno» al suelo o al techo, que lo calcula el cliente); tras **Construir**, si la figura sale como fantasma, cambiar la figura, su tamaño, sus variaciones o su material rehace también el fantasma (con la vista previa en vivo encendida).
+
+Al rehacerse el fantasma en vivo, el de antes sigue a la vista, quieto donde estaba, hasta que el nuevo llega y está armado; ya no parpadea un fotograma vacío entre los dos. Si el nuevo no llega en 3 s, el viejo se quita.
 
 El modo se recuerda para todas las herramientas en `studio.json`. Quien tenía guardado «sin vista previa» de una versión anterior (era lo de serie y se guardaba igual que si se hubiera elegido) pasa una vez a en vivo; si se vuelve a apagar, se queda apagada. Sin vista previa: el sello (que va al pincel), Materiales, Bioma, Simetría y Capacidades.
 
@@ -120,19 +165,20 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 | --- | --- | --- |
 | Naturaleza | Árbol, Roca | `tree`, `rock` (y `pincel tree`/`rock`, `tree save`) |
 | Tejados | Tejado, Loft | `roof`, `loft` (y `-e` para estimar) |
-| Terreno | Sello de relieve, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
+| Terreno | Sello de relieve, Pintar terreno, Rampa, Río o cañón, Erosión, Pintar superficie | `pincel heightmap`, `pincel paint`, `terreno rampa`, `terreno rio\|arroyo\|canon\|barranco`, `terreno erosion`, `terreno pintar` |
 | Utilidades | Texto, Materiales, Gravedad, Nieve, Drenar, Inundar, Bioma | `text`, `analyze`, `gravity`, `snow`, `drain`, `waterlog`, `biome` (y `pincel biome`) |
 | Modos | Simetría, Capacidades | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Elegir:** sin herramienta elegida, la etapa es una cuadrícula de iconos con su nombre entero (en dos líneas si hace falta), agrupada como en la tabla (con ★ Favoritas arriba si hay) y con un buscador (`Ctrl+F` o `/`) por nombre, orden, alias y descripción, sin tildes. Al elegir una, la cuadrícula se pliega en una fila con su icono y su nombre (pulsarla la vuelve a abrir), sus **recientes** para cambiar de un clic, la ★ y **copiar la orden** al portapapeles.
-- **Miniaturas:** lo que se elige viendo sale como galería de miniaturas con el nombre debajo, dibujadas por el propio generador: las especies de árbol (con `TreeGrower`), los tipos de roca (`RockShaper`), los tipos de tejado sobre una casa de 9×7 (`RoofGenerator`) y los 20 sellos de relieve. Se pintan en segundo plano la primera vez y luego se reutilizan. Bajo cada una, su nombre entero: la galería pone tantas columnas como dejen caber cada nombre en dos líneas como mucho («Cuatro aguas», «Roble oscuro»). Con un panel alto (380 píxeles de contenido o más, como 1080p con GUI 2) se ven todas las opciones a la vez; si no, dos filas (una en compacto) y ‹ › para pasar de página, que empieza siempre por la elegida.
+- **Miniaturas:** lo que se elige viendo sale como galería de miniaturas con el nombre debajo, dibujadas por el propio generador: las especies de árbol (con `TreeGrower`), los tipos de roca (`RockShaper`), los tipos de tejado sobre una casa de 9×7 (`RoofGenerator`) y los 80 sellos de relieve (con los colores de su categoría: nieve en las montañas, arena en las dunas, agua alrededor de las islas). Se pintan en segundo plano la primera vez y luego se reutilizan. Bajo cada una, su nombre entero: la galería pone tantas columnas como dejen caber cada nombre en dos líneas como mucho («Cuatro aguas», «Roble oscuro»). Con un panel alto (380 píxeles de contenido o más, como 1080p con GUI 2) se ven todas las opciones a la vez; si no, dos filas (una en compacto) y ‹ › para pasar de página, que empieza siempre por la elegida.
 - **Ajustes esenciales** a la vista y el resto en **Más ajustes**, plegado, con cuántos hay o cuántos has cambiado («2 cambiados»). Solo salen los ajustes que usa la opción elegida (la altura de la cúpula no sale en un tejado a dos aguas). Los números **auto** no llevan bandera: vale el de la herramienta (la altura de la especie, el radio del tipo de roca…) y se ve en gris junto a «auto».
 - **Presets** (una fila de pastillas: Joven, Viejo, Azotado, Pelado; Empinado, Con buhardillas…; el tooltip dice qué cambian). Cada preset deja la herramienta en un **estado completo y conocido**: lo que no define vuelve al de serie (el de la especie o el tipo), así que nada se queda con lo de un preset anterior («Pelado» y luego «Joven» vuelve a tener copa). Se conservan qué es (la especie, el tipo de roca o de tejado, el sello), los materiales, los textos (el del rótulo, la máscara, la paleta), la semilla y los interruptores de cómo se coloca que ningún preset toca (vista previa en cada clic, reemplazar, raíces). La pastilla del preset que hay puesto sale marcada. **Azar** (`R`) para una semilla nueva y, en árboles y rocas, los **presets guardados** del jugador (`#nombre`). En **Más ajustes**, las acciones: **Al pincel** (árbol, roca, bioma), **Estimar** (tejado, loft y terreno, con `-e`), **Guardar preset** y, en simetría, **Desactivar**, **Centro aquí**, **Entre bloques** y **Centro de la selección**.
 - **Bloques:** cada bloque es una fila con su icono, su nombre traducido y un **cuentagotas** que pone el bloque que miras. Si no hay bloque elegido, la fila dice qué se usará («Como el tejado», «El de los muros», «De la familia del material»). Al pulsar la fila se abre la **biblioteca de bloques** (ver [Elegir bloques](#elegir-bloques)).
-- **Sobre qué trabaja:** el pie dice si usa la selección (con su tamaño), los puntos de la trayectoria o **donde haces clic** (tras un clic, «Clic en 124, 64, -38»; ver [Colocar con el ratón](#colocar-con-el-ratón)). Si falta algo, Construir sale apagado y dice qué, y una franja encima de los ajustes lo explica con **Marcar puntos** cuando lo que falta son puntos.
+- **Sobre qué trabaja:** el pie dice si usa la selección (con su tamaño), los puntos de la trayectoria o **donde haces clic** (tras un clic, «Clic en 124, 64, -38»; ver [El ratón en el mundo](#el-ratón-en-el-mundo)). Si falta algo, Construir sale apagado y dice qué, y una franja encima de los ajustes lo explica con **Marcar puntos** cuando lo que falta son puntos.
 - **Permisos:** al abrir la etapa (y cada segundo mientras se ve) el Studio pregunta al servidor qué nodos tiene el jugador. Una herramienta sin ningún permiso sale apagada con un candado y su ayuda dice qué nodo falta; dentro, un aviso rojo dice el nodo que pide la opción elegida (el cañón pide `terrain.canyon`, el río `terrain.river`) y Construir queda en «Sin permiso». Es solo para enseñarlo: al construir, el servidor vuelve a comprobarlo todo. Con un servidor que no contesta (sin esta versión de KomaEdit) no se apaga nada.
 - **Validación antes de mandar:** texto vacío o con más de 16 líneas, espacios en máscaras o listas de bloques, caracteres que el chat no admite (`§` o de control: Minecraft echaría al jugador), nombres de sello, recorrido o bioma inválidos, más de 64 gotas en la erosión hidráulica o fuerza térmica de más de 2. Construir queda apagado y dice el motivo.
-- **Sello de relieve:** galería con la miniatura de los 20 sellos de serie (el mapa de alturas pintado con sombreado) y un campo para un PNG propio de `config/komaedit/heightmaps/`. Construir deja el pincel en la mano, y lo que cambies después en la tarjeta le llega solo (ver [El pincel sigue al Studio](#el-pincel-sigue-al-studio)).
+- **Sello de relieve:** la [biblioteca de sellos](#biblioteca-de-sellos) en una galería con buscador (busca en las 14 categorías a la vez por nombre o descripción; Intro elige el primero), la **categoría** a la vista (‹ Montañas › …, y **★ Favoritos** en cuanto marcas alguno) y una estrella en cada miniatura (también clic derecho) para guardarlo en favoritos, que se recuerdan en `studio.json`. Debajo, radio, **altura** (en automático, la natural del sello para ese radio) y **modo**; en **Más ajustes**, la **paleta** (de serie, la de la categoría), la **variación** (60 % de serie), **Bloquear semilla** y la semilla. **Azar** da otra semilla. Al pasar el ratón, el nombre y una frase salen debajo de la miniatura (sin tapar su fila), y el pie dice el sello, el modo y la semilla («Montaña · Sumar · semilla al azar», «semilla 4217 bloqueada») y qué hacen los clics. En modo compacto la galería enseña la categoría y sus páginas, sin el buscador. Un campo para un PNG propio de `config/komaedit/heightmaps/`. Construir deja el pincel en la mano, y lo que cambies después en la tarjeta le llega solo (ver [El pincel sigue al Studio](#el-pincel-sigue-al-studio)).
+- **Pintar terreno:** dos galerías, la paleta con la muestra de su degradado y la huella con su miniatura, y debajo el degradado, el radio, la fuerza y la semilla (el candado, en Más ajustes; ver [Pincel de pintura](#pincel-de-pintura)). Cada número dice qué le pasa al terreno y sus extremos («de suave a de golpe», «de difuminado a cortado»). Las dos galerías van cortas (la de paletas en dos filas y la de huellas en una, con ‹ ›) para que todo eso quepa a la vista.
 - **Texto:** campo de texto (`\n` parte líneas), fuente (las de serie y las del servidor, `config/komaedit/fonts/`) y tamaño a la vista; grosor, borde, orientación, alineación, espaciado, interlineado y losas y escaleras, en Más ajustes.
 - **Materiales:** **Contar** lanza `analyze` y la lista llega a la herramienta: totales (bloques, tipos, objetos, huecos y cofres) y cada objeto con su cantidad y sus pilas, más **Copiar lista** (lo mismo que `[COPIAR]` del chat).
 - **Bioma:** buscador con todos los biomas del registro del servidor (también de datapacks y mods), relleno vertical y radio del pincel.
@@ -143,15 +189,34 @@ La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo 
 
 ![«Pelado» y luego «Joven»: el árbol vuelve a tener copa y la pastilla del preset puesto sale marcada](renders/studio/1080p_gui3_arbol_presets_es.png)
 
-### Colocar con el ratón
+### El ratón en el mundo
 
-Con el Studio abierto el ratón está suelto, así que lo que va «donde miras» pasa a ir **donde haces clic**: el rayo sale del cursor, no del centro de la pantalla.
+Con el Studio abierto el ratón está suelto, así que lo que va «donde miras» pasa a ir **donde haces clic**: el rayo sale del cursor, no del centro de la pantalla. Lo que hace el botón izquierdo en el mundo depende de la etapa, y el pie lo dice siempre que el ratón está encima del mundo (con la leyenda entera si lo dejas quieto):
 
-- **Árbol, roca y texto** (sin puntos de trayectoria): un clic en el mundo lo construye en ese bloque, con la vista previa del ojo (de serie, en vivo y como fantasma). El pie dice «Clic en x, y, z» y **Construir** vuelve a usar ese mismo sitio hasta el próximo clic. Sin clic, Construir usa el centro de la pantalla, como antes. Con puntos de trayectoria mandan los puntos, como siempre.
-- **Con un fantasma a la vista** (cualquiera: un árbol, una figura construida, un plano, un `//paste`), un clic en el mundo lo lleva ahí, contra la cara del bloque al que apunta el cursor (encima, debajo o pegado a una pared, como **G** «a donde miro»), y **manteniendo el botón y arrastrando lo mueve por el terreno**. Las flechas, los anillos y el cubo del gizmo siguen sirviendo para afinar: un clic sobre ellos los agarra, como antes.
-- En **Trayectoria** el clic sigue poniendo y eligiendo puntos.
+| Dónde estás | Clic en el mundo | Arrastrar |
+| --- | --- | --- |
+| **Trayectoria** y **Figuras** | Un punto nuevo al final; sobre un punto, lo elige; sobre un tramo, mete uno en medio | Lleva por el terreno el punto agarrado (también el que se acaba de poner o meter) |
+| Herramienta que va **donde haces clic** (árbol, roca, texto) | La construye ahí | — |
+| Herramienta sobre la **selección** (tejado, nieve, erosión…) y **Color** | Empieza una caja de un bloque; doble clic: selección mágica | Dibuja la caja; sobre una cara de la selección, tira de ella |
+| **Planos**, con un plano elegido | Lo coloca ahí (con su fantasma) | — |
+| Con un **pincel** de KomaEdit en la mano (sello, árbol o roca «al pincel», estampar planos…) | Pinta ahí | Sigue pintando mientras mantienes el botón |
+| Con un **fantasma** a la vista (fuera de Trayectoria) | Lo lleva ahí | Lo mueve por el terreno |
+| **Alt+clic**, en cualquier etapa | El bloque pulsado pasa a ser el material | — |
+| **Clic derecho** | — | Gira la cámara |
+
+Con puntos de trayectoria, las herramientas que los usan (árbol, roca, río, rampa…) hacen que el clic ponga y mueva puntos en vez de construir o seleccionar. Las de mano (sello de relieve) sin el pincel en la mano lo dicen: «“Al pincel” te da el pincel; luego, clic aquí para pintar».
+
+- **Construir donde haces clic:** árbol, roca y texto (sin puntos) se construyen en el bloque pulsado, con la vista previa del ojo (de serie, en vivo y como fantasma). El pie dice «Clic en x, y, z» y **Construir** vuelve a usar ese mismo sitio hasta el próximo clic. Sin clic, Construir usa el centro de la pantalla, como antes.
+- **Planos con clic:** en la etapa Planos, con un plano elegido, un clic lo coloca en ese bloque (con su fantasma, para moverlo, girarlo y confirmarlo), igual que los árboles. **Colocar plano** del pie usa también el último clic; sin clic, tu posición, como antes. Vale para cualquier `/komaedit place` mandado desde el Studio tras un clic.
+- **Texto según la cara pulsada:** con la orientación **Según dónde apuntes** (la de serie), un clic en el Studio decide por la cara: en una pared, el texto queda pegado a ella; en un suelo, tumbado sobre él; bajo un techo, colgado de él. Antes salía según la inclinación de la cámara, que con el ratón suelto no dice a dónde apuntas. Fuera del Studio sigue siendo la mirada. **Tumbado** con un clic en un techo cuelga de él.
+- **Seleccionar arrastrando** (como la Box Select de Axiom): se pulsa en un bloque y se arrastra hasta otro; la caja va de uno a otro y se ve al momento con sus medidas (la de WorldEdit se actualiza a la vez, como mucho cada 60 ms mientras se arrastra). Con una selección hecha, la cara bajo el cursor se resalta y, al pulsarla, se tira de ella: la caja crece o encoge por ese lado de bloque en bloque, siguiendo el cursor por su eje, sin darse la vuelta. Una cara tapada por el terreno no se agarra: el clic empieza otra caja. **Doble clic** en un bloque (sin arrastrar) selecciona lo pegado del mismo bloque (la selección mágica, hasta 20 000 bloques a 96 de distancia).
+- **Puntos que se arrastran:** en Trayectoria y en Figuras se pulsa un punto y se arrastra por el terreno; pulsar en medio de un tramo mete un punto ahí y se arrastra igual; pulsar en el terreno añade uno al final, que también se puede arrastrar antes de soltar. Las flechas X, Y, Z del punto elegido siguen sirviendo para moverlo en un solo eje (para subirlo o bajarlo). El punto se ve en su sitio desde el primer momento, sin esperar al servidor.
+- **Pintar con el pincel:** con un pincel de KomaEdit en la mano, un clic pinta en el bloque pulsado y, manteniendo el botón, cada 200 ms otra pasada si el cursor ya está en otro bloque (lo mismo que mantener el clic derecho con el pincel fuera del Studio). Con Mayús es la pasada de Mayús del pincel. El círculo del radio del pincel se dibuja bajo el cursor.
+- **Cuentagotas con Alt:** Alt+clic en un bloque del mundo lo pone de material: en Figuras, el bloque de la figura; en Herramientas, el primer bloque de la herramienta (el material del tejado, el tronco del árbol, las letras del texto); en Color, el primero del degradado (con Mayús, el último). Se deshace con `Z` como cualquier ajuste.
 - Fuera del Studio no cambia nada: todo va donde miras y el fantasma se mueve con el punto de mira.
-- El cliente le dice al servidor en qué bloque se hizo clic justo antes de la orden (`studio_aim`); el servidor solo lo acepta en tu dimensión y al alcance de la mirada (160 bloques los árboles y las rocas). Al cerrar el Studio se olvida.
+- El cliente le dice al servidor en qué bloque se hizo clic justo antes de la orden o de la pasada del pincel (`studio_aim`); el servidor solo lo acepta en tu dimensión y al alcance de la mirada (160 bloques los árboles, las rocas y los planos; 192 los pinceles). Al cerrar el Studio se olvida.
+
+![El ratón quieto sobre el mundo con el tejado elegido: el pie y la leyenda dicen qué hace cada clic](renders/studio/1080p_gui3_pie_mundo_es.png)
 
 ![El pie del árbol tras un clic en el mundo](renders/studio/1080p_gui3_arbol_clic_es.png)
 
@@ -159,13 +224,19 @@ Con el Studio abierto el ratón está suelto, así que lo que va «donde miras»
 
 ### El pincel sigue al Studio
 
-**Al pincel** (árbol, roca, bioma) y el **Sello de relieve** dejan un pincel en la mano. Desde entonces, cualquier cambio en esa tarjeta del Studio llega a ese pincel al momento (0,3 s después de dejar de tocarlo), aunque luego mires otra herramienta: quitar **Vista previa en cada clic** la quita del pincel, cambiar el radio o la especie cambia lo que pinta el siguiente clic.
+**Al pincel** (árbol, roca, bioma), el **Sello de relieve** y **Pintar terreno** dejan un pincel en la mano. Desde entonces, cualquier cambio en esa tarjeta del Studio llega a ese pincel al momento (0,3 s después de dejar de tocarlo), aunque luego mires otra herramienta: quitar **Vista previa en cada clic** la quita del pincel, cambiar el radio o la especie cambia lo que pinta el siguiente clic.
 
 - El Studio manda `/komaedit pincel actualizar <tipo> <ajustes>`, que solo cambia el pincel que ya tienes en la mano y es de ese tipo: nunca marca ni entrega otro objeto, y lo dice en la barra de acción, sin llenar el chat.
 - Si cambias de objeto en la mano, no se manda nada; al volver a coger el pincel le llega lo último.
 - Con algo mal escrito en la tarjeta (un bloque con espacios), el pincel se queda como estaba.
+- **Estampar planos** sigue igual a su etapa: tras **Estampar**, elegir otro plano o cambiar el **Radio** en Planos se lo pasa al pincel de la mano (o, si se estampó una etiqueta, la etiqueta que haya en el buscador).
+- Con el Studio abierto, el pincel se usa ahí mismo: clic o mantener el botón en el mundo (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
 
 ![El sello de relieve con su pincel al día](renders/studio/1080p_gui3_sello_pincel_es.png)
+
+![La galería de sellos por categorías, con favoritos](renders/studio/1080p_gui3_sello_galeria_es.png)
+
+![Buscando «isla» en todas las categorías](renders/studio/1080p_gui3_sello_buscar_es.png)
 
 ### Elegir bloques
 
@@ -194,15 +265,44 @@ En cualquier etapa, mientras algo tuyo está en marcha (leer la selección, calc
 
 ![Pie con la vista previa esperando](renders/studio/1080p_gui3_vista_previa_es.png)
 
+### Temas de color
+
+El Studio tiene cuatro temas de color. El de serie es **Pizarra**; los demás se eligen en el propio Studio o en los ajustes del cliente, y cada jugador recuerda el suyo.
+
+| Tema | Cómo es | Éxito |
+| --- | --- | --- |
+| **Pizarra** (de serie) | Grises azulados y acento azul lapislázuli | Verde menta |
+| **Prismarina** | Azul de mar profundo y acento turquesa, como los templos del océano | Verde |
+| **Bosque** | Verdes de musgo y abeto con acento verde salvia | Turquesa |
+| **Clásico** | Claro: la piedra gris y el texto oscuro del inventario, con el morado de los encantamientos como acento | Verde oscuro |
+
+- **Cambiarlo:** en la chuleta (`F1` o `?`), la fila **Tema** de abajo: un clic en un tema lo pone al momento y la chuleta sigue abierta para probar otro. También desde la paleta de órdenes (`Ctrl+K`, «tema») y en `/kegui ajustes` → **Tema del Studio**. Se guarda en `config/komaedit/studio.json` (`"theme": "forest"`); un nombre que no existe vuelve a Pizarra. Cambiar de tema no cuesta nada: no recarga texturas ni rehace miniaturas.
+- **Por qué Pizarra de serie:** el azul no se confunde con ningún estado (rojo de peligro, ámbar de aviso, verde de éxito), queda lejos de los ocres, la madera y la hierba del mundo que hay al lado y es el acento que se espera en un editor. Prismarina y Bosque pegan más con el mundo, pero se acercan al verde del éxito (por eso Bosque lo pasa a turquesa), y Clásico es claro: va a gusto de cada uno, pero deslumbra de noche o en una cueva.
+- **Reglas de todos los temas** (las comprueban las pruebas): todo el texto llega al contraste WCAG AA (4,5:1) con el fondo que tiene debajo, medido en el Studio pintado de verdad con cada tema, a 1080p y a 854×480; las marcas de selección y el borde del campo en el que se escribe, a 3:1. El **rojo** es solo peligro (borrar, cancelar, errores) y nunca acento; el **ámbar**, aviso; el **verde** o el **turquesa**, éxito. Ninguno de los tres se parece al acento.
+- **Los estados se ven por la forma, no solo por el color:** lo elegido lleva relleno tintado y una marca de acento (barra o marco doble); lo que está bajo el ratón, un relleno más claro y, en botones, pastillas y miniaturas, un borde; un botón desactivado va hueco, solo con su contorno, y su clic sigue diciendo qué falta. Un interruptor encendido (también el de cada **variación** de Figuras) tiene el carril del acento y el pulsador a la derecha; apagado, el carril gris y el pulsador a la izquierda, y la tarjeta de una variación encendida va tintada y con su barra de acento.
+- **Miniaturas:** las de especies, tejados, rocas, sellos, planos, variaciones y las huellas de **Pintar terreno** van sobre un fondo propio, más claro y neutro que la tarjeta, para que el abeto o el roble oscuro no se pierdan en un fondo oscuro ni las hojas en uno de su mismo verde. La huella del pincel de pintura es una mancha de hierba que se transparenta donde no pinta, así que se lee igual en los temas oscuros y en el claro.
+- Los temas oscuros llevan el acento claro con el texto oscuro encima (el botón **Construir**, el interruptor encendido): un acento oscuro con texto blanco no se vería como marca de selección sobre las tarjetas.
+- **Límites:** el tema cambia el Studio, su pie, sus avisos, sus tooltips y su leyenda del mundo. Lo que se dibuja en el mundo (fantasma, gizmo con sus ejes rojo, verde y azul, holograma, vista previa, la caja de selección y sus caras al cogerlas con el ratón, guías de simetría), la barra de acción y los mensajes del chat no cambian, a propósito: su fondo es el mundo y un acento turquesa o salvia se perdería en el agua o la hierba. Esos colores del mundo también son fichas, fijas, en `StudioTheme` (`WORLD_…`); el ámbar de las caras de la selección es el de la caja de la vista previa. No hay temas propios desde un archivo: para añadir uno se escribe en `StudioPalette`, con un color para cada ficha de `StudioTheme`.
+
+![El árbol con los cuatro temas, junto al mundo](renders/studio/temas/comparativa_arbol.png)
+
+![Figuras con dos variaciones encendidas y tres apagadas, con los cuatro temas](renders/studio/temas/comparativa_variaciones.png)
+
+![Las fichas de cada tema y los controles en cada estado](renders/studio/temas/fichas.png)
+
+Hay más comparativas de los cuatro temas en `docs/renders/studio/temas/`: [Herramientas](renders/studio/temas/comparativa_herramientas.png), [Sello de relieve](renders/studio/temas/comparativa_sello.png) y [Pintar terreno](renders/studio/temas/comparativa_pintar.png). Las maquetas de Herramientas, Árbol, Tejado, Planos, Variaciones, Sello y Pintar terreno con cada tema, a 1080p con GUI 3 y a 854×480 con GUI 2, están en `docs/renders/studio/temas/<tema>/`.
+
+![La chuleta con el selector de tema](renders/studio/1080p_gui3_chuleta_tema_es.png)
+
 ### Atajos de teclado
 
-`F1` o `?` abren la chuleta dentro del Studio. Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
+`F1` o `?` abren la chuleta dentro del Studio; abajo tiene el selector de [tema de color](#temas-de-color). Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
 
 | Tecla | Acción |
 | --- | --- |
-| `1` – `9`, `0` | Ir a una etapa, en el orden de la columna (`1` Herramientas … `0` Instancias) |
+| `1` – `7` | Ir a una etapa, en el orden de la columna (`1` Herramientas … `7` Instancias) |
 | `Tab` / `Mayús+Tab` | Etapa siguiente / anterior |
-| `Ctrl+K` | Paleta de órdenes: etapas, herramientas, presets, figuras y planos |
+| `Ctrl+K` | Paleta de órdenes: etapas, herramientas, presets, figuras, planos y temas |
 | `Ctrl+F` o `/` | Buscar figura (en Herramientas, herramienta; en Planos, plano) |
 | `B` | Botón principal de la etapa: Construir (las obras grandes piden confirmar), Colocar plano… |
 | `Intro` | Confirmar la vista previa que espera |
@@ -214,8 +314,10 @@ En cualquier etapa, mientras algo tuyo está en marcha (leer la selección, calc
 | `Ctrl+S` | Guardar la receta |
 | `Ctrl+Supr` | Limpiar la trayectoria |
 | `RePág` / `AvPág` | Desplazar el panel |
-| `F1` / `?` | Chuleta de atajos |
+| `F1` / `?` | Chuleta de atajos y tema de colores |
 | `K` / `Esc` | Cerrar el Studio (`Esc` cierra antes la paleta, la biblioteca de bloques, la chuleta o el campo abierto) |
+
+La chuleta (`F1`) lista también los gestos del ratón en el mundo: clic, arrastrar un punto o un tramo, arrastrar una selección, tirar de una cara, doble clic, mantener el clic con un pincel, Alt+clic y el clic derecho.
 
 ### Pantallas pequeñas
 
@@ -223,19 +325,22 @@ Con menos de 300 píxeles de alto escalado (854×480 con GUI 2, 1080p con GUI 4)
 
 ![Árbol a 854×480 con GUI 2](renders/studio/854_gui2_arbol_es.png)
 
-- Las etapas encogen su alto (hasta 12 píxeles, el de su icono) y, si hace falta, el hueco entre ellas (a 1 píxel) para que las diez quepan sin desplazarse con cualquier escala de GUI.
+- Las etapas encogen su alto (hasta 12 píxeles, el de su icono) y, si hace falta, el hueco entre ellas (a 1 píxel) para que las siete quepan sin desplazarse con cualquier escala de GUI.
 - Con menos de 600 píxeles de ancho escalado el panel se queda en 230 píxeles (el mínimo), para dejar al mundo al menos la mitad de la pantalla. Ahí el chat vanilla (320 píxeles) puede quedar en parte bajo el panel.
 - Los textos que no caben se recortan con «…»; el texto completo sale en el tooltip.
 - Con menos de 330 píxeles de alto la chuleta se muestra en dos columnas.
 - Lo que queda desplazado bajo la barra o el pie del panel no responde a clics.
-- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las nueve etapas y sus grupos caben, la barra de progreso y los dos botones del pie caben, el panel no pisa el chat cuando hay sitio y de serie no pasa del 40 % de una pantalla grande. `GalleryNamesTest` comprueba que ningún nombre de galería, herramienta o figura se corta a 1080p con GUI 2, 3 y 4, 1440p con GUI 3 y 854×480 con GUI 2, en los dos idiomas.
+- El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las siete etapas y sus grupos caben, la barra de progreso y los dos botones del pie caben, el panel no pisa el chat cuando hay sitio y de serie no pasa del 40 % de una pantalla grande. `GalleryNamesTest` comprueba que ningún nombre de galería, herramienta o figura se corta a 1080p con GUI 2, 3 y 4, 1440p con GUI 3 y 854×480 con GUI 2, en los dos idiomas.
 
 ### Cómo está hecho
 
 Todo el Studio (barra, etapas, contenido, pie, paleta, historial y biblioteca de bloques) es código común, sin Minecraft: `StudioView` guarda el estado y atiende el ratón y el teclado, `StudioLayout` reparte la pantalla y `StudioUi` dibuja sobre un `StudioCanvas`. En el juego, el lienzo es el `DrawContext` (`DrawContextCanvas`); en las pruebas, una imagen con la fuente de Minecraft y los iconos de los objetos del propio juego (`ImageCanvas`). Por eso las maquetas son el Studio de verdad y no un dibujo aparte:
 
 - `StudioMockupsTest` pinta las maquetas PNG con `KOMAEDIT_STUDIO_MOCKUPS=<carpeta>`. Las revisadas están en `docs/renders/studio/` (1080p con GUI 3 y 4 y 854×480 con GUI 2, en español e inglés) y las de la versión anterior, en `docs/renders/studio/antes/`.
-- `StudioDriver` maneja el Studio como un jugador (pulsar por texto, arrastrar, rueda, escribir, teclas) y lo usan `ToolsPanelTest`, `StudioViewTest`, `CompactModeTest`, `NumberControlTest`, `CommandPaletteTest` y `TaskClicksTest`, que cuenta los clics de las tareas típicas.
+- `StudioDriver` maneja el Studio como un jugador (pulsar por texto, arrastrar, rueda, escribir, teclas) y lo usan `ToolsPanelTest`, `StudioViewTest`, `CompactModeTest`, `NumberControlTest`, `CommandPaletteTest`, `FigureClarityTest` y `TaskClicksTest`, que cuenta los clics de las tareas típicas.
+- Las variaciones son `FigureVariation` (cuándo está puesta cada una, con qué se pone, qué deja al quitarla y dónde sirve) y sus dibujos, `VariationThumbnails`; «Pegar al terreno» es `SurfaceConform`, sin Minecraft, con un `Terrain` que dan el servidor, el cliente o las pruebas.
+- Lo que explica cada control es `ControlHelp` (qué hace y sus extremos, de `gui.komaedit.tools.<herramienta>.ends.<ajuste>` o `gui.komaedit.ends.<control>`); `ControlHelpTest` exige que cada ajuste de herramienta diga lo que hace sin repetir su etiqueta, que los números lleven sus extremos (salvo semilla, rumbo y altura absoluta) y que ninguna herramienta enseñe más de cuatro ajustes antes de Más ajustes.
+- El ratón en el mundo son modelos sin Minecraft que usa la pantalla: `StudioView.worldAction` (qué hace un clic en cada etapa), `BoxSelect` (la caja, sus caras y el doble clic), `PathDrag` (agarrar, meter y añadir puntos) y `BrushStroke` (el ritmo del pincel). El relevo de mallas del fantasma en vivo es `MeshHandover`.
 
 ## Trayectorias y hologramas
 
@@ -285,7 +390,7 @@ Los puntos se numeran desde 1, como en el HUD. El autocompletado de `<n>` muestr
 | `path pop` | Quita el último punto (lo que hacía antes `path undo`). |
 | `path clear` | Vacía la trayectoria; se puede deshacer. |
 
-En el editor en vivo (`K`, herramienta de trayectoria), **Supr** quita el nodo señalado e **Insert** añade uno a mitad entre ese nodo y el siguiente.
+En el editor en vivo (`K`, herramienta de trayectoria), **Supr** quita el nodo señalado e **Insert** añade uno a mitad entre ese nodo y el siguiente. Con el ratón, en Trayectoria o en Figuras: arrastrar un nodo lo lleva por el terreno y arrastrar un tramo mete uno en medio (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
 
 Ejemplos:
 
@@ -564,7 +669,7 @@ Ejemplos:
 - **La rueda** lo acerca o lo aleja en la dirección de la mirada (por el eje en el que más miras), de uno en uno o de 5 en 5 con Mayús. Se puede apagar en los ajustes (**Rueda mueve el fantasma**) y entonces cambia de casilla como siempre.
 - **G** («a donde miro»): lo pone contra la cara del bloque que miras, hasta 192 bloques: encima, centrado; debajo, colgando; en una pared, pegado a ella con la base a la altura del bloque mirado.
 
-**El ratón.** En el mundo no se libera: el punto de mira es el puntero, como en el resto de Minecraft y en el modo constructor de Axiom. Así no hay ningún modo que activar para mover el fantasma, y andar, volar y mirar alrededor siguen igual mientras lo tienes. La pieza bajo el punto de mira se resalta en amarillo. En el Studio, que ya suelta el ratón, el puntero es el cursor: con el Studio abierto se arrastran las piezas del gizmo con el ratón, **un clic en el mundo fuera del gizmo lleva el fantasma a ese bloque y arrastrando lo mueve por el terreno** (ver [Colocar con el ratón](#colocar-con-el-ratón)), y el clic derecho sigue girando la cámara.
+**El ratón.** En el mundo no se libera: el punto de mira es el puntero, como en el resto de Minecraft y en el modo constructor de Axiom. Así no hay ningún modo que activar para mover el fantasma, y andar, volar y mirar alrededor siguen igual mientras lo tienes. La pieza bajo el punto de mira se resalta en amarillo. En el Studio, que ya suelta el ratón, el puntero es el cursor: con el Studio abierto se arrastran las piezas del gizmo con el ratón, **un clic en el mundo fuera del gizmo lleva el fantasma a ese bloque y arrastrando lo mueve por el terreno** (ver [El ratón en el mundo](#el-ratón-en-el-mundo)), y el clic derecho sigue girando la cámara.
 
 ### Girar y voltear
 
@@ -642,7 +747,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 
 ### Ajustes del cliente
 
-`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera. Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
+`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera (también el tema del Studio). Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
 
 | Ajuste | De serie | Qué hace |
 | --- | --- | --- |
@@ -657,6 +762,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 | Sonidos | Sí, 35 % | Un sonido corto al confirmar, al terminar una edición larga y al fallar, con su volumen. |
 | Colocar con gizmo | Siempre | Cuándo sale el fantasma con gizmo: **Siempre**, **Con -v** o **Nunca** (ver [Colocar con gizmo](#colocar-con-gizmo)). Se guarda aparte, en `config/komaedit-gizmo.json`, y el cliente se lo dice al servidor al entrar y al cambiarlo. |
 | Rueda mueve el fantasma | Sí | Con un fantasma en pantalla, la rueda lo acerca o lo aleja en lugar de cambiar de casilla. |
+| Tema del Studio | Pizarra | Los colores del Studio: Pizarra, Prismarina, Bosque o Clásico (ver [Temas de color](#temas-de-color)). Se guarda con las preferencias del Studio, en `config/komaedit/studio.json`, y también se cambia dentro del Studio. |
 
 ### Teclas
 
@@ -1847,9 +1953,21 @@ Ejemplos:
 - La superficie va siempre de una curva a la siguiente en orden: para una vela con un punto suelto, marca ese punto como una curva corta.
 - Con curvas muy dispares (una larga y otra de dos puntos muy cerca), la malla se aprieta en un lado y la superficie se pliega.
 
-## Modificadores
+## Variaciones de la figura
 
-Los modificadores transforman de manera continua la figura seleccionada:
+En el Studio son las **Variaciones** de la etapa Figuras (ver [Tamaño, material y variaciones](#tamaño-material-y-variaciones)); antes eran la etapa Modificadores. Por debajo son los mismos números de la receta (`RecipeExtensions`), así que las recetas, los paquetes `.krecipe` y las instancias de antes se leen igual:
+
+| Variación | Números de la receta |
+| --- | --- |
+| Afinar | escala inicial y final, espaciado inicial y final |
+| Retorcer | torsión total |
+| Otra figura encima | fusión: figura secundaria e intervalo |
+| Pegar al terreno | conformado: modo, alcance y separación |
+| Repetir lo copiado | sockets Kitbash: colocación e intervalo |
+| (Más ajustes) Cómo cambia | curva de transición |
+| (Más ajustes) Cerrar huecos y Quitar bloques sueltos | reparación de microhuecos y componentes aislados |
+
+Lo que hacen, como antes:
 
 - Escala inicial y final.
 - Espaciado inicial y final.
@@ -2943,17 +3061,17 @@ Las capacidades no pasan por `BlockItem.place` ni por el paquete de uso de bloqu
 Herramientas de paisaje como las de goBrush, Axiom (Elevation, Slope) o Arceon (`//river`): un pincel de relieve con sellos en escala de grises, rampas, ríos y cañones a lo largo de la trayectoria y erosión física de la selección. Todas trabajan sobre el **mapa de alturas** de la zona (el bloque de suelo más alto de cada columna) y lo vuelven a pasar a bloques con una **paleta de superficie** por pendiente y altura.
 
 ```text
-/komaedit pincel heightmap <sello> [radio] [altura] [elevar|bajar|aplanar] [paleta] [-i intensidad] [-r mirada|azar|grados] [-m máscara] [-c neutro] [-p]
+/komaedit pincel heightmap <sello> [radio] [altura] [sumar|restar|maximo|aplanar|suavizar] [paleta|auto] [-i intensidad] [-r mirada|azar|grados] [-x variación] [-s semilla] [-k] [-m máscara] [-c neutro] [-p]
 /komaedit terreno rampa [plano|cono] [ancho] [transición] [paleta] [-t talud] [-u] [-m máscara] [-e]
 /komaedit terreno rio|arroyo|canon|barranco [ancho] [profundidad] [paleta] [-o orilla] [-w laderas] [-t transición] [-f agua|lava|seco] [-n nivel] [-z suavizado] [-y] [-k] [-m máscara] [-e]
 /komaedit terreno erosion hidraulica|termica|completa [iteraciones] [fuerza] [paleta] [-a ángulo] [-s semilla] [-m máscara] [-e]
 /komaedit terreno pintar [paleta] [-m máscara] [-e]
-/komaedit terreno sellos | paletas
+/komaedit terreno sellos [categoría] | sellos exportar <sello> | paletas
 ```
 
-- Alias: `/komaedit terrain` con `ramp`, `river`, `stream`, `canyon`, `gully`, `erode` (`hydraulic`, `thermal`, `full`), `paint`, `stamps` y `palettes`; el pincel también es `relieve` o `sello` (`hm`). `cañon`, `río` y `erosión` con tilde también valen.
-- Permisos: `komaedit.build` o los finos `komaedit.build.brush.heightmap`, `komaedit.build.terrain.ramp`, `.terrain.river` (río y arroyo), `.terrain.canyon` (cañón y barranco), `.terrain.paint` (paquete intermedio) y `.terrain.erode.hydraulic` y `.terrain.erode.thermal` (avanzado; la completa pide los dos).
-- **En el Studio:** familia Terreno de la etapa [Herramientas](#herramientas): sello de relieve con la galería de miniaturas, rampa, río o cañón, erosión y pintar superficie, con **Estimar** (`-e`).
+- Alias: `/komaedit terrain` con `ramp`, `river`, `stream`, `canyon`, `gully`, `erode` (`hydraulic`, `thermal`, `full`), `paint`, `stamps` y `palettes`; el pincel también es `relieve` o `sello` (`hm`), y el de pintura, `pincel paint` o `pintar`. `cañon`, `río` y `erosión` con tilde también valen.
+- Permisos: `komaedit.build` o los finos `komaedit.build.brush.heightmap`, `komaedit.build.brush.paint`, `komaedit.build.terrain.ramp`, `.terrain.river` (río y arroyo), `.terrain.canyon` (cañón y barranco), `.terrain.paint` (paquete intermedio) y `.terrain.erode.hydraulic` y `.terrain.erode.thermal` (avanzado; la completa pide los dos).
+- **En el Studio:** familia Terreno de la etapa [Herramientas](#herramientas): sello de relieve con la galería de miniaturas, pintar terreno, rampa, río o cañón, erosión y pintar superficie, con **Estimar** (`-e`).
 - **Todo en un worker y un solo //undo:** el pincel va por el camino de los pinceles (captura repartida entre ticks, cálculo fuera del hilo del servidor, `-p` para vista previa) y las órdenes por el motor de las operaciones de región: lectura repartida entre ticks, cálculo en un worker, la estimación de `/komaedit estimate` (bloques, chunks, caja, memoria y tiempo, con la [confirmación de Build grandes](#confirmación-de-build-grandes) por encima del umbral) y escritura por lotes solo donde el bloque no haya cambiado mientras tanto. `-e` solo estima, sin construir.
 - **Máscara `-m`:** decide qué columnas se tocan mirando su **bloque de superficie**. En las órdenes es una máscara de WorldEdit (`grass_block,dirt`, `!stone`, `#existing`…, ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región)); en el pincel, la de los pinceles: una lista (`#fullblock`, `grass_block,sand`, `!sand`) o cualquier máscara de WorldEdit, como en el resto de pinceles. Así se erosiona solo la hierba o se talla un río sin tocar un camino de piedra.
 
@@ -2973,28 +3091,149 @@ Las columnas que cambian se repintan según su pendiente nueva, su altura y el a
 | `playa` | Arena, con arenisca en lo empinado. |
 | `piedra` | Todo piedra, para texturizar después. |
 | `conservar` | Los mismos bloques que tenía cada columna. |
+| `alpino` | Hierba, roca (piedra, andesita, toba) desde 38° y nieve en el 30 % más alto de lo que se cambia (`cumbre@70%`). |
+| `costa` | Hierba arriba, paredes de piedra, andesita y diorita desde 45° y arena al pie, junto al agua. |
+| `rocoso` | Hierba con tierra gruesa en lo llano y piedra, andesita, roca y toba desde 32°. |
+| `isla` | Hierba, roca en lo empinado y playa de arena de 3 bloques sobre el agua. |
+| `bancal` | Hierba en los bancales y muros de piedra, piedra musgosa y roca en los escalones. |
+| `ceniza` | Para volcanes: toba y andesita en las laderas, basalto desde 36° y piedra negra en el 25 % más alto (`cumbre@75%`); magma en el lecho. |
+| `glaciar` | Nieve y hielo compacto; roca, grava y hielo en las pendientes; hielo azul en el lecho. |
 
-A un preajuste se le pueden cambiar partes con `clave:bloques@valor` separados por comas (sin espacios): `natural,cumbre:powder_snow@170,pendiente:stone|tuff@35`. Claves: `llano`, `pendiente@grados`, `cumbre@Y`, `relleno@capas` (bajo la superficie, 3 por defecto), `fondo`, `lecho` (bajo el agua), `orilla@altura` (sobre el agua) y `estratos` (bandas por altura en las pendientes). También en inglés (`flat`, `steep`, `peak`, `fill`, `deep`, `bed`, `shore`, `strata`). `/komaedit terreno paletas` las lista.
+A un preajuste se le pueden cambiar partes con `clave:bloques@valor` separados por comas (sin espacios): `natural,cumbre:powder_snow@170,pendiente:stone|tuff@35`. Claves: `llano`, `pendiente@grados`, `cumbre@Y` (o `cumbre@70%`: relativa, por encima del 70 % de lo que se cambia; con el pincel de relieve, del 70 % del sello estampado sobre la altura del clic, así una montaña se nieva en su tercio de arriba y un hoyo no; con menos de 6 bloques de desnivel no hay cumbre), `relleno@capas` (bajo la superficie, 3 por defecto), `fondo`, `lecho` (bajo el agua), `orilla@altura` (sobre el agua) y `estratos` (bandas por altura en las pendientes). También en inglés (`flat`, `steep`, `peak`, `fill`, `deep`, `bed`, `shore`, `strata`). `/komaedit terreno paletas` las lista.
 
 ### Pincel de relieve (sellos)
 
-Cada clic estampa un **sello**: una imagen en escala de grises donde el blanco es lo más alto, escalada a un cuadrado de lado `2·radio` alrededor del bloque que miras.
+Cada clic estampa un **sello**: una forma de relieve (una imagen en escala de grises donde el blanco es lo más alto) escalada a un cuadrado de lado `2·radio` alrededor del bloque que miras. Es la manera fácil de hacer terreno sin saber de herramientas: se elige una forma en la [biblioteca](#biblioteca-de-sellos), se pulsa y sale una montaña, un cañón o una isla con su erosión, sus cauces y su paleta.
 
-- **Modos:** `elevar` suma la forma del sello, `bajar` la resta y `aplanar` lleva el terreno hacia la altura del bloque del clic con la fuerza que marca el sello. El clic izquierdo hace lo contrario (bajar ↔ elevar) y la F cambia de modo.
-- **Giro (`-r`):** `mirada` (por defecto: la parte de arriba de la imagen apunta hacia donde miras), `azar` (uno distinto en cada clic) o unos grados fijos (0 = la parte de arriba al norte).
-- **Altura e intensidad:** `[altura]` son los bloques que sube el blanco puro (12 por defecto, hasta 96) e `-i` el porcentaje (100 por defecto); repasar acumula.
-- **Gris neutro (`-c`):** el gris que no cambia nada. Por debajo, el sello hunde aunque el modo sea elevar: así funcionan `crater` (neutro 0,35), `dolina` y `valle` (neutro 1). Se guarda en el propio PNG y `-c` lo cambia.
-- **Sellos de serie:** `montana`, `pico`, `colina`, `loma`, `cordillera`, `macizo`, `volcan`, `crater`, `dolina`, `valle`, `duna`, `dunas`, `mesa`, `terrazas`, `acantilado`, `barrancos`, `aguja`, `domo`, `atolon` y `circo`. Están generados por código con funciones y ruido de semilla fija (no vienen de ninguna imagen ajena) y salen siempre iguales. Los que tienen orientación (loma, cordillera, valle, duna, acantilado, circo) la toman del giro.
-- **Sellos propios:** cualquier imagen en `config/komaedit/heightmaps/` con los formatos de `/komaedit image` (PNG, JPG o GIF; mejor PNG en grises de 16 bits, que no deja escalones; en color se toma el brillo y la transparencia deja el terreno como está), de hasta 1024×1024 y 8 MB. Se usa por su nombre sin `.png`. La primera vez que se usa el pincel, KomaEdit escribe allí los sellos de serie como PNG de 16 bits para que sirvan de plantilla; uno con el mismo nombre sustituye al de serie y un archivo borrado vuelve a salir. `/komaedit terreno sellos` los lista; pulsar uno lo deja escrito en el chat.
-- La paleta va como posicional (`natural` por defecto).
+- **Modos de mezcla:** `sumar` (de serie) añade la forma del sello; `restar` la quita; `maximo` sube el terreno hasta la forma del sello puesta a la altura del clic **sin hundir lo que ya esté más alto** (dos montañas que se pisan no se apilan; repasar no sube más); `aplanar` deja el terreno **a la altura del sello** (puesto a la altura del clic), suba o baje, con la huella fundida en el borde; `suavizar` suaviza lo que hay bajo el sello con su forma como fuerza, para fundir bordes y costuras. El clic izquierdo hace lo contrario (sumar ↔ restar; máximo resta) y la F cambia de modo. Alias: `elevar`/`subir`, `bajar`/`hundir`, `máximo`/`tope`, `llano`/`ajustar`, `alisar`/`fundir`.
+- **Altura:** `[altura]` son los bloques que sube lo más alto del sello (hasta 96). Sin escribirla, la **altura natural** del sello para ese radio: una colina sale con un tercio del radio, un pico casi con el radio entero (la proporción de cada sello está en la [hoja de contacto](#biblioteca-de-sellos)). En un PNG propio, la mitad del radio.
+- **Paleta:** sin paleta o con `auto`, la de la **categoría** del sello (`alpino` en montañas y cordilleras, `pradera` en colinas, `mesa` en mesetas y cañones, `costa` en acantilados, `rocoso` en cráteres y rocas, `ceniza` en volcanes, `desierto` en dunas, `isla`, `bancal`, `glaciar` y `conservar` en los de detalle). Cualquier otra se escribe como siempre.
+- **Variación en cada clic:** como la semilla de Axiom. De la **semilla** del pincel y el número de clic salen a la vez un **giro** de hasta ±25°, una **escala** de ±20 %, un **espejo** (uno de cada dos) y un **ruido fino** de ±30 % que mueve las crestas, todo multiplicado por `-x` (60 % de serie; `-x 0` estampa siempre lo mismo). Así diez clics del mismo sello no dejan diez copias. El ruido fino multiplica el relieve, así que el borde sigue en cero.
+  - `-s semilla` fija la semilla con la que empieza (sin ella, una al azar al coger el pincel); **Mayús+F** con el pincel en la mano da una semilla nueva y vuelve a contar los clics.
+  - `-k` **bloquea la semilla**: todos los clics salen exactamente iguales (los de la semilla y el clic 0), para repetir un sello idéntico.
+  - Con `-r azar`, el giro entero sale de la semilla (cualquier ángulo) y con la semilla bloqueada se repite.
+- **Giro (`-r`):** `mirada` (por defecto: la parte de arriba de la imagen apunta hacia donde miras), `azar` o unos grados fijos (0 = la parte de arriba al norte). Los sellos con orientación (acantilado, cañón ciego, circo, duna, valle…) la toman del giro: «hacia ti» es hacia donde estás al pulsar.
+- **Intensidad (`-i`):** el porcentaje de la forma en cada clic (100 por defecto); con sumar, repasar acumula.
+- **Gris neutro (`-c`):** el gris que no cambia nada. Por debajo, el sello hunde aunque el modo sea sumar: así funcionan los cañones, la dolina o el valle (neutro 1), los cráteres (0,35) y los de detalle (0,5, suben y bajan). Va en el propio PNG y `-c` lo cambia.
+- **Sellos propios:** cualquier imagen en `config/komaedit/heightmaps/` con los formatos de `/komaedit image` (PNG, JPG o GIF; mejor PNG en grises de 16 bits, que no deja escalones; en color se toma el brillo y la transparencia deja el terreno como está), de hasta 1024×1024 y 8 MB. Se usa por su nombre sin `.png`; uno con el nombre de uno de serie lo sustituye. La carpeta se crea con un `LEEME.txt` que lo explica; los de serie ya no se copian allí (van dentro del mod). `/komaedit terreno sellos exportar <sello>` deja allí una copia en 16 bits de uno de serie para retocarlo (permiso de administración `komaedit.admin.stamps.export`; no pisa nada). Las plantillas que escribía la 1.8 con los 20 sellos de entonces, si siguen sin tocar, se ignoran y vale el sello nuevo del mismo nombre; si las retocaste, mandan las tuyas.
+- `/komaedit terreno sellos` lista los de serie por categoría y los PNG propios; `sellos <categoría>` (`montanas`, `cordilleras`, `colinas`, `mesetas`, `acantilados`, `canones`, `crateres`, `volcanes`, `dunas`, `islas`, `terrazas`, `glaciar`, `rocas`, `detalle`) los explica uno por uno. Pulsar uno lo deja escrito en el chat.
 
 ```text
-/komaedit pincel heightmap montana 24 30 -r azar
-/komaedit pincel heightmap crater 16 10 natural
-/komaedit pincel heightmap duna 20 8 desierto
-/komaedit pincel heightmap mesa 28 24 mesa -r 30
+/komaedit pincel heightmap montana 24 -r azar
+/komaedit pincel heightmap cordillera 30 maximo
+/komaedit pincel heightmap lomas 22 maximo pradera -x 80
+/komaedit pincel heightmap canon 26
+/komaedit pincel heightmap mesa 28 24 aplanar mesa -r 30
+/komaedit pincel heightmap colina 16 suavizar -i 50
+/komaedit pincel heightmap pico 20 -s 4217 -k
 /komaedit pincel heightmap mi_isla 32 40 -i 50 -m grass_block,sand
 ```
+
+#### Biblioteca de sellos
+
+80 sellos de serie en 14 categorías, **generados por código**: ruido por capas (un Perlin de 64 direcciones, crestas multifractales y deformación del dominio), formas de base (conos, crestas a lo largo de un trazo, cuencos, escalones, campos de piezas sueltas) y, en casi todos, la **erosión del terraformado horneada** (la hidráulica por gotas y la térmica por talud, con la forma puesta a escala de bloques) para que tengan cauces, crestas afiladas y faldas de derrubios en lugar de conos lisos. Las dunas pasan por la térmica a 33°, el ángulo de reposo de la arena, que pone la cara de sotavento. Nada sale de imágenes de nadie. Cada sello baja suave a su gris neutro antes del borde, para fundirse con lo que haya.
+
+| Categoría | Sellos | Paleta |
+| --- | --- | --- |
+| Montañas y picos | `montana`, `pico`, `macizo`, `cumbre_doble`, `montana_vieja` (sierra vieja de lomos redondeados), `espolon` | `alpino` |
+| Cordilleras | `cordillera`, `sierra` (dentada), `cordillera_curva`, `cordillera_ramificada` (en Y), `cordones` (sierras paralelas) | `alpino` |
+| Colinas suaves | `colina`, `loma`, `lomas`, `cerro` (cima casi llana), `ondulaciones` (sube y baja) | `pradera` |
+| Mesetas y mesas | `mesa`, `meseta`, `cerro_testigo`, `mesa_escalonada`, `mesa_partida` | `mesa` |
+| Acantilados y escarpes | `acantilado`, `ensenada`, `promontorio`, `farallones`, `canchal` | `costa` |
+| Cañones y gargantas (hunden) | `canon`, `garganta`, `valle_fluvial`, `hoz`, `canon_ciego` | `mesa` |
+| Cráteres y calderas | `crater`, `crater_central`, `caldera`, `dolina`, `crateres`, `cuenca` | `rocoso` |
+| Volcanes | `volcan`, `volcan_escudo`, `cono_ceniza`, `volcan_roto`, `volcan_doble`, `colada` | `ceniza` |
+| Dunas | `duna` (barján), `dunas`, `duna_estrella`, `duna_lineal`, `duna_parabolica`, `barjanes` | `desierto` |
+| Islas y atolones | `isla`, `archipielago`, `atolon`, `cayo`, `isla_media_luna`, `tombolo` | `isla` |
+| Terrazas y bancales | `terrazas`, `bancales`, `anfiteatro`, `terrazas_fluviales` | `bancal` |
+| Glaciares y morrenas | `circo`, `valle` (en U), `cuerno`, `morrena`, `drumlins`, `glaciar` | `glaciar` |
+| Rocas y peñascos | `aguja`, `agujas`, `domo`, `penasco`, `tor`, `bloques`, `laja` | `rocoso` |
+| Detalle | `arrugas`, `grietas`, `carcavas`, `arroyo`, `barrancos`, `rizos`, `bultos`, `escalones` | `conservar` |
+
+Los 20 nombres de la 1.8 siguen valiendo (algunos con una forma mejor), así que las órdenes y los presets guardados no se rompen.
+
+![Los 80 sellos de serie](renders/terreno/sellos_de_serie.png)
+
+Cada sello estampado en bloques con radio 30, su altura natural y la paleta de su categoría:
+
+![Los 80 sellos en bloques](renders/terreno/sellos_en_bloques.png)
+
+Tres paisajes hechos **solo estampando** sobre un llano (con la variación de cada clic):
+
+![Cordillera con valle](renders/terreno/escena_cordillera_iso.png)
+
+![Costa con acantilados, con el mar a Y 26](renders/terreno/escena_costa_iso.png)
+
+![Desierto con dunas y mesas](renders/terreno/escena_desierto_iso.png)
+
+![Seis clics del mismo sello: cada uno distinto; con la semilla bloqueada, iguales](renders/terreno/variacion_por_clic_iso.png)
+
+![Los cinco modos con dos clics que se pisan](renders/terreno/modos_de_mezcla_iso.png)
+
+- **Dónde están:** dentro del jar, como PNG de 16 bits de 160×160 (`assets/komaedit/stamps/`, unos 1,6 MB en total, con la altura guardada a 1/4096). Se leen al primer uso de cada uno en unos milisegundos. Generarlos al arrancar costaría unos 12 s de CPU en cada cliente y servidor la primera vez y, como la erosión es caótica, dos Java distintas podrían dar cauces algo distintos: la miniatura del cliente no sería exactamente lo que estampa el servidor. Una prueba comprueba que los PNG del jar son los de las recetas.
+- **Rendimiento:** un clic de radio 32 con erosión horneada cuesta lo mismo que antes (el sello ya viene hecho); muestrear con giro, escala, espejo y ruido fino es una interpolación y una octava de ruido por columna.
+- **Limitaciones:** el sello cubre como mucho un cuadrado de 64×64 bloques con el radio máximo (32), así que una cordillera larga se hace con varios clics (mejor en `maximo`). Las formas son de una sola capa de altura por columna: no hay arcos ni salientes. La nieve de `alpino` sale en lo alto del sello; una paleta con `cumbre` fija (`natural`) sigue usando su Y.
+
+### Pincel de pintura
+
+Recolorea la **superficie** con un degradado de la paleta **sin cambiar ninguna altura**, arrastrando como un pincel de dibujo: lo que hasta ahora solo se podía hacer sobre una selección (texturizado, `shade`, `terreno pintar`) ahora se pinta a mano. Pensado para empezar sin saber nada: `/komaedit pincel pintar` y mantener el clic derecho sobre una ladera pinta hierba en lo llano y piedra en lo empinado.
+
+```text
+/komaedit pincel paint [paleta] [radio] [pendiente|altura|ruido|huella] [fuerza] [-h huella] [-s semilla] [-k] [-e espaciado] [-u dureza] [-j variación] [-d capas] [-t] [-c] [-x] [-b bloques] [-m máscara] [-y desde..hasta] [-a grados..grados] [-n ruido] [-z tamaño] [-p]
+```
+
+- Alias: `pintar` (y `pt`). Los posicionales van en cualquier orden: el primer número es el radio (8 de serie, hasta 32), el segundo la fuerza en % (60), una palabra de degradado el modo (`pendiente` de serie) y lo demás, la paleta.
+- Permiso: `komaedit.build.brush.paint` (paquete intermedio) o `komaedit.build`.
+- **Controles:** clic derecho pinta un toque; **mantenerlo y arrastrar** pinta a lo largo del trazo. Clic izquierdo: un toque con la paleta al revés. **F**: semilla nueva (🎲). **Mayús + F**: bloquea o libera la semilla. La barra de acción dice la semilla.
+- **Paleta:** cualquiera de KomaEdit (`##Nombre`, una guardada con `#nombre` o una lista `stone,andesite,tuff`) ordenada del primer tono al último, o una de serie del pincel:
+
+| Paleta | Tonos | Para |
+| --- | --- | --- |
+| `hierba_piedra` (de serie) | hierba, musgo, tierra gruesa, grava, andesita, piedra | por pendiente: hierba en lo llano, piedra en las paredes |
+| `bosque` | hierba, podzol, tierra gruesa, tierra enraizada, piedra musgosa, toba | por pendiente |
+| `musgo` | hierba, musgo, piedra musgosa, adoquín, piedra | por pendiente o por ruido |
+| `nevado` | nieve, calcita, diorita, andesita, piedra, toba | por pendiente: nieve en lo llano |
+| `cumbres` | hierba, tierra gruesa, piedra, andesita, calcita, nieve | por altura: hierba al pie y nieve arriba |
+| `costa` | arena, grava, tierra gruesa, hierba | por altura: de la orilla a la hierba |
+| `desierto` | arena, arenisca, arena roja, arenisca roja, terracota | por pendiente |
+| `mesa` | arena roja y seis terracotas | por altura: estratos |
+| `volcanico` | toba, pizarra abismal, basalto liso, piedra negra, basalto | por pendiente o por ruido |
+
+- **Huella (`-h`):** la forma del pincel vista desde arriba, como máscara de intensidad: `circulo` (de serie), `cuadrado` o cualquier sello del [pincel de relieve](#pincel-de-relieve-sellos), de serie o propio, donde lo que se aparta del gris neutro pinta más (también lo hundido de una dolina). La **dureza** (`-u`, 30 % de serie) decide el borde: 0 lo difumina desde el centro y 100 lo corta.
+- **Degradado (cómo se reparte la paleta dentro de la pincelada):**
+  - `pendiente` (de serie): lo llano, el primer tono; lo empinado, el último. De serie de 30° (hasta ahí aguanta la hierba; una cuesta de un bloque por bloque son 45°) a 65°; `-a 20..55` lo cambia. La pendiente se mide en la columna con la altura del suelo a dos bloques.
+  - `altura`: lo bajo, el primer tono; lo alto, el último. Sin `-y`, al empezar cada trazo se mide el terreno de alrededor (el mapa de alturas en 64 bloques a la redonda, sin hojas) y la franja va del 5 % al 95 % de esas alturas, con 8 bloques como mínimo: pintar una colina reparte la paleta entre su pie y su cima aunque se empiece por el llano. `-y 60..120` la fija.
+  - `ruido`: manchas con la semilla del pincel, de `-z` bloques (12 de serie); `-n` usa otro ruido (el [ruido configurable](#ruido-configurable) o uno guardado) tal cual.
+  - `huella`: el centro del toque, el primer tono; el borde, el último. Al arrastrar sale un camino con el borde de otro color.
+- **Mezcla tramada:** cada bloque cae entre dos tonos vecinos al azar en la proporción que le toca (un 2,3 da un 70 % del tono 2 y un 30 % del 3), así no hay bandas; la **variación** (`-j`, 15 %) mueve además las fronteras con ruido para que no salgan rectas.
+- **Fuerza y pasadas:** la fuerza es la de un trazo, como la opacidad de un pincel de dibujo. Un bloque que estaba en el tono `p` al empezar el trazo se acerca al que le toca `P` hasta `p + (P - p) · fuerza · intensidad de la huella`: los toques que se solapan al arrastrar no se suman (da igual ir despacio o deprisa) y es **otra pasada** la que empuja un poco más, sin saltar del primero al último. Lo que no es de la paleta (la hierba de alrededor de otro color, la tierra de un corte) se cubre con esa misma probabilidad, así el borde se funde con el terreno.
+- **Semilla, como en Axiom:** el ruido, la trama y el giro de la huella salen de una semilla que se ve (en la barra de acción y en el Studio) y se elige con `-s`. Con la semilla **libre**, cada toque gira la huella al azar y cambia un poco su tamaño (±15 %), distinto en cada clic. **Bloqueada** (`-k`), la huella no gira ni cambia y el mismo trazo sobre el mismo terreno pinta siempre lo mismo. Al cambiar los ajustes desde el Studio sin semilla escrita, el pincel conserva la suya.
+- **Espaciado (`-e`):** distancia entre toques al arrastrar, en % del radio (30 de serie, de 5 a 200).
+- **Qué se pinta:** de serie solo la superficie (los bloques que tocan el aire o algo abierto, como plantas, hojas o nieve en capa) hasta `-d` capas hacia dentro (1); `-t` pinta todo el volumen del pincel. Las **escaleras y losas** se pintan con la escalera o losa del material del tono y conservan su forma y orientación (`-c` las deja como están; si el material no tiene esa pieza, se quedan). Sin máscara solo se toca el terreno natural (tierras, piedras, arenas, terracotas, nieve, hielo, menas, Nether y End) y los bloques de la propia paleta, para no repintar una casa al pasar al lado; `-x` deja pintar cualquier bloque. `-b grass_block,dirt` pinta solo esos bloques y `-m` acepta una máscara de WorldEdit completa (las dos juntas se suman). Hojas, troncos y plantas nunca se pintan.
+- **Alcance:** cada toque mira desde el suelo de la columna del centro hasta `radio + 4` bloques por encima y por debajo (entre 8 y 28).
+- **Vista previa:** con `-p` cada clic es un toque con su holograma y `/komaedit pincel aplicar`, sin arrastrar.
+
+```text
+/komaedit pincel pintar
+/komaedit pincel pintar cumbres 14 altura -h montana
+/komaedit pincel pintar musgo ruido 80 -z 8
+/komaedit pincel pintar ##Grayscale 6 huella -u 70
+/komaedit pincel pintar desierto 12 -h dunas -s 4242 -k
+/komaedit pincel pintar bosque -b grass_block,dirt,coarse_dirt -d 2
+```
+
+- **En el Studio:** tarjeta **Pintar terreno** de la familia Terreno, junto al sello de relieve. A la vista: la paleta con la **muestra de su degradado** (sus bloques en celdas, con la misma trama que pone el pincel; «Propia» deja escribir cualquier paleta), la **huella** con su miniatura (el círculo, el cuadrado y los sellos como mancha de luz), el degradado, el radio, la fuerza, la semilla con **Azar** (`R`). En **Más ajustes**: **Bloquear semilla**, espaciado, dureza, variación, las pendientes o alturas de cada extremo (según el modo), el tamaño de las manchas, capas, solo la superficie, escaleras y losas, cualquier bloque, solo estos bloques, máscara y vista previa en cada clic. Presets: **Ladera** (lo de serie), **Cumbres**, **Manchas** y **Desierto**. **Al pincel** deja el pincel en la mano y [lo sigue](#el-pincel-sigue-al-studio); con el Studio abierto, se pinta ahí mismo manteniendo el clic en el mundo (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
+- **Un trazo, un //undo:** todo lo que se pinta mientras se mantiene el clic es una sola edición del historial de WorldEdit (se cierra al soltar el botón). Lo que cambies a mano mientras tanto no se pisa: cada bloque se escribe solo si sigue como estaba en la foto.
+- **Rendimiento:** la paleta (con sus losas y escaleras y lo que pone sobre cada estado), la huella medida, las máscaras sencillas y los ruidos se preparan una vez al configurar el pincel (o al cambiarlo desde el Studio): ningún clic lee del disco. Minecraft repite el clic derecho cada 4 ticks; entre medias el servidor mira cada tick hacia dónde apuntas y lo confirma con la siguiente repetición, así el trazo es suave y acaba donde sueltas. Los toques se calculan en tandas (hasta 24, o lo que quepa en 1,5 millones de bloques leídos): foto repartida entre ticks (4 ms por tick), cálculo en un worker propio que no cancela ni espera a otros pinceles y escritura con 4 ms por tick; cada tanda empieza cuando la anterior está escrita, para que los toques nuevos vean lo pintado. En el worker, un toque cuesta unos 0,4 ms con radio 8 y unos 2 ms con radio 16 (`PaintStrokeBenchmarkTest`).
+- **Limitaciones:** un trazo pinta como mucho el límite de operación del servidor (al llegar, el chat lo dice y lo pintado se queda); el límite de WorldEdit (`//limit`) también lo para. Con la semilla bloqueada y poca fuerza, repasar puede quedarse a medio camino del tono (la trama es la misma en cada pasada): sube la fuerza o libera la semilla. Los clientes sin KomaEdit también arrastran (el clic derecho se repite igual), pero sin la F.
+
+![Una colina pintada con cada modo](renders/paint/colina_modos.png)
+
+![Pasadas sobre la misma ladera con fuerza 25 %: cada una empuja un poco más hacia la piedra](renders/paint/pasadas.png)
+
+![Un trazo largo con la huella del circo glaciar: con la semilla libre gira y cambia; bloqueada se repite igual](renders/paint/trazo_semillas.png)
+
+![La tarjeta Pintar terreno en el Studio](renders/studio/1080p_gui2_pintar_es.png)
 
 ### Rampa
 
@@ -3096,6 +3335,7 @@ Los pinceles de ezEdits (`//ezbrush`) dentro del sistema de brochas de KomaEdit:
 | `heightmap` | `relieve`, `sello`, `hm` | [Pincel de relieve](#pincel-de-relieve-sellos) (propio de KomaEdit) |
 | `sculpt` | `modelar`, `modelado`, `sk` | [Modelado](#pinceles-de-modelado): esculpir, roca, soldar, fundir, rugosidad y grietas (propio de KomaEdit) |
 | `stamp` | `estampar`, `planos`, `st` | [Estampar planos de la biblioteca](#pincel-estampar) (propio de KomaEdit) |
+| `paint` | `pintar`, `pt` | [Pintar el terreno con un degradado, arrastrando](#pincel-de-pintura) (propio de KomaEdit) |
 
 - El pincel se liga al **objeto de la mano principal**, como los de WorldEdit: cada objeto guarda el suyo y se pueden llevar varios a la vez. Con la mano vacía se entrega una pluma llamada «Pincel de KomaEdit». Volver a configurar un objeto que ya tiene pincel lo sustituye.
 - `quitar` (`off`, `none`) suelta el pincel del objeto de la mano; `estado` (`status`) dice qué pincel lleva y sus controles.
@@ -4067,7 +4307,7 @@ Herramientas pequeñas de uso diario (las que traen Axiom o FAWE): texto en bloq
 
 Alias: `texto`; `fuentes` para `fonts`. Permiso `komaedit.build.text` (paquete intermedio).
 
-- **Dónde:** en el bloque que miras (hasta 128 bloques), en la cara que miras; si no miras ningún bloque, en tus pies. **De pie** (mirada horizontal) el texto mira hacia ti y su grosor crece hacia ti, así apoyado en una pared no se mete en ella; mirando una pared se pone de frente a ella aunque la mires de lado. De pie sobre el suelo apoya su base en él; bajo un techo cuelga de él. **Tumbado** (mirando al suelo, más de 50° hacia abajo) se lee desde donde estás; mirando al techo cuelga de él y se lee mirando hacia arriba. Tumbado y en una pared queda centrado en el punto mirado. `-v` lo fuerza de pie y `-h` tumbado.
+- **Dónde:** en el bloque que miras (hasta 128 bloques), en la cara que miras; si no miras ningún bloque, en tus pies. **De pie** (mirada horizontal) el texto mira hacia ti y su grosor crece hacia ti, así apoyado en una pared no se mete en ella; mirando una pared se pone de frente a ella aunque la mires de lado. De pie sobre el suelo apoya su base en él; bajo un techo cuelga de él. **Tumbado** (mirando al suelo, más de 50° hacia abajo) se lee desde donde estás; mirando al techo cuelga de él y se lee mirando hacia arriba. Tumbado y en una pared queda centrado en el punto mirado. `-v` lo fuerza de pie y `-h` tumbado. Desde el Studio, tras un clic en el mundo, manda la cara pulsada y no la inclinación de la cámara: en una pared, pegado a ella; en el suelo, tumbado; en un techo, colgado (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
 - **Texto:** entre comillas si lleva espacios (`"Año Nuevo"`; una comilla dentro se escribe `\"`). `\n` parte líneas (hasta 16, con 256 caracteres en total). Los acentos, la ñ, `¿` y `¡` salen con las fuentes de serie; si una fuente no tiene un carácter, se avisa antes de construir.
 - **Material:** un patrón de WorldEdit (`stone`, `50%stone,50%andesite`); sin nada, `stone`. Con `-g v|h` (o si empieza por `#` o lleva `;`) es una **paleta en degradado** con la notación de [Paletas guardadas](#paletas-guardadas) (`##Magma`, `#mipaleta`, `white_concrete;light_gray_concrete;gray_concrete`): `v` va de abajo arriba y `h` de izquierda a derecha; la primera entrada queda abajo o a la izquierda (`-##Magma` la invierte).
 
@@ -4285,7 +4525,7 @@ Comportamiento:
 
 ### Etapa Planos del Studio
 
-La etapa **Planos** (`8`) es la biblioteca con miniaturas. El plano elegido se coloca con el botón del pie, **Colocar plano** (en tu posición, con vista previa), o con `B`.
+La etapa **Planos** (`5`) es la biblioteca con miniaturas. El plano elegido se coloca con un **clic en el mundo** (en ese bloque, con su fantasma), con el botón del pie, **Colocar plano** (en el último clic o, sin clic, en tu posición, con vista previa), o con `B`. Tras **Estampar**, el clic en el mundo pinta con el pincel de estampar y los cambios de la etapa (otro plano, otro radio) le llegan solos.
 
 ![Etapa Planos](renders/studio/1080p_gui3_planos_es.png)
 
@@ -4387,7 +4627,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
    - Contenido: `komaedit.recipe`, `komaedit.instance`.
    - Edición: `komaedit.select` (selecciones y supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
-   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo); excepción de volumen: `komaedit.limit.unrestricted`.
+   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
@@ -4395,6 +4635,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.terrain.ramp`, `.terrain.river`, `.terrain.canyon`, `.terrain.paint`, `.terrain.erode.hydraulic` y `.terrain.erode.thermal` ([Terraformado](#terraformado)).
    - `komaedit.build.roof` y `komaedit.build.loft` (ver [Tejados](#tejados) y [Loft entre curvas](#loft-entre-curvas)).
    - `komaedit.build.brush.sculpt` ([Pinceles de modelado](#pinceles-de-modelado)); escalar y girar el portapapeles va con `komaedit.clipboard`.
+   - `komaedit.build.brush.paint` ([Pincel de pintura](#pincel-de-pintura)).
    - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).

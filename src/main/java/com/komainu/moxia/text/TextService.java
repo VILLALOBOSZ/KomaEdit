@@ -155,10 +155,13 @@ public final class TextService {
             anchor = new int[]{player.getBlockX(), player.getBlockY(), player.getBlockZ()};
         }
         float pitch = player.getPitch();
+        // Con un clic del Studio la cámara no dice a dónde se apunta (el ratón va suelto): manda la cara pulsada.
+        boolean clicked = side != null && StudioAim.clicked(player);
         TextPlacement.Mode mode = switch (request.orientation()) {
             case STANDING -> TextPlacement.Mode.WALL;
-            case LYING -> pitch < 0 ? TextPlacement.Mode.CEILING : TextPlacement.Mode.FLOOR;
-            case LOOK -> TextPlacement.modeForPitch(pitch);
+            case LYING -> clicked ? side == Direction.DOWN ? TextPlacement.Mode.CEILING : TextPlacement.Mode.FLOOR
+                    : pitch < 0 ? TextPlacement.Mode.CEILING : TextPlacement.Mode.FLOOR;
+            case LOOK -> clicked ? TextPlacement.modeForFace(side.getOffsetY()) : TextPlacement.modeForPitch(pitch);
         };
         Direction facing = player.getHorizontalFacing();
         if (mode == TextPlacement.Mode.WALL && side != null && side.getAxis().isHorizontal()) {

@@ -26,7 +26,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, PAINT, TEXT, ANALYZE, GRAVITY, SNOW, DRAIN, WATERLOG,
-        BIOME, SYMMETRY, CAPABILITIES,
+        BIOME, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
         // El fantasma con gizmo.
         GIZMO
     }
@@ -355,10 +355,10 @@ public final class StudioIcons {
                 "#...####...#",
                 "#...####...#",
                 ".#...##...#.",
-                "..##....#rr.",
-                "....####rrrr",
-                "........rrrr",
-                ".........rr.");
+                "..##....#ss.",
+                "....####ssss",
+                "........ssss",
+                ".........ss.");
         mask(Icon.LOOK,
                 ".....##.....",
                 ".....##.....",
@@ -634,6 +634,20 @@ public final class StudioIcons {
                 "#.#.........",
                 "##..........",
                 "###.........");
+        // Pincel de pintar terreno: mango en diagonal, la punta cargada y el trazo en el suelo.
+        mask(Icon.PAINT_BRUSH,
+                "..........##",
+                ".........###",
+                "........###.",
+                ".......###..",
+                "......###...",
+                ".....##.....",
+                "...+##......",
+                "..+++#......",
+                ".++++.......",
+                "+++.........",
+                "............",
+                "####++++####");
     }
 
     private StudioIcons() {
@@ -685,10 +699,11 @@ public final class StudioIcons {
     private static int color(char symbol, int color) {
         return switch (symbol) {
             case '+' -> StudioTheme.fade(color, 0.5);
-            case 'r' -> 0xFFE24B6A;
-            case 'y' -> 0xFFF2B94B;
-            case 'b' -> 0xFF4BC3E2;
-            case 'x' -> StudioTheme.DANGER;
+            case 'r' -> StudioTheme.PIGMENT_RED;
+            case 'y' -> StudioTheme.PIGMENT_YELLOW;
+            case 'b' -> StudioTheme.PIGMENT_BLUE;
+            // Lo que está en marcha (en vivo): verde de éxito, nunca rojo, que es solo para el peligro.
+            case 's' -> StudioTheme.SUCCESS;
             default -> color;
         };
     }

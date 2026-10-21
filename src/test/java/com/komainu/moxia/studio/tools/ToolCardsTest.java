@@ -52,8 +52,8 @@ class ToolCardsTest {
             assertFalse(card.command(card.defaults(), false).startsWith("/"), "sin barra: " + card.id());
             assertTrue(card.command(card.defaults(), false).startsWith("komaedit "), card.id());
         }
-        assertEquals(List.of("tree", "rock", "roof", "loft", "stamp", "ramp", "river", "erosion", "paint", "text",
-                "analyze", "gravity", "snow", "drain", "waterlog", "biome", "symmetry", "capabilities"),
+        assertEquals(List.of("tree", "rock", "roof", "loft", "stamp", "paintbrush", "ramp", "river", "erosion", "paint",
+                "text", "analyze", "gravity", "snow", "drain", "waterlog", "biome", "symmetry", "capabilities"),
                 ToolCatalog.ALL.stream().map(ToolCard::id).toList());
         for (ToolFamily family : ToolFamily.values()) {
             assertFalse(ToolCatalog.family(family).isEmpty(), family.id());
@@ -73,7 +73,7 @@ class ToolCardsTest {
         assertEquals("komaedit rock boulder", card("rock").command(card("rock").defaults(), false));
         assertEquals("komaedit roof gable spruce_planks", card("roof").command(card("roof").defaults(), false));
         assertEquals("komaedit loft white_wool", card("loft").command(card("loft").defaults(), false));
-        assertEquals("komaedit pincel heightmap montana 12 12 elevar natural",
+        assertEquals("komaedit pincel heightmap montana 12 9 sumar auto",
                 card("stamp").command(card("stamp").defaults(), false));
         assertEquals("komaedit terreno rampa plano 5 6 natural", card("ramp").command(card("ramp").defaults(), false));
         assertEquals("komaedit terreno rio natural", card("river").command(card("river").defaults(), false));
@@ -261,11 +261,17 @@ class ToolCardsTest {
                 ramp.command(ramp.defaults().with("profile", "cono").with("width", 7).with("palette", "desierto")
                         .with("talus", 8).with("smooth", true), true));
         ToolCard stamp = card("stamp");
-        assertEquals("komaedit pincel heightmap mi_isla 32 40 bajar playa -i 50 -r azar -c 0.35 -m sand -p",
+        assertEquals("komaedit pincel heightmap mi_isla 32 40 restar playa -i 50 -r azar -x 20 -s 77 -k -c 0.35"
+                        + " -m sand -p",
                 stamp.command(stamp.defaults().with("custom", "mi_isla").with("radius", 32).with("height", 40)
-                        .with("mode", "bajar").with("palette", "playa").with("intensity", 50)
-                        .with("rotation", "azar").with("neutral", 35).with("mask", "sand")
-                        .with("brush_preview", true), false));
+                        .with("mode", "restar").with("palette", "playa").with("intensity", 50)
+                        .with("rotation", "azar").with("variation", 20).with("seed", 77).with("lock_seed", true)
+                        .with("neutral", 35).with("mask", "sand").with("brush_preview", true), false));
+        // En automático, la altura natural del sello para ese radio: una colina baja y un pico alto.
+        assertEquals("komaedit pincel heightmap colina 20 7 sumar auto",
+                stamp.command(stamp.defaults().with("stamp", "colina").with("radius", 20), false));
+        assertEquals("komaedit pincel heightmap pico 20 19 sumar auto",
+                stamp.command(stamp.defaults().with("stamp", "pico").with("radius", 20), false));
     }
 
     @Test
@@ -462,7 +468,7 @@ class ToolCardsTest {
         ToolValues values = stamp.apply(stamp.defaults().with("custom", "mi_sello").with("brush_preview", true),
                 preset(stamp, "dunes"));
         assertEquals("", values.text("custom"));
-        assertTrue(stamp.command(values, false).startsWith("komaedit pincel heightmap duna "));
+        assertTrue(stamp.command(values, false).startsWith("komaedit pincel heightmap dunas "));
         assertTrue(values.toggle("brush_preview"), "la vista previa en cada clic no es la forma: se queda");
         ToolCard roof = card("roof");
         assertTrue(roof.apply(roof.defaults().with("replace", true), preset(roof, "steep")).toggle("replace"));

@@ -1,5 +1,7 @@
 package com.komainu.moxia.client.gui;
 
+import com.komainu.moxia.brush.BrushInput;
+import com.komainu.moxia.brush.BrushToolPayload;
 import com.komainu.moxia.client.gizmo.GhostClient;
 import com.komainu.moxia.client.gui.studio.ClientStudioAim;
 import com.komainu.moxia.client.gui.studio.ClientStudioHost;
@@ -8,7 +10,9 @@ import com.komainu.moxia.client.mixin.GameRendererAccessor;
 import com.komainu.moxia.client.preview.EditorOverlayRenderer;
 import com.komainu.moxia.client.preview.PathHologramRenderer;
 import com.komainu.moxia.client.preview.ProceduralPreviewRenderer;
+import com.komainu.moxia.client.world.WorldOverlayRenderer;
 import com.komainu.moxia.editor.EditorActionPayload;
+import com.komainu.moxia.feedback.SelectionPayload;
 import com.komainu.moxia.gizmo.GizmoMath;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeActionPayload;
@@ -17,11 +21,16 @@ import com.komainu.moxia.studio.ui.StudioKey;
 import com.komainu.moxia.studio.ui.StudioStage;
 import com.komainu.moxia.studio.ui.StudioUi;
 import com.komainu.moxia.studio.ui.StudioView;
+import com.komainu.moxia.studio.world.BoxSelect;
+import com.komainu.moxia.studio.world.BrushStroke;
+import com.komainu.moxia.studio.world.PathDrag;
+import net.minecraft.block.BlockState;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.Camera;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -36,9 +45,12 @@ import java.util.List;
 /**
  * Procedural Studio (tecla K). Todo lo que se ve en el panel (barra, etapas, contenido, pie y ventanas) lo dibuja y
  * lo atiende la vista común {@link StudioView}, la misma que pintan las maquetas y prueban los tests. Esta pantalla
- * solo le pasa el ratón y el teclado y se queda con el mundo: el puntero, los puntos de la trayectoria, sus flechas
- * para moverlos, girar la cámara con clic derecho y andar con WASD mientras no se escribe. Con un fantasma del gizmo
- * en pantalla, el cursor agarra sus flechas, anillos y cubo, la rueda lo acerca o aleja y sus teclas van primero.
+ * solo le pasa el ratón y el teclado y se queda con el mundo: los rayos del cursor, girar la cámara con clic derecho y
+ * andar con WASD mientras no se escribe. Lo que hace el botón izquierdo en el mundo lo decide la vista según la etapa
+ * ({@link StudioView#worldAction}) y lo hacen los modelos sin Minecraft: puntos que se arrastran ({@link PathDrag}),
+ * la caja de selección con sus caras ({@link BoxSelect}) y el trazo del pincel ({@link BrushStroke}); Alt+clic es el
+ * cuentagotas. Con un fantasma del gizmo en pantalla, el cursor agarra sus flechas, anillos y cubo, la rueda lo acerca
+ * o aleja y sus teclas van primero.
  */
 public final class ProceduralStudioScreen extends Screen {
     /** El Studio sigue igual al reabrirlo (etapa, receta, herramienta, ajustes); no al salir del mundo. */
@@ -53,8 +65,14 @@ public final class ProceduralStudioScreen extends Screen {
     private int draggedAxis = -1;
     private BlockPos axisDragOrigin;
     private double axisDragStart;
-    private BlockPos hoverPlacement;
     private BlockPos lastDraggedPosition;
+    private final PathDrag pathDrag = new PathDrag();
+    private final BoxSelect box = new BoxSelect();
+    private final BrushStroke stroke = new BrushStroke();
+    /** Mientras se arrastra la caja, se manda a WorldEdit como mucho cada tanto (se dibuja al momento igual). */
+    private static final long BOX_SEND_MILLIS = 60L;
+    private long lastBoxSend;
+    private boolean boxPending;
 
     public ProceduralStudioScreen() {
         super(Text.translatable("gui.komaedit.title"));
@@ -109,6 +127,8 @@ public final class ProceduralStudioScreen extends Screen {
         releaseMovementKeys();
         EditorOverlayRenderer.clear();
         view.closed(host);
+        WorldOverlayRenderer.face(null, false);
+        WorldOverlayRenderer.studioCursor(null);
         sendCommand("komaedit path mode off");
         // Fuera del Studio todo vuelve a ir donde se mira.
         ClientStudioAim.clear();
@@ -129,16 +149,10 @@ public final class ProceduralStudioScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         StudioView.Click click = view.mouseClicked(mouseX, mouseY, studioButton(button), host);
-        if (click == StudioView.Click.WORLD && button == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                && GhostClient.studioPress(gizmoRay(mouseX, mouseY))) {
-            return true;
-        }
         switch (click) {
             case WORLD -> {
-                if (view.stage() == StudioStage.PATH) {
-                    worldClicked(mouseX, mouseY);
-                } else {
-                    placeClicked(mouseX, mouseY);
+                if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    worldPressed(mouseX, mouseY);
                 }
             }
             case CAMERA -> cameraDragging = true;
@@ -149,24 +163,172 @@ public final class ProceduralStudioScreen extends Screen {
     }
 
     /**
-     * «Donde haces clic»: con un fantasma a la vista, salta a donde apunta el cursor y lo sigue mientras se arrastra;
-     * si no, con una herramienta que va en el mundo (árbol, roca, texto), se construye ahí. El rayo sale del cursor,
-     * no del centro de la pantalla.
+     * El botón izquierdo en el mundo. Alt+clic es el cuentagotas y las flechas, anillos y cubo del gizmo se agarran
+     * siempre; lo demás, lo que diga la etapa ({@link StudioView#worldAction}): puntos, colocar, seleccionar, pintar
+     * o mover el fantasma. El rayo sale del cursor, no del centro de la pantalla.
      */
-    private void placeClicked(double mouseX, double mouseY) {
+    private void worldPressed(double mouseX, double mouseY) {
         BlockHitResult hit = cursorHit(mouseX, mouseY);
-        if (GhostClient.studioPlace(hit)) {
+        if (hasAltDown()) {
+            eyedropper(hit);
             return;
         }
-        if (!view.placesOnClick(host)) {
+        if (GhostClient.studioPress(gizmoRay(mouseX, mouseY))) {
             return;
         }
+        switch (view.worldAction(host)) {
+            case GHOST -> GhostClient.studioPlace(hit);
+            case POINTS -> pointsPressed(mouseX, mouseY, hit);
+            case PLACE -> placeAt(hit);
+            case SELECT -> selectPressed(mouseX, mouseY, hit);
+            case PAINT -> paintPressed(hit);
+            case NONE -> view.status(view.worldHint(host), System.currentTimeMillis());
+        }
+    }
+
+    /** Construir ahí lo elegido (árbol, roca, texto, el plano elegido): el servidor sabe antes en qué bloque. */
+    private void placeAt(BlockHitResult hit) {
         if (hit == null) {
             view.status(tr("gui.komaedit.status.click.no_block"), System.currentTimeMillis());
             return;
         }
         ClientStudioAim.send(hit);
         view.placeAtClick(host);
+    }
+
+    /** Alt+clic: el bloque pulsado pasa a ser el material de lo que se está haciendo. */
+    private void eyedropper(BlockHitResult hit) {
+        if (hit == null || client == null || client.world == null) {
+            view.status(tr("gui.komaedit.status.click.no_block"), System.currentTimeMillis());
+            return;
+        }
+        BlockState state = client.world.getBlockState(hit.getBlockPos());
+        if (state.isAir()) {
+            view.status(tr("gui.komaedit.status.click.no_block"), System.currentTimeMillis());
+            return;
+        }
+        view.eyedropper(Registries.BLOCK.getId(state.getBlock()).toString(), hasShiftDown(), host);
+    }
+
+    /**
+     * Los puntos de la trayectoria: las flechas del punto elegido lo mueven en un eje; si no, se agarra un punto, se
+     * mete uno en un tramo o se añade uno al final, y arrastrando va por el terreno ({@link PathDrag}).
+     */
+    private void pointsPressed(double mouseX, double mouseY, BlockHitResult hit) {
+        Ray ray = rayForMouse(mouseX, mouseY);
+        List<BlockPos> points = PathHologramRenderer.points();
+        int selectedPoint = view.figure().selectedPoint();
+        BlockPos selectedPosition = selectedPoint >= 0 && selectedPoint < points.size()
+                ? points.get(selectedPoint)
+                : null;
+        int axis = selectedPosition == null ? -1 : pickGizmoAxis(ray, selectedPosition);
+        if (axis >= 0 && beginAxisDrag(ray, selectedPosition, axis)) {
+            return;
+        }
+        int[] place = hit == null ? null : array(hit.getBlockPos().offset(hit.getSide()));
+        PathDrag.Press press = pathDrag.press(gizmoRay(mouseX, mouseY), arrays(points), PathHologramRenderer.closed(),
+                place, FigureStages.MAX_PATH_POINTS);
+        long now = System.currentTimeMillis();
+        switch (press.grab()) {
+            case POINT -> {
+                view.figure().selectPoint(press.index());
+                view.status(tr("gui.komaedit.status.node.grabbed", press.index() + 1), now);
+            }
+            case INSERT -> {
+                PathHologramRenderer.insertLocal(press.index(), midpoint(points, press.after()));
+                sendEditor(EditorActionPayload.PATH_INSERT, press.after(), BlockPos.ORIGIN);
+                view.figure().selectPoint(press.index());
+                view.status(tr("gui.komaedit.status.node.inserted", press.after() + 1,
+                        (press.after() + 1) % points.size() + 1), now);
+            }
+            case ADD -> {
+                BlockPos position = new BlockPos(place[0], place[1], place[2]);
+                PathHologramRenderer.insertLocal(points.size(), position);
+                sendEditor(EditorActionPayload.PATH_ADD, -1, position);
+                view.figure().selectPoint(-1);
+                view.status(tr("gui.komaedit.status.node.added", coordinates(position)), now);
+            }
+            case NONE -> view.status(tr(points.size() >= FigureStages.MAX_PATH_POINTS ? "gui.komaedit.status.path.full"
+                    : "gui.komaedit.status.click.no_block", FigureStages.MAX_PATH_POINTS), now);
+        }
+    }
+
+    /** El punto en medio del tramo que empieza en {@code after} (cerrado, el último va al primero). */
+    private static BlockPos midpoint(List<BlockPos> points, int after) {
+        BlockPos start = points.get(after);
+        BlockPos end = points.get((after + 1) % points.size());
+        return new BlockPos(Math.floorDiv(start.getX() + end.getX(), 2), Math.floorDiv(start.getY() + end.getY(), 2),
+                Math.floorDiv(start.getZ() + end.getZ(), 2));
+    }
+
+    /**
+     * Seleccionar: pulsar sobre una cara de la selección la agarra; si no, empieza una caja en el bloque pulsado. Doble
+     * clic sin arrastrar, al soltar, pide la selección mágica ({@link BoxSelect}).
+     */
+    private void selectPressed(double mouseX, double mouseY, BlockHitResult hit) {
+        GizmoMath.Ray ray = gizmoRay(mouseX, mouseY);
+        box.known(knownBox());
+        BoxSelect.Box started = box.press(ray, hit == null ? null : array(hit.getBlockPos()), reach(hit),
+                System.currentTimeMillis());
+        if (started == null) {
+            view.status(tr("gui.komaedit.status.click.no_block"), System.currentTimeMillis());
+            return;
+        }
+        if (box.pulling() != null) {
+            WorldOverlayRenderer.face(box.pulling(), true);
+            view.status(tr("gui.komaedit.status.select.pulling", tr("gui.komaedit.world.face." + box.pulling().name()
+                    .toLowerCase(java.util.Locale.ROOT))), System.currentTimeMillis());
+        } else {
+            sendBox(started, true);
+        }
+    }
+
+    /** La selección que tiene el jugador según el servidor, para poder tirar de sus caras. */
+    private static BoxSelect.Box knownBox() {
+        SelectionPayload selection = WorldOverlayRenderer.selection();
+        if (!selection.visible() || !selection.complete()) {
+            return null;
+        }
+        return new BoxSelect.Box(selection.minX(), selection.minY(), selection.minZ(), selection.maxX(),
+                selection.maxY(), selection.maxZ());
+    }
+
+    /**
+     * Manda la caja a WorldEdit (las dos esquinas) y la dibuja ya, sin esperar al servidor, con sus medidas. Mientras
+     * se arrastra, como mucho cada {@value #BOX_SEND_MILLIS} ms; al soltar, siempre.
+     */
+    private void sendBox(BoxSelect.Box selection, boolean force) {
+        WorldOverlayRenderer.selection(new SelectionPayload(true, true, selection.minX(), selection.minY(),
+                selection.minZ(), selection.maxX(), selection.maxY(), selection.maxZ(), "cuboid"));
+        long now = System.currentTimeMillis();
+        if (!force && now - lastBoxSend < BOX_SEND_MILLIS) {
+            boxPending = true;
+            return;
+        }
+        lastBoxSend = now;
+        boxPending = false;
+        sendEditor(EditorActionPayload.BOX_PRIMARY, -1, new BlockPos(selection.minX(), selection.minY(),
+                selection.minZ()));
+        sendEditor(EditorActionPayload.BOX_SECONDARY, 0, new BlockPos(selection.maxX(), selection.maxY(),
+                selection.maxZ()));
+        view.status(tr("gui.komaedit.status.select.box", selection.sizeX(), selection.sizeY(), selection.sizeZ()),
+                now);
+    }
+
+    /** Pintar con el pincel de la mano donde apunta el cursor (el servidor apunta al bloque del clic). */
+    private void paintPressed(BlockHitResult hit) {
+        if (hit == null) {
+            view.status(tr("gui.komaedit.status.click.no_block"), System.currentTimeMillis());
+            return;
+        }
+        if (stroke.press(array(hit.getBlockPos()), System.currentTimeMillis())) {
+            paint(hit);
+        }
+    }
+
+    private void paint(BlockHitResult hit) {
+        ClientStudioAim.send(hit);
+        ClientPlayNetworking.send(new BrushToolPayload(BrushInput.of(BrushInput.Base.RIGHT, hasShiftDown())));
     }
 
     /** El bloque al que apunta el cursor (hasta {@link FigureStages#REACH} bloques), o {@code null}. */
@@ -181,34 +343,28 @@ public final class ProceduralStudioScreen extends Screen {
         return result instanceof BlockHitResult hit && result.getType() == HitResult.Type.BLOCK ? hit : null;
     }
 
+    /** A qué distancia está lo que se ve bajo el cursor (lo de más allá queda tapado). */
+    private double reach(BlockHitResult hit) {
+        if (hit == null || client == null) {
+            return FigureStages.REACH;
+        }
+        return client.gameRenderer.getCamera().getPos().distanceTo(hit.getPos());
+    }
+
+    private static int[] array(BlockPos position) {
+        return new int[]{position.getX(), position.getY(), position.getZ()};
+    }
+
+    private static List<int[]> arrays(List<BlockPos> points) {
+        return points.stream().map(ProceduralStudioScreen::array).toList();
+    }
+
     private static int studioButton(int button) {
         return switch (button) {
             case GLFW.GLFW_MOUSE_BUTTON_LEFT -> 0;
             case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> 1;
             default -> 2;
         };
-    }
-
-    /** Clic en el mundo en la etapa Trayectoria: flecha del nodo elegido, otro nodo o un punto nuevo. */
-    private void worldClicked(double mouseX, double mouseY) {
-        Ray ray = rayForMouse(mouseX, mouseY);
-        List<BlockPos> points = PathHologramRenderer.points();
-        int selectedPoint = view.figure().selectedPoint();
-        BlockPos selectedPosition = selectedPoint >= 0 && selectedPoint < points.size()
-                ? points.get(selectedPoint)
-                : null;
-        int axis = selectedPosition == null ? -1 : pickGizmoAxis(ray, selectedPosition);
-        if (axis >= 0 && beginAxisDrag(ray, selectedPosition, axis)) {
-            return;
-        }
-        int pickedPoint = pickPathPoint(ray);
-        if (pickedPoint >= 0) {
-            view.figure().selectPoint(pickedPoint);
-            view.status(tr("gui.komaedit.status.node.selected", pickedPoint + 1), System.currentTimeMillis());
-        } else if (hoverPlacement != null) {
-            sendEditor(EditorActionPayload.PATH_ADD, -1, hoverPlacement);
-            view.status(tr("gui.komaedit.status.node.added", coordinates(hoverPlacement)), System.currentTimeMillis());
-        }
     }
 
     @Override
@@ -228,29 +384,56 @@ public final class ProceduralStudioScreen extends Screen {
             client.player.changeLookDirection(-deltaX * 1.55, -deltaY * 1.55);
             return true;
         }
-        if (draggingPoint && button == GLFW.GLFW_MOUSE_BUTTON_LEFT && draggedPoint >= 0
-                && draggedAxis >= 0 && axisDragOrigin != null) {
-            Double axisPosition = axisParameter(rayForMouse(mouseX, mouseY), Vec3d.ofCenter(axisDragOrigin),
-                    draggedAxis);
-            if (axisPosition != null) {
-                int offset = (int) Math.round(axisPosition - axisDragStart);
-                BlockPos position = switch (draggedAxis) {
-                    case 0 -> axisDragOrigin.add(offset, 0, 0);
-                    case 1 -> axisDragOrigin.add(0, offset, 0);
-                    default -> axisDragOrigin.add(0, 0, offset);
-                };
-                if (position.getY() >= -2_048 && position.getY() <= 2_047
-                        && !position.equals(lastDraggedPosition)) {
-                    PathHologramRenderer.moveLocal(draggedPoint, position);
-                    sendEditor(EditorActionPayload.PATH_MOVE, draggedPoint, position);
-                    lastDraggedPosition = position;
-                    view.status(tr("gui.komaedit.status.node.moving", draggedPoint + 1, axisName(draggedAxis),
-                            coordinates(position)), System.currentTimeMillis());
-                    updateHover((int) mouseX, (int) mouseY);
-                }
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            return true;
+        }
+        if (draggingPoint && draggedPoint >= 0 && draggedAxis >= 0 && axisDragOrigin != null) {
+            dragAxis(mouseX, mouseY);
+        } else if (pathDrag.active()) {
+            BlockHitResult hit = cursorHit(mouseX, mouseY);
+            int[] next = pathDrag.drag(hit == null ? null : array(hit.getBlockPos().offset(hit.getSide())));
+            if (next != null) {
+                BlockPos position = new BlockPos(next[0], next[1], next[2]);
+                PathHologramRenderer.moveLocal(pathDrag.index(), position);
+                sendEditor(EditorActionPayload.PATH_MOVE, pathDrag.index(), position);
+                view.status(tr("gui.komaedit.status.node.dragging", pathDrag.index() + 1, coordinates(position)),
+                        System.currentTimeMillis());
+            }
+        } else if (box.active()) {
+            BlockHitResult hit = cursorHit(mouseX, mouseY);
+            BoxSelect.Box next = box.drag(gizmoRay(mouseX, mouseY), hit == null ? null : array(hit.getBlockPos()));
+            if (next != null) {
+                sendBox(next, false);
+            }
+        } else if (stroke.active()) {
+            BlockHitResult hit = cursorHit(mouseX, mouseY);
+            if (hit != null && stroke.drag(array(hit.getBlockPos()), System.currentTimeMillis())) {
+                paint(hit);
             }
         }
         return true;
+    }
+
+    /** Arrastrar una flecha del punto elegido: el punto se mueve por ese eje, de bloque en bloque. */
+    private void dragAxis(double mouseX, double mouseY) {
+        Double axisPosition = axisParameter(rayForMouse(mouseX, mouseY), Vec3d.ofCenter(axisDragOrigin), draggedAxis);
+        if (axisPosition == null) {
+            return;
+        }
+        int offset = (int) Math.round(axisPosition - axisDragStart);
+        BlockPos position = switch (draggedAxis) {
+            case 0 -> axisDragOrigin.add(offset, 0, 0);
+            case 1 -> axisDragOrigin.add(0, offset, 0);
+            default -> axisDragOrigin.add(0, 0, offset);
+        };
+        if (position.getY() >= -2_048 && position.getY() <= 2_047 && !position.equals(lastDraggedPosition)) {
+            PathHologramRenderer.moveLocal(draggedPoint, position);
+            sendEditor(EditorActionPayload.PATH_MOVE, draggedPoint, position);
+            lastDraggedPosition = position;
+            view.status(tr("gui.komaedit.status.node.moving", draggedPoint + 1, axisName(draggedAxis),
+                    coordinates(position)), System.currentTimeMillis());
+            updateHover((int) mouseX, (int) mouseY);
+        }
     }
 
     @Override
@@ -263,6 +446,20 @@ public final class ProceduralStudioScreen extends Screen {
             draggedAxis = -1;
             axisDragOrigin = null;
             lastDraggedPosition = null;
+            pathDrag.release();
+            stroke.release();
+            if (box.active()) {
+                BlockHitResult hit = cursorHit(mouseX, mouseY);
+                BoxSelect.Result result = box.release(hit == null ? null : array(hit.getBlockPos()),
+                        System.currentTimeMillis());
+                WorldOverlayRenderer.face(null, false);
+                if (result.magic() && hit != null) {
+                    sendEditor(EditorActionPayload.MAGIC_AREA, 0, hit.getBlockPos());
+                    view.status(tr("gui.komaedit.status.select.magic"), System.currentTimeMillis());
+                } else if (result.box() != null && boxPending) {
+                    sendBox(result.box(), true);
+                }
+            }
         }
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             cameraDragging = false;
@@ -343,31 +540,36 @@ public final class ProceduralStudioScreen extends Screen {
 
     // ── Mundo: puntero, rayos y flechas ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Lo que se ve en el mundo bajo el cursor, según lo que haría un clic: el bloque donde iría un punto (y las flechas
+     * del punto elegido), la cara de la selección que se agarraría o el círculo del pincel.
+     */
     private void updateHover(int mouseX, int mouseY) {
-        hoverPlacement = null;
         BlockPos overlay = null;
         boolean overWorld = view.frame() == null || mouseX < view.frame().panel().x();
-        if (!view.modal() && view.stage() == StudioStage.PATH && overWorld && client != null
-                && client.world != null && client.player != null) {
-            Ray ray = rayForMouse(mouseX, mouseY);
-            HitResult result = client.world.raycast(new RaycastContext(
-                    ray.origin(),
-                    ray.origin().add(ray.direction().multiply(FigureStages.REACH)),
-                    RaycastContext.ShapeType.OUTLINE,
-                    RaycastContext.FluidHandling.NONE,
-                    client.player
-            ));
-            if (result instanceof BlockHitResult hit && result.getType() == HitResult.Type.BLOCK) {
-                hoverPlacement = hit.getBlockPos().offset(hit.getSide()).toImmutable();
-                overlay = hoverPlacement;
-            }
+        StudioView.WorldAction action = view.worldAction(host);
+        // Solo se lanza el rayo cuando lo que hay bajo el cursor cambia lo que se ve (el fantasma tiene el suyo).
+        boolean aims = action == StudioView.WorldAction.POINTS || action == StudioView.WorldAction.SELECT
+                || action == StudioView.WorldAction.PAINT;
+        BlockHitResult hit = overWorld && aims ? cursorHit(mouseX, mouseY) : null;
+        if (action == StudioView.WorldAction.POINTS && hit != null && !pathDrag.active()) {
+            overlay = hit.getBlockPos().offset(hit.getSide()).toImmutable();
+        }
+        WorldOverlayRenderer.studioCursor(action == StudioView.WorldAction.PAINT ? hit : null);
+        if (box.active()) {
+            WorldOverlayRenderer.face(box.pulling(), true);
+        } else if (action == StudioView.WorldAction.SELECT && overWorld) {
+            box.known(knownBox());
+            WorldOverlayRenderer.face(box.faceUnder(gizmoRay(mouseX, mouseY), reach(hit)), false);
+        } else {
+            WorldOverlayRenderer.face(null, false);
         }
         List<BlockPos> points = PathHologramRenderer.points();
         if (view.figure().selectedPoint() >= points.size()) {
             view.figure().selectPoint(-1);
         }
         int selectedPoint = view.figure().selectedPoint();
-        BlockPos gizmoOrigin = view.stage() == StudioStage.PATH && selectedPoint >= 0
+        BlockPos gizmoOrigin = action == StudioView.WorldAction.POINTS && selectedPoint >= 0
                 ? points.get(selectedPoint)
                 : null;
         EditorOverlayRenderer.update(
@@ -420,26 +622,6 @@ public final class ProceduralStudioScreen extends Screen {
                 .add(up.multiply(-normalizedY * tangent))
                 .normalize();
         return new Ray(origin, direction);
-    }
-
-    private int pickPathPoint(Ray ray) {
-        List<BlockPos> points = PathHologramRenderer.points();
-        int selected = -1;
-        double bestDistance = Double.MAX_VALUE;
-        for (int index = 0; index < points.size(); index++) {
-            Vec3d center = Vec3d.ofCenter(points.get(index));
-            double along = center.subtract(ray.origin()).dotProduct(ray.direction());
-            if (along < 0.0) {
-                continue;
-            }
-            double distance = center.distanceTo(ray.origin().add(ray.direction().multiply(along)));
-            double threshold = Math.clamp(along * 0.009, 0.70, 1.40);
-            if (distance <= threshold && distance < bestDistance) {
-                selected = index;
-                bestDistance = distance;
-            }
-        }
-        return selected;
     }
 
     private boolean beginAxisDrag(Ray ray, BlockPos origin, int axis) {
