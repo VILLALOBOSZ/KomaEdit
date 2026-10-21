@@ -30,6 +30,7 @@ public final class ToolCatalog {
             entry(ToolCategory.BUILDINGS, new RoofCard(), StudioIcons.Icon.ROOF),
             entry(ToolCategory.BUILDINGS, new LoftCard(), StudioIcons.Icon.LOFT),
             entry(ToolCategory.BUILDINGS, new UtilityCards.Text(), StudioIcons.Icon.TEXT),
+            entry(ToolCategory.BUILDINGS, new DisplayCard(), StudioIcons.Icon.DISPLAY),
             entry(ToolCategory.TERRAIN, new TerrainCards.Stamp(), StudioIcons.Icon.STAMP),
             entry(ToolCategory.TERRAIN, new PaintCard(), StudioIcons.Icon.PAINT_BRUSH),
             entry(ToolCategory.TERRAIN, new TerrainCards.Ramp(), StudioIcons.Icon.RAMP),

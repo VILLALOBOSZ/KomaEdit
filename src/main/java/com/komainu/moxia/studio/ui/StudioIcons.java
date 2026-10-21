@@ -25,7 +25,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
-        TOUCH_UP, HOTBARS, REBUILD, LASSO,
+        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, LASSO,
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
@@ -627,6 +627,20 @@ public final class StudioIcons {
                 "+++.........",
                 "............",
                 "####++++####");
+        // Un tiesto con su flor entre las esquinas de una selección: un display elegido.
+        mask(Icon.DISPLAY,
+                "++........++",
+                "+...#..#...+",
+                ".....##.....",
+                "....####....",
+                ".....##.....",
+                "......#.....",
+                "....#.#.....",
+                ".....##.....",
+                "..########..",
+                "...######...",
+                "+...####...+",
+                "++........++");
         // Una llana de albañil: el mango arriba y la hoja abajo.
         mask(Icon.TOUCH_UP,
                 ".........##.",

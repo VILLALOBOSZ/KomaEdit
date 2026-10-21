@@ -34,6 +34,7 @@ public final class KomaEditConfig {
         AlignmentGuideSettings.load(directory());
         com.komainu.moxia.rebuild.RebuildConfig.load(directory());
         ShareConfig.load(directory());
+        com.komainu.moxia.display.DisplayConfig.load(directory());
         settings = load(file());
         apply(settings);
     }
