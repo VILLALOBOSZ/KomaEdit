@@ -83,6 +83,14 @@ public final class ProceduralStudioScreen extends Screen {
         view = new StudioView();
     }
 
+    /** {@code /komaedit tutorial}: abre el Studio (si no está abierto) con la bienvenida guiada desde el principio. */
+    public static void openWelcome(MinecraftClient client) {
+        view.startWelcome();
+        if (!(client.currentScreen instanceof ProceduralStudioScreen) && client.player != null) {
+            client.setScreen(new ProceduralStudioScreen());
+        }
+    }
+
     /** La receta que enseña el holograma: la de la figura en curso. */
     public static ProceduralRecipe previewRecipe() {
         return view.figure().draft();
@@ -329,6 +337,7 @@ public final class ProceduralStudioScreen extends Screen {
     private void paint(BlockHitResult hit) {
         ClientStudioAim.send(hit);
         ClientPlayNetworking.send(new BrushToolPayload(BrushInput.of(BrushInput.Base.RIGHT, hasShiftDown())));
+        view.brushUsed();
     }
 
     /** El bloque al que apunta el cursor (hasta {@link FigureStages#REACH} bloques), o {@code null}. */

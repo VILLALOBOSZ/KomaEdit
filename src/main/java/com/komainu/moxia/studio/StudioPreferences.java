@@ -25,7 +25,7 @@ import java.util.Set;
  * Las herramientas tienen sus propias favoritas y recientes (por id de tarjeta), recuerdan sus últimos ajustes y
  * por dónde se iba, y la vista previa (ninguna, al construir o en vivo). También se recuerdan la última etapa, los
  * bloques elegidos hace poco, qué secciones plegables se dejaron abiertas y el tema de colores. Los sellos de relieve
- * tienen sus propias favoritas.
+ * tienen sus propias favoritas. Y si ya salió la bienvenida guiada (su versión), para que salga una sola vez.
  */
 public final class StudioPreferences {
     public static final int MAX_RECENTS = 6;
@@ -79,6 +79,7 @@ public final class StudioPreferences {
     private String tool = "";
     private double panelShare;
     private String theme = "";
+    private int welcome;
 
     public boolean isFavorite(String id) {
         return favorites.contains(id);
@@ -280,6 +281,15 @@ public final class StudioPreferences {
         theme = value == null ? "" : value.strip();
     }
 
+    /** La versión de la bienvenida guiada que ya le salió a este jugador (0: nunca). */
+    public int welcome() {
+        return welcome;
+    }
+
+    public void setWelcome(int version) {
+        welcome = Math.max(0, version);
+    }
+
     public String toJson() {
         JsonObject root = new JsonObject();
         root.addProperty("format", FORMAT);
@@ -298,6 +308,9 @@ public final class StudioPreferences {
         }
         if (!theme.isEmpty()) {
             root.addProperty("theme", theme);
+        }
+        if (welcome > 0) {
+            root.addProperty("welcome", welcome);
         }
         JsonObject valuesObject = new JsonObject();
         toolValues.forEach((id, values) -> {
@@ -369,6 +382,10 @@ public final class StudioPreferences {
             preferences.stage = string(root, "stage");
             preferences.tool = string(root, "tool");
             preferences.theme = string(root, "theme");
+            if (root.has("welcome") && root.get("welcome").isJsonPrimitive()
+                    && root.getAsJsonPrimitive("welcome").isNumber()) {
+                preferences.setWelcome(root.get("welcome").getAsInt());
+            }
             if (root.has("panelShare") && root.get("panelShare").isJsonPrimitive()
                     && root.getAsJsonPrimitive("panelShare").isNumber()) {
                 preferences.setPanelShare(root.get("panelShare").getAsDouble());

@@ -9,6 +9,7 @@ import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.studio.BuildEstimate;
 import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.StudioShortcuts;
+import com.komainu.moxia.studio.WelcomeTour;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.layout.StudioLayout;
@@ -34,7 +35,8 @@ import static com.komainu.moxia.studio.ui.StudioTheme.*;
  * desplazable de cada etapa, pie con sobre qué se trabaja y el botón Construir, y las ventanas de encima (biblioteca
  * de bloques, paleta de órdenes, historial del mundo y chuleta de atajos). La pantalla del cliente solo le pasa el
  * ratón y el teclado, le da un {@link StudioHost} y se queda con lo que pasa en el mundo (puntos, flechas, cámara).
- * Las pruebas y las maquetas usan esta misma clase.
+ * Encima va la bienvenida guiada ({@link WelcomeTour}) la primera vez. Las pruebas y las maquetas usan esta misma
+ * clase.
  */
 public final class StudioView {
     /** Qué tiene que hacer la pantalla con un clic que el Studio no se queda. */
@@ -66,6 +68,7 @@ public final class StudioView {
     private final BlockPicker picker = new BlockPicker();
     private final CommandPalette palette = new CommandPalette();
     private final LivePreview live = new LivePreview();
+    private final WelcomeGuide welcome = new WelcomeGuide(this);
 
     private StudioStage stage = StudioStage.FIGURE;
     private boolean loaded;
@@ -116,6 +119,10 @@ public final class StudioView {
 
     public CommandPalette palette() {
         return palette;
+    }
+
+    public WelcomeTour welcome() {
+        return welcome.tour();
     }
 
     public StudioStage stage() {
@@ -186,6 +193,7 @@ public final class StudioView {
         }
         toolCreation = stage == StudioStage.TOOLS;
         tools.load(bind(host));
+        welcome.loaded(host);
     }
 
     /** Un mensaje en el pie durante {@value #STATUS_MILLIS} ms. */
@@ -217,6 +225,7 @@ public final class StudioView {
     /** Lo que pasa al cerrar el Studio: se aplica lo escrito, se manda lo pendiente y se guarda. */
     public void closed(StudioHost host) {
         StudioHost bound = bind(host);
+        welcome.closed(bound);
         tools.commitField(bound);
         tools.flushOptions(bound, true);
         tools.saveSoon(bound, true);
@@ -244,6 +253,7 @@ public final class StudioView {
     public void tick(StudioHost host) {
         load(host);
         StudioHost bound = bind(host);
+        welcome.tick(bound);
         long now = host.now();
         if (stage == StudioStage.TOOLS) {
             tools.tick(bound);
@@ -322,6 +332,7 @@ public final class StudioView {
         load(host);
         StudioTheme.use(StudioPalette.byId(host.preferences().theme()));
         StudioHost bound = bind(host);
+        welcome.tick(bound);
         int preferred = panelShare > 0 ? (int) Math.round(panelShare * width) : StudioLayout.AUTO;
         frame = StudioLayout.compute(width, height, preferred, StudioStage.groupSizes());
         ui.begin(mouseX, mouseY, !modal());
@@ -338,6 +349,7 @@ public final class StudioView {
             ui.disableHover();
         }
         drawContent(ui, bound);
+        welcome.reveal(ui);
         if (navFlyout) {
             ui.enableHover();
         }
@@ -351,6 +363,7 @@ public final class StudioView {
         if (navFlyout) {
             drawNavFlyout(ui, bound, flyout);
         }
+        welcome.draw(ui, bound);
         if (picker.isOpen()) {
             picker.draw(ui, frame.screen(), bound);
         } else if (palette.isOpen()) {
@@ -358,7 +371,8 @@ public final class StudioView {
         } else if (cheatSheet) {
             drawCheatSheet(ui, bound);
         }
-        if (worldLegend(mouseX, mouseY, host.now())) {
+        // Con la bienvenida a la vista la leyenda sobra: la burbuja ya dice qué hacer.
+        if (worldLegend(mouseX, mouseY, host.now()) && !welcome.visible()) {
             drawWorldLegend(ui, bound);
         }
         ui.canvas().endOverlay();
@@ -427,7 +441,8 @@ public final class StudioView {
      */
     private String pointerHint(StudioUi ui, StudioHost host, int mouseX, int mouseY) {
         if (modal() || dragging() || typing() || mouseX < 0 || mouseY < 0
-                || frame.footer().contains(mouseX, mouseY)) {
+                || frame.footer().contains(mouseX, mouseY)
+                || welcome.covers(mouseX, mouseY)) {
             return "";
         }
         if (mouseX < frame.panel().x()) {
@@ -485,6 +500,9 @@ public final class StudioView {
         boolean tools = stage == StudioStage.TOOLS;
         for (int slot = 0; slot < buttons.size(); slot++) {
             Rect rect = frame.toolButton(slot);
+            if (buttons.get(slot) == 3) {
+                ui.anchor("top:history", rect);
+            }
             switch (buttons.get(slot)) {
                 case 0 -> ui.toolButton(rect, StudioIcons.Icon.CLOSE, false, true)
                         .onClick(host::close).tooltip(host.tr("gui.komaedit.help.top.close"));
@@ -772,6 +790,7 @@ public final class StudioView {
             if (line.phase() == ProgressLine.Phase.WAITING) {
                 String discard = host.tr("gui.komaedit.job.discard");
                 Rect[] buttons = frame.footerButtons(ui.width(discard) + 20);
+                ui.anchor("job:confirm", buttons[0]);
                 ui.button(buttons[0], host.tr("gui.komaedit.job.confirm"), StudioUi.Tone.PRIMARY)
                         .tooltip(host.tr("gui.komaedit.job.confirm") + "\n" + host.tr("gui.komaedit.job.confirm.help"))
                         .onClick(() -> {
@@ -811,6 +830,7 @@ public final class StudioView {
             drawPreviewSelector(ui, parts[0], host);
             build = parts[1];
         }
+        ui.anchor("footer:build", build);
         ui.button(build, footer.buildLabel(), footer.tone()).onClick(footer.build())
                 .tooltip(footer.buildLabel() + "\n" + footer.help());
     }
@@ -852,6 +872,7 @@ public final class StudioView {
         String cancel = host.tr("gui.komaedit.ghost.button.cancel");
         Rect[] buttons = frame.footerButtons(ui.width(cancel) + 20);
         String place = host.tr(ghost.waiting() ? "gui.komaedit.ghost.placing" : "gui.komaedit.ghost.button.place");
+        ui.anchor(WelcomeTour.GHOST_PLACE_ANCHOR, buttons[0]);
         ui.button(buttons[0], place, ghost.waiting() ? StudioUi.Tone.DISABLED : StudioUi.Tone.PRIMARY)
                 .tooltip(place + "\n" + host.tr("gui.komaedit.ghost.button.place.tooltip"))
                 .onClick(ghost.place());
@@ -1003,6 +1024,7 @@ public final class StudioView {
             y += 16;
         }
         Rect[] buttons = new Rect(box.x() + 6, box.bottom() - 20, box.width() - 12, 15).columns(2, 4);
+        ui.anchor("history:undo", buttons[0]);
         boolean canUndo = history.undone() < entries.size() || entries.isEmpty();
         boolean canRedo = history.undone() > 0;
         ui.button(buttons[0], host.tr("gui.komaedit.history.undo"), canUndo ? StudioUi.Tone.SECONDARY
@@ -1064,7 +1086,15 @@ public final class StudioView {
         ui.fill(modal, PANEL);
         ui.border(modal, DIVIDER);
         ui.fill(new Rect(modal.x(), modal.y(), 2, modal.height()), ACCENT);
-        ui.bold(host.tr("gui.komaedit.shortcuts.title"), modal.x() + 14, modal.y() + 10, modalWidth - 28, TEXT_STRONG);
+        // Arriba a la derecha, volver a lanzar la bienvenida guiada.
+        String relaunch = host.tr("gui.komaedit.welcome.relaunch");
+        int relaunchWidth = ui.chipWidth(relaunch);
+        ui.chip(new Rect(modal.right() - 14 - relaunchWidth, modal.y() + 7, relaunchWidth, 14), relaunch, false,
+                        ACCENT_TEXT)
+                .group(WelcomeBubble.GROUP).tooltip(relaunch + "\n" + host.tr("gui.komaedit.welcome.relaunch.help"))
+                .onClick(this::startWelcome);
+        ui.bold(host.tr("gui.komaedit.shortcuts.title"), modal.x() + 14, modal.y() + 10,
+                modalWidth - 36 - relaunchWidth, TEXT_STRONG);
         ui.label(host.tr("gui.komaedit.shortcuts.close"), modal.x() + 14, modal.bottom() - 14, modalWidth - 28, MUTED);
         int keyColumn = Math.min(keyWidth, columnWidth / 2);
         for (int index = 0; index < shortcuts.size(); index++) {
@@ -1126,6 +1156,28 @@ public final class StudioView {
         StudioTheme.use(palette);
         host.savePreferences();
         bind(host).status(host.tr("gui.komaedit.theme.applied", host.tr(palette.translationKey())));
+    }
+
+    // ── Bienvenida ──────────────────────────────────────────────────────────────────────────────────────
+
+    /** Vuelve a lanzar la bienvenida desde la entrada (desde la ayuda o con {@code /komaedit tutorial}). */
+    public void startWelcome() {
+        cheatSheet = false;
+        historyOpen = false;
+        welcome.tour().offer();
+    }
+
+    /** La pantalla pintó con el pincel en el mundo (un clic o una pasada al arrastrar). */
+    public void brushUsed() {
+        welcome.tour().brushUsed();
+    }
+
+    /** Desplaza el contenido para que {@code bounds} (registrada en el último dibujo) quede a la vista. */
+    void scrollIntoView(Rect bounds) {
+        Rect viewport = frame.viewport();
+        if (bounds.y() < viewport.y() || bounds.bottom() > viewport.bottom()) {
+            scroll = Math.clamp(scroll + bounds.y() - viewport.y() - viewport.height() / 3, 0, maximumScroll());
+        }
     }
 
     // ── Paleta de órdenes ───────────────────────────────────────────────────────────────────────────────
@@ -1359,7 +1411,11 @@ public final class StudioView {
         ProceduralRecipe before = figure.draft();
         ToolsPanel.Snapshot toolsBefore = tools.snapshot();
         StudioUi.Widget widget = ui == null ? null : ui.at(x, y);
+        String anchor = ui == null ? null : ui.anchorAt(x, y);
         Click result = click(x, y, button, widget, bound);
+        if (button == 0) {
+            welcome.clicked(widget, anchor);
+        }
         figure.track(before, widget == null ? null : widget.group(), host.now());
         tools.track(toolsBefore, widget == null ? null : widget.group(), host.now());
         return result;
@@ -1368,8 +1424,10 @@ public final class StudioView {
     private Click click(double x, double y, int button, StudioUi.Widget widget, StudioHost host) {
         boolean left = button == 0;
         if (cheatSheet) {
-            // Cualquier clic la cierra, salvo en el selector de tema: así se prueban los temas uno tras otro.
-            if (left && widget != null && THEME_GROUP.equals(widget.group())) {
+            // Cualquier clic la cierra, salvo en el selector de tema (así se prueban los temas uno tras otro) y en
+            // volver a lanzar la bienvenida.
+            if (left && widget != null && (THEME_GROUP.equals(widget.group())
+                    || WelcomeBubble.GROUP.equals(widget.group()))) {
                 widget.press(x, y);
             } else {
                 cheatSheet = false;
@@ -1387,6 +1445,13 @@ public final class StudioView {
         }
         if (picker.isOpen() || palette.isOpen()) {
             if (left && widget != null) {
+                widget.press(x, y);
+            }
+            return Click.HANDLED;
+        }
+        if (widget != null && WelcomeBubble.GROUP.equals(widget.group())) {
+            // La burbuja de la bienvenida responde al primer clic, aunque el historial esté abierto.
+            if (left) {
                 widget.press(x, y);
             }
             return Click.HANDLED;
@@ -1777,6 +1842,7 @@ public final class StudioView {
 
         @Override
         public void send(String command) {
+            welcome.tour().sent(command);
             host.send(command);
         }
 
@@ -1901,12 +1967,18 @@ public final class StudioView {
         }
 
         @Override
+        public boolean creative() {
+            return host.creative();
+        }
+
+        @Override
         public int[] clickedSpot() {
             return host.clickedSpot();
         }
 
         @Override
         public void worldUndo() {
+            welcome.tour().undone();
             host.worldUndo();
         }
 
