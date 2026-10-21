@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Auditoría de deshacer, transformaciones y datos
+
+- **Retocar un cofre ya no le vacía el contenido.** WorldEdit 7.3.8 vacía siempre un contenedor antes de escribir encima y KomaEdit escribía un estado sin datos: «Retocar» a mano un cofre, barril, horno, tolva, atril o tocadiscos tiraba lo que llevaba y, al ser un solo bloque, no quedaba en `//undo`. También lo vaciaban (con `//undo`) anegar o drenar cofres y retocar una selección. Un cambio de estado del mismo bloque conserva ahora sus datos, y una edición a mano que quita o cambia por otro un bloque con contenido va al historial aunque sea de un bloque. Con la simetría de WorldEdit puesta, la copia sobre el mismo contenedor conserva lo suyo (no duplica objetos).
+- **Reconstrucción animada sin duplicar objetos.** Los cofres, hornos y demás bloques con datos volvían con lo que tenían al leer la obra aunque alguien (o una tolva) sacara o metiera cosas antes de quitarlos: lo sacado se duplicaba y lo metido se perdía. Ahora se releen justo al quitarlos.
+- **Doblar y estampar planos giran raíles y bisagras.** Usaban el giro de WorldEdit, que no toca la forma de los raíles (una vía doblada por una curva seguía de norte a sur) ni la bisagra de las puertas al voltear. Ahora usan la misma transformación que la simetría, el gizmo y el portapapeles.
+- **Crafter reflejado:** uno que mira de lado, reflejado a la vez en horizontal y en vertical (simetría o gizmo), sigue al espejo en vez de quedarse mirando donde estaba.
+- **Notas y vistas compartidas que no se pueden leer** (a medias, editadas a mano o de una versión más nueva tras volver a una anterior) se apartan como `notes.broken-N.json` / `views.broken-N.json` en vez de pisarse con la primera nota o vista nueva.
+- **Un recorrido borrado ya no vuelve** al entrar de nuevo: se quedaba su copia `.bak` y el proyecto lo recuperaba.
+- La documentación de doblar dice que los bloques con datos salen sin ellos, como en la colocación.
+- Prueba exhaustiva de estados (`OrientedStatesCoverageTest`) por las 48 orientaciones y los radiales de la simetría: escaleras con cada esquina, losas, troncos, puertas, camas, carteles colgantes, vallas, muros, raíles, cofres dobles, trampillas, palancas, campanas, faroles, estalactitas, crafter, pistones y tolvas.
+
 ## 2.0.1 (estable, 2026-10-21)
 
 - Corrige el arranque de la 2.0.0: la reconstrucción animada pedía el aire de WorldEdit al cargar el mod, antes de que WorldEdit tuviera sus registros, y el servidor y el cliente se caían con «WorldEdit is not initialized yet». Una prueba nueva (`InitOrderTest`) vigila que ninguna clase que se carga al iniciar tenga constantes con registros de WorldEdit.
