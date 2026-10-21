@@ -107,7 +107,13 @@ public final class RebuildService {
             .with(SideEffect.NEIGHBORS, SideEffect.State.OFF)
             .with(SideEffect.UPDATE, SideEffect.State.OFF)
             .with(SideEffect.VALIDATION, SideEffect.State.OFF);
-    private static final BaseBlock AIR = BlockTypes.AIR.getDefaultState().toBaseBlock();
+    /**
+     * El aire de WorldEdit, pedido al usarlo: esta clase se carga en {@code onInitialize} (al registrar sus
+     * eventos), antes de que WorldEdit tenga sus registros, y una constante con {@code BlockTypes} tumbaba el arranque.
+     */
+    private static BaseBlock worldEditAir() {
+        return BlockTypes.AIR.getDefaultState().toBaseBlock();
+    }
     private static final double REACH = 128.0;
     private static final Map<UUID, Job> JOBS = new LinkedHashMap<>();
     private static final Map<UUID, Recovery> RECOVERIES = new LinkedHashMap<>();
@@ -638,7 +644,7 @@ public final class RebuildService {
         private int add(int raw, BlockTraits traits, BaseBlock block) {
             int palette = builder.palette(raw, traits);
             while (blocks.size() < palette) {
-                blocks.add(AIR);
+                blocks.add(worldEditAir());
             }
             blocks.add(block);
             return palette;
@@ -1069,7 +1075,7 @@ public final class RebuildService {
         public void write(long position, int palette) throws MaxChangedBlocksException {
             job.editSession.setBlock(BlockVector3.at(PackedBlockPlan.unpackX(position),
                     PackedBlockPlan.unpackY(position), PackedBlockPlan.unpackZ(position)),
-                    palette == RebuildModel.AIR ? AIR : job.blocks.get(palette));
+                    palette == RebuildModel.AIR ? worldEditAir() : job.blocks.get(palette));
         }
     }
 
@@ -1154,7 +1160,7 @@ public final class RebuildService {
 
                 @Override
                 public void write(long position, int palette) throws MaxChangedBlocksException {
-                    BaseBlock block = palette == RebuildModel.AIR ? AIR : blocks[palette];
+                    BaseBlock block = palette == RebuildModel.AIR ? worldEditAir() : blocks[palette];
                     if (block == null) {
                         unknown++;
                         return;
@@ -1191,7 +1197,7 @@ public final class RebuildService {
             BaseBlock[] blocks = new BaseBlock[snapshot.palette().size()];
             int[] raw = new int[blocks.length];
             for (int index = 0; index < blocks.length; index++) {
-                BaseBlock block = index == RebuildModel.AIR ? AIR : RebuildBlocks.parse(snapshot.palette().get(index));
+                BaseBlock block = index == RebuildModel.AIR ? worldEditAir() : RebuildBlocks.parse(snapshot.palette().get(index));
                 blocks[index] = block;
                 raw[index] = block == null ? -1 : RebuildBlocks.raw(block);
             }
