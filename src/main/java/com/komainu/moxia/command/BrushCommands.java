@@ -59,13 +59,13 @@ public final class BrushCommands {
                 case PETAL_PAINTER -> new String[]{"petals", "wildflowers", "leaves", "8", "0.3", "-n",
                         "Perlin(F:0.05)", "-z", "-m", "#fullblock", "grass_block,moss_block", "-p"};
                 case PLACE -> new String[]{"Clipboard", "Cl(O:C)", "Cl(R:90)", "Sh(S:Cone,P:stone)", "Constant",
-                        "SurfaceNormal", "Aim", "Random", "ViewDiff", "C(D:east)", "-s", "-o", "-j", "-a", "-x", "-w",
-                        "-p"};
+                        "SurfaceNormal", "Aim", "Random", "ViewDiff", "C(D:east)", "C(D:aim)", "-s", "-o", "-j", "-a",
+                        "-x", "-w", "-mirada", "clic", "-p"};
                 case SCATTER -> new String[]{"Clipboard", "Sc(N:arbol_.*)", "Ic(P:stone,R:0.6)", "Constant", "Random",
                         "SurfaceNormal", "-h", "Box(D:\"30,20,30\")", "-n", "-d", "up", "-e", "-m", "-u", "-s", "-o",
-                        "-t"};
+                        "-t", "-mirada", "clic"};
                 case ARRAY -> new String[]{"Clipboard", "Sh(S:Cylinder,P:stone)", "Tangential", "Orthogonal",
-                        "Constant", "-g", "-q", "-y", "-b", "-n", "-p", "-s"};
+                        "Constant", "-g", "-q", "-y", "-b", "-n", "-p", "-s", "-mirada", "clic"};
                 case TREE -> new String[]{"oak", "spruce", "birch", "jungle", "acacia", "cherry", "willow", "dark_oak",
                         "dead", "palm", "baobab", "fantasy", "18", "-g", "-b", "-d", "-w", "-i", "-c", "-x", "-t", "-h",
                         "-r", "-m", "-s", "-p"};
@@ -155,7 +155,7 @@ public final class BrushCommands {
                         .suggests(TYPES)
                         .executes(context -> configure(context, ""))
                         .then(argument("pincel_opciones", StringArgumentType.greedyString())
-                                .suggests(OPTIONS)
+                                .suggests(ResultSuggestions.or(OPTIONS))
                                 .executes(context -> configure(context,
                                         StringArgumentType.getString(context, "pincel_opciones")))));
     }

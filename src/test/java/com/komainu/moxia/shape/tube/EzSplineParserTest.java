@@ -236,9 +236,12 @@ class EzSplineParserTest {
         assertEquals(EzShapes.Form.RINGS.option(), rings.get(EzShapes.FORM, 0));
         assertEquals(1.0, rings.get("thickness", 0));
         assertEquals(EzShapes.Form.BEADS.option(), options("3d Be clay 10").get(EzShapes.FORM, 0));
-        // Braids es la trenza de KomaEdit.
-        assertEquals(PathShape.BRAID, parameters("3d Braids(Thickness:0.2) clay 7").shape());
-        assertEquals(0.12, settings("3d Braids(Thickness:0.2) clay 7").strandThickness(), 1.0E-9);
+        // Braids es la trenza de ezEdits, con la fórmula de su gráfica Desmos.
+        assertEquals(PathShape.SWEEP, parameters("3d Braids(Thickness:0.2) clay 7").shape());
+        ShapeOptions braids = options("3d Br(T:0.2,G:1) clay 7");
+        assertEquals(EzShapes.Form.BRAIDS.option(), braids.get(EzShapes.FORM, 0));
+        assertEquals(0.2, braids.get("thickness", 0), 1.0E-9);
+        assertEquals(1.0, braids.get("gap", 0), 1.0E-9);
     }
 
     @Test

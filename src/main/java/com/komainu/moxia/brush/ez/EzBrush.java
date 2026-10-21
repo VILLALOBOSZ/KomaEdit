@@ -18,6 +18,7 @@ import com.komainu.moxia.nature.NaturePresets;
 import com.komainu.moxia.nature.NatureService;
 import com.komainu.moxia.nature.RockSettings;
 import com.komainu.moxia.nature.TreeSettings;
+import com.komainu.moxia.placement.DirectionExpr;
 import com.komainu.moxia.placement.PlacementService;
 import com.komainu.moxia.placement.PlacementSettings;
 import com.komainu.moxia.sculpt.BrushFalloff;
@@ -103,7 +104,10 @@ public abstract sealed class EzBrush {
                 case ARRAY -> PlacementSettings.Kind.ARRAY;
                 default -> PlacementSettings.Kind.PLACE;
             };
-            return new Placing(type, PlacementSettings.parse(kind, input, true));
+            Vec3d look = player.getRotationVec(1.0F);
+            // Como en ezEdits: Constant(D:aim) es la mirada de ahora, al configurar; Aim, la de cada clic.
+            return new Placing(type, PlacementSettings.parse(kind, input, true)
+                    .bindAim(new DirectionExpr.Context(new Vec3(look.x, look.y, look.z))));
         }
         BrushOptions options = type.options(input);
         boolean preview = options.has('p');
@@ -527,6 +531,11 @@ public abstract sealed class EzBrush {
 
         PlacementSettings settings() {
             return settings;
+        }
+
+        /** La colocación marcada con el clic derecho que espera la dirección de {@code ViewDiff}, o {@code null}. */
+        PlacementService.BrushTarget pending() {
+            return pending;
         }
 
         @Override

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Lo que faltaba de ezEdits: visualizador de la alineación y más
+
+- **Visualizador de la alineación en los pinceles de colocación.** Con un pincel `place`, `scatter` o `array` en la mano se ve, en el bloque que miras, hacia dónde quedará lo que colocas: flecha verde la primaria (el «arriba» de la estructura), roja la secundaria (su +x) y azul el tercer eje, con sus nombres en la punta y a trazos la secundaria que pediste si no era perpendicular. Es el mismo cálculo que el clic: sigue al terreno con `SurfaceNormal`, espera el clic derecho en `ViewDiff`, va por el tramo siguiente en `array` y avisa en amarillo si la orientación no vale. Con KomaEdit en el cliente se dibuja como el gizmo (encima de todo y del mismo tamaño en pantalla); sin el mod, con block displays de hormigón que solo ve quien pincela, como en ezEdits. Se apaga para todos en `config/komaedit/visualisations.json` (también cada cuánto se recalcula) y cada jugador para sí en `/kegui ajustes` (**Alineación del pincel**).
+- **`Constant(D:aim)` es la mirada de cuando configuras el pincel**, como en ezEdits (y cualquier dirección fija que dependa de ti, también `-k aim`); `Aim` sigue la de cada clic. Con `-mirada clic` (alias `-aim click`) vuelve lo de antes.
+- **Máscara `#savedselection[nombre]`** (`#savedsel`): los bloques dentro de una selección guardada con `/komaedit sel save`, con su forma.
+- **El `=` de las paletas, en el chat**: `##Magma=` propone la paleta desplegada en bloques y el tabulador la escribe, también dentro de `Sh(S:Cone,P:##Magma=` y de `#palette[##Ice=` en WorldEdit; y `C(D:east-z+(0,0.5,0)=` propone la dirección calculada.
+- **`//ezspline 3d Braids` como el de ezEdits**: la trenza sale ahora con la fórmula de su gráfica Desmos pública (tres hebras redondas desfasadas un tercio de vuelta, cada una en su franja de la paleta); `Gap` separa los cruces.
+- **`/komaedit debugprint`** (admin) con versiones, memoria, límites y el estado del visualizador, para copiarlo en un informe, y **`/komaedit debug clearloadingbars|removevisualiserentities`**, como `//ezdebug`.
+- `palette decode` explica por qué un código de ezEdits no se puede leer (su formato no está publicado y cambia con la versión de Minecraft) y qué pegar en su lugar. La tabla de paridad queda con cada fila en «Completo» o con su motivo.
+- Código: `placement.AlignmentGuide` (cálculo y dibujo, puro), `AlignmentGuideSettings`, `feedback.AlignmentGuidePayload`, `brush.ez.AlignmentGuides` y `AlignmentGuideDisplays`, `client.world.AlignmentGuideRenderer`; la flecha y el cubo del gizmo salen de `GizmoGeometry` para usarlos los dos. `command.ResultSuggestions` para el `=`. Pruebas: el visualizador frente a la colocación real (once alineaciones), la ladera, `ViewDiff`, `array`, lo que no vale, el paquete, las barras de los displays, `#savedselection` con cada forma, el `=` (también por Brigadier y en las órdenes de verdad), la mirada fija o por clic, la trenza y la ida y vuelta de todas las paletas de serie por `kp1:`. Renders en `docs/renders/alineacion/` (`AlignmentGuideRenderTest`, con `KOMAEDIT_GUIDE_RENDER`). Nada probado aún dentro de Minecraft.
+
 ## 1.9.1 (estable, 2026-10-21)
 
 ### Bienvenida guiada: lo primero que ve quien abre el Studio
