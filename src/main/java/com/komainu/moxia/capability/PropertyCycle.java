@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Recorrido de propiedades de «Retocar». Trabaja con nombres y valores en texto, como los da el estado del bloque
+ * Recorrido de propiedades de «Cambiar estado». Trabaja con nombres y valores en texto, como los da el estado del bloque
  * ({@code facing=north}, {@code half=bottom}…), y no toca Minecraft.
  *
  * <p>Hay una propiedad activa por jugador. El clic derecho la avanza al valor siguiente (con Mayús, al anterior) y
