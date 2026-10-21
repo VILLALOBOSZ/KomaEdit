@@ -62,21 +62,31 @@ public final class OperationLedger {
         finish(jobs(playerId), id, description, processed, total, changed, protectedBlocks, cancelled);
     }
 
+    /**
+     * Un trabajo cerrado (hecho o cancelado) ya no tiene nada de qué avisar y se borra su archivo: si no, cada edición
+     * dejaba el suyo para siempre y {@link #markInterrupted} los leía todos al entrar el jugador.
+     */
     static void finish(Path directory, String id, String description, long processed, long total, int changed,
                        int protectedBlocks, boolean cancelled) {
-        JsonObject root = readOrBase(directory, id, description, total);
-        root.addProperty("status", cancelled ? "CANCELLED" : "COMPLETED");
-        root.addProperty("processed", processed);
-        root.addProperty("changed", changed);
-        root.addProperty("protected", protectedBlocks);
-        root.addProperty("finishedAt", Instant.now().toString());
-        write(directory, id, root);
+        forget(path(directory, id));
+    }
+
+    /** La copia primero: {@link AtomicStorage#recoverTree} rehace el archivo de una copia que se quede sola. */
+    private static void forget(Path file) {
+        try {
+            Files.deleteIfExists(AtomicStorage.backup(file));
+            Files.deleteIfExists(AtomicStorage.temporary(file));
+            Files.deleteIfExists(file);
+        } catch (IOException exception) {
+            KomaEditMod.LOGGER.warn("Could not remove the finished KomaEdit job {}", file, exception);
+        }
     }
 
     public static int markInterrupted(UUID playerId) {
         return markInterrupted(jobs(playerId));
     }
 
+    /** Lo que quedó corriendo pasa a interrumpido; lo terminado que dejaron versiones anteriores se borra. */
     static int markInterrupted(Path directory) {
         if (!Files.isDirectory(directory)) {
             return 0;
@@ -86,15 +96,25 @@ public final class OperationLedger {
             for (Path file : paths.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".json"))
                     .toList()) {
-                JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8))
-                        .getAsJsonObject();
-                if (!"RUNNING".equals(root.get("status").getAsString())) {
-                    continue;
+                // Un archivo ilegible se queda donde está, pero no para a los demás.
+                try {
+                    JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8))
+                            .getAsJsonObject();
+                    String status = root.get("status").getAsString();
+                    if ("COMPLETED".equals(status) || "CANCELLED".equals(status)) {
+                        forget(file);
+                        continue;
+                    }
+                    if (!"RUNNING".equals(status)) {
+                        continue;
+                    }
+                    root.addProperty("status", "INTERRUPTED");
+                    root.addProperty("interruptedAt", Instant.now().toString());
+                    AtomicStorage.writeString(file, GSON.toJson(root));
+                    interrupted++;
+                } catch (IOException | RuntimeException exception) {
+                    KomaEditMod.LOGGER.warn("Skipping unreadable KomaEdit job {}: {}", file, exception.getMessage());
                 }
-                root.addProperty("status", "INTERRUPTED");
-                root.addProperty("interruptedAt", Instant.now().toString());
-                AtomicStorage.writeString(file, GSON.toJson(root));
-                interrupted++;
             }
             return interrupted;
         } catch (IOException | RuntimeException exception) {
