@@ -4,6 +4,9 @@ import com.komainu.moxia.path.PathGenerators;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.persistence.NamedDefinitions;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.selection.BrushShape;
+import com.komainu.moxia.selection.SelectionMorphology;
+import com.komainu.moxia.selection.SelectionToolService;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.worldedit.ez.EzDirections;
 import com.komainu.moxia.worldedit.ez.SavedSelections;
@@ -42,6 +45,10 @@ import static net.minecraft.server.command.CommandManager.literal;
  * {@code /komaedit sel}: órdenes de selección de ezEdits ({@code //selload}, {@code //next}, {@code //selhere},
  * {@code //ezselinvert}, {@code //delpos2}, {@code //encapsulate}, {@code //encapsulatenear} y {@code //ezsel}) sobre la
  * selección de WorldEdit. La catenaria ({@code //selcatenary}) es {@code /komaedit path catenary}.
+ *
+ * <p>Y las de la selección a mano (el lazo y el pincel del Studio, {@link SelectionToolService}): {@code undo},
+ * {@code grow}, {@code shrink}, {@code complement}, {@code box} y {@code clear}. Valen con cualquier selección: una
+ * caja o una esfera se convierten antes en bloques sueltos.</p>
  */
 public final class SelectionCommands {
     /** Bloques como mucho que revisa {@code encapsulate}. */
@@ -107,7 +114,110 @@ public final class SelectionCommands {
                 .then(encapsulateNearCommand("encapsulatenear"))
                 .then(encapsulateNearCommand("encnear"))
                 .then(catenaryCommand("catenary"))
-                .then(catenaryCommand("catenaria"));
+                .then(catenaryCommand("catenaria"))
+                .then(undoCommand("undo"))
+                .then(undoCommand("deshacer"))
+                .then(resizeCommand("grow", true))
+                .then(resizeCommand("ampliar", true))
+                .then(resizeCommand("shrink", false))
+                .then(resizeCommand("reducir", false))
+                .then(complementCommand("complement"))
+                .then(complementCommand("complemento"))
+                .then(literal("box").requires(EzCommandSupport.node(SelectionToolService.BOX))
+                        .executes(SelectionCommands::box))
+                .then(literal("caja").requires(EzCommandSupport.node(SelectionToolService.BOX))
+                        .executes(SelectionCommands::box))
+                .then(literal("clear").requires(EzCommandSupport.node(SelectionToolService.CLEAR))
+                        .executes(SelectionCommands::clear))
+                .then(literal("quitar").requires(EzCommandSupport.node(SelectionToolService.CLEAR))
+                        .executes(SelectionCommands::clear));
+    }
+
+    // ── Selección a mano ──────────────────────────────────────────────────────────────────────────────────
+
+    private static LiteralArgumentBuilder<ServerCommandSource> undoCommand(String name) {
+        return literal(name).requires(EzCommandSupport.node(SelectionToolService.UNDO))
+                .executes(context -> EzCommandSupport.run(context, player -> {
+                    if (!SelectionToolService.undo(player)) {
+                        throw new IllegalArgumentException("No hay trazos de selección que deshacer");
+                    }
+                    EzCommandSupport.ok(player, "Último trazo de selección deshecho");
+                    return 1;
+                }));
+    }
+
+    /**
+     * {@code grow|shrink <bloques> [sphere|cube|octahedron] [-s] [-n]}: amplía o reduce; {@code -s} por la superficie
+     * (por columnas sobre lo que se ve) y {@code -n} cuenta lo que no es sólido como suelo.
+     */
+    private static LiteralArgumentBuilder<ServerCommandSource> resizeCommand(String name, boolean grow) {
+        String node = grow ? SelectionToolService.GROW : SelectionToolService.SHRINK;
+        return literal(name).requires(EzCommandSupport.node(node))
+                .then(argument("args", StringArgumentType.greedyString())
+                        .suggests(EzCommandSupport.words(List.of("1", "2", "3", "sphere", "cube", "octahedron", "-s",
+                                "-n")))
+                        .executes(context -> EzCommandSupport.run(context, player -> {
+                            CommandTokens tokens = CommandTokens.parse(StringArgumentType.getString(context, "args"),
+                                    Set.of()).allow("s", "n").atMost(2);
+                            int steps;
+                            try {
+                                steps = Integer.parseInt(tokens.require(0, "cuántos bloques"));
+                            } catch (NumberFormatException exception) {
+                                throw new IllegalArgumentException("Uso: sel " + name + " <bloques> [sphere|cube|"
+                                        + "octahedron] [-s] [-n]");
+                            }
+                            if (steps < 1 || steps > SelectionMorphology.MAX_STEPS) {
+                                throw new IllegalArgumentException("Se amplía o reduce de 1 a "
+                                        + SelectionMorphology.MAX_STEPS + " bloques");
+                            }
+                            BrushShape shape = BrushShape.byId(tokens.at(1, "cube"));
+                            int size = grow
+                                    ? SelectionToolService.grow(player, steps, shape, tokens.flag("s"),
+                                    tokens.flag("n"))
+                                    : SelectionToolService.shrink(player, steps, shape, tokens.flag("s"),
+                                    tokens.flag("n"));
+                            EzCommandSupport.ok(player, (grow ? "Selección ampliada" : "Selección reducida") + ": "
+                                    + ProgressLine.group(size) + " bloques");
+                            return 1;
+                        })));
+    }
+
+    /** {@code complement [-s] [-n]}: lo que no estaba seleccionado, en su caja o (con {@code -s}) por la superficie. */
+    private static LiteralArgumentBuilder<ServerCommandSource> complementCommand(String name) {
+        return literal(name).requires(EzCommandSupport.node(SelectionToolService.COMPLEMENT))
+                .executes(context -> complement(context, ""))
+                .then(argument("flags", StringArgumentType.greedyString())
+                        .suggests(EzCommandSupport.words(List.of("-s", "-n")))
+                        .executes(context -> complement(context, StringArgumentType.getString(context, "flags"))));
+    }
+
+    private static int complement(CommandContext<ServerCommandSource> context, String flags)
+            throws CommandSyntaxException {
+        return EzCommandSupport.run(context, player -> {
+            CommandTokens tokens = CommandTokens.parse(flags, Set.of()).allow("s", "n").atMost(0);
+            int size = SelectionToolService.complement(player, tokens.flag("s"), tokens.flag("n"));
+            EzCommandSupport.ok(player, "Selección invertida: " + ProgressLine.group(size) + " bloques");
+            return 1;
+        });
+    }
+
+    private static int box(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        return EzCommandSupport.run(context, player -> {
+            BlockVector3[] corners = SelectionToolService.box(player);
+            BlockVector3 size = corners[1].subtract(corners[0]).add(1, 1, 1);
+            EzCommandSupport.ok(player, "Selección pasada a caja: " + size.x() + "×" + size.y() + "×" + size.z());
+            return 1;
+        });
+    }
+
+    private static int clear(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        return EzCommandSupport.run(context, player -> {
+            if (!SelectionToolService.clear(player)) {
+                throw new IllegalArgumentException("No tienes nada seleccionado");
+            }
+            EzCommandSupport.ok(player, "Selección quitada · /komaedit sel undo la recupera");
+            return 1;
+        });
     }
 
     private static java.util.function.Predicate<ServerCommandSource> selection(String sub) {

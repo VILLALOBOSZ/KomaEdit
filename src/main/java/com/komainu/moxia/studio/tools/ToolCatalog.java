@@ -25,6 +25,7 @@ public final class ToolCatalog {
             new TerrainCards.River(),
             new TerrainCards.Erosion(),
             new TerrainCards.Paint(),
+            new SelectionCard(),
             new UtilityCards.Text(),
             new UtilityCards.Analyze(),
             new UtilityCards.Gravity(),

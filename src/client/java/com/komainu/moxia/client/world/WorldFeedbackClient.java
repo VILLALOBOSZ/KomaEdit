@@ -9,6 +9,7 @@ import com.komainu.moxia.feedback.WorldFeedbackSettings;
 import com.komainu.moxia.preview.PreviewPlanCodec;
 import com.komainu.moxia.preview.PreviewPlanPayload;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.selection.SelectionPayloads;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -70,6 +71,8 @@ public final class WorldFeedbackClient {
                 WorldOverlayRenderer.selection(payload));
         ClientPlayNetworking.registerGlobalReceiver(SymmetryGuidePayload.ID, (payload, context) ->
                 WorldOverlayRenderer.symmetry(payload));
+        ClientPlayNetworking.registerGlobalReceiver(SelectionPayloads.Outline.ID, (payload, context) ->
+                WorldOverlayRenderer.outline(payload));
         ClientPlayNetworking.registerGlobalReceiver(FeedbackEventPayload.ID, (payload, context) ->
                 context.client().execute(() -> sound(context.client(), payload.kind())));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(() -> {

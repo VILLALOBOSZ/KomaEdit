@@ -135,6 +135,9 @@ public final class StudioTheme {
     public static final int WORLD_PLANE_Z = 0x42A5F5;
     public static final int WORLD_PLANE_Y = 0x66BB6A;
     public static final int WORLD_AXIS = 0xFFCA28;
+    /** El lazo mientras se dibuja, a tramos claros y oscuros: se lee sobre cualquier cosa que rodee. */
+    public static final int WORLD_LASSO_LIGHT = 0xFFFFFFFF;
+    public static final int WORLD_LASSO_DARK = 0xFF1A1A1A;
 
     private static StudioPalette current;
 

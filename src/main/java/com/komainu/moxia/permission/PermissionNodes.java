@@ -111,6 +111,11 @@ public final class PermissionNodes {
             add(select + "." + entry[0], Pack.BASIC, select, "ezedits.selection." + entry[1],
                     "/komaedit sel " + entry[0]);
         }
+        add(select + ".lasso", Pack.BASIC, select, null, "Lazo del Studio (selección a mano)");
+        add(select + ".brush", Pack.BASIC, select, null, "Pincel de selección del Studio");
+        for (String operation : List.of("grow", "shrink", "complement", "undo", "box", "clear")) {
+            add(select + "." + operation, Pack.BASIC, select, null, "/komaedit sel " + operation);
+        }
 
         // Intermedio.
         add(KomaPermissions.PAINT, Pack.INTERMEDIATE, null, null, "Pintura rápida del editor");

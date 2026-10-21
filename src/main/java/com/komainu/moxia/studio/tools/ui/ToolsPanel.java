@@ -450,6 +450,7 @@ public final class ToolsPanel {
             case "river" -> StudioIcons.Icon.RIVER;
             case "erosion" -> StudioIcons.Icon.EROSION;
             case "paint" -> StudioIcons.Icon.PAINT;
+            case "select" -> StudioIcons.Icon.SELECTION;
             case "text" -> StudioIcons.Icon.TEXT;
             case "analyze" -> StudioIcons.Icon.ANALYZE;
             case "gravity" -> StudioIcons.Icon.GRAVITY;
