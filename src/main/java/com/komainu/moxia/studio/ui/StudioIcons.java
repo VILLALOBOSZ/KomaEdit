@@ -25,7 +25,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
-        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER, WATER, LASSO,
+        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER, WATER, LASSO, REFERENCE,
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, LOOSE_FLOWS, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
@@ -695,6 +695,18 @@ public final class StudioIcons {
                 "..+#######+.",
                 "...+#####+..",
                 "....+###+...");
+        // Calcar imagen: un cuadro con un paisaje y la rejilla de contar bloques encima.
+        mask(Icon.REFERENCE,
+                "############",
+                "#...+...+..#",
+                "#...+..##..#",
+                "#...+..##..#",
+                "#++++++++++#",
+                "#...+...+..#",
+                "#...#...+..#",
+                "#..###..#..#",
+                "#.#####.##.#",
+                "############");
         // Una casa a medio levantar: la mitad de abajo ya puesta y lo que falta, con el tejado, aún apagado.
         mask(Icon.REBUILD,
                 ".....++.....",

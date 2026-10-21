@@ -13,7 +13,6 @@ import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.tools.CapabilityCard;
 import com.komainu.moxia.studio.tools.HotbarCard;
-import com.komainu.moxia.studio.tools.MeasureCard;
 import com.komainu.moxia.studio.tools.SymmetryCard;
 import com.komainu.moxia.studio.tools.TerrainCards;
 import com.komainu.moxia.studio.tools.ToolAction;
@@ -638,6 +637,12 @@ public final class ToolsPanel {
         }
         if (card instanceof CapabilityCard) {
             drawCapabilities(ui, column, host, info);
+            return;
+        }
+        if (card.params().isEmpty()) {
+            // Sin ajustes (Calcar imagen): lo que hace y sus botones, a la vista y no plegados en Más ajustes.
+            ui.paragraph(column, description(card, host), MUTED, 0);
+            drawActions(ui, column, host, card, values, context, card.actions(values));
             return;
         }
         if (card instanceof HotbarCard) {
@@ -1847,7 +1852,8 @@ public final class ToolsPanel {
                     : card instanceof SymmetryCard
                     ? host.tr(info.symmetry().active() ? "gui.komaedit.tools.footer.on"
                     : "gui.komaedit.tools.footer.off")
-                    : card instanceof MeasureCard ? host.tr("gui.komaedit.tools.footer.client")
+                    // Lo del cliente (la regla, Calcar imagen) no pasa por el servidor.
+                    : card.clientOnly(values(card)) ? host.tr("gui.komaedit.tools.footer.client")
                     : host.tr("gui.komaedit.tools.footer.active", info.capabilities() == null ? 0
                     : Integer.bitCount(info.capabilities().enabled() & info.capabilities().permitted()));
             case SELF -> host.tr("gui.komaedit.tools.footer.here");

@@ -2,6 +2,7 @@ package com.komainu.moxia.client.mixin;
 
 import com.komainu.moxia.client.capability.CapabilityControls;
 import com.komainu.moxia.client.gizmo.GhostClient;
+import com.komainu.moxia.client.reference.ReferenceClient;
 import com.komainu.moxia.client.utility.RulerClient;
 import net.minecraft.client.MinecraftClient;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,8 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Clic derecho de las capacidades: si es de una capacidad, no hace lo de Minecraft (lo manda
  * {@link CapabilityControls}); con «Colocación rápida» quita la espera de 4 ticks entre bloques. Con el fantasma del
- * gizmo en pantalla, el clic derecho lo coloca ({@link GhostClient}); con la regla puesta, pone un punto
- * ({@link RulerClient}).
+ * gizmo en pantalla, el clic derecho lo coloca ({@link GhostClient}); editando una imagen de referencia con su
+ * gizmo, termina ({@link ReferenceClient}); con la regla puesta, pone un punto ({@link RulerClient}). Van en ese
+ * orden: el fantasma y la imagen que se edita son de un momento, la regla se queda puesta.
  */
 @Mixin(MinecraftClient.class)
 public abstract class MinecraftClientMixin {
@@ -25,6 +27,12 @@ public abstract class MinecraftClientMixin {
     private void komaedit$capabilityUse(CallbackInfo callbackInfo) {
         // Con el fantasma del gizmo en pantalla, el clic derecho lo coloca.
         if (GhostClient.onUse((MinecraftClient) (Object) this)) {
+            itemUseCooldown = 4;
+            callbackInfo.cancel();
+            return;
+        }
+        // Editando una imagen de referencia con su gizmo, el clic derecho termina.
+        if (ReferenceClient.onUse((MinecraftClient) (Object) this)) {
             itemUseCooldown = 4;
             callbackInfo.cancel();
             return;

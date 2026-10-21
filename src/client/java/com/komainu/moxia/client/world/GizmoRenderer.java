@@ -106,8 +106,9 @@ public final class GizmoRenderer {
         return java.util.Arrays.copyOf(values, count);
     }
 
-    private static void draw(Matrix4f view, Matrix4f projection, ShaderProgram program, VertexFormat.DrawMode mode,
-                             VertexFormat format, int primitives, Consumer<BufferBuilder> emit) {
+    /** Sube y dibuja una malla de una vez (también la usa {@link ReferenceWorldRenderer}). */
+    static void draw(Matrix4f view, Matrix4f projection, ShaderProgram program, VertexFormat.DrawMode mode,
+                     VertexFormat format, int primitives, Consumer<BufferBuilder> emit) {
         int bytes = Math.max(1_024, primitives * 4 * format.getVertexSizeByte());
         try (BufferAllocator allocator = new BufferAllocator(bytes)) {
             BufferBuilder builder = new BufferBuilder(allocator, mode, format);
@@ -128,7 +129,7 @@ public final class GizmoRenderer {
         }
     }
 
-    private static void line(BufferBuilder builder, Vec3d camera, GizmoGeometry.Line line) {
+    static void line(BufferBuilder builder, Vec3d camera, GizmoGeometry.Line line) {
         Vec3 direction = line.to().subtract(line.from()).normalized();
         int argb = line.argb();
         builder.vertex((float) (line.from().x() - camera.x), (float) (line.from().y() - camera.y),
