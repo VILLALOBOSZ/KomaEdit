@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.9.1 (estable, 2026-10-21)
+
 ### Bienvenida guiada: lo primero que ve quien abre el Studio
 
 - **Cinco pasos sobre el mundo de verdad, en un par de minutos.** La primera vez que alguien abre el Studio sale **Primeros pasos en el Studio**: plantar un árbol con un clic donde apunta el cursor, moverlo con el gizmo y colocarlo, levantar una montaña con el sello de relieve y cambiarle la semilla, pintarla con el preset **Cumbres** del pincel de pintura y deshacer desde el historial. Cada paso enseña algo que se usa siempre: elegir, ver antes de colocar, confirmar y deshacer.
