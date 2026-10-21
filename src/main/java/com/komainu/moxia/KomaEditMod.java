@@ -17,6 +17,7 @@ import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramPayload;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.persistence.OperationLedger;
 import com.komainu.moxia.permission.KomaPermissions;
@@ -171,6 +172,8 @@ public final class KomaEditMod implements ModInitializer {
             BrushManager.remove(handler.player.getUuid());
             ProjectStorage.unbind(handler.player.getUuid());
             RegionOperationService.cancel(handler.player.getUuid());
+            ServerWork.forget(handler.player.getUuid());
+            com.komainu.moxia.region.SelectionParts.forget(handler.player.getUuid());
             com.komainu.moxia.persistence.QuietMode.forget(handler.player.getUuid());
             PlanPreviews.forget(handler.player.getUuid());
             ProgressBars.remove(handler.player);
@@ -184,14 +187,24 @@ public final class KomaEditMod implements ModInitializer {
                 PlanPreviews.discard(newPlayer, "al reaparecer"));
         // Los displays de vista previa solo existen en el cliente; si alguno llegara al mundo, se borra al cargar.
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> PreviewDisplays.onEntityLoad(entity));
-        ServerTickEvents.END_SERVER_TICK.register(BatchEditService::tick);
-        ServerTickEvents.END_SERVER_TICK.register(FastPaintService::tick);
-        ServerTickEvents.END_SERVER_TICK.register(SnapshotCaptureService::tick);
-        ServerTickEvents.END_SERVER_TICK.register(RegionOperationService::tick);
-        ServerTickEvents.END_SERVER_TICK.register(PlanPreviews::tick);
+        // Todo lo que KomaEdit hace en el hilo del servidor sale de un mismo presupuesto por tick: lo ligero primero
+        // y lo pesado (leer, colocar, pintar biomas) por turnos entre jugadores.
+        ServerWork.light(FastPaintService::tick);
+        ServerWork.light(SnapshotCaptureService::tick);
+        ServerWork.light(PlanPreviews::tick);
+        BatchEditService.register();
+        RegionOperationService.register();
+        ServerWork.register();
         ServerTickEvents.END_SERVER_TICK.register(ProgressBars::tick);
         ServerTickEvents.END_SERVER_TICK.register(server -> PreviewDisplays.sweep());
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> AsyncEngine.start());
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            AsyncEngine.start();
+            // Planes enormes volcados a disco por un servidor que se paró de golpe.
+            int leftovers = com.komainu.moxia.edit.PackedBlockPlan.sweepSpills();
+            if (leftovers > 0) {
+                LOGGER.info("Removed {} leftover KomaEdit plan files", leftovers);
+            }
+        });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             BatchEditService.shutdown();
             FastPaintService.shutdown();
@@ -202,6 +215,8 @@ public final class KomaEditMod implements ModInitializer {
             BrushManager.clearAll();
             ProjectStorage.clearBindings();
             RegionOperationService.clearAll();
+            ServerWork.clearAll();
+            com.komainu.moxia.region.SelectionParts.clearAll();
             com.komainu.moxia.persistence.QuietMode.clearAll();
             PlanPreviews.clearAll();
             ProgressBars.clearAll();

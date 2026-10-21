@@ -19,10 +19,11 @@ import java.util.UUID;
 
 /**
  * Bossbar de progreso de cada jugador: lectura de la selección, cálculo, preparación de la vista previa, espera de
- * confirmación y colocación, con porcentaje, bloques por segundo y tiempo restante. No hay que avisarla: cada
- * pocos ticks pregunta a los servicios del motor ({@link RegionOperationService}, {@link AsyncEngine},
- * {@link PlanPreviews}, {@link BatchEditService} y el pintado de biomas de {@link BiomeEditService}) qué está haciendo
- * cada jugador, así que cualquier operación que pase por ellos la tiene. Solo aparece cuando la operación dura más de un segundo (la vista previa, al momento).
+ * confirmación, turno en la cola y colocación, con porcentaje, bloques por segundo y tiempo restante (o el puesto y
+ * cuándo empieza, en la cola). No hay que avisarla: cada pocos ticks pregunta a los servicios del motor
+ * ({@link RegionOperationService}, {@link AsyncEngine}, {@link PlanPreviews}, {@link BatchEditService} y el pintado de
+ * biomas de {@link BiomeEditService}) qué está haciendo cada jugador, así que cualquier operación que pase por ellos la
+ * tiene. Solo aparece cuando la operación dura más de un segundo (la vista previa, la cola y la pausa, al momento).
  */
 public final class ProgressBars {
     private static final int UPDATE_EVERY_TICKS = 5;
@@ -46,11 +47,9 @@ public final class ProgressBars {
 
     /** Lo que hace ahora el jugador, por orden: colocar, vista previa, leer, calcular. */
     public static Optional<ProgressLine> current(UUID player) {
-        Optional<BatchEditService.JobStatus> job = BatchEditService.status(player);
+        Optional<ProgressLine> job = BatchEditService.progress(player);
         if (job.isPresent()) {
-            BatchEditService.JobStatus status = job.get();
-            return Optional.of(new ProgressLine(status.description(), ProgressLine.Phase.PLACING,
-                    status.processed(), status.total(), status.elapsedNanos(), "/komaedit cancel"));
+            return job;
         }
         Optional<ProgressLine> biome = BiomeEditService.progress(player);
         if (biome.isPresent()) {
@@ -98,7 +97,9 @@ public final class ProgressBars {
                 BARS.put(id, bar);
             }
             ProgressLine progress = line.get();
-            boolean immediate = progress.phase() == ProgressLine.Phase.WAITING;
+            // La vista previa, la cola y la pausa se enseñan al momento: el jugador tiene que saber que espera.
+            boolean immediate = progress.phase() == ProgressLine.Phase.WAITING
+                    || progress.phase() == ProgressLine.Phase.QUEUED || progress.phase() == ProgressLine.Phase.PAUSED;
             if (!bar.shown && !immediate && now - bar.activeSince < SHOW_AFTER_NANOS) {
                 continue;
             }
@@ -121,9 +122,12 @@ public final class ProgressBars {
             case PREPARING, CHECKING -> BossBar.Color.PINK;
             case WAITING -> BossBar.Color.YELLOW;
             case PLACING -> BossBar.Color.GREEN;
+            case QUEUED -> BossBar.Color.WHITE;
+            case PAUSED -> BossBar.Color.RED;
         });
         // Sin medida (un cálculo que no informa), la barra va y viene para que se vea que sigue vivo.
-        float percent = line.measured() ? line.fraction() : (float) Math.abs(Math.sin(ticks / 12.0));
+        float percent = line.phase() == ProgressLine.Phase.QUEUED ? 0.0f
+                : line.measured() ? line.fraction() : (float) Math.abs(Math.sin(ticks / 12.0));
         bossBar.setPercent(Math.clamp(percent, 0.0f, 1.0f));
     }
 

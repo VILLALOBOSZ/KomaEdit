@@ -26,6 +26,8 @@ public final class KomaPermissions {
     public static final String ADMIN_RELOAD = "komaedit.admin.reload";
     /** Copiar un sello de serie a {@code config/komaedit/heightmaps} para retocarlo. */
     public static final String ADMIN_STAMP_EXPORT = "komaedit.admin.stamps.export";
+    /** {@code /komaedit jobs}: ver, pausar y cancelar los trabajos de todos los jugadores. */
+    public static final String ADMIN_JOBS = "komaedit.admin.jobs";
     /** Imágenes por URL en {@code /komaedit image} cuando {@code urlsRequireAdmin} está activo. */
     public static final String ADMIN_IMAGE_URL = "komaedit.admin.image.url";
 

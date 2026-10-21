@@ -16,6 +16,7 @@ public final class RegionEdits {
     private final PackedBlockPlan.Builder builder;
     private int changes;
     private int checks;
+    private PackedBlockPlan sealed;
 
     public RegionEdits(RegionSnapshot snapshot, int limit) {
         this.snapshot = snapshot;
@@ -34,6 +35,9 @@ public final class RegionEdits {
     }
 
     private boolean write(int x, int y, int z, BlockState state) {
+        if (sealed != null) {
+            throw new IllegalStateException("El plan ya está cerrado");
+        }
         if (state == null) {
             throw new IllegalArgumentException("Estado de bloque vacío");
         }
@@ -59,7 +63,18 @@ public final class RegionEdits {
         return changes;
     }
 
+    /**
+     * Cierra el plan: lo monta (y lo comprime, si es grande) una vez. Se llama al final del cálculo, en el worker,
+     * para no hacerlo en el hilo del servidor; {@link #plan} lo devuelve después sin más.
+     */
+    public void seal() {
+        if (sealed == null) {
+            sealed = builder.build();
+        }
+    }
+
     public PackedBlockPlan plan() {
-        return builder.build();
+        seal();
+        return sealed;
     }
 }

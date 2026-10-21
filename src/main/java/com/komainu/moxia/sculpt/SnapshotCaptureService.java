@@ -2,6 +2,7 @@ package com.komainu.moxia.sculpt;
 
 import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
+import com.komainu.moxia.performance.ServerWork;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.World;
 import net.minecraft.server.MinecraftServer;
@@ -65,7 +66,7 @@ public final class SnapshotCaptureService {
         if (JOBS.isEmpty()) {
             return;
         }
-        long globalDeadline = System.nanoTime() + MAX_NANOS_PER_TICK;
+        long globalDeadline = ServerWork.deadline(MAX_NANOS_PER_TICK);
         boolean first = true;
         while (!JOBS.isEmpty() && System.nanoTime() < globalDeadline) {
             java.util.List<CaptureJob> jobs = java.util.List.copyOf(JOBS.values());

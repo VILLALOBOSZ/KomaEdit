@@ -4,6 +4,7 @@ import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.performance.ServerWork;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.function.pattern.Pattern;
@@ -93,7 +94,7 @@ public final class FastPaintService {
         if (STROKES.isEmpty()) {
             return;
         }
-        long deadline = System.nanoTime() + MAX_NANOS_PER_TICK;
+        long deadline = ServerWork.deadline(MAX_NANOS_PER_TICK);
         for (Stroke stroke : java.util.List.copyOf(STROKES.values())) {
             if (System.nanoTime() >= deadline || !STROKES.containsKey(stroke.playerId)) {
                 break;

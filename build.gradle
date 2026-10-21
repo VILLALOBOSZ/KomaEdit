@@ -53,10 +53,30 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named("test") {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags "benchmark"
+    }
     testLogging {
         events "failed", "skipped"
         exceptionFormat "full"
+    }
+}
+
+// Pruebas de rendimiento con millones de bloques: no corren con build; `gradlew benchmark`.
+tasks.register("benchmark", Test) {
+    description = "Mide las ediciones enormes (1, 5 y 20 millones de bloques) fuera del juego."
+    group = "verification"
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags "benchmark"
+    }
+    maxHeapSize = "3g"
+    outputs.upToDateWhen { false }
+    testLogging {
+        events "failed", "skipped"
+        exceptionFormat "full"
+        showStandardStreams = true
     }
 }
 

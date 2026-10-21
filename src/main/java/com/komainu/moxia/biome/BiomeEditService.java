@@ -4,6 +4,7 @@ import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.region.SnapshotJobs;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -11,13 +12,12 @@ import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.biome.BiomeType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Formatting;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,6 @@ import java.util.UUID;
  * el cambio sin volver a entrar.
  */
 public final class BiomeEditService {
-    private static final long NANOS_PER_TICK = 4_000_000L;
     private static final int CELLS_PER_CHECK = 256;
     private static final Map<UUID, Job> JOBS = new LinkedHashMap<>();
 
@@ -39,7 +38,23 @@ public final class BiomeEditService {
     }
 
     public static void register() {
-        ServerTickEvents.END_SERVER_TICK.register(BiomeEditService::tick);
+        // Trabajo pesado: se reparte por turnos con la lectura y la colocación de los demás.
+        ServerWork.lane(new ServerWork.Lane() {
+            @Override
+            public void owners(Collection<UUID> into) {
+                for (UUID owner : JOBS.keySet()) {
+                    if (!ServerWork.paused(owner)) {
+                        into.add(owner);
+                    }
+                }
+            }
+
+            @Override
+            public boolean step(MinecraftServer server, UUID owner, long deadline) {
+                Job job = JOBS.get(owner);
+                return job != null && !ServerWork.paused(owner) && BiomeEditService.step(server, job, deadline);
+            }
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> finish(handler.player.getUuid(), true));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             for (UUID playerId : List.copyOf(JOBS.keySet())) {
@@ -78,45 +93,42 @@ public final class BiomeEditService {
         if (job == null) {
             return Optional.empty();
         }
-        return Optional.of(new ProgressLine(job.description, ProgressLine.Phase.PLACING, job.index, job.cells.length,
-                System.nanoTime() - job.startedAt, "/komaedit cancel"));
+        boolean paused = ServerWork.paused(playerId);
+        return Optional.of(new ProgressLine(job.description,
+                paused ? ProgressLine.Phase.PAUSED : ProgressLine.Phase.PLACING, job.index, job.cells.length,
+                System.nanoTime() - job.startedAt, paused ? "en pausa por un admin" : "/komaedit cancel"));
     }
 
-    private static void tick(MinecraftServer server) {
-        if (JOBS.isEmpty()) {
-            return;
-        }
-        long deadline = System.nanoTime() + NANOS_PER_TICK;
-        for (Job job : new ArrayList<>(JOBS.values())) {
-            if (System.nanoTime() >= deadline) {
-                return;
+    /** Un turno del pintado de {@code job} hasta {@code deadline}; {@code true} si le queda. */
+    private static boolean step(MinecraftServer server, Job job, long deadline) {
+        try {
+            while (job.index < job.cells.length && System.nanoTime() < deadline) {
+                int end = Math.min(job.cells.length, job.index + CELLS_PER_CHECK);
+                for (; job.index < end; job.index++) {
+                    long packed = job.cells[job.index];
+                    job.session.setBiome(BlockVector3.at(PackedBlockPlan.unpackX(packed),
+                            PackedBlockPlan.unpackY(packed), PackedBlockPlan.unpackZ(packed)), job.biome);
+                }
             }
-            try {
-                while (job.index < job.cells.length && System.nanoTime() < deadline) {
-                    int end = Math.min(job.cells.length, job.index + CELLS_PER_CHECK);
-                    for (; job.index < end; job.index++) {
-                        long packed = job.cells[job.index];
-                        job.session.setBiome(BlockVector3.at(PackedBlockPlan.unpackX(packed),
-                                PackedBlockPlan.unpackY(packed), PackedBlockPlan.unpackZ(packed)), job.biome);
-                    }
-                }
-                if (job.index >= job.cells.length) {
-                    finish(job.playerId, false);
-                    ServerPlayerEntity player = server.getPlayerManager().getPlayer(job.playerId);
-                    if (player != null) {
-                        player.sendMessage(SnapshotJobs.message(job.description + ": " + job.cells.length
-                                + " celdas de 4×4×4 · //undo para deshacer", Formatting.GREEN), false);
-                    }
-                }
-            } catch (RuntimeException exception) {
-                KomaEditMod.LOGGER.error("Biome edit failed for {}", job.playerId, exception);
-                finish(job.playerId, true);
+            if (job.index >= job.cells.length) {
+                finish(job.playerId, false);
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(job.playerId);
                 if (player != null) {
-                    player.sendMessage(SnapshotJobs.message(job.description + ": " + SnapshotJobs.readable(exception)
-                            + " · lo pintado se puede deshacer con //undo", Formatting.RED), false);
+                    player.sendMessage(SnapshotJobs.message(job.description + ": " + job.cells.length
+                            + " celdas de 4×4×4 · //undo para deshacer", Formatting.GREEN), false);
                 }
+                return false;
             }
+            return true;
+        } catch (RuntimeException exception) {
+            KomaEditMod.LOGGER.error("Biome edit failed for {}", job.playerId, exception);
+            finish(job.playerId, true);
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(job.playerId);
+            if (player != null) {
+                player.sendMessage(SnapshotJobs.message(job.description + ": " + SnapshotJobs.readable(exception)
+                        + " · lo pintado se puede deshacer con //undo", Formatting.RED), false);
+            }
+            return false;
         }
     }
 

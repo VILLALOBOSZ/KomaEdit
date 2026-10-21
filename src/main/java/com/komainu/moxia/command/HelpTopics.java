@@ -404,7 +404,7 @@ public final class HelpTopics {
                     new Entry("/komaedit capability option flyspeed <x>", "Velocidad de vuelo (1 normal, 2.5…)")
             )),
             new Topic("preview", "Vista previa y progreso", List.of("vistaprevia", "previa", "progreso", "cancelar",
-                    "confirmar", "repeat", "repetir"), List.of(
+                    "confirmar", "repeat", "repetir", "cola", "jobs", "trabajos", "trozo", "part"), List.of(
                     new Entry("/komaedit texture rockify stone -v",
                             "-v (o --preview) en cualquier orden: calcula y enseña sin colocar nada"),
                     new Entry("/komaedit confirm", "Aplica exactamente lo que ves; si la zona cambió, lo recalcula"),
@@ -415,7 +415,14 @@ public final class HelpTopics {
                     new Entry("/komaedit preview", "Tu preferencia y la vista previa que tengas esperando"),
                     new Entry("/komaedit repeat [-v]",
                             "Repite la última orden que colocó bloques, donde estás ahora (-v: con vista previa)"),
-                    new Entry("/komaedit job status", "Progreso de la colocación (también en la bossbar)")
+                    new Entry("/komaedit job status", "Progreso de la colocación o puesto en la cola (también en la"
+                            + " bossbar)"),
+                    new Entry("/komaedit trozo <n>", "Selecciona el trozo n de una selección que pasaba del límite"
+                            + " (alias part)"),
+                    new Entry("/komaedit jobs", "Los trabajos de todos: fase, bloques y tiempo (admin; alias"
+                            + " trabajos)"),
+                    new Entry("/komaedit jobs pause|resume|cancel <jugador>",
+                            "Pausa, reanuda o cancela los trabajos de un jugador (admin)")
             )),
             new Topic("utilidades", "Utilidades de obra", List.of("utilities", "texto", "text", "materiales",
                     "analyze", "analizar", "gravedad", "gravity", "nieve", "snow", "agua", "drain", "drenar", "waterlog",

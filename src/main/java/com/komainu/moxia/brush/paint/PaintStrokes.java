@@ -12,12 +12,12 @@ import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.komainu.moxia.studio.net.StudioAim;
 import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.performance.ServerWork;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockState;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
@@ -68,7 +68,7 @@ public final class PaintStrokes {
     }
 
     public static void register() {
-        ServerTickEvents.END_SERVER_TICK.register(PaintStrokes::tick);
+        ServerWork.light(PaintStrokes::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             Stroke stroke = STROKES.remove(handler.player.getUuid());
             if (stroke != null) {
@@ -264,7 +264,7 @@ public final class PaintStrokes {
                 startBatch(player);
             }
             if (stage == Stage.CAPTURE) {
-                long deadline = System.nanoTime() + CAPTURE_NANOS_PER_TICK;
+                long deadline = ServerWork.deadline(CAPTURE_NANOS_PER_TICK);
                 while (!capture.complete() && System.nanoTime() < deadline) {
                     capture.step(CAPTURE_BLOCKS_PER_STEP, deadline);
                 }
@@ -370,7 +370,7 @@ public final class PaintStrokes {
                 stopTrace();
                 return;
             }
-            long deadline = System.nanoTime() + APPLY_NANOS_PER_TICK;
+            long deadline = ServerWork.deadline(APPLY_NANOS_PER_TICK);
             try {
                 while (applied < planned.size() && System.nanoTime() < deadline) {
                     long key = planned.positions()[applied];

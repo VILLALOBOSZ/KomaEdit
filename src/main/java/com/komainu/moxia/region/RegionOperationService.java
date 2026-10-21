@@ -1,11 +1,14 @@
 package com.komainu.moxia.region;
 
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.BlockBounds;
 import com.komainu.moxia.edit.BuildEstimate;
+import com.komainu.moxia.edit.EditLimits;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
 import com.komainu.moxia.preview.PlanPreviews;
@@ -16,6 +19,7 @@ import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -28,7 +32,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,11 +57,11 @@ import java.util.function.Consumer;
  */
 public final class RegionOperationService {
     public static final long MAX_CAPTURE_BLOCKS = 16_000_000L;
+    /** Cambios como mucho de una operación sobre la selección (sin límite de bloques, la foto entera). */
     public static final int MAX_CHANGES = 1_500_000;
     /** Hasta este volumen de foto, la vista previa vigila también toda la selección (no solo los cambios). */
     private static final long WATCH_SNAPSHOT_UP_TO = 2_000_000L;
-    private static final int BLOCKS_PER_SLICE = 32_768;
-    private static final long NANOS_PER_TICK = 4_000_000L;
+    private static final int BLOCKS_PER_SLICE = 65_536;
     /**
      * Lo que se calculó sobre la foto de un mundo no se aplica en otro: si el jugador cambia de dimensión antes de
      * que termine, se descarta con este aviso.
@@ -161,21 +165,74 @@ public final class RegionOperationService {
         if (sizeY <= 0) {
             throw new IllegalArgumentException("La selección está fuera de la altura del mundo");
         }
-        if (volume > MAX_CAPTURE_BLOCKS) {
-            throw new IllegalArgumentException("La selección es demasiado grande para esta operación ("
-                    + ProgressLine.group(volume) + " bloques con su margen; máximo " + MAX_CAPTURE_BLOCKS + ")");
-        }
-        OperationPolicy.validate(player, selection.getVolume(), 0);
+        checkLimits(player, selection, description, volume, volume - selection.getVolume());
         UUID playerId = player.getUuid();
         if (JOBS.containsKey(playerId)) {
             throw new IllegalStateException("Ya hay una operación leyendo tu selección; espera a que termine");
         }
         JOBS.put(playerId, new CaptureJob(playerId, world, selection, description, operation, onCaptured,
-                RegionSnapshot.builder(minimumX, minimumY, minimumZ, sizeX, sizeY, sizeZ), sizeX, sizeY, sizeZ,
-                minimumX, minimumY, minimumZ, EditRequests.current(), padding, extra));
+                sizeX, sizeY, sizeZ, minimumX, minimumY, minimumZ, EditRequests.current(), padding, extra));
         double seconds = BuildEstimate.readSeconds(volume);
         QuietMode.status(player, message(description + ": leyendo " + ProgressLine.group(volume) + " bloques"
                 + (seconds >= 2.0 ? " (~" + ProgressLine.duration(seconds) + ")" : "") + "…", Formatting.GRAY));
+    }
+
+    /**
+     * Antes de leer nada: la selección cabe en el límite del servidor y en lo que KomaEdit lee de una vez. Si no,
+     * dice cuánto ocupa, cuál es el límite y en cuántos trozos partirla; si la selección es una caja, deja los
+     * trozos preparados para {@code /komaedit trozo}.
+     */
+    private static void checkLimits(ServerPlayerEntity player, Region selection, String description, long volume,
+                                    long margin) {
+        long selected = selection.getVolume();
+        Optional<EditLimits.Excess> excess = EditLimits.check(EditLimits.Kind.SERVER, selected,
+                OperationPolicy.limit(player));
+        long readLimit = MAX_CAPTURE_BLOCKS - Math.max(0L, margin);
+        if (excess.isEmpty() && volume > MAX_CAPTURE_BLOCKS) {
+            excess = EditLimits.check(EditLimits.Kind.CAPTURE, selected, Math.max(1L, readLimit));
+        }
+        if (excess.isEmpty()) {
+            return;
+        }
+        EditLimits.Excess found = excess.get();
+        boolean parts = false;
+        if (selection instanceof CuboidRegion && readLimit > 0) {
+            BlockVector3 low = selection.getMinimumPoint();
+            BlockVector3 high = selection.getMaximumPoint();
+            try {
+                List<BlockBounds> pieces = EditLimits.split(new BlockBounds(low.x(), low.y(), low.z(), high.x(),
+                        high.y(), high.z()), Math.min(found.limit(), readLimit));
+                SelectionParts.propose(player.getUuid(), player.getServerWorld().getRegistryKey().getValue()
+                        .toString(), description, pieces);
+                parts = true;
+            } catch (IllegalArgumentException ignored) {
+                // Ni una capa cabe en el límite: solo se dice el tamaño y el límite.
+            }
+        }
+        throw new IllegalArgumentException(description + ": " + found.message("la selección", parts));
+    }
+
+    /** Se apunta como trabajo pesado de {@link ServerWork}: la lectura se reparte por turnos con lo demás. */
+    public static void register() {
+        ServerWork.lane(new ServerWork.Lane() {
+            @Override
+            public void owners(Collection<UUID> into) {
+                for (UUID owner : JOBS.keySet()) {
+                    if (!ServerWork.paused(owner)) {
+                        into.add(owner);
+                    }
+                }
+            }
+
+            @Override
+            public boolean step(MinecraftServer server, UUID owner, long deadline) {
+                CaptureJob job = JOBS.get(owner);
+                if (job == null || ServerWork.paused(owner)) {
+                    return false;
+                }
+                return RegionOperationService.step(server, job, deadline);
+            }
+        });
     }
 
     /** Lectura en curso del jugador, para la barra de progreso. */
@@ -184,8 +241,12 @@ public final class RegionOperationService {
         if (job == null) {
             return Optional.empty();
         }
-        return Optional.of(new ProgressLine(job.description, ProgressLine.Phase.READING, job.index, job.total,
-                System.nanoTime() - job.startedAt, null));
+        if (ServerWork.paused(playerId)) {
+            return Optional.of(new ProgressLine(job.description, ProgressLine.Phase.PAUSED, job.reader.read(),
+                    job.reader.total(), System.nanoTime() - job.startedAt, "lectura en pausa por un admin"));
+        }
+        return Optional.of(new ProgressLine(job.description, ProgressLine.Phase.READING, job.reader.read(),
+                job.reader.total(), System.nanoTime() - job.startedAt, null));
     }
 
     public static boolean cancel(UUID playerId) {
@@ -196,44 +257,37 @@ public final class RegionOperationService {
         JOBS.clear();
     }
 
-    public static void tick(MinecraftServer server) {
-        if (JOBS.isEmpty()) {
-            return;
+    /** Un turno de lectura de {@code job}; al acabar, calcula (o entrega la foto). */
+    private static boolean step(MinecraftServer server, CaptureJob job, long deadline) {
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(job.playerId);
+        if (player == null) {
+            JOBS.remove(job.playerId);
+            return false;
         }
-        long deadline = System.nanoTime() + NANOS_PER_TICK;
-        List<CaptureJob> jobs = new ArrayList<>(JOBS.values());
-        for (CaptureJob job : jobs) {
-            if (System.nanoTime() >= deadline) {
-                return;
+        try {
+            if (!job.reader.step(BLOCKS_PER_SLICE, deadline, System::nanoTime)) {
+                return true;
             }
-            ServerPlayerEntity player = server.getPlayerManager().getPlayer(job.playerId);
-            if (player == null) {
-                JOBS.remove(job.playerId);
-                continue;
+            JOBS.remove(job.playerId);
+            // Quien recibe la foto (onCaptured) decide al terminar; las operaciones se descartan ya.
+            if (job.onCaptured == null && player.getServerWorld() != job.world) {
+                player.sendMessage(message(job.description + ": " + OTHER_WORLD, Formatting.YELLOW), false);
+                return false;
             }
-            try {
-                if (job.step(deadline)) {
-                    JOBS.remove(job.playerId);
-                    // Quien recibe la foto (onCaptured) decide al terminar; las operaciones se descartan ya.
-                    if (job.onCaptured == null && player.getServerWorld() != job.world) {
-                        player.sendMessage(message(job.description + ": " + OTHER_WORLD, Formatting.YELLOW), false);
-                        continue;
-                    }
-                    RegionSnapshot snapshot = job.builder.build();
-                    // La petición de la orden (vista previa…) vuelve a estar activa para lo que salga de la foto.
-                    EditRequests.within(job.request, () -> {
-                        if (job.onCaptured != null) {
-                            job.onCaptured.accept(snapshot);
-                        } else {
-                            compute(server, player, job, snapshot);
-                        }
-                    });
+            RegionSnapshot snapshot = job.reader.build();
+            // La petición de la orden (vista previa…) vuelve a estar activa para lo que salga de la foto.
+            EditRequests.within(job.request, () -> {
+                if (job.onCaptured != null) {
+                    job.onCaptured.accept(snapshot);
+                } else {
+                    compute(server, player, job, snapshot);
                 }
-            } catch (RuntimeException exception) {
-                JOBS.remove(job.playerId);
-                player.sendMessage(message(job.description + ": " + readable(exception), Formatting.RED), false);
-            }
+            });
+        } catch (RuntimeException exception) {
+            JOBS.remove(job.playerId);
+            player.sendMessage(message(job.description + ": " + readable(exception), Formatting.RED), false);
         }
+        return false;
     }
 
     private static void compute(
@@ -246,12 +300,15 @@ public final class RegionOperationService {
         RegionOperation operation = job.operation;
         UUID playerId = player.getUuid();
         QuietMode.status(player, message(description + ": calculando fuera del hilo del servidor…", Formatting.GRAY));
+        int limit = changeLimit(player, snapshot);
         AsyncEngine.submit(
                 playerId,
                 description,
                 () -> {
-                    RegionEdits edits = new RegionEdits(snapshot, MAX_CHANGES);
+                    RegionEdits edits = new RegionEdits(snapshot, limit);
                     operation.apply(snapshot, edits);
+                    // El plan se monta (y se comprime si es grande) aquí, no en el hilo del servidor.
+                    edits.seal();
                     return edits;
                 },
                 edits -> server.execute(() -> {
@@ -289,6 +346,18 @@ public final class RegionOperationService {
                     }
                 })
         );
+    }
+
+    /**
+     * Cambios que puede producir la operación: el límite del servidor, o la foto entera si el jugador no tiene
+     * límite (el plan grande va comprimido, ya no hace falta cortarlo en {@value #MAX_CHANGES}).
+     */
+    private static int changeLimit(ServerPlayerEntity player, RegionSnapshot snapshot) {
+        long limit = OperationPolicy.limit(player);
+        if (limit == Long.MAX_VALUE) {
+            return (int) Math.min(Integer.MAX_VALUE - 8, Math.max(MAX_CHANGES, snapshot.volume()));
+        }
+        return (int) Math.min(Integer.MAX_VALUE - 8, Math.max(1L, limit));
     }
 
     /** Vuelve a lanzar la operación sobre la misma selección (la vista previa vio que el mundo cambió). */
@@ -353,7 +422,7 @@ public final class RegionOperationService {
         return cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage();
     }
 
-    /** Lectura por tramos de la región; cada tick avanza hasta agotar su presupuesto de tiempo. */
+    /** Lectura por tramos de la región; cada turno avanza hasta agotar su parte del tick. */
     private static final class CaptureJob {
         private final UUID playerId;
         private final ServerWorld world;
@@ -361,20 +430,11 @@ public final class RegionOperationService {
         private final String description;
         private final RegionOperation operation;
         private final Consumer<RegionSnapshot> onCaptured;
-        private final RegionSnapshot.Builder builder;
-        private final int sizeX;
-        private final int sizeZ;
-        private final int minimumX;
-        private final int minimumY;
-        private final int minimumZ;
-        private final long total;
-        private final boolean light;
-        private final BlockPos.Mutable position = new BlockPos.Mutable();
+        private final RegionReader reader;
         private final EditRequest request;
         private final int padding;
         private final int[] extra;
         private final long startedAt = System.nanoTime();
-        private long index;
 
         private CaptureJob(
                 UUID playerId,
@@ -383,7 +443,6 @@ public final class RegionOperationService {
                 String description,
                 RegionOperation operation,
                 Consumer<RegionSnapshot> onCaptured,
-                RegionSnapshot.Builder builder,
                 int sizeX,
                 int sizeY,
                 int sizeZ,
@@ -403,49 +462,39 @@ public final class RegionOperationService {
             this.description = description;
             this.operation = operation;
             this.onCaptured = onCaptured;
-            this.builder = builder;
-            this.sizeX = sizeX;
-            this.sizeZ = sizeZ;
-            this.minimumX = minimumX;
-            this.minimumY = minimumY;
-            this.minimumZ = minimumZ;
-            this.total = (long) sizeX * sizeY * sizeZ;
-            this.light = operation != null && operation.needsLight();
+            this.reader = new RegionReader(new WorldSource(world), selected(selection), minimumX, minimumY,
+                    minimumZ, sizeX, sizeY, sizeZ, operation != null && operation.needsLight());
         }
 
-        /** @return {@code true} cuando la lectura ha terminado */
-        boolean step(long deadline) {
-            int processed = 0;
-            long layer = (long) sizeX * sizeZ;
-            while (index < total && processed < BLOCKS_PER_SLICE) {
-                if ((processed & 1_023) == 0 && System.nanoTime() >= deadline) {
-                    return false;
-                }
-                int localY = (int) (index / layer);
-                long remainder = index - localY * layer;
-                int localZ = (int) (remainder / sizeX);
-                int localX = (int) (remainder - (long) localZ * sizeX);
-                int x = minimumX + localX;
-                int y = minimumY + localY;
-                int z = minimumZ + localZ;
-                position.set(x, y, z);
-                BlockState state = world.getBlockState(position);
-                int rawId = Block.getRawIdFromState(state);
-                if (!builder.knows(rawId)) {
-                    builder.state(describe(rawId, state));
-                }
-                builder.set(x, y, z, rawId, selection.contains(BlockVector3.at(x, y, z)));
-                if (light) {
-                    builder.light(x, y, z, world.getLightLevel(LightType.BLOCK, position),
-                            world.getLightLevel(LightType.SKY, position));
-                }
-                index++;
-                processed++;
+        /** Una caja se mira con sus límites, sin crear un vector por bloque; las demás formas, con WorldEdit. */
+        private static RegionReader.Selection selected(Region selection) {
+            if (selection instanceof CuboidRegion) {
+                BlockVector3 low = selection.getMinimumPoint();
+                BlockVector3 high = selection.getMaximumPoint();
+                return (x, y, z) -> x >= low.x() && x <= high.x() && y >= low.y() && y <= high.y()
+                        && z >= low.z() && z <= high.z();
             }
-            return index >= total;
+            return (x, y, z) -> selection.contains(BlockVector3.at(x, y, z));
+        }
+    }
+
+    /** El mundo para {@link RegionReader}: estados crudos, su descripción la primera vez y la luz. */
+    private static final class WorldSource implements RegionReader.BlockSource {
+        private final ServerWorld world;
+        private final BlockPos.Mutable position = new BlockPos.Mutable();
+
+        private WorldSource(ServerWorld world) {
+            this.world = world;
         }
 
-        private RegionSnapshot.StateInfo describe(int rawId, BlockState state) {
+        @Override
+        public int rawId(int x, int y, int z) {
+            return Block.getRawIdFromState(world.getBlockState(position.set(x, y, z)));
+        }
+
+        @Override
+        public RegionSnapshot.StateInfo describe(int rawId, int x, int y, int z) {
+            BlockState state = world.getBlockState(position.set(x, y, z));
             com.sk89q.worldedit.world.block.BlockState adapted = FabricAdapter.adapt(state);
             String text = adapted.getAsString();
             int bracket = text.indexOf('[');
@@ -460,6 +509,13 @@ public final class RegionOperationService {
                     properties,
                     state.getLuminance()
             );
+        }
+
+        @Override
+        public int light(int x, int y, int z) {
+            position.set(x, y, z);
+            return (world.getLightLevel(LightType.BLOCK, position) << 4)
+                    | world.getLightLevel(LightType.SKY, position);
         }
     }
 }
