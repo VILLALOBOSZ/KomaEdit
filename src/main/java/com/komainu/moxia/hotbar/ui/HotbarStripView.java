@@ -76,9 +76,12 @@ public final class HotbarStripView {
         int nameSpace = Math.min(120, firstRow.x() - 12);
         String hint = hint(deck, texts);
         int hintWidth = canvas.width(hint);
-        int left = Math.min(firstRow.x() - nameSpace - 8, layout.width() / 2 - hintWidth / 2 - 6);
-        int right = Math.max(firstRow.right() + 40, layout.width() / 2 + hintWidth / 2 + 6);
-        Rect backdrop = new Rect(Math.max(0, left), layout.top() - 17, Math.min(layout.width(), right) - Math.max(0, left),
+        // Centrado en la pantalla, como la barra: ancho para los nombres (izquierda) o la posición (derecha).
+        int center = layout.width() / 2;
+        int half = Math.max(hintWidth / 2 + 6, deck.isEmpty() ? ROW_WIDTH / 2 + 8
+                : Math.max(center - (firstRow.x() - nameSpace - 8), firstRow.right() + 40 - center));
+        int left = Math.max(0, center - half);
+        Rect backdrop = new Rect(left, layout.top() - 17, Math.min(layout.width(), center + half) - left,
                 layout.rows().getLast().bottom() - layout.top() + 21);
         canvas.fill(backdrop, 0x70000000);
         canvas.text(hint, layout.width() / 2 - hintWidth / 2, layout.top() - 12, hintColor(deck));
