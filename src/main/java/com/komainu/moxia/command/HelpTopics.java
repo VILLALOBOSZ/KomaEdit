@@ -475,7 +475,8 @@ public final class HelpTopics {
                             "Los planos también valen en place, scatter y array con Bp(N:…|T:…)")
             )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup", "menu", "quick", "gui", "quiet",
-                    "silencio", "permisos", "permissions", "reload", "recargar", "tutorial", "bienvenida"), List.of(
+                    "silencio", "permisos", "permissions", "reload", "recargar", "tutorial", "bienvenida", "debug",
+                    "debugprint", "depuracion"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),
                     new Entry("/komaedit project backup", "Copia de seguridad del proyecto"),
                     new Entry("/komaedit menu", "Paleta rápida (tecla K; alias quick)"),
@@ -487,7 +488,12 @@ public final class HelpTopics {
                     new Entry("/komaedit wiki", "Dónde está la ayuda"),
                     new Entry("/komaedit permisos [paquete]", "Qué nodos y paquetes de permisos tienes (alias permissions)"),
                     new Entry("/komaedit reload", "Recarga la configuración y las paletas del servidor (admin; alias "
-                            + "recargar)")
+                            + "recargar)"),
+                    new Entry("/komaedit debugprint", "Versiones, memoria, límites y visualizador, para diagnosticar"
+                            + " un fallo (admin)"),
+                    new Entry("/komaedit debug clearloadingbars", "Quita tu barra de progreso"),
+                    new Entry("/komaedit debug removevisualiserentities", "Retira los displays del visualizador de la"
+                            + " alineación y los de la vista previa que hubieran quedado en el mundo (admin)")
             ))
     );
 

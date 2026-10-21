@@ -89,6 +89,7 @@ public final class TextureCommands {
                         })
                         .executes(context -> texture(context, ""))
                         .then(argument("texture_arguments", StringArgumentType.greedyString())
+                                .suggests(ResultSuggestions.PROVIDER)
                                 .executes(context -> texture(context,
                                         StringArgumentType.getString(context, "texture_arguments")))));
     }
@@ -99,6 +100,7 @@ public final class TextureCommands {
                         && KomaPermissions.canBuild(player, node))
                 .executes(context -> run(context, action, ""))
                 .then(argument("region_arguments", StringArgumentType.greedyString())
+                        .suggests(ResultSuggestions.PROVIDER)
                         .executes(context -> run(context, action,
                                 StringArgumentType.getString(context, "region_arguments"))));
     }
