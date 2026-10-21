@@ -21,6 +21,10 @@ public final class OperationLedger {
     }
 
     public static String start(UUID playerId, String description, long total) {
+        return start(jobs(playerId), description, total);
+    }
+
+    static String start(Path directory, String description, long total) {
         String id = UUID.randomUUID().toString();
         JsonObject root = base(id, description, total);
         root.addProperty("status", "RUNNING");
@@ -28,17 +32,21 @@ public final class OperationLedger {
         root.addProperty("changed", 0);
         root.addProperty("protected", 0);
         root.addProperty("startedAt", Instant.now().toString());
-        write(playerId, id, root);
+        write(directory, id, root);
         return id;
     }
 
     public static void progress(UUID playerId, String id, String description, long processed, long total, int changed) {
-        JsonObject root = readOrBase(playerId, id, description, total);
+        progress(jobs(playerId), id, description, processed, total, changed);
+    }
+
+    static void progress(Path directory, String id, String description, long processed, long total, int changed) {
+        JsonObject root = readOrBase(directory, id, description, total);
         root.addProperty("status", "RUNNING");
         root.addProperty("processed", processed);
         root.addProperty("changed", changed);
         root.addProperty("updatedAt", Instant.now().toString());
-        write(playerId, id, root);
+        write(directory, id, root);
     }
 
     public static void finish(
@@ -51,17 +59,25 @@ public final class OperationLedger {
             int protectedBlocks,
             boolean cancelled
     ) {
-        JsonObject root = readOrBase(playerId, id, description, total);
+        finish(jobs(playerId), id, description, processed, total, changed, protectedBlocks, cancelled);
+    }
+
+    static void finish(Path directory, String id, String description, long processed, long total, int changed,
+                       int protectedBlocks, boolean cancelled) {
+        JsonObject root = readOrBase(directory, id, description, total);
         root.addProperty("status", cancelled ? "CANCELLED" : "COMPLETED");
         root.addProperty("processed", processed);
         root.addProperty("changed", changed);
         root.addProperty("protected", protectedBlocks);
         root.addProperty("finishedAt", Instant.now().toString());
-        write(playerId, id, root);
+        write(directory, id, root);
     }
 
     public static int markInterrupted(UUID playerId) {
-        Path directory = ProjectStorage.namespace(playerId, "jobs");
+        return markInterrupted(jobs(playerId));
+    }
+
+    static int markInterrupted(Path directory) {
         if (!Files.isDirectory(directory)) {
             return 0;
         }
@@ -82,7 +98,7 @@ public final class OperationLedger {
             }
             return interrupted;
         } catch (IOException | RuntimeException exception) {
-            KomaEditMod.LOGGER.warn("Could not recover interrupted KomaEdit jobs for {}", playerId, exception);
+            KomaEditMod.LOGGER.warn("Could not recover interrupted KomaEdit jobs in {}", directory, exception);
             return interrupted;
         }
     }
@@ -96,8 +112,8 @@ public final class OperationLedger {
         return root;
     }
 
-    private static JsonObject readOrBase(UUID playerId, String id, String description, long total) {
-        Path file = path(playerId, id);
+    private static JsonObject readOrBase(Path directory, String id, String description, long total) {
+        Path file = path(directory, id);
         if (!Files.isRegularFile(file)) {
             return base(id, description, total);
         }
@@ -109,18 +125,22 @@ public final class OperationLedger {
         }
     }
 
-    private static void write(UUID playerId, String id, JsonObject root) {
+    private static void write(Path directory, String id, JsonObject root) {
         try {
-            AtomicStorage.writeString(path(playerId, id), GSON.toJson(root));
+            AtomicStorage.writeString(path(directory, id), GSON.toJson(root));
         } catch (IOException exception) {
             KomaEditMod.LOGGER.warn("Could not persist operation ledger {}", id, exception);
         }
     }
 
-    private static Path path(UUID playerId, String id) {
+    private static Path jobs(UUID playerId) {
+        return ProjectStorage.namespace(playerId, "jobs");
+    }
+
+    private static Path path(Path directory, String id) {
         if (id == null || !id.matches("[a-f0-9-]{36}")) {
             throw new IllegalArgumentException("Invalid operation id");
         }
-        return ProjectStorage.namespace(playerId, "jobs").resolve(id + ".json");
+        return directory.resolve(id + ".json");
     }
 }
