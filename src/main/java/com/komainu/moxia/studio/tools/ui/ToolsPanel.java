@@ -464,6 +464,7 @@ public final class ToolsPanel {
     }
 
     private void drawToolCell(StudioUi ui, Rect cell, ToolCard card, Host host, ToolContext context) {
+        ui.anchor("tool:" + card.id(), cell);
         if (!ui.visible(cell)) {
             return;
         }
@@ -765,6 +766,7 @@ public final class ToolsPanel {
         String kind = host.tr("gui.komaedit.palette.kind.preset");
         for (int index = 0; index < presets.size(); index++) {
             ToolPreset preset = presets.get(index);
+            ui.anchor("preset:" + preset.id(), cells.get(index));
             // Marcada la del preset que hay puesto: se ve de un vistazo y se sabe que otro empieza de cero.
             ui.chip(cells.get(index), labels.get(index), card.matches(current(), preset), TEXT_SECONDARY)
                     .tooltip(kind + ": " + labels.get(index) + "\n" + host.tr(preset.helpKey()))
@@ -776,6 +778,7 @@ public final class ToolsPanel {
         }
         int next = presets.size();
         if (seeded) {
+            ui.anchor("preset:random", cells.get(next));
             ui.chip(cells.get(next), labels.get(next), false, TEXT_SECONDARY)
                     .tooltip(labels.get(next) + "\n" + host.tr("gui.komaedit.tools.random.help"))
                     .group("tools:preset")
@@ -1181,6 +1184,7 @@ public final class ToolsPanel {
             for (int index = rowStart; index < Math.min(end, rowStart + perRow); index++) {
                 String option = shown.get(index);
                 Rect cell = new Rect(row.x() + (index - rowStart) * (tile + Column.GAP), row.y(), tile, tileHeight);
+                ui.anchor("stamp:" + option, cell);
                 if (!ui.visible(cell)) {
                     continue;
                 }

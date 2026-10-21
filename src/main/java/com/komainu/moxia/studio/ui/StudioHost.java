@@ -75,6 +75,14 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
     default void expectGhost(boolean refresh) {
     }
 
+    /**
+     * Si el jugador está en creativo. En supervivencia la bienvenida guiada solo enseña, sin colocar nada (el servidor
+     * vuelve a decidir igualmente lo que deja construir).
+     */
+    default boolean creative() {
+        return true;
+    }
+
     void close();
 
     /** La biblioteca de planos del cliente: catálogo, permisos y miniaturas. */

@@ -49,6 +49,10 @@ public final class KomaEditClient implements ClientModInitializer {
                 (payload, context) -> context.client().execute(() -> openEditor(context.client()))
         );
         ClientPlayNetworking.registerGlobalReceiver(
+                com.komainu.moxia.studio.net.StudioWelcomePayload.ID,
+                (payload, context) -> context.client().execute(() -> ProceduralStudioScreen.openWelcome(context.client()))
+        );
+        ClientPlayNetworking.registerGlobalReceiver(
                 RecipeCatalogPayload.ID,
                 (payload, context) -> context.client().execute(() -> ClientRecipeCatalog.update(payload.recipes()))
         );
