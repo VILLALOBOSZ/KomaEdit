@@ -21,6 +21,7 @@ import java.util.Locale;
  * @param symmetryGuides planos y eje de la simetría
  * @param sounds         sonidos al confirmar, al terminar una edición larga y al fallar
  * @param soundVolume    volumen de esos sonidos, de 0 a 1
+ * @param alignmentGuide flechas de la alineación con un pincel de colocación en la mano
  */
 public record WorldFeedbackSettings(
         PreviewStyle previewStyle,
@@ -32,7 +33,8 @@ public record WorldFeedbackSettings(
         boolean brushReticle,
         boolean symmetryGuides,
         boolean sounds,
-        double soundVolume
+        double soundVolume,
+        boolean alignmentGuide
 ) {
     public static final int FORMAT = 1;
     public static final double MIN_OPACITY = 0.15;
@@ -73,57 +75,62 @@ public record WorldFeedbackSettings(
     /** Los de serie: discretos. Sin WorldEditCUI, con contorno de la selección. */
     public static WorldFeedbackSettings defaults(boolean worldEditCui) {
         return new WorldFeedbackSettings(PreviewStyle.GHOST, 0.5, true, !worldEditCui, true, true, true, true,
-                true, 0.35);
+                true, 0.35, true);
     }
 
     public WorldFeedbackSettings withPreviewStyle(PreviewStyle value) {
         return new WorldFeedbackSettings(value, previewOpacity, fadeNear, selection, dimensions, pathNumbers,
-                brushReticle, symmetryGuides, sounds, soundVolume);
+                brushReticle, symmetryGuides, sounds, soundVolume, alignmentGuide);
     }
 
     public WorldFeedbackSettings withPreviewOpacity(double value) {
         return new WorldFeedbackSettings(previewStyle, value, fadeNear, selection, dimensions, pathNumbers,
-                brushReticle, symmetryGuides, sounds, soundVolume);
+                brushReticle, symmetryGuides, sounds, soundVolume, alignmentGuide);
     }
 
     public WorldFeedbackSettings withFadeNear(boolean value) {
         return new WorldFeedbackSettings(previewStyle, previewOpacity, value, selection, dimensions, pathNumbers,
-                brushReticle, symmetryGuides, sounds, soundVolume);
+                brushReticle, symmetryGuides, sounds, soundVolume, alignmentGuide);
     }
 
     public WorldFeedbackSettings withSelection(boolean value) {
         return new WorldFeedbackSettings(previewStyle, previewOpacity, fadeNear, value, dimensions, pathNumbers,
-                brushReticle, symmetryGuides, sounds, soundVolume);
+                brushReticle, symmetryGuides, sounds, soundVolume, alignmentGuide);
     }
 
     public WorldFeedbackSettings withDimensions(boolean value) {
         return new WorldFeedbackSettings(previewStyle, previewOpacity, fadeNear, selection, value, pathNumbers,
-                brushReticle, symmetryGuides, sounds, soundVolume);
+                brushReticle, symmetryGuides, sounds, soundVolume, alignmentGuide);
     }
 
     public WorldFeedbackSettings withPathNumbers(boolean value) {
         return new WorldFeedbackSettings(previewStyle, previewOpacity, fadeNear, selection, dimensions, value,
-                brushReticle, symmetryGuides, sounds, soundVolume);
+                brushReticle, symmetryGuides, sounds, soundVolume, alignmentGuide);
     }
 
     public WorldFeedbackSettings withBrushReticle(boolean value) {
         return new WorldFeedbackSettings(previewStyle, previewOpacity, fadeNear, selection, dimensions, pathNumbers,
-                value, symmetryGuides, sounds, soundVolume);
+                value, symmetryGuides, sounds, soundVolume, alignmentGuide);
     }
 
     public WorldFeedbackSettings withSymmetryGuides(boolean value) {
         return new WorldFeedbackSettings(previewStyle, previewOpacity, fadeNear, selection, dimensions, pathNumbers,
-                brushReticle, value, sounds, soundVolume);
+                brushReticle, value, sounds, soundVolume, alignmentGuide);
     }
 
     public WorldFeedbackSettings withSounds(boolean value) {
         return new WorldFeedbackSettings(previewStyle, previewOpacity, fadeNear, selection, dimensions, pathNumbers,
-                brushReticle, symmetryGuides, value, soundVolume);
+                brushReticle, symmetryGuides, value, soundVolume, alignmentGuide);
+    }
+
+    public WorldFeedbackSettings withAlignmentGuide(boolean value) {
+        return new WorldFeedbackSettings(previewStyle, previewOpacity, fadeNear, selection, dimensions, pathNumbers,
+                brushReticle, symmetryGuides, sounds, soundVolume, value);
     }
 
     public WorldFeedbackSettings withSoundVolume(double value) {
         return new WorldFeedbackSettings(previewStyle, previewOpacity, fadeNear, selection, dimensions, pathNumbers,
-                brushReticle, symmetryGuides, sounds, value);
+                brushReticle, symmetryGuides, sounds, value, alignmentGuide);
     }
 
     /**
@@ -154,6 +161,7 @@ public record WorldFeedbackSettings(
         root.addProperty("pathNumbers", pathNumbers);
         root.addProperty("brushReticle", brushReticle);
         root.addProperty("symmetryGuides", symmetryGuides);
+        root.addProperty("alignmentGuide", alignmentGuide);
         JsonObject sound = new JsonObject();
         sound.addProperty("enabled", sounds);
         sound.addProperty("volume", round(soundVolume));
@@ -185,7 +193,8 @@ public record WorldFeedbackSettings(
                 bool(root, "brushReticle", defaults.brushReticle()),
                 bool(root, "symmetryGuides", defaults.symmetryGuides()),
                 bool(sound, "enabled", defaults.sounds()),
-                number(sound, "volume", defaults.soundVolume())
+                number(sound, "volume", defaults.soundVolume()),
+                bool(root, "alignmentGuide", defaults.alignmentGuide())
         );
     }
 

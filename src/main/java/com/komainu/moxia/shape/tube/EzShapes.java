@@ -30,7 +30,8 @@ final class EzShapes {
     }
 
     enum Form {
-        BEADS, CUBES, CHAINLINK, FISHNET, HONEYCOMB, OSCILLATE, RINGS, SCALES, NOODLES, NOISE;
+        // BRAIDS va al final: el número de cada forma se guarda en las opciones.
+        BEADS, CUBES, CHAINLINK, FISHNET, HONEYCOMB, OSCILLATE, RINGS, SCALES, NOODLES, NOISE, BRAIDS;
 
         double option() {
             return ordinal() + 1.0;
@@ -70,6 +71,7 @@ final class EzShapes {
             case SCALES -> new Scales(parameters, line);
             case NOODLES -> new Noodles(parameters, line, seed(options, "noodleseed", pathSeed));
             case NOISE -> new NoiseCut(options, settings.seed() != 0L ? settings.seed() : pathSeed);
+            case BRAIDS -> new Braids(parameters);
         };
     }
 
@@ -153,6 +155,52 @@ final class EzShapes {
                 return band(link & 1, 2, Math.pow(best, 1.0 / minorExponent));
             }
             return axialGap == Double.MAX_VALUE ? outside(CLEARANCE) : outside(axialGap * blocks);
+        }
+    }
+
+    /**
+     * Trenza, con la fórmula de la gráfica Desmos pública que enlaza la wiki de ezEdits: tres hebras de sección
+     * circular desfasadas 2π/3 a lo largo del recorrido. La hebra {@code k} tiene el centro en
+     * {@code (−sen w / (1+T), −sen 2w / (2(1+T)))} con {@code w = z·Z + 2πk/3} y radio {@code T / (1+T)}: con el grosor
+     * {@code T = 0,5} de serie, un tercio del radio del tubo. {@code Z = 1 / (1+G)}: el hueco {@code G} (0 de serie,
+     * como en la gráfica) separa los cruces. Cada hebra va en su franja de la paleta.
+     */
+    static final class Braids extends TubeShapes.Classic {
+        private static final double THIRD = Math.PI * 2.0 / 3.0;
+        private final double thickness;
+        private final double frequency;
+
+        Braids(ShapeParameters parameters) {
+            super(parameters);
+            thickness = Math.clamp(options.get("thickness", 0.5), 0.05, 1.0);
+            frequency = 1.0 / (1.0 + Math.clamp(options.get("gap", 0.0), -0.5, 4.0));
+        }
+
+        @Override
+        public double extent() {
+            // El centro de una hebra llega a 1/(1+T) y su radio es T/(1+T): justo el borde del tubo.
+            return 1.0;
+        }
+
+        @Override
+        double sample(double x, double y, double z, double blocks, double stretch) {
+            double scale = 1.0 + thickness;
+            double radius = Math.max(thickness / scale, MINIMUM_WIRE / blocks);
+            double best = Double.MAX_VALUE;
+            int strand = 0;
+            for (int index = 0; index < 3; index++) {
+                double phase = z * frequency + THIRD * index;
+                double distance = Math.hypot(x + Math.sin(phase) / scale, y + Math.sin(2.0 * phase) / (2.0 * scale));
+                if (distance < best) {
+                    best = distance;
+                    strand = index;
+                }
+            }
+            if (best <= radius) {
+                return band(strand, 3, best / radius);
+            }
+            // La hebra va inclinada: la distancia en la sección sobrestima la real hasta en √2, así que la mitad.
+            return outside((best - radius) * blocks * 0.5);
         }
     }
 

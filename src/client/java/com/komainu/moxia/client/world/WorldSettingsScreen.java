@@ -90,6 +90,8 @@ public final class WorldSettingsScreen extends Screen {
                         Text.translatable(palette.translationKey() + ".help")))
                 .build(left, top + row * ROW, BUTTON, 20, Text.translatable("gui.komaedit.world.theme"),
                         (button, value) -> ClientStudioHost.setTheme(value)));
+        toggle(right, top + row * ROW, "alignment_guide", settings.alignmentGuide(),
+                WorldFeedbackSettings::withAlignmentGuide);
         row += 2;
         addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.world.defaults"), button -> {
             ClientWorldSettings.set(ClientWorldSettings.defaults());

@@ -923,6 +923,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 | Números de la trayectoria | Sí | El número de cada punto encima de él. |
 | Radio del pincel | Sí | Con un pincel en la mano, su radio sobre la superficie que miras. |
 | Guías de simetría | Sí | Los planos y el eje de la simetría alrededor de ti, sin partículas. |
+| Alineación del pincel | Sí | Con un pincel de colocación (`place`, `scatter`, `array`) en la mano, las flechas de su alineación en el bloque que miras (ver [Visualizador de la alineación](#visualizador-de-la-alineación)). |
 | Sonidos | Sí, 35 % | Un sonido corto al confirmar, al terminar una edición larga y al fallar, con su volumen. |
 | Colocar con gizmo | Siempre | Cuándo sale el fantasma con gizmo: **Siempre**, **Con -v** o **Nunca** (ver [Colocar con gizmo](#colocar-con-gizmo)). Se guarda aparte, en `config/komaedit-gizmo.json`, y el cliente se lo dice al servidor al entrar y al cambiarlo. |
 | Rueda mueve el fantasma | Sí | Con un fantasma en pantalla, la rueda lo acerca o lo aleja en lugar de cambiar de casilla. |
@@ -1645,7 +1646,7 @@ Figuras propias en espacio de tubo, escritas como funciones implícitas: cada bl
 | --- | --- | --- |
 | `Beads` (`Be`) | — | Esferas de un radio que se tocan, una por diámetro. Es `Rings(E:0,T:1,G:0,M:2,N:2)`. |
 | `Cubes` (`Cu`) | `Gap` (`G`, 0,5) | Cubos de un diámetro que se doblan con la curva, separados `Gap` veces su tamaño; con 0 forman un tubo cuadrado. |
-| `Braids` (`Br`) | `Thickness` (`T`, 0,5), `Gap` (`G`, 0) | La [trenza](#figuras-de-espacio-de-tubo) de tres hebras; `T` da su grosor relativo y `G` abre los cruces. |
+| `Braids` (`Br`) | `Thickness` (`T`, 0,5), `Gap` (`G`, 0) | Trenza de tres hebras con la fórmula de la gráfica Desmos que enlaza la wiki de ezEdits: hebras redondas de radio `T/(1+T)` del tubo (un tercio con el 0,5 de serie), desfasadas un tercio de vuelta y cada una en su franja de la paleta (con tres bloques, una de cada). `G` separa los cruces: con `G:1` quedan al doble de distancia. |
 | `Chainlink` (`Ch`) | `Extrusion` (`E`, 0,2), `Thickness` (`T`, 1), `Gap` (`G`, 0), `MajorExponent` (`M`, 3), `MinorExponent` (`N`, 3), `Place` (`P`, `BOTH`) | Eslabones alternados 90° y enganchados: llegan al borde del tubo, `E` los alarga, `T` engorda el alambre (un cuarto de radio por unidad), `G` los separa en largos de eslabón, `M` da su contorno (2 elipse, 99 rectángulo, 1 rombo) y `N` la sección del alambre. `P:FIRST` o `P:SECOND` dejan solo una mitad (para pintar cada una con su bloque). |
 | `Fishnet` (`Fi`) | `Spacing` (`S`, 1), `Depth` (`D`, 0,2), `Width` (`W`, 0,2) | Dos familias de hilos a ±45° sobre la piel, separados `S` radios (ajustado para cerrar la vuelta), de ancho `W` y que entran `D` hacia el eje. |
 | `Honeycomb` (`Ho`) | `CellSize` (`C`, 0,25), `WireWidth` (`W`, 0,06), `Depth` (`D`, 0,2) | Rejilla de hexágonos sobre la piel; las columnas se ajustan para cerrar la vuelta y, en lazos cerrados, las filas para empalmar. |
@@ -2171,8 +2172,11 @@ Donde KomaEdit espera una paleta (por ejemplo, `/komaedit gradient` o el materia
 | `gold_block*3,diamond_block` | Repite el tramo anterior. |
 | `-[##Grayscale,gold_block]` | Agrupa para aplicar un modificador a todo el grupo. |
 | `oak_stairs[facing=east]` | Bloques con estado: los corchetes pegados al nombre son parte del bloque. |
+| `##Magma=` | **Resultado**, como en ezEdits: en el chat, un `=` al final propone la paleta ya desplegada en bloques; el tabulador la escribe. Al ejecutar la orden, el `=` se ignora. |
 
 Una paleta admite hasta 256 entradas.
+
+**El `=` en el chat.** Al escribir una paleta acabada en `=` (`##Magma=`, `-#mia(1:4)=`, `gold_block*3,##Ice=`), la sugerencia del chat es la lista de bloques que da, separados por comas y sin `minecraft:`; con el tabulador sustituye a lo escrito. Vale en cualquier sitio de la orden: `Sh(S:Cone,P:##Magma=` deja `Sh(S:Cone,P:` delante, y en WorldEdit `//set #palette[##Ice=` propone `#palette[` con los bloques. Lo mismo con las direcciones de `Constant`: `C(D:east-z+(0,0.5,0)=` propone `C(D:(1,0.5,-1)` (y `aim`, `left`… con tu mirada de ese momento). Va en los pinceles, `place`, `scatter`, `array`, `/komaedit palette save|place|swap|print|encode`, los texturizados, los generadores, `ezspline` y las máscaras y patrones de WorldEdit. Si la orden no cupiera en los 256 caracteres del chat, no se propone.
 
 ### Ruido configurable
 
@@ -3768,10 +3772,24 @@ Los tres pinceles de colocación de ezEdits (`//ezbrush place`, `scatter` y `arr
 - **array:** el **clic izquierdo** añade un punto al trazo (el bloque mirado), **Mayús + izquierdo** quita el último, el **clic derecho** coloca las estructuras a lo largo de la curva que pasa por los puntos (justo encima de cada uno) y **Mayús + derecho** borra el trazo. **F** cambia entre trazo de esta herramienta y global, como en el trazo de degradado.
 - Cada pasada es una edición de `//undo`, con la misma escritura condicional del motor común. Sin `-i` cada clic usa una semilla nueva y el chat la dice.
 - **Vista previa:** con `-p` el pincel `place` usa la colocación anterior, de giros de 90° y con holograma (`/komaedit pincel aplicar`): solo admite `Clipboard`, las alineaciones `Constant`, `Aim`, `Upward`, `SurfaceNormal`, `PlayerRelative` y `Random`, y las banderas `-a` y `-x`. En `array`, `-p` son los parámetros de la curva, como en el comando.
+- **La mirada fija, como en ezEdits.** En los pinceles, `Constant(D:aim)` (y cualquier dirección fija que dependa de ti: `C(D:left)`, `C(D:aim+up)`, `-k aim`…) es la mirada **del momento en que configuras el pincel**: se queda así aunque luego mires a otro sitio. Para seguir la mirada de cada clic está el modo `Aim` (y `Upward`). Con `-mirada clic` (alias `-aim click`) las direcciones fijas vuelven a tomarse en cada clic, como hacía KomaEdit hasta ahora; `-mirada fija` es lo de serie.
+
+### Visualizador de la alineación
+
+Con un pincel `place`, `scatter` o `array` en la mano se ve, en el bloque que miras, hacia dónde quedaría lo que colocas, con tres flechas como las del gizmo: **verde, la primaria** (el «arriba» de la estructura), **roja, la secundaria** (su +x) y **azul, el tercer eje** (+z, más corta). Es el mismo cálculo que el clic, con el `-j` y el `-x` del pincel, así que lo que se ve es lo que sale; se mueve con el punto de mira, y con `SurfaceNormal` se inclina con el terreno.
+
+- Si la secundaria que pediste no es perpendicular a la primaria, se ve además **a trazos y en rojo tenue, «pedida»**: la roja es la perpendicular más parecida a ella, la que se usará.
+- **ViewDiff:** antes del clic derecho solo sale la verde y un aviso («clic derecho: dónde · después, clic izquierdo: hacia dónde»); tras él, las flechas se quedan en ese sitio y la roja apunta al bloque que miras, lo que haría el clic izquierdo.
+- **Array:** el ejemplo va encima del bloque que miras, en el tramo que añadiría el siguiente punto (`Tangential` y `Orthogonal` siguen ese tramo).
+- **Al azar** (`Random` o una mezcla con él): se ve un ejemplo quieto con el aviso «al azar: cada colocación sale distinta».
+- **Si no vale** (primaria nula o en la misma recta que la secundaria, sin `-x`), el centro sale amarillo con el aviso de cambiar una o usar `-x`: el clic fallaría.
+- **Con KomaEdit en el cliente** las flechas se dibujan encima de todo y ocupan siempre lo mismo en pantalla, con «primaria» y «secundaria» en sus puntas; cada jugador lo apaga para sí en `/kegui ajustes` (**Alineación del pincel**).
+- **Sin el mod en el cliente** se ven, como en ezEdits, barras de block displays de hormigón (verde, roja y azul, con la punta más gruesa) que solo ve quien tiene el pincel: no existen en el mundo del servidor y se mueven con interpolación. `/komaedit debug removevisualiserentities` las retira (ver [Depuración](#depuración-komaedit-debugprint-y-komaedit-debug)).
+- El administrador lo apaga para todos o cambia cada cuánto se recalcula en `config/komaedit/visualisations.json` (ver [Configuración](#configuración)).
 
 ### Parámetros
 
-Los de [Colocar estructuras](#colocar-estructuras), [Alineación primaria y secundaria](#alineación-primaria-y-secundaria), [Dispersión de estructuras](#dispersión-de-estructuras) y [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria).
+Los de [Colocar estructuras](#colocar-estructuras), [Alineación primaria y secundaria](#alineación-primaria-y-secundaria), [Dispersión de estructuras](#dispersión-de-estructuras) y [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria), y además `-mirada fija|clic` (alias `-aim bind|click`): cuándo se toma la mirada de las direcciones fijas (`fija`, al configurar, de serie; `clic`, en cada clic).
 
 Ejemplos:
 
@@ -3785,13 +3803,14 @@ Ejemplos:
 /komaedit pincel scatter Cl C R -m clay -l pink_wool
 /komaedit pincel array Cl Tangential Constant -g 2
 /komaedit pincel place Cl(R:90) C(D:south) C(D:east) -p
+/komaedit pincel place Sh(S:Cone,P:stone) C(D:aim) Constant -s 6,20,6
+/komaedit pincel place Sh(S:Cone,P:stone) C(D:aim) Constant -s 6,20,6 -mirada clic
 ```
 
 ### Rendimiento y limitaciones
 
 - Los límites son los del motor común (5000 estructuras y 1 500 000 bloques por pasada). Un clic nuevo cancela el cálculo anterior si aún no ha terminado.
-- En estos pinceles `Constant(D:aim)` y `aim` en las direcciones son la mirada de **cada clic** (en ezEdits, la de cuando se configuró el pincel); para la de cada clic también está `Aim`.
-- No hay visualizador de la alineación mientras apuntas (en ezEdits, entidades BlockDisplay).
+- El visualizador se recalcula en el servidor cinco veces por segundo (`updateTicks`, 4 de serie) y solo para quien tiene un pincel de colocación en la mano; solo manda algo cuando cambia. Con `SurfaceNormal` lee unos 30 bloques alrededor del que miras, y nunca carga chunks.
 - El trazo de `array` admite hasta 256 puntos; con `-b` cada colocación baja a la superficie más cercana.
 
 ## Pinceles de modelado
@@ -4067,6 +4086,7 @@ KomaEdit registra en WorldEdit las máscaras y patrones de ezEdits, así que val
 | `#near[máscara][distancia]` / `#near[máscara][mín][máx]` | Bloques a esa distancia esférica de alguno de la máscara, sin contar los de la propia máscara. Con mínimo, excluye los que están más cerca. Distancia hasta 16. |
 | `#palette[paleta][<estricto>]` | Bloques de la paleta. Estricto (por defecto) mira además las propiedades escritas: `oak_stairs[facing=east]` no encaja con una escalera al oeste; `oak_stairs` sin corchetes encaja con todas. |
 | `#fuzzypalette[paleta]` (`#fpalette`) | Igual que `#palette[paleta][false]`: solo el tipo de bloque. |
+| `#savedselection[selección]` (`#savedsel`) | Bloques dentro de una selección guardada con `/komaedit sel save`, con su forma (caja, polígono, esfera, cilindro, convexa…): `//replace #savedselection[plaza] stone_bricks`. Tiene que ser del mundo en el que editas. |
 | `#radialgradientmask[distancia][<modo>][<inicio>][<ruido>][<escala>][<semilla>]` (`#rgradientm`) | Degradado desde tu posición: cerca pasa casi todo, a `distancia` bloques ya nada. `modo`: `sphere`, `cube`, `diamond` o `cylinder`. `inicio`: bloques que pasan siempre antes de empezar el degradado. Con ruido, el borde sigue el ruido en vez de salir moteado. |
 | `#vectorgradientmask[vector][distancia][<ruido>][<escala>][<semilla>]` (`#vgradientm`) | Degradado a lo largo de un vector desde tu posición: `up`, `north`, `me`, `left`… o `x,y,z`. Lo que queda detrás pasa siempre. |
 
@@ -4089,11 +4109,12 @@ En la wiki de ezEdits el apartado del patrón `#vectorgradient` describe en real
 
 ### Rendimiento y limitaciones
 
-- Todo lo que depende de ti (la mirada de `#aim`, tu posición en los degradados, el portapapeles, la máscara global, la selección de `#selection`) se fija al escribir la orden.
+- Todo lo que depende de ti (la mirada de `#aim`, tu posición en los degradados, el portapapeles, la máscara global, la selección de `#selection` y `#savedselection`) se fija al escribir la orden.
+- Un `=` al final de una paleta (`#palette[##Ice=`) hace que el chat proponga la paleta desplegada (ver [Paletas con nombre](#paletas-con-nombre)).
 - Las máscaras leen los bloques a través de WorldEdit (ven los cambios de la propia edición) y guardan la respuesta por estado de bloque. La luz se lee del motor de luz de Minecraft, que no carga chunks: en zonas sin cargar vale 0. Se evalúan donde WorldEdit las evalúa, en el hilo del servidor.
 - `#near` revisa una esfera alrededor de cada bloque y se para en el primero que encuentra; guarda lo que ya sabe de la máscara interior. Con distancias grandes en zonas sin coincidencias es la más lenta.
 - `#clipblocks` y `#schemblocks` revisan hasta 4 millones de bloques; `#selection` copia hasta 262 144.
-- Solo las puede usar un jugador cuando dependen de él (`#aim`, `#hotbar`, degradados, `#selection`).
+- Solo las puede usar un jugador cuando dependen de él (`#aim`, `#hotbar`, degradados, `#selection`, `#savedselection`). `#savedselection` mira si cada bloque cae dentro de la forma: no tiene límite de tamaño ni copia nada.
 - No piden permiso propio: las gobiernan los permisos de la orden de WorldEdit en la que se escriben.
 
 ## Paletas guardadas
@@ -4123,7 +4144,9 @@ Alias: `/komaedit paleta`.
 - `place` pone la paleta en fila delante de ti; se deshace con `//undo`.
 - `swap` cambia, dentro de la selección, el bloque n del origen por el n del destino. `-a` no toca el aire del origen, `-s` estira el destino para cubrir todo el origen (sin él, lo que sobra del origen se queda igual), `-f` encaja el origen solo por tipo y `-b` copia las propiedades del bloque original sobre el nuevo cuando las admite. Va por el motor de operaciones sobre la selección: lectura repartida, cálculo en un worker y un solo `//undo`.
 - `print` muestra la paleta (`-v` con id completo y estados); al pulsarla se copia.
-- `encode` da un código `kp1:…` que se copia al pulsarlo; `decode` lo convierte otra vez en bloques. El formato es propio de KomaEdit (no es el de ezEdits) y admite bloques de mods.
+- `encode` da un código `kp1:…` que se copia al pulsarlo; `decode` lo convierte otra vez en bloques. El formato es propio de KomaEdit y admite bloques de mods (los de Minecraft van sin `minecraft:` para acortarlo).
+- Los códigos de `//ezpalette encode` de ezEdits **no se pueden leer**: su formato no está publicado, cambia con la versión de Minecraft (sus notas de versión dicen que lo cambiaron para 1.21.5 y otra vez para 1.21.11) y averiguarlo exigiría descompilar el plugin. `decode` lo dice si se pega uno; lo que sí vale es la lista de bloques que da su `//ezpalette decode`, pegada tal cual como paleta.
+- Un `=` al final de la paleta (`/komaedit palette print ##Magma=`) hace que el chat proponga sus bloques (ver [Paletas con nombre](#paletas-con-nombre)).
 - Para sacar los materiales de una selección de cualquier forma, de la barra rápida o de otra paleta **ordenados de oscuro a claro**, usa `/komaedit color palette <selection|hotbar|paleta> [nombre]`; para crear una paleta de degradado entre dos bloques, `/komaedit color gradient … -p nombre` (ver [Color y sombreado](#color-y-sombreado)).
 
 ### Paletas de serie
@@ -4331,7 +4354,8 @@ Por defecto, la primaria es `Constant` (+y) y la secundaria `Constant` (+x, el e
 | `Orthogonal(Angle:<grados>)` | `O(A:…)` | Perpendicular a la trayectoria: 0° arriba, 90° izquierda, 180° abajo, 270° derecha (solo `array`). |
 | `<peso>%<modo>,…` | | Mezcla: suma de las direcciones con sus pesos, por ejemplo `10%C,2%R`. |
 
-- **Direcciones** (en `Constant`, `-k` y `-d`): ejes (`x`, `-z`), puntos cardinales (`north`, `east`, `up`, `down`, también `norte`, `este`, `arriba`…), vectores `(1,2,0)`, direcciones relativas a ti (`aim`, `forward`, `back`, `left`, `right`) y sumas con factores: `east-z+(0,0.5,0)`, `2*up+aim`. Un `=` final se ignora.
+- **Direcciones** (en `Constant`, `-k` y `-d`): ejes (`x`, `-z`), puntos cardinales (`north`, `east`, `up`, `down`, también `norte`, `este`, `arriba`…), vectores `(1,2,0)`, direcciones relativas a ti (`aim`, `forward`, `back`, `left`, `right`) y sumas con factores: `east-z+(0,0.5,0)`, `2*up+aim`. Con un `=` final, el chat propone la dirección ya calculada (`C(D:east-z+(0,0.5,0)=` → `C(D:(1,0.5,-1)`); al ejecutar, el `=` se ignora.
+- **Las relativas a ti** se toman al lanzar la orden; en los [pinceles de colocación](#pincel-de-colocación), al configurar el pincel (con `-mirada clic`, en cada clic).
 - **Expression:** las sentencias van separadas por `;` y asignan `rx`, `ry` o `rz` (las que falten valen 0; el resto de asignaciones son variables auxiliares). Usa el compilador de fórmulas de KomaEdit (sin bucles, con `noise`). `Space` es `WORLD` (la posición en el mundo, por defecto), `LOCAL` o `NORMALIZED`: en `place`, 0; en `scatter`, relativa al centro de la región (normalizada a [-1, 1]); en `array`, `z` es la distancia recorrida (normalizada, de 0 a 1).
 - **SurfaceNormal** necesita leer el mundo: en `scatter` es la normal de cada superficie; en `place`, la del suelo bajo tus pies; en `array`, la de la superficie que encuentra `-b` (sin `-b`, arriba).
 - `ViewDiff` (dos clics) es solo para pinceles y aquí da un error.
@@ -4952,7 +4976,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
    - Contenido: `komaedit.recipe`, `komaedit.instance`.
    - Edición: `komaedit.select` (selecciones y supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
-   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.jobs` (`/komaedit jobs`: ver, pausar y cancelar los trabajos de todos), `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
+   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.debug` (`/komaedit debugprint`), `komaedit.debug.visualiser` (`/komaedit debug removevisualiserentities`), `komaedit.admin.jobs` (`/komaedit jobs`: ver, pausar y cancelar los trabajos de todos), `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
@@ -4964,6 +4988,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.build.brush.paint` ([Pincel de pintura](#pincel-de-pintura)) y `komaedit.build.brush.zone` ([Pincel de zona](#pincel-de-zona), también `pincel retocar`), los dos del paquete intermedio.
    - Planos: `komaedit.blueprint.load`, `.save` y `.share`, `komaedit.build.blueprint` y `komaedit.build.brush.stamp`; de admin, `komaedit.admin.blueprints` y `komaedit.limit.blueprints` (ver [Permisos y límites](#permisos-y-límites)).
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
+   - `komaedit.debug.loadingbar` (`/komaedit debug clearloadingbars`; la da también `komaedit.use`). `komaedit.debug` da las dos órdenes de `/komaedit debug`.
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
    - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…) y `komaedit.select.superwand`.
@@ -4972,15 +4997,10 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 
 | Paquete | Incluye |
 | --- | --- |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, rellenar y quitar flujos sueltos (`fluido rellenar`, `fluido limpiar`), supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, la bola de fluido y las cascadas (`fluido bola`, `fluido cascada`), tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
-| `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
-| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, rellenar y quitar flujos sueltos (`fluido rellenar`, `fluido limpiar`, `retocar sueltos`), supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`), `debug clearloadingbars` y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
+| `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, la bola de fluido y las cascadas (`fluido bola`, `fluido cascada`), tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, `jobs`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.admin` | `reload`, `jobs`, `debugprint`, `debug removevisualiserentities`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
@@ -5011,6 +5031,31 @@ Los campos que falten (un `config.json` de una versión anterior, como el de la 
 `config/komaedit/blueprints.json` guarda los límites de la [biblioteca de planos](#permisos-y-límites) (planos por jugador, compartidos, tamaño y si se puede compartir); también se recarga con `/komaedit reload`.
 
 `config/komaedit/palettes.json` guarda las paletas de serie del servidor (ver [Paletas guardadas](#paletas-guardadas)); también se recarga con `/komaedit reload`. `config/komaedit/images.json` configura `/komaedit image` (ver [Configuración de imágenes](#configuración-de-imágenes)) y también se recarga. `/komaedit info` muestra la versión del mod y cuántas paletas y ruidos de serie hay.
+
+`config/komaedit/visualisations.json` es el visualizador de la alineación de los pinceles de colocación, como la sección `visualisations` de ezEdits (ver [Visualizador de la alineación](#visualizador-de-la-alineación)); también se recarga con `/komaedit reload`:
+
+```json
+{
+  "format": 1,
+  "alignment": {
+    "enabled": true,
+    "updateTicks": 4,
+    "vanillaDisplays": true
+  }
+}
+```
+
+- `enabled`: si se enseña (cada jugador con KomaEdit en el cliente lo apaga además para sí en `/kegui ajustes`).
+- `updateTicks`: cada cuántos ticks se recalcula, de `1` a `40` (`4`: cinco veces por segundo).
+- `vanillaDisplays`: si los clientes sin KomaEdit lo ven con block displays.
+
+### Depuración: `/komaedit debugprint` y `/komaedit debug`
+
+Como `/ezedits debugprint` y `//ezdebug` de ezEdits:
+
+- `/komaedit debugprint` (permiso `komaedit.admin.debug`) escribe lo que hace falta para diagnosticar un fallo: versiones de KomaEdit, Minecraft, WorldEdit, Fabric Loader y Java, memoria, límites y presupuesto por tick, el estado del visualizador, cuántos jugadores tienen el mod en el cliente, paletas y la carpeta de la configuración. **[copiar]** lo copia todo para pegarlo en un informe.
+- `/komaedit debug clearloadingbars` (permiso `komaedit.debug.loadingbar`, paquete básico) quita tu barra de progreso; si una edición sigue, vuelve al avanzar.
+- `/komaedit debug removevisualiserentities` (permiso `komaedit.debug.visualiser`, paquete admin) retira tus block displays del visualizador de la alineación (vuelven si sigues con el pincel en la mano) y borra los displays de la vista previa que hubieran quedado en el mundo cargado. No debería haber ninguno: solo existen en el cliente de quien edita, y el servidor ya borra solo cualquiera que se cargue con un chunk.
 
 ## Rendimiento
 
