@@ -179,6 +179,12 @@ public final class NoteService {
         }
     }
 
+    public static void syncAll(MinecraftServer server) {
+        if (server != null) {
+            server.getPlayerManager().getPlayerList().forEach(NoteService::sync);
+        }
+    }
+
     private static NotePayloads.NoteSyncPayload payload(ServerPlayerEntity player, boolean reset, String dimension,
                                                         List<WorldNote> notes) {
         return new NotePayloads.NoteSyncPayload(reset, dimension, new ArrayList<>(notes),
