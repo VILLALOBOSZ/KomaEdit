@@ -32,6 +32,7 @@ public final class ToolCatalog {
             new UtilityCards.Drain(),
             new UtilityCards.Waterlog(),
             new UtilityCards.Biome(),
+            new RebuildCard(),
             new SymmetryCard(),
             new CapabilityCard()
     );

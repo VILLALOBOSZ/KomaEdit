@@ -740,8 +740,10 @@ public final class ToolsPanel {
         }
     }
 
-    private static boolean seeded(ToolCard card) {
-        return card.params().stream().anyMatch(param -> param.id().equals("seed"));
+    /** Si la tarjeta tiene la semilla a la vista con sus valores (la reconstrucción solo la usa al azar). */
+    private boolean seeded(ToolCard card) {
+        ToolValues values = values(card);
+        return card.params().stream().anyMatch(param -> param.id().equals("seed") && param.visible(values));
     }
 
     private void drawPresets(StudioUi ui, Column column, Host host, ToolCard card, ToolsInfo info) {

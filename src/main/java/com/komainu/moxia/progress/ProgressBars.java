@@ -21,9 +21,9 @@ import java.util.UUID;
  * Bossbar de progreso de cada jugador: lectura de la selección, cálculo, preparación de la vista previa, espera de
  * confirmación, turno en la cola y colocación, con porcentaje, bloques por segundo y tiempo restante (o el puesto y
  * cuándo empieza, en la cola). No hay que avisarla: cada pocos ticks pregunta a los servicios del motor
- * ({@link RegionOperationService}, {@link AsyncEngine}, {@link PlanPreviews}, {@link BatchEditService} y el pintado de
- * biomas de {@link BiomeEditService}) qué está haciendo cada jugador, así que cualquier operación que pase por ellos la
- * tiene. Solo aparece cuando la operación dura más de un segundo (la vista previa, la cola y la pausa, al momento).
+ * ({@link RegionOperationService}, {@link AsyncEngine}, {@link PlanPreviews}, {@link BatchEditService}, el pintado de
+ * biomas de {@link BiomeEditService} y la reconstrucción animada) qué está haciendo cada jugador, así que cualquier
+ * operación que pase por ellos la tiene. Solo aparece cuando la operación dura más de un segundo (la vista previa, la cola y la pausa, al momento).
  */
 public final class ProgressBars {
     private static final int UPDATE_EVERY_TICKS = 5;
@@ -50,6 +50,10 @@ public final class ProgressBars {
         Optional<ProgressLine> job = BatchEditService.progress(player);
         if (job.isPresent()) {
             return job;
+        }
+        Optional<ProgressLine> rebuild = com.komainu.moxia.rebuild.RebuildService.progress(player);
+        if (rebuild.isPresent()) {
+            return rebuild;
         }
         Optional<ProgressLine> biome = BiomeEditService.progress(player);
         if (biome.isPresent()) {

@@ -187,6 +187,8 @@ public final class PermissionNodes {
                 "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
         add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
         add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
+        add(KomaPermissions.REBUILD, Pack.INTERMEDIATE, build, null,
+                "/komaedit rebuild (reconstrucción animada de la selección, el portapapeles o un plano)");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");

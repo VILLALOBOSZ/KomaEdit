@@ -29,6 +29,7 @@ public final class KomaEditConfig {
     public static void load() {
         ImageConfig.load(directory());
         BlueprintConfig.load(directory());
+        com.komainu.moxia.rebuild.RebuildConfig.load(directory());
         settings = load(file());
         apply(settings);
     }
