@@ -1,7 +1,9 @@
 package com.komainu.moxia.brush.paint;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.brush.ez.BrushNoise;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * como mucho) sobre un terreno de 161 × 161 con colina y escarpe, con cada modo y dos radios. Sin Minecraft no se
  * miden la foto ni la escritura, que dependen del servidor.
  *
- * <p>Imprime la tabla y, con {@code KOMAEDIT_PAINT_BENCHMARK=<archivo>}, la escribe ahí. Los márgenes son holgados:
- * solo falla si algo se dispara.</p>
+ * <p>El trazo largo solo corre con {@code KOMAEDIT_PAINT_BENCHMARK=<archivo>}: imprime la tabla y la escribe ahí.
+ * Tarda unos segundos y no aporta en cada build. Los márgenes son holgados: solo falla si algo se dispara.</p>
  */
 class PaintStrokeBenchmarkTest {
     /** Un toque no puede costar más que esto en el worker (muy holgado: suele ir por debajo de 1 ms). */
@@ -28,6 +30,7 @@ class PaintStrokeBenchmarkTest {
     private static final int RUNS = 5;
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "KOMAEDIT_PAINT_BENCHMARK", matches = ".+")
     void aLongStrokeStaysFast() throws IOException {
         List<String> rows = new ArrayList<>();
         rows.add(String.format(Locale.ROOT, "| %-10s | %5s | %6s | %8s | %10s | %10s | %9s |", "Modo", "Radio",
@@ -96,7 +99,7 @@ class PaintStrokeBenchmarkTest {
         }
         double again = (System.nanoTime() - start) / 1.0E6 / 1_000;
         System.out.printf(Locale.ROOT, "Huella montana: %.2f ms la primera vez, %.4f ms después%n", prepare, again);
-        assertTrue(again < 0.5, "pedir otra vez la huella ya medida no cuesta: " + again + " ms");
+        FullTests.assertFasterThan(again, 0.5, "pedir otra vez la huella ya medida no cuesta: " + again + " ms");
     }
 
     private static PaintPainter.Settings settings(PaintGradient gradient, int radius) {

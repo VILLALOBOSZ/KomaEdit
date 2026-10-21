@@ -53,24 +53,29 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named("test") {
-    useJUnitPlatform {
-        excludeTags "benchmark"
-    }
+    useJUnitPlatform()
+    // Las clases de prueba se reparten entre varias JVM: la mitad de los núcleos (una en una máquina de 2 o 3, como el
+    // CI de un repositorio privado) y como mucho 4, que cada una se lleva su memoria. Ninguna prueba depende de lo que
+    // deje otra ni del reloj de verdad.
+    maxParallelForks = Math.max(1, Math.min(4, Runtime.runtime.availableProcessors().intdiv(2)))
     testLogging {
         events "failed", "skipped"
         exceptionFormat "full"
     }
 }
 
-// Pruebas de rendimiento con millones de bloques: no corren con build; `gradlew benchmark`.
+// Las ediciones enormes (1, 5 y 20 millones de bloques) con sus tablas: la misma prueba que corre en cada build, con
+// KOMAEDIT_FULL_TESTS y la memoria que necesitan los 20 millones.
 tasks.register("benchmark", Test) {
     description = "Mide las ediciones enormes (1, 5 y 20 millones de bloques) fuera del juego."
     group = "verification"
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
-    useJUnitPlatform {
-        includeTags "benchmark"
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching "com.komainu.moxia.performance.HugeEditBenchmarkTest"
     }
+    environment "KOMAEDIT_FULL_TESTS", "1"
     maxHeapSize = "3g"
     outputs.upToDateWhen { false }
     testLogging {

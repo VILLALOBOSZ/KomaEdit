@@ -45,8 +45,9 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `capability` | Capacidades de construcción a mano: reglas puras, red, servidor y aplicación con WorldEdit |
 | `client.gui` | Pantalla no bloqueante del Studio (`ProceduralStudioScreen`: el mundo, la cámara, los clics sobre la trayectoria y el teclado; el panel es `studio.ui`) |
 | `studio.ui` | El Procedural Studio entero sin Minecraft: `StudioView` (estado, ratón y teclado de barra, etapas, contenido, pie, paleta `Ctrl+K`, historial y biblioteca de bloques), las etapas (`FigureStages`, `ColorStage`, `BlueprintStage`), los controles de `StudioUi` (con `NumberView`/`NumberEdit` para los números) y las miniaturas que dibujan los generadores (`ChoiceThumbnails`). Dibuja sobre un `StudioCanvas`: en el juego, `client.gui.studio.DrawContextCanvas`; en las pruebas, una imagen con la fuente y los iconos del juego, de donde salen las maquetas. Lo que pide al juego pasa por `StudioHost` (`ClientStudioHost` en el cliente) |
+| `studio.world` | El ratón en el mundo con el Studio abierto, en Java puro: la caja de selección con sus caras (`BoxSelect`), los puntos que se arrastran (`PathDrag`) y el trazo de pintar manteniendo (`BrushStroke`) |
 | `studio.tools` | Etapa Herramientas del Studio: cada tarjeta (`ToolCard`) declara sus ajustes (con su unidad, `ValueUnit`), arma la orden de chat que manda Construir, sus nodos de permiso y su validación; `ToolsPanel` dibuja la etapa con `StudioUi` |
-| `studio.net` | Red de la etapa: estado de herramientas (permisos, selección, fuentes, presets, simetría y el historial de //undo con el nombre de cada operación, de `worldedit.EditHistory`), progreso para el pie del Studio y lista de materiales, solo hacia clientes con KomaEdit |
+| `studio.net` | Red de la etapa: estado de herramientas (permisos, selección, fuentes, presets, simetría y el historial de //undo con el nombre de cada operación, de `worldedit.EditHistory`), progreso para el pie del Studio y lista de materiales, solo hacia clientes con KomaEdit; y «donde haces clic» (`StudioAim`), el bloque pulsado con el Studio abierto, que el servidor solo acepta en la dimensión del jugador y a su alcance. `NetworkRegistrationTest` comprueba en las fuentes que cada paquete está registrado una vez y tiene receptor |
 
 ## Flujo de una brocha
 
@@ -173,7 +174,7 @@ Para un comando nuevo: si es de gestión (no coloca bloques) o ya usa `-v` con o
 
 ## Presupuesto por tick, cola y memoria
 
-Piezas en `com.komainu.moxia.performance` y `com.komainu.moxia.edit`. Todo lo puro tiene pruebas con un reloj de mentira; `HugeEditBenchmarkTest` (`./gradlew benchmark`, fuera de `build`) mide las fases con 1, 5 y 20 millones de bloques.
+Piezas en `com.komainu.moxia.performance` y `com.komainu.moxia.edit`. Todo lo puro tiene pruebas con un reloj de mentira; `HugeEditBenchmarkTest` comprueba en cada build un plan de un millón (comprimido y exacto) y el modelo de colocación con reloj de mentira; con `KOMAEDIT_FULL_TESTS=1` (o `./gradlew benchmark`, que además le da la memoria de los 20 millones) mide las fases con 1, 5 y 20 millones de bloques.
 
 1. **Presupuesto.** `TickBudget` (puro) mide en `START_SERVER_TICK` y al final de `END_SERVER_TICK` (fases propias, la última después de las de los demás mods) cuánto dura cada tick, cada cuánto llega y cuánto gastó KomaEdit, y da el presupuesto del tick: `tickBudgetMillis`, menos si el resto del servidor deja menos de eso hasta 45 ms, y `tickBudgetMinMillis` si los ticks llegan tarde (por debajo de ~19,4 TPS).
 2. **El tick de KomaEdit.** `ServerWork.tick` (un solo `END_SERVER_TICK`) abre la ventana del presupuesto y corre primero lo ligero (`ServerWork.light`: fantasma, pintura, pintura rápida, foto de los pinceles, vista previa), que pide su plazo con `ServerWork.deadline(máximo)`; si hay trabajo pesado, lo ligero usa como mucho la mitad. Luego lo pesado: cada servicio es un `ServerWork.Lane` (`BatchEditService`, `RegionOperationService`, `BiomeEditService`) que dice qué jugadores tienen trabajo y avanza el de uno hasta un plazo. `FairShare` reparte lo que queda por turnos entre jugadores (cada uno, lo que queda entre los que faltan; lo que no gasta pasa a los siguientes; si sobra, otra vuelta; el primero rota cada tick) y, dentro de un jugador, los servicios rotan también. `ServerWork.pause` (admin) hace que los carriles se salten a ese jugador.
@@ -208,8 +209,15 @@ Todo se prueba con JUnit sin arrancar Minecraft. Dos pruebas de humo vigilan lo 
 
 - `command.CommandTreeSmokeTest` monta el árbol entero con `MoxiaCommands.register(dispatcher)` en un `CommandDispatcher` de Brigadier (no hace falta el servidor: los permisos se miran al ejecutar). Brigadier fusiona en silencio dos hijos con el mismo nombre, así que la prueba apunta cada `addChild` que repite nombre bajo `/komaedit`. Comprueba también los alias `/ke`, `/mx`, `/moxia` y `ruta`, que cada orden tenga su tema en `HelpTopics` (por id, alias o entrada), que la ayuda solo enseñe órdenes que existen y dónde va la bandera `-v`.
 - `config.KomaEditConfigTest` lee `config.json` de serie, uno de la 1.4.0 sin los campos nuevos y uno roto con `KomaEditConfig.load(Path)`.
+- `studio.net.NetworkRegistrationTest` lee las fuentes: cada paquete (`implements CustomPayload`) registrado una sola vez y en un sentido, con su receptor al otro lado. Un paquete del cliente sin registrar no da error: `canSend` dice que no y el cliente se calla.
 
 Una orden nueva necesita, por tanto, su entrada en `HelpTopics` y, si no coloca bloques, su sitio en `PreviewScope`.
+
+Las pruebas no dependen del PC: ni de la hora, ni del idioma del sistema, ni de los recursos que Loom descarga (los nombres de bloque en español solo se leen al pintar las maquetas), ni del orden en que corren (Gradle las reparte entre varias JVM), ni de lo rápida o cargada que esté la máquina. Lo que reparte trabajo entre ticks con un presupuesto en nanosegundos recibe el reloj (`SnapshotCaptureService.tick(online, clock)`, `WorldSnapshot.Capture.step(…, clock)`, `EditRequests.clock`) y sus pruebas le pasan uno falso que avanza lo mismo por lectura. Lo que tarda y no aporta en cada build va detrás de una variable de entorno:
+
+- **Renders y maquetas**: `KOMAEDIT_<TEMA>_RENDER=<carpeta>` (o `KOMAEDIT_RENDER_DIR`, `KOMAEDIT_STUDIO_MOCKUPS`) escribe los PNG; `KOMAEDIT_MC_JAR=<jar del cliente>` les pone las texturas del juego (`preview.TextureTiles`, común a los rasterizadores).
+- **Benchmarks**: `KOMAEDIT_BRUSH_BENCHMARK=<archivo>` y `KOMAEDIT_PAINT_BENCHMARK=<archivo>` miden y escriben la tabla.
+- **Pasada entera** (`KOMAEDIT_FULL_TESTS=1`, `FullTests`): las que recorren todas las combinaciones (formas de `ezspline`, especies y semillas de árboles, los 80 PNG de sellos frente a sus recetas) pasan en cada build por una muestra fija y aquí por todo; y los límites de tiempo de reloj («figuras grandes en menos de 8 s», `FullTests.assertFasterThan`) solo se comprueban aquí: en una máquina cargada fallan sin que nada esté mal. Pásala al tocar esos generadores o su rendimiento.
 
 ## Pinceles de modelado
 

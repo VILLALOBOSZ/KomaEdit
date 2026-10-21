@@ -1,5 +1,6 @@
 package com.komainu.moxia.performance;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.edit.FakeStates;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.PlacementRun;
@@ -8,7 +9,6 @@ import com.komainu.moxia.region.RegionReader;
 import com.komainu.moxia.region.RegionSnapshot;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.world.block.BlockState;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -24,7 +24,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Ediciones enormes (1, 5 y 20 millones de bloques) medidas fuera del juego, fase a fase: leer el mundo (la lectura de
@@ -36,10 +38,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * medido): antes, todo lo escrito esperaba en el búfer de la sesión hasta cerrarla y caía en un solo tick; ahora va
  * por ventanas ({@link PlacementRun}) con el presupuesto de cada tick ({@link TickBudget}).</p>
  *
- * <p>No corre con {@code gradlew build}: {@code gradlew benchmark} (con más memoria). Escribe las tablas en
- * {@code build/reports/benchmarks/huge-edits.md}.</p>
+ * <p>En cada build solo corre lo que no depende del reloj ni de la memoria del equipo: un plan de un millón de bloques
+ * sale comprimido y exacto, y el modelo de colocación con un reloj de mentira nunca pasa del presupuesto. Las tablas
+ * con tiempos y memoria salen con {@code KOMAEDIT_FULL_TESTS=1} ({@link FullTests}); {@code gradlew benchmark} las
+ * saca con la memoria que piden los 20 millones y las escribe en {@code build/reports/benchmarks/huge-edits.md}.</p>
  */
-@Tag("benchmark")
 class HugeEditBenchmarkTest {
     private static final int HEIGHT = 64;
     private static final int[] MILLIONS = {1, 5, 20};
@@ -58,28 +61,65 @@ class HugeEditBenchmarkTest {
     private static final long BUDGET_NANOS = 6_000_000L;
 
     @Test
+    void aMillionBlockPlanIsSmallAndExact() {
+        int side = 125;
+        PackedBlockPlan plan = pack(side);
+        assertEquals(1_000_000, plan.size());
+        assertTrue(plan.compressed());
+        assertTrue(plan.footprintBytes() < 1_000_000L, "menos de un byte por bloque: " + plan.footprintBytes());
+        int index = 0;
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int z = 0; z < side; z++) {
+                for (int x = 0; x < side; x++, index++) {
+                    if (index % 997 == 0) {
+                        assertEquals(PackedBlockPlan.pack(x, y, z), plan.packedPosition(index));
+                        assertEquals(rawId(x, y, z), plan.expectedStateId(index));
+                        assertSame(ANDESITE, plan.override(index));
+                    }
+                }
+            }
+        }
+        assertEquals(1_000_000, apply(plan));
+    }
+
+    @Test
+    void placingAMillionBlocksNeverPassesTheBudgetInTheModel() {
+        Ticks result = ticks(1_000_000);
+        assertTrue(result.worst() <= BUDGET_NANOS + EFFECTS_NANOS, "peor tick: " + result.worst());
+        // 7 µs por bloque en ticks de 6 ms: unos 1 167 ticks, sin desperdiciar el presupuesto.
+        long ideal = 1_000_000L * (WRITE_NANOS + FLUSH_NANOS + EFFECTS_NANOS) / BUDGET_NANOS;
+        assertTrue(result.ticks() <= ideal * 102 / 100, "ticks: " + result.ticks() + " (ideal " + ideal + ")");
+    }
+
+    @Test
     void hugeEdits() throws IOException {
+        assumeTrue(FullTests.ENABLED, "las tablas, con KOMAEDIT_FULL_TESTS=1 (gradlew benchmark)");
+        // Los 20 millones piden unos 2 GB de margen; con menos (la JVM de las pruebas), hasta 5 millones.
+        int[] millions = Runtime.getRuntime().maxMemory() >= 2_500L * 1024 * 1024 ? MILLIONS : new int[]{1, 5};
         // Calentamiento del JIT con la talla pequeña; no cuenta.
         run(1, false);
         List<String> rows = new ArrayList<>();
         rows.add("| Bloques | Leer (ns/bl) | Foto (MB) | Calcular (ns/bl) | Empaquetar (ns/bl) | Plan (MB) "
                 + "| Plan (B/bl) | Pico al montar (MB) | Recorrer (ns/bl) |");
         rows.add("|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
-        for (int millions : MILLIONS) {
-            rows.add(run(millions, true));
+        for (int size : millions) {
+            rows.add(run(size, true));
         }
         rows.add("");
         rows.add("| Bloques (desordenados) | Plan en memoria (MB) | Plan en disco (MB) | B/bl en memoria "
                 + "| Pico al montar (MB) | Recorrer (ns/bl) |");
         rows.add("|---:|---:|---:|---:|---:|---:|");
-        for (int millions : MILLIONS) {
-            rows.add(scattered(millions * 1_000_000));
+        for (int size : millions) {
+            rows.add(scattered(size * 1_000_000));
         }
         rows.add("");
         rows.add("| Bloques | Peor tick antes | Peor tick ahora | Ticks ahora | Duración ahora (a 20 TPS) |");
         rows.add("|---:|---:|---:|---:|---:|");
-        for (int millions : MILLIONS) {
-            rows.add(ticks(millions * 1_000_000));
+        for (int size : millions) {
+            Ticks result = ticks(size * 1_000_000L);
+            rows.add(String.format(Locale.ROOT, "| %,d | %s | %.2f ms | %,d | %s |", size * 1_000_000L,
+                    duration(result.before()), result.worst() / 1_000_000.0, result.ticks(),
+                    duration(result.ticks() * 50_000_000L)).replace(',', ' '));
         }
         String table = String.join("\n", rows);
         System.out.println(table);
@@ -246,7 +286,11 @@ class HugeEditBenchmarkTest {
      * la cola escribía en la sesión (hasta 32 768 por tick) y todo lo demás caía al cerrarla. Ahora: ventanas con el
      * presupuesto de serie.
      */
-    private static String ticks(long blocks) {
+    /** Peor tick (antes y ahora) y ticks que hacen falta, en nanosegundos del reloj de mentira. */
+    private record Ticks(long before, long worst, long ticks) {
+    }
+
+    private static Ticks ticks(long blocks) {
         long beforeWorst = blocks * (FLUSH_NANOS + EFFECTS_NANOS);
         long[] now = {0L};
         long[] buffered = {0L};
@@ -301,9 +345,7 @@ class HugeEditBenchmarkTest {
         } catch (MaxChangedBlocksException exception) {
             throw new IllegalStateException(exception);
         }
-        assertTrue(worst <= BUDGET_NANOS + EFFECTS_NANOS);
-        return String.format(Locale.ROOT, "| %,d | %s | %.2f ms | %,d | %s |", blocks, duration(beforeWorst),
-                worst / 1_000_000.0, ticks, duration(ticks * 50_000_000L)).replace(',', ' ');
+        return new Ticks(beforeWorst, worst, ticks);
     }
 
     private static String duration(long nanos) {

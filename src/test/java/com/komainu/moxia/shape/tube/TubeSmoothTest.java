@@ -1,5 +1,6 @@
 package com.komainu.moxia.shape.tube;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
@@ -262,7 +263,7 @@ class TubeSmoothTest {
                 TubeFigures.generate(path, parameters, LIMIT), LIMIT);
         long elapsed = (System.nanoTime() - start) / 1_000_000L;
         assertTrue(smoothed.pieces().size() > 5_000);
-        assertTrue(elapsed < 8_000, "demasiado lento: " + elapsed + " ms con piezas");
+        FullTests.assertFasterThan(elapsed, 8_000, "demasiado lento: " + elapsed + " ms con piezas");
     }
 
     private static TubeVoxelizer.Evaluator evaluator(SampledPath path, ShapeParameters parameters) {

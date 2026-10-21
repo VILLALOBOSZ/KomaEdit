@@ -289,10 +289,6 @@ public final class BuilderCommands {
         return input == null ? null : RegionMasks.parse(player, input);
     }
 
-    private static Text prefixText(String text, Formatting color) {
-        return prefix().append(Text.literal(text).formatted(color));
-    }
-
     private static net.minecraft.text.MutableText prefix() {
         return Feedback.prefix();
     }

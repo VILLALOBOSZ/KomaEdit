@@ -1,5 +1,6 @@
 package com.komainu.moxia.nature;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
@@ -41,7 +42,8 @@ class TreeGrowerTest {
     void nothingFloatsInAnySpeciesOrTerrain() {
         for (TreeSpecies species : TreeSpecies.values()) {
             for (FakeTerrain terrain : terrains()) {
-                for (long seed : new long[]{1L, 7L, 42L}) {
+                // En cada build, una semilla; con KOMAEDIT_FULL_TESTS, tres.
+                for (long seed : FullTests.pick(List.of(1L, 7L, 42L), List.of(1L))) {
                     Grown grown = grow(species.id(), terrain, seed);
                     String label = species.id() + " semilla " + seed;
                     assertTrue(grown.voxels().count(NatureVoxels.Role.WOOD) > 0, label);
@@ -62,6 +64,10 @@ class TreeGrowerTest {
             for (int run = 0; run < 8; run++) {
                 String options = species.id() + extras[run];
                 long seed = random.nextLong(1L, 1_000_000L);
+                if (!FullTests.ENABLED && run % 2 == 1) {
+                    // En cada build, la mitad de los ajustes (las mismas semillas que con KOMAEDIT_FULL_TESTS).
+                    continue;
+                }
                 FakeTerrain terrain = terrains().get(run % 3);
                 Grown grown = grow(options, terrain, seed);
                 String label = options + " semilla " + seed;

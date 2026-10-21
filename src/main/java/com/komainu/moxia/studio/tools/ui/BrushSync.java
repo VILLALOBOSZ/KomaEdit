@@ -9,9 +9,15 @@ package com.komainu.moxia.studio.tools.ui;
  * <p>Nunca toca otro objeto: el pincel se reconoce por el id de la herramienta que el servidor deja en el objeto de
  * la mano tras crearlo, y la orden de actualizar solo cambia un pincel que ya existe y es del mismo tipo (lo comprueba
  * el servidor). Lógica pura, con pruebas.</p>
+ *
+ * <p>Entre dos órdenes pasa al menos {@value #MIN_INTERVAL_MILLIS} ms: cada orden suma un segundo al antispam de
+ * Minecraft, que echa a quien no es OP al pasar de diez, así que más de una por segundo acabaría echando al jugador
+ * que va pulsando «+» con calma.</p>
  */
 public final class BrushSync {
     public static final long DELAY_MILLIS = 300L;
+    /** Lo mínimo entre dos órdenes de actualizar: una por segundo, lo que el antispam de Minecraft descuenta. */
+    public static final long MIN_INTERVAL_MILLIS = 1_000L;
     /** Lo que se espera a ver el pincel en la mano tras crearlo (el servidor marca el objeto). */
     public static final long ADOPT_MILLIS = 5_000L;
     static final String CREATE = "komaedit pincel ";
@@ -24,6 +30,7 @@ public final class BrushSync {
     private String pending;
     private long changedAt;
     private long linkedAt;
+    private long sentAt = Long.MIN_VALUE / 2;
 
     /**
      * El Studio acaba de crear el pincel con {@code command} desde la tarjeta {@code card} (con la acción
@@ -85,10 +92,12 @@ public final class BrushSync {
             pending = command;
             changedAt = now;
         }
-        if (!tool.equals(held) || command.equals(sent) || now - changedAt < DELAY_MILLIS) {
+        if (!tool.equals(held) || command.equals(sent) || now - changedAt < DELAY_MILLIS
+                || now - sentAt < MIN_INTERVAL_MILLIS) {
             return null;
         }
         sent = command;
+        sentAt = now;
         return update(command);
     }
 

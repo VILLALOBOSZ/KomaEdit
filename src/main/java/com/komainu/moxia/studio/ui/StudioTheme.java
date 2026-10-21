@@ -116,11 +116,6 @@ public final class StudioTheme {
 
     public static int SCRIM;
 
-    /** Pigmentos de un icono que dibuja bloques de colores: no cambian con el tema. */
-    public static final int PIGMENT_RED = 0xFFE0503F;
-    public static final int PIGMENT_YELLOW = 0xFFF2C14B;
-    public static final int PIGMENT_BLUE = 0xFF4B9BE2;
-
     // ── En el mundo ─────────────────────────────────────────────────────────────────────────────────────
 
     /*

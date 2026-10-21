@@ -531,15 +531,6 @@ public final class StudioUi {
         return new NameGrid(1, false);
     }
 
-    /** Cuántas líneas (una o dos) necesita {@code text} en {@code width} sin cortarse. */
-    public int nameLineCount(String text, int width) {
-        if (canvas.width(text) <= width) {
-            return 1;
-        }
-        List<String> lines = nameLines(text, width, 2);
-        return lines == null ? 1 : lines.size();
-    }
-
     /**
      * Un nombre centrado en vertical en {@code row}: en una línea si cabe, si no en dos partidas por palabras, y solo
      * si ni así cabe, cortado con «…».
