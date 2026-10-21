@@ -63,6 +63,10 @@ public final class BuildEstimate {
     }
 
     /** 950 → «950», 12 345 → «12,3 k», 1 234 567 → «1,23 M» (coma decimal, como el resto del Studio). */
+    public static String compact(long blocks) {
+        return compact((int) Math.clamp(blocks, 0L, Integer.MAX_VALUE));
+    }
+
     public static String compact(int blocks) {
         if (blocks < 1_000) {
             return Integer.toString(Math.max(0, blocks));
