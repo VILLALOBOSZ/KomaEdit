@@ -6,6 +6,7 @@ import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeOptions;
 import com.komainu.moxia.shape.ShapeParameters;
+import com.komainu.moxia.symmetry.SymmetryTransform;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -49,6 +50,14 @@ public final class TubeBender {
 
     public static int quarterTurns(int encoded) {
         return encoded & 3;
+    }
+
+    /**
+     * Los {@link #quarterTurns} de un bloque (los de {@code AffineTransform.rotateY}, de este a norte) como
+     * transformación de la simetría (de este a sur), para girar sus estados con {@code StateTransform}.
+     */
+    public static SymmetryTransform symmetry(int quarterTurns) {
+        return new SymmetryTransform(false, false, false, Math.floorMod(-quarterTurns, 4), 4);
     }
 
     /**
