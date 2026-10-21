@@ -124,7 +124,8 @@ public final class AdminCommands {
                     KomaEditConfig.Settings settings = KomaEditConfig.settings();
                     context.getSource().sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal(
                             "Configuración recargada: " + ProgressLine.group(settings.maxBlocksPerOperation()) + " bloques por operación, "
-                                    + settings.maxConcurrentJobs() + " trabajos a la vez y " + palettes
+                                    + settings.maxConcurrentJobs() + " colocando a la vez, "
+                                    + ProgressLine.decimal(settings.tickBudgetMillis()) + " ms por tick y " + palettes
                                     + " paletas del servidor").formatted(Formatting.GREEN)), true);
                     return 1;
                 });

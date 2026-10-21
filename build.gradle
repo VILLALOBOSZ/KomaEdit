@@ -64,6 +64,27 @@ tasks.named("test") {
     }
 }
 
+// Las ediciones enormes (1, 5 y 20 millones de bloques) con sus tablas: la misma prueba que corre en cada build, con
+// KOMAEDIT_FULL_TESTS y la memoria que necesitan los 20 millones.
+tasks.register("benchmark", Test) {
+    description = "Mide las ediciones enormes (1, 5 y 20 millones de bloques) fuera del juego."
+    group = "verification"
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching "com.komainu.moxia.performance.HugeEditBenchmarkTest"
+    }
+    environment "KOMAEDIT_FULL_TESTS", "1"
+    maxHeapSize = "3g"
+    outputs.upToDateWhen { false }
+    testLogging {
+        events "failed", "skipped"
+        exceptionFormat "full"
+        showStandardStreams = true
+    }
+}
+
 java {
     withSourcesJar()
     sourceCompatibility = JavaVersion.VERSION_21

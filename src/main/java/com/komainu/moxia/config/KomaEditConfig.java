@@ -6,7 +6,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.blueprint.BlueprintConfig;
+import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.image.ImageConfig;
+import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.performance.TickBudget;
 import com.komainu.moxia.persistence.AtomicStorage;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -27,6 +30,13 @@ public final class KomaEditConfig {
         ImageConfig.load(directory());
         BlueprintConfig.load(directory());
         settings = load(file());
+        apply(settings);
+    }
+
+    /** Lleva al motor el presupuesto por tick y dónde se guardan los planes grandes. */
+    static void apply(Settings value) {
+        ServerWork.configure(value.tickBudget());
+        PackedBlockPlan.configure(value.planStorage());
     }
 
     /**
@@ -62,7 +72,11 @@ public final class KomaEditConfig {
                 integer(root, "confirmBuildAboveBlocks", Settings.DEFAULT.confirmBuildAboveBlocks()),
                 integer(root, "previewTimeoutSeconds", Settings.DEFAULT.previewTimeoutSeconds()),
                 integer(root, "previewMaxDisplays", Settings.DEFAULT.previewMaxDisplays()),
-                integer(root, "arraySnapRadius", Settings.DEFAULT.arraySnapRadius())
+                integer(root, "arraySnapRadius", Settings.DEFAULT.arraySnapRadius()),
+                decimal(root, "tickBudgetMillis", Settings.DEFAULT.tickBudgetMillis()),
+                decimal(root, "tickBudgetMinMillis", Settings.DEFAULT.tickBudgetMinMillis()),
+                integer(root, "planCompressAboveBlocks", Settings.DEFAULT.planCompressAboveBlocks()),
+                integer(root, "planMemoryMegabytes", Settings.DEFAULT.planMemoryMegabytes())
         );
     }
 
@@ -96,11 +110,19 @@ public final class KomaEditConfig {
         root.addProperty("previewTimeoutSeconds", value.previewTimeoutSeconds());
         root.addProperty("previewMaxDisplays", value.previewMaxDisplays());
         root.addProperty("arraySnapRadius", value.arraySnapRadius());
+        root.addProperty("tickBudgetMillis", value.tickBudgetMillis());
+        root.addProperty("tickBudgetMinMillis", value.tickBudgetMinMillis());
+        root.addProperty("planCompressAboveBlocks", value.planCompressAboveBlocks());
+        root.addProperty("planMemoryMegabytes", value.planMemoryMegabytes());
         return GSON.toJson(root);
     }
 
     private static int integer(JsonObject root, String key, int fallback) {
         return root.has(key) ? root.get(key).getAsInt() : fallback;
+    }
+
+    private static double decimal(JsonObject root, String key, double fallback) {
+        return root.has(key) ? root.get(key).getAsDouble() : fallback;
     }
 
     private static boolean bool(JsonObject root, String key, boolean fallback) {
@@ -111,6 +133,13 @@ public final class KomaEditConfig {
      * @param confirmBuildAboveBlocks por encima de estos bloques, un Build pide confirmación antes de encolarse; 0 no
      *                                pregunta nunca
      * @param arraySnapRadius         hasta dónde busca superficie la bandera {@code -b} de {@code array}, en bloques
+     * @param maxConcurrentJobs       ediciones que colocan a la vez; las demás esperan en la cola por orden de llegada
+     * @param tickBudgetMillis        milisegundos por tick que puede usar KomaEdit en el hilo del servidor (leer,
+     *                                colocar, vistas previas…), repartidos por turnos entre jugadores
+     * @param tickBudgetMinMillis     lo que usa aunque el servidor vaya por debajo de 20 TPS
+     * @param planCompressAboveBlocks a partir de cuántos bloques el plan de una edición se comprime por páginas
+     * @param planMemoryMegabytes     memoria comprimida de un plan antes de volcar el resto a un archivo temporal
+     *                                (0: nunca a disco)
      */
     public record Settings(
             int maxBlocksPerOperation,
@@ -120,7 +149,11 @@ public final class KomaEditConfig {
             int confirmBuildAboveBlocks,
             int previewTimeoutSeconds,
             int previewMaxDisplays,
-            int arraySnapRadius
+            int arraySnapRadius,
+            double tickBudgetMillis,
+            double tickBudgetMinMillis,
+            int planCompressAboveBlocks,
+            int planMemoryMegabytes
     ) {
         public static final int DEFAULT_ARRAY_SNAP_RADIUS = 96;
         public static final int MAX_ARRAY_SNAP_RADIUS = 256;
@@ -129,6 +162,9 @@ public final class KomaEditConfig {
          * pregunta nunca). Una vista previa caduca a los {@code previewTimeoutSeconds} segundos y enseña como mucho
          * {@code previewMaxDisplays} block displays (0: solo la caja).
          */
+        public static final double DEFAULT_TICK_BUDGET_MILLIS = 6.0;
+        public static final double DEFAULT_TICK_BUDGET_MIN_MILLIS = 1.0;
+        public static final int DEFAULT_PLAN_MEMORY_MEGABYTES = 128;
         public static final Settings DEFAULT = new Settings(1_500_000, 4, false, 5, 250_000, 90, 1_500,
                 DEFAULT_ARRAY_SNAP_RADIUS);
 
@@ -141,6 +177,27 @@ public final class KomaEditConfig {
                         int backupRetention, int confirmBuildAboveBlocks) {
             this(maxBlocksPerOperation, maxConcurrentJobs, rootPermissionGrantsAll, backupRetention,
                     confirmBuildAboveBlocks, 90, 1_500, DEFAULT_ARRAY_SNAP_RADIUS);
+        }
+
+        public Settings(int maxBlocksPerOperation, int maxConcurrentJobs, boolean rootPermissionGrantsAll,
+                        int backupRetention, int confirmBuildAboveBlocks, int previewTimeoutSeconds,
+                        int previewMaxDisplays, int arraySnapRadius) {
+            this(maxBlocksPerOperation, maxConcurrentJobs, rootPermissionGrantsAll, backupRetention,
+                    confirmBuildAboveBlocks, previewTimeoutSeconds, previewMaxDisplays, arraySnapRadius,
+                    DEFAULT_TICK_BUDGET_MILLIS, DEFAULT_TICK_BUDGET_MIN_MILLIS,
+                    PackedBlockPlan.Storage.DEFAULT_COMPRESS_ABOVE, DEFAULT_PLAN_MEMORY_MEGABYTES);
+        }
+
+        /** El presupuesto por tick de {@link ServerWork}. */
+        public TickBudget.Settings tickBudget() {
+            return TickBudget.Settings.ofMillis(tickBudgetMillis, tickBudgetMinMillis);
+        }
+
+        /** Dónde se guardan los planes grandes ({@link PackedBlockPlan.Storage}). */
+        public PackedBlockPlan.Storage planStorage() {
+            return new PackedBlockPlan.Storage(planCompressAboveBlocks,
+                    planMemoryMegabytes == 0 ? -1L : planMemoryMegabytes * 1024L * 1024L,
+                    PackedBlockPlan.Storage.temporaryDirectory());
         }
 
         public Settings {
@@ -164,6 +221,18 @@ public final class KomaEditConfig {
             }
             if (arraySnapRadius < 1 || arraySnapRadius > MAX_ARRAY_SNAP_RADIUS) {
                 throw new IllegalArgumentException("arraySnapRadius must be between 1 and " + MAX_ARRAY_SNAP_RADIUS);
+            }
+            if (!(tickBudgetMillis >= 0.5 && tickBudgetMillis <= 40.0)) {
+                throw new IllegalArgumentException("tickBudgetMillis must be between 0.5 and 40");
+            }
+            if (!(tickBudgetMinMillis >= 0.1 && tickBudgetMinMillis <= tickBudgetMillis)) {
+                throw new IllegalArgumentException("tickBudgetMinMillis must be between 0.1 and tickBudgetMillis");
+            }
+            if (planCompressAboveBlocks < 0) {
+                throw new IllegalArgumentException("planCompressAboveBlocks must be 0 or more");
+            }
+            if (planMemoryMegabytes < 0 || planMemoryMegabytes > 65_536) {
+                throw new IllegalArgumentException("planMemoryMegabytes must be between 0 and 65536");
             }
         }
     }

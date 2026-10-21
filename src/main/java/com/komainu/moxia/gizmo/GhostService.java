@@ -15,6 +15,7 @@ import com.komainu.moxia.preview.PreviewDisplays;
 import com.komainu.moxia.preview.PreviewPlanCodec;
 import com.komainu.moxia.preview.PreviewSurface;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.performance.ServerWork;
 import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BaseBlock;
@@ -332,9 +333,9 @@ public final class GhostService {
             return;
         }
         long start = System.nanoTime();
-        prepare(server, start + PREPARE_NANOS_PER_TICK);
+        prepare(server, ServerWork.deadline(PREPARE_NANOS_PER_TICK));
         sendParts(server);
-        check(server, System.nanoTime() + CHECK_NANOS_PER_TICK);
+        check(server, ServerWork.deadline(CHECK_NANOS_PER_TICK));
         expire(server, start);
     }
 

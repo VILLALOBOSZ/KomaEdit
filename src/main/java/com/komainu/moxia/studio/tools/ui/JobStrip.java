@@ -9,7 +9,8 @@ import java.util.Locale;
 
 /**
  * Lo que el pie del Studio cuenta mientras algo está en marcha (en cualquier etapa): la fase con su porcentaje,
- * ritmo y tiempo restante, o la vista previa con sus cambios y cuándo caduca. El pie lo pinta en una línea que
+ * ritmo y tiempo restante, la vista previa con sus cambios y cuándo caduca, o el puesto en la cola de colocación y
+ * cuándo empezará. El pie lo pinta en una línea que
  * siempre cabe: si no hay sitio se quitan primero los datos menos importantes, nunca se corta a media palabra.
  * Los botones mandan {@code /komaedit confirm} y {@code /komaedit cancel}, las mismas órdenes que los del chat.
  */
@@ -48,10 +49,19 @@ public final class JobStrip {
             return segments;
         }
         String phase = capitalize(actions.tr(phaseKey(line.phase())));
+        if (line.phase() == ProgressLine.Phase.QUEUED) {
+            // En la cola, done es el puesto, total cuántas esperan y el tiempo lo que falta para empezar.
+            segments.add(actions.tr("gui.komaedit.job.queue", line.done(), line.total()));
+            if (line.secondsUntilStart() >= 1.0) {
+                segments.add(actions.tr("gui.komaedit.job.starts", ProgressLine.duration(line.secondsUntilStart())));
+            }
+            segments.add(line.title());
+            return segments;
+        }
         if (line.measured()) {
             segments.add(phase + " " + line.percent() + " %");
             double remaining = line.remainingSeconds();
-            if (remaining >= 1.0) {
+            if (remaining >= 1.0 && line.phase() != ProgressLine.Phase.PAUSED) {
                 segments.add("~" + ProgressLine.duration(remaining));
             }
             double rate = line.rate();
@@ -80,6 +90,9 @@ public final class JobStrip {
         if (line.phase() == ProgressLine.Phase.WAITING) {
             return line.total() <= 0 ? 0.0 : Math.clamp((double) line.done() / line.total(), 0.0, 1.0);
         }
+        if (line.phase() == ProgressLine.Phase.QUEUED) {
+            return 0.0;
+        }
         if (line.measured()) {
             return line.fraction();
         }
@@ -89,7 +102,7 @@ public final class JobStrip {
     /** Color de la línea según la fase. */
     public static int color(ProgressLine.Phase phase) {
         return switch (phase) {
-            case WAITING -> StudioTheme.WARNING;
+            case WAITING, PAUSED -> StudioTheme.WARNING;
             case PLACING -> StudioTheme.SUCCESS;
             default -> StudioTheme.ACCENT_TEXT;
         };

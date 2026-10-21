@@ -7,7 +7,8 @@ import java.util.Locale;
  * pinta {@link ProgressBars} en la bossbar del jugador; aquí solo están las cuentas y el texto.
  *
  * @param done  hecho en la fase (bloques leídos, colocados, comprobados…); con {@code total} 0 la fase no tiene
- *              medida y solo se cuenta el tiempo
+ *              medida y solo se cuenta el tiempo. En la cola ({@link Phase#QUEUED}, ver {@link #queued}) es el
+ *              puesto, {@code total} cuántas esperan y {@code elapsedNanos} lo que falta para empezar
  * @param extra información de la fase (cambios de la vista previa…), o {@code null}
  */
 public record ProgressLine(String title, Phase phase, long done, long total, long elapsedNanos, String extra) {
@@ -17,7 +18,11 @@ public record ProgressLine(String title, Phase phase, long done, long total, lon
         PREPARING("preparando la vista previa"),
         WAITING("vista previa"),
         CHECKING("comprobando la zona"),
-        PLACING("colocando");
+        PLACING("colocando"),
+        /** Esperando turno en la cola de colocación (van al final: el Studio recibe el ordinal). */
+        QUEUED("en cola"),
+        /** Parada por un administrador ({@code /komaedit jobs pause}). */
+        PAUSED("en pausa");
 
         private final String label;
 
@@ -40,8 +45,23 @@ public record ProgressLine(String title, Phase phase, long done, long total, lon
         elapsedNanos = Math.max(0L, elapsedNanos);
     }
 
+    /**
+     * Esperando en la cola de colocación: {@code position} (1 la primera) de {@code waiting} y {@code seconds} hasta
+     * empezar (negativo si no se sabe).
+     */
+    public static ProgressLine queued(String title, int position, int waiting, double seconds) {
+        long nanos = seconds < 0.0 ? 0L : Math.round(seconds * 1_000_000_000.0);
+        return new ProgressLine(title, Phase.QUEUED, position, Math.max(position, waiting), nanos,
+                "/komaedit cancel");
+    }
+
     public boolean measured() {
-        return total > 0;
+        return total > 0 && phase != Phase.QUEUED;
+    }
+
+    /** En la cola: segundos hasta empezar. */
+    public double secondsUntilStart() {
+        return phase == Phase.QUEUED ? elapsedNanos / 1_000_000_000.0 : 0.0;
     }
 
     /** De 0 a 1; sin medida, 0. */
@@ -65,10 +85,32 @@ public record ProgressLine(String title, Phase phase, long done, long total, lon
         return measured() && rate > 0.0 ? Math.max(0.0, (total - done) / rate) : -1.0;
     }
 
-    /** «Texturizar · colocando 45 % · 12 300 bl/s · ~8 s». */
+    /**
+     * «Texturizar · colocando 45 % · 12 300 bl/s · ~8 s»; en la cola, «Texturizar · en cola 2.º de 3 · empieza en
+     * ~1 min 10 s».
+     */
     public String text() {
         StringBuilder builder = new StringBuilder(title).append(" · ").append(phase.label());
+        if (phase == Phase.QUEUED) {
+            builder.append(' ').append(done).append(".º de ").append(total);
+            if (elapsedNanos > 0) {
+                builder.append(" · empieza en ~").append(duration(secondsUntilStart()));
+            }
+            if (extra != null) {
+                builder.append(" · ").append(extra);
+            }
+            return builder.toString();
+        }
         if (phase == Phase.WAITING) {
+            if (extra != null) {
+                builder.append(" · ").append(extra);
+            }
+            return builder.toString();
+        }
+        if (phase == Phase.PAUSED) {
+            if (measured()) {
+                builder.append(' ').append(percent()).append(" %");
+            }
             if (extra != null) {
                 builder.append(" · ").append(extra);
             }
@@ -103,6 +145,14 @@ public record ProgressLine(String title, Phase phase, long done, long total, lon
             builder.append(digits.charAt(index));
         }
         return (value < 0 ? "-" : "") + builder;
+    }
+
+    /** «6», «2,5»: sin decimales si no hacen falta, con coma. */
+    public static String decimal(double value) {
+        if (value == Math.rint(value)) {
+            return Long.toString(Math.round(value));
+        }
+        return String.format(Locale.ROOT, "%.1f", value).replace('.', ',');
     }
 
     public static String duration(double seconds) {

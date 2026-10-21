@@ -279,6 +279,7 @@ public final class MoxiaCommands {
         ClipboardCommands.register(root);
         PasteCommands.register(root);
         PreviewCommands.register(root);
+        JobCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")
                 .requires(source -> can(source, KomaPermissions.PATH))
@@ -1572,11 +1573,13 @@ public final class MoxiaCommands {
             return fail(context.getSource(), "No hay una edición por lotes activa");
         }
         BatchEditService.JobStatus job = status.get();
+        String state = job.queuePosition() > 0
+                ? "en cola, puesto " + job.queuePosition() + " · empieza en ~"
+                + ProgressLine.duration(job.secondsUntilStart())
+                : job.percentage() + "% · " + job.processed() + "/" + job.total();
         context.getSource().sendFeedback(
-                () -> prefix().append(Text.literal(
-                        job.description() + " · " + job.percentage() + "% · "
-                                + job.processed() + "/" + job.total()
-                ).formatted(Formatting.AQUA)),
+                () -> prefix().append(Text.literal(job.description() + " · " + state
+                        + (job.paused() ? " · en pausa por un admin" : "")).formatted(Formatting.AQUA)),
                 false
         );
         return job.percentage();

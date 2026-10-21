@@ -43,7 +43,8 @@ class KomaEditConfigTest {
         String written = Files.readString(file, StandardCharsets.UTF_8);
         for (String key : new String[]{"format", "maxBlocksPerOperation", "maxConcurrentJobs",
                 "rootPermissionGrantsAll", "backupRetention", "confirmBuildAboveBlocks", "previewTimeoutSeconds",
-                "previewMaxDisplays", "arraySnapRadius"}) {
+                "previewMaxDisplays", "arraySnapRadius", "tickBudgetMillis", "tickBudgetMinMillis",
+                "planCompressAboveBlocks", "planMemoryMegabytes"}) {
             assertTrue(written.contains("\"" + key + "\""), "falta " + key + " en el archivo de serie");
         }
         assertEquals(KomaEditConfig.Settings.DEFAULT, KomaEditConfig.load(file), "y se vuelve a leer igual");
@@ -63,7 +64,30 @@ class KomaEditConfigTest {
         assertEquals(defaults.previewTimeoutSeconds(), settings.previewTimeoutSeconds());
         assertEquals(defaults.previewMaxDisplays(), settings.previewMaxDisplays());
         assertEquals(defaults.arraySnapRadius(), settings.arraySnapRadius());
+        assertEquals(defaults.tickBudgetMillis(), settings.tickBudgetMillis());
+        assertEquals(defaults.tickBudgetMinMillis(), settings.tickBudgetMinMillis());
+        assertEquals(defaults.planCompressAboveBlocks(), settings.planCompressAboveBlocks());
+        assertEquals(defaults.planMemoryMegabytes(), settings.planMemoryMegabytes());
         assertEquals(CONFIG_1_4_0, Files.readString(file, StandardCharsets.UTF_8), "leerla no la reescribe");
+    }
+
+    @Test
+    void theTickBudgetAndPlanStorageCanBeTuned() {
+        KomaEditConfig.Settings settings = KomaEditConfig.parse("""
+                { "tickBudgetMillis": 2.5, "tickBudgetMinMillis": 0.5, "planCompressAboveBlocks": 0,
+                  "planMemoryMegabytes": 0 }
+                """);
+        assertEquals(2_500_000L, settings.tickBudget().budgetNanos());
+        assertEquals(500_000L, settings.tickBudget().minimumNanos());
+        assertEquals(0, settings.planStorage().compressAbove(), "0: comprimir siempre");
+        assertEquals(-1L, settings.planStorage().spillAbove(), "0 MB: nunca a disco");
+        assertEquals(128L * 1024 * 1024, KomaEditConfig.Settings.DEFAULT.planStorage().spillAbove());
+        assertEquals(KomaEditConfig.Settings.DEFAULT, KomaEditConfig.parse(KomaEditConfig.toJson(
+                KomaEditConfig.Settings.DEFAULT)));
+        assertThrows(IllegalArgumentException.class, () -> KomaEditConfig.parse("{ \"tickBudgetMillis\": 0 }"));
+        assertThrows(IllegalArgumentException.class,
+                () -> KomaEditConfig.parse("{ \"tickBudgetMillis\": 2, \"tickBudgetMinMillis\": 3 }"),
+                "el mínimo no puede pasar del presupuesto");
     }
 
     @Test

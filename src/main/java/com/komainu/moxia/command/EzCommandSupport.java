@@ -102,6 +102,10 @@ final class EzCommandSupport {
         CommandHints.suggestion(message)
                 .flatMap(found -> CommandHints.corrected(request == null ? null : request.command(), found))
                 .ifPresent(fixed -> body.append(" ").append(Feedback.fix("[corregir]", fixed)));
+        // Una selección que pasa del límite: los trozos que se acaban de preparar, con un botón cada uno.
+        if (message != null && message.contains("/komaedit trozo 1") && source.getPlayer() != null) {
+            JobCommands.partButtons(source.getPlayer()).ifPresent(buttons -> body.append(" ").append(buttons));
+        }
         return Feedback.fail(source, body);
     }
 

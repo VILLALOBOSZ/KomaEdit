@@ -650,9 +650,10 @@ En los dos casos, el chat resume la vista previa en una línea: cambios, cuánto
 
 ### Progreso y cancelación
 
-- Una bossbar enseña la fase de la operación: **leyendo** la selección, **calculando**, **preparando la vista previa**, **vista previa** (con la cuenta atrás), **comprobando la zona** y **colocando**, con porcentaje, bloques por segundo y tiempo restante. Aparece cuando la operación dura más de un segundo; la vista previa, al momento.
+- Una bossbar enseña la fase de la operación: **leyendo** la selección, **calculando**, **preparando la vista previa**, **vista previa** (con la cuenta atrás), **comprobando la zona**, **en cola** (el puesto y cuándo empezará) y **colocando**, con porcentaje, bloques por segundo y tiempo restante, o **en pausa** si un administrador la paró. Aparece cuando la operación dura más de un segundo; la vista previa, la cola y la pausa, al momento. El pie del Studio enseña lo mismo («En cola: 2.º de 3 · empieza en ~1 min 10 s»).
+- Si ya colocan tantas ediciones como permite el servidor (`maxConcurrentJobs`, 4 de serie), la tuya **espera su turno** en vez de rechazarse: el chat dice el puesto y cuándo empezará, y la barra lo va actualizando. Ver [Rendimiento](#rendimiento).
 - Un cálculo que no sabe cuánto le falta enseña el tiempo que lleva, y la barra va y viene.
-- `/komaedit cancel` para todo lo tuyo que esté en marcha: lectura, cálculo y colocación, y descarta la vista previa y el Build en espera. Lo ya colocado queda en una sola entrada de **//undo**: la colocación se corta siempre entre dos bloques, nunca a medias, y el chat dice cuántos bloques llegó a poner. `/komaedit job cancel` sigue parando solo la colocación.
+- `/komaedit cancel` para todo lo tuyo que esté en marcha, en la fase que sea: lectura, cálculo, espera en la cola y colocación, y descarta la vista previa y el Build en espera. Lo ya colocado queda en una sola entrada de **//undo**: la colocación se corta siempre entre dos bloques, nunca a medias, y el chat dice cuántos bloques llegó a poner. `/komaedit job cancel` sigue parando solo la colocación.
 - También para el pintado de biomas (`biome` y su pincel), que la bossbar enseña como colocación.
 - Si cambias de dimensión antes de que termine una operación que lee el mundo (operaciones sobre la selección, terraformado, tejados, texto, colocación…), se descarta con un aviso y no cambia nada: lo calculado era de la foto del mundo de antes. Al desconectarte se para todo lo tuyo.
 
@@ -660,13 +661,14 @@ En los dos casos, el chat resume la vista previa en una línea: cambios, cuánto
 
 - Las operaciones sobre la selección dicen al empezar cuántos bloques van a leer y, si pasa de dos segundos, cuánto tardarán.
 - Una colocación de más de tres segundos avisa de cuánto durará y de que `/komaedit cancel` la para.
-- Si un plan supera el `//limit` de tu sesión de WorldEdit, se avisa antes de empezar: la edición se parará al llegar y lo colocado quedará en //undo; súbelo con `//limit` para hacerla entera.
+- **Si una edición pasa de un límite, se dice antes de empezar** y no se lee, calcula ni coloca nada: cuántos bloques tiene, cuál es el límite y en cuántos trozos partirla. Vale para el límite del servidor (`maxBlocksPerOperation`, salvo con `komaedit.limit.unrestricted`), para lo que KomaEdit lee de una vez de la selección (16 millones de bloques con su margen) y para el `//limit` de tu sesión de WorldEdit (que además propone subirlo). Antes, con `//limit`, la edición empezaba y se paraba a medias.
+- Si la selección es una caja, el aviso trae los trozos preparados: **[trozo 1] [trozo 2] …** (o `/komaedit trozo <n>`, alias `part`) seleccionan cada uno, cortados por el lado horizontal más largo y en bordes de chunk; repites la orden en cada trozo. Los trozos se acuerdan de la selección original aunque ya hayas seleccionado el primero. Con otras formas de selección solo se dice en cuántos partirla.
 - `/komaedit estimate` de las trayectorias sigue igual.
 
 ### Rendimiento y limitaciones
 
 - Preparar la vista previa lee el mundo y el patrón de cada bloque en el hilo del servidor, unos 4 ms por tick: un plan de un millón de bloques tarda unos segundos (la barra lo enseña). La superficie (o la elección de displays) se calcula en un hilo aparte; el plan compacto se envía a unos 64 KiB por tick y los displays, a 128 por tick.
-- Mientras espera, el plan congelado ocupa unos 40 bytes por bloque.
+- Mientras espera, el plan congelado se guarda comprimido como cualquier plan grande (ver [Memoria](#memoria)).
 - Sin vista previa: los degradados de `gradient` (colocan por regiones, sin el plan que la vista previa necesita), los biomas (`biome`), el editor y Construir del Studio (que tiene su holograma y su confirmación), los pinceles y la supervarita, y las órdenes que no colocan bloques (`color`, `analyze`, `symmetry`, `capability`, `quiet`, los presets de `tree` y `rock`, `text fonts`…), que no aceptan la bandera.
 - Recalcular repitiendo la orden usa tu posición y mirada de ese momento (afecta a `place` y `array` sin selección).
 - Si un plan escribe dos veces en la misma posición, gana la última, igual que sin vista previa.
@@ -4669,7 +4671,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
    - Contenido: `komaedit.recipe`, `komaedit.instance`.
    - Edición: `komaedit.select` (selecciones y supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
-   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
+   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.jobs` (`/komaedit jobs`: ver, pausar y cancelar los trabajos de todos), `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
@@ -4696,7 +4698,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.admin` | `reload`, `jobs`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
@@ -4708,7 +4710,11 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 `config/komaedit/config.json` se crea automáticamente con:
 
 - `maxBlocksPerOperation`: `1500000` de forma predeterminada; rango válido `10000–10000000`.
-- `maxConcurrentJobs`: `4` de forma predeterminada; rango válido `1–64`.
+- `maxConcurrentJobs`: `4` de forma predeterminada; rango válido `1–64`. Ediciones que colocan a la vez; las demás esperan en la cola por orden de llegada (antes se rechazaban).
+- `tickBudgetMillis`: `6` de forma predeterminada; rango válido `0.5–40` (admite decimales). Milisegundos por tick que KomaEdit puede usar en el hilo del servidor entre todos los jugadores: leer selecciones, colocar, pintar biomas, preparar vistas previas, pinceles… Ver [Rendimiento](#rendimiento).
+- `tickBudgetMinMillis`: `1` de forma predeterminada; rango válido `0.1–tickBudgetMillis`. Lo que usa aunque el servidor vaya por debajo de 20 TPS, para que las ediciones terminen.
+- `planCompressAboveBlocks`: `131072` de forma predeterminada; `0` o más. A partir de cuántos bloques el plan de una edición se guarda comprimido por páginas (`0`: siempre).
+- `planMemoryMegabytes`: `128` de forma predeterminada; rango válido `0–65536`. Memoria comprimida que puede ocupar el plan de una edición; lo que pase va a un archivo temporal (`0`: nunca a disco).
 - `backupRetention`: `5` de forma predeterminada; rango válido `1–50`.
 - `confirmBuildAboveBlocks`: `250000` de forma predeterminada; rango válido `0–10000000`. Por encima, un Build pide confirmación; `0` lo desactiva.
 - `arraySnapRadius`: `96` de forma predeterminada (como ezEdits); rango válido `1–256`. Hasta dónde busca superficie `-b` en `array` y su pincel.
@@ -4716,7 +4722,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - `previewMaxDisplays`: `1500` de forma predeterminada; rango válido `0–10000`. Block displays como mucho por vista previa; por encima se enseña la superficie o una muestra, y con `0` solo la caja.
 - `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
 
-Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa ni `arraySnapRadius`) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
+Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa, `arraySnapRadius` ni los del presupuesto por tick y el plan) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
 
 `config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
 
@@ -4726,15 +4732,77 @@ Los campos que falten (un `config.json` de una versión anterior, como el de la 
 
 ## Rendimiento
 
-- La geometría se calcula de forma asíncrona.
-- La colocación se agrupa por chunks y lotes.
-- Los hologramas utilizan secciones persistentes, descarte por cámara y caras expuestas.
-- Los generadores poseen límites de seguridad y cancelación cooperativa.
-- Las figuras de espacio de tubo recorren solo los ladrillos de 8³ bloques cercanos al eje y localizan el eje con un árbol de esferas.
-- El límite de volumen y la cuota global de jobs se aplican antes de abrir una sesión de edición.
-- Cada job persistente registra avance con frecuencia limitada y su finalización o cancelación.
-- Las operaciones largas enseñan su progreso en una bossbar y se paran con `/komaedit cancel`; lo colocado queda en //undo.
-- La vista previa prepara el plan repartido entre ticks y lo aplica sin recalcularlo si la zona no ha cambiado.
+KomaEdit está pensado para usarse en un servidor con gente: una edición enorme (millones de bloques) no baja los TPS ni deja a nadie esperando. Las figuras, los cálculos sobre la selección y la geometría van en hilos aparte; en el hilo del servidor solo se lee y se escribe el mundo, y eso tiene un presupuesto por tick.
+
+### Presupuesto por tick
+
+- Todo lo que KomaEdit hace en el hilo del servidor sale de un mismo presupuesto: `tickBudgetMillis` (**6 ms** de serie) por tick, entre todos los jugadores y todas las fases. Antes cada parte tenía el suyo (la colocación 12 ms, la lectura 4, los pinceles 5, la vista previa 4…) y podían sumarse.
+- **Baja solo si el servidor va justo.** KomaEdit mide lo que duran los ticks y a qué ritmo llegan: si el servidor ya gasta casi todo el tick por su cuenta, usa solo lo que sobre hasta 45 ms; si va por debajo de 20 TPS, solo el mínimo (`tickBudgetMinMillis`, **1 ms**). Cuando el servidor se recupera, en un segundo o dos vuelve al presupuesto entero.
+- Se trabaja por tiempo, no por número de bloques: el mismo presupuesto da más bloques por tick en un mundo sencillo y menos donde cada bloque cuesta más (luz, vecinos, entidades de bloque).
+- Lo interactivo (pinceles, vista previa, fantasma, pintura) va primero, pero si hay ediciones pesadas en marcha usa como mucho la mitad del presupuesto.
+- Un servidor con poca gente puede subir `tickBudgetMillis` (por ejemplo a 15) para que las ediciones vayan más rápido; uno muy cargado, bajarlo. Se aplica con `/komaedit reload`.
+
+### Cola justa
+
+- Lo pesado (leer una selección, colocar, pintar biomas) se reparte **por turnos entre jugadores** en cada tick: cada uno recibe su parte, lo que uno no gasta pasa a los demás y el primero del turno cambia cada tick. Una edición de 20 millones de bloques no bloquea la de 2 000 de otro jugador: las dos avanzan en cada tick y la pequeña acaba en unos ticks.
+- Como mucho `maxConcurrentJobs` ediciones **colocan** a la vez; las demás esperan en la cola por orden de llegada, con su puesto y el tiempo estimado en la barra y en `/komaedit job status`. El tiempo sale del ritmo medido de la cola (las que colocan se lo reparten a partes iguales).
+- `/komaedit cancel` saca tu edición de la cola o la para en cualquier fase.
+
+### Colocar sin picos
+
+- WorldEdit no escribe en el mundo al hacer `setBlock`: lo guarda en un búfer de la sesión hasta vaciarla, y en su modo rápido (el de serie) deja la luz, los vecinos y el envío a los clientes para después. Hasta ahora KomaEdit no vaciaba ese búfer mientras colocaba, así que **toda la edición caía en el tick final**: con un millón de bloques, varios segundos con el servidor parado, y hasta el final nadie veía nada.
+- Ahora la colocación va **por ventanas**: escribe un tramo, lo pasa al mundo (agrupado por chunk y sección, como hace WorldEdit) y aplica su luz, vecinos y envío a los clientes, repartido entre ticks si hace falta; luego el siguiente. El tamaño de cada ventana se ajusta a lo que cuesta de verdad cada bloque, para que quepa en el tick. Los bloques aparecen poco a poco y ningún tick pasa del presupuesto.
+- Se respetan los ajustes de WorldEdit de cada jugador (`//perf`, `//fast`, `//reorder`): lo que cambia es cuándo se aplican, no cuáles.
+- Sigue siendo **una sola entrada de //undo** aunque dure cientos de ticks, y cancelar deja exactamente lo colocado hasta ahí.
+- De paso se arregla la captura de las instancias del Studio (Construir): leía el mundo cuando lo escrito aún estaba en el búfer y apuntaba el bloque de antes; ahora lee lo colocado.
+
+### Memoria
+
+- **El plan de una edición grande va comprimido** (por encima de `planCompressAboveBlocks`, 131 072 bloques de serie): en páginas de 4 096 entradas con una paleta propia, como las secciones de un chunk, y las posiciones seguidas en tramos. Un relleno o una operación sobre la selección ocupan **0,2 bytes por bloque** en vez de 16; un plan desordenado (estructuras sueltas), unos 10.
+- Si aun así un plan pasa de `planMemoryMegabytes` (**128 MB** de serie), el resto de sus páginas va a un **archivo temporal** (`<temporal del sistema>/komaedit-plans`) y se lee de ahí al colocar. El archivo se borra al acabar (en Linux ni siquiera se ve en la carpeta: se lee por el archivo ya abierto); los que deje un servidor de Windows parado de golpe se borran al arrancar.
+- El plan se monta y se comprime en el hilo del cálculo, no en el del servidor, y ya no hace falta reservar los arrays enteros: montar un plan de 20 millones pasa de unos 2 GB de memoria a menos de 100 MB (muestreado; varía entre ejecuciones).
+- Lo que sigue ocupando memoria en una edición enorme es de Minecraft y WorldEdit: la foto de la selección (4 bytes por bloque leído, hasta 16 millones) y el historial de //undo de WorldEdit (decenas de bytes por bloque cambiado). En un servidor de 3,5 GB, con el límite de serie (1,5 millones de bloques por edición y 4 a la vez), sobra; para ediciones de decenas de millones con `komaedit.limit.unrestricted`, mejor de una en una.
+
+### Límites claros
+
+- Una edición que pasa del límite se avisa **antes de empezar**, con su tamaño, el límite y en cuántos trozos partirla (y, si la selección es una caja, los trozos listos con `/komaedit trozo <n>`). Ver [Estimación antes de empezar](#estimación-antes-de-empezar).
+- Las operaciones sobre la selección ya no se cortan en 1,5 millones de cambios para quien no tiene límite: llegan a la foto entera.
+
+### Administración: `/komaedit jobs`
+
+- `/komaedit jobs` (alias `trabajos`, permiso `komaedit.admin.jobs`) enseña el estado del servidor (TPS, milisegundos por tick, lo que usa KomaEdit de su presupuesto, cuántas colocan a la vez y el ritmo de la cola) y una línea por jugador con trabajo: fase, bloques, porcentaje, tiempo y, si el plan es grande, su memoria, con botones **[pausar]** / **[reanudar]** y **[cancelar]**.
+- `/komaedit jobs pause <jugador>` (alias `pausar`) para sus lecturas, colocaciones y pintados de biomas sin perder nada: termina la ventana que estaba vaciando (para que nada quede sin luz ni sin enviar) y deja de leer y escribir; una edición en pausa no ocupa sitio en la cola. Los cálculos en hilos aparte siguen, y lo que salga espera en la cola hasta reanudar. `resume <jugador>` (alias `reanudar`) sigue donde iba.
+- `/komaedit jobs cancel <jugador>` (alias `cancelar`) hace lo mismo que su `/komaedit cancel`: lo para todo y lo ya colocado queda en su //undo.
+- El jugador recibe un aviso cuando un administrador pausa, reanuda o cancela lo suyo.
+
+### Números
+
+Medido fuera del juego con `./gradlew benchmark` (la prueba `HugeEditBenchmarkTest` con `KOMAEDIT_FULL_TESTS=1` y 3 GB de memoria; Ryzen 7 3800XT, Java 21) sobre un mundo de mentira: lo que hace KomaEdit por bloque en cada fase, sin lo que cuesta Minecraft al leer o escribir (que no se puede medir sin el juego). «Antes» es la 1.9.0.
+
+| Bloques | Leer (ns/bl) | Calcular (ns/bl) | Empaquetar (ns/bl) | Plan | Pico al montar el plan | Recorrer (ns/bl) |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 000 000 | 24,4 → 18,5 | 2,2 | 34,3 → 48,5 | 16 MB → 0,2 MB | 76 MB → 20 MB | 34,3 → 43,9 |
+| 5 017 600 | 17,7 → 10,0 | 2,3 | 41,4 → 26,6 | 80 MB → 1 MB | 238 MB → 29 MB | 31,8 → 36,7 |
+| 19 998 784 | 15,9 → 10,6 | 2,2 | 80,0 → 26,8 | 310 MB → 4 MB | 1 987 MB → 69 MB | 31,7 → 36,3 |
+
+Plan desordenado (posiciones al azar, 300 estados esperados y 20 bloques distintos), el peor caso para la compresión: 1 millón, 10 MB; 5 millones, 49 MB; 20 millones, 129 MB en memoria y 66 MB en disco (antes, 16 bytes por bloque y el mismo pico de 2 GB al montarlo).
+
+Peor tick al colocar, con un modelo de lo que cuesta WorldEdit por bloque (2 µs escribir en la sesión, 1 µs pasar al mundo y 4 µs luz, vecinos y envío; supuestos, no medidos):
+
+| Bloques | Peor tick antes | Peor tick ahora | Duración ahora (a 20 TPS) |
+| ---: | ---: | ---: | ---: |
+| 1 000 000 | 5 s | 6 ms | 58 s |
+| 5 000 000 | 25 s | 6 ms | 4 min 51 s |
+| 20 000 000 | 1 min 40 s | 6 ms | 19 min 26 s |
+
+La duración es el precio de no parar el servidor; con `tickBudgetMillis` a 15 tarda unas 2,5 veces menos.
+
+### Limitaciones
+
+- Leer o colocar en chunks sin cargar los carga en el hilo del servidor, como WorldEdit: el tramo que lo hace puede pasarse del presupuesto en ese tick. Lo normal es editar cerca, con los chunks cargados.
+- `//undo` y `//redo` son de WorldEdit y se hacen de golpe: deshacer una edición de millones de bloques para el servidor unos segundos.
+- Si un plan escribe dos veces en la misma posición y la segunda es condicional, y caen en ventanas distintas, gana la primera (la segunda ve el bloque ya cambiado y lo respeta como un cambio a mano). Antes ganaba la última.
+- Las demás protecciones de antes siguen: cálculos asíncronos y cancelables, límites de seguridad de los generadores, hologramas por secciones con caras expuestas, bitácora de cada trabajo y //undo de lo parcial.
 
 ## Versiones descargables
 

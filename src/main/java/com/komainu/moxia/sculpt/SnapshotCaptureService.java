@@ -1,5 +1,6 @@
 package com.komainu.moxia.sculpt;
 
+import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -62,15 +63,23 @@ public final class SnapshotCaptureService {
     }
 
     public static void tick(MinecraftServer server) {
-        tick(playerId -> server.getPlayerManager().getPlayer(playerId) != null, System::nanoTime);
+        if (JOBS.isEmpty()) {
+            return;
+        }
+        // En el juego el plazo sale del presupuesto común del tick (ServerWork), nunca más de MAX_NANOS_PER_TICK.
+        tick(playerId -> server.getPlayerManager().getPlayer(playerId) != null, System::nanoTime,
+                ServerWork.deadline(MAX_NANOS_PER_TICK));
     }
 
     /** Un tick: porciones por turnos hasta acabar o gastar el presupuesto del tick, medido con {@code clock}. */
     static void tick(Predicate<UUID> online, LongSupplier clock) {
+        tick(online, clock, clock.getAsLong() + MAX_NANOS_PER_TICK);
+    }
+
+    private static void tick(Predicate<UUID> online, LongSupplier clock, long globalDeadline) {
         if (JOBS.isEmpty()) {
             return;
         }
-        long globalDeadline = clock.getAsLong() + MAX_NANOS_PER_TICK;
         boolean first = true;
         while (!JOBS.isEmpty() && clock.getAsLong() < globalDeadline) {
             java.util.List<CaptureJob> jobs = java.util.List.copyOf(JOBS.values());
