@@ -2,6 +2,7 @@ package com.komainu.moxia.blueprint;
 
 import com.komainu.moxia.brush.ez.BrushMask;
 import com.komainu.moxia.brush.ez.BrushWorld;
+import com.komainu.moxia.symmetry.SymmetryTransform;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,14 @@ public final class StampPlanner {
         /** Matriz entera 3×3 (por filas) que lleva las coordenadas locales del plano al mundo. */
         public int[] matrix() {
             return matrix(quarterTurns, flipX, flipZ);
+        }
+
+        /**
+         * La misma transformación para girar los estados de los bloques ({@code StateTransform}): primero los
+         * volteos y después los cuartos de vuelta de este a sur, como la matriz.
+         */
+        public SymmetryTransform symmetry() {
+            return new SymmetryTransform(flipX, flipZ, false, Math.floorMod(quarterTurns, 4), 4);
         }
 
         /** Primero los volteos y después los cuartos de vuelta alrededor de +Y. */

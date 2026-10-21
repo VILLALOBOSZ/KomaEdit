@@ -96,6 +96,24 @@ public final class AtomicStorage {
         return target.resolveSibling(target.getFileName() + BACKUP_SUFFIX);
     }
 
+    /**
+     * Aparta un archivo que no se puede leer ({@code notes.json} → {@code notes.broken-1.json}) para que lo que se
+     * guarde después no lo pise y se pueda recuperar a mano. Devuelve dónde quedó.
+     */
+    public static Path setAside(Path file) throws IOException {
+        String name = file.getFileName().toString();
+        int dot = name.lastIndexOf('.');
+        String stem = dot > 0 ? name.substring(0, dot) : name;
+        String extension = dot > 0 ? name.substring(dot) : "";
+        for (int number = 1; ; number++) {
+            Path candidate = file.resolveSibling(stem + ".broken-" + number + extension);
+            if (!Files.exists(candidate)) {
+                Files.move(file, candidate);
+                return candidate;
+            }
+        }
+    }
+
     private static void move(Path source, Path target) throws IOException {
         try {
             Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);

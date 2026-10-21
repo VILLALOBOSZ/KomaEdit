@@ -1952,6 +1952,15 @@ public final class ToolsPanel {
      * @return la orden mandada, o {@code null} si algo lo impidió
      */
     public String build(Host host) {
+        return build(host, command -> host.send(command));
+    }
+
+    /**
+     * Igual, mandando la orden con {@code sender} (la vista previa en vivo la manda por su red).
+     *
+     * @return la orden mandada, o {@code null} si algo lo impidió
+     */
+    public String build(Host host, Consumer<String> sender) {
         commitField(host);
         ToolProblem problem = blocking(host);
         if (problem != null) {
@@ -1963,7 +1972,8 @@ public final class ToolsPanel {
         }
         boolean preview = preview(host);
         String command = selected().command(current(), preview);
-        send(host, command);
+        sender.accept(command);
+        refreshSoon();
         if (target() == ToolTarget.HAND) {
             brush.linked(selected().id(), "", command, host.now());
         }

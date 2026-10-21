@@ -179,17 +179,30 @@ El botón del reloj de la barra abre la lista de los últimos cambios en el mund
 
 ### Vista previa
 
-El ojo del pie elige qué hace el botón principal en las herramientas que admiten la vista previa universal; un clic pasa al siguiente modo y el clic derecho la apaga:
+El ojo del pie elige qué hace el botón principal en las herramientas que admiten la vista previa universal y en Figuras; un clic pasa al siguiente modo y el clic derecho la apaga. A su lado, arriba a la derecha del pie, dice en qué está en dos palabras: **en vivo** (en el color de acento), **al construir** o **sin vista previa**. El ojo cambia de dibujo en cada modo: tachado sin vista previa, abierto al construir y con un punto verde en vivo (ámbar si está en pausa).
 
-- **Vista previa en vivo** (la de serie): Construir enseña la vista previa (con el [fantasma del gizmo](#colocar-con-gizmo) si es un objeto: árbol, roca, texto, tejado…) y, **mientras se vea**, cada cambio de un ajuste la rehace sola con lo nuevo. El fantasma nuevo sale donde dejaste el anterior, con su giro y sus opciones: puedes moverlo con el ratón y seguir ajustando sin perder el sitio. Espera 0,35 s sin cambios, deja al menos 1 s entre dos envíos (más deprisa, el antispam de Minecraft acabaría echando a quien no es OP), no manda nada mientras el servidor calcula la anterior ni repite una orden igual, y solo vale en obras pequeñas: selecciones de hasta 64 000 bloques y, en Figuras, menos de 250 000 bloques en el holograma. Al arrastrar un número o escribir no se manda nada hasta soltar. No abre ninguna vista previa por su cuenta: solo rehace la que pediste; al colocarla o quitarla, se acaba hasta el próximo Construir.
+- **Vista previa en vivo** (la de serie): Construir enseña la vista previa (con el [fantasma del gizmo](#colocar-con-gizmo) si es un objeto: árbol, roca, texto, tejado…) y, **mientras se vea**, cada cambio de un ajuste la rehace sola con lo nuevo en unas décimas de segundo: sale a los 0,25 s de dejar de tocar, más lo que tarde el servidor en calcularla. El fantasma nuevo sale donde dejaste el anterior, con su giro y sus opciones: puedes moverlo con el ratón y seguir ajustando sin perder el sitio. Al arrastrar un número o escribir no se manda nada hasta soltar. No abre ninguna vista previa por su cuenta: solo rehace la que pediste; al colocarla o quitarla, se acaba hasta el próximo Construir.
 - **Vista previa al construir:** Construir enseña la vista previa (en la orden, `-v` o `--preview`) y espera a **Confirmar** (`Intro`); cambiar un ajuste no la rehace.
 - **Sin vista previa:** Construir cambia el mundo en el acto (lo que es un objeto sale igualmente como fantasma si **Colocar con gizmo** está en **Siempre**).
 
+Con un fantasma a la vista (o una vista previa esperando a **Confirmar**), el pie cambia y el ojo grande no cabe: queda un **ojo pequeño** arriba a la derecha con su etiqueta, que dice si la vista previa en vivo lo sigue y, con un clic, la enciende o la apaga sin quitar el fantasma.
+
+**Cómo viaja.** Con un servidor de esta versión, cada petición de la vista previa en vivo (el Construir que la abre y cada cambio después) va por un paquete propio de KomaEdit, no por el chat:
+
+- **No cuenta para el antispam de Minecraft**, que echa a quien no es OP si manda más de una orden por segundo de media.
+- **Solo cuenta la última.** El servidor calcula una como mucho por jugador; si llegan más mientras tanto, se queda solo con la última y las de en medio se descartan sin calcular. Nunca choca con la lectura de la selección de la anterior («ya hay una operación leyendo tu selección»).
+- **Cae en el mismo sitio.** Lo que se coloca «donde miras» (árbol, roca, texto, agua) sale donde cayó el Construir, aunque después gires la cámara o cierres y vuelvas a abrir el Studio (al cerrarlo se olvida el clic en el mundo). Antes el objeto nuevo se calculaba donde mirases en ese momento y el fantasma saltaba a otra parte.
+- **Contesta.** Si no se pudo rehacer (un ajuste no vale, falta un permiso), el pie lo dice; lo de antes sigue a la vista. Al rehacerla, el chat no repite el aviso de cada vista previa ni el «Creando instancia…» de cada figura.
+
+Con un servidor anterior (sin esa red) va por el chat como antes: espera 0,35 s sin cambios, deja al menos 1 s entre dos órdenes y no manda nada mientras el servidor calcula la anterior.
+
+**Obras grandes.** Solo se rehace sola hasta el tamaño elegido en los [ajustes del cliente](#ajustes-del-cliente) (**Vista previa en vivo hasta**, 250 000 bloques de serie; también 64 000, 1 000 000 o 4 000 000): la selección en las herramientas que trabajan sobre ella y el recuento del holograma en Figuras. Por encima, el pie lo dice en ámbar («En vivo en pausa: 300 k bloques, más que tu límite de 250 k») y el ojo pasa a ámbar; **Construir** la rehace a mano. Antes el límite era fijo (64 000 en la selección) y por encima se apagaba sin decir nada.
+
 En **Figuras**, el holograma ya sigue cada cambio (también «Pegar al terreno» al suelo o al techo, que lo calcula el cliente); tras **Construir**, si la figura sale como fantasma, cambiar la figura, su tamaño, sus variaciones o su material rehace también el fantasma (con la vista previa en vivo encendida).
 
-Al rehacerse el fantasma en vivo, el de antes sigue a la vista, quieto donde estaba, hasta que el nuevo llega y está armado; ya no parpadea un fotograma vacío entre los dos. Si el nuevo no llega en 3 s, el viejo se quita.
+Al rehacerse en vivo, lo de antes sigue a la vista hasta que lo nuevo está listo: el fantasma, quieto donde estaba, hasta que llega el nuevo y está armado (si no llega en 3 s, el viejo se quita); la vista previa de bloques de las herramientas sobre la selección (Pintar, Retocar, Erosionar…), hasta que llega la nueva, que la sustituye de golpe (si no llega, se quita entonces). Antes la de bloques desaparecía al descartarse y no se veía nada hasta que llegaba la otra.
 
-El modo se recuerda para todas las herramientas en `studio.json`. Quien tenía guardado «sin vista previa» de una versión anterior (era lo de serie y se guardaba igual que si se hubiera elegido) pasa una vez a en vivo; si se vuelve a apagar, se queda apagada. Sin vista previa: el sello (que va al pincel), Materiales, Bioma, Simetría y Capacidades.
+El modo y el límite se recuerdan para todas las herramientas en `studio.json` (`"preview"` y `"liveLimit"`). Quien tenía guardado «sin vista previa» de una versión anterior (era lo de serie y se guardaba igual que si se hubiera elegido) pasa una vez a en vivo; si se vuelve a apagar, se queda apagada. Sin vista previa: el sello (que va al pincel), Materiales, Bioma, Simetría y Capacidades.
 
 ### Antes de construir
 
@@ -510,6 +523,7 @@ Todo el Studio (barra, etapas, contenido, pie, paleta, historial y biblioteca de
 - Lo que explica cada control es `ControlHelp` (qué hace y sus extremos, de `gui.komaedit.tools.<herramienta>.ends.<ajuste>` o `gui.komaedit.ends.<control>`); `ControlHelpTest` exige que cada ajuste de herramienta diga lo que hace sin repetir su etiqueta, que los números lleven sus extremos (salvo semilla, rumbo y altura absoluta) y que ninguna herramienta enseñe más de cuatro ajustes antes de Más ajustes (las galerías, los buscadores y el interruptor no cuentan).
 - La [bienvenida guiada](#bienvenida-guiada) es `WelcomeTour` (la máquina de estados, sin Minecraft ni dibujo: pasos, golpes, cuándo avanza, permisos y supervivencia), `WelcomeGuide` (la engancha a `StudioView`: le cuenta lo que se ve, prepara cada golpe y sostiene la vista previa) y `WelcomeBubble` (la burbuja, la tarjeta y el borde). Señala con **anclas con nombre** de `StudioUi` (`tool:tree`, `stamp:montana`, `preset:random`, `footer:build`, `ghost:place`, `top:history`, `history:undo`…), registradas enteras aunque el recorte las tape, para poder desplazar hasta ellas. `WelcomeTourTest` prueba la máquina (avanzar con la acción de verdad, saltar, sin permiso, en supervivencia y relanzar), `StudioWelcomeTest` la hace entera pulsando los controles del Studio (y comprueba que nada se manda sin vista previa ni sin Aplicar, que se guarda que ya se vio y que al cerrar vuelve lo de antes) y `StudioWelcomeMockupsTest` pinta sus maquetas; `StudioThemeContrastTest` mide sus textos en los cuatro temas.
 - El ratón en el mundo son modelos sin Minecraft que usa la pantalla: `StudioView.worldAction` (qué hace un clic en cada etapa), `BoxSelect` (la caja, sus caras y el doble clic), `PathDrag` (agarrar, meter y añadir puntos) y `BrushStroke` (el ritmo del pincel). El relevo de mallas del fantasma en vivo es `MeshHandover`.
+- La vista previa en vivo, de punta a punta: `LivePreview` (cuándo manda el Studio), `LivePreviewRequestPayload` y `LivePreviewResultPayload` (su red), `LiveService` con `LiveQueue` (solo la última por jugador), `LiveRequests` (qué admite) y `LiveAnchors` (el sitio del Construir, a través de `StudioAim`) en el servidor, `PreviewHandover` (la vista previa de bloques que sigue a la vista mientras llega la nueva) y `StudioGhostLink` (qué fantasma es del Studio, en el cliente). `LivePreviewEndToEndTest` lo recorre entero con un servidor y un cliente de prueba (`LiveLoop`) que usan esas mismas piezas.
 
 ## Trayectorias y hologramas
 
@@ -1077,7 +1091,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 
 ### Ajustes del cliente
 
-`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera (también el tema del Studio). Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
+`/kegui ajustes` (o su tecla) abre una pantalla con interruptores; cada cambio se guarda al momento en `config/komaedit-client.json`, en tu equipo y para todos los mundos y servidores. Los valores de serie son discretos y el botón **Valores de serie** los recupera (también el tema del Studio y el límite de la vista previa en vivo). Un archivo roto o a medias no impide jugar: lo que falte toma su valor de serie.
 
 | Ajuste | De serie | Qué hace |
 | --- | --- | --- |
@@ -1094,6 +1108,7 @@ Lo que KomaEdit dibuja, suena y escribe mientras construyes, sin abrir el Studio
 | Colocar con gizmo | Siempre | Cuándo sale el fantasma con gizmo: **Siempre**, **Con -v** o **Nunca** (ver [Colocar con gizmo](#colocar-con-gizmo)). Se guarda aparte, en `config/komaedit-gizmo.json`, y el cliente se lo dice al servidor al entrar y al cambiarlo. |
 | Rueda mueve el fantasma | Sí | Con un fantasma en pantalla, la rueda lo acerca o lo aleja en lugar de cambiar de casilla. |
 | Tema del Studio | Pizarra | Los colores del Studio: Pizarra, Prismarina, Bosque o Clásico (ver [Temas de color](#temas-de-color)). Se guarda con las preferencias del Studio, en `config/komaedit/studio.json`, y también se cambia dentro del Studio. |
+| Vista previa en vivo hasta | 250 000 bloques | Hasta qué tamaño se rehace sola la [vista previa en vivo](#vista-previa) del Studio: 64 000, 250 000, 1 000 000 o 4 000 000 bloques. Más grande, el Studio lo avisa y espera a Construir. Se guarda con las preferencias del Studio (`"liveLimit"`). |
 
 ### Teclas
 
@@ -1499,7 +1514,7 @@ Curva un módulo copiado con WorldEdit (un tramo de muro, puente, calzada, vía 
 - **Estirar:** una sola copia ocupa todo el recorrido.
 - Igual que las figuras de tubo, se trabaja al revés: cada bloque del mundo cercano al eje pregunta qué bloque del módulo le toca. Por fuera de las curvas el módulo se estira sin abrir huecos; por dentro se comprime y puede perder algún detalle fino.
 - **Normales `upright` (por defecto):** el módulo se asocia a la vertical de cada punto del recorrido, así que en una cuesta los postes y muros quedan a plomo y la altura se mide en bloques del mundo. Con `horizontal` o `consistent` la sección se inclina con la pendiente.
-- Escaleras, troncos, vallas y demás bloques con dirección se giran en cuartos de vuelta para seguir la curva.
+- Escaleras, troncos, vallas, raíles (también en curva y en rampa) y demás bloques con dirección se giran en cuartos de vuelta para seguir la curva, con la misma transformación que la [simetría](#simetría).
 
 ### Parámetros
 
@@ -1526,6 +1541,7 @@ Ejemplos:
 - El portapapeles admite hasta 100 000 bloques y como mucho 128 bloques de alto o de lado desde el origen.
 - Un tramo de puente de 7×3×6 doblado sobre 85 bloques de curva (unos 850 bloques) se calcula en menos de 0,1 s en un worker.
 - Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
+- Los bloques con datos salen sin ellos, como en la [colocación](#colocar-estructuras): cofres vacíos, carteles en blanco, estandartes sin dibujo. Para conservarlos, `//paste`.
 - El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
 
 ## Escalar y girar el portapapeles
@@ -3368,7 +3384,7 @@ Nodos y paquetes:
 
 ### Historial
 
-Las acciones de más de un bloque (extruir, encoger, arrastrar y cualquiera que otro mod amplíe, como la simetría) son una sola operación de `//undo`. Las de un bloque (reemplazar, retocar, colocar, romper) no entran en el historial, igual que la colocación normal, para no echar del historial de WorldEdit las operaciones grandes.
+Las acciones de más de un bloque (extruir, encoger, arrastrar y cualquiera que otro mod amplíe, como la simetría) son una sola operación de `//undo`. Las de un bloque (reemplazar, retocar, colocar, romper) no entran en el historial, igual que la colocación normal, para no echar del historial de WorldEdit las operaciones grandes. La excepción es un bloque con contenido (cofre, barril, horno, tolva, atril…) que se reemplaza o se rompe: eso sí entra, para poder recuperar lo que guardaba con `//undo`. Retocarlo (girarlo, anegarlo…) conserva lo que lleva.
 
 ### Configuración de las capacidades
 
@@ -4200,7 +4216,7 @@ Con `/komaedit symmetry worldedit on`, cada bloque que escribe una edición tuya
 - Todo queda en **un solo `//undo`**, y `//undo` y `//redo` no se vuelven a reflejar.
 - Las copias pasan por la máscara global (`//gmask`) y cuentan para el límite de bloques de WorldEdit.
 - Como mucho `maxBlocksPerOperation` copias por edición (1.500.000 de serie; sin límite con `komaedit.limit.unrestricted`). Al pasarlo, la edición termina sin más copias y se avisa una vez.
-- Los bloques con datos (cofres, carteles) copian sus datos, como `//paste`. Una copia que cae fuera de la altura del mundo o del borde se salta.
+- Los bloques con datos (cofres, carteles) copian sus datos, como `//paste`, salvo una copia que cae sobre el mismo contenedor (cofre, barril, horno…): ese conserva lo suyo, así retocar un cofre no copia su contenido al de enfrente. Una copia que cae fuera de la altura del mundo o del borde se salta.
 - Una orden que lee lo que va escribiendo (`//smooth`, `//move`) lee el mundo tal cual: las copias no cambian lo que ve.
 
 ### Marcas en el mundo
@@ -5540,7 +5556,7 @@ Ejemplos:
 Comportamiento:
 
 - **Dónde:** los huecos se reparten como un disco de Poisson: puntos al azar dentro del círculo, cada uno a la separación mínima de todos los demás, y de lo estampado con ese pincel en el último minuto (hasta 256 puntos); con radio 0 el plano va donde miras aunque haya otro cerca. Cada hueco sale con la probabilidad de `-n` y elige plano según los pesos.
-- **Giro y volteo:** se aplican a los bloques y a su estado (escaleras, troncos, puertas…), como `//rotate` y `//flip`.
+- **Giro y volteo:** se aplican a los bloques y a su estado (escaleras con su esquina, troncos, puertas con su bisagra, raíles, cofres dobles…), con la misma transformación que la [simetría](#simetría).
 - **Suelo:** sostienen los cubos enteros, las losas y las escaleras; la hierba alta, las flores, la nieve en capa y los líquidos no. Se busca el suelo más cercano a la altura del clic, hasta 24 bloques por encima (una ladera que sube) o por debajo.
 - **`apoyar`:** el plano cae hasta que alguna de sus columnas toca el suelo de la suya, así que no se mete en la ladera; en pendiente puede quedar un hueco por debajo del lado bajo (`-y -1` lo entierra). **`centro`:** la base del plano queda sobre el suelo que hay bajo su centro. **`no`:** a la altura del bloque de delante de la cara que miras. Un hueco sin suelo (o que no cumple `-m`) se salta.
 - Cada clic vuelve a leer la lista: los planos nuevos de una etiqueta entran solos. Un nombre o una etiqueta que no existe da error al ponerlo en la mano.
@@ -5691,7 +5707,7 @@ Cada posición se escribe solo si sigue como se dejó: al vaciar, si sigue como 
 Una obra no se queda a medias por un reinicio. Antes de vaciar nada, la reconstrucción guarda en `<mundo>/komaedit/rebuilds/<id>.bin` lo que tiene que quedar y lo que había (con sus datos), y lo borra al terminar o cancelar.
 
 - **Al parar el servidor** (`/stop`, cerrar el mundo), cada reconstrucción en marcha **termina al momento**, sin animación ni presupuesto, antes de que se guarde el mundo; la que se estaba cancelando termina de deshacerse. Lo que aún leía u ordenaba se olvida (no había tocado nada).
-- **Si el servidor se cae** sin pararse, al arrancar se encuentra el archivo y la obra se termina sola, repartida entre ticks, antes de que nadie pueda empezar otra: cada chunk está como se guardó por última vez (con la obra entera, vaciada o a medio levantar), así que se mira posición a posición: si tiene lo que debe quedar, nada; si está vacía o tiene lo de antes, se pone la obra; si tiene otra cosa, alguien la cambió y se deja. Si se estaba cancelando (queda una marca `<id>.restore`), se deja como estaba antes en vez de acabarla. Quien la lanzó recibe un aviso al terminar si está conectado, y queda en `latest.log`.
+- **Si el servidor se cae** sin pararse, en el primer tick tras arrancar (cuando WorldEdit ya tiene sus registros) se encuentra el archivo y la obra se termina sola, repartida entre ticks, antes de que nadie pueda empezar otra: cada chunk está como se guardó por última vez (con la obra entera, vaciada o a medio levantar), así que se mira posición a posición: si tiene lo que debe quedar, nada; si está vacía o tiene lo de antes, se pone la obra; si tiene otra cosa, alguien la cambió y se deja. Si se estaba cancelando (queda una marca `<id>.restore`), se deja como estaba antes en vez de acabarla. Quien la lanzó recibe un aviso al terminar si está conectado, y queda en `latest.log`.
 - Si una reconstrucción falla a medias en el juego, se termina igual, sin animación, con lo guardado.
 - Lo recuperado tras una caída no deja `//undo` (la sesión de WorldEdit no sobrevive al reinicio). Un archivo de una dimensión que ya no existe se queda en disco y se avisa en `latest.log`.
 
@@ -5834,7 +5850,7 @@ Para quien quiera escribir herramientas que lean o hagan paquetes:
 
 ## Recetas, instancias y paquetes
 
-- Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo.
+- Las recetas guardan parámetros reutilizables de forma persistente dentro del mundo. Cada jugador guarda como mucho 64 (las que enseña el Studio): para guardar otra hay que borrar alguna; sustituir una ya guardada siempre vale.
 - Las instancias conservan receta, trayectoria, estados colocados y checksum; permiten actualizar o retirar una construcción sin borrar bloques modificados manualmente.
 - Seleccionar una instancia vuelve a cargar sus puntos en el editor antes de actualizarla.
 - Los paquetes exportables conservan configuraciones compartibles en `config/komaedit/packages/`; en otro servidor se dejan en `config/komaedit/imports/` y se importan con `/komaedit share import archivo` (ver [Compartir entre servidores](#compartir-entre-servidores)), que es también la forma de pasar recetas, paletas, presets y planos juntos.
@@ -5865,6 +5881,7 @@ El proyecto persistente evita perder recetas e instancias al desconectarse y per
 
 - Los jobs activos escriben progreso como máximo una vez por segundo para no convertir el disco en un cuello de botella.
 - Tras un cierre inesperado, los jobs `RUNNING` pasan a `INTERRUPTED`; no se reanudan automáticamente porque el mundo pudo cambiar mientras el servidor estaba apagado.
+- Un job que termina o se cancela borra su archivo: en `jobs` solo quedan los que una caída dejó a medias, y `project status` cuenta esos. Los terminados que dejaron versiones anteriores se borran la próxima vez que entra el jugador; un archivo ilegible se queda en disco y se avisa en `latest.log`.
 - Las operaciones ya confirmadas siguen usando el historial de WorldEdit para `//undo`; la bitácora persistente es de diagnóstico, no una sustitución del historial.
 - Los backups son manuales y por jugador. Los administradores deben incluir la carpeta `komaedit` del mundo en su estrategia normal de respaldo.
 - Una receta o instancia que no se pueda leer (dañada, o de una versión que usaba una figura ya retirada) se omite del catálogo y se registra en `latest.log` con su nombre de archivo; el archivo se queda en disco y el resto del proyecto sigue funcionando.
@@ -5927,6 +5944,20 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
 - Las máscaras y patrones de WorldEdit (`#palette`, `#near`…) no piden permiso propio.
 - La tabla completa con su equivalente de ezEdits está en `docs/EZEDITS_PARITY.md`.
+
+### Lo que llega del cliente
+
+El Studio, el gizmo, los displays, las barras, las vistas y el lazo hablan con el servidor por paquetes, y un cliente modificado puede mandarlos a su antojo. El servidor comprueba cada uno como la orden equivalente:
+
+- **Permisos:** reemplazar, borrar o pintar la selección desde el editor pide `komaedit.build`, no `komaedit.select`.
+- **Zonas:** la selección mágica no lee bloques de chunks sin cargar (no los carga ni los genera); el gizmo, los displays y el lazo ya miraban la distancia, el borde y lo cargado.
+- **Límites:** la pintura rápida del editor se para en `maxBlocksPerOperation` como cualquier edición y no acumula más de 1 024 pasadas en espera.
+- **Frenos por jugador** a lo que cuesta en el servidor: unas cuantas peticiones seguidas y unas pocas por segundo; a mano no se nota y las de más se ignoran sin aviso.
+  - Barras guardadas: guardar, borrar, importar, exportar, sincronizar y deshacer (cambiar de barra ya tenía su espera).
+  - Vistas: compartir una y pedir el catálogo.
+  - Pincel de selección: empezar un trazo.
+  - Acciones de recetas e instancias.
+- **Miniaturas de planos:** pedir una que ya se está leyendo o enviando no la vuelve a leer, y hay como mucho 1 024 lecturas pendientes por jugador.
 
 ### Configuración
 

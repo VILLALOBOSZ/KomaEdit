@@ -61,12 +61,17 @@ public final class BlueprintNetwork {
                 }
                 UUID viewer = player.getUuid();
                 MinecraftServer server = player.getServer();
+                ThumbnailChunks.Queue queue = QUEUES.computeIfAbsent(viewer, key -> new ThumbnailChunks.Queue());
                 for (String hash : request.values()) {
-                    if (ThumbnailChunks.validHash(hash)) {
+                    // La que ya se está leyendo o enviando no se vuelve a leer: pedirla sin parar no cuesta nada.
+                    if (ThumbnailChunks.validHash(hash) && queue.request(hash)) {
                         BlueprintService.readThumbnail(server, viewer, hash, data -> {
-                            if (server.getPlayerManager().getPlayer(viewer) != null) {
-                                QUEUES.computeIfAbsent(viewer, key -> new ThumbnailChunks.Queue())
-                                        .offer(ThumbnailChunks.split(data));
+                            try {
+                                if (data != null && server.getPlayerManager().getPlayer(viewer) != null) {
+                                    queue.offer(ThumbnailChunks.split(data));
+                                }
+                            } finally {
+                                queue.finished(hash);
                             }
                         });
                     }

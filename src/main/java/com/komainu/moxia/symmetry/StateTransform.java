@@ -88,7 +88,7 @@ public final class StateTransform {
             return transform.mirrorY() ? swap(value, "true", "false") : value;
         }
         if (name.equals("orientation")) {
-            return orientation(value, transform);
+            return orientation(value, values, transform);
         }
         return value;
     }
@@ -160,12 +160,23 @@ public final class StateTransform {
         return values.contains(candidate) ? candidate : second + "_" + first;
     }
 
-    private static String orientation(String value, SymmetryTransform transform) {
+    /**
+     * Frente y arriba del crafter (y de la pieza de puzle). Si el par girado no existe (uno que mira de lado siempre
+     * tiene arriba arriba: reflejado en Y no puede tener arriba abajo), manda el frente, que es por donde suelta lo que
+     * fabrica: se gira el frente y se queda el arriba de antes.
+     */
+    private static String orientation(String value, Collection<String> values, SymmetryTransform transform) {
         String[] parts = value.split("_");
         if (parts.length != 2 || !DIRECTIONS.contains(parts[0]) || !DIRECTIONS.contains(parts[1])) {
             return value;
         }
-        return direction(parts[0], transform) + "_" + direction(parts[1], transform);
+        String front = direction(parts[0], transform);
+        String turned = front + "_" + direction(parts[1], transform);
+        if (values.contains(turned)) {
+            return turned;
+        }
+        String keptTop = front + "_" + parts[1];
+        return values.contains(keptTop) ? keptTop : value;
     }
 
     /** Conexiones con los vecinos (vallas, muros, cristal, redstone, setas, liquen…): se cambian de lado. */

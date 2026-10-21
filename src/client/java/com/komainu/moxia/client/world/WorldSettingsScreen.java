@@ -4,6 +4,8 @@ import com.komainu.moxia.client.gizmo.ClientGizmoSettings;
 import com.komainu.moxia.client.gui.studio.ClientStudioHost;
 import com.komainu.moxia.feedback.WorldFeedbackSettings;
 import com.komainu.moxia.gizmo.GizmoSettings;
+import com.komainu.moxia.studio.BuildEstimate;
+import com.komainu.moxia.studio.StudioPreferences;
 import com.komainu.moxia.studio.ui.StudioPalette;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -36,7 +38,7 @@ public final class WorldSettingsScreen extends Screen {
         WorldFeedbackSettings settings = ClientWorldSettings.get();
         int left = width / 2 - BUTTON - 5;
         int right = width / 2 + 5;
-        int top = Math.max(36, height / 2 - 7 * ROW);
+        int top = Math.max(36, height / 2 - 8 * ROW);
         int row = 0;
         addDrawableChild(CyclingButtonWidget.<WorldFeedbackSettings.PreviewStyle>builder(style ->
                         Text.translatable("gui.komaedit.world.style." + style.id()))
@@ -92,11 +94,22 @@ public final class WorldSettingsScreen extends Screen {
                         (button, value) -> ClientStudioHost.setTheme(value)));
         toggle(right, top + row * ROW, "alignment_guide", settings.alignmentGuide(),
                 WorldFeedbackSettings::withAlignmentGuide);
+        row++;
+        // Hasta qué tamaño se rehace sola la vista previa en vivo del Studio (también en komaedit/studio.json).
+        addDrawableChild(CyclingButtonWidget.<Long>builder(limit ->
+                        Text.translatable("gui.komaedit.world.live_limit.value", BuildEstimate.compact(limit)))
+                .values(StudioPreferences.LIVE_LIMITS)
+                .initially(ClientStudioHost.loadPreferences().liveLimit())
+                .tooltip(limit -> net.minecraft.client.gui.tooltip.Tooltip.of(
+                        Text.translatable("gui.komaedit.world.live_limit.tooltip")))
+                .build(left, top + row * ROW, BUTTON, 20, Text.translatable("gui.komaedit.world.live_limit"),
+                        (button, value) -> ClientStudioHost.setLiveLimit(value)));
         row += 2;
         addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.world.defaults"), button -> {
             ClientWorldSettings.set(ClientWorldSettings.defaults());
             ClientGizmoSettings.set(GizmoSettings.DEFAULT);
             ClientStudioHost.setTheme(StudioPalette.DEFAULT);
+            ClientStudioHost.setLiveLimit(StudioPreferences.DEFAULT_LIVE_LIMIT);
             clearAndInit();
         }).dimensions(left, top + row * ROW, BUTTON, 20).build());
         addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> close())
@@ -139,7 +152,7 @@ public final class WorldSettingsScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, Math.max(14, height / 2 - 7 * ROW - 22),
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, Math.max(14, height / 2 - 8 * ROW - 22),
                 0xFFFFFF);
     }
 

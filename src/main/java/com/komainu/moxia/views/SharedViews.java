@@ -50,16 +50,33 @@ public final class SharedViews {
         this.file = file;
     }
 
-    /** Lee el archivo (si existe); las vistas rotas se saltan. Devuelve cuántas se saltaron. */
+    /**
+     * Lee el archivo (si existe); las vistas rotas se saltan. Devuelve cuántas se saltaron. Si el archivo entero no se
+     * puede leer (a medias o de una versión más nueva), se aparta como {@code views.broken-N.json} para que las vistas
+     * nuevas no lo pisen, y lanza diciendo dónde quedó.
+     */
     public synchronized int load() {
         views.clear();
         if (!Files.isRegularFile(file)) {
             return 0;
         }
+        String json;
         try {
-            return read(Files.readString(file, StandardCharsets.UTF_8));
+            json = Files.readString(file, StandardCharsets.UTF_8);
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
+        }
+        try {
+            return read(json);
+        } catch (RuntimeException exception) {
+            views.clear();
+            try {
+                Path aside = AtomicStorage.setAside(file);
+                throw new IllegalStateException("No se pudo leer " + file.getFileName() + " (" + exception.getMessage()
+                        + "); quedó apartado como " + aside.getFileName(), exception);
+            } catch (IOException moveFailure) {
+                throw new UncheckedIOException(moveFailure);
+            }
         }
     }
 

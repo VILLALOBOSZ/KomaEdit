@@ -20,6 +20,7 @@ import com.komainu.moxia.gizmo.GizmoLayout;
 import com.komainu.moxia.gizmo.GizmoMath;
 import com.komainu.moxia.gizmo.GroundSnap;
 import com.komainu.moxia.gizmo.Orientation;
+import com.komainu.moxia.gizmo.StudioGhostLink;
 import com.komainu.moxia.preview.PreviewPlanCodec;
 import com.komainu.moxia.shape.Vec3;
 import com.komainu.moxia.studio.ui.StudioHost;
@@ -76,8 +77,6 @@ public final class GhostClient {
     private static final double REACH = 192.0;
     private static final int HUD_EVERY_TICKS = 10;
     private static final int BOX = 0xC07FD7FF;
-    /** Lo que puede tardar en llegar el fantasma que pidió el Studio. */
-    private static final long EXPECT_MILLIS = 20_000L;
     private static final PreviewPlanCodec.Assembler ASSEMBLER = new PreviewPlanCodec.Assembler();
     private static final Map<GizmoKeys.Action, KeyBinding> BINDINGS = new EnumMap<>(GizmoKeys.Action.class);
 
@@ -91,10 +90,8 @@ public final class GhostClient {
     private static int ticks;
     private static String notice = "";
     private static long noticeAt;
-    private static long studioUntil;
-    private static boolean refreshPending;
-    /** El fantasma de ahora lo abrió el Studio (su vista previa en vivo lo puede rehacer). */
-    private static boolean fromStudio;
+    /** Qué fantasma es del Studio (su vista previa en vivo lo puede rehacer). */
+    private static final StudioGhostLink LINK = new StudioGhostLink();
     private static boolean terrainDrag;
     /** El bloque y la cara a los que apuntaba el cursor la última vez al arrastrar por el terreno. */
     private static int[] terrainLast;
@@ -107,8 +104,15 @@ public final class GhostClient {
      * ahora y sale donde el jugador lo dejó ({@link GhostSession#follow}).
      */
     public static void expectStudio(boolean refresh) {
-        studioUntil = System.currentTimeMillis() + EXPECT_MILLIS;
-        refreshPending = refresh;
+        LINK.expect(refresh, System.currentTimeMillis());
+    }
+
+    /**
+     * El servidor contesta a la vista previa en vivo que el fantasma {@code ghost}, que llega justo detrás, es suyo
+     * (con {@code refresh}, el de antes con otros ajustes).
+     */
+    public static void claimStudio(int ghost, boolean refresh) {
+        LINK.claim(ghost, refresh);
     }
 
     public static void register() {
@@ -120,7 +124,10 @@ public final class GhostClient {
                 context.client().execute(() -> result(payload)));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) ->
                 client.execute(ClientGizmoSettings::announce));
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(GhostClient::close));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(() -> {
+            close();
+            LINK.clear();
+        }));
         WorldRenderEvents.AFTER_ENTITIES.register(GhostClient::renderBox);
         WorldRenderEvents.LAST.register(GhostClient::render);
         ClientTickEvents.END_CLIENT_TICK.register(GhostClient::tick);
@@ -156,31 +163,28 @@ public final class GhostClient {
     // ---------------------------------------------------------------- red
 
     private static void open(GhostPayloads.Open payload, MinecraftClient client) {
-        boolean studio = System.currentTimeMillis() < studioUntil;
-        GhostSession previous = studio && refreshPending && fromStudio && session != null && session.active()
-                ? session : null;
-        studioUntil = 0L;
-        refreshPending = false;
-        if (previous != null) {
-            // La malla de antes sigue a la vista, quieta, hasta que llegue la del nuevo: sin parpadeo.
-            GhostRenderer.retire(previous.transform());
-        }
-        close(previous == null);
         GhostOptions options = GhostOptions.fromBits(payload.options()).withGround(false);
-        session = new GhostSession(new GhostSession.Info(payload.id(), payload.description(), payload.bounds(),
-                payload.blocks(), payload.air(), GhostTransform.at(payload.pivotX(), payload.pivotY(),
-                payload.pivotZ()), options));
-        palette = payload.palette();
-        fromStudio = studio;
-        ASSEMBLER.clear();
-        if (previous != null) {
-            // La vista previa en vivo: el mismo objeto con otros ajustes, donde el jugador lo dejó y sin repetir el
-            // aviso del chat.
-            session.follow(previous, RULES);
-            hud(client);
-            return;
+        // El giro que se hereda tiene que valerle al objeto nuevo (sus escaleras, puertas…), no al de antes.
+        GhostSession.Rules rules = orientation -> GhostStates.admitsAll(payload.palette(), orientation);
+        StudioGhostLink.Arrival arrival = LINK.arrive(session, new GhostSession.Info(payload.id(),
+                payload.description(), payload.bounds(), payload.blocks(), payload.air(),
+                GhostTransform.at(payload.pivotX(), payload.pivotY(), payload.pivotZ()), options), rules,
+                System.currentTimeMillis());
+        if (arrival.previous() != null) {
+            // La malla de antes sigue a la vista, quieta, hasta que llegue la del nuevo: sin parpadeo.
+            GhostRenderer.retire(arrival.previous().transform());
         }
-        announce(client);
+        close(arrival.previous() == null);
+        // La vista previa en vivo: el mismo objeto con otros ajustes, donde el jugador lo dejó y sin repetir el aviso
+        // del chat.
+        session = arrival.session();
+        palette = payload.palette();
+        ASSEMBLER.clear();
+        if (arrival.announce()) {
+            announce(client);
+        } else {
+            hud(client);
+        }
     }
 
     private static void part(GhostPayloads.Part payload, MinecraftClient client) {
@@ -205,6 +209,7 @@ public final class GhostClient {
                 session.placed(false);
                 notice(payload.message());
                 close();
+                LINK.closed();
             }
             case COPY_PLACED -> {
                 session.placed(true);
@@ -218,6 +223,7 @@ public final class GhostClient {
                 session.closed();
                 notice(payload.message());
                 close();
+                LINK.closed();
             }
             case CONFIRM -> confirm(false);
         }
@@ -236,7 +242,6 @@ public final class GhostClient {
         hovered = GizmoHandle.NONE;
         worldDrag = false;
         studioDrag = false;
-        fromStudio = false;
         terrainDrag = false;
         terrainLast = null;
         ASSEMBLER.clear();
@@ -264,6 +269,7 @@ public final class GhostClient {
             notice(Text.translatable("gui.komaedit.ghost.cancelled").getString());
         }
         close();
+        LINK.closed();
     }
 
     // ---------------------------------------------------------------- reglas
@@ -614,7 +620,7 @@ public final class GhostClient {
                         MinecraftClient.getInstance()),
                 () -> perform(new GizmoKeys.Press(GizmoKeys.Action.GROUND, false, false, false),
                         MinecraftClient.getInstance()),
-                fromStudio));
+                LINK.fromStudio()));
     }
 
     // ---------------------------------------------------------------- dibujo
@@ -649,6 +655,7 @@ public final class GhostClient {
         } catch (RuntimeException exception) {
             KomaEditMod.LOGGER.error("KomaEdit ghost failed; closing it", exception);
             close();
+            LINK.closed();
         }
     }
 
