@@ -465,6 +465,20 @@ public final class HelpTopics {
                     new Entry("/komaedit scatter Bp(T:rocas) SurfaceNormal Random -n 1",
                             "Los planos también valen en place, scatter y array con Bp(N:…|T:…)")
             )),
+            new Topic("share", "Compartir", List.of("compartir", "exportar", "importar", "paquete", "paquetes",
+                    "kpack"), List.of(
+                    new Entry("/komaedit share", "Lo que puedes compartir, con un botón por cosa (alias compartir)"),
+                    new Entry("/komaedit share export <tipo:nombre…> [-n nombre] [-f]",
+                            "Un código para copiar (paleta, ruido, arbol, roca, escultura, receta, plano; tipo:* son"
+                                    + " todos); -f lo guarda en config/komaedit/exports como .kpack"),
+                    new Entry("/komaedit share import <código>", "Enseña lo que trae y lo que choca antes de guardar"),
+                    new Entry("/komaedit share import archivo <nombre>",
+                            "Un .kpack (o un .txt con un código) de config/komaedit/imports"),
+                    new Entry("/komaedit share files", "Los archivos que hay para importar (alias archivos)"),
+                    new Entry("/komaedit share accept [renombrar|reemplazar|saltar]",
+                            "Importa lo enseñado; lo que choca, con otro nombre, sustituyéndolo o sin tocar"),
+                    new Entry("/komaedit share cancel", "Descarta la importación pendiente")
+            )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup", "menu", "quick", "gui", "quiet",
                     "silencio", "permisos", "permissions", "reload", "recargar", "tutorial", "bienvenida"), List.of(
                     new Entry("/komaedit project status", "Recetas, instancias y espacio usado"),

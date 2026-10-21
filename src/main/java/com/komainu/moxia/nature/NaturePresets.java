@@ -36,6 +36,11 @@ public final class NaturePresets {
         };
     }
 
+    /** ¿Es una palabra que quita el material ({@code none}, {@code sin}…) en lugar de un bloque? */
+    public static boolean disabled(String material) {
+        return NatureArgs.disabled(material);
+    }
+
     /** Ajustes de árbol aceptando los presets del jugador. */
     public static TreeSettings tree(UUID playerId, String input) {
         return TreeSettings.parse(input, resolver(() -> trees(playerId)));

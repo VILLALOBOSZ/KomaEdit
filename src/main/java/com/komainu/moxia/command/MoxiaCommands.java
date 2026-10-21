@@ -276,6 +276,7 @@ public final class MoxiaCommands {
         SymmetryCommands.register(root);
         BuilderCommands.register(root);
         BlueprintCommands.register(root);
+        ShareCommands.register(root);
         ClipboardCommands.register(root);
         PasteCommands.register(root);
         PreviewCommands.register(root);

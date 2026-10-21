@@ -2,6 +2,7 @@ package com.komainu.moxia.permission;
 
 import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.capability.BuildCapability;
+import com.komainu.moxia.share.SharePermissions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -187,6 +188,10 @@ public final class PermissionNodes {
                 "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
         add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
         add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
+        add(SharePermissions.EXPORT, Pack.INTERMEDIATE, use, null,
+                "Exportar paletas, ruidos, presets, recetas y planos a un código (/komaedit share export)");
+        add(SharePermissions.IMPORT, Pack.INTERMEDIATE, null, null,
+                "Importar paquetes de otros servidores (/komaedit share import); además, el de guardar cada tipo");
 
         // Avanzado.
         add(build, Pack.ADVANCED, null, null, "Todas las figuras y ediciones (también las propias de KomaEdit)");
@@ -201,6 +206,8 @@ public final class PermissionNodes {
         add(build + ".image", Pack.ADVANCED, build, "ezedits.stainedglass.image", "/komaedit image");
         add(BlueprintPermissions.SHARE, Pack.ADVANCED, null, null,
                 "Compartir planos propios con todo el servidor (/komaedit blueprint share)");
+        add(SharePermissions.FILE, Pack.ADVANCED, null, null,
+                "Exportar paquetes a un archivo .kpack en config/komaedit/exports (/komaedit share export … -f)");
 
         // Capacidades de construcción a mano (menú rápido y /komaedit capability).
         for (BuildCapability capability : BuildCapability.values()) {
@@ -231,6 +238,8 @@ public final class PermissionNodes {
                 "Borrar o reemplazar los planos compartidos de otros jugadores");
         add(BlueprintPermissions.UNLIMITED, Pack.ADMIN, null, null,
                 "Sin los límites de número y tamaño de planos de blueprints.json");
+        add(SharePermissions.UNLIMITED, Pack.ADMIN, null, null,
+                "Sin el límite de importaciones y exportaciones por hora de share.json");
     }
 
     private PermissionNodes() {

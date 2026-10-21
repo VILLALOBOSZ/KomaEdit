@@ -28,9 +28,6 @@ public final class SculptPresetStore {
     private static final int FORMAT_VERSION = 1;
     private static final Pattern VALID_NAME = Pattern.compile("[a-zA-Z0-9_-]{1,32}");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path ROOT = FabricLoader.getInstance().getConfigDir()
-            .resolve("komaedit")
-            .resolve("presets");
 
     private SculptPresetStore() {
     }
@@ -62,37 +59,45 @@ public final class SculptPresetStore {
             throw new IllegalArgumentException("No existe el preset " + name);
         }
         try {
-            JsonObject root = JsonParser.parseString(Files.readString(target, StandardCharsets.UTF_8)).getAsJsonObject();
-            if (root.get("version").getAsInt() != FORMAT_VERSION) {
-                throw new IllegalArgumentException("Versión de preset no compatible");
-            }
-            SculptBrushType type = SculptBrushType.byId(root.get("type").getAsString());
-            BrushFalloff falloff = BrushFalloff.byId(root.get("falloff").getAsString());
-            BrushMask mask = new BrushMask(
-                    root.get("ignoreAir").getAsBoolean(),
-                    root.get("ignoreLiquids").getAsBoolean(),
-                    strings(root.getAsJsonArray("whitelist")),
-                    strings(root.getAsJsonArray("blacklist")),
-                    strings(root.getAsJsonArray("replaceOnly"))
-            );
-            SculptSettings settings = new SculptSettings(
-                    type,
-                    root.get("radius").getAsInt(),
-                    root.get("height").getAsInt(),
-                    root.get("intensity").getAsInt(),
-                    falloff,
-                    root.get("noise").getAsInt(),
-                    root.get("randomness").getAsInt(),
-                    root.get("hollow").getAsBoolean(),
-                    mask
-            );
-            return new SculptProfile(settings, root.get("pattern").getAsString());
+            return fromJson(JsonParser.parseString(Files.readString(target, StandardCharsets.UTF_8)).getAsJsonObject());
         } catch (IOException | RuntimeException exception) {
             if (exception instanceof IllegalArgumentException illegalArgumentException) {
                 throw illegalArgumentException;
             }
             throw new IllegalStateException("No se pudo cargar el preset: " + exception.getMessage(), exception);
         }
+    }
+
+    public static boolean exists(UUID playerId, String name) {
+        return Files.isRegularFile(presetPath(playerId, name));
+    }
+
+    /** Un preset en el JSON que se guarda (lo usan también los paquetes compartidos). */
+    public static SculptProfile fromJson(JsonObject root) {
+        if (root.get("version").getAsInt() != FORMAT_VERSION) {
+            throw new IllegalArgumentException("Versión de preset no compatible");
+        }
+        SculptBrushType type = SculptBrushType.byId(root.get("type").getAsString());
+        BrushFalloff falloff = BrushFalloff.byId(root.get("falloff").getAsString());
+        BrushMask mask = new BrushMask(
+                root.get("ignoreAir").getAsBoolean(),
+                root.get("ignoreLiquids").getAsBoolean(),
+                strings(root.getAsJsonArray("whitelist")),
+                strings(root.getAsJsonArray("blacklist")),
+                strings(root.getAsJsonArray("replaceOnly"))
+        );
+        SculptSettings settings = new SculptSettings(
+                type,
+                root.get("radius").getAsInt(),
+                root.get("height").getAsInt(),
+                root.get("intensity").getAsInt(),
+                falloff,
+                root.get("noise").getAsInt(),
+                root.get("randomness").getAsInt(),
+                root.get("hollow").getAsBoolean(),
+                mask
+        );
+        return new SculptProfile(settings, root.get("pattern").getAsString());
     }
 
     public static List<String> list(UUID playerId) {
@@ -121,7 +126,7 @@ public final class SculptPresetStore {
         }
     }
 
-    private static JsonObject toJson(SculptProfile profile) {
+    public static JsonObject toJson(SculptProfile profile) {
         SculptSettings settings = profile.settings();
         JsonObject root = new JsonObject();
         root.addProperty("version", FORMAT_VERSION);
@@ -154,14 +159,21 @@ public final class SculptPresetStore {
         return values;
     }
 
-    private static Path presetPath(UUID playerId, String name) {
-        if (!VALID_NAME.matcher(name).matches()) {
+    /** El nombre de un preset válido o lanza. */
+    public static String validName(String name) {
+        if (name == null || !VALID_NAME.matcher(name).matches()) {
             throw new IllegalArgumentException("El nombre debe usar 1–32 letras, números, _ o -");
         }
-        return playerDirectory(playerId).resolve(name + ".json");
+        return name;
+    }
+
+    private static Path presetPath(UUID playerId, String name) {
+        return playerDirectory(playerId).resolve(validName(name) + ".json");
     }
 
     private static Path playerDirectory(UUID playerId) {
-        return ROOT.resolve(playerId.toString());
+        // Al usarse y no al cargar la clase: las pruebas leen el JSON sin Fabric.
+        return FabricLoader.getInstance().getConfigDir().resolve("komaedit").resolve("presets")
+                .resolve(playerId.toString());
     }
 }
