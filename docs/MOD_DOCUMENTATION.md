@@ -12,7 +12,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 - **Color e imagen:** [Color y sombreado](#color-y-sombreado) · [Imagen en bloques](#imagen-en-bloques)
 - **Generadores y terreno:** [Formas sueltas](#formas-sueltas) · [Terreno con ruido](#terreno-con-ruido) · [Campos y líneas de flujo](#campos-y-líneas-de-flujo) · [Terraformado](#terraformado)
 - **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Pinceles de modelado](#pinceles-de-modelado) · [Supervarita](#supervarita) · [Simetría](#simetría)
-- **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
+- **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Barras guardadas](#barras-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
 - **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
 - **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
@@ -3971,6 +3971,95 @@ Se usan con `##murallas` en cualquier sitio que acepte una paleta y salen en `/k
 - `swap` y `fetch` solo admiten bloques (no porcentajes ni patrones) en las paletas; `save`, `place` y `print` admiten cualquier patrón de WorldEdit.
 - `place` y `swap` necesitan `komaedit.build` (o `komaedit.build.palette.place` / `.swap`); el resto, `komaedit.use` (o `komaedit.palette.<orden>`). Ver [Permisos](#permisos).
 
+## Barras guardadas
+
+### Objetivo y acceso
+
+Como el Hotbar Swapper de Axiom: guardar la barra rápida con un nombre y un icono, tener muchas y cambiar de una a otra en un momento. Se guardan los nueve huecos con todo lo que llevan (encantamientos, nombres, durabilidad, libros escritos, cajas con contenido, el pincel de KomaEdit ligado a un objeto…). Son de cada jugador y de cada mundo.
+
+- **La tecla** (Alt izquierdo de serie, como en Axiom; en Controles → KomaEdit, «Barras guardadas»): **mantenla** y sale la tira con tus barras sobre la barra de verdad, la que llevas marcada en verde; **la rueda** elige otra (hacia abajo, la siguiente) y **al soltar** cambias a ella. Si vuelves a la que llevabas, no pasa nada. La rueda no cambia de casilla mientras mantienes la tecla.
+- **Tocar la tecla** (soltarla antes de un cuarto de segundo sin mover la rueda) abre el **menú circular**: tus barras alrededor, con su icono y su nombre; al pasar el ratón por una, en el centro salen sus nueve huecos. Clic: usarla; clic derecho: copiar su código; rueda: página (12 por página). Abajo, escribe un nombre y pulsa **Guardar** para guardar la barra que llevas (si ya existe una con ese nombre, el segundo clic la sustituye), **Pegar código** importa un código `kh1:` del portapapeles y **Copiar todas** copia el de todas. El menú tiene también su propia tecla («Menú de barras guardadas», sin asignar de serie).
+- **Las órdenes**, para todo lo demás y para servidores donde el cliente no tiene KomaEdit:
+
+```text
+/komaedit hotbar save <nombre> [-i hueco|objeto] [-f]
+/komaedit hotbar load <nombre>
+/komaedit hotbar list
+/komaedit hotbar palette <nombre> <paleta> [-f] [-l]
+/komaedit hotbar gradient <nombre> <A> <B> [-c] [-s] [-o] [-u] [-x] [-v variante] [-f] [-l]
+/komaedit hotbar selection <nombre> [-f] [-l]
+/komaedit hotbar stamp <nombre> [paleta de superficie] [-f] [-l]
+/komaedit hotbar paint <nombre> [paleta] [-f] [-l]
+/komaedit hotbar roof <nombre> <material> [-f] [-l]
+/komaedit hotbar export [nombre|all]
+/komaedit hotbar import <código> [nombre] [-f]
+/komaedit hotbar undo
+/komaedit hotbar autosave [on|off]
+/komaedit hotbar rename <nombre> <nuevo>
+/komaedit hotbar icon <nombre> <hueco|objeto>
+/komaedit hotbar move <nombre> <posición>
+/komaedit hotbar delete <nombre>
+```
+
+Alias: `/komaedit barra`, y en español `guardar`, `usar` (o `cargar`), `lista`, `paleta`, `degradado`, `seleccion`, `sello`, `pintura`, `tejado`, `exportar`, `importar`, `deshacer`, `autoguardado`, `renombrar`, `icono`, `mover` y `borrar`. `/komaedit help hotbar` las enseña con su explicación.
+
+- `save` guarda la barra que llevas. `-i` elige el icono: un hueco del 1 al 9 o un objeto (`-i lantern`); sin él, el del primer hueco con algo. `-f` sustituye una que ya exista. Guardar una barra la deja como «en uso».
+- `load` cambia a esa barra (ver abajo qué hace según el modo de juego).
+- `list` las enseña con lo que llevan; pulsar el nombre la usa, y cada una tiene **[exportar]** y **[borrar]**.
+
+Ejemplos:
+
+```text
+/komaedit hotbar save castillo -i 4
+/komaedit hotbar palette mar ##GlowBlue -l
+/komaedit hotbar gradient atardecer red_terracotta yellow_concrete -c -o
+/komaedit hotbar roof pizarra deepslate_tiles -l
+/komaedit hotbar selection fachada
+```
+
+### Creativo y supervivencia
+
+Lo que hace cambiar de barra lo decide el servidor, según el modo de juego:
+
+- **Creativo: al instante.** El cliente pone la barra en ese momento y el servidor la confirma con la suya. El cliente solo dice **qué barra** quiere: el servidor pone su copia guardada, así que nadie puede colar objetos con un paquete hecho a mano. Lo que no existe en el servidor (de un mod que ya no está, o desactivado) sale vacío y se avisa; las cantidades no pasan del máximo de cada objeto.
+- **Supervivencia y aventura: solo reordena, nunca crea.** Busca cada objeto de la barra guardada en tu inventario y lo cambia de sitio con lo que hubiera en ese hueco. Prefiere el mismo objeto con los mismos componentes y, si no lo hay, el mismo objeto con otros (un pico gastado vale por el nuevo que guardaste); entre los que valen, los del inventario antes que los de la barra, la pila más grande y el hueco más bajo. Los huecos vacíos de la barra guardada no piden nada. Lo que no llevas se queda como estaba y se avisa («no llevas: …»).
+- **Espectador:** no se cambia de barra.
+
+Por qué así en supervivencia: no ofrecerlo dejaba fuera a quien construye en supervivencia, y lo único seguro era no crear nada. Reordenar es lo que el jugador podría hacer a mano con el inventario abierto: el inventario tiene exactamente las mismas pilas antes y después (lo comprueban las pruebas con miles de inventarios al azar), así que no hay forma de sacar objetos con ello. En la tira y en el menú se avisa en amarillo de que solo se mueve lo que llevas.
+
+Un administrador puede dar `komaedit.admin.hotbar.give` para poner las barras como en creativo en cualquier modo: eso **crea objetos**, así que va en el paquete de administrador. Los operadores lo tienen, como todos los nodos: fuera de creativo, la tira y el menú les avisan en naranja de que la barra se pone tal cual y crea objetos.
+
+### La barra que dejas se guarda sola
+
+Como en Axiom: en creativo, al cambiar de barra, la que dejas se guarda en la que estabas usando, así que al volver la encuentras como la dejaste (con el bloque que cogiste con la rueda del ratón, por ejemplo). Si no estabas usando ninguna, no se guarda nada. Se apaga con `/komaedit hotbar autosave off` y se enciende con `on`. En supervivencia no se guarda sola: ahí la barra guardada es un orden de objetos, no lo que llevas.
+
+`/komaedit hotbar undo` vuelve a la barra de antes del último cambio (solo en creativo, un paso, y se pierde al salir del servidor).
+
+### Crear barras desde otras cosas
+
+- `palette <nombre> <paleta>`: los bloques de una paleta: de serie (`##Magma`), del servidor (`##murallas`), guardada (`#mia`), una lista (`stone,andesite,tuff`) o un código `kp1:`. Si tiene más de nueve bloques, se reparten de la primera a la última.
+- `gradient <nombre> <A> <B>`: el degradado de color de [Color y sombreado](#color-y-sombreado) en nueve pasos, con sus mismos filtros (`-c` solo cubos, `-s` sólidos, `-o` opacos, `-u` uniformes, `-x` cualquiera) y `-v` para otra variante. La salida de `/komaedit color gradient` y de `/komaedit color palette` lleva también **[guardar barra]**, que escribe la orden.
+- `selection <nombre>`: los nueve bloques más usados de la selección de WorldEdit (sin aire ni líquidos), de más a menos. Lee la selección repartida entre ticks, como las demás operaciones de región.
+- `stamp <nombre> [paleta]`: los bloques de la paleta de superficie de un [sello de relieve](#terraformado) (`natural`, `desierto`, `nevado`… o una escrita), en su orden: llano, pendiente, cumbre, relleno…
+- `paint <nombre> [paleta]`: una paleta del [pincel de pintura](#pinceles) (`hierba_piedra`, `bosque`…) o cualquier otra.
+- `roof <nombre> <material>`: el material de un [tejado](#tejados) con sus piezas, en el orden en que se usan: el bloque, sus escaleras y losas, y después muro, valla, puerta de valla, trampilla, puerta… (las familias de bloques de Minecraft).
+
+En todas, `-l` la pone ya en tu barra y `-f` sustituye una que se llame igual. Un bloque con estado en la paleta (`oak_log[axis=x]`, `snow[layers=3]`) da su objeto con el componente `block_state`, que lo coloca con ese estado. Los bloques sin objeto (el agua, el fuego) y los patrones (`50%stone`) se saltan y se dicen.
+
+### Compartir
+
+- `export [nombre]` da un código `kh1:…` que se copia al pulsarlo; sin nombre (o con `all`), el de todas. Lleva los objetos con sus componentes, comprimido. Si la orden de importar cabe en el chat (256 letras; una barra de bloques sin componentes suele caber), también sale **[copiar orden]**.
+- `import <código> [nombre] [-f]` las guarda. Si ya tienes una con ese nombre, la nueva se llama `nombre_2` (con `-f`, la sustituye). Los objetos que no existen en este servidor se quitan y se avisa. Un código que no cabe en el chat se importa con **Pegar código** del menú o del Studio (hasta 32 000 letras).
+- El formato es propio de KomaEdit, como el `kp1:` de las paletas: no es el de Axiom.
+
+### Rendimiento y limitaciones
+
+- Hasta 64 barras por jugador y mundo, de 32 KiB cada una como mucho y 512 KiB entre todas (en JSON: una barra de bloques ocupa menos de 1 KiB; lo que pesa son los libros y las cajas llenas). Se guardan en `<mundo>/komaedit/players/<uuid>/hotbars/hotbars.json` con escritura atómica; si el archivo se daña, se aparta como `hotbars.broken-N.json` (no se pisa) y se empieza de cero.
+- Cada cambio escribe ese archivo; el servidor admite como mucho uno cada 2 ticks por jugador. Cambiar va por un paquete propio y no por una orden de chat, así que no suma al antispam de Minecraft.
+- El servidor guarda los objetos con el códec de Minecraft, también los componentes que no se mandan al cliente; la tira y el menú pintan la versión que manda el servidor.
+- Si otro mod usa Alt izquierdo, cambia la tecla en Controles. Con Alt+Tab no se cambia de barra ni se abre el menú.
+- Permisos: `komaedit.hotbar` (lo da `komaedit.use`; paquete básico) y `komaedit.admin.hotbar.give` (paquete de administrador).
+
 ## Ruidos guardados
 
 ### Objetivo y acceso
@@ -4684,21 +4773,22 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.analyze` (lista de materiales; la da también `komaedit.use`).
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
+   - `komaedit.hotbar` ([barras guardadas](#barras-guardadas); lo da también `komaedit.use`) y `komaedit.admin.hotbar.give` (ponerlas como en creativo en cualquier modo, que crea objetos; solo el paquete de administrador).
    - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…) y `komaedit.select.superwand`.
    - `komaedit.capability.<capacidad>` y `komaedit.capability.flyspeed` (ver [Construir a mano: capacidades](#construir-a-mano-capacidades)); los da también `komaedit.build`.
 3. **Paquetes** (`permpack` de ezEdits):
 
 | Paquete | Incluye |
 | --- | --- |
-| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
+| `komaedit.permpack.basic` | Acceso, trayectorias, formas sueltas, `deform rotate`, `slabmerge`, `tweak`, `glassgradient`, `inflate`, `deflate`, `color` (parecidos, degradados, paletas y barra rápida), barras guardadas (`hotbar`), `analyze`, `gravity`, `snow`, `drain`, `waterlog`, supervarita, selecciones sin guardar (`next`, `here`, `invert`, `delpos2`, `encapsulate`, `encapsulatenear`, `catenary`) y las capacidades Reemplazar, Retocar, Colocar en el aire y Colocación rápida, con la velocidad de vuelo. |
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`, `sculpt`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles (con escalar y girar), recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`), usar las capacidades fuera de creativo (`komaedit.admin.anymode`) y poner barras guardadas como en creativo en cualquier modo (`komaedit.admin.hotbar.give`). Va aparte: no incluye los otros. |
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, `jobs`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.admin` | `reload`, `jobs`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`), usar las capacidades fuera de creativo (`komaedit.admin.anymode`) y poner barras guardadas como en creativo en cualquier modo (`komaedit.admin.hotbar.give`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
