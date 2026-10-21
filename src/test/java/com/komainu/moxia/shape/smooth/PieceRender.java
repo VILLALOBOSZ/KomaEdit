@@ -36,6 +36,15 @@ public final class PieceRender {
     }
 
     public static BufferedImage render(Long2ObjectOpenHashMap<Cell> cells, int scale) {
+        return render(cells, scale, null);
+    }
+
+    /**
+     * Como {@link #render(Long2ObjectOpenHashMap, int)}, encuadrado en los bloques de {@code frame}: todas las
+     * imágenes de una animación salen del mismo tamaño y en el mismo sitio aunque aún falten bloques.
+     */
+    public static BufferedImage render(Long2ObjectOpenHashMap<Cell> cells, int scale,
+                                       Long2ObjectOpenHashMap<Cell> frame) {
         List<Box> boxes = new ArrayList<>();
         double minScreenX = Double.POSITIVE_INFINITY;
         double maxScreenX = Double.NEGATIVE_INFINITY;
@@ -51,6 +60,14 @@ public final class PieceRender {
                 continue;
             }
             addBoxes(boxes, x, y, z, cell);
+        }
+        for (long key : (frame == null ? cells : frame).keySet()) {
+            int x = PackedBlockPlan.unpackX(key);
+            int y = PackedBlockPlan.unpackY(key);
+            int z = PackedBlockPlan.unpackZ(key);
+            if (frame == null && cells.get(key).piece() == SmoothPiece.FULL && hidden(cells, x, y, z)) {
+                continue;
+            }
             for (int corner = 0; corner < 8; corner++) {
                 double[] point = project(x + (corner & 1), y + (corner >> 1 & 1), z + (corner >> 2 & 1), scale);
                 minScreenX = Math.min(minScreenX, point[0]);
@@ -59,7 +76,7 @@ public final class PieceRender {
                 maxScreenY = Math.max(maxScreenY, point[1]);
             }
         }
-        if (boxes.isEmpty()) {
+        if (boxes.isEmpty() && frame == null || minScreenX == Double.POSITIVE_INFINITY) {
             return new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
         }
         int width = (int) Math.ceil(maxScreenX - minScreenX) + 20;

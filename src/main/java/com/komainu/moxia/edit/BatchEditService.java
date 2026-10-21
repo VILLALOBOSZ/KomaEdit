@@ -513,9 +513,9 @@ public final class BatchEditService {
 
     /**
      * El vaciado de la sesión de WorldEdit: {@code commit} pasa al mundo el búfer y luego aplica la luz, los vecinos
-     * y el envío a los clientes posición a posición mientras quede tiempo.
+     * y el envío a los clientes posición a posición mientras quede tiempo. Lo usa también la reconstrucción animada.
      */
-    static PlacementRun.Session session(EditSession editSession) {
+    public static PlacementRun.Session session(EditSession editSession) {
         return () -> {
             Operation operation = editSession.commit();
             if (operation == null) {

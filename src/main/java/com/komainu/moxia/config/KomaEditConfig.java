@@ -31,6 +31,7 @@ public final class KomaEditConfig {
         ImageConfig.load(directory());
         BlueprintConfig.load(directory());
         AlignmentGuideSettings.load(directory());
+        com.komainu.moxia.rebuild.RebuildConfig.load(directory());
         settings = load(file());
         apply(settings);
     }

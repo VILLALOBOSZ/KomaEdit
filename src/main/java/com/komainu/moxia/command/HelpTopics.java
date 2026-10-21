@@ -497,6 +497,31 @@ public final class HelpTopics {
                     new Entry("/komaedit scatter Bp(T:rocas) SurfaceNormal Random -n 1",
                             "Los planos también valen en place, scatter y array con Bp(N:…|T:…)")
             )),
+            new Topic("rebuild", "Reconstrucción animada", List.of("reconstruir", "reconstruccion", "timelapse",
+                    "animacion", "animar"), List.of(
+                    new Entry("/komaedit rebuild [orden] [banderas]",
+                            "Quita la selección y la levanta bloque a bloque, a la vista de todos (alias reconstruir)"),
+                    new Entry("/komaedit rebuild portapapeles [orden] [banderas]",
+                            "Levanta el portapapeles donde lo pondría //paste (-l x,y,z: en otro sitio; -a: sin su aire)"),
+                    new Entry("/komaedit rebuild plano <plano> [orden] [banderas]",
+                            "Levanta un plano de la biblioteca encima del bloque que miras"),
+                    new Entry("/komaedit rebuild capas|ondas|eje|azar|constructor|historial",
+                            "El orden: por capas, desde un punto (-c), por un eje (-e), al azar (-s), como un"
+                                    + " constructor (de serie) o como se colocó"),
+                    new Entry("/komaedit rebuild constructor -b <bloques/tick> | -t <segundos>",
+                            "El ritmo: bloques por tick (4 de serie) o la duración total"),
+                    new Entry("/komaedit rebuild constructor -p <pausa> -i <iguales> -d <distintos> -w <espera>",
+                            "Pausa entre capas o fases y retrasos entre bloques iguales o distintos (segundos; 10t en"
+                                    + " ticks)"),
+                    new Entry("/komaedit rebuild constructor -f -n",
+                            "Partículas (-f) y sonido (-n) de colocación, discretos"),
+                    new Entry("/komaedit rebuild pausar|seguir", "Para la animación donde va y la reanuda"),
+                    new Entry("/komaedit rebuild velocidad <factor>",
+                            "Más deprisa o más despacio (2, 0.5…); acelerar y frenar la doblan o la parten"),
+                    new Entry("/komaedit rebuild terminar", "Salta al final: pone lo que falta ya, sin animación"),
+                    new Entry("/komaedit rebuild cancelar", "Lo deja todo como estaba (también /komaedit cancel)"),
+                    new Entry("/komaedit rebuild estado", "Fase, bloques, velocidad y lo que queda")
+            )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup", "menu", "quick", "gui", "quiet",
                     "silencio", "permisos", "permissions", "reload", "recargar", "tutorial", "bienvenida", "debug",
                     "debugprint", "depuracion"), List.of(

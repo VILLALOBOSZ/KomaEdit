@@ -165,6 +165,7 @@ public final class KomaEditMod implements ModInitializer {
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             BatchEditService.cancel(handler.player.getUuid(), false);
+            com.komainu.moxia.rebuild.RebuildService.disconnected(handler.player.getUuid());
             // Lo que aún se lee o se calcula para él ya no tiene a quién entregarse.
             SnapshotCaptureService.cancel(handler.player.getUuid());
             AsyncEngine.cancel(handler.player.getUuid());
@@ -197,6 +198,9 @@ public final class KomaEditMod implements ModInitializer {
         ServerWork.light(PlanPreviews::tick);
         BatchEditService.register();
         RegionOperationService.register();
+        // La reconstrucción animada va a ritmo de reloj, no de cola: su propio carril del mismo presupuesto.
+        com.komainu.moxia.rebuild.RebuildService.register();
+        com.komainu.moxia.rebuild.PlacementHistory.register();
         ServerWork.register();
         ServerTickEvents.END_SERVER_TICK.register(ProgressBars::tick);
         ServerTickEvents.END_SERVER_TICK.register(server -> PreviewDisplays.sweep());
@@ -207,9 +211,19 @@ public final class KomaEditMod implements ModInitializer {
             if (leftovers > 0) {
                 LOGGER.info("Removed {} leftover KomaEdit plan files", leftovers);
             }
+            com.komainu.moxia.rebuild.PlacementHistory.start(server);
+            // Las reconstrucciones que una caída dejó a medias se terminan ahora.
+            com.komainu.moxia.rebuild.RebuildService.started(server);
+        });
+        // Antes de que se guarde el mundo: ninguna reconstrucción se queda a medias en disco.
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            com.komainu.moxia.rebuild.RebuildService.stopping();
+            com.komainu.moxia.rebuild.PlacementHistory.save(true);
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             BatchEditService.shutdown();
+            com.komainu.moxia.rebuild.RebuildService.clearAll();
+            com.komainu.moxia.rebuild.PlacementHistory.clearAll();
             FastPaintService.shutdown();
             SnapshotCaptureService.clearAll();
             AsyncEngine.shutdown();
