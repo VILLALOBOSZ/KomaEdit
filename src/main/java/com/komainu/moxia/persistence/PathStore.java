@@ -65,8 +65,16 @@ public final class PathStore {
     }
 
     public static boolean delete(UUID playerId, String name) {
+        return delete(file(playerId, name));
+    }
+
+    /** Con su copia y su temporal: si no, el proyecto lo recuperaría desde la copia al volver a entrar. */
+    static boolean delete(Path file) {
         try {
-            return Files.deleteIfExists(file(playerId, name));
+            boolean deleted = Files.deleteIfExists(file);
+            Files.deleteIfExists(AtomicStorage.temporary(file));
+            Files.deleteIfExists(AtomicStorage.backup(file));
+            return deleted;
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudo borrar el recorrido: " + exception.getMessage(), exception);
         }

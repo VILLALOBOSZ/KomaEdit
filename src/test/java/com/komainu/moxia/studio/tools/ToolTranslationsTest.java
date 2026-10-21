@@ -20,6 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Toda la etapa Herramientas sale en el idioma de Minecraft: cada texto que arman las tarjetas existe en es y en. */
@@ -38,6 +39,59 @@ class ToolTranslationsTest {
     private static JsonObject lang(String name) throws IOException {
         Path file = Path.of("src", "main", "resources", "assets", "komaedit", "lang", name + ".json");
         return JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
+    }
+
+    /**
+     * Dos ajustes que se ven a la vez en una tarjeta no se llaman igual: con «Caballete» dos veces en el tejado (el
+     * bloque y su eje) o «From» dos veces en las barras (de dónde y el primer color) no se sabe cuál es cuál.
+     */
+    @Test
+    void settingsShownTogetherHaveDifferentNames() throws IOException {
+        List<String> repeated = new ArrayList<>();
+        for (String language : List.of("es_es", "en_us")) {
+            JsonObject lang = lang(language);
+            for (ToolCard card : ToolCatalog.ALL) {
+                for (ToolValues values : combinations(card)) {
+                    java.util.Map<String, String> seen = new java.util.HashMap<>();
+                    for (ToolParam param : card.params()) {
+                        String key = card.labelKey(param);
+                        if (param.id().equals(ToolUse.PARAM) || !param.visible(values) || !lang.has(key)) {
+                            continue;
+                        }
+                        String label = lang.get(key).getAsString();
+                        String other = seen.putIfAbsent(label, param.id());
+                        if (other != null) {
+                            repeated.add(language + " · " + card.id() + ": «" + label + "» (" + other + " y "
+                                    + param.id() + ")");
+                        }
+                    }
+                }
+            }
+        }
+        assertEquals(List.of(), repeated.stream().distinct().toList());
+    }
+
+    /** Los valores de serie con cada opción y cada interruptor cambiados, juntos mientras no pasen de unos miles. */
+    private static List<ToolValues> combinations(ToolCard card) {
+        List<ToolValues> result = List.of(card.defaults());
+        for (ToolParam param : card.params()) {
+            List<Object> options = switch (param) {
+                case ToolParam.Choice choice when !choice.dynamic() -> List.copyOf(choice.options());
+                case ToolParam.Toggle ignored -> List.of(true, false);
+                default -> List.of();
+            };
+            if (options.isEmpty() || result.size() * options.size() > 3_000) {
+                continue;
+            }
+            List<ToolValues> next = new ArrayList<>();
+            for (ToolValues values : result) {
+                for (Object option : options) {
+                    next.add(values.with(param.id(), option));
+                }
+            }
+            result = next;
+        }
+        return result;
     }
 
     @Test

@@ -141,11 +141,22 @@ public final class ThumbnailChunks {
 
     /** Cola de envío de un jugador: cada tick saca trozos hasta gastar el presupuesto (al menos uno). */
     public static final class Queue {
+        /**
+         * Miniaturas pedidas al disco que aún no han llegado a la cola, como mucho: más que una biblioteca de serie
+         * entera (64 propios y 512 compartidos), que el cliente pide de una vez y no repite.
+         */
+        public static final int MAX_PENDING = 1_024;
+
         private final Deque<Chunk> chunks = new ArrayDeque<>();
         private final java.util.Set<String> queued = new java.util.HashSet<>();
+        /** Pedidas al disco que aún no han llegado. */
+        private final java.util.Set<String> requested = new java.util.HashSet<>();
 
         /** Encola una miniatura entera; si ya estaba en cola, no la repite. */
         public synchronized boolean offer(List<Chunk> thumbnail) {
+            if (!thumbnail.isEmpty()) {
+                requested.remove(thumbnail.getFirst().hash());
+            }
             if (thumbnail.isEmpty() || !queued.add(thumbnail.getFirst().hash())) {
                 return false;
             }
@@ -167,13 +178,32 @@ public final class ThumbnailChunks {
             return out;
         }
 
+        /**
+         * ¿Hay que leer del disco la miniatura que pide el cliente? No si ya se está leyendo o enviando, ni si hay
+         * {@link #MAX_PENDING} lecturas pendientes: así pedirla una y otra vez no cuesta nada.
+         */
+        public synchronized boolean request(String hash) {
+            if (queued.contains(hash) || requested.contains(hash) || requested.size() >= MAX_PENDING) {
+                return false;
+            }
+            requested.add(hash);
+            return true;
+        }
+
+        /** Terminó la lectura de esa miniatura, llegara o no (no existe, o falló). */
+        public synchronized void finished(String hash) {
+            requested.remove(hash);
+        }
+
+        /** Sin nada que enviar ni lecturas pendientes. */
         public synchronized boolean isEmpty() {
-            return chunks.isEmpty();
+            return chunks.isEmpty() && requested.isEmpty();
         }
 
         public synchronized void clear() {
             chunks.clear();
             queued.clear();
+            requested.clear();
         }
     }
 }

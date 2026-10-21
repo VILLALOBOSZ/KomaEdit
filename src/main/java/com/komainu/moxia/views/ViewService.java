@@ -4,6 +4,7 @@ import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.config.UtilitiesConfig;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.feedback.FeedbackEventPayload;
+import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.permission.KomaPermissions;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -34,6 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ViewService {
     private static final Map<UUID, Long> LAST_JUMP = new ConcurrentHashMap<>();
+    /** Compartir escribe el archivo y manda el catálogo a todos; pedirlo, el catálogo entero: con freno. */
+    private static final RequestBudget REQUESTS = new RequestBudget(6, 2.0);
     private static volatile SharedViews shared;
 
     private ViewService() {
@@ -56,6 +59,9 @@ public final class ViewService {
                 }));
         ServerPlayNetworking.registerGlobalReceiver(ViewPayloads.ViewSharePayload.ID, (payload, context) ->
                 context.server().execute(() -> {
+                    if (!REQUESTS.allow(context.player().getUuid(), System.nanoTime())) {
+                        return;
+                    }
                     String message;
                     boolean ok;
                     try {
@@ -69,13 +75,21 @@ public final class ViewService {
                             message));
                 }));
         ServerPlayNetworking.registerGlobalReceiver(ViewPayloads.ViewCatalogRequest.ID, (payload, context) ->
-                context.server().execute(() -> sendCatalog(context.player())));
+                context.server().execute(() -> {
+                    if (REQUESTS.allow(context.player().getUuid(), System.nanoTime())) {
+                        sendCatalog(context.player());
+                    }
+                }));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sendCatalog(handler.player));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> LAST_JUMP.remove(handler.player.getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            LAST_JUMP.remove(handler.player.getUuid());
+            REQUESTS.forget(handler.player.getUuid());
+        });
         ServerLifecycleEvents.SERVER_STARTED.register(ViewService::open);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             shared = null;
             LAST_JUMP.clear();
+            REQUESTS.clear();
         });
     }
 

@@ -1,11 +1,14 @@
 package com.komainu.moxia.blueprint;
 
 import com.komainu.moxia.brush.ez.BrushWorld;
+import com.komainu.moxia.symmetry.StateTransform;
+import com.komainu.moxia.symmetry.SymmetryTransform;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.IntBinaryOperator;
 
@@ -243,5 +246,44 @@ class StampPlannerTest {
             assertThrows(IllegalArgumentException.class, () -> StampSettings.parse(wrong), wrong);
         }
         assertNotEquals(0, StampPlanner.autoSpacing(List.of(rock())));
+    }
+
+    /**
+     * Los estados de cada plano estampado giran y se voltean como sus posiciones, con la transformación de la
+     * simetría: también los raíles (rectos, en curva y en rampa) y las bisagras de las puertas, que el giro de
+     * WorldEdit deja como estaban.
+     */
+    @Test
+    void stampedStatesTurnAndFlipLikeTheirPositions() {
+        int[][] sides = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+        for (int turns = 0; turns < 4; turns++) {
+            for (boolean flipX : new boolean[]{false, true}) {
+                for (boolean flipZ : new boolean[]{false, true}) {
+                    StampPlanner.Stamp stamp = new StampPlanner.Stamp(0, 0, 0, 0, turns, flipX, flipZ);
+                    int[] m = stamp.matrix();
+                    SymmetryTransform transform = stamp.symmetry();
+                    for (int[] side : sides) {
+                        assertArrayEquals(new int[]{m[0] * side[0] + m[2] * side[1], m[6] * side[0] + m[8] * side[1]},
+                                transform.direction(side[0], side[1]), stamp.toString());
+                    }
+                }
+            }
+        }
+        Map<String, List<String>> rail = Map.of("shape", List.of("north_south", "east_west", "ascending_east",
+                "ascending_west", "ascending_north", "ascending_south", "south_east", "south_west", "north_west",
+                "north_east"), "waterlogged", List.of("true", "false"));
+        SymmetryTransform quarter = new StampPlanner.Stamp(0, 0, 0, 0, 1, false, false).symmetry();
+        assertEquals("east_west", StateTransform.apply(Map.of("shape", "north_south", "waterlogged", "false"), rail,
+                quarter).get("shape"));
+        assertEquals("ascending_south", StateTransform.apply(Map.of("shape", "ascending_east", "waterlogged",
+                "false"), rail, quarter).get("shape"));
+        assertEquals("south_west", StateTransform.apply(Map.of("shape", "south_east", "waterlogged", "false"), rail,
+                quarter).get("shape"));
+        Map<String, List<String>> door = Map.of("facing", List.of("north", "south", "west", "east"), "half",
+                List.of("upper", "lower"), "hinge", List.of("left", "right"), "open", List.of("true", "false"),
+                "powered", List.of("true", "false"));
+        assertEquals("right", StateTransform.apply(Map.of("facing", "north", "half", "lower", "hinge", "left", "open",
+                "false", "powered", "false"), door, new StampPlanner.Stamp(0, 0, 0, 0, 0, true, false).symmetry())
+                .get("hinge"));
     }
 }

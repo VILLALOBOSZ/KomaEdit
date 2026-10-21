@@ -202,4 +202,37 @@ class NoteBookTest {
         assertEquals(NoteIcon.NOTA, read.find("def234").orElseThrow().icon(), "un icono que no conoce: el de serie");
         assertEquals(0xABCDEF, read.find("DEF234").orElseThrow().color());
     }
+
+    /**
+     * Un {@code notes.json} que no se puede leer (a medias, editado a mano o de una versión más nueva del mod tras
+     * volver a una anterior) no se pisa con las notas nuevas: se aparta para poder recuperarlo.
+     */
+    @Test
+    void anUnreadableFileIsSetAsideInsteadOfOverwritten() throws java.io.IOException {
+        for (String unreadable : List.of("{\"format\": 2, \"notes\": [{\"id\": \"nueva1\"}]}",
+                "{\"format\": 1, \"notes\": [{\"id\": \"abc234\", \"te")) {
+            Path directory = Files.createTempDirectory(folder, "notas");
+            Path file = directory.resolve("notes.json");
+            Files.writeString(file, unreadable);
+            NoteBook book = new NoteBook(file);
+            assertThrows(RuntimeException.class, book::load);
+            IntUnaryOperator ids = counter();
+            book.add(NoteRequest.parse("uno"), BLOCK, ANA, LIMITS, 1, ids);
+            book.add(NoteRequest.parse("dos"), BLOCK, ANA, LIMITS, 2, ids);
+            List<String> kept = new java.util.ArrayList<>();
+            try (var files = Files.list(directory)) {
+                for (Path other : files.toList()) {
+                    kept.add(Files.readString(other));
+                }
+            }
+            assertTrue(kept.contains(unreadable), "las notas de antes se han perdido: " + unreadable);
+            assertEquals(2, reread(file).size(), "y las nuevas se guardan");
+        }
+    }
+
+    private static NoteBook reread(Path file) {
+        NoteBook book = new NoteBook(file);
+        book.load();
+        return book;
+    }
 }

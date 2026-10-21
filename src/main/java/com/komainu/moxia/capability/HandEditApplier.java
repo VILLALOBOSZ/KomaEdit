@@ -1,5 +1,6 @@
 package com.komainu.moxia.capability;
 
+import com.komainu.moxia.edit.KeptData;
 import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -9,6 +10,7 @@ import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.util.SideEffect;
 import com.sk89q.worldedit.util.SideEffectSet;
+import com.sk89q.worldedit.world.block.BaseBlock;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -86,12 +88,26 @@ public final class HandEditApplier {
         }
         List<HandEdit> placed = new ArrayList<>();
         List<HandEdit> broken = new ArrayList<>();
+        // Lo que guardaba un bloque que se cambia por otro (o se quita) no vuelve sin //undo, aunque sea uno solo.
+        boolean dataLost = false;
         try {
             for (HandEdit edit : accepted) {
                 BlockState before = world.getBlockState(edit.pos());
                 BlockPos pos = edit.pos();
-                if (!session.setBlock(BlockVector3.at(pos.getX(), pos.getY(), pos.getZ()),
-                        FabricAdapter.adapt(edit.state()))) {
+                BlockVector3 at = BlockVector3.at(pos.getX(), pos.getY(), pos.getZ());
+                BaseBlock written = FabricAdapter.adapt(edit.state()).toBaseBlock();
+                if (before.hasBlockEntity()) {
+                    // WorldEdit vacía el contenedor al escribir encima: retocar un cofre no puede tirar lo que lleva.
+                    if (KeptData.keeps(false, true, true, edit.state().getBlock(), before.getBlock())) {
+                        BaseBlock full = FabricAdapter.adapt(world).getFullBlock(at);
+                        if (full.getNbtReference() != null) {
+                            written = FabricAdapter.adapt(edit.state()).toBaseBlock(full.getNbtReference());
+                        }
+                    } else {
+                        dataLost = true;
+                    }
+                }
+                if (!session.setBlock(at, written)) {
                     continue;
                 }
                 boolean removal = !before.isAir()
@@ -106,7 +122,7 @@ public final class HandEditApplier {
             reason = "Has llegado al límite de bloques de WorldEdit";
         } finally {
             session.close();
-            if (session.size() > 1) {
+            if (session.size() > 1 || dataLost && session.size() > 0) {
                 EditHistory.label(session, "Edición a mano");
                 context.session().remember(session);
             }

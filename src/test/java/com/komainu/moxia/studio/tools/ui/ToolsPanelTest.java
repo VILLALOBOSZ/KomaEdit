@@ -483,4 +483,67 @@ class ToolsPanelTest {
         assertFalse(again.view.tools().browsing());
         assertEquals(19, again.view.tools().values(ToolCatalog.byId("tree")).number("height"));
     }
+
+    /**
+     * Deshacer y rehacer un ajuste también se guarda: si no, al abrir otra partida volvía el valor deshecho (el que
+     * ya estaba en disco), no el que se veía al cerrar.
+     */
+    @Test
+    void undoingASettingIsRememberedLikeChangingIt() {
+        select("tree");
+        studio.wheelValue("Altura", 1);
+        studio.advance(ToolsPanel.SAVE_DELAY_MILLIS + 1);
+        assertEquals(Map.of("height", 19), studio.host.preferences.toolValues("tree"));
+        studio.key(StudioKey.letter('Z', false, false));
+        studio.advance(ToolsPanel.SAVE_DELAY_MILLIS + 1);
+        assertEquals(Map.of(), studio.host.preferences.toolValues("tree"), "deshecho: la altura vuelve a auto");
+        studio.key(StudioKey.letter('Y', false, false));
+        studio.view.closed(studio.host);
+        assertEquals(Map.of("height", 19), studio.host.preferences.toolValues("tree"), "rehecho y cerrado enseguida");
+    }
+
+    /** Deshacer puede volver a otra herramienta: es la que se recuerda, no la que se dejó al deshacer. */
+    @Test
+    void undoingBackToAnotherToolRemembersThatTool() {
+        select("tree");
+        studio.wheelValue("Altura", 1);
+        select("rock");
+        studio.key(StudioKey.letter('Z', false, false));
+        assertEquals("tree", panel.selected().id());
+        assertEquals("tree", studio.host.preferences.tool());
+    }
+
+    /**
+     * El nombre de la herramienta elegida se lee entero arriba de la tarjeta: con el panel de serie a 1080p (GUI 3),
+     * a 854×480 (GUI 2) y a 1080p con GUI 4, en los dos idiomas. Si no cabe en negrita, va en dos líneas, como en la
+     * cuadrícula.
+     */
+    @Test
+    void theNameOfTheChosenToolIsNeverCutInTheHeader() {
+        List<String> cut = new java.util.ArrayList<>();
+        for (String language : List.of("es_es", "en_us")) {
+            for (int[] screen : new int[][]{{640, 360}, {427, 240}, {480, 270}}) {
+                for (var card : ToolCatalog.ALL) {
+                    StudioDriver small = new StudioDriver(new StudioView(), new FakeStudioHost(language, false),
+                            screen[0], screen[1]);
+                    small.host.context = ALL;
+                    small.view.selectStage(StudioStage.TOOLS, small.host);
+                    small.view.tools().select(card, small.host);
+                    String name = small.host.tr(card.nameKey());
+                    small.render();
+                    var header = small.ui().widgets().stream()
+                            .filter(widget -> widget.tooltip() != null && widget.tooltip().startsWith(name + "\n"))
+                            .findFirst().orElseThrow();
+                    String shown = small.canvas().texts().stream()
+                            .filter(text -> header.bounds().contains(text.x(), text.y() + 4))
+                            .map(text -> text.text())
+                            .reduce((first, second) -> first + " " + second).orElse("");
+                    if (!shown.equals(name)) {
+                        cut.add(language + " " + screen[0] + "×" + screen[1] + " " + card.id() + ": «" + shown + "»");
+                    }
+                }
+            }
+        }
+        assertEquals(List.of(), cut);
+    }
 }

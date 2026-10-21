@@ -172,7 +172,8 @@ public record ShapeRequest(
     /** {@code r} o {@code norte-sur,este-oeste}. */
     private static double[] radii(String text) {
         String[] parts = text.split("[,;]");
-        if (parts.length > 2) {
+        // «,» sola se parte en nada: también es escribir mal los radios.
+        if (parts.length == 0 || parts.length > 2) {
             throw new IllegalArgumentException("El cono admite uno o dos radios: norte-sur,este-oeste");
         }
         double first = radius(parts[0], "El radio");

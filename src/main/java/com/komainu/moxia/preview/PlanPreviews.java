@@ -10,6 +10,8 @@ import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.feedback.FeedbackEventPayload;
 import com.komainu.moxia.gizmo.GhostService;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.studio.live.LivePreviewResultPayload;
+import com.komainu.moxia.studio.live.LiveService;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.performance.ServerWork;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -77,6 +79,8 @@ public final class PlanPreviews {
         return thread;
     });
     private static final PreviewFlow<Held> FLOW = new PreviewFlow<>(new Hooks(), 90_000_000_000L);
+    /** Lo que el cliente sigue dibujando mientras la vista previa en vivo trae la siguiente. */
+    private static final PreviewHandover HANDOVER = new PreviewHandover();
     private static volatile MinecraftServer server;
 
     private PlanPreviews() {
@@ -170,11 +174,22 @@ public final class PlanPreviews {
         if (plan.size() > ANNOUNCE_PREPARING_ABOVE) {
             Feedback.status(player, Feedback.format("Preparando la vista previa de %s (%s bloques)…", description,
                     plan.size()).append(replaced ? " · la anterior se descartó" : ""));
-        } else if (replaced) {
+        } else if (replaced && !LiveService.refreshing(id)) {
             Feedback.status(player, "La vista previa anterior se descartó");
         }
         LastEdits.remember(id, request);
         return true;
+    }
+
+    /**
+     * La vista previa en vivo del jugador acabó sin traer otra vista previa: si la de antes se quedó a la vista en el
+     * cliente esperándola, se quita.
+     */
+    public static void liveEnded(ServerPlayerEntity player) {
+        int plan = HANDOVER.ended(player.getUuid());
+        if (plan != 0 && PreviewPlanSender.supported(player)) {
+            PreviewPlanSender.clear(player, plan);
+        }
     }
 
     /** Empieza a aplicar la vista previa del jugador. */
@@ -225,6 +240,7 @@ public final class PlanPreviews {
     public static void forget(UUID player) {
         PREPARING.remove(player);
         FLOW.discard(player);
+        HANDOVER.forget(player);
         EditRequests.forget(player);
         PreviewPreferences.forget(player);
         PreviewPlanSender.forget(player);
@@ -255,6 +271,7 @@ public final class PlanPreviews {
     public static void clearAll() {
         PREPARING.clear();
         FLOW.clear();
+        HANDOVER.clear();
         EditRequests.clearAll();
         PreviewPreferences.clearAll();
         PreviewPlanSender.clearAll();
@@ -434,12 +451,22 @@ public final class PlanPreviews {
                 .then(preparation.extras == null ? null : preparation.extras.watch());
         long ttl = KomaEditConfig.settings().previewTimeoutSeconds() * 1_000_000_000L;
         FLOW.hold(preparation.player, held, watch, System.nanoTime(), ttl);
+        // La vista previa en vivo del Studio sabe así qué salió; al rehacerla, el chat no repite el aviso de cada una.
+        boolean refresh = LiveService.shown(player, LivePreviewResultPayload.Outcome.PREVIEW,
+                clientPlan == null ? 0 : clientPlan.id());
+        // La que se quedó a la vista en el cliente la sustituye esta al llegar.
+        HANDOVER.shown(preparation.player);
         if (clientPlan != null) {
             PreviewPlanSender.start(player, clientPlan.id(), clientPlan.parts());
         } else {
             held.spawnSome(player, SPAWNS_PER_TICK);
         }
-        announceHeld(player, held, ttl);
+        if (refresh) {
+            BuildEstimate.limitWarning(held.frozen.size(), held.sessionLimit).ifPresent(warning ->
+                    Feedback.warn(player, warning));
+        } else {
+            announceHeld(player, held, ttl);
+        }
     }
 
     /**
@@ -665,8 +692,10 @@ public final class PlanPreviews {
             ServerPlayerEntity online = online(player);
             if (online != null) {
                 PreviewDisplays.destroy(online, held.spawned.toIntArray());
-                if (held.clientPlan != 0) {
-                    PreviewPlanSender.clear(online, held.clientPlan);
+                // Si la descarta la vista previa en vivo, el cliente la sigue dibujando hasta que llegue la nueva.
+                int clear = HANDOVER.hidden(player, held.clientPlan, LiveService.refreshing(player));
+                if (clear != 0) {
+                    PreviewPlanSender.clear(online, clear);
                 }
             }
             held.spawned.clear();

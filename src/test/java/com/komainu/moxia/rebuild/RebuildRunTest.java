@@ -53,6 +53,33 @@ class RebuildRunTest {
         assertEquals(40, rig.world.writes, "una escritura para quitar y otra para poner cada bloque");
     }
 
+    /**
+     * Un cofre que alguien vacía (o que una tolva va llenando) entre la lectura y el vaciado: si se vuelve a poner lo
+     * leído al empezar, los objetos que se sacaron entre medias se duplican y los que se metieron se pierden. Cada
+     * bloque se anuncia, con su entrada de lo que había, justo antes de quitarlo, para guardar lo que lleva entonces.
+     */
+    @Test
+    void eachBlockIsAnnouncedWithWhatItWasJustBeforeItIsTaken() throws Exception {
+        RebuildFixtures.Fixture fixture = RebuildFixtures.paste(
+                new RebuildFixtures.Build().fill(0, 0, 0, 3, 0, 0, "stone"),
+                new RebuildFixtures.Build().set(0, 0, 0, "chest[facing=north]").set(2, 0, 0, "dirt"));
+        RebuildFixtures.Rig rig = rig(fixture, RebuildPace.DEFAULT.withLeadIn(0).withBlocksPerTick(4));
+        rig.tick(UNLIMITED);
+        assertEquals(0, rig.world.unannounced, "vaciados sin avisar antes");
+        assertEquals(2, rig.world.taken.size(), "el cofre y la tierra, lo único que había");
+        for (int entry = 0; entry < fixture.model().size(); entry++) {
+            long position = fixture.model().position(entry);
+            if (fixture.model().before(entry) != RebuildModel.AIR) {
+                assertEquals(fixture.model().before(entry), rig.world.taken.get(position));
+            }
+        }
+
+        RebuildFixtures.Rig selection = rig(line(6), RebuildPace.DEFAULT.withLeadIn(0).withBlocksPerTick(4));
+        selection.tick(UNLIMITED);
+        assertEquals(0, selection.world.unannounced);
+        assertEquals(6, selection.world.taken.size(), "en la selección, cada bloque de la obra");
+    }
+
     @Test
     void lessThanOneBlockPerTickWaitsBetweenBlocks() throws Exception {
         RebuildFixtures.Rig rig = rig(line(3), RebuildPace.DEFAULT.withLeadIn(0).withBlocksPerTick(0.25));

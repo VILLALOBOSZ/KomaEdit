@@ -27,8 +27,8 @@ class LivePreviewTest {
         live.arm("tool:tree", "tree oak -v", 0);
         assertNull(live.tick("tool:tree", "tree oak 19 -v", 1_000, false, true));
         assertNull(live.tick("tool:tree", "tree oak 20 -v", 1_100, false, true), "cambió: vuelve a esperar");
-        assertNull(live.tick("tool:tree", "tree oak 20 -v", 1_100 + LivePreview.DELAY_MILLIS - 1, false, true));
-        assertEquals("tree oak 20 -v", live.tick("tool:tree", "tree oak 20 -v", 1_100 + LivePreview.DELAY_MILLIS,
+        assertNull(live.tick("tool:tree", "tree oak 20 -v", 1_100 + LivePreview.CHAT_DELAY_MILLIS - 1, false, true));
+        assertEquals("tree oak 20 -v", live.tick("tool:tree", "tree oak 20 -v", 1_100 + LivePreview.CHAT_DELAY_MILLIS,
                 false, true));
         assertNull(live.tick("tool:tree", "tree oak 20 -v", 5_000, false, true), "lo mismo no se vuelve a pedir");
     }
@@ -38,7 +38,7 @@ class LivePreviewTest {
         LivePreview live = new LivePreview();
         live.arm("tool:tree", "a", 0);
         live.tick("tool:tree", "b", 0, false, true);
-        assertNull(live.tick("tool:tree", "b", LivePreview.DELAY_MILLIS, false, true),
+        assertNull(live.tick("tool:tree", "b", LivePreview.CHAT_DELAY_MILLIS, false, true),
                 "menos de " + LivePreview.MIN_INTERVAL_MILLIS + " ms desde Construir");
         assertNull(live.tick("tool:tree", "b", LivePreview.MIN_INTERVAL_MILLIS, true, true), "el servidor calcula");
         assertEquals("b", live.tick("tool:tree", "b", LivePreview.MIN_INTERVAL_MILLIS, false, true));
@@ -51,7 +51,7 @@ class LivePreviewTest {
         assertNull(live.tick("tool:rock", "rock boulder -v", 2_000, false, true), "otra herramienta no la sustituye");
         assertNull(live.tick("tool:rock", "rock boulder -v", 4_000, false, true));
         assertNull(live.tick("tool:tree", "tree oak 20 -v", 4_000, false, true), "de vuelta al árbol: espera");
-        assertEquals("tree oak 20 -v", live.tick("tool:tree", "tree oak 20 -v", 4_000 + LivePreview.DELAY_MILLIS,
+        assertEquals("tree oak 20 -v", live.tick("tool:tree", "tree oak 20 -v", 4_000 + LivePreview.CHAT_DELAY_MILLIS,
                 false, true));
     }
 
@@ -77,7 +77,7 @@ class LivePreviewTest {
         studio.view.tools().select(ToolCatalog.byId("tree"), studio.host);
         studio.render();
         studio.wheelValue("Altura", 1);
-        studio.advance(LivePreview.DELAY_MILLIS * 4);
+        studio.advance(LivePreview.CHAT_DELAY_MILLIS * 4);
         assertNull(studio.host.last(), "sin Construir no sale ninguna vista previa sola");
 
         studio.click("Plantar");
@@ -98,10 +98,10 @@ class LivePreviewTest {
         studio.host.job = JobStatusPayload.of(new ProgressLine("Árbol", ProgressLine.Phase.PREPARING, 1, 10, 1, null),
                 0);
         studio.wheelValue("Grosor", -1);
-        studio.advance(LivePreview.DELAY_MILLIS * 3);
+        studio.advance(LivePreview.CHAT_DELAY_MILLIS * 3);
         assertEquals(2, studio.host.sent.size());
         studio.host.job = null;
-        studio.advance(LivePreview.DELAY_MILLIS);
+        studio.advance(LivePreview.CHAT_DELAY_MILLIS);
         assertEquals("komaedit tree oak 20 -g 0.95 -v", studio.host.last());
 
         // Colocado: el fantasma se va y la vista en vivo se olvida.
@@ -176,10 +176,10 @@ class LivePreviewTest {
     }
 
     @Test
-    void bigSelectionsGetNoLivePreview() {
+    void bigSelectionsPauseTheLivePreviewAndSaySo() {
         StudioDriver studio = new StudioDriver("es_es", 960, 900);
-        studio.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), true, 200_000L, 0, false);
-        studio.host.info = new ToolsInfo(true, new int[]{100, 20, 100}, List.of(), Map.of(), Map.of(),
+        studio.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), true, 300_000L, 0, false);
+        studio.host.info = new ToolsInfo(true, new int[]{100, 30, 100}, List.of(), Map.of(), Map.of(),
                 ToolsInfo.Symmetry.OFF, null, List.of(), null);
         studio.view.selectStage(StudioStage.TOOLS, studio.host);
         studio.view.tools().select(ToolCatalog.byId("snow"), studio.host);
@@ -189,8 +189,39 @@ class LivePreviewTest {
         studio.host.job = JobStatusPayload.of(new ProgressLine("Nieve", ProgressLine.Phase.WAITING, 5_000, 90_000, 0,
                 null), 120);
         studio.wheelValue("Capas", 1);
-        studio.advance(LivePreview.DELAY_MILLIS * 4);
-        assertEquals(1, studio.host.sent.size(), "selección de 200 000 bloques: nada en vivo");
+        for (int step = 0; step < 8; step++) {
+            studio.advance(LivePreview.CHAT_DELAY_MILLIS);
+        }
+        assertEquals(1, studio.host.sent.size(), "selección de 300 000 bloques (límite de serie 250 000): nada");
+        studio.host.job = null;
+        studio.render();
+        assertTrue(studio.texts().stream().anyMatch(text -> text.contains("En vivo en pausa")),
+                "el pie dice por qué no se rehace: " + studio.texts());
+
+        // Con el límite más alto, la misma selección sí se rehace.
+        studio.host.preferences.setLiveLimit(1_000_000L);
+        studio.host.job = JobStatusPayload.of(new ProgressLine("Nieve", ProgressLine.Phase.WAITING, 5_000, 90_000, 0,
+                null), 120);
+        studio.advance(LivePreview.CHAT_DELAY_MILLIS);
+        studio.advance(LivePreview.CHAT_DELAY_MILLIS);
+        assertEquals("komaedit retocar nieve 3 -v", studio.host.last());
+    }
+
+    @Test
+    void mediumSelectionsAreLiveByDefault() {
+        StudioDriver studio = new StudioDriver("es_es", 960, 900);
+        studio.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), true, 200_000L, 0, false);
+        studio.view.selectStage(StudioStage.TOOLS, studio.host);
+        studio.view.tools().select(ToolCatalog.byId("snow"), studio.host);
+        studio.render();
+        studio.click("Nevar");
+        studio.host.job = JobStatusPayload.of(new ProgressLine("Nieve", ProgressLine.Phase.WAITING, 5_000, 90_000, 0,
+                null), 120);
+        studio.wheelValue("Capas", 1);
+        studio.advance(LivePreview.CHAT_DELAY_MILLIS);
+        studio.advance(LivePreview.MIN_INTERVAL_MILLIS);
+        assertEquals("komaedit retocar nieve 3 -v", studio.host.last(),
+                "antes, con más de 64 000 bloques se apagaba sin decir nada");
     }
 
     private static StudioHost.Ghost ghost(boolean fromStudio) {

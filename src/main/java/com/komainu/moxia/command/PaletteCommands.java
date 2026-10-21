@@ -66,6 +66,8 @@ public final class PaletteCommands {
 
     private static LiteralArgumentBuilder<ServerCommandSource> command(String name) {
         return literal(name)
+                .requires(source -> EzCommandSupport.canAny(source, "komaedit.palette")
+                        || EzCommandSupport.canAny(source, KomaPermissions.BUILD + ".palette"))
                 .executes(context -> list(context, "all"))
                 .then(literal("list").requires(EzCommandSupport.node("komaedit.palette.list"))
                         .executes(context -> list(context, "all"))
@@ -117,6 +119,8 @@ public final class PaletteCommands {
 
     private static int list(CommandContext<ServerCommandSource> context, String set) throws CommandSyntaxException {
         return EzCommandSupport.run(context, player -> {
+            // También sin subórden («/komaedit palette»), que lista igual.
+            KomaPermissions.require(player, "komaedit.palette.list");
             String which = set.toLowerCase(Locale.ROOT);
             if (!List.of("all", "default", "mine", "todas", "serie", "mias", "mías").contains(which)) {
                 throw new IllegalArgumentException("Usa list all, list default o list mine");
