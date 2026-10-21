@@ -21,4 +21,14 @@ public final class KeptData {
                                     B plannedBlock, B currentBlock) {
         return !plannedHasData && fromWhatIsThere && currentHasData && Objects.equals(plannedBlock, currentBlock);
     }
+
+    /**
+     * Una copia de la simetría que cae sobre el mismo contenedor conserva lo suyo, traiga datos o no: llevarle los del
+     * original duplicaría objetos (retocar un cofre con la simetría de WorldEdit puesta).
+     *
+     * @param currentHasData el contenedor donde cae la copia tiene datos
+     */
+    public static <B> boolean copyKeeps(boolean currentHasData, B copiedBlock, B currentBlock) {
+        return currentHasData && Objects.equals(copiedBlock, currentBlock);
+    }
 }

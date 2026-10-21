@@ -4200,7 +4200,7 @@ Con `/komaedit symmetry worldedit on`, cada bloque que escribe una edición tuya
 - Todo queda en **un solo `//undo`**, y `//undo` y `//redo` no se vuelven a reflejar.
 - Las copias pasan por la máscara global (`//gmask`) y cuentan para el límite de bloques de WorldEdit.
 - Como mucho `maxBlocksPerOperation` copias por edición (1.500.000 de serie; sin límite con `komaedit.limit.unrestricted`). Al pasarlo, la edición termina sin más copias y se avisa una vez.
-- Los bloques con datos (cofres, carteles) copian sus datos, como `//paste`. Una copia que cae fuera de la altura del mundo o del borde se salta.
+- Los bloques con datos (cofres, carteles) copian sus datos, como `//paste`, salvo una copia que cae sobre el mismo contenedor (cofre, barril, horno…): ese conserva lo suyo, así retocar un cofre no copia su contenido al de enfrente. Una copia que cae fuera de la altura del mundo o del borde se salta.
 - Una orden que lee lo que va escribiendo (`//smooth`, `//move`) lee el mundo tal cual: las copias no cambian lo que ve.
 
 ### Marcas en el mundo

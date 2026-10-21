@@ -31,4 +31,15 @@ class KeptDataTest {
         // Sin entidad de bloque no hay nada que guardar.
         assertFalse(KeptData.keeps(false, true, false, "minecraft:oak_stairs", "minecraft:oak_stairs"));
     }
+
+    /**
+     * Las copias de la simetría de WorldEdit llevan los datos del original: retocar un cofre con la simetría puesta
+     * copiaría su contenido al cofre reflejado. Una copia que cae sobre el mismo contenedor conserva lo suyo.
+     */
+    @Test
+    void aSymmetryCopyOverTheSameContainerKeepsItsOwn() {
+        assertTrue(KeptData.copyKeeps(true, CHEST, CHEST));
+        assertFalse(KeptData.copyKeeps(true, CHEST, "minecraft:barrel"), "sobre otro bloque, la copia trae lo suyo");
+        assertFalse(KeptData.copyKeeps(false, CHEST, CHEST), "sobre un cofre vacío de datos, igual");
+    }
 }
