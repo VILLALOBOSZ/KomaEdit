@@ -32,9 +32,6 @@ import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.recipe.RecipeExtensions;
 import com.komainu.moxia.recipe.StructureBendService;
-import com.komainu.moxia.region.RegionOperationService;
-import com.komainu.moxia.region.SignWax;
-import com.komainu.moxia.region.TweakOperation;
 import com.komainu.moxia.region.TweakRules;
 import com.komainu.moxia.shape.PathShape;
 import com.komainu.moxia.shape.SampledPath;
@@ -255,7 +252,6 @@ public final class MoxiaCommands {
                 .then(sculptCommand().requires(source -> can(source, "komaedit.build.brush.sculpt")))
                 .then(gradientCommand().requires(source -> can(source, KomaPermissions.BUILD)))
                 .then(tweakCommand("tweak").requires(MoxiaCommands::canTweak))
-                .then(tweakCommand("retocar").requires(MoxiaCommands::canTweak))
                 .then(tweakCommand("survival").requires(MoxiaCommands::canTweak))
                 .then(HelpCommands.command("help"))
                 .then(HelpCommands.command("ayuda"))
@@ -275,6 +271,8 @@ public final class MoxiaCommands {
         CapabilityCommands.register(root);
         SymmetryCommands.register(root);
         BuilderCommands.register(root);
+        RetouchCommands.register(root);
+        SelectionBrushCommands.register(root);
         BlueprintCommands.register(root);
         ClipboardCommands.register(root);
         PasteCommands.register(root);
@@ -782,7 +780,10 @@ public final class MoxiaCommands {
         }
     }
 
-    /** {@code /komaedit tweak <deinfest|persist|waterlog|wax> [on|off]}: retoques sobre la selección de WorldEdit. */
+    /**
+     * {@code /komaedit tweak <deinfest|persist|waterlog|wax> [on|off]} (y {@code survival}): la orden de antes de
+     * {@code /komaedit retocar desinfestar|hojas|anegar|encerar}, que hace lo mismo ({@link RetouchCommands}).
+     */
     private static LiteralArgumentBuilder<ServerCommandSource> tweakCommand(String name) {
         RequiredArgumentBuilder<ServerCommandSource, String> tweak = argument("tweak", StringArgumentType.word())
                 .suggests((context, builder) -> {
@@ -791,10 +792,10 @@ public final class MoxiaCommands {
                     }
                     return builder.buildFuture();
                 })
-                .executes(context -> runTweak(context, null));
+                .executes(context -> runTweak(context, name, null));
         tweak.then(argument("tweak_state", StringArgumentType.word())
                 .suggests((context, builder) -> builder.suggest("on").suggest("off").buildFuture())
-                .executes(context -> runTweak(context, StringArgumentType.getString(context, "tweak_state"))));
+                .executes(context -> runTweak(context, name, StringArgumentType.getString(context, "tweak_state"))));
         return literal(name).then(tweak);
     }
 
@@ -803,27 +804,18 @@ public final class MoxiaCommands {
                 && KomaPermissions.canAny(player, KomaPermissions.BUILD + ".tweak");
     }
 
-    private static int runTweak(CommandContext<ServerCommandSource> context, String state)
+    private static int runTweak(CommandContext<ServerCommandSource> context, String name, String state)
             throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         try {
             TweakRules.Tweak tweak = TweakRules.Tweak.byId(StringArgumentType.getString(context, "tweak"));
-            KomaPermissions.requireBuild(player, "tweak." + tweak.id());
-            boolean enable = TweakRules.enabled(state);
-            if (tweak == TweakRules.Tweak.DEINFEST && !enable) {
-                throw new IllegalArgumentException("Quitar la infestación no tiene modo off");
-            }
-            RegionOperationService.submit(player, 0, tweak.displayName() + (enable ? "" : " (off)"),
-                    new TweakOperation(tweak, enable));
-            if (tweak == TweakRules.Tweak.WAX) {
-                // Los carteles guardan la cera en sus datos: van en una edición aparte, también con //undo.
-                int signs = SignWax.apply(player, enable);
-                if (signs > 0) {
-                    context.getSource().sendFeedback(() -> prefix().append(Text.literal(signs
-                            + (signs == 1 ? " cartel " : " carteles ") + (enable ? "encerado" : "desencerado")
-                            + (signs == 1 ? "" : "s") + " · //undo para deshacerlo").formatted(Formatting.GREEN)),
-                            false);
-                }
+            RetouchCommands.Mode mode = java.util.Arrays.stream(RetouchCommands.Mode.values())
+                    .filter(candidate -> candidate.tweak() == tweak).findFirst().orElseThrow();
+            Renamed.notice(player, "/komaedit " + name + " " + tweak.id(), "/komaedit retocar " + mode.id());
+            String signs = RetouchCommands.tweak(player, tweak, state);
+            if (signs != null) {
+                context.getSource().sendFeedback(() -> prefix().append(Text.literal(signs)
+                        .formatted(Formatting.GREEN)), false);
             }
             return 1;
         } catch (IncompleteRegionException exception) {

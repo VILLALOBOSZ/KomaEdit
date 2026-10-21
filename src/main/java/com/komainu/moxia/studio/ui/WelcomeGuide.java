@@ -7,6 +7,7 @@ import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
 import com.komainu.moxia.studio.tools.ToolPreset;
+import com.komainu.moxia.studio.tools.ToolUse;
 import com.komainu.moxia.studio.tools.ToolValues;
 import com.komainu.moxia.studio.tools.ui.ToolsPanel;
 
@@ -34,6 +35,11 @@ final class WelcomeGuide {
     private boolean held;
     private StudioPreferences.PreviewMode preview;
     private final Map<String, Boolean> brushes = new LinkedHashMap<>();
+    /** Cómo se usa cada herramienta de la bienvenida en sus pasos. */
+    private static final Map<String, ToolUse> USES = Map.of(WelcomeTour.TREE, ToolUse.CLICK, WelcomeTour.STAMP,
+            ToolUse.BRUSH, WelcomeTour.PAINT, ToolUse.BRUSH);
+    /** La manera que tenía el jugador en las herramientas que la bienvenida cambió, para devolvérsela. */
+    private final Map<String, ToolUse> uses = new LinkedHashMap<>();
 
     WelcomeGuide(StudioView view) {
         this.view = view;
@@ -250,6 +256,16 @@ final class WelcomeGuide {
                 tools.setValues(card, values.with(BRUSH_PREVIEW, true));
             }
         }
+        // Cada paso enseña una manera de usar la herramienta: el árbol donde haces clic, el sello y la pintura con
+        // el pincel. Si el jugador las tenía de otra manera, se vuelve a la suya al acabar.
+        for (Map.Entry<String, ToolUse> wanted : USES.entrySet()) {
+            ToolCard card = ToolCatalog.byId(wanted.getKey());
+            ToolValues values = tools.values(card);
+            if (card.use(values) != wanted.getValue()) {
+                uses.put(wanted.getKey(), card.use(values));
+                tools.setValues(card, values.with(ToolUse.PARAM, wanted.getValue().id()));
+            }
+        }
     }
 
     /**
@@ -275,6 +291,15 @@ final class WelcomeGuide {
             }
         }
         brushes.clear();
+        for (Map.Entry<String, ToolUse> previous : uses.entrySet()) {
+            ToolCard card = ToolCatalog.byId(previous.getKey());
+            ToolValues values = tools.values(card);
+            if (card.use(values) == USES.get(previous.getKey())) {
+                tools.setValues(card, values.with(ToolUse.PARAM, previous.getValue().id()));
+                host.preferences().setToolValues(previous.getKey(), tools.values(card).changed());
+            }
+        }
+        uses.clear();
         host.savePreferences();
     }
 }

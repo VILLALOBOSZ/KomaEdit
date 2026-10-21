@@ -22,7 +22,7 @@ public final class RebuildCard extends ToolCard {
             "nz", "-z");
 
     RebuildCard() {
-        super("rebuild", ToolFamily.UTILITIES, ToolTarget.SELECTION,
+        super("rebuild", ToolTarget.SELECTION,
                 List.of("rebuild", "reconstruir", "reconstruccion", "animar", "animacion", "timelapse", "video",
                         "levantar", "obra", "axiom", "animated"),
                 List.of(

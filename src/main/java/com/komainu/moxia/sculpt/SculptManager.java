@@ -203,6 +203,22 @@ public final class SculptManager {
      * un worker cancelable y, después, vista previa ({@code preview}) o edición por lotes con su //undo.
      */
     public static void run(ServerPlayerEntity player, BrushOperation operation, boolean preview) {
+        run(player, operation, preview, null);
+    }
+
+    /**
+     * Una pasada de pincel que viene de una orden sobre la selección ({@code /komaedit pintar}, {@code relieve}):
+     * el mismo camino, pero al final se aplica como la orden, con su petición ({@code -v} enseña la vista previa
+     * universal y espera a Confirmar, y {@code /komaedit repeat} la puede repetir).
+     *
+     * @param request la petición de la orden, recogida al ejecutarla
+     */
+    public static void runAsCommand(ServerPlayerEntity player, BrushOperation operation, EditRequest request) {
+        run(player, operation, false, request == null ? EditRequest.DEFAULT : request);
+    }
+
+    private static void run(ServerPlayerEntity player, BrushOperation operation, boolean preview,
+                            EditRequest command) {
         UUID playerId = player.getUuid();
         SnapshotCaptureService.cancel(playerId);
         AsyncEngine.cancel(playerId);
@@ -211,7 +227,7 @@ public final class SculptManager {
         RegistryKey<World> worldKey = player.getWorld().getRegistryKey();
         BrushOperation.Capture capture = operation.capture();
         if (capture == null) {
-            planOperation(server, playerId, worldKey, operation, preview, null);
+            planOperation(server, playerId, worldKey, operation, preview, command, null);
             return;
         }
         long side = capture.horizontalRadius() * 2L + 1L;
@@ -226,7 +242,7 @@ public final class SculptManager {
                 capture.center(),
                 capture.horizontalRadius(),
                 capture.verticalRadius(),
-                snapshot -> planOperation(server, playerId, worldKey, operation, preview, snapshot),
+                snapshot -> planOperation(server, playerId, worldKey, operation, preview, command, snapshot),
                 throwable -> player.sendMessage(message(
                         "No se pudo capturar el terreno: " + readableMessage(throwable)
                 ), false)
@@ -239,6 +255,7 @@ public final class SculptManager {
             RegistryKey<World> worldKey,
             BrushOperation operation,
             boolean preview,
+            EditRequest command,
             WorldSnapshot snapshot
     ) {
         AsyncEngine.submit(
@@ -262,11 +279,15 @@ public final class SculptManager {
                     }
                     try {
                         // Un trazo de pincel se aplica al momento: sin la vista previa universal ni su preferencia.
-                        int queued = EditRequests.within(EditRequest.TOOL,
+                        // Lo que viene de una orden sobre la selección, como la orden.
+                        int queued = EditRequests.within(command == null ? EditRequest.TOOL : command,
                                 () -> BatchEditService.submit(current, plan, operation.pattern(),
                                         operation.displayName()));
-                        current.sendMessage(message(operation.displayName() + ": " + ProgressLine.group(queued)
-                                + " bloques · //undo para deshacer"), true);
+                        if (command == null || !command.preview()) {
+                            // Con vista previa, lo que se dice es lo de la vista previa (Confirmar o Descartar).
+                            current.sendMessage(message(operation.displayName() + ": " + ProgressLine.group(queued)
+                                    + " bloques · //undo para deshacer"), true);
+                        }
                     } catch (IllegalArgumentException | IllegalStateException exception) {
                         current.sendMessage(message(operation.displayName() + ": " + exception.getMessage()), true);
                     }

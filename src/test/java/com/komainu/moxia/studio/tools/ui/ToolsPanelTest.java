@@ -80,18 +80,20 @@ class ToolsPanelTest {
     @Test
     void withoutAToolTheGridShowsEveryToolByGroup() {
         assertTrue(panel.browsing());
-        for (String group : List.of("NATURALEZA", "TEJADOS", "TERRENO", "UTILIDADES", "MODOS")) {
+        for (String group : List.of("NATURALEZA", "EDIFICIOS", "TERRENO", "UTILIDADES", "MODOS")) {
             assertTrue(studio.has(group), group);
         }
-        for (String tool : List.of("Árbol", "Roca", "Tejado", "Río o cañón", "Texto", "Simetría", "Capacidades")) {
-            assertTrue(studio.has(tool), tool);
+        for (String tool : List.of("Plantar árbol", "Poner roca", "Poner tejado", "Excavar río", "Escribir texto",
+                "Pintar", "Retocar", "Simetría", "Construir a mano")) {
+            assertTrue(studio.ui().widgets().stream().anyMatch(widget -> widget.tooltip().startsWith(tool + "\n")),
+                    tool);
         }
         assertFalse(studio.has("ESPECIE"), "sin herramienta no hay ajustes");
     }
 
     @Test
     void choosingAToolFoldsTheGridAndShowsItsSettings() {
-        studio.click("Tejado");
+        studio.press("tool:roof");
         assertEquals("roof", panel.selected().id());
         assertFalse(panel.browsing(), "la cuadrícula se pliega");
         assertFalse(studio.has("NATURALEZA"));
@@ -100,7 +102,7 @@ class ToolsPanelTest {
         assertEquals("roof", studio.host.preferences.toolRecents().getFirst());
         assertEquals("roof", studio.host.preferences.tool());
         // La cabecera de la herramienta vuelve a abrir la cuadrícula.
-        studio.click("Tejado");
+        studio.click("Poner tejado");
         assertTrue(panel.browsing());
     }
 
@@ -109,8 +111,8 @@ class ToolsPanelTest {
         select("tree");
         select("roof");
         select("river");
-        assertNotNull(studio.widget("Reciente: Tejado"));
-        studio.click("Reciente: Tejado");
+        assertNotNull(studio.widget("Reciente: Poner tejado"));
+        studio.click("Reciente: Poner tejado");
         assertEquals("roof", panel.selected().id());
     }
 
@@ -121,9 +123,9 @@ class ToolsPanelTest {
         assertTrue(panel.typing());
         assertTrue(panel.browsing(), "buscar abre la cuadrícula");
         studio.type("nieve");
-        assertEquals("snow", panel.visibleCards(studio.host).getFirst().id());
+        assertEquals("touchup", panel.visibleCards(studio.host).getFirst().id(), "la nieve es ahora un modo de Retocar");
         studio.key(StudioKey.of(StudioKey.Code.ENTER));
-        assertEquals("snow", panel.selected().id());
+        assertEquals("touchup", panel.selected().id());
         assertFalse(panel.typing());
         assertFalse(panel.browsing());
     }
@@ -178,7 +180,7 @@ class ToolsPanelTest {
         select("river");
         studio.click("Marcar puntos");
         assertEquals(StudioStage.PATH, studio.view.stage(), "la franja lleva a Trayectoria");
-        assertTrue(studio.shows("Río o cañón · "), "y el pie sigue siendo el del río");
+        assertTrue(studio.shows("Excavar río · "), "y el pie sigue siendo el del río");
     }
 
     @Test
@@ -323,15 +325,19 @@ class ToolsPanelTest {
     }
 
     @Test
-    void secondaryActionsSendTheirOwnCommands() {
+    void theUseSwitchTurnsTheTreeIntoABrushWithTheSameSettings() {
         select("tree");
-        more();
+        studio.click("Abeto");
+        studio.click("Pincel");
+        assertTrue(studio.has("Al pincel"), "el botón dice que deja un pincel");
         studio.click("Al pincel");
-        assertEquals("komaedit pincel tree oak", studio.host.last());
+        assertEquals("komaedit pincel tree spruce", studio.host.last(), "la misma especie, ahora en el pincel");
         studio.host.context = new ToolContext(true, Set.of(TreeCard.NODE), true, 1L, 0, false);
-        studio.click("Al pincel");
-        assertEquals("komaedit pincel tree oak", studio.host.last(), "sin permiso del pincel no manda otra vez");
-        assertTrue(studio.view.status().contains(TreeCard.BRUSH_NODE));
+        studio.render();
+        assertTrue(studio.has("Sin permiso"), "sin el permiso del pincel, el botón lo dice");
+        studio.click("Con un clic");
+        studio.click("Plantar");
+        assertEquals("komaedit tree spruce", studio.host.last(), "y de vuelta, donde haces clic");
     }
 
     @Test
@@ -354,14 +360,15 @@ class ToolsPanelTest {
 
     @Test
     void theBiomeSearchFindsServerBiomes() {
-        select("biome");
+        select("touchup");
+        studio.click("Cambiar bioma", "tools:touch");
         studio.clickKey("tools:biome");
         assertTrue(panel.typing());
         studio.type("moon");
         studio.key(StudioKey.of(StudioKey.Code.ENTER));
-        assertEquals("terralith:moonlight_grove", values("biome").choice("biome"));
-        studio.click("Pintar bioma");
-        assertEquals("komaedit biome terralith:moonlight_grove", studio.host.last());
+        assertEquals("terralith:moonlight_grove", values("touchup").choice("biome"));
+        studio.click("Cambiar bioma");
+        assertEquals("komaedit retocar bioma terralith:moonlight_grove", studio.host.last());
     }
 
     @Test
@@ -435,9 +442,10 @@ class ToolsPanelTest {
 
     @Test
     void theCopyIconCopiesTheChatCommand() {
-        select("gravity");
+        select("touchup");
+        studio.click("Dejar caer", "tools:touch");
         studio.click("Copiar la orden del chat");
-        assertEquals("/komaedit gravity", studio.host.copied.getLast());
+        assertEquals("/komaedit retocar gravedad", studio.host.copied.getLast());
     }
 
     @Test
@@ -458,7 +466,7 @@ class ToolsPanelTest {
         studio.click("Cancelar");
         assertEquals("komaedit cancel", studio.host.last());
         studio.click("Nevar");
-        assertEquals("komaedit snow 2", studio.host.last(), "mientras se coloca, Construir sigue a mano");
+        assertEquals("komaedit retocar nieve 2", studio.host.last(), "mientras se coloca, Construir sigue a mano");
     }
 
     @Test
