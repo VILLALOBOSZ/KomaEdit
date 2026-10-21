@@ -16,7 +16,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Archivo temporal con las páginas de un plan que no caben en memoria ({@link PlanPages}). Se escribe una vez al
  * montar el plan y luego solo se lee, desde cualquier hilo (lecturas por posición). El archivo se borra al cerrarse,
  * y se cierra solo cuando nadie usa ya el plan; si el servidor se para de golpe, {@link #sweep} borra los restos al
- * arrancar.
+ * arrancar. En Linux ({@code DELETE_ON_CLOSE}) el archivo sale de la carpeta nada más abrirse y se sigue leyendo por
+ * el canal abierto, así que ni siquiera deja restos; en Windows se ve hasta que se cierra.
  */
 final class PlanSpill {
     static final String PREFIX = "komaedit-plan-";

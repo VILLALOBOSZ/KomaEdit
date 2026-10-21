@@ -198,6 +198,11 @@ public final class PackedBlockPlan implements Iterable<BlockVector3> {
         return store.spilledBytes();
     }
 
+    /** Páginas del plan que están en el archivo temporal (para las pruebas). */
+    int pagesOnDisk() {
+        return store instanceof PlanPages pages ? pages.pagesOnDisk() : 0;
+    }
+
     @Override
     public Iterator<BlockVector3> iterator() {
         return new Iterator<>() {

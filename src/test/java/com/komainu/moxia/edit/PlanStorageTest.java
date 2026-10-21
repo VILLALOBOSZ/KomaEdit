@@ -146,16 +146,19 @@ class PlanStorageTest {
     }
 
     @Test
-    void spilledPlanGivesTheSameBlocksFromDisk() throws IOException {
+    void spilledPlanGivesTheSameBlocksFromDisk() {
         List<Entry> entries = new ArrayList<>(scan(64, 20, 40, false));
         entries.addAll(scattered(9_000, 11L));
         PackedBlockPlan flat = build(entries, PackedBlockPlan.Storage.FLAT);
         PackedBlockPlan spilled = build(entries, onDisk());
-        assertTrue(spilled.spilledBytes() > 0, "con el umbral a 0 todo va a disco");
-        try (var files = Files.list(spill)) {
-            assertEquals(1, files.filter(file -> file.getFileName().toString().startsWith(PlanSpill.PREFIX))
-                    .count());
-        }
+        // No se cuentan archivos: en Linux el temporal sale de la carpeta nada más abrirse (se borra al abrir y se
+        // sigue leyendo por el canal), en Windows se queda hasta cerrarlo.
+        int pages = (entries.size() + PlanPages.PAGE - 1) / PlanPages.PAGE;
+        assertEquals(pages, spilled.pagesOnDisk(), "con el umbral a 0 todas las páginas van a disco");
+        assertTrue(spilled.spilledBytes() > 0);
+        assertTrue(spilled.footprintBytes() < 4_096, "en memoria solo quedan las paletas y el índice: "
+                + spilled.footprintBytes());
+        assertEquals(0, flat.pagesOnDisk());
         assertSameEntries(flat, spilled);
         // Leer al revés obliga a traer cada página otra vez del disco.
         for (int index = flat.size() - 1; index >= 0; index -= 97) {

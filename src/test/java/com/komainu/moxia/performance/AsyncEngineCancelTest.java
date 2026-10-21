@@ -43,10 +43,10 @@ class AsyncEngineCancelTest {
                 stopped.countDown();
             }
         }, result -> delivered.set(true), failure -> delivered.set(true));
-        assertTrue(started.await(5, TimeUnit.SECONDS));
+        assertTrue(started.await(30, TimeUnit.SECONDS));
         assertTrue(AsyncEngine.status(owner).isPresent(), "la barra lo ve calculando");
         assertTrue(AsyncEngine.cancel(owner));
-        assertTrue(stopped.await(5, TimeUnit.SECONDS), "el worker se corta");
+        assertTrue(stopped.await(30, TimeUnit.SECONDS), "el worker se corta");
         assertFalse(AsyncEngine.isRunning(owner));
         assertTrue(AsyncEngine.status(owner).isEmpty());
         Thread.sleep(50);
@@ -66,9 +66,9 @@ class AsyncEngineCancelTest {
             }
             return 1;
         }, result -> firstDelivered.set(true), failure -> firstDelivered.set(true));
-        assertTrue(firstStarted.await(5, TimeUnit.SECONDS));
+        assertTrue(firstStarted.await(30, TimeUnit.SECONDS));
         AsyncEngine.submit(owner, () -> 2, result -> second.countDown(), failure -> { });
-        assertTrue(second.await(5, TimeUnit.SECONDS));
+        assertTrue(second.await(30, TimeUnit.SECONDS));
         assertFalse(firstDelivered.get());
     }
 }

@@ -121,6 +121,16 @@ final class PlanPages implements PackedBlockPlan.Store {
         return spilledBytes;
     }
 
+    int pagesOnDisk() {
+        int onDisk = 0;
+        for (Object page : pages) {
+            if (page instanceof PlanSpill.Slot) {
+                onDisk++;
+            }
+        }
+        return onDisk;
+    }
+
     /** Montaje página a página; se sigue desde las entradas que ya llevaba el plan sin comprimir. */
     static final class Builder {
         private final long spillAbove;
