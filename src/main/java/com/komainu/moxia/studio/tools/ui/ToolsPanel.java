@@ -367,6 +367,8 @@ public final class ToolsPanel {
             selected = card;
             browsing = false;
             values.put(card.id(), snapshot.values());
+            // Lo deshecho se guarda como cualquier cambio; track() solo se salta el historial.
+            dirtySince = dirtySince < 0 ? clock : dirtySince;
         }
         stopEditing();
         restoring = true;
@@ -561,7 +563,13 @@ public final class ToolsPanel {
         ui.fill(name.left(2), ACCENT);
         ui.icon(icon(card), name.x() + 6, name.centerY() - 6, ACCENT_TEXT);
         ui.icon(StudioIcons.Icon.CHEVRON_DOWN, name.right() - 15, name.centerY() - 5, hovered ? TEXT : MUTED);
-        ui.bold(host.tr(card.nameKey()), name.x() + 22, name.centerY() - 4, name.width() - 40, TEXT_STRONG);
+        String title = host.tr(card.nameKey());
+        if (ui.boldWidth(title) <= name.width() - 40) {
+            ui.bold(title, name.x() + 22, name.centerY() - 4, name.width() - 40, TEXT_STRONG);
+        } else {
+            // Si no cabe en negrita, en dos líneas como en la cuadrícula antes que cortado.
+            ui.nameLabel(title, name.x() + 22, name, name.width() - 40, TEXT_STRONG);
+        }
         ui.register(name)
                 .tooltip(host.tr(card.nameKey()) + "\n" + description(card, host) + "\n"
                         + host.tr("gui.komaedit.tools.change"))

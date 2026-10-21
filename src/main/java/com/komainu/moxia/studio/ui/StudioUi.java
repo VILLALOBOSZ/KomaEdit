@@ -842,9 +842,11 @@ public final class StudioUi {
             fill(new Rect(row.x() + 1, row.centerY() - 1, 2, 2), ACCENT);
         }
         int textX = row.x() + 23;
-        int labelWidth = Math.min(width(model.label()), (dropper.x() - textX) / 2);
-        label(model.label(), textX, row.centerY() - 4, labelWidth, hovered ? TEXT : TEXT_SECONDARY);
         int nameRight = dropper.x() - 4;
+        // La etiqueta se queda con lo que no ocupa el nombre (al menos la mitad), así un nombre corto no la corta.
+        int labelWidth = Math.min(width(model.label()), Math.max((dropper.x() - textX) / 2,
+                nameRight - textX - 6 - width(model.name())));
+        label(model.label(), textX, row.centerY() - 4, labelWidth, hovered ? TEXT : TEXT_SECONDARY);
         int nameLeft = textX + labelWidth + 6;
         String name = fit(model.name(), nameRight - nameLeft);
         rightAligned(name, nameRight, row.centerY() - 4, model.automatic() ? MUTED : TEXT);

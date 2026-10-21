@@ -537,7 +537,13 @@ public final class StudioView {
         int left = bar.x() + frame.padding();
         int right = frame.toolButton(buttons.size() - 1).x() - 4;
         ui.icon(stage.icon(), left, bar.centerY() - 6, ACCENT_TEXT);
-        ui.bold(host.tr(stage.titleKey()), left + 17, bar.centerY() - 4, right - left - 17, TEXT_STRONG);
+        String title = host.tr(stage.titleKey());
+        if (ui.boldWidth(title) <= right - left - 17) {
+            ui.bold(title, left + 17, bar.centerY() - 4, right - left - 17, TEXT_STRONG);
+        } else {
+            // Con el panel al mínimo la negrita no cabe: sin ella, «Herramientas» se lee entero.
+            ui.label(title, left + 17, bar.centerY() - 4, right - left - 17, TEXT_STRONG);
+        }
         ui.register(new Rect(left, bar.y(), Math.max(0, right - left), bar.height()))
                 .tooltip(host.tr(stage.titleKey()) + " · " + stage.shortcut() + "\n" + host.tr(stage.subtitleKey()));
 
