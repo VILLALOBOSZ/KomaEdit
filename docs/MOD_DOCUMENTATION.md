@@ -1526,6 +1526,7 @@ Ejemplos:
 - El portapapeles admite hasta 100 000 bloques y como mucho 128 bloques de alto o de lado desde el origen.
 - Un tramo de puente de 7×3×6 doblado sobre 85 bloques de curva (unos 850 bloques) se calcula en menos de 0,1 s en un worker.
 - Los giros de bloques van en cuartos de vuelta: una escalera no puede quedar a 30°.
+- Los bloques con datos salen sin ellos, como en la [colocación](#colocar-estructuras): cofres vacíos, carteles en blanco, estandartes sin dibujo. Para conservarlos, `//paste`.
 - El holograma del Studio no muestra el módulo doblado (igual que el resto de Kitbash): se calcula en el servidor al pulsar Build.
 
 ## Escalar y girar el portapapeles

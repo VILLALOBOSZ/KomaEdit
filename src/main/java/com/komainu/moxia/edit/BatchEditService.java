@@ -754,7 +754,8 @@ public final class BatchEditService {
                 return block;
             }
             net.minecraft.block.BlockState current = Block.getStateFromRawId(expected);
-            if (!KeptData.keeps(block.getNbtReference() != null, true, current.hasBlockEntity(),
+            // Lo barato primero: casi nada de lo que se escribe cae sobre un bloque con entidad.
+            if (!current.hasBlockEntity() || !KeptData.keeps(block.getNbtReference() != null, true, true,
                     FabricAdapter.adapt(block.getBlockType()), current.getBlock())) {
                 return block;
             }
