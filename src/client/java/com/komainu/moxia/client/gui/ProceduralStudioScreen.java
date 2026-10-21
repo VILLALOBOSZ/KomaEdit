@@ -2,6 +2,7 @@ package com.komainu.moxia.client.gui;
 
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.brush.BrushToolPayload;
+import com.komainu.moxia.client.display.DisplayEditorClient;
 import com.komainu.moxia.client.gizmo.GhostClient;
 import com.komainu.moxia.client.gui.studio.ClientStudioAim;
 import com.komainu.moxia.client.gui.studio.ClientStudioHost;
@@ -16,14 +17,22 @@ import com.komainu.moxia.feedback.SelectionPayload;
 import com.komainu.moxia.gizmo.GizmoMath;
 import com.komainu.moxia.recipe.ProceduralRecipe;
 import com.komainu.moxia.recipe.RecipeActionPayload;
+import com.komainu.moxia.selection.LassoCamera;
+import com.komainu.moxia.selection.LassoPolygon;
+import com.komainu.moxia.selection.SelectionCombine;
+import com.komainu.moxia.selection.SelectionPayloads;
+import com.komainu.moxia.studio.tools.SelectionCard;
 import com.komainu.moxia.studio.ui.FigureStages;
 import com.komainu.moxia.studio.ui.StudioKey;
 import com.komainu.moxia.studio.ui.StudioStage;
+import com.komainu.moxia.studio.ui.StudioTheme;
 import com.komainu.moxia.studio.ui.StudioUi;
 import com.komainu.moxia.studio.ui.StudioView;
 import com.komainu.moxia.studio.world.BoxSelect;
 import com.komainu.moxia.studio.world.BrushStroke;
+import com.komainu.moxia.studio.world.LassoDraw;
 import com.komainu.moxia.studio.world.PathDrag;
+import com.komainu.moxia.studio.world.SelectionStroke;
 import net.minecraft.block.BlockState;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
@@ -48,9 +57,11 @@ import java.util.List;
  * solo le pasa el ratón y el teclado y se queda con el mundo: los rayos del cursor, girar la cámara con clic derecho y
  * andar con WASD mientras no se escribe. Lo que hace el botón izquierdo en el mundo lo decide la vista según la etapa
  * ({@link StudioView#worldAction}) y lo hacen los modelos sin Minecraft: puntos que se arrastran ({@link PathDrag}),
- * la caja de selección con sus caras ({@link BoxSelect}) y el trazo del pincel ({@link BrushStroke}); Alt+clic es el
- * cuentagotas. Con un fantasma del gizmo en pantalla, el cursor agarra sus flechas, anillos y cubo, la rueda lo acerca
- * o aleja y sus teclas van primero.
+ * la caja de selección con sus caras ({@link BoxSelect}), el trazo del pincel ({@link BrushStroke}) y, con la
+ * tarjeta Seleccionar, el lazo ({@link LassoDraw}) y el pincel de selección ({@link SelectionStroke}); Alt+clic es el
+ * cuentagotas salvo en el lazo y el pincel de selección, donde Mayús suma, Ctrl resta y Alt interseca (y por eso ahí
+ * Mayús y Ctrl no mueven al jugador). Con un fantasma del gizmo en pantalla, el cursor agarra sus flechas, anillos y
+ * cubo, la rueda lo acerca o aleja y sus teclas van primero.
  */
 public final class ProceduralStudioScreen extends Screen {
     /** El Studio sigue igual al reabrirlo (etapa, receta, herramienta, ajustes); no al salir del mundo. */
@@ -69,6 +80,12 @@ public final class ProceduralStudioScreen extends Screen {
     private final PathDrag pathDrag = new PathDrag();
     private final BoxSelect box = new BoxSelect();
     private final BrushStroke stroke = new BrushStroke();
+    private final LassoDraw lasso = new LassoDraw();
+    /** La cámara al empezar el lazo: el contorno se proyecta con ella aunque luego se mueva la vista. */
+    private LassoCamera lassoCamera;
+    private final SelectionStroke selectStroke = new SelectionStroke();
+    /** Los ajustes del pincel de selección al empezar el trazo. */
+    private SelectionCard.Settings strokeSettings;
     /** Mientras se arrastra la caja, se manda a WorldEdit como mucho cada tanto (se dibuja al momento igual). */
     private static final long BOX_SEND_MILLIS = 60L;
     private long lastBoxSend;
@@ -116,11 +133,12 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public void tick() {
-        if (view.typing()) {
-            // Mientras se escribe en un campo, W, A, S, D y el espacio son letras, no movimiento.
+        if (view.typing() || lasso.active() || selectStroke.active()) {
+            // Mientras se escribe en un campo, W, A, S, D y el espacio son letras, no movimiento; y mientras se dibuja
+            // un lazo o se pinta la selección, la vista se queda quieta.
             releaseMovementKeys();
         } else {
-            updateMovementKeys();
+            updateMovementKeys(selectionModifiers());
         }
         if (client != null) {
             ProceduralPreviewRenderer.request(view.figure().draft(), PathHologramRenderer.points(),
@@ -137,9 +155,16 @@ public final class ProceduralStudioScreen extends Screen {
         view.closed(host);
         WorldOverlayRenderer.face(null, false);
         WorldOverlayRenderer.studioCursor(null);
+        WorldOverlayRenderer.selectionRadius(-1);
+        lasso.cancel();
+        if (selectStroke.release()) {
+            ClientPlayNetworking.send(new SelectionPayloads.Brush(SelectionPayloads.Brush.END, 0, BlockPos.ORIGIN, 0, 0,
+                    false));
+        }
         sendCommand("komaedit path mode off");
         // Fuera del Studio todo vuelve a ir donde se mira.
         ClientStudioAim.clear();
+        DisplayEditorClient.studioClosed();
     }
 
     @Override
@@ -149,7 +174,45 @@ public final class ProceduralStudioScreen extends Screen {
         if (GhostClient.active() && overWorld(mouseX)) {
             GhostClient.studioHover(gizmoRay(mouseX, mouseY));
         }
+        if (DisplayEditorClient.active()) {
+            DisplayEditorClient.studioHover(overWorld(mouseX) ? gizmoRay(mouseX, mouseY) : null);
+        }
         view.render(ui, width, height, mouseX, mouseY, host);
+        if (lasso.active()) {
+            drawLasso(context, mouseX, mouseY);
+        }
+    }
+
+    /**
+     * El lazo que se está dibujando: el trazo con hormigas que andan y, más tenue, el tramo que lo cerrará al soltar.
+     * Encima de todo, para verlo también si pasa por el panel.
+     */
+    private void drawLasso(DrawContext context, int mouseX, int mouseY) {
+        List<float[]> points = lasso.points();
+        if (points.isEmpty()) {
+            return;
+        }
+        int phase = (int) (System.currentTimeMillis() / 80L % 8L);
+        int light = StudioTheme.WORLD_LASSO_LIGHT;
+        int dark = StudioTheme.WORLD_LASSO_DARK;
+        for (int index = 1; index < points.size(); index++) {
+            dashed(context, points.get(index - 1), points.get(index), phase, light, dark);
+        }
+        float[] cursor = {mouseX, mouseY};
+        dashed(context, points.getLast(), cursor, phase, light, dark);
+        dashed(context, cursor, points.getFirst(), phase, 0x90000000 | light & 0xFFFFFF, 0x90000000 | dark & 0xFFFFFF);
+    }
+
+    /** Una línea de puntos de un píxel, blanca y negra a tramos de cuatro (se ve sobre cualquier fondo). */
+    private static void dashed(DrawContext context, float[] from, float[] to, int phase, int light, int dark) {
+        double length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+        int steps = Math.max(1, (int) Math.ceil(length));
+        for (int step = 0; step <= steps; step++) {
+            double amount = step / (double) steps;
+            int x = (int) Math.round(from[0] + (to[0] - from[0]) * amount);
+            int y = (int) Math.round(from[1] + (to[1] - from[1]) * amount);
+            context.fill(x, y, x + 1, y + 1, ((step + phase) / 4 & 1) == 0 ? light : dark);
+        }
     }
 
     // ── Ratón ───────────────────────────────────────────────────────────────────────────────────────────
@@ -177,20 +240,105 @@ public final class ProceduralStudioScreen extends Screen {
      */
     private void worldPressed(double mouseX, double mouseY) {
         BlockHitResult hit = cursorHit(mouseX, mouseY);
-        if (hasAltDown()) {
+        StudioView.WorldAction action = view.worldAction(host);
+        if (hasAltDown() && !selectionModifiers()) {
             eyedropper(hit);
             return;
         }
         if (GhostClient.studioPress(gizmoRay(mouseX, mouseY))) {
             return;
         }
-        switch (view.worldAction(host)) {
+        // Con el editor de displays abierto, el clic elige un display o agarra su gizmo.
+        if (DisplayEditorClient.studioPress(gizmoRay(mouseX, mouseY))) {
+            return;
+        }
+        switch (action) {
             case GHOST -> GhostClient.studioPlace(hit);
             case POINTS -> pointsPressed(mouseX, mouseY, hit);
             case PLACE -> placeAt(hit);
             case SELECT -> selectPressed(mouseX, mouseY, hit);
             case PAINT -> paintPressed(hit);
+            case LASSO -> lassoPressed(mouseX, mouseY);
+            case FREEHAND -> freehandPressed(hit);
             case NONE -> view.status(view.worldHint(host), System.currentTimeMillis());
+        }
+    }
+
+    /** Si el clic en el mundo es del lazo o del pincel de selección: ahí Mayús, Ctrl y Alt dicen cómo se junta. */
+    private boolean selectionModifiers() {
+        StudioView.WorldAction action = view.worldAction(host);
+        return action == StudioView.WorldAction.LASSO || action == StudioView.WorldAction.FREEHAND;
+    }
+
+    private static SelectionCombine combine() {
+        return SelectionCombine.of(hasShiftDown(), hasControlDown(), hasAltDown());
+    }
+
+    /** Empieza el lazo donde se pulsa, con la cámara de ahora y el modo de las teclas que se mantienen. */
+    private void lassoPressed(double mouseX, double mouseY) {
+        lassoCamera = lassoCamera();
+        if (lassoCamera == null) {
+            return;
+        }
+        lasso.begin(mouseX, mouseY, combine());
+        view.status(tr("gui.komaedit.status.lasso.drawing", tr("gui.komaedit.select.mode." + lasso.mode().id())),
+                System.currentTimeMillis());
+    }
+
+    /** Suelta el lazo: si rodea algo, el servidor lo proyecta y lo deja como selección. */
+    private void lassoReleased() {
+        LassoPolygon polygon = lasso.finish();
+        long now = System.currentTimeMillis();
+        if (polygon == null || lassoCamera == null) {
+            view.status(tr("gui.komaedit.status.lasso.too_small"), now);
+            return;
+        }
+        SelectionCard.Settings settings = view.selectionTool();
+        ClientPlayNetworking.send(SelectionPayloads.Lasso.of(lasso.mode(), lassoCamera, polygon, settings.lasso()));
+        view.status(tr("gui.komaedit.status.lasso.sent"), now);
+    }
+
+    /** La cámara del Studio como la ve el lazo: posición, hacia dónde mira, su campo de visión y la pantalla. */
+    private LassoCamera lassoCamera() {
+        if (client == null || client.player == null) {
+            return null;
+        }
+        Camera camera = client.gameRenderer.getCamera();
+        Vector3f forward = camera.getHorizontalPlane();
+        Vector3f up = camera.getVerticalPlane();
+        double fieldOfView = ((GameRendererAccessor) client.gameRenderer).komaedit$getFov(camera,
+                camera.getLastTickDelta(), true);
+        Vec3d position = camera.getPos();
+        try {
+            return LassoCamera.of(new com.komainu.moxia.shape.Vec3(position.x, position.y, position.z),
+                    new com.komainu.moxia.shape.Vec3(forward.x(), forward.y(), forward.z()),
+                    new com.komainu.moxia.shape.Vec3(up.x(), up.y(), up.z()), fieldOfView, Math.max(1, width),
+                    Math.max(1, height));
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    /** Pintar la selección: cada bloque nuevo bajo el cursor es una pasada del pincel de selección. */
+    private void freehandPressed(BlockHitResult hit) {
+        strokeSettings = view.selectionTool();
+        sendSelectionDab(selectStroke.press(hit == null ? null : array(hit.getBlockPos()), combine(),
+                System.currentTimeMillis()), hit);
+        if (hit == null) {
+            view.status(tr("gui.komaedit.status.click.no_block"), System.currentTimeMillis());
+        }
+    }
+
+    private void sendSelectionDab(SelectionStroke.Send send, BlockHitResult hit) {
+        if (send == SelectionStroke.Send.NOTHING || hit == null || strokeSettings == null) {
+            return;
+        }
+        int phase = send == SelectionStroke.Send.START ? SelectionPayloads.Brush.START : SelectionPayloads.Brush.DAB;
+        ClientPlayNetworking.send(new SelectionPayloads.Brush(phase, selectStroke.mode().ordinal(), hit.getBlockPos(),
+                strokeSettings.radius(), strokeSettings.shape().ordinal(), strokeSettings.nonSolid()));
+        if (send == SelectionStroke.Send.START) {
+            view.status(tr("gui.komaedit.status.freehand.painting",
+                    tr("gui.komaedit.select.mode." + selectStroke.mode().id())), System.currentTimeMillis());
         }
     }
 
@@ -382,6 +530,10 @@ public final class ProceduralStudioScreen extends Screen {
             GhostClient.studioDrag(gizmoRay(mouseX, mouseY));
             return true;
         }
+        if (DisplayEditorClient.studioDragging() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            DisplayEditorClient.studioDrag(gizmoRay(mouseX, mouseY));
+            return true;
+        }
         if (GhostClient.studioTerrainDragging() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             GhostClient.studioTerrain(cursorHit(mouseX, mouseY));
             return true;
@@ -419,6 +571,12 @@ public final class ProceduralStudioScreen extends Screen {
             if (hit != null && stroke.drag(array(hit.getBlockPos()), System.currentTimeMillis())) {
                 paint(hit);
             }
+        } else if (lasso.active()) {
+            lasso.add(mouseX, mouseY);
+        } else if (selectStroke.active()) {
+            BlockHitResult hit = cursorHit(mouseX, mouseY);
+            sendSelectionDab(selectStroke.drag(hit == null ? null : array(hit.getBlockPos()),
+                    System.currentTimeMillis()), hit);
         }
         return true;
     }
@@ -450,6 +608,7 @@ public final class ProceduralStudioScreen extends Screen {
         view.mouseReleased(mouseX, mouseY, studioButton(button), host);
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             GhostClient.studioRelease();
+            DisplayEditorClient.studioRelease();
             draggingPoint = false;
             draggedPoint = -1;
             draggedAxis = -1;
@@ -457,6 +616,13 @@ public final class ProceduralStudioScreen extends Screen {
             lastDraggedPosition = null;
             pathDrag.release();
             stroke.release();
+            if (lasso.active()) {
+                lassoReleased();
+            }
+            if (selectStroke.release()) {
+                ClientPlayNetworking.send(new SelectionPayloads.Brush(SelectionPayloads.Brush.END, 0, BlockPos.ORIGIN,
+                        0, 0, false));
+            }
             if (box.active()) {
                 BlockHitResult hit = cursorHit(mouseX, mouseY);
                 BoxSelect.Result result = box.release(hit == null ? null : array(hit.getBlockPos()),
@@ -498,9 +664,18 @@ public final class ProceduralStudioScreen extends Screen {
             view.paste(client.keyboard.getClipboard(), host);
             return true;
         }
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && lasso.active()) {
+            // Esc con el lazo a medias lo descarta sin cerrar el Studio.
+            lasso.cancel();
+            view.status(tr("gui.komaedit.status.lasso.cancelled"), System.currentTimeMillis());
+            return true;
+        }
         // Las teclas del fantasma van antes que las del panel (salvo escribiendo en un campo): Intro lo coloca y
         // Esc lo quita sin cerrar el Studio.
         if (!view.typing() && !view.modal() && GhostClient.studioKey(keyCode, modifiers)) {
+            return true;
+        }
+        if (!view.typing() && !view.modal() && DisplayEditorClient.studioKey(keyCode, modifiers)) {
             return true;
         }
         StudioKey key = studioKey(keyCode, control, shift);
@@ -560,12 +735,14 @@ public final class ProceduralStudioScreen extends Screen {
         StudioView.WorldAction action = view.worldAction(host);
         // Solo se lanza el rayo cuando lo que hay bajo el cursor cambia lo que se ve (el fantasma tiene el suyo).
         boolean aims = action == StudioView.WorldAction.POINTS || action == StudioView.WorldAction.SELECT
-                || action == StudioView.WorldAction.PAINT;
+                || action == StudioView.WorldAction.PAINT || action == StudioView.WorldAction.FREEHAND;
         BlockHitResult hit = overWorld && aims ? cursorHit(mouseX, mouseY) : null;
         if (action == StudioView.WorldAction.POINTS && hit != null && !pathDrag.active()) {
             overlay = hit.getBlockPos().offset(hit.getSide()).toImmutable();
         }
-        WorldOverlayRenderer.studioCursor(action == StudioView.WorldAction.PAINT ? hit : null);
+        boolean freehand = action == StudioView.WorldAction.FREEHAND;
+        WorldOverlayRenderer.studioCursor(action == StudioView.WorldAction.PAINT || freehand ? hit : null);
+        WorldOverlayRenderer.selectionRadius(freehand ? view.selectionTool().radius() : -1);
         if (box.active()) {
             WorldOverlayRenderer.face(box.pulling(), true);
         } else if (action == StudioView.WorldAction.SELECT && overWorld) {
@@ -728,7 +905,8 @@ public final class ProceduralStudioScreen extends Screen {
         }
     }
 
-    private void updateMovementKeys() {
+    /** WASD, espacio, Mayús y Ctrl mueven al jugador; con {@code modifiersTaken}, Mayús y Ctrl no (son del lazo). */
+    private void updateMovementKeys(boolean modifiersTaken) {
         if (client == null) {
             return;
         }
@@ -738,8 +916,8 @@ public final class ProceduralStudioScreen extends Screen {
         client.options.leftKey.setPressed(down(window, GLFW.GLFW_KEY_A));
         client.options.rightKey.setPressed(down(window, GLFW.GLFW_KEY_D));
         client.options.jumpKey.setPressed(down(window, GLFW.GLFW_KEY_SPACE));
-        client.options.sneakKey.setPressed(down(window, GLFW.GLFW_KEY_LEFT_SHIFT));
-        client.options.sprintKey.setPressed(down(window, GLFW.GLFW_KEY_LEFT_CONTROL));
+        client.options.sneakKey.setPressed(!modifiersTaken && down(window, GLFW.GLFW_KEY_LEFT_SHIFT));
+        client.options.sprintKey.setPressed(!modifiersTaken && down(window, GLFW.GLFW_KEY_LEFT_CONTROL));
     }
 
     private void releaseMovementKeys() {

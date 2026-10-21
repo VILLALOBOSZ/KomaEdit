@@ -258,6 +258,11 @@ public final class ToolsPanel {
             namingAction = null;
             biomeSearch = "";
             stampSearch = "";
+            // Las tarjetas que trabajan en un modo (el editor de displays) lo abren al elegirlas.
+            String command = card.selectCommand();
+            if (command != null && card.missingPermission(card.defaults(), host.context()) == null) {
+                send(host, command);
+            }
         }
         browsing = false;
         search = "";
@@ -786,9 +791,6 @@ public final class ToolsPanel {
 
     /** Sobre qué trabaja la herramienta, con lo que hay ahora (selección, puntos). */
     String target(ToolCard card, Host host, ToolContext context, ToolsInfo info) {
-        if (card.clientSide()) {
-            return host.tr("gui.komaedit.tools.target.client");
-        }
         ToolTarget target = card.target(values(card));
         String key = target.translationKey();
         return switch (target) {
@@ -1823,7 +1825,8 @@ public final class ToolsPanel {
             case PATH_OR_SELECTION -> context.pathPoints() > 0 ? StudioIcons.Icon.PATH : StudioIcons.Icon.SELECTION;
             case LOOK -> StudioIcons.Icon.LOOK;
             case HAND -> StudioIcons.Icon.HAND;
-            case MODE -> selected().clientSide() ? StudioIcons.Icon.EYE : StudioIcons.Icon.MODE;
+            case MODE -> StudioIcons.Icon.MODE;
+            case SELF -> StudioIcons.Icon.EYE;
         };
     }
 
@@ -1845,13 +1848,15 @@ public final class ToolsPanel {
             case LOOK -> clicked(host);
             case HAND -> card instanceof TerrainCards.Stamp ? stampTarget(host)
                     : host.tr("gui.komaedit.tools.footer.hand");
-            case MODE -> card.clientSide() ? host.tr("gui.komaedit.tools.footer.client")
-                    : card instanceof HotbarCard ? hotbarTarget(host)
+            case MODE -> card instanceof HotbarCard ? hotbarTarget(host)
                     : card instanceof SymmetryCard
                     ? host.tr(info.symmetry().active() ? "gui.komaedit.tools.footer.on"
                     : "gui.komaedit.tools.footer.off")
+                    // Lo del cliente (la regla, Calcar imagen) no pasa por el servidor.
+                    : card.clientOnly(values(card)) ? host.tr("gui.komaedit.tools.footer.client")
                     : host.tr("gui.komaedit.tools.footer.active", info.capabilities() == null ? 0
                     : Integer.bitCount(info.capabilities().enabled() & info.capabilities().permitted()));
+            case SELF -> host.tr("gui.komaedit.tools.footer.here");
         };
     }
 

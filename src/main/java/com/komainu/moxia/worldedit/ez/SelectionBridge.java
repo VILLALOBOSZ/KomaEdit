@@ -44,6 +44,13 @@ public final class SelectionBridge {
     }
 
     public static SelectionShape read(RegionSelector selector, World world) throws IncompleteRegionException {
+        if (selector instanceof com.komainu.moxia.worldedit.BlockSetSelector blocks) {
+            if (blocks.fallback() != null) {
+                return read(blocks.fallback(), world);
+            }
+            throw new IllegalArgumentException("Una selección de bloques sueltos (lazo o pincel) no se guarda ni se "
+                    + "mueve con sel: usa //shift o //move -s, o pásala a caja con /komaedit sel box");
+        }
         String worldName = world == null ? null : world.getName();
         if (selector instanceof CuboidRegionSelector) {
             CuboidRegion region = (CuboidRegion) selector.getRegion();

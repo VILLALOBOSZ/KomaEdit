@@ -211,6 +211,9 @@ public final class AdminCommands {
                     KomaEditConfig.load();
                     CapabilityConfig.load();
                     CapabilityService.resyncAll(context.getSource().getServer());
+                    // Las reglas de utilities.json (compartir, notas del equipo) cambian lo que puede cada uno.
+                    com.komainu.moxia.views.ViewService.sendCatalogToAll(context.getSource().getServer());
+                    com.komainu.moxia.notes.NoteService.syncAll(context.getSource().getServer());
                     int palettes = ServerPalettes.load(KomaEditConfig.palettesFile());
                     KomaEditConfig.Settings settings = KomaEditConfig.settings();
                     context.getSource().sendFeedback(() -> EzCommandSupport.prefix().append(Text.literal(

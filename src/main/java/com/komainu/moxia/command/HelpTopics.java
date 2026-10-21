@@ -414,7 +414,13 @@ public final class HelpTopics {
                     new Entry("/komaedit sel encapsulatenear <radio> <máscara>",
                             "Selecciona los bloques de la máscara que hay cerca"),
                     new Entry("/komaedit sel catenary <puntos> [comba] [down|up|left|right]",
-                            "Selección convexa colgando como una cadena entre el principio y el final")
+                            "Selección convexa colgando como una cadena entre el principio y el final"),
+                    new Entry("/komaedit sel undo", "Deshace el último trazo de selección (lazo, pincel u operación)"),
+                    new Entry("/komaedit sel grow|shrink <bloques> [sphere|cube|octahedron] [-s] [-n]",
+                            "Amplía o reduce; -s por la superficie, columna a columna"),
+                    new Entry("/komaedit sel complement [-s]", "Invierte: lo que no estaba, dentro de su caja"),
+                    new Entry("/komaedit sel box", "Cambia la selección por la caja que la contiene"),
+                    new Entry("/komaedit sel clear", "Quita la selección (sel undo la recupera)")
             )),
             new Topic("capability", "Construir a mano", List.of("capacidad", "capacidades", "capabilities",
                     "axiom", "builder"), List.of(
@@ -479,6 +485,21 @@ public final class HelpTopics {
                     new Entry("/komaedit pincel biome <bioma> [radio] [-v] [-m máscara]",
                             "Pincel de biomas; el clic izquierdo toma el bioma del bloque")
             )),
+            new Topic("fluidos", "Agua y lava: rellenar, bola, cascadas", List.of("fluido", "fluid", "fluids",
+                    "rellenar", "floodfill", "fluidball", "cascada", "cascadas", "waterfall", "sueltos", "lagos",
+                    "piscina"), List.of(
+                    new Entry("/komaedit " + FluidCommands.FILL_USAGE,
+                            "Llena el hueco del clic hasta el nivel solo si está cerrado; si se escapa, dice y señala"
+                                    + " por dónde (alias fluid fill)"),
+                    new Entry("/komaedit fluido rellenar agua borde",
+                            "Ejemplo: llena la piscina hasta lo más alto que aguante sin derramarse"),
+                    new Entry("/komaedit " + FluidCommands.BALL_USAGE,
+                            "Esfera de fluido: -s solo fuentes, -a solo el aire, -c cerrar bordes (sin derrames)"),
+                    new Entry("/komaedit " + FluidCommands.FALL_USAGE,
+                            "Cascada desde el borde que pulsas con poza abajo; con puntos (P), un río corto con saltos"),
+                    new Entry("/komaedit " + FluidCommands.CLEAN_USAGE,
+                            "Quita de la selección las corrientes que no salen de ninguna fuente")
+            )),
             new Topic("blueprint", "Planos", List.of("planos", "plano", "blueprints", "biblioteca", "estampar",
                     "stamp"), List.of(
                     new Entry("/komaedit blueprint save <nombre> [etiquetas]",
@@ -535,6 +556,60 @@ public final class HelpTopics {
                     new Entry("/komaedit share accept [renombrar|reemplazar|saltar]",
                             "Importa lo enseñado; lo que choca, con otro nombre, sustituyéndolo o sin tocar"),
                     new Entry("/komaedit share cancel", "Descarta la importación pendiente")
+            )),
+            new Topic("display", "Decorar con displays", List.of("displays", "decorar", "decoracion", "carteles",
+                    "hologramas"), List.of(
+                    new Entry("/komaedit display edit [on|off]",
+                            "Abre o cierra el editor: clic en un display para elegirlo, gizmo para moverlo (alias editar)"),
+                    new Entry("/komaedit display block [bloque]",
+                            "Display del bloque de la mano (o el escrito) contra el bloque que miras (alias bloque)"),
+                    new Entry("/komaedit display item [fixed|none|gui|ground|head|mano]",
+                            "Display del objeto de la mano, con su modo de vista (alias objeto)"),
+                    new Entry("/komaedit display text [-c color] [-f fondo] [-s] [-a izq|centro|der] [-w ancho] [-t]"
+                            + " <texto>", "Display de texto; \\n parte la línea y &c, &l… dan formato (alias texto)"),
+                    new Entry("/komaedit display select [add|toggle|clear]",
+                            "Elige el display que miras, sin el mod en el cliente (alias elegir)"),
+                    new Entry("/komaedit display move <dx> <dy> <dz>", "Mueve lo elegido (alias mover)"),
+                    new Entry("/komaedit display rotate <x|y|z> <grados> [local]",
+                            "Gira lo elegido sobre el activo, en un eje del mundo o del objeto (alias girar)"),
+                    new Entry("/komaedit display scale <factor>|<x> <y> <z>",
+                            "Escala por igual o en sus ejes (alias escalar)"),
+                    new Entry("/komaedit display reset", "Sin giro y con escala 1 (alias enderezar)"),
+                    new Entry("/komaedit display duplicate|delete", "Duplica en el mismo sitio o borra (duplicar, borrar)"),
+                    new Entry("/komaedit display group|ungroup",
+                            "Agrupa lo elegido (un clic elige el grupo entero) o lo desagrupa (agrupar, desagrupar)"),
+                    new Entry("/komaedit display set brightness <bloque> [cielo]|auto",
+                            "Brillo fijo de 0 a 15 o el de su sitio (ajustes brillo)"),
+                    new Entry("/komaedit display set shadow <radio> [fuerza]", "Sombra en el suelo (ajustes sombra)"),
+                    new Entry("/komaedit display set viewrange <multiplicador>",
+                            "Hasta dónde se ve (1 es lo normal; ajustes distancia)"),
+                    new Entry("/komaedit display set billboard <fixed|vertical|horizontal|center>",
+                            "Que mire siempre a la cámara (center) o no (fixed)"),
+                    new Entry("/komaedit display set glow on [color]|off", "Brillo del contorno (ajustes contorno)")
+            )),
+            new Topic("view", "Vistas", List.of("vista", "vistas", "views", "camara", "teleporte",
+                    "fija", "regla", "medir", "ruler"), List.of(
+                    new Entry("/komaedit vista compartir <nombre>", "Comparte con el equipo la vista de donde estás;"
+                            + " las tuyas se guardan en tu cliente con /kegui vista guardar <nombre>"),
+                    new Entry("/komaedit vista lista [página]", "Las vistas del equipo con [ir] y [quitar]; la lista"
+                            + " de todas, fijas incluidas, es /kegui vistas"),
+                    new Entry("/komaedit vista ir <nombre>", "Salta a una vista del equipo (creativo o espectador,"
+                            + " según el servidor)"),
+                    new Entry("/komaedit vista borrar <nombre>", "Deja de compartir una vista tuya"),
+                    new Entry("/komaedit vista", "Con KomaEdit en el cliente: /kegui regla mide con clics (recorrido,"
+                            + " círculo o caja) y Ctrl+C copia las medidas")
+            )),
+            new Topic("note", "Notas", List.of("nota", "notas", "notes", "apuntes", "marcas", "tareas"), List.of(
+                    new Entry("/komaedit nota poner <texto> [-c color] [-i icono] [-d distancia] [-e] [-p]",
+                            "En el bloque que miras (-p: donde estás); -e para el equipo (alias nueva, add)"),
+                    new Entry("/komaedit nota lista [abiertas|todas|resueltas|mias|equipo] [página]",
+                            "Con [ir], [resolver] y [borrar]"),
+                    new Entry("/komaedit nota ir <id>", "Salta junto a la nota"),
+                    new Entry("/komaedit nota resolver <id>", "La marca como resuelta (reabrir la vuelve a abrir)"),
+                    new Entry("/komaedit nota borrar <id>", "Borra una nota tuya"),
+                    new Entry("/komaedit nota limpiar", "Borra tus notas resueltas"),
+                    new Entry("/komaedit nota ver <id>", "El texto entero, el autor y la fecha; con KomaEdit en el"
+                            + " cliente, la lista en pantalla es /kegui notas")
             )),
             new Topic("project", "Proyecto", List.of("proyecto", "copias", "backup", "menu", "quick", "gui", "quiet",
                     "silencio", "permisos", "permissions", "reload", "recargar", "tutorial", "bienvenida", "debug",

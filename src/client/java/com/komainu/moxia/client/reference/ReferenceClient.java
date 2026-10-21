@@ -19,7 +19,9 @@ import com.komainu.moxia.reference.ReferenceRotation;
 import com.komainu.moxia.reference.ReferenceSet;
 import com.komainu.moxia.reference.WorldFrame;
 import com.komainu.moxia.shape.Vec3;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -51,7 +53,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 
 /**
  * Las imágenes de referencia en el cliente: qué hay abierto en este mundo o servidor (se guarda al salir y un
- * segundo después de cada cambio), la tecla de mostrar u ocultar, la orden {@code /keref} y la edición en el mundo
+ * segundo después de cada cambio), la tecla de mostrar u ocultar, la orden {@code /kegui referencias} y la edición en el mundo
  * con el gizmo. No manda nada al servidor: funciona igual en un servidor sin KomaEdit.
  *
  * <p>Teclas: en Controles vienen sin asignar, como las del fantasma, para no quitarle la tecla a nadie. Mientras no se
@@ -95,10 +97,17 @@ public final class ReferenceClient {
         ClientTickEvents.END_CLIENT_TICK.register(ReferenceClient::tick);
         ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> onAttack(client, clickCount));
         ReferenceWindows.register();
+        // Bajo /kegui, como el resto de lo que atiende el propio cliente (también si lo manda el Studio).
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
-                literal("keref").executes(context -> openScreen())
-                        .then(literal("alternar").executes(context -> run(ReferenceClient::toggleShown)))
-                        .then(literal("listo").executes(context -> run(ReferenceClient::stopEditing)))));
+                literal("kegui").then(references("referencias", "alternar", "listo"))
+                        .then(references("references", "toggle", "done"))));
+    }
+
+    private static LiteralArgumentBuilder<FabricClientCommandSource> references(String name, String toggle,
+                                                                                 String done) {
+        return literal(name).executes(context -> openScreen())
+                .then(literal(toggle).executes(context -> run(ReferenceClient::toggleShown)))
+                .then(literal(done).executes(context -> run(ReferenceClient::stopEditing)));
     }
 
     private static int run(Runnable action) {

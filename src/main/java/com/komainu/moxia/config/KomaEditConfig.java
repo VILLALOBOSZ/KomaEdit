@@ -31,9 +31,11 @@ public final class KomaEditConfig {
     public static void load() {
         ImageConfig.load(directory());
         BlueprintConfig.load(directory());
+        UtilitiesConfig.load(directory());
         AlignmentGuideSettings.load(directory());
         com.komainu.moxia.rebuild.RebuildConfig.load(directory());
         ShareConfig.load(directory());
+        com.komainu.moxia.display.DisplayConfig.load(directory());
         settings = load(file());
         apply(settings);
     }

@@ -16,6 +16,7 @@ import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.layout.StudioLayout;
 import com.komainu.moxia.studio.net.JobStatusPayload;
+import com.komainu.moxia.studio.tools.SelectionCard;
 import com.komainu.moxia.studio.tools.ToolCard;
 import com.komainu.moxia.studio.tools.ToolCatalog;
 import com.komainu.moxia.studio.tools.ToolContext;
@@ -1345,7 +1346,11 @@ public final class StudioView {
         /** Seleccionar arrastrando una caja; tirando de sus caras se ajusta; doble clic, lo pegado del mismo bloque. */
         SELECT,
         /** Pintar con el pincel de la mano; manteniendo el botón se sigue pintando. */
-        PAINT
+        PAINT,
+        /** Rodear con el lazo lo que se quiere seleccionar (Mayús suma, Ctrl resta, Alt interseca). */
+        LASSO,
+        /** Pintar la selección con el pincel de selección (las mismas teclas). */
+        FREEHAND
     }
 
     /**
@@ -1373,9 +1378,13 @@ public final class StudioView {
                 yield switch (tools.target()) {
                     case LOOK -> WorldAction.PLACE;
                     case PATH_OR_LOOK -> points ? WorldAction.POINTS : WorldAction.PLACE;
-                    case SELECTION -> WorldAction.SELECT;
+                    case SELECTION -> tools.selected() instanceof SelectionCard ? switch (selectionTool().tool()) {
+                        case "lasso" -> WorldAction.LASSO;
+                        case "brush" -> WorldAction.FREEHAND;
+                        default -> WorldAction.SELECT;
+                    } : WorldAction.SELECT;
                     case PATH_OR_SELECTION -> points ? WorldAction.POINTS : WorldAction.SELECT;
-                    case HAND, MODE -> brush ? WorldAction.PAINT : WorldAction.NONE;
+                    case HAND, MODE, SELF -> brush ? WorldAction.PAINT : WorldAction.NONE;
                 };
             }
             case COLOR -> WorldAction.SELECT;
@@ -1383,6 +1392,14 @@ public final class StudioView {
                     : blueprints.selectedName(host).isEmpty() ? WorldAction.NONE : WorldAction.PLACE;
             case RECIPES, INSTANCES -> brush ? WorldAction.PAINT : WorldAction.NONE;
         };
+    }
+
+    /**
+     * Los ajustes de la tarjeta Seleccionar (la herramienta del ratón, la profundidad del lazo, el radio y la forma
+     * del pincel), los que usa la pantalla para el lazo y el pincel de selección.
+     */
+    public SelectionCard.Settings selectionTool() {
+        return SelectionCard.settings(tools.values(ToolCatalog.byId("select")));
     }
 
     /** Si lo de la mano es un pincel de KomaEdit (no la supervarita ni otra cosa). */
@@ -1403,11 +1420,16 @@ public final class StudioView {
                     : "gui.komaedit.hint.world.place";
             case SELECT -> "gui.komaedit.hint.world.select";
             case PAINT -> "gui.komaedit.hint.world.paint";
+            case LASSO -> "gui.komaedit.hint.world.lasso";
+            case FREEHAND -> "gui.komaedit.hint.world.freehand";
         };
         String what = action == WorldAction.PLACE && stage == StudioStage.TOOLS
                 ? host.tr(tools.selected().buildKey()).toLowerCase(java.util.Locale.ROOT)
                 : key.endsWith("brush_first") ? host.tr(tools.selected().buildKey()) : "";
-        return host.tr(key, what) + " · " + host.tr("gui.komaedit.hint.world.common");
+        // En el lazo y el pincel de selección, Alt interseca: ahí no hay cuentagotas.
+        String common = action == WorldAction.LASSO || action == WorldAction.FREEHAND
+                ? "gui.komaedit.hint.world.common_select" : "gui.komaedit.hint.world.common";
+        return host.tr(key, what) + " · " + host.tr(common);
     }
 
     /**

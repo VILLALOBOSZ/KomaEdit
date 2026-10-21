@@ -71,6 +71,8 @@ public final class KomaEditMod implements ModInitializer {
         com.komainu.moxia.studio.net.StudioToolsNetwork.register();
         com.komainu.moxia.feedback.WorldFeedback.register();
         com.komainu.moxia.gizmo.GhostNetwork.register();
+        com.komainu.moxia.display.DisplayNetwork.register();
+        com.komainu.moxia.selection.SelectionNetwork.register();
         ServerPlayNetworking.registerGlobalReceiver(EditorActionPayload.ID, (payload, context) ->
                 context.server().execute(() -> EditorActionService.handle(context.player(), payload))
         );
@@ -80,6 +82,8 @@ public final class KomaEditMod implements ModInitializer {
         com.komainu.moxia.blueprint.BlueprintNetwork.register();
         com.komainu.moxia.hotbar.HotbarService.register();
         com.komainu.moxia.share.ShareService.register();
+        com.komainu.moxia.views.ViewService.register();
+        com.komainu.moxia.notes.NoteService.register();
         MoxiaCommands.register();
         com.komainu.moxia.worldedit.EzExtensions.register();
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
@@ -184,6 +188,7 @@ public final class KomaEditMod implements ModInitializer {
             ProgressBars.remove(handler.player);
             com.komainu.moxia.studio.net.StudioToolsNetwork.forget(handler.player.getUuid());
             com.komainu.moxia.command.ColorCommands.forget(handler.player.getUuid());
+            com.komainu.moxia.fluid.LeakMarkers.forget(handler.player.getUuid());
         });
         // La vista previa es solo para quien edita y en su dimensión: se descarta al cambiar de mundo o reaparecer.
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) ->
@@ -205,6 +210,7 @@ public final class KomaEditMod implements ModInitializer {
         ServerWork.register();
         ServerTickEvents.END_SERVER_TICK.register(ProgressBars::tick);
         ServerTickEvents.END_SERVER_TICK.register(server -> PreviewDisplays.sweep());
+        ServerTickEvents.END_SERVER_TICK.register(com.komainu.moxia.fluid.LeakMarkers::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             AsyncEngine.start();
             // Planes enormes volcados a disco por un servidor que se paró de golpe.
@@ -241,6 +247,7 @@ public final class KomaEditMod implements ModInitializer {
             PreviewDisplays.clearOrphans();
             com.komainu.moxia.studio.net.StudioToolsNetwork.clearAll();
             com.komainu.moxia.command.ColorCommands.clearAll();
+            com.komainu.moxia.fluid.LeakMarkers.clearAll();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");
     }

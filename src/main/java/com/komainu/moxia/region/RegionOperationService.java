@@ -379,9 +379,9 @@ public final class RegionOperationService {
     /**
      * La selección entera de la foto, para que la vista previa note cualquier cambio donde actúa la operación (no
      * solo en los bloques que cambia). El margen no se vigila: ahí la nieve o un cultivo que crece harían recalcular
-     * sin motivo.
+     * sin motivo. {@code null} si la foto es demasiado grande para vigilarla entera.
      */
-    private static ZoneCheck.Watch watch(RegionSnapshot snapshot) {
+    public static ZoneCheck.Watch watch(RegionSnapshot snapshot) {
         if (snapshot.volume() > WATCH_SNAPSHOT_UP_TO) {
             return null;
         }

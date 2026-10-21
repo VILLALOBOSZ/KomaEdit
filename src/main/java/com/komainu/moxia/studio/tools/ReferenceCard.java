@@ -4,20 +4,21 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Imagen de referencia, como «Open Reference Image» de Axiom: abre la lista de imágenes de
+ * «Calcar imagen», como «Open Reference Image» de Axiom: abre la lista de imágenes de
  * {@code config/komaedit/references/} para calcar fachadas, estatuas o pixel art, en pantalla o en el mundo. Es solo
- * del cliente ({@code /keref}): no pasa por el servidor, no pide permisos y no cambia el mundo.
+ * del cliente ({@code /kegui referencias}, que atiende el propio cliente aunque la mande el Studio): no pasa por el
+ * servidor, no pide permisos y no cambia el mundo.
  */
 public final class ReferenceCard extends ToolCard {
     /** Orden del cliente que abre la lista de referencias. */
-    public static final String OPEN = "keref";
+    public static final String OPEN = "kegui referencias";
     /** Orden del cliente que enseña u oculta todas las referencias. */
-    public static final String TOGGLE = "keref alternar";
+    public static final String TOGGLE = "kegui referencias alternar";
 
     ReferenceCard() {
         super("reference", ToolTarget.MODE,
-                List.of("reference", "referencia", "imagen", "image", "calcar", "trace", "plantilla", "foto", "photo",
-                        "pixel", "pixelart", "fachada", "plano", "axiom", "keref"),
+                List.of("reference", "referencia", "referencias", "imagen", "image", "calcar", "trace", "plantilla",
+                        "foto", "photo", "pixel", "pixelart", "fachada", "plano", "axiom"),
                 List.of());
     }
 
@@ -27,7 +28,7 @@ public final class ReferenceCard extends ToolCard {
     }
 
     @Override
-    public boolean clientSide() {
+    public boolean clientOnly(ToolValues values) {
         return true;
     }
 

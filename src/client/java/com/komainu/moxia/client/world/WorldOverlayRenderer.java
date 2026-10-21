@@ -5,7 +5,10 @@ import com.komainu.moxia.brush.BrushTool;
 import com.komainu.moxia.feedback.SelectionPayload;
 import com.komainu.moxia.feedback.SymmetryGuidePayload;
 import com.komainu.moxia.feedback.WorldFeedbackSettings;
+import com.komainu.moxia.preview.PreviewOutline;
 import com.komainu.moxia.preview.PreviewPlanCodec;
+import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.selection.SelectionPayloads;
 import com.komainu.moxia.studio.ui.StudioTheme;
 import com.komainu.moxia.studio.world.BoxSelect;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -28,7 +31,8 @@ import java.util.Set;
  * Lo que KomaEdit dibuja en el mundo además de la vista previa, todo con líneas finas y apagable en los ajustes:
  *
  * <ul>
- *     <li>La selección de WorldEdit con sus medidas (y la caja de la vista previa con las suyas).</li>
+ *     <li>La selección de WorldEdit con sus medidas (y la caja de la vista previa con las suyas). La de bloques
+ *     sueltos (lazo y pincel de selección), con su contorno y su número de bloques.</li>
  *     <li>El radio del pincel en la mano, sobre la superficie que se mira, como en Axiom.</li>
  *     <li>Los planos y el eje de la simetría: un marco alrededor del jugador con una rejilla tenue, sin partículas.</li>
  * </ul>
@@ -57,6 +61,11 @@ public final class WorldOverlayRenderer {
     private static volatile boolean faceGrabbed;
     /** Con el Studio abierto: el bloque al que apunta el cursor, para el círculo del pincel. */
     private static volatile BlockHitResult studioCursor;
+    /** Con el pincel de selección del Studio: su radio (si no, -1 y vale el del pincel de la mano). */
+    private static volatile int selectionRadius = -1;
+    /** El contorno de la selección de bloques sueltos y sus aristas ya en coordenadas del mundo (x1 y1 z1 x2 y2 z2). */
+    private static volatile SelectionPayloads.Outline outline = SelectionPayloads.Outline.NONE;
+    private static volatile float[] outlineLines = new float[0];
     private static boolean broken;
 
     private WorldOverlayRenderer() {
@@ -82,13 +91,47 @@ public final class WorldOverlayRenderer {
         studioCursor = hit;
     }
 
+    /** El radio del pincel de selección del Studio para el círculo bajo el cursor, o -1 para el de la mano. */
+    public static void selectionRadius(int radius) {
+        selectionRadius = radius;
+    }
+
     public static void symmetry(SymmetryGuidePayload payload) {
         symmetry = payload;
+    }
+
+    /** El contorno de la selección de bloques sueltos (llega cuando cambia). */
+    public static void outline(SelectionPayloads.Outline payload) {
+        int count = 0;
+        for (PreviewOutline.Section section : payload.sections()) {
+            count += section.edges().length;
+        }
+        float[] lines = new float[count * 6];
+        int index = 0;
+        for (PreviewOutline.Section section : payload.sections()) {
+            for (int edge : section.edges()) {
+                float x = section.x() * 16 + PreviewOutline.localX(edge);
+                float y = section.y() * 16 + PreviewOutline.localY(edge);
+                float z = section.z() * 16 + PreviewOutline.localZ(edge);
+                int axis = PreviewOutline.axis(edge);
+                int length = PreviewOutline.length(edge);
+                lines[index++] = x;
+                lines[index++] = y;
+                lines[index++] = z;
+                lines[index++] = x + (axis == 0 ? length : 0);
+                lines[index++] = y + (axis == 1 ? length : 0);
+                lines[index++] = z + (axis == 2 ? length : 0);
+            }
+        }
+        outlineLines = lines;
+        outline = payload;
     }
 
     public static void clear() {
         selection = SelectionPayload.NONE;
         symmetry = SymmetryGuidePayload.NONE;
+        outline = SelectionPayloads.Outline.NONE;
+        outlineLines = new float[0];
     }
 
     public static void render(WorldRenderContext context) {
@@ -111,13 +154,23 @@ public final class WorldOverlayRenderer {
         matrices.translate(-camera.x, -camera.y, -camera.z);
         VertexConsumer lines = context.consumers().getBuffer(RenderLayer.getLines());
         SelectionPayload currentSelection = selection;
+        SelectionPayloads.Outline blocks = blocks(currentSelection);
         if (settings.selection() && currentSelection.visible()) {
             Box box = new Box(currentSelection.minX(), currentSelection.minY(), currentSelection.minZ(),
                     currentSelection.maxX() + 1.0, currentSelection.maxY() + 1.0, currentSelection.maxZ() + 1.0)
                     .expand(0.004);
-            box(matrices, lines, box, SELECTION);
+            float[] edges = outlineLines;
+            if (blocks != null && edges.length > 0) {
+                // Bloques sueltos: su contorno, como las guías de la vista previa, en lugar de la caja.
+                MatrixStack.Entry entry = matrices.peek();
+                for (int index = 0; index + 5 < edges.length; index += 6) {
+                    edge(entry, lines, edges, index, SELECTION);
+                }
+            } else {
+                box(matrices, lines, box, SELECTION);
+            }
             BoxSelect.Face highlighted = face;
-            if (highlighted != null && currentSelection.complete()) {
+            if (highlighted != null && currentSelection.complete() && blocks == null) {
                 face(matrices, lines, box, highlighted, faceGrabbed ? FACE_GRABBED : FACE_HOVER);
             }
         }
@@ -143,7 +196,12 @@ public final class WorldOverlayRenderer {
                         currentSelection.maxX() + 1.0, currentSelection.maxY() + 1.0, currentSelection.maxZ() + 1.0);
                 if (currentSelection.complete()) {
                     WorldLabels.dimensions(context, box, SELECTION & 0xFFFFFF);
-                    if (SHAPES.contains(currentSelection.shape())) {
+                    if (blocks != null) {
+                        WorldLabels.draw(context, Text.translatable("gui.komaedit.world.blocks",
+                                        ProgressLine.group(blocks.count())).getString(),
+                                (box.minX + box.maxX) / 2.0, box.maxY + 0.6, (box.minZ + box.maxZ) / 2.0,
+                                SELECTION & 0xFFFFFF);
+                    } else if (SHAPES.contains(currentSelection.shape())) {
                         WorldLabels.draw(context, Text.translatable(
                                         "gui.komaedit.world.shape." + currentSelection.shape()).getString(),
                                 (box.minX + box.maxX) / 2.0, box.maxY + 0.6, (box.minZ + box.maxZ) / 2.0,
@@ -159,6 +217,37 @@ public final class WorldOverlayRenderer {
                         preview.maxX() + 1.0, preview.maxY() + 1.0, preview.maxZ() + 1.0), PREVIEW_BOX & 0xFFFFFF);
             }
         }
+    }
+
+    /** El contorno de bloques sueltos si es el de la selección que se dibuja (misma caja), o {@code null}. */
+    private static SelectionPayloads.Outline blocks(SelectionPayload selection) {
+        SelectionPayloads.Outline current = outline;
+        if (!"blocks".equals(selection.shape()) || !current.visible() || current.minX() != selection.minX()
+                || current.minY() != selection.minY() || current.minZ() != selection.minZ()
+                || current.maxX() != selection.maxX() || current.maxY() != selection.maxY()
+                || current.maxZ() != selection.maxZ()) {
+            return null;
+        }
+        return current;
+    }
+
+    /** Una arista del contorno (seis números seguidos de {@code edges}) con su normal, sin crear vectores. */
+    private static void edge(MatrixStack.Entry entry, VertexConsumer lines, float[] edges, int index, int argb) {
+        float dx = edges[index + 3] - edges[index];
+        float dy = edges[index + 4] - edges[index + 1];
+        float dz = edges[index + 5] - edges[index + 2];
+        float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (length < 1.0E-6F) {
+            return;
+        }
+        float alpha = (argb >>> 24) / 255.0F;
+        float red = (argb >> 16 & 0xFF) / 255.0F;
+        float green = (argb >> 8 & 0xFF) / 255.0F;
+        float blue = (argb & 0xFF) / 255.0F;
+        lines.vertex(entry, edges[index], edges[index + 1], edges[index + 2]).color(red, green, blue, alpha)
+                .normal(entry, dx / length, dy / length, dz / length);
+        lines.vertex(entry, edges[index + 3], edges[index + 4], edges[index + 5]).color(red, green, blue, alpha)
+                .normal(entry, dx / length, dy / length, dz / length);
     }
 
     /** Una cara de la caja resaltada: su borde algo metido hacia dentro y una cruz, para que se vea qué se agarra. */
@@ -201,8 +290,9 @@ public final class WorldOverlayRenderer {
         if (client.player == null || client.currentScreen != null && cursor == null) {
             return;
         }
-        int radius = BrushTool.radius(client.player.getMainHandStack());
-        if (radius <= 0) {
+        int ownRadius = selectionRadius;
+        int radius = cursor != null && ownRadius >= 0 ? ownRadius : BrushTool.radius(client.player.getMainHandStack());
+        if (radius < 0 || radius == 0 && ownRadius < 0) {
             return;
         }
         Entity camera = client.getCameraEntity() == null ? client.player : client.getCameraEntity();

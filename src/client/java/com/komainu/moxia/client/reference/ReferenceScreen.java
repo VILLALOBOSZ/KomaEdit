@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
- * Las imágenes de referencia ({@code /keref}, Ctrl+Mayús+I o la tarjeta del Studio). A la izquierda, las imágenes de
+ * Las imágenes de referencia ({@code /kegui referencias}, Ctrl+Mayús+I o la tarjeta del Studio). A la izquierda, las imágenes de
  * {@code config/komaedit/references/} con su miniatura: un clic la abre. A la derecha, las abiertas en este mundo y
  * los ajustes de la elegida: modo, opacidad, filtrado, rejilla y, según el modo, «a través» y colocar las ventanas, o
  * profundidad, traerla delante, tumbarla y moverla con el gizmo. Se pueden arrastrar imágenes PNG o JPG a la ventana

@@ -17,13 +17,13 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 /**
- * Rasterizador en perspectiva para los renders del fantasma con gizmo: la cámara de Minecraft (guiñada y cabeceo, campo
- * de visión vertical), z-buffer, caras con la textura del jar de cliente si {@code KOMAEDIT_MC_JAR} lo indica (si no,
- * colores lisos) y la transparencia de una sola capa de la vista previa. El gizmo se pinta encima de todo, como en el
- * juego.
+ * Rasterizador en perspectiva para los renders del fantasma con gizmo, de la regla y de las notas: la cámara de
+ * Minecraft (guiñada y cabeceo, campo de visión vertical), z-buffer, caras con la textura del jar de cliente si
+ * {@code KOMAEDIT_MC_JAR} lo indica (si no, colores lisos) y la transparencia de una sola capa de la vista previa. El
+ * gizmo se pinta encima de todo, como en el juego.
  */
-final class PerspectiveRaster implements AutoCloseable {
-    static final double[] SHADE = {0.6, 0.6, 0.5, 1.0, 0.8, 0.8};
+public final class PerspectiveRaster implements AutoCloseable {
+    public static final double[] SHADE = {0.6, 0.6, 0.5, 1.0, 0.8, 0.8};
     private final int width;
     private final int height;
     private final Vec3 eye;
@@ -37,7 +37,8 @@ final class PerspectiveRaster implements AutoCloseable {
     private final TextureTiles tiles;
 
     /** @param yaw y {@code pitch} en grados, como en Minecraft (guiñada 0 = sur, cabeceo positivo = abajo) */
-    PerspectiveRaster(int width, int height, Vec3 eye, double yaw, double pitch, double fov) throws IOException {
+    public PerspectiveRaster(int width, int height, Vec3 eye, double yaw, double pitch, double fov)
+            throws IOException {
         this.width = width;
         this.height = height;
         this.eye = eye;
@@ -55,15 +56,15 @@ final class PerspectiveRaster implements AutoCloseable {
         clear();
     }
 
-    Vec3 eye() {
+    public Vec3 eye() {
         return eye;
     }
 
-    Vec3 forward() {
+    public Vec3 forward() {
         return forward;
     }
 
-    boolean real() {
+    public boolean real() {
         return tiles.real();
     }
 
@@ -79,14 +80,14 @@ final class PerspectiveRaster implements AutoCloseable {
     // ---------------------------------------------------------------- texturas
 
     /** 16×16 ARGB de {@code textures/block/<name>.png} con un tinte, o un color liso ({@link TextureTiles}). */
-    int[] texture(String name, int fallback, int tint) {
+    public int[] texture(String name, int fallback, int tint) {
         return tiles.tile(name, fallback, tint);
     }
 
     // ---------------------------------------------------------------- proyección
 
     /** {x, y, 1/z} en pantalla, o {@code null} detrás de la cámara. */
-    double[] project(Vec3 point) {
+    public double[] project(Vec3 point) {
         Vec3 offset = point.subtract(eye);
         double z = offset.dot(forward);
         if (z < 0.05) {
@@ -103,7 +104,7 @@ final class PerspectiveRaster implements AutoCloseable {
      *
      * @param ghost profundidad de la capa del fantasma: con ella solo se pinta la cara más cercana, mezclada
      */
-    void face(double x0, double y0, double z0, double x1, double y1, double z1, int face, int[] texture,
+    public void face(double x0, double y0, double z0, double x1, double y1, double z1, int face, int[] texture,
               double shade, double alpha, double[] ghost) {
         Vec3[] corners = corners(x0, y0, z0, x1, y1, z1, face);
         Vec3 normal = normal(face);
@@ -128,7 +129,17 @@ final class PerspectiveRaster implements AutoCloseable {
      * bloque girado, como un block display).
      */
     void quad(Vec3[] corners, int rgb, double shade) {
-        Vec3 normal = corners[1].subtract(corners[0]).cross(corners[2].subtract(corners[0]));
+        int[] flat = new int[256];
+        Arrays.fill(flat, 0xFF000000 | rgb);
+        quad(corners, flat, shade);
+    }
+
+    /**
+     * Un cuadrilátero cualquiera con su textura (la cara de un display girado o escalado), si mira a la cámara. Las
+     * esquinas van en sentido antihorario vistas desde fuera, empezando abajo a la izquierda, como en {@link #corners}.
+     */
+    void quad(Vec3[] corners, int[] texture, double shade) {
+        Vec3 normal = corners[1].subtract(corners[0]).cross(corners[3].subtract(corners[0]));
         if (normal.dot(corners[0].subtract(eye)) >= 0.0) {
             return;
         }
@@ -139,16 +150,14 @@ final class PerspectiveRaster implements AutoCloseable {
                 return;
             }
         }
-        int[] flat = new int[256];
-        Arrays.fill(flat, 0xFF000000 | rgb);
         triangle(screen[0], screen[1], screen[2], new double[]{0, 1}, new double[]{1, 1}, new double[]{1, 0},
-                flat, shade, 1.0, null);
+                texture, shade, 1.0, null);
         triangle(screen[0], screen[2], screen[3], new double[]{0, 1}, new double[]{1, 0}, new double[]{0, 0},
-                flat, shade, 1.0, null);
+                texture, shade, 1.0, null);
     }
 
     /** Nueva capa de fantasma: profundidades vacías. */
-    double[] layer() {
+    public double[] layer() {
         return new double[width * height];
     }
 
@@ -210,7 +219,7 @@ final class PerspectiveRaster implements AutoCloseable {
     // ---------------------------------------------------------------- líneas y gizmo
 
     /** Una línea del mundo con prueba de profundidad (las aristas del contorno). */
-    void depthLine(Vec3 from, Vec3 to, int argb, double widthPixels) {
+    public void depthLine(Vec3 from, Vec3 to, int argb, double widthPixels) {
         double[] a = project(from);
         double[] b = project(to);
         if (a == null || b == null) {
@@ -241,7 +250,7 @@ final class PerspectiveRaster implements AutoCloseable {
     }
 
     /** El gizmo encima de todo (sin profundidad), con antialias. */
-    void gizmo(GizmoGeometry.Shape shape, double alpha) {
+    public void gizmo(GizmoGeometry.Shape shape, double alpha) {
         BufferedImage image = image();
         Graphics2D graphics = image.createGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -275,7 +284,7 @@ final class PerspectiveRaster implements AutoCloseable {
     }
 
     /** Un texto con fondo oscuro en un punto del mundo (las medidas de la caja). */
-    void label(String text, Vec3 at, int rgb) {
+    public void label(String text, Vec3 at, int rgb) {
         double[] point = project(at);
         if (point == null) {
             return;
@@ -296,7 +305,7 @@ final class PerspectiveRaster implements AutoCloseable {
     }
 
     /** La action bar del juego: una línea abajo, centrada, con sombra. */
-    void actionBar(String text) {
+    public void actionBar(String text) {
         BufferedImage image = image();
         Graphics2D graphics = image.createGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -316,10 +325,25 @@ final class PerspectiveRaster implements AutoCloseable {
         load(image);
     }
 
-    BufferedImage image() {
+    public BufferedImage image() {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         image.setRGB(0, 0, width, height, color, 0, width);
         return image;
+    }
+
+    /** Pinta encima de lo que hay con un {@link BufferedImage} (textos de la fuente del juego, iconos). */
+    public void paint(java.util.function.Consumer<BufferedImage> painter) {
+        BufferedImage image = image();
+        painter.accept(image);
+        load(image);
+    }
+
+    public int width() {
+        return width;
+    }
+
+    public int height() {
+        return height;
     }
 
     private void load(BufferedImage image) {
@@ -329,7 +353,7 @@ final class PerspectiveRaster implements AutoCloseable {
         }
     }
 
-    void write(Path file) throws IOException {
+    public void write(Path file) throws IOException {
         ImageIO.write(image(), "png", file.toFile());
     }
 
@@ -372,7 +396,7 @@ final class PerspectiveRaster implements AutoCloseable {
         return new Color(value >> 16 & 0xFF, value >> 8 & 0xFF, value & 0xFF, Math.clamp(a, 0, 255));
     }
 
-    static int lerp(int from, int to, double amount) {
+    public static int lerp(int from, int to, double amount) {
         int r = (int) Math.round((from >> 16 & 0xFF) + ((to >> 16 & 0xFF) - (from >> 16 & 0xFF)) * amount);
         int g = (int) Math.round((from >> 8 & 0xFF) + ((to >> 8 & 0xFF) - (from >> 8 & 0xFF)) * amount);
         int b = (int) Math.round((from & 0xFF) + ((to & 0xFF) - (from & 0xFF)) * amount);
