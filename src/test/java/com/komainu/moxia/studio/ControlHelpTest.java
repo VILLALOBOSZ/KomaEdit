@@ -88,7 +88,8 @@ class ControlHelpTest {
 
     /**
      * Lo esencial arriba: como mucho cuatro controles a la vista antes de Más ajustes. Lo que se elige viendo (las
-     * galerías de miniaturas y los buscadores) no cuenta: no son líneas ni números que haya que entender.
+     * galerías de miniaturas y los buscadores) no cuenta: no son líneas ni números que haya que entender. Tampoco el
+     * interruptor «Pincel / Selección»: dice cómo se usa la herramienta, no qué sale.
      */
     @Test
     void lessIsInSightEachToolShowsAtMostFourControlsBeforeMoreSettings() {
@@ -97,7 +98,8 @@ class ControlHelpTest {
                     .filter(param -> card.essential(param) && param.visible(card.defaults()))
                     .filter(param -> !(param instanceof ToolParam.Choice choice
                             && (choice.style() == ToolParam.Choice.Style.GALLERY
-                            || choice.style() == ToolParam.Choice.Style.SEARCH)))
+                            || choice.style() == ToolParam.Choice.Style.SEARCH
+                            || choice.style() == ToolParam.Choice.Style.SWITCH)))
                     .count();
             assertTrue(essentials <= 4, card.id() + " enseña " + essentials + " controles de entrada");
         }

@@ -73,7 +73,7 @@ class StudioViewTest {
         StudioDriver studio = studio();
         studio.view.selectStage(StudioStage.TOOLS, studio.host);
         studio.view.tools().select(ToolCatalog.byId("roof"), studio.host);
-        studio.click("Tejado");
+        studio.click("Poner tejado");
         assertTrue(studio.view.tools().browsing());
         assertTrue(studio.key(StudioKey.of(StudioKey.Code.ESCAPE)), "Esc cierra la cuadrícula");
         assertFalse(studio.view.tools().browsing());
@@ -87,7 +87,7 @@ class StudioViewTest {
         StudioDriver studio = studio();
         studio.view.selectStage(StudioStage.PATH, studio.host);
         assertTrue(studio.has("USAR CON"));
-        studio.click("Río o cañón");
+        studio.click("Excavar río");
         assertEquals(StudioStage.TOOLS, studio.view.stage());
         assertEquals("river", studio.view.tools().selected().id());
         studio.click("Tallar cauce");
@@ -104,7 +104,7 @@ class StudioViewTest {
         studio.view.tools().select(ToolCatalog.byId("river"), studio.host);
         studio.click("Marcar puntos");
         assertEquals(StudioStage.PATH, studio.view.stage());
-        assertTrue(studio.shows("Río o cañón · "), "el pie sigue siendo el del río");
+        assertTrue(studio.shows("Excavar río · "), "el pie sigue siendo el del río");
         for (int index = 0; index < 3; index++) {
             studio.host.points.add(new int[]{index, 64, 0});
         }

@@ -27,7 +27,12 @@ public enum EzBrushType {
             Set.of('f', 'm', 'b', 's', 'g', 'k', 'z', 'w', 'e', 'd', 'i'), "modelar", "modelado", "sk"),
     /** Propio de KomaEdit: pintar el terreno con un degradado, arrastrando (paquete {@code brush.paint}). */
     PAINT("paint", "Pintar", com.komainu.moxia.brush.paint.PaintConfig.SWITCHES,
-            com.komainu.moxia.brush.paint.PaintConfig.VALUED, "pintar", "pt");
+            com.komainu.moxia.brush.paint.PaintConfig.VALUED, "pintar", "pt"),
+    /**
+     * Propio de KomaEdit: una orden de la selección (retocar, pintar, erosionar…) repetida alrededor de cada clic
+     * ({@link ZoneCommand}). Sus opciones son {@code <radio> <orden>}, sin banderas propias.
+     */
+    ZONE("zone", "Pincel de zona", Set.of(), Set.of(), "zona");
 
     private final String id;
     private final String displayName;
@@ -65,6 +70,14 @@ public enum EzBrushType {
         return BrushOptions.parse(input, switches, valued);
     }
 
+    /**
+     * Si el Studio puede cambiar un pincel de este tipo por uno de {@code other} con {@code pincel actualizar}: el
+     * mismo tipo o los dos de la tarjeta Pintar (el modo Natural va por zonas).
+     */
+    public boolean sameCard(EzBrushType other) {
+        return this == other || Set.of(PAINT, ZONE).contains(this) && Set.of(PAINT, ZONE).contains(other);
+    }
+
     public static EzBrushType byId(String input) {
         String name = input.toLowerCase(Locale.ROOT);
         for (EzBrushType type : values()) {
@@ -79,6 +92,6 @@ public enum EzBrushType {
         }
         throw new IllegalArgumentException("Pincel desconocido: " + input
                 + " (paletteshift, gradient, gradientstroke, petalpainter, place, scatter, array, tree, rock,"
-                + " biome, heightmap, sculpt, stamp, paint)");
+                + " biome, heightmap, sculpt, stamp, paint, zone)");
     }
 }

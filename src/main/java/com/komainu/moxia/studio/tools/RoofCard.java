@@ -17,7 +17,7 @@ public final class RoofCard extends ToolCard {
     private static final Set<String> TALL = Set.of("dome", "cone", "spire", "pagoda");
 
     RoofCard() {
-        super("roof", ToolFamily.ROOFS, ToolTarget.SELECTION,
+        super("roof", ToolTarget.SELECTION,
                 List.of("roof", "tejado", "techo", "gable", "hip", "dosaguas", "cupula", "mansarda", "tejas"),
                 List.of(
                         new ToolParam.Choice("type", Arrays.stream(RoofType.values()).map(RoofType::id).toList(),
