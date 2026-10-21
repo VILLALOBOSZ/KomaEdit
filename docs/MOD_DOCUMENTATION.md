@@ -5,15 +5,15 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 ## Índice
 
 - **Empezar:** [Procedural Studio](#procedural-studio) · [Trayectorias y hologramas](#trayectorias-y-hologramas) · [Ayuda y comandos](#ayuda-y-comandos) · [Diagnóstico antes de construir](#diagnóstico-antes-de-construir) · [Vista previa, progreso y cancelación](#vista-previa-progreso-y-cancelación) · [Colocar con gizmo](#colocar-con-gizmo) · [En el mundo: ajustes, teclas y mensajes](#en-el-mundo-ajustes-teclas-y-mensajes)
-- **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Variaciones de la figura](#variaciones-de-la-figura) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
+- **Figuras y tubos:** [Figuras procedurales](#figuras-procedurales) · [Red](#red) · [Rayos ramificados](#rayos-ramificados) · [Telarañas adaptativas](#telarañas-adaptativas) · [Figuras de espacio de tubo](#figuras-de-espacio-de-tubo) · [Motor exacto de las figuras clásicas](#motor-exacto-de-las-figuras-clásicas) · [Doblar estructuras del portapapeles](#doblar-estructuras-del-portapapeles) · [Escalar y girar el portapapeles](#escalar-y-girar-el-portapapeles) · [Figura Expresión](#figura-expresión) · [Spline de ezEdits (ezspline)](#spline-de-ezedits-ezspline) · [Variaciones de la figura](#variaciones-de-la-figura) · [Estructuras](#estructuras) · [Materiales y degradados](#materiales-y-degradados)
 - **Sobre lo construido:** [Envejecer (orden avanzada)](#envejecer) · [Hiedra viva](#hiedra-viva) · [Retoques sobre la selección](#retoques-sobre-la-selección) · [Enredaderas, musgo, losas y estados](#enredaderas-musgo-losas-y-estados) · [Vidriera degradada](#vidriera-degradada)
 - **Edificios y naturaleza:** [Árboles y rocas](#árboles-y-rocas) · [Tejados](#tejados) · [Loft entre curvas](#loft-entre-curvas)
 - **Deformar, texturizar y suavizar:** [Deformar la selección](#deformar-la-selección) · [Superficie](#superficie) · [Texturizado](#texturizado) · [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región) · [Suavizado](#suavizado) · [Smoothblocks: perfiles de -w](#smoothblocks-perfiles-de--w)
 - **Color e imagen:** [Color y sombreado](#color-y-sombreado) · [Imagen en bloques](#imagen-en-bloques)
 - **Generadores y terreno:** [Formas sueltas](#formas-sueltas) · [Terreno con ruido](#terreno-con-ruido) · [Campos y líneas de flujo](#campos-y-líneas-de-flujo) · [Terraformado](#terraformado)
-- **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Supervarita](#supervarita) · [Simetría](#simetría)
+- **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Pinceles de modelado](#pinceles-de-modelado) · [Supervarita](#supervarita) · [Simetría](#simetría)
 - **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
-- **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria)
+- **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra)
 - **Servidor y proyecto:** [Recetas, instancias y paquetes](#recetas-instancias-y-paquetes) · [Proyecto persistente y recuperación](#proyecto-persistente-y-recuperación) · [Permisos, cuotas y configuración](#permisos-cuotas-y-configuración) · [Rendimiento](#rendimiento) · [Versiones descargables](#versiones-descargables) · [Política de actualización](#política-de-actualización)
 
@@ -21,7 +21,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 
 Procedural Studio se abre con `K` y permite construir mientras el mundo sigue visible y activo. Tiene siete etapas repartidas en tres grupos: **Crear** (Herramientas, Trayectoria y Figuras), **Ajustar** (Color) y **Biblioteca** (Planos, Recetas e Instancias). Modificadores y Material ya no son etapas: solo valían para la figura y viven dentro de Figuras, como su [material](#tamaño-material-y-variaciones) y sus [variaciones](#tamaño-material-y-variaciones). Envejecer tampoco es una etapa: queda como la orden avanzada [`/komaedit weather`](#envejecer).
 
-Todo se explica en la propia pantalla, sin leer esto: cada control dice al pasar el ratón qué le pasa a lo que construyes y, en los números, sus extremos en palabras («de estrecha a ancha»); el pie dice qué hace cada clic en el mundo en la etapa en la que estás, y al dejar quieto el ratón sobre el mundo sale la leyenda entera. Y todo se hace con el ratón sin cerrar el Studio: seleccionar arrastrando, poner y arrastrar puntos, pintar con el pincel, coger un material con Alt+clic y colocar con un clic (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
+La primera vez que se abre, una [bienvenida guiada](#bienvenida-guiada) de cinco pasos lo enseña sobre el mundo. Todo se explica en la propia pantalla, sin leer esto: cada control dice al pasar el ratón qué le pasa a lo que construyes y, en los números, sus extremos en palabras («de estrecha a ancha»); el pie dice qué hace cada clic en el mundo en la etapa en la que estás, y al dejar quieto el ratón sobre el mundo sale la leyenda entera. Y todo se hace con el ratón sin cerrar el Studio: seleccionar arrastrando, poner y arrastrar puntos, pintar con el pincel, coger un material con Alt+clic y colocar con un clic (ver [El ratón en el mundo](#el-ratón-en-el-mundo)).
 
 - El catálogo de materiales utiliza todos los bloques registrados por Minecraft y los mods cargados.
 - La cámara puede desplazarse mientras el Studio permanece abierto.
@@ -32,6 +32,48 @@ Todo se explica en la propia pantalla, sin leer esto: cada control dice al pasar
 ![Herramientas con el árbol elegido](renders/studio/1080p_gui3_arbol_es.png)
 
 ![Lo primero que se ve: Figuras sin puntos dice cómo ponerlos](renders/studio/1080p_gui3_primera_vez_es.png)
+
+### Bienvenida guiada
+
+La primera vez que alguien abre el Studio sale una tarjeta, **Primeros pasos en el Studio**: cinco pasos cortos sobre el mundo de verdad que en un par de minutos dejan hecho algo bonito (un árbol y una montaña nevada) y enseñan lo que se usa siempre: elegir una herramienta, ver antes de colocar, confirmar y deshacer. **Empezar** la lanza; **Ahora no** la cierra.
+
+| Paso | Qué se hace | Qué enseña |
+| --- | --- | --- |
+| 1. Planta un árbol | Pulsar **Árbol** en la cuadrícula y hacer clic en el suelo: sale como fantasma, sin colocar. | Las herramientas se eligen en la cuadrícula; un clic en el mundo construye ahí. |
+| 2. Muévelo y colócalo | Arrastrar una flecha del fantasma (o hacer clic en otro sitio) y pulsar **Colocar** (o `Intro`). | Nada se pone hasta confirmarlo, y el gizmo lo deja justo donde se quiere. |
+| 3. Levanta una montaña | **Sello de relieve**, elegir un sello (Montaña, por ejemplo), **Al pincel**, clic en el suelo (se ve antes de cambiar nada), **Azar** y otro clic (otra montaña con la misma forma) y **Aplicar**. | La miniatura es la forma; la semilla da otra variante; el pincel enseña antes de aplicar. |
+| 4. Píntala | **Pintar terreno**, el preset **Cumbres**, **Al pincel**, clic en la montaña y **Aplicar**. | Un preset deja la herramienta lista de un clic. |
+| 5. Deshaz lo que quieras | Abrir el historial (el reloj de la barra) y pulsar **Deshacer** (o `Ctrl+Z`). | Todo lo del mundo se deshace, y se rehace. |
+
+- **Cada golpe, una burbuja.** Junto a lo que hay que tocar sale una burbuja corta: en qué paso va («Paso 2 de 5», con un punto por paso), una frase de qué hacer y por qué y, abajo, **Saltar paso** y **Saltar bienvenida**. Lo que hay que pulsar lleva un borde de acento con una luz que le da la vuelta despacio. La burbuja va sobre el mundo, a la izquierda del panel y a la altura del control, así que no tapa ningún control; lo que se hace en el mundo (un clic en el suelo) va arriba, pegado al panel. Si el mundo no deja sitio (un panel muy ancho en una pantalla pequeña), va sobre el panel, debajo o encima del control. Mientras se ve, la leyenda del mundo no sale, y sus botones responden al primer clic aunque el historial esté abierto.
+- **Avanza solo cuando lo haces.** Cada golpe espera a la acción de verdad: que la herramienta esté elegida, que salga el fantasma tras el clic, que se mueva, que se coloque, que llegue la orden del pincel, que se pinte en el mundo, que cambie la semilla o que se deshaga algo. Si a mitad de un paso vas a otra herramienta, la burbuja pide volver y luego sigue donde ibas. Si quitas el fantasma sin colocarlo (o el servidor no lo coloca), vuelve a pedir el clic: «Cancelado: no se colocó nada».
+- **Prepara lo justo:** abre Herramientas con su cuadrícula para elegir, desplaza el panel hasta lo que hay que tocar y, en el modo compacto, abre **Más ajustes**, donde van los presets y **Azar**. Nunca elige nada por el jugador.
+
+#### Segura en cualquier servidor
+
+- **Nada se coloca sin que lo confirmes.** Mientras dura, Construir va siempre con vista previa (si la tenías apagada, pasa a en vivo) y los pinceles del sello y de la pintura, con la **vista previa en cada clic**: un clic enseña el resultado y la burbuja ofrece **Aplicar** (`/komaedit pincel aplicar`) o **Descartar** (`/komaedit pincel cancelar`). La bienvenida no manda nada que cambie el mundo salvo esos **Aplicar** que pulsa el jugador. Si se salta un paso o la bienvenida con una vista previa del pincel a medias, se descarta.
+- **Se avisa de que todo se deshace:** lo dice la entrada, lo repite el paso de colocar y el último paso enseña a deshacer.
+- **Al acabar, al saltarla o al cerrar el Studio** vuelve lo que tenías (la vista previa apagada, la de cada clic de los pinceles), salvo que lo cambiaras tú durante la bienvenida. En `studio.json` no se queda nada de lo que puso; al volver a abrir el Studio, sigue donde iba y lo vuelve a poner.
+- **Sin el permiso de un paso, se salta solo** y la burbuja siguiente lo dice («Sin permiso para Sello de relieve: ese paso se salta»); sin el del árbol se saltan plantar y colocar. «Paso N de M» cuenta solo los que se hacen. Con un servidor que no contesta qué permisos tienes no se salta nada: decide el servidor al construir.
+- **En supervivencia, o sin ningún permiso de construir, solo enseña**, y la entrada ya lo dice. Se elige igual (la herramienta, el sello, Azar, el preset, abrir el historial), pero lo que tocaría el mundo pasa a ser un golpe de mirar con **Siguiente**: la burbuja señala el botón, sin el borde animado, y explica qué haría. No se manda ninguna orden de construir. Son cuatro pasos (colocar va dentro del primero).
+
+#### Una vez por jugador, y siempre que quieras
+
+- Sale sola **una vez**: al enseñar la entrada queda apuntada en `config/komaedit/studio.json` (`"welcome": 1`), aunque se cierre a medias. Un `studio.json` de una versión anterior no lo tiene, así que a quien ya usaba el Studio también le sale una vez.
+- Se vuelve a lanzar desde la chuleta (`F1` o `?`), con **Bienvenida guiada** arriba a la derecha, y con **`/komaedit tutorial`** o **`/komaedit bienvenida`**, que abren el Studio (si no estaba abierto) con la bienvenida desde la entrada. La orden necesita KomaEdit en el cliente; sin él, lo dice.
+- En español o en inglés, según el idioma del juego, con el mismo tono que la ayuda de los controles.
+
+![La entrada: lo que se va a hacer y que nada se coloca sin confirmar](renders/studio/bienvenida/1080p_gui3_bienvenida_0_entrada_es.png)
+
+![Paso 1: la burbuja junto a Árbol, que lleva el borde](renders/studio/bienvenida/1080p_gui3_bienvenida_1_arbol_es.png)
+
+![Paso 3: la montaña se ve antes; Aplicar o Descartar](renders/studio/bienvenida/1080p_gui3_bienvenida_3_aplicar_es.png)
+
+![A 854×480 con GUI 2: el preset, dentro de Más ajustes](renders/studio/bienvenida/854_gui2_bienvenida_4_pintar_es.png)
+
+Las maquetas de todos los pasos, a 1080p con GUI 3 y a 854×480 con GUI 2, en español e inglés (y en supervivencia), están en `docs/renders/studio/bienvenida/`.
+
+- **Limitaciones:** la vista previa de los pinceles se aplica desde la burbuja; fuera de la bienvenida es `/komaedit pincel aplicar`. Con «Colocar con gizmo: Nunca» (`/kegui ajustes`) el árbol sale como vista previa de bloques, que no se mueve, y el paso 2 pide solo **Confirmar**. Con puntos de trayectoria, el árbol va en cada punto y el paso 1 pide **Plantar**. Si se sale del mundo a mitad, la vista previa queda en vivo (la de serie). Nada se ha probado aún dentro de Minecraft.
 
 ### Disposición de la pantalla
 
@@ -68,7 +110,7 @@ Con una figura elegida, la etapa **Figuras** tiene, de arriba abajo, lo que se t
 1. Su nombre (pulsarlo abre la cuadrícula), su descripción y los presets (**Compacto**, **De serie**, **Amplio**, **Robusto**, **Azar**). Si faltan puntos, encima, en amarillo: «Faltan 2 puntos: ponlos con un clic en el mundo.»
 2. **Tamaño:** radio, espaciado y grosor (con el nombre que les da cada figura: «Paso de trenza», «Grosor de hebra»), y la altura en las que la tienen. En Perfil 2D, el perfil y si va hueco; en Expresión, la fórmula.
 3. **Material:** el bloque, con su biblioteca y su cuentagotas, y el interruptor **Degradado**. Con él encendido, la fila del bloque pasa a ser la **Paleta** (‹ › o la rueda); al apagarlo vuelve el bloque y al encenderlo otra vez, la misma paleta.
-4. **Variaciones:** lo que era la etapa Modificadores (ver [Variaciones de la figura](#variaciones-de-la-figura)). Cada una es una fila con su **dibujo**, su nombre, una frase de lo que hace y un interruptor; toda la fila la pone o la quita y el clic derecho la quita. Puesta, sus controles salen justo debajo. El título dice cuántas hay puestas.
+4. **Variaciones** (ver [Variaciones de la figura](#variaciones-de-la-figura)). Cada una es una fila con su **dibujo**, su nombre, una frase de lo que hace y un interruptor; toda la fila la pone o la quita y el clic derecho la quita. Puesta, sus controles salen justo debajo. El título dice cuántas hay puestas.
 5. **Más ajustes**, plegado (con cuántos ya no están de serie): el giro de la figura sobre el camino, el resto del tubo (motor, extremos, normales, piezas), **Cómo cambia** (si afinar o retorcer van parejos o se notan más al principio o al final), la dirección, mezcla, sentido y reparto del degradado, **Cerrar huecos**, **Quitar bloques sueltos** y **Quitar todas las variaciones**.
 
 | Variación | Qué hace | Sus controles | Se pone con |
@@ -92,13 +134,9 @@ Con una figura elegida, la etapa **Figuras** tiene, de arriba abajo, lo que se t
 
 ![El material bajo el tamaño](renders/studio/1080p_gui3_material_es.png)
 
-Antes, Modificadores era una etapa aparte con nombres abstractos (escala inicial y final, espaciado inicial y final, torsión total, curva, fusión, conformado, kitbash, limpieza) y ningún control decía qué cambiaba:
-
-![Modificadores en la 1.8.0](renders/studio/antes/1080p_gui3_modificadores_es.png)
-
 ### Ajustar rápido
 
-Todos los controles numéricos del Studio (figuras, modificadores, herramientas y color) son iguales: la etiqueta a la izquierda, el valor **con su unidad** (`18 bloques`, `50 %`, `45°`, `×1,5`, `Y 64`; en corto si no cabe, `18 bl.`) entre `−` y `+`, y debajo una barra con el rango, llena hasta el valor y con una marca en el de serie. Un punto del color del acento delante de la etiqueta dice que el valor ya no es el de serie.
+Todos los controles numéricos del Studio (figuras, variaciones, herramientas y color) son iguales: la etiqueta a la izquierda, el valor **con su unidad** (`18 bloques`, `50 %`, `45°`, `×1,5`, `Y 64`; en corto si no cabe, `18 bl.`) entre `−` y `+`, y debajo una barra con el rango, llena hasta el valor y con una marca en el de serie. Un punto del color del acento delante de la etiqueta dice que el valor ya no es el de serie.
 
 - **Rueda** sobre los botones o el valor: sube o baja un paso. Sobre la etiqueta o fuera de los controles, la rueda desplaza el panel, para no cambiar valores sin querer. Con **Mayús**, `−` `+` y la rueda dan un paso grande (×5, o el propio del control: 45° el giro, 90° la torsión, 25 % las escalas).
 - **Arrastrar** el número en horizontal lo cambia como un deslizador: recorrer el rango entero cuesta unos 240 píxeles, y nunca menos de 6 píxeles por paso. Con **Mayús**, fino: un paso cada 12 píxeles.
@@ -141,7 +179,7 @@ El botón del reloj de la barra abre la lista de los últimos cambios en el mund
 
 El ojo del pie elige qué hace el botón principal en las herramientas que admiten la vista previa universal; un clic pasa al siguiente modo y el clic derecho la apaga:
 
-- **Vista previa en vivo** (la de serie): Construir enseña la vista previa (con el [fantasma del gizmo](#colocar-con-gizmo) si es un objeto: árbol, roca, texto, tejado…) y, **mientras se vea**, cada cambio de un ajuste la rehace sola con lo nuevo. El fantasma nuevo sale donde dejaste el anterior, con su giro y sus opciones: puedes moverlo con el ratón y seguir ajustando sin perder el sitio. Espera 0,35 s sin cambios, deja al menos 0,7 s entre dos envíos, no manda nada mientras el servidor calcula la anterior ni repite una orden igual, y solo vale en obras pequeñas: selecciones de hasta 64 000 bloques y, en Figuras, menos de 250 000 bloques en el holograma. Al arrastrar un número o escribir no se manda nada hasta soltar. No abre ninguna vista previa por su cuenta: solo rehace la que pediste; al colocarla o quitarla, se acaba hasta el próximo Construir.
+- **Vista previa en vivo** (la de serie): Construir enseña la vista previa (con el [fantasma del gizmo](#colocar-con-gizmo) si es un objeto: árbol, roca, texto, tejado…) y, **mientras se vea**, cada cambio de un ajuste la rehace sola con lo nuevo. El fantasma nuevo sale donde dejaste el anterior, con su giro y sus opciones: puedes moverlo con el ratón y seguir ajustando sin perder el sitio. Espera 0,35 s sin cambios, deja al menos 1 s entre dos envíos (más deprisa, el antispam de Minecraft acabaría echando a quien no es OP), no manda nada mientras el servidor calcula la anterior ni repite una orden igual, y solo vale en obras pequeñas: selecciones de hasta 64 000 bloques y, en Figuras, menos de 250 000 bloques en el holograma. Al arrastrar un número o escribir no se manda nada hasta soltar. No abre ninguna vista previa por su cuenta: solo rehace la que pediste; al colocarla o quitarla, se acaba hasta el próximo Construir.
 - **Vista previa al construir:** Construir enseña la vista previa (en la orden, `-v` o `--preview`) y espera a **Confirmar** (`Intro`); cambiar un ajuste no la rehace.
 - **Sin vista previa:** Construir cambia el mundo en el acto (lo que es un objeto sale igualmente como fantasma si **Colocar con gizmo** está en **Siempre**).
 
@@ -224,7 +262,7 @@ Con puntos de trayectoria, las herramientas que los usan (árbol, roca, río, ra
 
 ### El pincel sigue al Studio
 
-**Al pincel** (árbol, roca, bioma), el **Sello de relieve** y **Pintar terreno** dejan un pincel en la mano. Desde entonces, cualquier cambio en esa tarjeta del Studio llega a ese pincel al momento (0,3 s después de dejar de tocarlo), aunque luego mires otra herramienta: quitar **Vista previa en cada clic** la quita del pincel, cambiar el radio o la especie cambia lo que pinta el siguiente clic.
+**Al pincel** (árbol, roca, bioma), el **Sello de relieve** y **Pintar terreno** dejan un pincel en la mano. Desde entonces, cualquier cambio en esa tarjeta del Studio llega a ese pincel al momento (0,3 s después de dejar de tocarlo y, entre dos cambios seguidos, al menos 1 s, por el antispam de Minecraft), aunque luego mires otra herramienta: quitar **Vista previa en cada clic** la quita del pincel, cambiar el radio o la especie cambia lo que pinta el siguiente clic.
 
 - El Studio manda `/komaedit pincel actualizar <tipo> <ajustes>`, que solo cambia el pincel que ya tienes en la mano y es de ese tipo: nunca marca ni entrega otro objeto, y lo dice en la barra de acción, sin llenar el chat.
 - Si cambias de objeto en la mano, no se manda nada; al volver a coger el pincel le llega lo último.
@@ -252,7 +290,7 @@ La biblioteca de bloques se abre al pulsar cualquier fila de bloque (material de
 
 ### Lo que se recuerda
 
-En `config/komaedit/studio.json`, por jugador y en su equipo: la etapa y la herramienta en las que lo dejaste, **los ajustes de cada herramienta** (se guardan 2 s después del último cambio y al cerrar), el desplazamiento de cada etapa y de cada herramienta, las secciones abiertas, el modo de vista previa, las favoritas y las recientes (figuras, herramientas y bloques) y la parte de la pantalla del panel. Un archivo de una versión anterior se lee igual; uno roto se ignora.
+En `config/komaedit/studio.json`, por jugador y en su equipo: la etapa y la herramienta en las que lo dejaste, **los ajustes de cada herramienta** (se guardan 2 s después del último cambio y al cerrar), el desplazamiento de cada etapa y de cada herramienta, las secciones abiertas, el modo de vista previa, las favoritas y las recientes (figuras, herramientas y bloques), la parte de la pantalla del panel y si ya salió la [bienvenida guiada](#bienvenida-guiada). Un archivo de una versión anterior se lee igual; uno roto se ignora.
 
 ### Progreso en el pie
 
@@ -296,7 +334,7 @@ Hay más comparativas de los cuatro temas en `docs/renders/studio/temas/`: [Herr
 
 ### Atajos de teclado
 
-`F1` o `?` abren la chuleta dentro del Studio; abajo tiene el selector de [tema de color](#temas-de-color). Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
+`F1` o `?` abren la chuleta dentro del Studio; abajo tiene el selector de [tema de color](#temas-de-color) y, arriba a la derecha, **Bienvenida guiada**, que vuelve a lanzar la [bienvenida](#bienvenida-guiada). Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
 
 | Tecla | Acción |
 | --- | --- |
@@ -336,10 +374,11 @@ Con menos de 300 píxeles de alto escalado (854×480 con GUI 2, 1080p con GUI 4)
 
 Todo el Studio (barra, etapas, contenido, pie, paleta, historial y biblioteca de bloques) es código común, sin Minecraft: `StudioView` guarda el estado y atiende el ratón y el teclado, `StudioLayout` reparte la pantalla y `StudioUi` dibuja sobre un `StudioCanvas`. En el juego, el lienzo es el `DrawContext` (`DrawContextCanvas`); en las pruebas, una imagen con la fuente de Minecraft y los iconos de los objetos del propio juego (`ImageCanvas`). Por eso las maquetas son el Studio de verdad y no un dibujo aparte:
 
-- `StudioMockupsTest` pinta las maquetas PNG con `KOMAEDIT_STUDIO_MOCKUPS=<carpeta>`. Las revisadas están en `docs/renders/studio/` (1080p con GUI 3 y 4 y 854×480 con GUI 2, en español e inglés) y las de la versión anterior, en `docs/renders/studio/antes/`.
+- `StudioMockupsTest` pinta las maquetas PNG con `KOMAEDIT_STUDIO_MOCKUPS=<carpeta>`. Las revisadas están en `docs/renders/studio/` (1080p con GUI 3 y 4 y 854×480 con GUI 2, en español e inglés).
 - `StudioDriver` maneja el Studio como un jugador (pulsar por texto, arrastrar, rueda, escribir, teclas) y lo usan `ToolsPanelTest`, `StudioViewTest`, `CompactModeTest`, `NumberControlTest`, `CommandPaletteTest`, `FigureClarityTest` y `TaskClicksTest`, que cuenta los clics de las tareas típicas.
 - Las variaciones son `FigureVariation` (cuándo está puesta cada una, con qué se pone, qué deja al quitarla y dónde sirve) y sus dibujos, `VariationThumbnails`; «Pegar al terreno» es `SurfaceConform`, sin Minecraft, con un `Terrain` que dan el servidor, el cliente o las pruebas.
 - Lo que explica cada control es `ControlHelp` (qué hace y sus extremos, de `gui.komaedit.tools.<herramienta>.ends.<ajuste>` o `gui.komaedit.ends.<control>`); `ControlHelpTest` exige que cada ajuste de herramienta diga lo que hace sin repetir su etiqueta, que los números lleven sus extremos (salvo semilla, rumbo y altura absoluta) y que ninguna herramienta enseñe más de cuatro ajustes antes de Más ajustes.
+- La [bienvenida guiada](#bienvenida-guiada) es `WelcomeTour` (la máquina de estados, sin Minecraft ni dibujo: pasos, golpes, cuándo avanza, permisos y supervivencia), `WelcomeGuide` (la engancha a `StudioView`: le cuenta lo que se ve, prepara cada golpe y sostiene la vista previa) y `WelcomeBubble` (la burbuja, la tarjeta y el borde). Señala con **anclas con nombre** de `StudioUi` (`tool:tree`, `stamp:montana`, `preset:random`, `footer:build`, `ghost:place`, `top:history`, `history:undo`…), registradas enteras aunque el recorte las tape, para poder desplazar hasta ellas. `WelcomeTourTest` prueba la máquina (avanzar con la acción de verdad, saltar, sin permiso, en supervivencia y relanzar), `StudioWelcomeTest` la hace entera pulsando los controles del Studio (y comprueba que nada se manda sin vista previa ni sin Aplicar, que se guarda que ya se vio y que al cerrar vuelve lo de antes) y `StudioWelcomeMockupsTest` pinta sus maquetas; `StudioThemeContrastTest` mide sus textos en los cuatro temas.
 - El ratón en el mundo son modelos sin Minecraft que usa la pantalla: `StudioView.worldAction` (qué hace un clic en cada etapa), `BoxSelect` (la caja, sus caras y el doble clic), `PathDrag` (agarrar, meter y añadir puntos) y `BrushStroke` (el ritmo del pincel). El relevo de mallas del fantasma en vivo es `MeshHandover`.
 
 ## Trayectorias y hologramas
@@ -496,6 +535,7 @@ El tema también se encuentra por el nombre de cualquiera de sus órdenes y alia
 - Los errores de nombre desconocido proponen el más parecido: figuras y sus alias, perfiles, extremos, normales, calidad, piezas, paletas, banderas de tubo, parámetros de figura, temas de ayuda y recorridos guardados. Por ejemplo, `/komaedit build coli stone` responde «Forma 3D desconocida: coli · ¿Quisiste decir «coil»?». Se acepta un error cada cuatro letras (cambiar, sobrar, faltar o intercambiar dos vecinas), sin contar tildes ni mayúsculas, o un prefijo de tres letras o más.
 - Alias: `/ke`, `/mx` y `/moxia` para `/komaedit`; `ruta` para `path`; `ayuda` para `help`; `estimar` para `estimate`; `confirmar` para `confirm`; `cancelar` para `cancel`; `vistaprevia` para `preview`. Casi todas las órdenes tienen además su nombre en español (`tejado`, `arbol`, `terreno`, `bioma`…), que la ayuda indica junto a cada una.
 - `/komaedit wiki` (como `/ezedits wiki`) indica dónde está la ayuda: dentro del juego, con `/komaedit help`.
+- `/komaedit tutorial` (alias `bienvenida`) abre el Procedural Studio con la [bienvenida guiada](#bienvenida-guiada) desde el principio; está en `/komaedit help project`.
 
 ### Mensajes: `/komaedit quiet`
 
@@ -610,9 +650,10 @@ En los dos casos, el chat resume la vista previa en una línea: cambios, cuánto
 
 ### Progreso y cancelación
 
-- Una bossbar enseña la fase de la operación: **leyendo** la selección, **calculando**, **preparando la vista previa**, **vista previa** (con la cuenta atrás), **comprobando la zona** y **colocando**, con porcentaje, bloques por segundo y tiempo restante. Aparece cuando la operación dura más de un segundo; la vista previa, al momento.
+- Una bossbar enseña la fase de la operación: **leyendo** la selección, **calculando**, **preparando la vista previa**, **vista previa** (con la cuenta atrás), **comprobando la zona**, **en cola** (el puesto y cuándo empezará) y **colocando**, con porcentaje, bloques por segundo y tiempo restante, o **en pausa** si un administrador la paró. Aparece cuando la operación dura más de un segundo; la vista previa, la cola y la pausa, al momento. El pie del Studio enseña lo mismo («En cola: 2.º de 3 · empieza en ~1 min 10 s»).
+- Si ya colocan tantas ediciones como permite el servidor (`maxConcurrentJobs`, 4 de serie), la tuya **espera su turno** en vez de rechazarse: el chat dice el puesto y cuándo empezará, y la barra lo va actualizando. Ver [Rendimiento](#rendimiento).
 - Un cálculo que no sabe cuánto le falta enseña el tiempo que lleva, y la barra va y viene.
-- `/komaedit cancel` para todo lo tuyo que esté en marcha: lectura, cálculo y colocación, y descarta la vista previa y el Build en espera. Lo ya colocado queda en una sola entrada de **//undo**: la colocación se corta siempre entre dos bloques, nunca a medias, y el chat dice cuántos bloques llegó a poner. `/komaedit job cancel` sigue parando solo la colocación.
+- `/komaedit cancel` para todo lo tuyo que esté en marcha, en la fase que sea: lectura, cálculo, espera en la cola y colocación, y descarta la vista previa y el Build en espera. Lo ya colocado queda en una sola entrada de **//undo**: la colocación se corta siempre entre dos bloques, nunca a medias, y el chat dice cuántos bloques llegó a poner. `/komaedit job cancel` sigue parando solo la colocación.
 - También para el pintado de biomas (`biome` y su pincel), que la bossbar enseña como colocación.
 - Si cambias de dimensión antes de que termine una operación que lee el mundo (operaciones sobre la selección, terraformado, tejados, texto, colocación…), se descarta con un aviso y no cambia nada: lo calculado era de la foto del mundo de antes. Al desconectarte se para todo lo tuyo.
 
@@ -620,13 +661,14 @@ En los dos casos, el chat resume la vista previa en una línea: cambios, cuánto
 
 - Las operaciones sobre la selección dicen al empezar cuántos bloques van a leer y, si pasa de dos segundos, cuánto tardarán.
 - Una colocación de más de tres segundos avisa de cuánto durará y de que `/komaedit cancel` la para.
-- Si un plan supera el `//limit` de tu sesión de WorldEdit, se avisa antes de empezar: la edición se parará al llegar y lo colocado quedará en //undo; súbelo con `//limit` para hacerla entera.
+- **Si una edición pasa de un límite, se dice antes de empezar** y no se lee, calcula ni coloca nada: cuántos bloques tiene, cuál es el límite y en cuántos trozos partirla. Vale para el límite del servidor (`maxBlocksPerOperation`, salvo con `komaedit.limit.unrestricted`), para lo que KomaEdit lee de una vez de la selección (16 millones de bloques con su margen) y para el `//limit` de tu sesión de WorldEdit (que además propone subirlo). Antes, con `//limit`, la edición empezaba y se paraba a medias.
+- Si la selección es una caja, el aviso trae los trozos preparados: **[trozo 1] [trozo 2] …** (o `/komaedit trozo <n>`, alias `part`) seleccionan cada uno, cortados por el lado horizontal más largo y en bordes de chunk; repites la orden en cada trozo. Los trozos se acuerdan de la selección original aunque ya hayas seleccionado el primero. Con otras formas de selección solo se dice en cuántos partirla.
 - `/komaedit estimate` de las trayectorias sigue igual.
 
 ### Rendimiento y limitaciones
 
 - Preparar la vista previa lee el mundo y el patrón de cada bloque en el hilo del servidor, unos 4 ms por tick: un plan de un millón de bloques tarda unos segundos (la barra lo enseña). La superficie (o la elección de displays) se calcula en un hilo aparte; el plan compacto se envía a unos 64 KiB por tick y los displays, a 128 por tick.
-- Mientras espera, el plan congelado ocupa unos 40 bytes por bloque.
+- Mientras espera, el plan congelado se guarda comprimido como cualquier plan grande (ver [Memoria](#memoria)).
 - Sin vista previa: los degradados de `gradient` (colocan por regiones, sin el plan que la vista previa necesita), los biomas (`biome`), el editor y Construir del Studio (que tiene su holograma y su confirmación), los pinceles y la supervarita, y las órdenes que no colocan bloques (`color`, `analyze`, `symmetry`, `capability`, `quiet`, los presets de `tree` y `rock`, `text fonts`…), que no aceptan la bandera.
 - Recalcular repitiendo la orden usa tu posición y mirada de ese momento (afecta a `place` y `array` sin selección).
 - Si un plan escribe dos veces en la misma posición, gana la última, igual que sin vista previa.
@@ -1154,7 +1196,7 @@ Curva un módulo copiado con WorldEdit (un tramo de muro, puente, calzada, vía 
 /komaedit doblar [repetir|estirar] [banderas]
 ```
 
-- En recetas: en **Modificadores → Kitbash**, la fila **Colocar** tiene dos modos nuevos, **Doblar** (repetir) y **Estirar**, que se suman a la figura de la receta y quedan dentro de la instancia, así que se pueden actualizar o retirar.
+- En recetas: la variación **Repetir lo copiado** de la etapa Figuras, con **Dónde** en «Doblado a lo largo» o «Estirado a lo largo», se suma a la figura de la receta y queda dentro de la instancia, así que se puede actualizar o retirar.
 
 ### Comportamiento
 
@@ -1247,7 +1289,7 @@ Ejemplos:
 
 ## Envejecer
 
-> **Orden avanzada.** Ya no está en el Studio (era la etapa Envejecer): queda la orden para quien la use.
+> **Orden avanzada.** No está en el Studio: se usa con la orden.
 
 ### Objetivo y acceso
 
@@ -1955,7 +1997,7 @@ Ejemplos:
 
 ## Variaciones de la figura
 
-En el Studio son las **Variaciones** de la etapa Figuras (ver [Tamaño, material y variaciones](#tamaño-material-y-variaciones)); antes eran la etapa Modificadores. Por debajo son los mismos números de la receta (`RecipeExtensions`), así que las recetas, los paquetes `.krecipe` y las instancias de antes se leen igual:
+En el Studio son las **Variaciones** de la etapa Figuras (ver [Tamaño, material y variaciones](#tamaño-material-y-variaciones)). Por debajo son los mismos números de la receta (`RecipeExtensions`), así que las recetas, los paquetes `.krecipe` y las instancias de antes se leen igual:
 
 | Variación | Números de la receta |
 | --- | --- |
@@ -2164,6 +2206,8 @@ Banderas:
 /komaedit surface noisify 3 Ce(F:0.1,cR:sub) 1 1 4 -m stone,andesite -t
 /komaedit surface rockify 2 -m ">stone"
 /komaedit surface rockify 3 -w SlabsAndStairs
+```
+
 ## Texturizado
 
 ### Objetivo y acceso
@@ -4627,7 +4671,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - Trayectorias y construcción: `komaedit.path`, `komaedit.build`, `komaedit.build.<figura>` (`komaedit.build.weather` para Envejecer).
    - Contenido: `komaedit.recipe`, `komaedit.instance`.
    - Edición: `komaedit.select` (selecciones y supervarita), `komaedit.paint`, `komaedit.clipboard`, `komaedit.history`.
-   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
+   - Administración: `komaedit.project.backup`, `komaedit.admin.reload`, `komaedit.admin.jobs` (`/komaedit jobs`: ver, pausar y cancelar los trabajos de todos), `komaedit.admin.image.url` (imágenes por URL, si `urlsRequireAdmin` está activo), `komaedit.admin.stamps.export` (copiar un sello de serie a `config/komaedit/heightmaps` para retocarlo); excepción de volumen: `komaedit.limit.unrestricted`.
 2. **Nodos finos**, uno por orden o modo, como en ezEdits. Un nodo padre da todos sus hijos (`komaedit.build.deform` da todos los modos de deform):
    - `komaedit.build.deform.<modo>`, `komaedit.build.surface.<modo>`, `komaedit.build.texture.<modo>`, `komaedit.build.shape.<forma>`, `komaedit.build.tweak.<modo>`, `komaedit.build.brush.<pincel>`.
    - `komaedit.build.smooth`, `.inflate`, `.deflate`, `.smoothblocks`, `.vines`, `.moss`, `.slabmerge`, `.statecycle`, `.glassgradient`, `.image`, `.noisegen`, `.flowfield`, `.flowline`, `.place`, `.array`, `.scatter`, `.palette.place`, `.palette.swap`, `.text`, `.gravity`, `.snow`, `.drain`, `.waterlog`, `.biome`, `.tree`, `.rock`.
@@ -4654,7 +4698,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`, `tree`, `rock`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, `tree`, `rock`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.intermediate` | Lo básico más pinceles (`paletteshift`, `gradient`, `gradientstroke`, `petalpainter`, `place`, `biome`, `heightmap`), deform, surface, smooth, texture, `shade`, `vines`, `moss`, `statecycle`, noisegen, flowfield, flowline, `place`, `text`, `biome`, simetría (espejos y radial), rampas, ríos, cañones y pintar terreno, tejados (`roof`) y lofts (`loft`), planos (ver, cargar, guardar, colocar y el pincel `stamp`), paletas y ruidos guardados, selecciones guardadas, pintura, portapapeles, recetas y las capacidades Extruir, Arrastrar, Sin actualizaciones y Alcance largo. |
 | `komaedit.permpack.advanced` | Lo intermedio más `array`, `scatter`, sus pinceles, `smoothblocks`, `symmetry worldedit`, `image`, compartir planos, la erosión física, instancias y todas las figuras propias de KomaEdit (`komaedit.build`). |
-| `komaedit.permpack.admin` | `reload`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
+| `komaedit.permpack.admin` | `reload`, `jobs`, copias del proyecto, imágenes por URL, sin límite de volumen, gestionar los planos compartidos y sin límites de planos, cambiar el modo de juego desde el menú rápido (`komaedit.admin.gamemode`) y usar las capacidades fuera de creativo (`komaedit.admin.anymode`). Va aparte: no incluye los otros. |
 
 - `/komaedit permisos [paquete]` (alias `permissions`) lista los nodos de cada paquete en verde (los tienes) o rojo; al pasar el ratón se ve el nodo completo y su equivalente de ezEdits.
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
@@ -4666,7 +4710,11 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 `config/komaedit/config.json` se crea automáticamente con:
 
 - `maxBlocksPerOperation`: `1500000` de forma predeterminada; rango válido `10000–10000000`.
-- `maxConcurrentJobs`: `4` de forma predeterminada; rango válido `1–64`.
+- `maxConcurrentJobs`: `4` de forma predeterminada; rango válido `1–64`. Ediciones que colocan a la vez; las demás esperan en la cola por orden de llegada (antes se rechazaban).
+- `tickBudgetMillis`: `6` de forma predeterminada; rango válido `0.5–40` (admite decimales). Milisegundos por tick que KomaEdit puede usar en el hilo del servidor entre todos los jugadores: leer selecciones, colocar, pintar biomas, preparar vistas previas, pinceles… Ver [Rendimiento](#rendimiento).
+- `tickBudgetMinMillis`: `1` de forma predeterminada; rango válido `0.1–tickBudgetMillis`. Lo que usa aunque el servidor vaya por debajo de 20 TPS, para que las ediciones terminen.
+- `planCompressAboveBlocks`: `131072` de forma predeterminada; `0` o más. A partir de cuántos bloques el plan de una edición se guarda comprimido por páginas (`0`: siempre).
+- `planMemoryMegabytes`: `128` de forma predeterminada; rango válido `0–65536`. Memoria comprimida que puede ocupar el plan de una edición; lo que pase va a un archivo temporal (`0`: nunca a disco).
 - `backupRetention`: `5` de forma predeterminada; rango válido `1–50`.
 - `confirmBuildAboveBlocks`: `250000` de forma predeterminada; rango válido `0–10000000`. Por encima, un Build pide confirmación; `0` lo desactiva.
 - `arraySnapRadius`: `96` de forma predeterminada (como ezEdits); rango válido `1–256`. Hasta dónde busca superficie `-b` en `array` y su pincel.
@@ -4674,7 +4722,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - `previewMaxDisplays`: `1500` de forma predeterminada; rango válido `0–10000`. Block displays como mucho por vista previa; por encima se enseña la superficie o una muestra, y con `0` solo la caja.
 - `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
 
-Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa ni `arraySnapRadius`) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
+Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa, `arraySnapRadius` ni los del presupuesto por tick y el plan) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
 
 `config/komaedit/capabilities.json` guarda los límites de las capacidades de construcción a mano (alcance, bloques por capa, largo del arrastre, velocidad de vuelo y acciones por tick; ver [Configuración de las capacidades](#configuración-de-las-capacidades)); también se recarga con `/komaedit reload`.
 
@@ -4684,15 +4732,77 @@ Los campos que falten (un `config.json` de una versión anterior, como el de la 
 
 ## Rendimiento
 
-- La geometría se calcula de forma asíncrona.
-- La colocación se agrupa por chunks y lotes.
-- Los hologramas utilizan secciones persistentes, descarte por cámara y caras expuestas.
-- Los generadores poseen límites de seguridad y cancelación cooperativa.
-- Las figuras de espacio de tubo recorren solo los ladrillos de 8³ bloques cercanos al eje y localizan el eje con un árbol de esferas.
-- El límite de volumen y la cuota global de jobs se aplican antes de abrir una sesión de edición.
-- Cada job persistente registra avance con frecuencia limitada y su finalización o cancelación.
-- Las operaciones largas enseñan su progreso en una bossbar y se paran con `/komaedit cancel`; lo colocado queda en //undo.
-- La vista previa prepara el plan repartido entre ticks y lo aplica sin recalcularlo si la zona no ha cambiado.
+KomaEdit está pensado para usarse en un servidor con gente: una edición enorme (millones de bloques) no baja los TPS ni deja a nadie esperando. Las figuras, los cálculos sobre la selección y la geometría van en hilos aparte; en el hilo del servidor solo se lee y se escribe el mundo, y eso tiene un presupuesto por tick.
+
+### Presupuesto por tick
+
+- Todo lo que KomaEdit hace en el hilo del servidor sale de un mismo presupuesto: `tickBudgetMillis` (**6 ms** de serie) por tick, entre todos los jugadores y todas las fases. Antes cada parte tenía el suyo (la colocación 12 ms, la lectura 4, los pinceles 5, la vista previa 4…) y podían sumarse.
+- **Baja solo si el servidor va justo.** KomaEdit mide lo que duran los ticks y a qué ritmo llegan: si el servidor ya gasta casi todo el tick por su cuenta, usa solo lo que sobre hasta 45 ms; si va por debajo de 20 TPS, solo el mínimo (`tickBudgetMinMillis`, **1 ms**). Cuando el servidor se recupera, en un segundo o dos vuelve al presupuesto entero.
+- Se trabaja por tiempo, no por número de bloques: el mismo presupuesto da más bloques por tick en un mundo sencillo y menos donde cada bloque cuesta más (luz, vecinos, entidades de bloque).
+- Lo interactivo (pinceles, vista previa, fantasma, pintura) va primero, pero si hay ediciones pesadas en marcha usa como mucho la mitad del presupuesto.
+- Un servidor con poca gente puede subir `tickBudgetMillis` (por ejemplo a 15) para que las ediciones vayan más rápido; uno muy cargado, bajarlo. Se aplica con `/komaedit reload`.
+
+### Cola justa
+
+- Lo pesado (leer una selección, colocar, pintar biomas) se reparte **por turnos entre jugadores** en cada tick: cada uno recibe su parte, lo que uno no gasta pasa a los demás y el primero del turno cambia cada tick. Una edición de 20 millones de bloques no bloquea la de 2 000 de otro jugador: las dos avanzan en cada tick y la pequeña acaba en unos ticks.
+- Como mucho `maxConcurrentJobs` ediciones **colocan** a la vez; las demás esperan en la cola por orden de llegada, con su puesto y el tiempo estimado en la barra y en `/komaedit job status`. El tiempo sale del ritmo medido de la cola (las que colocan se lo reparten a partes iguales).
+- `/komaedit cancel` saca tu edición de la cola o la para en cualquier fase.
+
+### Colocar sin picos
+
+- WorldEdit no escribe en el mundo al hacer `setBlock`: lo guarda en un búfer de la sesión hasta vaciarla, y en su modo rápido (el de serie) deja la luz, los vecinos y el envío a los clientes para después. Hasta ahora KomaEdit no vaciaba ese búfer mientras colocaba, así que **toda la edición caía en el tick final**: con un millón de bloques, varios segundos con el servidor parado, y hasta el final nadie veía nada.
+- Ahora la colocación va **por ventanas**: escribe un tramo, lo pasa al mundo (agrupado por chunk y sección, como hace WorldEdit) y aplica su luz, vecinos y envío a los clientes, repartido entre ticks si hace falta; luego el siguiente. El tamaño de cada ventana se ajusta a lo que cuesta de verdad cada bloque, para que quepa en el tick. Los bloques aparecen poco a poco y ningún tick pasa del presupuesto.
+- Se respetan los ajustes de WorldEdit de cada jugador (`//perf`, `//fast`, `//reorder`): lo que cambia es cuándo se aplican, no cuáles.
+- Sigue siendo **una sola entrada de //undo** aunque dure cientos de ticks, y cancelar deja exactamente lo colocado hasta ahí.
+- De paso se arregla la captura de las instancias del Studio (Construir): leía el mundo cuando lo escrito aún estaba en el búfer y apuntaba el bloque de antes; ahora lee lo colocado.
+
+### Memoria
+
+- **El plan de una edición grande va comprimido** (por encima de `planCompressAboveBlocks`, 131 072 bloques de serie): en páginas de 4 096 entradas con una paleta propia, como las secciones de un chunk, y las posiciones seguidas en tramos. Un relleno o una operación sobre la selección ocupan **0,2 bytes por bloque** en vez de 16; un plan desordenado (estructuras sueltas), unos 10.
+- Si aun así un plan pasa de `planMemoryMegabytes` (**128 MB** de serie), el resto de sus páginas va a un **archivo temporal** (`<temporal del sistema>/komaedit-plans`) y se lee de ahí al colocar. El archivo se borra al acabar (en Linux ni siquiera se ve en la carpeta: se lee por el archivo ya abierto); los que deje un servidor de Windows parado de golpe se borran al arrancar.
+- El plan se monta y se comprime en el hilo del cálculo, no en el del servidor, y ya no hace falta reservar los arrays enteros: montar un plan de 20 millones pasa de unos 2 GB de memoria a menos de 100 MB (muestreado; varía entre ejecuciones).
+- Lo que sigue ocupando memoria en una edición enorme es de Minecraft y WorldEdit: la foto de la selección (4 bytes por bloque leído, hasta 16 millones) y el historial de //undo de WorldEdit (decenas de bytes por bloque cambiado). En un servidor de 3,5 GB, con el límite de serie (1,5 millones de bloques por edición y 4 a la vez), sobra; para ediciones de decenas de millones con `komaedit.limit.unrestricted`, mejor de una en una.
+
+### Límites claros
+
+- Una edición que pasa del límite se avisa **antes de empezar**, con su tamaño, el límite y en cuántos trozos partirla (y, si la selección es una caja, los trozos listos con `/komaedit trozo <n>`). Ver [Estimación antes de empezar](#estimación-antes-de-empezar).
+- Las operaciones sobre la selección ya no se cortan en 1,5 millones de cambios para quien no tiene límite: llegan a la foto entera.
+
+### Administración: `/komaedit jobs`
+
+- `/komaedit jobs` (alias `trabajos`, permiso `komaedit.admin.jobs`) enseña el estado del servidor (TPS, milisegundos por tick, lo que usa KomaEdit de su presupuesto, cuántas colocan a la vez y el ritmo de la cola) y una línea por jugador con trabajo: fase, bloques, porcentaje, tiempo y, si el plan es grande, su memoria, con botones **[pausar]** / **[reanudar]** y **[cancelar]**.
+- `/komaedit jobs pause <jugador>` (alias `pausar`) para sus lecturas, colocaciones y pintados de biomas sin perder nada: termina la ventana que estaba vaciando (para que nada quede sin luz ni sin enviar) y deja de leer y escribir; una edición en pausa no ocupa sitio en la cola. Los cálculos en hilos aparte siguen, y lo que salga espera en la cola hasta reanudar. `resume <jugador>` (alias `reanudar`) sigue donde iba.
+- `/komaedit jobs cancel <jugador>` (alias `cancelar`) hace lo mismo que su `/komaedit cancel`: lo para todo y lo ya colocado queda en su //undo.
+- El jugador recibe un aviso cuando un administrador pausa, reanuda o cancela lo suyo.
+
+### Números
+
+Medido fuera del juego con `./gradlew benchmark` (la prueba `HugeEditBenchmarkTest` con `KOMAEDIT_FULL_TESTS=1` y 3 GB de memoria; Ryzen 7 3800XT, Java 21) sobre un mundo de mentira: lo que hace KomaEdit por bloque en cada fase, sin lo que cuesta Minecraft al leer o escribir (que no se puede medir sin el juego). «Antes» es la 1.9.0.
+
+| Bloques | Leer (ns/bl) | Calcular (ns/bl) | Empaquetar (ns/bl) | Plan | Pico al montar el plan | Recorrer (ns/bl) |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 000 000 | 24,4 → 18,5 | 2,2 | 34,3 → 48,5 | 16 MB → 0,2 MB | 76 MB → 20 MB | 34,3 → 43,9 |
+| 5 017 600 | 17,7 → 10,0 | 2,3 | 41,4 → 26,6 | 80 MB → 1 MB | 238 MB → 29 MB | 31,8 → 36,7 |
+| 19 998 784 | 15,9 → 10,6 | 2,2 | 80,0 → 26,8 | 310 MB → 4 MB | 1 987 MB → 69 MB | 31,7 → 36,3 |
+
+Plan desordenado (posiciones al azar, 300 estados esperados y 20 bloques distintos), el peor caso para la compresión: 1 millón, 10 MB; 5 millones, 49 MB; 20 millones, 129 MB en memoria y 66 MB en disco (antes, 16 bytes por bloque y el mismo pico de 2 GB al montarlo).
+
+Peor tick al colocar, con un modelo de lo que cuesta WorldEdit por bloque (2 µs escribir en la sesión, 1 µs pasar al mundo y 4 µs luz, vecinos y envío; supuestos, no medidos):
+
+| Bloques | Peor tick antes | Peor tick ahora | Duración ahora (a 20 TPS) |
+| ---: | ---: | ---: | ---: |
+| 1 000 000 | 5 s | 6 ms | 58 s |
+| 5 000 000 | 25 s | 6 ms | 4 min 51 s |
+| 20 000 000 | 1 min 40 s | 6 ms | 19 min 26 s |
+
+La duración es el precio de no parar el servidor; con `tickBudgetMillis` a 15 tarda unas 2,5 veces menos.
+
+### Limitaciones
+
+- Leer o colocar en chunks sin cargar los carga en el hilo del servidor, como WorldEdit: el tramo que lo hace puede pasarse del presupuesto en ese tick. Lo normal es editar cerca, con los chunks cargados.
+- `//undo` y `//redo` son de WorldEdit y se hacen de golpe: deshacer una edición de millones de bloques para el servidor unos segundos.
+- Si un plan escribe dos veces en la misma posición y la segunda es condicional, y caen en ventanas distintas, gana la primera (la segunda ve el bloque ya cambiado y lo respeta como un cambio a mano). Antes ganaba la última.
+- Las demás protecciones de antes siguen: cálculos asíncronos y cancelables, límites de seguridad de los generadores, hologramas por secciones con caras expuestas, bitácora de cada trabajo y //undo de lo parcial.
 
 ## Versiones descargables
 

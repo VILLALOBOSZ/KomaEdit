@@ -61,6 +61,35 @@ class BrushSyncTest {
         assertNull(sync.tick(null, "pincel:a", 9_000));
     }
 
+    /**
+     * Cada orden suma un segundo al antispam de Minecraft, que echa a quien no es OP al pasar de diez: pulsar «+» con
+     * calma (un clic cada 350 ms durante 10 s) no puede mandar más de una orden por segundo, y el último valor llega.
+     */
+    @Test
+    void neverSendsMoreThanOneUpdatePerSecond() {
+        BrushSync sync = new BrushSync();
+        sync.linked("tree", "brush", "komaedit pincel tree oak", 0);
+        sync.tick("komaedit pincel tree oak", "pincel:a", 10);
+        List<Long> sentAt = new java.util.ArrayList<>();
+        String last = null;
+        String command = "komaedit pincel tree oak";
+        for (long now = 50; now <= 12_000; now += 50) {
+            if (now <= 10_000 && now % 350 == 0) {
+                command = "komaedit pincel tree oak " + (20 + now / 350);
+            }
+            String send = sync.tick(command, "pincel:a", now);
+            if (send != null) {
+                sentAt.add(now);
+                last = send;
+            }
+        }
+        for (int index = 1; index < sentAt.size(); index++) {
+            assertTrue(sentAt.get(index) - sentAt.get(index - 1) >= BrushSync.MIN_INTERVAL_MILLIS, sentAt.toString());
+        }
+        assertTrue(sentAt.size() >= 5 && sentAt.size() <= 12, sentAt.toString());
+        assertEquals(BrushSync.update(command), last, "el último cambio llega al pincel");
+    }
+
     @Test
     void aSuperwandOrNothingInTheHandIsNeverTaken() {
         BrushSync sync = new BrushSync();
@@ -101,7 +130,7 @@ class BrushSyncTest {
                 }
                 panel.setValues(card, next);
                 studio.advance(10);
-                studio.advance(BrushSync.DELAY_MILLIS);
+                studio.advance(BrushSync.MIN_INTERVAL_MILLIS);
                 String expected = ToolsPanel.brushCommand(card, action, next);
                 if (expected.equals(previous)) {
                     // Un ajuste que no pinta nada con estos valores (los bloques de las raíces, sin raíces).
@@ -134,7 +163,7 @@ class BrushSyncTest {
         studio.click("Vista previa en cada clic");
         assertFalse(panel.values(stamp).toggle("brush_preview"));
         studio.advance(10);
-        studio.advance(BrushSync.DELAY_MILLIS);
+        studio.advance(BrushSync.MIN_INTERVAL_MILLIS);
         String update = studio.host.last();
         assertTrue(update.startsWith("komaedit pincel actualizar heightmap "), update);
         assertFalse(EzBrushType.HEIGHTMAP.options(arguments(update, "komaedit pincel actualizar heightmap "))
@@ -143,7 +172,7 @@ class BrushSyncTest {
         panel.select(ToolCatalog.byId("tree"), studio.host);
         panel.setValues(stamp, panel.values(stamp).with("radius", 20));
         studio.advance(10);
-        studio.advance(BrushSync.DELAY_MILLIS);
+        studio.advance(BrushSync.MIN_INTERVAL_MILLIS);
         assertTrue(studio.host.last().startsWith("komaedit pincel actualizar heightmap montana 20 15 "),
                 studio.host.last());
     }

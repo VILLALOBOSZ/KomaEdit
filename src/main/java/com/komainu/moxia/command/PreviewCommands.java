@@ -7,6 +7,7 @@ import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.gizmo.GhostService;
 import com.komainu.moxia.ivy.IvyService;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.preview.LastEdits;
 import com.komainu.moxia.preview.PlanPreviews;
 import com.komainu.moxia.preview.PreviewFlags;
@@ -187,6 +188,21 @@ final class PreviewCommands {
     /** {@code /komaedit cancel}: para todo lo que el jugador tenga en marcha. */
     private static int cancel(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        List<String> stopped = stopAll(player);
+        if (stopped.isEmpty()) {
+            return EzCommandSupport.fail(context.getSource(), "No tenías nada en marcha que cancelar");
+        }
+        Feedback.warn(player, "Cancelado: " + String.join(" · ", stopped));
+        return stopped.size();
+    }
+
+    /**
+     * Para todo lo que tenga en marcha {@code player}, en la fase que sea (vista previa, lectura, cálculo, cola,
+     * colocación, biomas) y le quita la pausa. Lo ya colocado queda en su //undo.
+     *
+     * @return lo que se paró, para el aviso
+     */
+    static List<String> stopAll(ServerPlayerEntity player) {
         UUID id = player.getUuid();
         List<String> stopped = new ArrayList<>();
         PlanPreviews.cancel(id).ifPresent(description -> stopped.add("vista previa de " + description));
@@ -204,13 +220,12 @@ final class PreviewCommands {
         Optional<BatchEditService.JobStatus> job = BatchEditService.status(id);
         if (BatchEditService.cancel(id, true)) {
             BatchEditService.JobStatus status = job.orElseThrow();
-            stopped.add("colocación de " + status.description() + " al " + status.percentage() + " % ("
+            stopped.add(status.queuePosition() > 0
+                    ? status.description() + " (sale de la cola sin haber colocado nada)"
+                    : "colocación de " + status.description() + " al " + status.percentage() + " % ("
                     + ProgressLine.group(status.changed()) + " bloques ya puestos, en //undo)");
         }
-        if (stopped.isEmpty()) {
-            return EzCommandSupport.fail(context.getSource(), "No tenías nada en marcha que cancelar");
-        }
-        Feedback.warn(player, "Cancelado: " + String.join(" · ", stopped));
-        return stopped.size();
+        ServerWork.pause(id, false);
+        return stopped;
     }
 }

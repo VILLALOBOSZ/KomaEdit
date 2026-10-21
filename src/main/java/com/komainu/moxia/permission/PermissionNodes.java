@@ -218,6 +218,8 @@ public final class PermissionNodes {
         add(BuildCapability.GAMEMODE_PERMISSION, Pack.ADMIN, null, null, "Cambiar el modo de juego desde el menú rápido");
         add(BuildCapability.ANY_MODE_PERMISSION, Pack.ADMIN, null, null, "Usar las capacidades fuera de creativo");
         add(KomaPermissions.ADMIN_RELOAD, Pack.ADMIN, null, "ezedits.admin.reload", "/komaedit reload");
+        add(KomaPermissions.ADMIN_JOBS, Pack.ADMIN, null, null,
+                "Ver, pausar y cancelar los trabajos de todos (/komaedit jobs)");
         add(KomaPermissions.ADMIN_STAMP_EXPORT, Pack.ADMIN, null, null,
                 "Copiar un sello de serie a config/komaedit/heightmaps para retocarlo"
                         + " (/komaedit terreno sellos exportar)");

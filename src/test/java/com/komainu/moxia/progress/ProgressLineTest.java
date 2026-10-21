@@ -46,6 +46,24 @@ class ProgressLineTest {
     }
 
     @Test
+    void queuedLineShowsPlaceAndWait() {
+        ProgressLine line = ProgressLine.queued("Texturizar", 2, 3, 70.0);
+        assertFalse(line.measured(), "la cola no tiene porcentaje");
+        assertEquals(70.0, line.secondsUntilStart(), 1e-9);
+        assertEquals("Texturizar · en cola 2.º de 3 · empieza en ~1 min 10 s · /komaedit cancel", line.text());
+        assertEquals("Leer · en cola 1.º de 1 · /komaedit cancel", ProgressLine.queued("Leer", 1, 0, -1).text());
+    }
+
+    @Test
+    void pausedLineKeepsItsPercentWithoutRate() {
+        ProgressLine line = new ProgressLine("Suavizar", ProgressLine.Phase.PAUSED, 450, 1_000, 30 * SECOND,
+                "en pausa por un admin");
+        assertEquals("Suavizar · en pausa 45 % · en pausa por un admin", line.text());
+        assertEquals("2,5", ProgressLine.decimal(2.5));
+        assertEquals("6", ProgressLine.decimal(6.0));
+    }
+
+    @Test
     void estimatesBeforeStartingAndWorldEditLimit() {
         assertEquals(0.0, BuildEstimate.placeSeconds(0));
         assertEquals(0.05, BuildEstimate.placeSeconds(1), 1e-9);

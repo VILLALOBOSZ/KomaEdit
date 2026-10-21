@@ -61,11 +61,6 @@ public final class Orientation {
         return axis[local];
     }
 
-    /** +1 si el eje local llega en el sentido positivo del eje del mundo, -1 si llega del revés. */
-    public int signOf(int local) {
-        return sign[local];
-    }
-
     /** Coordenada X del mundo del vector local ({@code x}, {@code y}, {@code z}). */
     public int x(int x, int y, int z) {
         return component(0, x, y, z);

@@ -46,8 +46,13 @@ public final class StudioToolsNetwork {
         PayloadTypeRegistry.playS2C().register(ToolStatePayload.ID, ToolStatePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(JobStatusPayload.ID, JobStatusPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(MaterialListPayload.ID, MaterialListPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(StudioAimPayload.ID, StudioAimPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ToolStateRequestPayload.ID, (payload, context) ->
                 context.server().execute(() -> sendState(context.player())));
+        // Ya en el hilo del servidor y en el orden en que llegó: la orden de chat que el cliente manda justo detrás
+        // tiene que encontrarse el clic apuntado (otro execute lo dejaría para después de ella).
+        ServerPlayNetworking.registerGlobalReceiver(StudioAimPayload.ID, (payload, context) ->
+                StudioAim.receive(context.player(), payload));
     }
 
     /** El estado de las herramientas para este jugador. */
@@ -123,6 +128,12 @@ public final class StudioToolsNetwork {
 
     public static void forget(UUID player) {
         BUSY.remove(player);
+        StudioAim.forget(player);
+    }
+
+    public static void clearAll() {
+        BUSY.clear();
+        StudioAim.clearAll();
     }
 
     /** La lista de {@code analyze} para la tarjeta Materiales del Studio. */

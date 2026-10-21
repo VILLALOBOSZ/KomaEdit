@@ -45,7 +45,7 @@ import java.util.function.IntConsumer;
 import static com.komainu.moxia.studio.ui.StudioTheme.*;
 
 /**
- * Las etapas de la figura sobre una trayectoria (Trayectoria, Figuras, Modificadores y Material), Envejecer y la
+ * Las etapas de la figura sobre una trayectoria (Trayectoria y Figuras, con su material y sus variaciones) y la
  * biblioteca de recetas e instancias. Guarda la receta en curso y su historial de deshacer. Todo se dibuja con
  * {@link StudioUi} y lo que toca el juego pasa por el {@link StudioHost}.
  */
@@ -154,10 +154,6 @@ public final class FigureStages {
 
     public boolean canRedo() {
         return history.canRedo();
-    }
-
-    public void clearHistory() {
-        history.clear();
     }
 
     /** Si hay un campo de estas etapas abierto: las letras se escriben y ningún atajo se dispara. */

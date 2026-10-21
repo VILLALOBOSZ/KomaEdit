@@ -1,5 +1,6 @@
 package com.komainu.moxia.sculpt;
 
+import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.preview.EditRequest;
 import com.komainu.moxia.preview.EditRequests;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -11,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 
 /**
@@ -18,11 +20,15 @@ import java.util.function.Predicate;
  * reparte por turnos porciones de {@value #MAX_BLOCKS_PER_SLICE} bloques entre los que esperan hasta gastar
  * {@value #MAX_NANOS_PER_TICK} ns: con un solo jugador pintando, la foto de un pincel de radio 8 a 12 (de 5 000 a
  * 20 000 bloques) sale en un tick en vez de en dos o tres, y el clic se nota antes.
+ *
+ * <p>El presupuesto se mide con un reloj que se le pasa al tick: en el juego, {@code System.nanoTime}; en las
+ * pruebas, uno falso que avanza lo mismo por lectura, para que el resultado no dependa de lo cargada que esté la
+ * máquina.</p>
  */
 public final class SnapshotCaptureService {
-    private static final int MAX_BLOCKS_PER_SLICE = 16_384;
-    private static final long MAX_NANOS_PER_SLICE = 1_500_000L;
-    private static final long MAX_NANOS_PER_TICK = 5_000_000L;
+    static final int MAX_BLOCKS_PER_SLICE = 16_384;
+    static final long MAX_NANOS_PER_SLICE = 1_500_000L;
+    static final long MAX_NANOS_PER_TICK = 5_000_000L;
     private static final Map<UUID, CaptureJob> JOBS = new LinkedHashMap<>();
     private static int roundRobinOffset;
 
@@ -57,22 +63,30 @@ public final class SnapshotCaptureService {
     }
 
     public static void tick(MinecraftServer server) {
-        tick(playerId -> server.getPlayerManager().getPlayer(playerId) != null);
-    }
-
-    /** Un tick: porciones por turnos hasta acabar o gastar el presupuesto del tick. */
-    static void tick(Predicate<UUID> online) {
         if (JOBS.isEmpty()) {
             return;
         }
-        long globalDeadline = System.nanoTime() + MAX_NANOS_PER_TICK;
+        // En el juego el plazo sale del presupuesto común del tick (ServerWork), nunca más de MAX_NANOS_PER_TICK.
+        tick(playerId -> server.getPlayerManager().getPlayer(playerId) != null, System::nanoTime,
+                ServerWork.deadline(MAX_NANOS_PER_TICK));
+    }
+
+    /** Un tick: porciones por turnos hasta acabar o gastar el presupuesto del tick, medido con {@code clock}. */
+    static void tick(Predicate<UUID> online, LongSupplier clock) {
+        tick(online, clock, clock.getAsLong() + MAX_NANOS_PER_TICK);
+    }
+
+    private static void tick(Predicate<UUID> online, LongSupplier clock, long globalDeadline) {
+        if (JOBS.isEmpty()) {
+            return;
+        }
         boolean first = true;
-        while (!JOBS.isEmpty() && System.nanoTime() < globalDeadline) {
+        while (!JOBS.isEmpty() && clock.getAsLong() < globalDeadline) {
             java.util.List<CaptureJob> jobs = java.util.List.copyOf(JOBS.values());
             // El turno empieza en otro trabajo cada tick (no en cada vuelta), para que nadie espere siempre.
             int start = Math.floorMod(first ? roundRobinOffset++ : roundRobinOffset - 1, jobs.size());
             first = false;
-            for (int offset = 0; offset < jobs.size() && System.nanoTime() < globalDeadline; offset++) {
+            for (int offset = 0; offset < jobs.size() && clock.getAsLong() < globalDeadline; offset++) {
                 CaptureJob job = jobs.get((start + offset) % jobs.size());
                 if (!JOBS.containsKey(job.playerId)) {
                     continue;
@@ -81,9 +95,9 @@ public final class SnapshotCaptureService {
                     JOBS.remove(job.playerId);
                     continue;
                 }
-                long deadline = Math.min(globalDeadline, System.nanoTime() + MAX_NANOS_PER_SLICE);
+                long deadline = Math.min(globalDeadline, clock.getAsLong() + MAX_NANOS_PER_SLICE);
                 try {
-                    job.capture.step(MAX_BLOCKS_PER_SLICE, deadline);
+                    job.capture.step(MAX_BLOCKS_PER_SLICE, deadline, clock);
                     if (job.capture.complete()) {
                         JOBS.remove(job.playerId);
                         // La petición de la orden (vista previa…) sigue activa para el cálculo que salga de la foto.
@@ -99,6 +113,8 @@ public final class SnapshotCaptureService {
 
     public static void clearAll() {
         JOBS.clear();
+        // Al reiniciar el servidor (o entre pruebas) el turno vuelve a empezar por el primero.
+        roundRobinOffset = 0;
     }
 
     private record CaptureJob(

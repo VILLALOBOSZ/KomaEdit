@@ -35,6 +35,7 @@ import net.minecraft.util.Language;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameMode;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -277,6 +278,12 @@ public final class ClientStudioHost implements StudioHost {
     @Override
     public int[] clickedSpot() {
         return ClientStudioAim.last();
+    }
+
+    @Override
+    public boolean creative() {
+        return client != null && client.interactionManager != null
+                && client.interactionManager.getCurrentGameMode() == GameMode.CREATIVE;
     }
 
     @Override

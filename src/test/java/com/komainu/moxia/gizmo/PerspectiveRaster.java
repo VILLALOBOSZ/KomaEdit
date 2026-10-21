@@ -1,5 +1,6 @@
 package com.komainu.moxia.gizmo;
 
+import com.komainu.moxia.preview.TextureTiles;
 import com.komainu.moxia.shape.Vec3;
 
 import javax.imageio.ImageIO;
@@ -12,13 +13,8 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
  * Rasterizador en perspectiva para los renders del fantasma con gizmo: la cámara de Minecraft (guiñada y cabeceo, campo
@@ -38,8 +34,7 @@ final class PerspectiveRaster implements AutoCloseable {
     final double fov;
     private final int[] color;
     private final double[] depth;
-    private final ZipFile jar;
-    private final Map<String, int[]> textures = new HashMap<>();
+    private final TextureTiles tiles;
 
     /** @param yaw y {@code pitch} en grados, como en Minecraft (guiñada 0 = sur, cabeceo positivo = abajo) */
     PerspectiveRaster(int width, int height, Vec3 eye, double yaw, double pitch, double fov) throws IOException {
@@ -56,8 +51,7 @@ final class PerspectiveRaster implements AutoCloseable {
         focal = height / 2.0 / Math.tan(Math.toRadians(fov) / 2.0);
         color = new int[width * height];
         depth = new double[width * height];
-        String path = System.getenv("KOMAEDIT_MC_JAR");
-        jar = path == null || path.isBlank() ? null : new ZipFile(Path.of(path).toFile());
+        tiles = new TextureTiles();
         clear();
     }
 
@@ -70,7 +64,7 @@ final class PerspectiveRaster implements AutoCloseable {
     }
 
     boolean real() {
-        return jar != null;
+        return tiles.real();
     }
 
     void clear() {
@@ -84,37 +78,9 @@ final class PerspectiveRaster implements AutoCloseable {
 
     // ---------------------------------------------------------------- texturas
 
-    /** 16×16 ARGB de {@code textures/block/<name>.png} con un tinte, o un color liso. */
+    /** 16×16 ARGB de {@code textures/block/<name>.png} con un tinte, o un color liso ({@link TextureTiles}). */
     int[] texture(String name, int fallback, int tint) {
-        return textures.computeIfAbsent(name + "#" + Integer.toHexString(tint), key -> {
-            int[] pixels = new int[256];
-            BufferedImage image = jar == null ? null : load("assets/minecraft/textures/block/" + name + ".png");
-            for (int index = 0; index < 256; index++) {
-                int argb;
-                if (image == null) {
-                    int noise = (int) ((index * 73 + 17) * 2654435761L >>> 28 & 7) - 3;
-                    argb = 0xFF000000 | add(fallback, noise * 4);
-                } else {
-                    argb = image.getRGB(index & 15, (index >> 4) % image.getHeight());
-                }
-                pixels[index] = multiply(argb, tint);
-            }
-            return pixels;
-        });
-    }
-
-    private BufferedImage load(String entryName) {
-        try {
-            ZipEntry entry = jar.getEntry(entryName);
-            if (entry == null) {
-                return null;
-            }
-            try (InputStream input = jar.getInputStream(entry)) {
-                return ImageIO.read(input);
-            }
-        } catch (IOException exception) {
-            return null;
-        }
+        return tiles.tile(name, fallback, tint);
     }
 
     // ---------------------------------------------------------------- proyección
@@ -345,9 +311,7 @@ final class PerspectiveRaster implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if (jar != null) {
-            jar.close();
-        }
+        tiles.close();
     }
 
     // ---------------------------------------------------------------- utilidades
@@ -396,19 +360,5 @@ final class PerspectiveRaster implements AutoCloseable {
         int g = (int) Math.round((argb >> 8 & 0xFF) * factor);
         int b = (int) Math.round((argb & 0xFF) * factor);
         return Math.min(255, r) << 16 | Math.min(255, g) << 8 | Math.min(255, b);
-    }
-
-    private static int multiply(int argb, int tint) {
-        int r = (argb >> 16 & 0xFF) * (tint >> 16 & 0xFF) / 255;
-        int g = (argb >> 8 & 0xFF) * (tint >> 8 & 0xFF) / 255;
-        int b = (argb & 0xFF) * (tint & 0xFF) / 255;
-        return argb & 0xFF000000 | r << 16 | g << 8 | b;
-    }
-
-    private static int add(int rgb, int amount) {
-        int r = Math.clamp((rgb >> 16 & 0xFF) + amount, 0, 255);
-        int g = Math.clamp((rgb >> 8 & 0xFF) + amount, 0, 255);
-        int b = Math.clamp((rgb & 0xFF) + amount, 0, 255);
-        return r << 16 | g << 8 | b;
     }
 }

@@ -11,6 +11,7 @@ import com.komainu.moxia.feedback.FeedbackEventPayload;
 import com.komainu.moxia.gizmo.GhostService;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.performance.ServerWork;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -292,7 +293,7 @@ public final class PlanPreviews {
         if (PREPARING.isEmpty() && FLOW.size() == 0) {
             return;
         }
-        long deadline = System.nanoTime() + PREPARE_NANOS_PER_TICK;
+        long deadline = ServerWork.deadline(PREPARE_NANOS_PER_TICK);
         prepare(current, deadline);
         FLOW.tick(id -> {
             ServerPlayerEntity player = current.getPlayerManager().getPlayer(id);

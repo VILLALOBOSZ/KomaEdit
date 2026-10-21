@@ -1,5 +1,6 @@
 package com.komainu.moxia.shape.tube;
 
+import com.komainu.moxia.FullTests;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.shape.SampledPath;
 import com.komainu.moxia.shape.ShapeParameters;
@@ -20,7 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Formas de {@code //ezspline} en espacio de tubo: sin huecos, deterministas y del tamaño que dice la wiki. */
+/**
+ * Formas de {@code //ezspline} en espacio de tubo: sin huecos, deterministas y del tamaño que dice la wiki.
+ *
+ * <p>Las comprobaciones que recorren todas las formas, recorridos y calidades pasan en cada build por una muestra
+ * fija; con {@code KOMAEDIT_FULL_TESTS=1}, por todo ({@link FullTests}).</p>
+ */
 class EzSplineShapesTest {
     private static final int LIMIT = 1_500_000;
     /** Una muestra de cada forma, con parámetros por defecto y alguno de los ejemplos de la wiki. */
@@ -42,7 +48,7 @@ class EzSplineShapesTest {
     void everyFormMatchesABruteForceScan() {
         // Ningún bloque queda fuera de los ladrillos que mira el voxelizador (alcance, margen y remates bien medidos).
         SampledPath path = oblique();
-        for (String form : FORMS) {
+        for (String form : FullTests.sample(FORMS, 4)) {
             ShapeParameters parameters = parameters(form);
             Set<BlockVector3> blocks = TubeFigures.generate(path, parameters, LIMIT);
             assertFalse(blocks.isEmpty(), form + " no genera nada");
@@ -58,7 +64,7 @@ class EzSplineShapesTest {
     @Test
     void everyFormIsDeterministic() {
         SampledPath path = curved();
-        for (String form : FORMS) {
+        for (String form : FullTests.sample(FORMS, 4, 2)) {
             ShapeParameters parameters = parameters(form);
             assertEquals(TubeFigures.generate(path, parameters, LIMIT), TubeFigures.generate(path, parameters, LIMIT),
                     form + " cambia entre dos ejecuciones");
@@ -74,9 +80,9 @@ class EzSplineShapesTest {
                 "2d Re(x1:0.2,y1:-1,x2:1,y2:0.3) clay 8", "2d Pipe clay 8");
         List<String> failures = new ArrayList<>();
         List<SampledPath> paths = List.of(straight(60), oblique(), curved());
-        for (int pathIndex = 0; pathIndex < paths.size(); pathIndex++) {
+        for (int pathIndex : FullTests.pick(List.of(0, 1, 2), List.of(1))) {
             for (String form : solid) {
-                for (double quality : new double[]{0.0, 1.0, 3.0}) {
+                for (double quality : FullTests.pick(List.of(0.0, 1.0, 3.0), List.of(1.0))) {
                     ShapeParameters parameters = with(parameters(form), Map.of("quality", quality));
                     Set<BlockVector3> blocks = TubeFigures.generate(paths.get(pathIndex), parameters, LIMIT);
                     int cavities = cavities(blocks);
@@ -96,7 +102,7 @@ class EzSplineShapesTest {
                 "3d Honeycomb clay 10", "3d Oscillate clay 6", "3d Os(D:0.6,I:1.5) clay 6", "3d Rings clay 8",
                 "3d Sc clay 10", "3d Sc(c:8,d:1.2) clay 12", "3d Chainlink clay 8", "2d SC(E:0.5) clay 8",
                 "2d Pipe clay 8", "2d St(S:6,D:0.6) clay 8", "2d Fl(C:5,D:0.4) clay 8", "noise stone 8");
-        for (SampledPath path : List.of(straight(60), oblique(), curved())) {
+        for (SampledPath path : FullTests.pick(List.of(straight(60), oblique(), curved()), List.of(oblique()))) {
             for (String form : continuous) {
                 Set<BlockVector3> blocks = TubeFigures.generate(path, parameters(form), LIMIT);
                 List<Integer> sizes = components(blocks);
@@ -123,7 +129,7 @@ class EzSplineShapesTest {
 
     @Test
     void wireCoresHaveNoGaps() {
-        for (SampledPath path : List.of(straight(60), oblique(), curved())) {
+        for (SampledPath path : FullTests.pick(List.of(straight(60), oblique(), curved()), List.of(curved()))) {
             for (String form : List.of("3d Chainlink clay 8", "3d Chainlink(M:99,N:99,E:0.6) clay 8",
                     "3d Chainlink(M:2,N:2,E:0,G:1,T:0.3) clay 8", "3d Fishnet clay 8", "3d Fishnet(W:0.05) clay 10",
                     "3d Honeycomb clay 10", "3d Honeycomb(W:0.01,D:0.05) clay 10", "3d Noodles clay 10",

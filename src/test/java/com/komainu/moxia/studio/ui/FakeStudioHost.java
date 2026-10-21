@@ -95,6 +95,8 @@ public final class FakeStudioHost implements StudioHost {
     public final List<Boolean> expectedGhosts = new ArrayList<>();
     /** La herramienta de KomaEdit de la mano ({@code pincel:…}), o {@code null}. */
     public String heldTool;
+    /** En creativo (en supervivencia la bienvenida solo enseña). */
+    public boolean creative = true;
     /** Donde se hizo clic en el mundo, o {@code null}. */
     public int[] clickedSpot;
     public WorldHistory history = WorldHistory.EMPTY;
@@ -113,6 +115,8 @@ public final class FakeStudioHost implements StudioHost {
         lang = load(language);
         blockNames = gameNames ? minecraftNames(language) : new HashMap<>();
         blockNames.putAll(TEST_NAMES.getOrDefault(language, TEST_NAMES.get("en_us")));
+        // Las pruebas y las maquetas de siempre son de quien ya vio la bienvenida; las suyas la ponen a 0.
+        preferences.setWelcome(com.komainu.moxia.studio.WelcomeTour.VERSION);
     }
 
     public static Map<String, String> load(String language) {
@@ -133,8 +137,9 @@ public final class FakeStudioHost implements StudioHost {
     }
 
     /**
-     * Los nombres de bloque del juego: el inglés va en el jar; el español, en los recursos que descarga Loom (si no
-     * están, se usa el inglés).
+     * Los nombres de bloque del juego: el inglés va en el jar. El español está en los recursos que descarga Loom, que
+     * no todos los PC tienen (el CI no): solo se leen al pintar las maquetas ({@code KOMAEDIT_STUDIO_MOCKUPS}), para
+     * que las pruebas den lo mismo en cualquier máquina.
      */
     private static Map<String, String> minecraftNames(String language) {
         Map<String, String> names = new HashMap<>();
@@ -146,7 +151,8 @@ public final class FakeStudioHost implements StudioHost {
         } catch (IOException | RuntimeException ignored) {
             // Sin el jar del juego: los ids.
         }
-        if (!language.equals("en_us")) {
+        String mockups = System.getenv("KOMAEDIT_STUDIO_MOCKUPS");
+        if (!language.equals("en_us") && mockups != null && !mockups.isBlank()) {
             Path index = Path.of(System.getProperty("user.home"), ".gradle", "caches", "fabric-loom", "assets",
                     "indexes", "1.21.1-17.json");
             try {
@@ -351,6 +357,11 @@ public final class FakeStudioHost implements StudioHost {
     @Override
     public int[] clickedSpot() {
         return clickedSpot;
+    }
+
+    @Override
+    public boolean creative() {
+        return creative;
     }
 
     @Override

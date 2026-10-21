@@ -1,9 +1,9 @@
 package com.komainu.moxia.gizmo;
 
+import com.komainu.moxia.performance.ServerWork;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -26,7 +26,7 @@ public final class GhostNetwork {
                 context.server().execute(() -> GhostService.cancel(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(GhostPayloads.Mode.ID, (payload, context) ->
                 context.server().execute(() -> GhostService.mode(context.player(), payload.mode())));
-        ServerTickEvents.END_SERVER_TICK.register(GhostService::tick);
+        ServerWork.light(GhostService::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 GhostService.forget(handler.player.getUuid()));
         // Como la vista previa: solo en su dimensión y para quien lo pidió.

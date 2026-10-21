@@ -6,6 +6,7 @@ import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockTypes;
 
 import java.util.Objects;
+import java.util.function.LongSupplier;
 
 public final class WorldSnapshot {
     /** El aire de fuera de la foto, al primer uso: capturar no necesita los registros de WorldEdit (las pruebas). */
@@ -136,9 +137,14 @@ public final class WorldSnapshot {
         }
 
         public int step(int maximumBlocks, long deadlineNanos) {
+            return step(maximumBlocks, deadlineNanos, System::nanoTime);
+        }
+
+        /** Como {@link #step(int, long)}, con el reloj en nanosegundos que mide el plazo (las pruebas usan uno falso). */
+        public int step(int maximumBlocks, long deadlineNanos, LongSupplier clock) {
             int processed = 0;
             int layerSize = sizeX * sizeZ;
-            while (index < blocks.length && processed < maximumBlocks && System.nanoTime() < deadlineNanos) {
+            while (index < blocks.length && processed < maximumBlocks && clock.getAsLong() < deadlineNanos) {
                 int localY = index / layerSize;
                 int remainder = index - localY * layerSize;
                 int localZ = remainder / sizeX;

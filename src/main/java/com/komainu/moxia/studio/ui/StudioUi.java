@@ -7,8 +7,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.IntConsumer;
 
 import static com.komainu.moxia.studio.ui.StudioTheme.*;
@@ -46,6 +48,7 @@ public final class StudioUi {
     private final StudioCanvas canvas;
     private final List<Widget> widgets = new ArrayList<>();
     private final Deque<Rect> clips = new ArrayDeque<>();
+    private final Map<String, Anchor> anchors = new LinkedHashMap<>();
     private int mouseX = -1;
     private int mouseY = -1;
     private boolean hoverEnabled = true;
@@ -60,6 +63,7 @@ public final class StudioUi {
         this.hoverEnabled = hoverEnabled;
         widgets.clear();
         clips.clear();
+        anchors.clear();
     }
 
     /** Desde aquí los controles responden al ratón (tras dibujar el fondo de una ventana modal). */
@@ -109,6 +113,34 @@ public final class StudioUi {
             widgets.add(widget);
         }
         return widget;
+    }
+
+    /** Una zona con nombre: la entera ({@code bounds}) y lo que se ve de ella con el recorte de ahora. */
+    public record Anchor(Rect bounds, Rect visible) {
+    }
+
+    /**
+     * Pone nombre a una zona del fotograma ({@code tool:tree}, {@code footer:build}…), aunque el recorte la tape: la
+     * bienvenida guiada señala con ellas y desplaza el panel hasta la que no se ve.
+     */
+    public void anchor(String id, Rect bounds) {
+        anchors.put(id, new Anchor(bounds, clips.isEmpty() ? bounds : intersection(bounds, clips.peek())));
+    }
+
+    /** La zona con ese nombre en el último fotograma, o {@code null}. */
+    public Anchor anchor(String id) {
+        return anchors.get(id);
+    }
+
+    /** El nombre de la última zona que se ve bajo el punto, o {@code null}. */
+    public String anchorAt(double x, double y) {
+        String found = null;
+        for (Map.Entry<String, Anchor> entry : anchors.entrySet()) {
+            if (entry.getValue().visible().contains(x, y)) {
+                found = entry.getKey();
+            }
+        }
+        return found;
     }
 
     public void pushClip(Rect clip) {
@@ -497,15 +529,6 @@ public final class StudioUi {
             }
         }
         return new NameGrid(1, false);
-    }
-
-    /** Cuántas líneas (una o dos) necesita {@code text} en {@code width} sin cortarse. */
-    public int nameLineCount(String text, int width) {
-        if (canvas.width(text) <= width) {
-            return 1;
-        }
-        List<String> lines = nameLines(text, width, 2);
-        return lines == null ? 1 : lines.size();
     }
 
     /**
