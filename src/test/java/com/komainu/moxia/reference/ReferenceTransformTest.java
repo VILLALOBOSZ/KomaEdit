@@ -140,6 +140,25 @@ class ReferenceTransformTest {
         assertEquals(WorldFrame.MAX_PIXELS_PER_BLOCK, frame.withPixelsPerBlock(1.0E9).pixelsPerBlock(), EPSILON);
     }
 
+    @Test
+    void sizesAndPosesInWords() {
+        assertEquals("32", ReferenceFormat.blocks(32.0));
+        assertEquals("12.5", ReferenceFormat.blocks(12.5));
+        assertEquals("48.31", ReferenceFormat.blocks(48.3125));
+        assertEquals("0.06", ReferenceFormat.blocks(1.0 / 16.0));
+        assertEquals("0", ReferenceFormat.blocks(-0.001));
+        assertEquals("0", ReferenceFormat.blocks(Double.NaN));
+        assertEquals("standing", ReferenceFormat.pose(ReferenceRotation.facing(30.0)));
+        assertEquals("flat", ReferenceFormat.pose(ReferenceRotation.flat(0.0)));
+        assertEquals("upside_down", ReferenceFormat.pose(ReferenceRotation.flat(0.0).turned(Orientation.X, 180.0)));
+        assertEquals("tilted", ReferenceFormat.pose(ReferenceRotation.IDENTITY.turned(Orientation.X, -30.0)));
+        assertEquals("north", ReferenceFormat.cardinal(ReferenceRotation.IDENTITY));
+        assertEquals("south", ReferenceFormat.cardinal(ReferenceRotation.facing(0.0)));
+        assertEquals("west", ReferenceFormat.cardinal(ReferenceRotation.facing(90.0)));
+        assertEquals("east", ReferenceFormat.cardinal(ReferenceRotation.flat(-90.0)));
+        assertEquals(null, ReferenceFormat.cardinal(ReferenceRotation.facing(45.0)));
+    }
+
     static void assertVector(Vec3 expected, Vec3 actual) {
         assertEquals(expected.x(), actual.x(), 1.0E-9, "x de " + actual);
         assertEquals(expected.y(), actual.y(), 1.0E-9, "y de " + actual);

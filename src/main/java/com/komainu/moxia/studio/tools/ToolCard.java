@@ -90,6 +90,14 @@ public abstract class ToolCard {
     /** Nodos de permiso que necesita Construir con estos valores (todos). */
     public abstract List<String> permissions(ToolValues values);
 
+    /**
+     * Si la orden es del cliente ({@code /keref}…): no pasa por el servidor, así que funciona también donde el servidor
+     * no tiene KomaEdit.
+     */
+    public boolean clientSide() {
+        return false;
+    }
+
     /** Si Construir admite la vista previa universal ({@code -v}). */
     public boolean previewable() {
         return true;
