@@ -1,6 +1,7 @@
 package com.komainu.moxia.editor;
 
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.BlockBounds;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathEditing;
 import com.komainu.moxia.path.PathHistory;
@@ -12,21 +13,14 @@ import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.function.pattern.Pattern;
 import com.sk89q.worldedit.regions.Region;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Set;
 
 public final class EditorActionService {
-    private static final int MAGIC_LIMIT = 20_000;
-    private static final int MAGIC_RANGE = 96;
-
     private EditorActionService() {
     }
 
@@ -103,51 +97,37 @@ public final class EditorActionService {
 
     private static void selectConnectedArea(ServerPlayerEntity player, BlockPos origin) {
         ServerWorld world = player.getServerWorld();
-        BlockState target = world.getBlockState(origin);
-        if (target.isAir()) {
-            throw new IllegalArgumentException("La selección mágica necesita un bloque sólido");
-        }
-
-        ArrayDeque<BlockPos> pending = new ArrayDeque<>();
-        Set<Long> visited = new HashSet<>();
-        pending.add(origin.toImmutable());
-        visited.add(origin.asLong());
-        BlockPos minimum = origin;
-        BlockPos maximum = origin;
-
-        while (!pending.isEmpty() && visited.size() < MAGIC_LIMIT) {
-            BlockPos current = pending.removeFirst();
-            minimum = new BlockPos(
-                    Math.min(minimum.getX(), current.getX()),
-                    Math.min(minimum.getY(), current.getY()),
-                    Math.min(minimum.getZ(), current.getZ())
-            );
-            maximum = new BlockPos(
-                    Math.max(maximum.getX(), current.getX()),
-                    Math.max(maximum.getY(), current.getY()),
-                    Math.max(maximum.getZ(), current.getZ())
-            );
-            for (Direction direction : Direction.values()) {
-                BlockPos next = current.offset(direction);
-                if (Math.abs(next.getX() - origin.getX()) > MAGIC_RANGE
-                        || Math.abs(next.getY() - origin.getY()) > MAGIC_RANGE
-                        || Math.abs(next.getZ() - origin.getZ()) > MAGIC_RANGE
-                        || !world.isInBuildLimit(next)
-                        || !world.isChunkLoaded(next)
-                        || !world.getBlockState(next).equals(target)
-                        || !visited.add(next.asLong())) {
-                    continue;
-                }
-                pending.addLast(next.toImmutable());
+        BlockPos.Mutable cursor = new BlockPos.Mutable();
+        MagicArea.Result area = MagicArea.flood(origin.getX(), origin.getY(), origin.getZ(), new MagicArea.World() {
+            @Override
+            public boolean readable(int x, int y, int z) {
+                cursor.set(x, y, z);
+                return world.isInBuildLimit(cursor) && world.isChunkLoaded(cursor);
             }
-        }
 
-        WorldEditService.setCuboid(player, minimum, maximum);
-        message(player, "Área mágica: " + ProgressLine.group(visited.size()) + " bloques conectados");
+            @Override
+            public int state(int x, int y, int z) {
+                return Block.getRawIdFromState(world.getBlockState(cursor.set(x, y, z)));
+            }
+
+            @Override
+            public boolean isAir(int state) {
+                return Block.getStateFromRawId(state).isAir();
+            }
+        });
+        BlockBounds bounds = area.bounds();
+        WorldEditService.setCuboid(player, new BlockPos(bounds.minimumX(), bounds.minimumY(), bounds.minimumZ()),
+                new BlockPos(bounds.maximumX(), bounds.maximumY(), bounds.maximumZ()));
+        message(player, "Área mágica: " + ProgressLine.group(area.blocks()) + " bloques conectados");
     }
 
     private static void requireAction(ServerPlayerEntity player, int action) {
-        String permission = switch (action) {
+        KomaPermissions.require(player, permission(action));
+    }
+
+    /** El permiso que pide cada acción del paquete. */
+    static String permission(int action) {
+        return switch (action) {
             case EditorActionPayload.PATH_ADD, EditorActionPayload.PATH_MOVE, EditorActionPayload.PATH_REMOVE,
                  EditorActionPayload.PATH_INSERT ->
                     KomaPermissions.PATH;
@@ -156,9 +136,11 @@ public final class EditorActionService {
             case EditorActionPayload.CLIPBOARD_COPY, EditorActionPayload.CLIPBOARD_CUT,
                  EditorActionPayload.CLIPBOARD_PASTE -> KomaPermissions.CLIPBOARD;
             case EditorActionPayload.UNDO, EditorActionPayload.REDO -> KomaPermissions.HISTORY;
+            // Cambian los bloques de toda la selección: construir, no seleccionar.
+            case EditorActionPayload.SELECTION_REPLACE, EditorActionPayload.SELECTION_DELETE,
+                 EditorActionPayload.PAINT_SELECTION -> KomaPermissions.BUILD;
             default -> KomaPermissions.SELECT;
         };
-        KomaPermissions.require(player, permission);
     }
 
     private static void paintSelection(ServerPlayerEntity player, String patternInput)
