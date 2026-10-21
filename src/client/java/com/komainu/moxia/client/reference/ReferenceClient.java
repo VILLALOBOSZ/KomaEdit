@@ -12,6 +12,7 @@ import com.komainu.moxia.image.ImageDecoder;
 import com.komainu.moxia.persistence.AtomicStorage;
 import com.komainu.moxia.reference.ReferenceDrag;
 import com.komainu.moxia.reference.ReferenceFiles;
+import com.komainu.moxia.reference.ReferenceFormat;
 import com.komainu.moxia.reference.ReferenceGizmo;
 import com.komainu.moxia.reference.ReferenceImage;
 import com.komainu.moxia.reference.ReferenceRotation;
@@ -351,6 +352,7 @@ public final class ReferenceClient {
                 if (!client.options.attackKey.isPressed()) {
                     drag = null;
                     save();
+                    hud(client);
                 } else {
                     WorldFrame next = drag.drag(ray, Screen.hasControlDown());
                     if (next != null && !next.equals(reference.world())) {
@@ -477,7 +479,7 @@ public final class ReferenceClient {
         }
     }
 
-    /** La línea de la action bar mientras se edita: nombre, tamaño, hacia dónde mira y qué hacer. */
+    /** La línea de la action bar mientras se edita: nombre, tamaño y qué hacer (la postura va en la lista). */
     private static void hud(MinecraftClient client) {
         Optional<ReferenceImage> current = edited();
         if (current.isEmpty() || client.inGameHud == null) {
@@ -488,13 +490,23 @@ public final class ReferenceClient {
         MutableText line = Text.literal(Feedback.PREFIX).formatted(Formatting.GOLD)
                 .append(Text.literal(" · ").formatted(Formatting.DARK_GRAY))
                 .append(Text.literal(reference.displayName()).formatted(Formatting.WHITE))
-                .append(Text.literal(" · " + ReferenceTexts.blocks(world.widthBlocks(reference.pixelWidth())) + "×"
-                        + ReferenceTexts.blocks(world.heightBlocks(reference.pixelHeight())) + " · ")
-                        .formatted(Formatting.GRAY))
-                .append(ReferenceTexts.orientation(world.rotation()).formatted(Formatting.GRAY));
+                .append(Text.literal(" · ").formatted(Formatting.DARK_GRAY))
+                .append(Text.translatable("gui.komaedit.reference.size_blocks",
+                        ReferenceTexts.blocks(world.widthBlocks(reference.pixelWidth())),
+                        ReferenceTexts.blocks(world.heightBlocks(reference.pixelHeight()))).formatted(Formatting.GRAY));
         if (GhostClient.active()) {
             line.append(Text.literal(" · ").formatted(Formatting.DARK_GRAY))
                     .append(Text.translatable("gui.komaedit.reference.hud.ghost").formatted(Formatting.YELLOW));
+        } else if (drag != null) {
+            // Mientras se arrastra, lo que cambia (y cómo afinar) en lugar de la pista.
+            Text doing = drag.handle().isCorner()
+                    ? Text.translatable("gui.komaedit.reference.hud.scaling")
+                    : drag.handle().gizmo().rotates()
+                    ? Text.translatable("gui.komaedit.reference.hud.turning", ReferenceFormat.signed(drag.degrees()))
+                    : Text.translatable("gui.komaedit.reference.hud.moving",
+                    ReferenceFormat.offset(world.center().subtract(drag.start().center())));
+            line.append(Text.literal(" · ").formatted(Formatting.DARK_GRAY))
+                    .append(doing.copy().formatted(Formatting.AQUA));
         } else {
             line.append(Text.literal(" · ").formatted(Formatting.DARK_GRAY))
                     .append(Text.translatable("gui.komaedit.reference.hud.hint").formatted(Formatting.GRAY));

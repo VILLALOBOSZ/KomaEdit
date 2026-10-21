@@ -20,7 +20,7 @@ import java.util.List;
  */
 public final class ReferenceGizmo {
     /** Lado de los cuadraditos de las esquinas, en fracción del tamaño del gizmo a esa distancia. */
-    public static final double CORNER = 0.07;
+    public static final double CORNER = 0.1;
     public static final int OUTLINE = 0xF0FFD23F;
     public static final int OUTLINE_IDLE = 0xC0FFFFFF;
     private static final float OUTLINE_WIDTH = 2.0F;

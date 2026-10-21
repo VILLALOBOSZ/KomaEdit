@@ -1,9 +1,13 @@
 package com.komainu.moxia.client.reference;
 
+import com.komainu.moxia.reference.ReferenceImage;
 import com.komainu.moxia.studio.ui.StudioTheme;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
+
+import java.util.List;
 
 /**
  * Colocar las ventanas en pantalla: el juego se ve tal cual (sin velo ni desenfoque) y todas las ventanas llevan su
@@ -25,12 +29,17 @@ public final class ReferenceArrangeScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        Text hint = Text.translatable("gui.komaedit.reference.arrange.hint");
-        int width = textRenderer.getWidth(hint) + 12;
+        // En una pantalla estrecha, la línea se parte en dos.
+        List<OrderedText> lines = textRenderer.wrapLines(Text.translatable("gui.komaedit.reference.arrange.hint"),
+                Math.max(80, this.width - 24));
+        int width = lines.stream().mapToInt(textRenderer::getWidth).max().orElse(0) + 12;
         int left = (this.width - width) / 2;
-        context.fill(left, 4, left + width, 18, StudioTheme.fade(StudioTheme.PANEL, 0.85));
-        context.drawCenteredTextWithShadow(textRenderer, hint, this.width / 2, 7, StudioTheme.TEXT);
-        if (ReferenceClient.set().drawn(com.komainu.moxia.reference.ReferenceImage.Mode.SCREEN).isEmpty()) {
+        context.fill(left, 4, left + width, 8 + lines.size() * 10, StudioTheme.fade(StudioTheme.PANEL, 0.85));
+        for (int index = 0; index < lines.size(); index++) {
+            context.drawCenteredTextWithShadow(textRenderer, lines.get(index), this.width / 2, 7 + index * 10,
+                    StudioTheme.TEXT);
+        }
+        if (ReferenceClient.set().drawn(ReferenceImage.Mode.SCREEN).isEmpty()) {
             context.drawCenteredTextWithShadow(textRenderer, Text.translatable("gui.komaedit.reference.arrange.none"),
                     this.width / 2, this.height / 2, StudioTheme.TEXT_SECONDARY);
         }

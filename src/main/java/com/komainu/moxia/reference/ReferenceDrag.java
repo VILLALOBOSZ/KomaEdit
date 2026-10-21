@@ -30,6 +30,7 @@ public final class ReferenceDrag {
     private final double along;
     private double lastAngle;
     private double turned;
+    private double degrees;
     private final double cornerReach;
 
     private ReferenceDrag(ReferenceGizmo.Handle handle, WorldFrame start, int pixelWidth, int pixelHeight,
@@ -103,6 +104,11 @@ public final class ReferenceDrag {
         return start;
     }
 
+    /** Lo girado desde que se agarró el anillo, ya en sus pasos (positivo, por la regla de la mano derecha). */
+    public double degrees() {
+        return degrees;
+    }
+
     /** El plano con el arrastre hasta {@code ray}, o {@code null} si el rayo no sirve (se deja como estaba). */
     public WorldFrame drag(GizmoMath.Ray ray, boolean fine) {
         if (handle.isCorner()) {
@@ -139,7 +145,7 @@ public final class ReferenceDrag {
         turned += GizmoMath.wrap(now - lastAngle);
         lastAngle = now;
         double step = fine ? FINE_ROTATE_STEP : ROTATE_STEP;
-        double degrees = Math.round(Math.toDegrees(turned) / step) * step;
+        degrees = Math.round(Math.toDegrees(turned) / step) * step;
         return start.withRotation(start.rotation().turned(axis, degrees));
     }
 

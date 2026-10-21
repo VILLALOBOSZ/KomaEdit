@@ -31,6 +31,7 @@ final class ReferenceWindows {
     private static final double OPACITY_STEP = 0.05;
     /** Menos unidades de pantalla por celda y la rejilla no se distingue: no se dibuja. */
     private static final double MIN_CELL = 3.0;
+    private static final double BOLD_CELL = 4.0;
 
     private static String dragging;
     private static ScreenFrame.Part part = ScreenFrame.Part.NONE;
@@ -141,19 +142,22 @@ final class ReferenceWindows {
             return;
         }
         boolean minor = grid.visibleAt(scale, MIN_CELL);
+        // Con celdas de 4 puntos o más, la línea marcada va el doble de gruesa para distinguirla.
+        int bold = grid.visibleAt(scale, BOLD_CELL) ? 2 : 1;
         ScreenFrame.Rect rect = window.image();
         int color = grid.color().rgb();
         for (ReferenceGrid.Line line : grid.lines(reference.pixelWidth(), reference.pixelHeight())) {
             if (!line.major() && !minor) {
                 continue;
             }
-            int argb = (line.major() ? 0xF0 : 0x90) << 24 | color;
+            int argb = (line.major() ? 0xE8 : 0x70) << 24 | color;
+            int thickness = line.major() ? bold : 1;
             if (line.vertical()) {
                 int x = rect.x() + (int) Math.round(line.at() * rect.width() / reference.pixelWidth());
-                context.fill(x, rect.y(), x + 1, rect.bottom(), argb);
+                context.fill(x, rect.y(), x + thickness, rect.bottom(), argb);
             } else {
                 int y = rect.y() + (int) Math.round(line.at() * rect.height() / reference.pixelHeight());
-                context.fill(rect.x(), y, rect.right(), y + 1, argb);
+                context.fill(rect.x(), y, rect.right(), y + thickness, argb);
             }
         }
         context.drawBorder(rect.x(), rect.y(), rect.width(), rect.height(), 0x90 << 24 | color);
@@ -177,6 +181,7 @@ final class ReferenceWindows {
                 outline);
         ScreenFrame.Rect grip = window.grip();
         int gripColor = grip.contains(mouseX, mouseY) ? StudioTheme.ACCENT_TEXT : StudioTheme.TEXT_SECONDARY;
+        context.fill(grip.x(), grip.y(), grip.right(), grip.bottom(), StudioTheme.fade(StudioTheme.PANEL, 0.75));
         for (int step = 0; step < 3; step++) {
             int offset = 2 + step * 2;
             context.fill(grip.right() - offset, grip.bottom() - 1, grip.right() - offset + 1, grip.bottom(),

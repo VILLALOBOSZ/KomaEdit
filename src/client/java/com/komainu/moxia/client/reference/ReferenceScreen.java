@@ -6,11 +6,16 @@ import com.komainu.moxia.reference.ReferenceImage;
 import com.komainu.moxia.reference.ReferenceSet;
 import com.komainu.moxia.reference.ScreenFrame;
 import com.komainu.moxia.studio.ui.StudioTheme;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.CyclingButtonWidget;
+import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
@@ -56,6 +61,8 @@ public final class ReferenceScreen extends Screen {
     private int listTop;
     private int listBottom;
     private int chipsTop;
+    private SettingsList settings;
+    private String settingsFor;
 
     public ReferenceScreen(Screen parent) {
         super(Text.translatable("gui.komaedit.reference.title"));
@@ -73,7 +80,7 @@ public final class ReferenceScreen extends Screen {
         rightWidth = width - rightX - MARGIN;
         listTop = 36;
         listBottom = height - 34;
-        chipsTop = 36;
+        chipsTop = 38;
         ReferenceSet set = ReferenceClient.set();
         if (selected == null || set.byId(selected).isEmpty()) {
             selected = set.references().isEmpty() ? null : set.references().getLast().id();
@@ -102,8 +109,17 @@ public final class ReferenceScreen extends Screen {
                 .build(width - MARGIN - 120, 6, 120, 20, Text.translatable("gui.komaedit.reference.shown_all"),
                         (button, value) -> ReferenceClient.update(ReferenceClient.set().withShown(value))));
         Optional<ReferenceImage> chosen = chosen();
+        // Al rehacer la pantalla por un cambio de la misma, la lista sigue donde estaba.
+        double keep = settings != null && selected != null && selected.equals(settingsFor)
+                ? settings.getScrollAmount() : 0.0;
+        settings = null;
+        settingsFor = selected;
         if (chosen.isPresent()) {
-            settings(chosen.get());
+            int top = settingsTop();
+            settings = new SettingsList(rightX, top, rightWidth, Math.max(ROW, height - top - 6));
+            settings(chosen.get(), settings);
+            addDrawableChild(settings);
+            settings.setScrollAmount(keep);
         }
     }
 
@@ -111,118 +127,130 @@ public final class ReferenceScreen extends Screen {
         return selected == null ? Optional.empty() : ReferenceClient.set().byId(selected);
     }
 
-    /** Las filas de ajustes de la elegida, bajo las fichas y su resumen. */
-    private void settings(ReferenceImage reference) {
-        int column = (rightWidth - 4) / 2;
-        int left = rightX;
-        int right = rightX + column + 4;
-        int top = settingsTop();
-        int row = 0;
-        addDrawableChild(CyclingButtonWidget.<ReferenceImage.Mode>builder(mode ->
-                        Text.translatable("gui.komaedit.reference.mode." + mode.id()))
-                .values(ReferenceImage.Mode.values())
-                .initially(reference.mode())
-                .tooltip(mode -> Tooltip.of(Text.translatable("gui.komaedit.reference.mode.tooltip")))
-                .build(left, top, column, 20, Text.translatable("gui.komaedit.reference.mode"),
-                        (button, mode) -> {
+    /**
+     * Las filas de ajustes de la elegida, de dos en dos, en una lista que se desplaza con la rueda (así caben en
+     * cualquier tamaño de pantalla): modo y visible, opacidad y filtro, la rejilla y, según el modo, lo de la ventana o
+     * lo del plano en el mundo.
+     */
+    private void settings(ReferenceImage reference, SettingsList list) {
+        list.row(CyclingButtonWidget.<ReferenceImage.Mode>builder(mode ->
+                                Text.translatable("gui.komaedit.reference.mode." + mode.id()))
+                        .values(ReferenceImage.Mode.values())
+                        .initially(reference.mode())
+                        .tooltip(mode -> Tooltip.of(Text.translatable("gui.komaedit.reference.mode.tooltip")))
+                        .build(0, 0, 100, 20, Text.translatable("gui.komaedit.reference.mode"), (button, mode) -> {
                             change(current -> current.withMode(mode));
                             clearAndInit();
-                        }));
-        addDrawableChild(CyclingButtonWidget.onOffBuilder(reference.visible())
-                .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.visible.tooltip")))
-                .build(right, top, column, 20, Text.translatable("gui.komaedit.reference.visible"),
-                        (button, value) -> change(current -> current.withVisible(value))));
-        row++;
-        addDrawableChild(slider(left, top + row * ROW, column,
-                (reference.opacity() - ReferenceImage.MIN_OPACITY)
-                        / (ReferenceImage.MAX_OPACITY - ReferenceImage.MIN_OPACITY), 0,
-                value -> Text.translatable("gui.komaedit.reference.opacity",
-                        Math.round(opacity(value) * 100.0)),
-                value -> change(current -> current.withOpacity(opacity(value)))));
-        addDrawableChild(CyclingButtonWidget.<Boolean>builder(smooth -> Text.translatable(smooth
-                        ? "gui.komaedit.reference.filter.smooth" : "gui.komaedit.reference.filter.sharp"))
-                .values(Boolean.FALSE, Boolean.TRUE)
-                .initially(reference.smooth())
-                .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.filter.tooltip")))
-                .build(right, top + row * ROW, column, 20, Text.translatable("gui.komaedit.reference.filter"),
-                        (button, value) -> change(current -> current.withSmooth(value))));
-        row++;
+                        }),
+                CyclingButtonWidget.onOffBuilder(reference.visible())
+                        .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.visible.tooltip")))
+                        .build(0, 0, 100, 20, Text.translatable("gui.komaedit.reference.visible"),
+                                (button, value) -> change(current -> current.withVisible(value))));
+        list.row(slider((reference.opacity() - ReferenceImage.MIN_OPACITY)
+                                / (ReferenceImage.MAX_OPACITY - ReferenceImage.MIN_OPACITY), 0,
+                        value -> Text.translatable("gui.komaedit.reference.opacity", Math.round(opacity(value) * 100.0)),
+                        value -> change(current -> current.withOpacity(opacity(value)))),
+                CyclingButtonWidget.<Boolean>builder(smooth -> Text.translatable(smooth
+                                ? "gui.komaedit.reference.filter.smooth" : "gui.komaedit.reference.filter.sharp"))
+                        .values(Boolean.FALSE, Boolean.TRUE)
+                        .initially(reference.smooth())
+                        .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.filter.tooltip")))
+                        .build(0, 0, 100, 20, Text.translatable("gui.komaedit.reference.filter"),
+                                (button, value) -> change(current -> current.withSmooth(value))));
         ReferenceGrid grid = reference.grid();
-        addDrawableChild(CyclingButtonWidget.onOffBuilder(grid.enabled())
-                .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.grid.tooltip")))
-                .build(left, top + row * ROW, column, 20, Text.translatable("gui.komaedit.reference.grid"),
-                        (button, value) -> change(current -> current.withGrid(current.grid().withEnabled(value)))));
-        addDrawableChild(slider(right, top + row * ROW, column, gridPosition(grid.pixels()), GRID_PIXELS.length - 1,
-                value -> Text.translatable("gui.komaedit.reference.grid.pixels", gridPixels(value)),
-                value -> change(current -> current.withGrid(current.grid().withPixels(gridPixels(value))
-                        .withEnabled(true)))));
-        row++;
-        addDrawableChild(CyclingButtonWidget.<ReferenceGrid.Color>builder(color ->
-                        Text.translatable("gui.komaedit.reference.grid.color." + color.id()))
-                .values(ReferenceGrid.Color.values())
-                .initially(grid.color())
-                .build(left, top + row * ROW, column, 20, Text.translatable("gui.komaedit.reference.grid.color"),
-                        (button, value) -> change(current -> current.withGrid(current.grid().withColor(value)))));
-        addDrawableChild(CyclingButtonWidget.<Integer>builder(major -> major == 0
-                        ? Text.translatable("gui.komaedit.reference.grid.major.none")
-                        : Text.translatable("gui.komaedit.reference.grid.major.every", major))
-                .values(MAJORS)
-                .initially(MAJORS.contains(grid.major()) ? grid.major() : 0)
-                .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.grid.major.tooltip")))
-                .build(right, top + row * ROW, column, 20, Text.translatable("gui.komaedit.reference.grid.major"),
-                        (button, value) -> change(current -> current.withGrid(current.grid().withMajor(value)))));
-        row++;
-        if (reference.mode() == ReferenceImage.Mode.SCREEN) {
-            addDrawableChild(CyclingButtonWidget.onOffBuilder(reference.screen().clickThrough())
-                    .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.through.tooltip")))
-                    .build(left, top + row * ROW, column, 20, Text.translatable("gui.komaedit.reference.through"),
-                            (button, value) -> change(current -> current.withScreen(current.screen()
-                                    .withClickThrough(value)))));
-            addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.reference.arrange"), button -> {
-                change(current -> current.withVisible(true));
-                ReferenceClient.update(ReferenceClient.set().withShown(true));
-                if (client != null) {
-                    client.setScreen(new ReferenceArrangeScreen(this));
-                }
-            }).dimensions(right, top + row * ROW, column, 20)
-                    .tooltip(Tooltip.of(Text.translatable("gui.komaedit.reference.arrange.tooltip"))).build());
-            row++;
-            addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.reference.reset"), button ->
-                            change(current -> current.withScreen(ScreenFrame.DEFAULT)))
-                    .dimensions(left, top + row * ROW, column, 20)
-                    .tooltip(Tooltip.of(Text.translatable("gui.komaedit.reference.reset.tooltip"))).build());
-        } else {
-            addDrawableChild(CyclingButtonWidget.onOffBuilder(reference.world().depth())
-                    .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.depth.tooltip")))
-                    .build(left, top + row * ROW, column, 20, Text.translatable("gui.komaedit.reference.depth"),
-                            (button, value) -> change(current -> current.withWorld(current.world()
-                                    .withDepth(value)))));
-            addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.reference.cell_block"), button -> {
-                change(current -> current.withGrid(current.grid().withEnabled(true)).cellPerBlock());
-                clearAndInit();
-            }).dimensions(right, top + row * ROW, column, 20)
-                    .tooltip(Tooltip.of(Text.translatable("gui.komaedit.reference.cell_block.tooltip"))).build());
-            row++;
-            addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.reference.bring"), button ->
-                            change(current -> current.withWorld(ReferenceClient.inFront(current.world()))))
-                    .dimensions(left, top + row * ROW, column, 20)
-                    .tooltip(Tooltip.of(Text.translatable("gui.komaedit.reference.bring.tooltip"))).build());
-            addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.reference.floor"), button ->
-                            change(current -> current.withWorld(ReferenceClient.onFloor(current.world()))))
-                    .dimensions(right, top + row * ROW, column, 20)
-                    .tooltip(Tooltip.of(Text.translatable("gui.komaedit.reference.floor.tooltip"))).build());
-            row++;
-            addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.reference.gizmo"), button ->
-                            ReferenceClient.edit(reference.id()))
-                    .dimensions(left, top + row * ROW, column, 20)
-                    .tooltip(Tooltip.of(Text.translatable("gui.komaedit.reference.gizmo.tooltip"))).build());
+        list.row(CyclingButtonWidget.onOffBuilder(grid.enabled())
+                        .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.grid.tooltip")))
+                        .build(0, 0, 100, 20, Text.translatable("gui.komaedit.reference.grid"), (button, value) -> {
+                            change(current -> current.withGrid(current.grid().withEnabled(value)));
+                            clearAndInit();
+                        }),
+                slider(gridPosition(grid.pixels()), GRID_PIXELS.length - 1,
+                        value -> Text.translatable("gui.komaedit.reference.grid.pixels", gridPixels(value)),
+                        value -> change(current -> current.withGrid(current.grid().withPixels(gridPixels(value))
+                                .withEnabled(true)))));
+        if (grid.enabled()) {
+            list.row(CyclingButtonWidget.<ReferenceGrid.Color>builder(color ->
+                                    Text.translatable("gui.komaedit.reference.grid.color." + color.id()))
+                            .values(ReferenceGrid.Color.values())
+                            .initially(grid.color())
+                            .build(0, 0, 100, 20, Text.translatable("gui.komaedit.reference.grid.color"),
+                                    (button, value) -> change(current -> current.withGrid(current.grid()
+                                            .withColor(value)))),
+                    CyclingButtonWidget.<Integer>builder(major -> major == 0
+                                    ? Text.translatable("gui.komaedit.reference.grid.major.none")
+                                    : Text.translatable("gui.komaedit.reference.grid.major.every", major))
+                            .values(MAJORS)
+                            .initially(MAJORS.contains(grid.major()) ? grid.major() : 0)
+                            .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.grid.major.tooltip")))
+                            .build(0, 0, 100, 20, Text.translatable("gui.komaedit.reference.grid.major"),
+                                    (button, value) -> change(current -> current.withGrid(current.grid()
+                                            .withMajor(value)))));
+            if (grid.pixels() > 1) {
+                int last = grid.pixels() - 1;
+                list.row(offset("x", grid.offsetX(), last), offset("y", grid.offsetY(), last));
+            }
         }
-        addDrawableChild(ButtonWidget.builder(Text.translatable("gui.komaedit.reference.remove"), button -> {
+        if (reference.mode() == ReferenceImage.Mode.SCREEN) {
+            list.row(CyclingButtonWidget.onOffBuilder(reference.screen().clickThrough())
+                            .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.through.tooltip")))
+                            .build(0, 0, 100, 20, Text.translatable("gui.komaedit.reference.through"),
+                                    (button, value) -> change(current -> current.withScreen(current.screen()
+                                            .withClickThrough(value)))),
+                    button("arrange", () -> {
+                        change(current -> current.withVisible(true));
+                        ReferenceClient.update(ReferenceClient.set().withShown(true));
+                        if (client != null) {
+                            client.setScreen(new ReferenceArrangeScreen(this));
+                        }
+                    }));
+            list.row(button("reset", () -> change(current -> current.withScreen(ScreenFrame.DEFAULT))),
+                    remove(reference));
+        } else {
+            list.row(CyclingButtonWidget.onOffBuilder(reference.world().depth())
+                            .tooltip(value -> Tooltip.of(Text.translatable("gui.komaedit.reference.depth.tooltip")))
+                            .build(0, 0, 100, 20, Text.translatable("gui.komaedit.reference.depth"),
+                                    (button, value) -> change(current -> current.withWorld(current.world()
+                                            .withDepth(value)))),
+                    button("cell_block", () -> {
+                        change(current -> current.withGrid(current.grid().withEnabled(true)).cellPerBlock());
+                        clearAndInit();
+                    }));
+            list.row(button("bring", () -> change(current -> current.withWorld(ReferenceClient.inFront(
+                            current.world())))),
+                    button("floor", () -> change(current -> current.withWorld(ReferenceClient.onFloor(
+                            current.world())))));
+            list.row(button("gizmo", () -> ReferenceClient.edit(reference.id())), remove(reference));
+        }
+    }
+
+    private ButtonWidget button(String id, Runnable action) {
+        return ButtonWidget.builder(Text.translatable("gui.komaedit.reference." + id), button -> action.run())
+                .dimensions(0, 0, 100, 20)
+                .tooltip(Tooltip.of(Text.translatable("gui.komaedit.reference." + id + ".tooltip")))
+                .build();
+    }
+
+    private ButtonWidget remove(ReferenceImage reference) {
+        return button("remove", () -> {
             ReferenceClient.update(ReferenceClient.set().remove(reference.id()));
             selected = null;
             clearAndInit();
-        }).dimensions(right, top + row * ROW, column, 20)
-                .tooltip(Tooltip.of(Text.translatable("gui.komaedit.reference.remove.tooltip"))).build());
+        });
+    }
+
+    /** Dónde empieza la primera columna o fila de la rejilla, de 0 a {@code last} píxeles. */
+    private SliderWidget offset(String axis, int value, int last) {
+        SliderWidget slider = slider(value / (double) last, last,
+                position -> Text.translatable(axis.equals("x") ? "gui.komaedit.reference.grid.offset_x"
+                        : "gui.komaedit.reference.grid.offset_y", (int) Math.round(position * last)),
+                position -> change(current -> {
+                    int moved = (int) Math.round(position * last);
+                    ReferenceGrid grid = current.grid();
+                    return current.withGrid(axis.equals("x") ? grid.withOffset(moved, grid.offsetY())
+                            : grid.withOffset(grid.offsetX(), moved));
+                }));
+        slider.setTooltip(Tooltip.of(Text.translatable("gui.komaedit.reference.grid.offset.tooltip")));
+        return slider;
     }
 
     /** Donde empiezan los ajustes: bajo las fichas (una o dos filas) y el resumen de dos líneas. */
@@ -268,10 +296,9 @@ public final class ReferenceScreen extends Screen {
      * Un deslizador. Con {@code steps} mayor que cero salta entre esas posiciones (los valores de la rejilla); si no,
      * es continuo (la opacidad).
      */
-    private static SliderWidget slider(int x, int y, int width, double initial, int steps,
-                                       java.util.function.DoubleFunction<Text> label,
+    private static SliderWidget slider(double initial, int steps, java.util.function.DoubleFunction<Text> label,
                                        java.util.function.DoubleConsumer apply) {
-        return new SliderWidget(x, y, width, 20, Text.empty(), Math.clamp(initial, 0.0, 1.0)) {
+        return new SliderWidget(0, 0, 100, 20, Text.empty(), Math.clamp(initial, 0.0, 1.0)) {
             {
                 updateMessage();
             }
@@ -522,6 +549,74 @@ public final class ReferenceScreen extends Screen {
         ReferenceClient.save();
         if (client != null) {
             client.setScreen(parent);
+        }
+    }
+
+    /** Los ajustes en filas de dos controles, con la rueda y la barra de vanilla y sin su fondo. */
+    private final class SettingsList extends ElementListWidget<SettingsList.Row> {
+        SettingsList(int x, int y, int width, int height) {
+            super(MinecraftClient.getInstance(), width, height, y, ROW);
+            setX(x);
+        }
+
+        void row(ClickableWidget left, ClickableWidget right) {
+            addEntry(new Row(right == null ? List.of(left) : List.of(left, right)));
+        }
+
+        @Override
+        public int getRowWidth() {
+            return width - 8;
+        }
+
+        @Override
+        public int getRowLeft() {
+            return getX();
+        }
+
+        @Override
+        protected int getScrollbarX() {
+            return getX() + width - 6;
+        }
+
+        @Override
+        protected void drawMenuListBackground(DrawContext context) {
+            // Sin el fondo de vanilla: va sobre el del Studio.
+        }
+
+        @Override
+        protected void drawHeaderAndFooterSeparators(DrawContext context) {
+            // Ni sus rayas de arriba y abajo.
+        }
+
+        final class Row extends ElementListWidget.Entry<Row> {
+            private final List<ClickableWidget> widgets;
+
+            Row(List<ClickableWidget> widgets) {
+                this.widgets = widgets;
+            }
+
+            @Override
+            public List<? extends Element> children() {
+                return widgets;
+            }
+
+            @Override
+            public List<? extends Selectable> selectableChildren() {
+                return widgets;
+            }
+
+            @Override
+            public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
+                               int mouseX, int mouseY, boolean hovered, float delta) {
+                int column = (entryWidth - 4) / 2;
+                for (int position = 0; position < widgets.size(); position++) {
+                    ClickableWidget widget = widgets.get(position);
+                    widget.setX(x + position * (column + 4));
+                    widget.setY(y);
+                    widget.setWidth(column);
+                    widget.render(context, mouseX, mouseY, delta);
+                }
+            }
         }
     }
 }

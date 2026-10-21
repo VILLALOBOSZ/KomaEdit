@@ -1,5 +1,7 @@
 package com.komainu.moxia.reference;
 
+import com.komainu.moxia.shape.Vec3;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -20,6 +22,17 @@ public final class ReferenceFormat {
         String text = BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros()
                 .toPlainString();
         return text.equals("-0") ? "0" : text;
+    }
+
+    /** Un desplazamiento en bloques con su signo: «+3, 0, -1.5». */
+    public static String offset(Vec3 delta) {
+        return signed(delta.x()) + ", " + signed(delta.y()) + ", " + signed(delta.z());
+    }
+
+    /** Grados con su signo: «+15», «-90», «0». */
+    public static String signed(double value) {
+        String text = blocks(value);
+        return text.startsWith("-") || text.equals("0") ? text : "+" + text;
     }
 
     /** {@code standing}, {@code flat} (boca arriba), {@code upside_down} (boca abajo) o {@code tilted}. */
