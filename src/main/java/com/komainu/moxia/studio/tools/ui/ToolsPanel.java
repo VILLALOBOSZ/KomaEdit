@@ -369,6 +369,7 @@ public final class ToolsPanel {
             values.put(card.id(), snapshot.values());
             // Lo deshecho se guarda como cualquier cambio; track() solo se salta el historial.
             dirtySince = dirtySince < 0 ? clock : dirtySince;
+            host.preferences().setTool(card.id());
         }
         stopEditing();
         restoring = true;

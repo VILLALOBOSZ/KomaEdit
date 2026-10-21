@@ -502,6 +502,17 @@ class ToolsPanelTest {
         assertEquals(Map.of("height", 19), studio.host.preferences.toolValues("tree"), "rehecho y cerrado enseguida");
     }
 
+    /** Deshacer puede volver a otra herramienta: es la que se recuerda, no la que se dejó al deshacer. */
+    @Test
+    void undoingBackToAnotherToolRemembersThatTool() {
+        select("tree");
+        studio.wheelValue("Altura", 1);
+        select("rock");
+        studio.key(StudioKey.letter('Z', false, false));
+        assertEquals("tree", panel.selected().id());
+        assertEquals("tree", studio.host.preferences.tool());
+    }
+
     /**
      * El nombre de la herramienta elegida se lee entero arriba de la tarjeta: con el panel de serie a 1080p (GUI 3),
      * a 854×480 (GUI 2) y a 1080p con GUI 4, en los dos idiomas. Si no cabe en negrita, va en dos líneas, como en la
