@@ -265,6 +265,7 @@ public final class MoxiaCommands {
         GeneratorCommands.register(dispatcher);
         PaletteCommands.register(root);
         ColorCommands.register(root);
+        HotbarCommands.register(root);
         NoiseCommands.register(root);
         SelectionCommands.register(root);
         AdminCommands.register(root);
@@ -274,10 +275,12 @@ public final class MoxiaCommands {
         RetouchCommands.register(root);
         SelectionBrushCommands.register(root);
         BlueprintCommands.register(root);
+        ShareCommands.register(root);
         ClipboardCommands.register(root);
         PasteCommands.register(root);
         PreviewCommands.register(root);
         JobCommands.register(root);
+        RebuildCommands.register(root);
         DisplayCommands.register(root);
         // «ruta» es el mismo nodo que «path»: hereda todos sus subcomandos y sugerencias.
         dispatcher.register(literal("komaedit").then(literal("ruta")

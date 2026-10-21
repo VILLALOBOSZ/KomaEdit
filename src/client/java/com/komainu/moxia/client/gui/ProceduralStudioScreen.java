@@ -507,7 +507,8 @@ public final class ProceduralStudioScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         boolean control = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
-        if (control && keyCode == GLFW.GLFW_KEY_V && view.typing() && client != null) {
+        if (control && keyCode == GLFW.GLFW_KEY_V && client != null && (view.typing()
+                || !view.modal() && StudioView.shareCode(client.keyboard.getClipboard()))) {
             view.paste(client.keyboard.getClipboard(), host);
             return true;
         }

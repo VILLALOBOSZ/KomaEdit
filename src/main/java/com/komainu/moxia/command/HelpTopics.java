@@ -372,6 +372,29 @@ public final class HelpTopics {
                     new Entry("/komaedit color gradient deepslate calcite 7 -c -o",
                             "Ejemplo: de oscuro a claro solo con cubos opacos")
             )),
+            new Topic("hotbar", "Barras guardadas", List.of("barra", "barras", "hotbars", "swapper"), List.of(
+                    new Entry("/komaedit hotbar save <nombre> [-i hueco|objeto] [-f]",
+                            "Guarda tu barra rápida (objetos y componentes) con un nombre y un icono"),
+                    new Entry("/komaedit hotbar load <nombre>",
+                            "Cambia a esa barra; en supervivencia solo mueve lo que llevas (alias usar)"),
+                    new Entry("/komaedit hotbar list", "Tus barras; pulsa una para usarla"),
+                    new Entry("/komaedit hotbar palette <nombre> <paleta> [-f] [-l]",
+                            "Barra con una paleta (##Nombre, #guardada, bloques o kp1:…); -l la pone ya"),
+                    new Entry("/komaedit hotbar gradient <nombre> <A> <B> [-c] [-s] [-o] [-u] [-v n]",
+                            "Barra con el degradado de color de A a B en 9 pasos (alias degradado)"),
+                    new Entry("/komaedit hotbar selection <nombre>", "Barra con los 9 bloques más usados de la selección"),
+                    new Entry("/komaedit hotbar stamp <nombre> [paleta]", "Barra con los bloques de un sello de relieve"),
+                    new Entry("/komaedit hotbar paint <nombre> [paleta]", "Barra con una paleta del pincel de pintura"),
+                    new Entry("/komaedit hotbar roof <nombre> <material>",
+                            "Barra de tejado: el material con sus escaleras, losas y piezas"),
+                    new Entry("/komaedit hotbar export [nombre|all]", "Código kh1:… para compartir una barra o todas"),
+                    new Entry("/komaedit hotbar import <código> [nombre] [-f]", "Guarda las barras de un código kh1:…"),
+                    new Entry("/komaedit hotbar undo", "Vuelve a la barra de antes del último cambio (creativo)"),
+                    new Entry("/komaedit hotbar autosave [on|off]",
+                            "Si la barra que dejas se guarda sola al cambiar (de serie, sí)"),
+                    new Entry("/komaedit hotbar rename|icon|move|delete <nombre> …",
+                            "Renombrar, cambiar el icono, ordenar o borrar")
+            )),
             new Topic("noise", "Ruidos guardados", List.of("ruido", "ruidos", "noises"), List.of(
                     new Entry("/komaedit noise list [all|default|mine]", "Ruidos de serie y tuyos"),
                     new Entry("/komaedit noise save <nombre> <ruido> [-f]", "Guarda un ruido para usarlo por su nombre"),
@@ -473,6 +496,45 @@ public final class HelpTopics {
                             + " [-f volteo] [-g apoyar|centro|no]", "Pincel estampar: planos al azar sobre el suelo"),
                     new Entry("/komaedit scatter Bp(T:rocas) SurfaceNormal Random -n 1",
                             "Los planos también valen en place, scatter y array con Bp(N:…|T:…)")
+            )),
+            new Topic("rebuild", "Reconstrucción animada", List.of("reconstruir", "reconstruccion", "timelapse",
+                    "animacion", "animar"), List.of(
+                    new Entry("/komaedit rebuild [orden] [banderas]",
+                            "Quita la selección y la levanta bloque a bloque, a la vista de todos (alias reconstruir)"),
+                    new Entry("/komaedit rebuild portapapeles [orden] [banderas]",
+                            "Levanta el portapapeles donde lo pondría //paste (-l x,y,z: en otro sitio; -a: sin su aire)"),
+                    new Entry("/komaedit rebuild plano <plano> [orden] [banderas]",
+                            "Levanta un plano de la biblioteca encima del bloque que miras"),
+                    new Entry("/komaedit rebuild capas|ondas|eje|azar|constructor|historial",
+                            "El orden: por capas, desde un punto (-c), por un eje (-e), al azar (-s), como un"
+                                    + " constructor (de serie) o como se colocó"),
+                    new Entry("/komaedit rebuild constructor -b <bloques/tick> | -t <segundos>",
+                            "El ritmo: bloques por tick (4 de serie) o la duración total"),
+                    new Entry("/komaedit rebuild constructor -p <pausa> -i <iguales> -d <distintos> -w <espera>",
+                            "Pausa entre capas o fases y retrasos entre bloques iguales o distintos (segundos; 10t en"
+                                    + " ticks)"),
+                    new Entry("/komaedit rebuild constructor -f -n",
+                            "Partículas (-f) y sonido (-n) de colocación, discretos"),
+                    new Entry("/komaedit rebuild pausar|seguir", "Para la animación donde va y la reanuda"),
+                    new Entry("/komaedit rebuild velocidad <factor>",
+                            "Más deprisa o más despacio (2, 0.5…); acelerar y frenar la doblan o la parten"),
+                    new Entry("/komaedit rebuild terminar", "Salta al final: pone lo que falta ya, sin animación"),
+                    new Entry("/komaedit rebuild cancelar", "Lo deja todo como estaba (también /komaedit cancel)"),
+                    new Entry("/komaedit rebuild estado", "Fase, bloques, velocidad y lo que queda")
+            )),
+            new Topic("share", "Compartir", List.of("compartir", "exportar", "importar", "paquete", "paquetes",
+                    "kpack"), List.of(
+                    new Entry("/komaedit share", "Lo que puedes compartir, con un botón por cosa (alias compartir)"),
+                    new Entry("/komaedit share export <tipo:nombre…> [-n nombre] [-f]",
+                            "Un código para copiar (paleta, ruido, arbol, roca, escultura, receta, plano; tipo:* son"
+                                    + " todos); -f lo guarda en config/komaedit/exports como .kpack"),
+                    new Entry("/komaedit share import <código>", "Enseña lo que trae y lo que choca antes de guardar"),
+                    new Entry("/komaedit share import archivo <nombre>",
+                            "Un .kpack (o un .txt con un código) de config/komaedit/imports"),
+                    new Entry("/komaedit share files", "Los archivos que hay para importar (alias archivos)"),
+                    new Entry("/komaedit share accept [renombrar|reemplazar|saltar]",
+                            "Importa lo enseñado; lo que choca, con otro nombre, sustituyéndolo o sin tocar"),
+                    new Entry("/komaedit share cancel", "Descarta la importación pendiente")
             )),
             new Topic("display", "Decorar con displays", List.of("displays", "decorar", "decoracion", "carteles",
                     "hologramas"), List.of(

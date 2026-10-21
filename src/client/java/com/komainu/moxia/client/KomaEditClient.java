@@ -99,7 +99,9 @@ public final class KomaEditClient implements ClientModInitializer {
                 "category.komaedit"
         ));
         CapabilityControls.register();
+        com.komainu.moxia.client.hotbar.HotbarControls.register();
         com.komainu.moxia.client.gui.studio.ToolClientState.register();
+        com.komainu.moxia.client.share.ClientShare.register();
         WorldFeedbackClient.register();
         com.komainu.moxia.client.gizmo.GhostClient.register();
         com.komainu.moxia.client.display.DisplayEditorClient.register();

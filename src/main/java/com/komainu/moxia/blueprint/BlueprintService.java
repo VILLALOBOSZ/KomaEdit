@@ -8,6 +8,9 @@ import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.share.BlueprintKind;
+import com.komainu.moxia.share.ShareService;
+import com.komainu.moxia.share.ShareTarget;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.WorldEditException;
@@ -178,6 +181,64 @@ public final class BlueprintService {
             writer.write(clipboard);
         }
         return output.toByteArray();
+    }
+
+    /**
+     * Guarda un plano que llega en un paquete compartido, ya saneado ({@code share.SchematicSanitizer}): lo lee con
+     * WorldEdit y pinta su miniatura en el hilo de los planos, como al guardar. Se comprueban aquí los límites de
+     * {@code blueprints.json}; el resultado llega después por el chat.
+     *
+     * @return qué está pasando, para la lista de lo importado
+     */
+    public static String importShared(ShareTarget target, BlueprintKind.Imported blueprint, boolean replace) {
+        MinecraftServer server = ShareService.server();
+        if (server == null) {
+            throw new IllegalStateException("El servidor no está en marcha");
+        }
+        String name = BlueprintRef.name(blueprint.name());
+        BlueprintLimits limits = BlueprintConfig.limits();
+        boolean unlimited = target.can(BlueprintPermissions.UNLIMITED);
+        limits.checkSize(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ(), unlimited);
+        limits.checkFile(blueprint.schematic().length);
+        UUID owner = target.id();
+        List<BlueprintLibrary.Entry> own = library().own(owner);
+        BlueprintLibrary.Entry previous = own.stream().filter(entry -> entry.meta().name().equals(name)).findFirst()
+                .orElse(null);
+        if (previous != null && !replace) {
+            throw new IllegalArgumentException("Ya tienes un plano «" + name + "»");
+        }
+        limits.checkCount(own.size(), previous != null, unlimited);
+        long now = System.currentTimeMillis();
+        long created = previous == null ? now : previous.meta().created();
+        String author = blueprint.author().isBlank() ? target.name() : blueprint.author();
+        byte[] schematic = blueprint.schematic();
+        IO.execute(() -> {
+            try {
+                Clipboard clipboard;
+                try (ClipboardReader reader = FORMAT.getReader(new ByteArrayInputStream(schematic))) {
+                    clipboard = reader.read();
+                }
+                Voxels voxels = voxels(clipboard);
+                byte[] png = BlueprintThumbnail.png(voxels.grid());
+                BlueprintMeta meta = new BlueprintMeta(name, BlueprintScope.PLAYER, owner, author, created, now,
+                        voxels.grid().sizeX(), voxels.grid().sizeY(), voxels.grid().sizeZ(), voxels.blocks(),
+                        blueprint.tags(), "", FORMAT_ALIAS, "", 0L);
+                BlueprintLibrary.Entry entry = library().save(meta, schematic, png, limits, unlimited);
+                forget(entry);
+                server.execute(() -> {
+                    ServerPlayerEntity current = server.getPlayerManager().getPlayer(owner);
+                    if (current != null) {
+                        current.sendMessage(message("Plano importado: " + entry.reference() + " · "
+                                + meta.describeSize() + " · " + ProgressLine.group(meta.blocks()) + " bloques · de "
+                                + author, Formatting.GREEN), false);
+                        BlueprintNetwork.sendCatalog(current);
+                    }
+                });
+            } catch (Exception exception) {
+                report(server, owner, "No se pudo importar el plano «" + name + "»", exception);
+            }
+        });
+        return previous == null ? "guardando (con su miniatura)…" : "sustituyendo (con su miniatura)…";
     }
 
     // ------------------------------------------------------------------ Cargar

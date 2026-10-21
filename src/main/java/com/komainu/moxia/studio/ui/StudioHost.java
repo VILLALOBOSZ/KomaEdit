@@ -3,6 +3,8 @@ package com.komainu.moxia.studio.ui;
 import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.recipe.ProceduralInstanceSummary;
 import com.komainu.moxia.recipe.ProceduralRecipe;
+import com.komainu.moxia.share.ShareCodePayload;
+import com.komainu.moxia.share.ShareOfferPayload;
 import com.komainu.moxia.studio.net.JobStatusPayload;
 import com.komainu.moxia.studio.tools.ui.ToolsPanel;
 
@@ -84,6 +86,35 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
     }
 
     void close();
+
+    @Override
+    default void shareExport(String things) {
+        send("komaedit share export " + things);
+    }
+
+    /** Lo que el jugador tiene en el portapapeles, o vacío. */
+    default String clipboard() {
+        return "";
+    }
+
+    /**
+     * «Pegar código»: manda el código al servidor, que contesta con lo que trae ({@link #takeShareOffer}).
+     *
+     * @return si se pudo mandar (un servidor sin KomaEdit, o uno antiguo con un código largo, no lo recibe)
+     */
+    default boolean shareImport(String code) {
+        return false;
+    }
+
+    /** Lo que trae un paquete que el servidor acaba de leer, una sola vez; el Studio lo enseña en su ventana. */
+    default Optional<ShareOfferPayload> takeShareOffer() {
+        return Optional.empty();
+    }
+
+    /** El resultado de un «Compartir» del Studio (ya en el portapapeles), una sola vez. */
+    default Optional<ShareCodePayload> takeShareResult() {
+        return Optional.empty();
+    }
 
     /** La biblioteca de planos del cliente: catálogo, permisos y miniaturas. */
     interface Blueprints {

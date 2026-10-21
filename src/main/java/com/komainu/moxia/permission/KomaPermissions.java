@@ -36,6 +36,8 @@ public final class KomaPermissions {
     public static final String DEBUG_VISUALISER = "komaedit.debug.visualiser";
     /** Imágenes por URL en {@code /komaedit image} cuando {@code urlsRequireAdmin} está activo. */
     public static final String ADMIN_IMAGE_URL = "komaedit.admin.image.url";
+    /** {@code /komaedit rebuild}: la reconstrucción animada. */
+    public static final String REBUILD = BUILD + ".rebuild";
 
     private KomaPermissions() {
     }
