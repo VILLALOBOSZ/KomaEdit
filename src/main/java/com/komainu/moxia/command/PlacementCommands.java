@@ -80,7 +80,13 @@ public final class PlacementCommands {
             int lastSpace = remaining.lastIndexOf(' ');
             var tail = builder.createOffset(builder.getStart() + lastSpace + 1);
             String typed = remaining.substring(lastSpace + 1).toLowerCase(Locale.ROOT);
-            List<String> words = ParamText.words(remaining);
+            List<String> words;
+            try {
+                words = ParamText.words(remaining);
+            } catch (IllegalArgumentException unclosedQuote) {
+                // Se está escribiendo un valor entre comillas: ahí no hay nada que sugerir.
+                return builder.buildFuture();
+            }
             List<String> options;
             if (lastSpace < 0) {
                 options = STRUCTURES;
@@ -116,9 +122,7 @@ public final class PlacementCommands {
                     || structure.equals("esquema")) {
                 KomaPermissions.require(player, KomaPermissions.CLIPBOARD);
             }
-            String started = PlacementService.start(player, kind, input);
-            context.getSource().sendFeedback(() -> prefix().append(Text.literal(started).formatted(Formatting.GRAY)),
-                    false);
+            EzCommandSupport.info(player, PlacementService.start(player, kind, input));
             return 1;
         } catch (IncompleteRegionException exception) {
             return fail(context.getSource(), kind == PlacementSettings.Kind.ARRAY

@@ -173,6 +173,27 @@ class CommandTreeSmokeTest {
         assertEquals(List.of(), wrong, "entradas de la ayuda que no llevan a ninguna orden");
     }
 
+    /**
+     * Las órdenes se ocultan del autocompletado a quien no puede usarlas (lo dice la documentación de permisos): cada
+     * una pide su nodo con {@code requires}, no solo al ejecutarse. Quedan abiertas a quien tenga
+     * {@code komaedit.use} las de ayuda, ajustes propios, vista previa y estado, que no tocan el mundo.
+     */
+    @Test
+    void everyCommandIsHiddenFromWhoCannotUseIt() {
+        Set<String> open = Set.of("help", "ayuda", "menu", "quick", "gui", "tutorial", "bienvenida", "shapes",
+                "info", "wiki", "quiet", "silencio", "permisos", "permissions", "confirm", "confirmar", "cancel",
+                "cancelar", "preview", "vistaprevia", "repeat", "repetir", "job", "project", "trozo", "part");
+        var anyone = LiteralArgumentBuilder.<ServerCommandSource>literal("x").getRequirement();
+        Set<String> unguarded = new TreeSet<>();
+        for (CommandNode<ServerCommandSource> child : komaedit.getChildren()) {
+            if (child instanceof LiteralCommandNode<?> && !FLAGS.contains(child.getName())
+                    && !open.contains(child.getName()) && child.getRequirement() == anyone) {
+                unguarded.add(child.getName());
+            }
+        }
+        assertEquals(Set.of(), unguarded, "órdenes que salen en el autocompletado sin pedir su permiso");
+    }
+
     /** Las órdenes de gestión no llevan la bandera {@code -v}: no colocan bloques o ya usan {@code -v}. */
     @Test
     void managementCommandsDoNotTakeThePreviewFlag() {

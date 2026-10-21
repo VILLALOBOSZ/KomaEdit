@@ -211,10 +211,6 @@ final class EzSplineCommands {
     }
 
     private static String readable(Throwable throwable) {
-        Throwable cause = throwable;
-        while (cause.getCause() != null && cause.getMessage() == null) {
-            cause = cause.getCause();
-        }
-        return cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage();
+        return EzCommandSupport.reason(throwable);
     }
 }

@@ -68,7 +68,10 @@ public final class CapabilityCommands {
                         .then(literal("on").executes(context -> toggle(context, 1)))
                         .then(literal("off").executes(context -> toggle(context, 0)))
                         .then(literal("toggle").executes(context -> toggle(context, -1)))
-                        .then(argument("distance", IntegerArgumentType.integer(1, 64))
+                        // Distancia (angel, reach) o bloques por capa (extrude, 256 de serie): el servidor recorta
+                        // cada uno a su máximo y la respuesta dice con cuánto se queda.
+                        .then(argument("distance", IntegerArgumentType.integer(1,
+                                        CapabilitySettings.MAX_EXTRUDE_LIMIT))
                                 .executes(CapabilityCommands::distance)));
     }
 
