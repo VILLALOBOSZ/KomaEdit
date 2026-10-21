@@ -187,9 +187,13 @@ public final class RegionOperationService {
         long selected = selection.getVolume();
         Optional<EditLimits.Excess> excess = EditLimits.check(EditLimits.Kind.SERVER, selected,
                 OperationPolicy.limit(player));
+        String subject = "la selección";
+        // Lo que se lee es la caja de la selección con su margen: con una selección que no es una caja puede pasarse
+        // aunque la selección cuente menos.
         long readLimit = MAX_CAPTURE_BLOCKS - Math.max(0L, margin);
-        if (excess.isEmpty() && volume > MAX_CAPTURE_BLOCKS) {
-            excess = EditLimits.check(EditLimits.Kind.CAPTURE, selected, Math.max(1L, readLimit));
+        if (excess.isEmpty()) {
+            excess = EditLimits.check(EditLimits.Kind.CAPTURE, volume, MAX_CAPTURE_BLOCKS);
+            subject = "la zona a leer (la caja de la selección y su margen)";
         }
         if (excess.isEmpty()) {
             return;
@@ -200,16 +204,19 @@ public final class RegionOperationService {
             BlockVector3 low = selection.getMinimumPoint();
             BlockVector3 high = selection.getMaximumPoint();
             try {
+                // Cada trozo cabe en el límite y, con su margen, en lo que se lee de una vez.
                 List<BlockBounds> pieces = EditLimits.split(new BlockBounds(low.x(), low.y(), low.z(), high.x(),
-                        high.y(), high.z()), Math.min(found.limit(), readLimit));
+                        high.y(), high.z()), Math.min(found.kind() == EditLimits.Kind.SERVER ? found.limit()
+                        : Long.MAX_VALUE, readLimit));
                 SelectionParts.propose(player.getUuid(), player.getServerWorld().getRegistryKey().getValue()
                         .toString(), description, pieces);
+                found = new EditLimits.Excess(found.kind(), found.blocks(), found.limit(), pieces.size());
                 parts = true;
             } catch (IllegalArgumentException ignored) {
                 // Ni una capa cabe en el límite: solo se dice el tamaño y el límite.
             }
         }
-        throw new IllegalArgumentException(description + ": " + found.message("la selección", parts));
+        throw new IllegalArgumentException(description + ": " + found.message(subject, parts));
     }
 
     /** Se apunta como trabajo pesado de {@link ServerWork}: la lectura se reparte por turnos con lo demás. */
