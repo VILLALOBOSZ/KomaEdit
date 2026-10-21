@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.0 (estable, 2026-10-21)
+
 ### Imagen de referencia, como en Axiom
 
 - **Calcar una foto, un plano o un pixel art.** `/kegui referencias` (Ctrl+Mayús+I, o la tarjeta **Calcar imagen** de Utilidades en el Studio) abre las imágenes PNG y JPG de `config/komaedit/references/` con su miniatura. Un clic abre una; también se pueden arrastrar archivos a la ventana del juego, que se copian a la carpeta. Es solo del cliente: no cambia el mundo, no pasa por el servidor y funciona en cualquiera.
