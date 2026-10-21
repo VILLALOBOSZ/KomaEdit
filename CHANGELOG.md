@@ -60,6 +60,14 @@ Lo que un cliente modificado podía hacer con los paquetes del Studio y que ahor
 - **Un recorrido borrado ya no vuelve** al entrar de nuevo: se quedaba su copia `.bak` y el proyecto lo recuperaba.
 - La documentación de doblar dice que los bloques con datos salen sin ellos, como en la colocación.
 - Prueba exhaustiva de estados (`OrientedStatesCoverageTest`) por las 48 orientaciones y los radiales de la simetría: escaleras con cada esquina, losas, troncos, puertas, camas, carteles colgantes, vallas, muros, raíles, cofres dobles, trampillas, palancas, campanas, faroles, estalactitas, crafter, pistones y tolvas.
+### Auditoría del Studio y del cliente
+
+- **Teclas que no pisan a nadie.** Minecraft solo atiende una entrada de Controles por tecla, y dos de serie chocaban: con P se quedaba «Interacciones sociales» (la captura de trayectoria no hacía nada) y con Alt izquierdo se quedaba la tira de barras (el «mirar libre» de Cobblemon al montar dejaba de ir). Como el fantasma y las imágenes de referencia, las dos salen ahora **sin asignar** con su atajo de serie leído aparte: **Ctrl+P** para la captura (P sola sigue siendo de Minecraft) y **Alt izquierdo** para la tira, salvo montado. Si ya las tenías guardadas en P o Alt, siguen así hasta que las cambies en Controles. `DefaultKeysTest` vigila que ninguna tecla de serie sea de Minecraft o de Cobblemon.
+- **Alt como modificador no abre el menú de barras.** Alt+clic en un display, Ctrl+Alt+R del fantasma o arrastrar sin pasos con Alt abrían el menú circular al soltar Alt (o sacaban la tira encima). Ahora, si con la tecla pulsada se usa otra tecla o el ratón, no es un toque; la rueda sigue siendo de la tira.
+- **Deshacer un ajuste se guarda.** Deshacer o rehacer en una tarjeta no marcaba nada para guardar: al abrir otra partida volvía el valor deshecho. Y si deshacer volvía a otra herramienta, se recordaba la de antes.
+- **Nada cortado arriba.** El nombre de la herramienta elegida salía cortado («Reconstruir paso…» a 1080p con GUI 3; «Plantar á…», «Estampar…» o «Poner agua o la…» a 854×480 y a 1080p con GUI 4): si no cabe en negrita, va en dos líneas como en la cuadrícula. Con el panel al mínimo, el título de la etapa salía «Herramient…». La fila de bloque daba a la etiqueta solo la mitad aunque el nombre del bloque fuera corto.
+- **Nombres repetidos.** En el tejado, el bloque del caballete y su eje se llamaban los dos «Caballete» (ahora «Eje del caballete»); en las barras, en inglés, «From» era a la vez de dónde salen los bloques y el primer color (ahora «Source»). Una prueba lo comprueba en todas las tarjetas, con cada modo, en los dos idiomas.
+- **Pruebas:** `StudioCommandsParseTest` pasa todo lo que puede mandar cada tarjeta (Construir, la vista previa, cada botón, con cada modo, opción, preset y los números en sus extremos) por el árbol real de `/komaedit`; no rechazó ninguna.
 
 ## 2.0.1 (estable, 2026-10-21)
 

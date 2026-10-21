@@ -92,10 +92,12 @@ public final class KomaEditClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_K,
                 "category.komaedit"
         ));
+        // Sin asignar en Controles: P es «Interacciones sociales» y Minecraft solo atiende una entrada por tecla.
+        // Mientras siga sin asignar vale Ctrl+P (onKey).
         togglePathCapture = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.komaedit.path_capture",
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_P,
+                InputUtil.UNKNOWN_KEY.getCode(),
                 "category.komaedit"
         ));
         CapabilityControls.register();
@@ -113,9 +115,7 @@ public final class KomaEditClient implements ClientModInitializer {
                 openEditor(client);
             }
             while (togglePathCapture.wasPressed()) {
-                if (client.player != null && client.player.networkHandler != null) {
-                    client.player.networkHandler.sendChatCommand("komaedit path mode toggle");
-                }
+                togglePathCapture(client);
             }
             if (client.player != null && client.world != null) {
                 ProceduralPreviewRenderer.request(
@@ -133,6 +133,28 @@ public final class KomaEditClient implements ClientModInitializer {
                 }).then(literal("ajustes").executes(context -> openWorldSettings()))
                         .then(literal("settings").executes(context -> openWorldSettings()))
         ));
+    }
+
+    /**
+     * Ctrl+P en el mundo pone o quita la captura de trayectoria mientras su entrada de Controles siga sin asignar (P
+     * sola sigue siendo de Minecraft).
+     *
+     * @return {@code true} si era nuestra y Minecraft no debe verla
+     */
+    public static boolean onKey(int key, int action, int modifiers) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (key != GLFW.GLFW_KEY_P || action != GLFW.GLFW_PRESS || (modifiers & GLFW.GLFW_MOD_CONTROL) == 0
+                || togglePathCapture == null || !togglePathCapture.isUnbound() || client.currentScreen != null) {
+            return false;
+        }
+        togglePathCapture(client);
+        return true;
+    }
+
+    private static void togglePathCapture(MinecraftClient client) {
+        if (client.player != null && client.player.networkHandler != null) {
+            client.player.networkHandler.sendChatCommand("komaedit path mode toggle");
+        }
     }
 
     /** Los ajustes de lo que se ve en el mundo; después del comando, para que el chat no la cierre. */

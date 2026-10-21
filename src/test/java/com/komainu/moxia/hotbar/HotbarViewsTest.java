@@ -88,6 +88,40 @@ class HotbarViewsTest {
         assertEquals(HotbarSwitcher.Outcome.NONE, switcher.release(false, 0).outcome());
     }
 
+    /**
+     * Alt también es modificador: Alt+clic en un display, Ctrl+Alt+R del fantasma, Alt para arrastrar sin pasos. Si
+     * con la tecla pulsada se usa otra tecla o el ratón, soltarla no abre el menú ni la tira sale encima; la rueda
+     * sí sigue siendo de la tira.
+     */
+    @Test
+    void altUsedWithAnotherKeyOrAClickIsNotATap() {
+        HotbarSwitcher switcher = new HotbarSwitcher();
+        switcher.press(5, 1);
+        switcher.usedAsModifier();
+        switcher.tick();
+        assertEquals(HotbarSwitcher.Outcome.NONE, switcher.release(true, 1).outcome(), "Alt+clic rápido");
+
+        switcher.press(5, 1);
+        switcher.usedAsModifier();
+        for (int tick = 0; tick < HotbarSwitcher.SHOW_TICKS; tick++) {
+            switcher.tick();
+        }
+        assertFalse(switcher.visible(), "arrastrando con Alt, la tira no tapa el display");
+        assertTrue(switcher.scroll(-1.0), "la rueda con Alt sigue siendo de la tira");
+        assertTrue(switcher.visible());
+        HotbarSwitcher.Result result = switcher.release(true, 1);
+        assertEquals(HotbarSwitcher.Outcome.APPLY, result.outcome());
+        assertEquals(2, result.index());
+
+        switcher.press(5, 1);
+        switcher.usedAsModifier();
+        switcher.cancel();
+        switcher.press(5, 1);
+        switcher.tick();
+        assertEquals(HotbarSwitcher.Outcome.OPEN_MENU, switcher.release(true, 1).outcome(),
+                "la pulsación siguiente vuelve a ser un toque");
+    }
+
     @Test
     void withoutHotbarsTheWheelIsStillTaken() {
         HotbarSwitcher switcher = new HotbarSwitcher();

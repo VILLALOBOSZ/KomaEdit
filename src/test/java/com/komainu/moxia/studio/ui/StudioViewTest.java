@@ -30,6 +30,31 @@ class StudioViewTest {
         return studio;
     }
 
+    /**
+     * El nombre de la etapa, arriba, se lee entero con el panel al mínimo y al máximo, en los dos idiomas: con el
+     * panel estrecho a 1080p (GUI 3 o 2) salía «Herramient…».
+     */
+    @Test
+    void theStageTitleIsWholeWithThePanelAtItsLimits() {
+        java.util.List<String> cut = new java.util.ArrayList<>();
+        for (String language : List.of("es_es", "en_us")) {
+            for (int[] screen : new int[][]{{640, 360}, {960, 540}, {427, 240}, {480, 270}}) {
+                for (double share : new double[]{0.01, 1.0}) {
+                    for (StudioStage stage : StudioStage.values()) {
+                        StudioDriver studio = new StudioDriver(language, screen[0], screen[1]);
+                        studio.host.preferences.setPanelShare(share);
+                        studio.view.selectStage(stage, studio.host);
+                        String title = studio.host.tr(stage.titleKey());
+                        if (!studio.has(title)) {
+                            cut.add(language + " " + screen[0] + "×" + screen[1] + " " + share + " " + title);
+                        }
+                    }
+                }
+            }
+        }
+        assertEquals(List.of(), cut);
+    }
+
     @Test
     void theStagesAreGroupedAndEachOneHasItsKey() {
         Set<Character> keys = new HashSet<>();
