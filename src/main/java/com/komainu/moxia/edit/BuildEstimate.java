@@ -6,8 +6,9 @@ import java.util.Locale;
 
 /**
  * Lo que costará colocar un plan: bloques, chunks que toca, caja, memoria y tiempo aproximado. El tiempo supone
- * el ritmo de la cola de KomaEdit (como mucho 32 768 bloques y 10 ms por tick) con un coste medio por bloque
- * prudente; en servidores cargados puede tardar más.
+ * el ritmo de la cola de KomaEdit con el presupuesto de serie (6 ms por tick, {@code tickBudgetMillis}) y un coste
+ * medio por bloque prudente con luz, vecinos y envío incluidos; con varias ediciones a la vez o el servidor cargado
+ * tarda más, y con más presupuesto, menos.
  */
 public record BuildEstimate(
         int blocks,
@@ -17,8 +18,8 @@ public record BuildEstimate(
         long memoryBytes,
         double seconds
 ) {
-    /** Bloques por tick que la cola coloca de media: unos 10 ms por tick a ~3 µs por bloque. */
-    public static final int BLOCKS_PER_TICK = 3_000;
+    /** Bloques por tick que la cola coloca de media: unos 6 ms por tick a ~6 µs por bloque, luz y vecinos incluidos. */
+    public static final int BLOCKS_PER_TICK = 1_000;
     /** Memoria aproximada por bloque del plan durante la construcción (posición, estado esperado, pieza, cola). */
     public static final int BYTES_PER_BLOCK = 40;
 
