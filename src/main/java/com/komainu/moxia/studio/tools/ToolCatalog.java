@@ -36,6 +36,7 @@ public final class ToolCatalog {
             entry(ToolCategory.TERRAIN, new TerrainCards.Ramp(), StudioIcons.Icon.RAMP),
             entry(ToolCategory.TERRAIN, new TerrainCards.River(), StudioIcons.Icon.RIVER),
             entry(ToolCategory.TERRAIN, new TerrainCards.Erosion(), StudioIcons.Icon.EROSION),
+            entry(ToolCategory.UTILITIES, new SelectionCard(), StudioIcons.Icon.LASSO),
             entry(ToolCategory.UTILITIES, new TouchUpCard(), StudioIcons.Icon.TOUCH_UP),
             entry(ToolCategory.UTILITIES, new WaterCard(), StudioIcons.Icon.WATER),
             entry(ToolCategory.UTILITIES, new UtilityCards.Analyze(), StudioIcons.Icon.ANALYZE),

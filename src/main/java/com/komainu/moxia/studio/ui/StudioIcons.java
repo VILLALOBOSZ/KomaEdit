@@ -25,7 +25,7 @@ public final class StudioIcons {
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
-        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER, WATER,
+        TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER, WATER, LASSO,
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, LOOSE_FLOWS, BIOME, DEINFEST, LEAVES, WET, WAX,
         // El fantasma con gizmo.
@@ -708,6 +708,20 @@ public final class StudioIcons {
                 "..###..###..",
                 "..###..###..",
                 "############");
+        // Un lazo: el contorno cerrado que rodea lo que se selecciona, con su nudo y la cuerda que cuelga.
+        mask(Icon.LASSO,
+                "...######...",
+                ".##......##.",
+                "#..........#",
+                "#..........#",
+                "#..........#",
+                ".#........#.",
+                "..##....##..",
+                "....#++#....",
+                ".....##.....",
+                "....#.......",
+                "...#........",
+                "..+.........");
         // Un bloque con una grieta que se cierra: lo infestado vuelve a ser piedra.
         mask(Icon.DEINFEST,
                 "############",

@@ -414,7 +414,13 @@ public final class HelpTopics {
                     new Entry("/komaedit sel encapsulatenear <radio> <máscara>",
                             "Selecciona los bloques de la máscara que hay cerca"),
                     new Entry("/komaedit sel catenary <puntos> [comba] [down|up|left|right]",
-                            "Selección convexa colgando como una cadena entre el principio y el final")
+                            "Selección convexa colgando como una cadena entre el principio y el final"),
+                    new Entry("/komaedit sel undo", "Deshace el último trazo de selección (lazo, pincel u operación)"),
+                    new Entry("/komaedit sel grow|shrink <bloques> [sphere|cube|octahedron] [-s] [-n]",
+                            "Amplía o reduce; -s por la superficie, columna a columna"),
+                    new Entry("/komaedit sel complement [-s]", "Invierte: lo que no estaba, dentro de su caja"),
+                    new Entry("/komaedit sel box", "Cambia la selección por la caja que la contiene"),
+                    new Entry("/komaedit sel clear", "Quita la selección (sel undo la recupera)")
             )),
             new Topic("capability", "Construir a mano", List.of("capacidad", "capacidades", "capabilities",
                     "axiom", "builder"), List.of(

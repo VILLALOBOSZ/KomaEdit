@@ -12,7 +12,7 @@ Este documento es el catálogo funcional oficial de KomaEdit. Cada función nuev
 - **Color e imagen:** [Color y sombreado](#color-y-sombreado) · [Imagen en bloques](#imagen-en-bloques)
 - **Generadores y terreno:** [Formas sueltas](#formas-sueltas) · [Terreno con ruido](#terreno-con-ruido) · [Campos y líneas de flujo](#campos-y-líneas-de-flujo) · [Terraformado](#terraformado)
 - **Construir a mano, pinceles y simetría:** [Construir a mano: capacidades](#construir-a-mano-capacidades) · [Pinceles](#pinceles) · [Pincel de zona](#pincel-de-zona) · [Pincel Desplazar paleta](#pincel-desplazar-paleta) · [Pinceles de degradado](#pinceles-de-degradado) · [Pintor de pétalos](#pintor-de-pétalos) · [Pincel de colocación](#pincel-de-colocación) · [Pinceles de modelado](#pinceles-de-modelado) · [Supervarita](#supervarita) · [Simetría](#simetría)
-- **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Barras guardadas](#barras-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selecciones](#selecciones)
+- **WorldEdit, paletas y selecciones:** [Máscaras y patrones en WorldEdit](#máscaras-y-patrones-en-worldedit) · [Paletas guardadas](#paletas-guardadas) · [Barras guardadas](#barras-guardadas) · [Ruidos guardados](#ruidos-guardados) · [Selección a mano: lazo y pincel](#selección-a-mano-lazo-y-pincel) · [Selecciones](#selecciones)
 - **Colocar estructuras:** [Colocar estructuras](#colocar-estructuras) · [Alineación primaria y secundaria](#alineación-primaria-y-secundaria) · [Estructuras colocables](#estructuras-colocables) · [Dispersión de estructuras](#dispersión-de-estructuras) · [Arrays a lo largo de la trayectoria](#arrays-a-lo-largo-de-la-trayectoria) · [Biblioteca de planos](#biblioteca-de-planos)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Reconstrucción animada](#reconstrucción-animada)
 - **Utilidades:** [Utilidades de obra](#utilidades-de-obra) · [Vistas, regla y notas](#vistas-regla-y-notas)
@@ -214,6 +214,7 @@ Son quince tarjetas, cada una con un nombre que dice lo que hace y un icono prop
 | Utilidades | Retocar, Contar materiales, Reconstruir paso a paso | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`, `rebuild` (y sus mandos) |
 | Utilidades | Retocar, Contar materiales, Medir y anotar | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`; Medir y anotar: `/kegui regla <modo>` y `/kegui vista guardar <nombre>` (del cliente) o `nota poner …` |
 | Utilidades | Retocar, Poner agua o lava, Contar materiales | `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `fluido rellenar`, `fluido bola`, `fluido cascada`, `analyze` |
+| Utilidades | Seleccionar, Retocar, Contar materiales, Guardar barras, Reconstruir paso a paso | `sel grow\|shrink\|complement\|box\|clear` (y `sel undo`), `retocar <modo>` (con el pincel, `pincel retocar` y `pincel biome`), `analyze`, `hotbar <fuente>` (lo demás de las barras va por su paquete, no por el chat), `rebuild` (y sus mandos) |
 | Modos | Simetría, Construir a mano | `symmetry on <modo>`, `off`, `center …`, `worldedit on\|off`; `capability <id> on\|off`, `capability option …` |
 
 - **Menos tarjetas, lo mismo de antes:** «Pintar terreno» y «Pintar superficie» son ahora **Pintar**, y Nieve, Drenar, Inundar, Gravedad y Bioma, modos de **Retocar**, que trae además los cuatro retoques de supervivencia que solo tenían orden (desinfestar, fijar las hojas, anegar y encerar). Lo que cambió de nombre, en [Lo que cambió de nombre](#lo-que-cambió-de-nombre).
@@ -235,6 +236,7 @@ Son quince tarjetas, cada una con un nombre que dice lo que hace y un icono prop
 - **Reconstruir paso a paso:** la [reconstrucción animada](#reconstrucción-animada). Qué se levanta (la selección, el portapapeles o un plano por su nombre), el orden en botones (Constructor, Capas, Ondas, Eje, Al azar, Historial; con Eje, el sentido del barrido), bloques por tick y duración total a la vista; pausa entre capas, retrasos entre bloques iguales o distintos, espera al empezar, partículas, sonido y, fuera de la selección, **Sin su aire**, en Más ajustes. Presets **Timelapse** (constructor en un minuto), **Impresora** (capas despacio), **Magia** (ondas con partículas y sonido) y **Rápida**; **Azar** solo sale con el orden al azar. En Más ajustes, los botones de la que está en marcha: **Pausar**, **Seguir**, **×2**, **Al final** y **Cancelar**.
 - **Decorar (displays):** al elegirla se abre el [editor de displays](#decorar-con-displays): un clic en un display lo elige y su gizmo se arrastra con el ratón; un clic en un bloque (o **Poner**) crea uno contra su cara. A la vista, el tipo (**Bloque**, **Objeto**, **Texto**), el bloque («El de la mano» si no eliges ninguno), la vista del objeto o el texto con su color, y el paso de mover. En **Más ajustes**, el fondo, la sombra y la alineación del texto, el paso de girar, los ejes del objeto (local), brillo, sombra en el suelo, distancia de vista, mirar a la cámara y contorno brillante, y los botones **Usar estos pasos**, **Aplicar ajustes**, **Duplicar**, **Agrupar**, **Desagrupar**, **Enderezar**, **Borrar** y **Cerrar el editor**.
 - **Simetría:** enseña el estado del servidor (activa o apagada, modo y centro, avisando si el centro está en otra dimensión) y lo sigue si se cambia por el chat. Modo (X, Z, XZ, Y, XY, ZY, XZY y Radial), brazos y espejo arriba ↔ abajo del radial, e interruptor **Reflejar WorldEdit y KomaEdit**. Construir activa con ese modo (o lo aplica si ya estaba activa).
+- **Seleccionar:** la herramienta del ratón en el mundo (**Caja**, **Lazo** o **Mano alzada**), la profundidad del lazo, el radio y la forma del pincel y si cuenta lo no sólido; **Aplicar** amplía, reduce, invierte, pasa a caja o quita la selección, y **Deshacer trazo** (en Más ajustes) vuelve atrás el último lazo, trazo u operación. Ver [Selección a mano: lazo y pincel](#selección-a-mano-lazo-y-pincel).
 - **Guardar barras:** arriba, el **Nombre** y **Guardar la que llevas**; debajo, **Tus barras** con sus nueve huecos (clic: usarla; clic derecho: copiar su código; la × la borra con un segundo clic), **Pegar código**, **Copiar todas**, **La que dejas se guarda sola** y **Volver a la barra de antes**; y al final **Crear una barra** desde una paleta, un degradado de color, la selección, un sello o un tejado (ver [Barras guardadas](#barras-guardadas)). En supervivencia, un aviso dice que cambiar solo mueve lo que llevas. Nada de esto va por el chat salvo Crear barra.
 - **Construir a mano:** un interruptor por capacidad (como el menú de la `Z`), apagado con candado y «sin permiso» si falta el nodo, y un aviso si no estás en creativo. Distancia en el aire, alcance, bloques por capa y velocidad de vuelo se mandan al dejar de tocarlos (0,6 s), para no llenar el chat; Reemplazar familia y lo que sigue Extruir, al momento.
 - **Añadir una tarjeta** (para quien programa): una línea en el catálogo con su grupo y su icono; ver [docs/ARCHITECTURE.md](ARCHITECTURE.md#herramientas-del-studio-catálogo-y-categorías).
@@ -365,11 +367,13 @@ Con el Studio abierto el ratón está suelto, así que lo que va «donde miras»
 | --- | --- | --- |
 | **Trayectoria** y **Figuras** | Un punto nuevo al final; sobre un punto, lo elige; sobre un tramo, mete uno en medio | Lleva por el terreno el punto agarrado (también el que se acaba de poner o meter) |
 | Herramienta que va **donde haces clic** (árbol, roca, texto) | La construye ahí | — |
-| Herramienta sobre la **selección** (tejado, retocar, erosionar, pintar la selección…) y **Color** | Empieza una caja de un bloque; doble clic: selección mágica | Dibuja la caja; sobre una cara de la selección, tira de ella |
+| Herramienta sobre la **selección** (tejado, retocar, erosionar, pintar la selección…), **Color** y **Seleccionar** con **Caja** | Empieza una caja de un bloque; doble clic: selección mágica | Dibuja la caja; sobre una cara de la selección, tira de ella |
+| **Seleccionar** con **Lazo** (Mayús suma, Ctrl resta, Alt interseca) | — | Rodea lo que quieres; al soltar, se selecciona lo que se ve dentro |
+| **Seleccionar** con **Mano alzada** (las mismas teclas; Ctrl borra) | Pinta la selección ahí | Sigue pintando la selección |
 | **Planos**, con un plano elegido | Lo coloca ahí (con su fantasma) | — |
 | Con un **pincel** de KomaEdit en la mano (cualquier herramienta con el interruptor en **Pincel**, estampar planos…) | Pinta ahí | Sigue pintando mientras mantienes el botón |
 | Con un **fantasma** a la vista (fuera de Trayectoria) | Lo lleva ahí | Lo mueve por el terreno |
-| **Alt+clic**, en cualquier etapa | El bloque pulsado pasa a ser el material | — |
+| **Alt+clic**, en cualquier etapa (salvo con el lazo y el pincel de selección, donde interseca) | El bloque pulsado pasa a ser el material | — |
 | **Clic derecho** | — | Gira la cámara |
 
 Con puntos de trayectoria, las herramientas que los usan (árbol, roca, río, rampa…) hacen que el clic ponga y mueva puntos en vez de construir o seleccionar. Las que tienen el interruptor en **Pincel** y aún no lo tienes en la mano lo dicen: «“Al pincel” te da el pincel; luego, clic aquí para pintar».
@@ -1128,6 +1132,7 @@ Al llegar una vista previa, la barra de acción recuerda las teclas: «12 300 ca
 
 - La selección de WorldEdit se dibuja con líneas blancas finas y sus medidas en las tres aristas más cercanas a la cámara, una por eje. Las medidas se ven a través de los bloques, con un fondo suave, y mantienen su tamaño en pantalla a cualquier distancia (hasta 160 bloques).
 - Una selección que no es un cuboide (polígono, elipsoide, cilindro, convexa) se ve por su caja, con el nombre de la forma encima. Con solo el primer punto puesto, ese bloque con «pos1».
+- Una selección de bloques sueltos (la del lazo o el pincel de selección) se ve por su **contorno**, las aristas donde dobla, como las guías de la vista previa, con su **número de bloques** encima y las medidas de su caja. Con más de 200 000 bloques o 60 000 aristas, solo la caja y el número.
 - Solo la selección del mundo en el que estás. El servidor la mira cada medio segundo y solo la manda cuando cambia; nunca pregunta por la de otro mundo, porque WorldEdit la borraría al cambiar de dimensión.
 - La caja de la vista previa (amarilla) y la de la herramienta Caja del Studio llevan también sus medidas.
 
@@ -4466,6 +4471,107 @@ Alias: `/komaedit ruido`.
 
 Hasta 512 ruidos por jugador y mundo, en `<mundo>/komaedit/players/<uuid>/noises/noises.json`.
 
+## Selección a mano: lazo y pincel
+
+Seleccionar con el ratón como en Axiom: rodeando con un **lazo** lo que se ve o pintando la selección con un **pincel**, sumando, restando o intersecando con lo que ya había. El resultado es una selección de WorldEdit de bloques sueltos que usan como región las órdenes de WorldEdit y de KomaEdit.
+
+![El lazo mientras se dibuja](renders/seleccion/lazo_1_dibujando.png)
+
+![Al soltar: la superficie que se veía dentro, con su contorno y su número de bloques](renders/seleccion/lazo_2_superficie.png)
+
+### Objetivo y acceso
+
+- **Studio → Herramientas → Utilidades → Seleccionar** (también se encuentra buscando «lazo», «mano alzada» o «seleccionar»). **Herramienta** elige qué hace el ratón en el mundo: **Caja** (la de siempre: arrastrar, tirar de las caras y doble clic para la selección mágica), **Lazo** o **Mano alzada** (el pincel de selección). El pie lo dice mientras el ratón está sobre el mundo.
+- Las teclas que se mantienen al **empezar** cada trazo dicen cómo se junta con la selección que hay:
+
+| Tecla | Lazo | Pincel |
+| --- | --- | --- |
+| Ninguna | Selección nueva | Selección nueva (cada trazo empieza otra) |
+| **Mayús** | Suma | Suma |
+| **Ctrl** | Resta | Borra de la selección |
+| **Alt** | Se queda lo común (intersecar) | Se queda lo común con lo que pintas |
+
+- Con el lazo o el pincel de selección elegidos, Mayús y Ctrl **no mueven al jugador** (son para sumar y restar) y Alt no es el cuentagotas; mientras se dibuja o se pinta, la vista se queda quieta. **Esc** descarta un lazo a medias sin cerrar el Studio.
+- Permisos: `komaedit.select.lasso`, `komaedit.select.brush` y uno por operación (`grow`, `shrink`, `complement`, `undo`, `box`, `clear`), todos en el paquete básico y dentro de `komaedit.select`.
+
+### Lazo
+
+- Se pulsa en el mundo, se arrastra rodeando lo que se quiere y se suelta: el contorno se cierra solo y se proyecta desde la cámara de cuando se empezó. Se selecciona **lo que se ve** dentro: lo tapado no entra.
+- **Profundidad:** **Superficie** (solo el bloque que se ve), **Capas** (de 1 a 64 bloques hacia dentro) o **Hasta el fondo** (hacia dentro hasta salir de la materia: un hueco o el aire del otro lado; como mucho 512). Hacia dentro es desde la cara que se ve: hacia abajo en un terreno visto desde arriba y de lado en una fachada vista de frente. Un hueco corta la profundidad.
+- **Lo no sólido** (en Más ajustes): apagado, los rayos atraviesan plantas, flores, agua, lava, antorchas y lo demás que se atraviesa andando, y se selecciona lo de debajo (el fondo de un estanque, la hierba bajo las flores); encendido, eso cuenta como bloque.
+- Lo calcula el servidor: lanza rayos por una rejilla de la pantalla, gruesa donde lo que se ve está cerca y fina (hasta medio punto) donde está lejos o se ve de canto, así que no deja huecos. Va por tramos de como mucho 8 ms por tick, dentro del presupuesto común; mientras, el pie dice «Seleccionando con el lazo…» y al acabar el mensaje cuenta los bloques.
+
+![Cuatro capas, vistas en un corte](renders/seleccion/lazo_3_cuatro_capas_corte.png)
+
+![Hasta el fondo, en el mismo corte](renders/seleccion/lazo_4_hasta_el_fondo_corte.png)
+
+![Mayús sumó el lazo verde y Ctrl restó el rojo](renders/seleccion/lazo_5_sumar_y_restar.png)
+
+![Sin lo no sólido: el fondo del estanque y la hierba bajo las flores](renders/seleccion/lazo_6_sin_lo_no_solido.png)
+
+![Con lo no sólido: el agua y las flores](renders/seleccion/lazo_7_con_lo_no_solido.png)
+
+### Pincel de selección
+
+- Radio de 0 a 16 (0, un solo bloque) y forma **esfera**, **cubo** u **octaedro**. Se arrastra sobre el mundo: cada bloque nuevo bajo el cursor es una pasada (como mucho una cada 40 ms) y la selección cambia al momento. Bajo el cursor se ve el círculo de su radio.
+- Selecciona lo que cuenta dentro de la forma (lo sólido y, con **Lo no sólido**, también eso), **nunca el aire**: para volúmenes con aire está la caja. Ctrl borra todo lo que toque, aire incluido.
+- Como mucho 4 096 pasadas por trazo.
+
+![Un trazo que suma y otro con Ctrl que borra por en medio](renders/seleccion/pincel_8_pintar_y_borrar.png)
+
+### Cambiar la selección
+
+**Aplicar** en la tarjeta hace lo elegido en **Al aplicar**, y lo mismo se puede escribir. Valen con cualquier selección: una caja, una esfera o un polígono de WorldEdit se convierten antes en bloques sueltos (si no pasan del máximo).
+
+| Orden | Qué hace |
+| --- | --- |
+| `/komaedit sel undo` | Deshace el último trazo: un lazo, un trazo del pincel o una de estas operaciones (también `quitar` y `caja`). Guarda los 16 últimos, con 4 millones de bloques entre todos. No deshace ediciones del mundo (eso es `Ctrl+Z`). Alias `deshacer`. |
+| `/komaedit sel grow <bloques> [sphere\|cube\|octahedron] [-s] [-n]` | Amplía de 1 a 16 bloques. Sin `-s`, en todas direcciones con el aire incluido, paso a paso con la forma (cubo de serie, octaedro, o esfera redondeada). Con `-s`, **por la superficie**: columna a columna en la dirección hacia la que mira la selección (arriba en un terreno, de lado en una fachada), con el bloque que se ve en cada columna nueva (el más cercano al de la columna de al lado, como mucho 8 más arriba o más abajo: bajo un árbol sigue el suelo, no la copa) y tantos hacia dentro como tenía la de al lado. `-n`: lo no sólido cuenta como suelo. Alias `ampliar`. |
+| `/komaedit sel shrink <bloques> [forma] [-s] [-n]` | Reduce: sin `-s` se va todo lo que tiene al lado algo sin seleccionar (una selección de una capa desaparece entera); con `-s` se quitan enteras las columnas cercanas al borde. Alias `reducir`. |
+| `/komaedit sel complement [-s] [-n]` | Invierte: lo que no estaba dentro de su caja; con `-s`, las columnas de su rectángulo que no estaban, con su bloque visible y el grosor más repetido. Alias `complemento`. (`sel invert` sigue siendo invertir el orden de los puntos.) |
+| `/komaedit sel box` | Cambia la selección por la caja que la contiene, una selección de WorldEdit de siempre. Alias `caja`. |
+| `/komaedit sel clear` | Quita la selección (`sel undo` la recupera). Alias `quitar`. |
+
+En la tarjeta, **Por la superficie** (encendido de serie) es `-s`, la forma es la del pincel y **Bloques**, cuántos.
+
+![Ampliada 3 por la superficie (en blanco, el lazo de partida)](renders/seleccion/superficie_9_ampliada_3.png)
+
+![Reducida 3 por la superficie](renders/seleccion/superficie_10_reducida_3.png)
+
+![Invertida por la superficie](renders/seleccion/superficie_11_invertida.png)
+
+### En WorldEdit
+
+WorldEdit 7.3.8 no tiene regiones de bloques sueltos, así que KomaEdit trae la suya (`BlockSetRegion`, con su selector): para WorldEdit es una selección más, `//size` la cuenta («KomaEdit (bloques sueltos)») y `//sel` la quita.
+
+| Cómo la usa | Órdenes |
+| --- | --- |
+| **Bloque a bloque**, exactamente lo seleccionado | `//set`, `//replace`, `//count`, `//distr`, `//walls` y `//faces` (las caras de la forma), `//hollow`, `//deform`, `//setbiome`, `//copy` y `//cut` (y `//paste` pega solo esos bloques), `//move`, `//stack`, `//regen`; y en KomaEdit, todo lo que trabaja sobre la selección (Pintar, Reemplazar y Borrar del Studio, retoques, superficie, texturizado, color…). |
+| **Por columnas** (las que tienen algún bloque) | `//overlay`, `//naturalize`, `//flora`, `//forest`. |
+| **Adaptadas** | `//expand <n> <dirección>` estira cada bloque hacia ese lado; `//contract` quita lo que está a menos de esa distancia del borde por ese lado (como mueve la cara una caja); `//shift`, `//move -s` y `//stack -s` mueven la selección. Si se quedara vacía o pasara del máximo, dan error y no cambian nada. |
+| **Con la máscara `#sel`** | `#sel` (o `#region`, `#selection`) es una máscara de WorldEdit que acepta solo lo seleccionado: `//gmask #sel` hace que cualquier edición (pinceles, `//smooth`, figuras, `//paste`…) solo toque esos bloques. Se quita con `//gmask`. |
+| **Por su caja** | `//smooth` (suaviza la caja entera; con `//gmask #sel` solo cambia lo seleccionado), `//center`. |
+| **No la admiten** | `//line` y `//curve` (piden una caja o una convexa), y `/komaedit sel save`, `load`, `next` y `here`, que dicen que la pases a caja con `sel box` o la muevas con `//shift`. |
+
+Marcar un punto con la varita, `//pos1` o `//pos2` la cambia por una caja normal desde ese punto.
+
+### Lo que se ve
+
+- El contorno de la selección (las aristas donde dobla, en blanco) con su número de bloques encima y las medidas de su caja, como las guías de la vista previa. El servidor lo manda cuando cambia, como mucho cada medio segundo.
+- Mientras se dibuja el lazo, su trazo en blanco y negro sobre la pantalla (y más tenue, el tramo que lo cerrará).
+
+![La tarjeta Seleccionar con el lazo](renders/seleccion/1080p_gui2_seleccionar_lazo_es.png)
+
+![Con el pincel y Más ajustes abierto](renders/seleccion/1080p_gui2_seleccionar_mas_ajustes_es.png)
+
+### Rendimiento y limitaciones
+
+- **Tamaño:** como mucho 1 000 000 de bloques seleccionados (o `maxBlocksPerOperation` si es menor); con `komaedit.limit.unrestricted`, 2 000 000. Cada bloque ocupa unos 16 bytes en el servidor mientras está seleccionado. Pasarse da un error y no cambia la selección.
+- **Lazo:** contornos de hasta 512 puntos (uno más largo se simplifica en el cliente sin cambiar su forma), hasta 250 000 rayos y 256 bloques de alcance; el servidor lo rechaza si la cámara está a más de 8 bloques de tus ojos o la pantalla no es válida. En las pruebas, un lazo de media pantalla sobre lomas a 30 bloques: 657 bloques, 17 693 rayos y menos de 0,1 s de servidor, repartidos en tramos de 8 ms. Lo que ocupa menos de medio punto de la pantalla (muy lejos y de canto) puede quedarse fuera. Los trozos sin cargar no cuentan.
+- La selección no se guarda al reiniciar (como las de WorldEdit) ni con `sel save`; para guardarla, pásala a caja.
+- Las operaciones de KomaEdit que leen la zona antes de cambiarla (retoques, superficie, texturizado, color…) leen la caja entera de la selección y cambian solo lo seleccionado: una selección pequeña pero muy repartida (dos esquinas lejanas) puede pasar de su límite de lectura.
+- Pruebas: `LassoProjectionTest` (cámara y terreno inventados: sin huecos de cerca, de lejos y de canto, sin lo tapado, la forma del contorno, la profundidad, lo no sólido, trozos sin cargar, límites y por tramos), `SelectionOperationsTest` (sumar, restar, intersecar, ampliar, reducir e invertir en volumen y por la superficie, el pincel, el historial y el contorno) y `BlockSetRegionTest` (lo que recorren los visitantes de WorldEdit, la máscara `#sel`, las columnas, `//expand`, `//contract`, `//shift` y la varita). Renders con `KOMAEDIT_LASSO_RENDER=<carpeta>` (`LassoRenderTest`) y maquetas de la tarjeta con `KOMAEDIT_STUDIO_MOCKUPS` (`SelectCardMockupTest`), en `docs/renders/seleccion/`. Nada probado aún dentro de Minecraft.
+
 ## Selecciones
 
 ### Objetivo y acceso
@@ -5662,7 +5768,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
    - `komaedit.palette.<orden>` y `komaedit.noise.<orden>` (`save`, `delete`, `list`, `print`…; los da también `komaedit.use`).
    - `komaedit.color.similar`, `.gradient`, `.palette` y `.hotbar` (los da también `komaedit.use`) y `komaedit.build.shade`.
    - `komaedit.hotbar` ([barras guardadas](#barras-guardadas); lo da también `komaedit.use`) y `komaedit.admin.hotbar.give` (ponerlas como en creativo en cualquier modo, que crea objetos; solo el paquete de administrador).
-   - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…) y `komaedit.select.superwand`.
+   - `komaedit.select.<orden>` (`save`, `load`, `next`, `here`, `catenary`…), `komaedit.select.superwand` y los de la selección a mano: `komaedit.select.lasso`, `brush`, `grow`, `shrink`, `complement`, `undo`, `box` y `clear`.
    - `komaedit.capability.<capacidad>` y `komaedit.capability.flyspeed` (ver [Construir a mano: capacidades](#construir-a-mano-capacidades)); los da también `komaedit.build`.
 3. **Paquetes** (`permpack` de ezEdits):
 

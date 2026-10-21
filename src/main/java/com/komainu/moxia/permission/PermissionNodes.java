@@ -125,6 +125,11 @@ public final class PermissionNodes {
         add(ViewPermissions.SEE_SHARED, Pack.BASIC, use, null, "Ver las vistas que comparte el equipo");
         add(NotePermissions.PRIVATE, Pack.BASIC, use, null, "Notas privadas en el mundo (/komaedit nota)");
         add(NotePermissions.TEAM, Pack.BASIC, use, null, "Ver las notas del equipo y marcarlas como resueltas");
+        add(select + ".lasso", Pack.BASIC, select, null, "Lazo del Studio (selección a mano)");
+        add(select + ".brush", Pack.BASIC, select, null, "Pincel de selección del Studio");
+        for (String operation : List.of("grow", "shrink", "complement", "undo", "box", "clear")) {
+            add(select + "." + operation, Pack.BASIC, select, null, "/komaedit sel " + operation);
+        }
 
         // Intermedio.
         add(KomaPermissions.PAINT, Pack.INTERMEDIATE, null, null, "Pintura rápida del editor");
