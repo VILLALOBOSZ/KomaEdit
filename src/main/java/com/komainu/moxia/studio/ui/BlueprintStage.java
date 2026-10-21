@@ -128,10 +128,11 @@ public final class BlueprintStage {
         }
         BlueprintSummary current = shown.stream().filter(blueprint -> blueprint.reference().equals(selected))
                 .findFirst().orElse(null);
-        // Compartir solo sale en los planos propios: su sitio cuenta si hay alguno, para que la tarjeta no salte.
+        // «Al servidor» solo sale en los planos propios: su sitio cuenta si hay alguno, para que la tarjeta no salte.
         boolean shareable = host.blueprints().canShare()
                 && shown.stream().anyMatch(blueprint -> blueprint.mine() && !blueprint.shared());
         actions(ui, column, host, current, compact, shareable);
+        pasteCode(ui, column, host);
 
         ui.section(column, host.tr("gui.komaedit.blueprint.library", shown.size()));
         if (shown.isEmpty()) {
@@ -240,7 +241,8 @@ public final class BlueprintStage {
         }
         int[] worst = {ui.chipWidth(host.tr("gui.komaedit.blueprint.stamp")) + 8, widest,
                 ui.chipWidth(host.tr("gui.komaedit.blueprint.load")),
-                shareable ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0};
+                shareable ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0,
+                ui.chipWidth(host.tr("gui.komaedit.share.button"))};
         int extra = (buttonRows(worst, column.width() - 12) - 1) * BUTTON_PITCH;
         Rect card = column.next((compact ? 30 : 42) + extra);
         ui.fill(card, FIELD);
@@ -287,7 +289,8 @@ public final class BlueprintStage {
         String radiusText = radiusText(host, RADII[radius]);
         int[] widths = {ui.chipWidth(host.tr("gui.komaedit.blueprint.stamp")) + 8,
                 ui.chipWidth(radiusText), ui.chipWidth(host.tr("gui.komaedit.blueprint.load")),
-                share ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0};
+                share ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0,
+                ui.chipWidth(host.tr("gui.komaedit.share.button"))};
         List<Rect> cells = Column.flow(widths, 14, buttons.x(), buttons.y(), buttons.width());
         ui.button(cells.get(0), host.tr("gui.komaedit.blueprint.stamp"),
                         stamp ? StudioUi.Tone.SECONDARY : StudioUi.Tone.DISABLED)
@@ -315,6 +318,27 @@ public final class BlueprintStage {
                             + host.tr("gui.komaedit.help.blueprint.share"))
                     .onClick(() -> host.send("komaedit blueprint share " + current.name()));
         }
+        ui.button(cells.get(4), host.tr("gui.komaedit.share.button"), StudioUi.Tone.SECONDARY)
+                .tooltip(host.tr("gui.komaedit.share.button") + "\n" + host.tr("gui.komaedit.help.share.button"))
+                .onClick(() -> {
+                    host.shareExport("plano:" + reference);
+                    host.status(host.tr("gui.komaedit.status.share.preparing", reference));
+                });
+    }
+
+    /** «Pegar código»: lo que llega de otro servidor (paletas, presets, planos…), enseñando antes qué trae. */
+    private static void pasteCode(StudioUi ui, Column column, StudioHost host) {
+        ui.button(column.next(16), host.tr("gui.komaedit.share.paste"), StudioUi.Tone.SECONDARY)
+                .tooltip(host.tr("gui.komaedit.share.paste") + "\n" + host.tr("gui.komaedit.help.share.paste"))
+                .onClick(() -> {
+                    String code = host.clipboard().strip();
+                    if (!StudioView.shareCode(code)) {
+                        host.status(host.tr("gui.komaedit.status.share.no_code"));
+                        return;
+                    }
+                    host.status(host.tr(host.shareImport(code) ? "gui.komaedit.status.share.reading"
+                            : "gui.komaedit.status.share.unsupported"));
+                });
     }
 
     private static final int BUTTON_PITCH = 14 + Column.GAP;

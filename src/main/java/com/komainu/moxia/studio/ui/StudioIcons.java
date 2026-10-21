@@ -27,7 +27,9 @@ public final class StudioIcons {
         TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, PAINT, TEXT, ANALYZE, GRAVITY, SNOW, DRAIN, WATERLOG,
         BIOME, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
         // El fantasma con gizmo.
-        GIZMO
+        GIZMO,
+        // Compartir con otro servidor (un código para copiar).
+        SHARE
     }
 
     private static final Map<Icon, String[]> MASKS = new EnumMap<>(Icon.class);
@@ -625,6 +627,22 @@ public final class StudioIcons {
     }
 
     private StudioIcons() {
+    }
+
+    static {
+        // Una flecha que sale de la caja: lo que se lleva a otro servidor.
+        mask(Icon.SHARE,
+                ".....##.....",
+                "....####....",
+                "...##..##...",
+                ".....##.....",
+                ".....##.....",
+                ".##..##..##.",
+                ".#...##...#.",
+                ".#........#.",
+                ".#........#.",
+                ".##########.",
+                "............");
     }
 
     private static void mask(Icon icon, String... rows) {

@@ -75,6 +75,10 @@ public final class BlueprintKind implements ShareKind {
 
     @Override
     public SharePack.Item export(ShareTarget target, String name) {
+        // Los compartidos del servidor también se exportan: hace falta poder verlos.
+        if (!target.can(BlueprintPermissions.LOAD)) {
+            throw new IllegalArgumentException("Te falta el permiso " + BlueprintPermissions.LOAD);
+        }
         BlueprintLibrary.Entry entry = library.get().require(target.id(), BlueprintRef.parse(name));
         JsonObject data = new JsonObject();
         JsonArray size = new JsonArray();
