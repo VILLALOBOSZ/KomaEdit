@@ -57,7 +57,7 @@
   "gui.komaedit.tools.hotbars.help.load": "Put it in your hotbar right after creating it",
   "gui.komaedit.tools.hotbars.help.overwrite": "If you already have a hotbar with that name, replace it",
   "gui.komaedit.tools.param.name": "Name",
-  "gui.komaedit.tools.param.source": "From",
+  "gui.komaedit.tools.param.source": "Source",
   "gui.komaedit.tools.param.from": "From",
   "gui.komaedit.tools.param.to": "To",
   "gui.komaedit.tools.param.surface": "Stamp",

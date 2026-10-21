@@ -775,7 +775,7 @@
   "gui.komaedit.tools.param.angle": "Ángulo de reposo",
   "gui.komaedit.tools.param.arms": "Brazos",
   "gui.komaedit.tools.param.aspect": "Alto/ancho",
-  "gui.komaedit.tools.param.axis": "Caballete",
+  "gui.komaedit.tools.param.axis": "Eje del caballete",
   "gui.komaedit.tools.param.bank": "Orilla",
   "gui.komaedit.tools.param.biome": "Bioma",
   "gui.komaedit.tools.param.blocks_only": "Solo anegar bloques",
