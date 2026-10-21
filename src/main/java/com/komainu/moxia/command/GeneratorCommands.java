@@ -91,6 +91,7 @@ public final class GeneratorCommands {
 
     private static RequiredArgumentBuilder<ServerCommandSource, String> rest(Runner runner) {
         return argument("args", StringArgumentType.greedyString())
+                .suggests(ResultSuggestions.PROVIDER)
                 .executes(context -> run(context, runner, StringArgumentType.getString(context, "args")));
     }
 

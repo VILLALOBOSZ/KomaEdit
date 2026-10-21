@@ -57,7 +57,7 @@ final class EzSplineCommands {
         return literal(name)
                 .executes(context -> run(context, ""))
                 .then(argument("spline", StringArgumentType.greedyString())
-                        .suggests(EzCommandSupport.words(SUBCOMMANDS))
+                        .suggests(ResultSuggestions.or(EzCommandSupport.words(SUBCOMMANDS)))
                         .executes(context -> run(context, StringArgumentType.getString(context, "spline"))));
     }
 

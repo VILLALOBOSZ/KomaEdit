@@ -35,6 +35,15 @@ public sealed interface Alignment {
         return false;
     }
 
+    /**
+     * La alineación con sus direcciones fijas ({@code Constant}) ya calculadas con la mirada de {@code view}. Es lo
+     * que hace ezEdits al configurar un pincel: {@code Constant(D:aim)} es la mirada de ese momento y {@code Aim}, la
+     * de cada clic. Los demás modos no cambian.
+     */
+    default Alignment bind(DirectionExpr.Context view) {
+        return this;
+    }
+
     /** Lo que sabe una colocación de sí misma y de su entorno. */
     record Context(
             Vec3 position,
@@ -172,6 +181,10 @@ public sealed interface Alignment {
     record Constant(DirectionExpr direction) implements Alignment {
         public Vec3 direction(Context context) {
             return direction.evaluate(context.view());
+        }
+
+        public Alignment bind(DirectionExpr.Context view) {
+            return direction.playerIndependent() ? this : new Constant(direction.bind(view));
         }
     }
 
@@ -316,6 +329,12 @@ public sealed interface Alignment {
 
         public boolean needsViewDiff() {
             return entries.stream().anyMatch(entry -> entry.alignment().needsViewDiff());
+        }
+
+        public Alignment bind(DirectionExpr.Context view) {
+            return new Mixed(entries.stream()
+                    .map(entry -> new Weighted(entry.weight(), entry.alignment().bind(view)))
+                    .toList());
         }
     }
 

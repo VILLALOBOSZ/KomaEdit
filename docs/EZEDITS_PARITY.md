@@ -1,6 +1,6 @@
 # Paridad con ezEdits
 
-Comparación, página a página, de la wiki pública de ezEdits (<https://ezedits.gitbook.io/ezedits>, revisada el 18/10/2026 en su versión en inglés) con lo que hace KomaEdit. Todo se ha reimplementado a partir de esa documentación: no se ha descompilado el plugin ni copiado su código, y las listas (paletas, ruidos de serie, formas) son propias.
+Comparación, página a página, de la wiki pública de ezEdits (<https://ezedits.gitbook.io/ezedits>, revisada el 18/10/2026 y de nuevo el 21/10/2026 en su versión en inglés, con sus notas de versión públicas en GitHub y las gráficas Desmos que enlaza) con lo que hace KomaEdit. Todo se ha reimplementado a partir de esa documentación: no se ha descompilado el plugin ni copiado su código, y las listas (paletas, ruidos de serie, formas) son propias.
 
 **Estados:** **Completo** (hace lo mismo, con los mismos nombres, parámetros y valores por defecto, aunque los números no salgan idénticos bloque a bloque), **Parcial** (existe, pero falta algo que se indica), **Falta** (no existe) y **En curso** (lo está haciendo otra rama).
 
@@ -27,7 +27,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | --- | --- | --- |
 | Permpacks `ezedits.permpack.*` (Basic, Intermediate, Advanced, Experimental, Admin) | `komaedit.permpack.basic`, `intermediate`, `advanced` (acumulativos) y `admin` | Completo (Experimental no hace falta: no hay funciones experimentales) |
 | `ezedits.general.wiki`, `info`, `quiet` | `/komaedit info`, `/komaedit quiet [on\|off]` (alias `silencio`; se guarda por jugador entre sesiones, `persistence/QuietMode`) y `/komaedit wiki` (lleva a `/komaedit help`); sin permiso propio, como la ayuda | Completo |
-| `ezedits.admin.reload`, `ezedits.admin.debug` | `komaedit.admin.reload` → `/komaedit reload` | Parcial: falta `debugprint` |
+| `ezedits.admin.reload`, `ezedits.admin.debug` | `komaedit.admin.reload` → `/komaedit reload`; `komaedit.admin.debug` → `/komaedit debugprint` (versiones, memoria, límites, visualizador y jugadores con el mod, con **[copiar]**) | Completo |
 | `ezedits.brush.*` | `komaedit.build.brush.<tipo>` | Completo |
 | `ezedits.deform.*` | `komaedit.build.deform.<modo>` | Completo |
 | `ezedits.flow.*`, `ezedits.region.*`, `ezedits.smooth.*`, `ezedits.surface.*`, `ezedits.texture.*`, `ezedits.survival.*`, `ezedits.stainedglass.gradient` | `komaedit.build.<orden>[.<modo>]` | Completo |
@@ -35,9 +35,9 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `ezedits.palettes.*`, `ezedits.noise.*` | `komaedit.palette.<sub>`, `komaedit.noise.<sub>`, `komaedit.build.palette.place/swap` | Completo |
 | `ezedits.selection.*`, `ezedits.tools.superwand` | `komaedit.select.<sub>`, `komaedit.select.superwand` | Completo |
 | `ezedits.place`, `ezedits.array`, `ezedits.scatter` | `komaedit.build.place`, `.array`, `.scatter` | Completo |
-| `ezedits.mask.*`, `ezedits.pattern.*` | Las máscaras y patrones no piden permiso propio: se usan dentro de órdenes de WorldEdit, que ya tienen los suyos | Parcial |
-| `ezedits.debug`, `ezedits.debug.loadingbar` (`//ezdebug …`) | No hay barras de progreso ni entidades de visualización que limpiar | Falta (no aplica) |
-| `ezedits.symmetry.reflectional`, `ezedits.symmetry.rotational` (`//ezsymmetry`, experimental) | `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` → `/komaedit symmetry` | Parcial: faltan `translational` y `update` (ver [Symmetry](#symmetry-solo-en-la-página-de-permisos)) |
+| `ezedits.mask.*`, `ezedits.pattern.*` | Las máscaras y patrones no piden permiso propio: se usan dentro de órdenes de WorldEdit, que ya tienen los suyos | Parcial, a propósito: los permisos de KomaEdit solo suman, y un nodo por máscara dejaría sin ellas a quien hoy las usa con los permisos de WorldEdit y sin los de KomaEdit |
+| `ezedits.debug`, `ezedits.debug.loadingbar` (`//ezdebug clearLoadingBars`, `removeVisualiserEntities`) | `/komaedit debug clearloadingbars` (`komaedit.debug.loadingbar`, paquete básico) y `/komaedit debug removevisualiserentities` (`komaedit.debug.visualiser`, admin: retira los block displays del visualizador y borra los de la vista previa que hubieran quedado en el mundo) | Completo |
+| `ezedits.symmetry.reflectional`, `ezedits.symmetry.rotational` (`//ezsymmetry`, experimental) | `komaedit.build.symmetry.reflectional`, `.rotational` y `.worldedit` → `/komaedit symmetry` | Parcial: faltan `translational` y `update`, de los que la wiki solo da el nombre del permiso (ver [Symmetry](#symmetry-solo-en-la-página-de-permisos)) |
 | `ezedits.stainedglass.image` (`//stainedglassimage`, experimental) | `komaedit.build.image` (paquete avanzado); las URL, además, con `komaedit.admin.image.url` si el admin lo pide | Completo |
 
 ## Palettes Explained
@@ -46,7 +46,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | --- | --- | --- |
 | `#nombre` (guardada) y `##Nombre` (de serie) | `gradient/PaletteSpec`, `SavedPalettes`, `GradientPalette`, `ServerPalettes` | Completo |
 | `,` concatenar · `-` invertir · `(a:b)` tramo · `*n` repetir · `[…]` agrupar | `PaletteSpec.Parser` | Completo |
-| `=` final para autocompletar | Se acepta y se ignora; `/komaedit palette print` da la lista desplegada | Parcial (no se autocompleta en el chat) |
+| `=` final para autocompletar | `command/ResultSuggestions`: con `=` al final, la sugerencia del chat (Brigadier) es la paleta desplegada en bloques, también dentro de `P:…`, de `#palette[…]` en WorldEdit y en las direcciones de `C(D:…)`; al ejecutar, el `=` se ignora | Completo (si la orden no cupiera en los 256 caracteres del chat, no se propone) |
 
 ## Default Palettes
 
@@ -62,7 +62,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `fetch <WORLD\|SELECTION\|HOTBAR> <nombre> [largo] [-d] [-f]` | `/komaedit palette fetch` (`PaletteCommands`) | Completo |
 | `save`, `delete`, `list [ALL\|DEFAULT\|MINE]`, `place`, `print [-v]` | `/komaedit palette …` | Completo (`list default` incluye las del servidor) |
 | `swap <origen> <destino> [-a] [-s] [-f] [-b]` | `/komaedit palette swap` (`PaletteSwapOperation`) | Completo |
-| `encode`, `decode` | `/komaedit palette encode/decode` (`PaletteCodec`) | Parcial: el código (`kp1:…`) es propio y no se entiende con el de ezEdits; a cambio admite bloques de mods |
+| `encode`, `decode` | `/komaedit palette encode/decode` (`PaletteCodec`) | Parcial, sin arreglo fiable: el código (`kp1:…`) es propio y admite bloques de mods. Los de ezEdits no se leen: la wiki no documenta su formato (solo que es de bloques vanilla), sus notas de versión públicas dicen que lo cambiaron para 1.21.5 y otra vez para 1.21.11 (va atado a la versión de Minecraft) y no hay ejemplos públicos; averiguarlo exigiría descompilar el plugin. `decode` lo explica y pide pegar la lista de bloques de su `//ezpalette decode` |
 
 ## Noise Explained
 
@@ -96,7 +96,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `#eznoisemask`/`#eznm`, `#fullblock`, `#fuzzypalette`/`#fpalette`, `#infested`, `#near`, `#palette` | `EzMaskParser` | Completo |
 | `#radialgradientmask`/`#rgradientm`, `#vectorgradientmask`/`#vgradientm` | `EzMaskParser`, `GradientMath` | Completo |
 | `#hotbar` (solo en la página de permisos) | `EzMaskParser` (bloques de la barra rápida, por tipo) | Completo |
-| `#savedselection` (solo en la página de permisos) | — (`#region` de WorldEdit con `/komaedit sel load` cubre el caso) | Falta |
+| `#savedselection` (solo en la página de permisos: «bloques dentro de la región de una selección guardada») | `#savedselection[nombre]` (alias `#savedsel`) en `EzMaskParser`: la forma de `/komaedit sel save` (caja, polígono, esfera, cilindro, convexa…) con la `RegionMask` de WorldEdit | Completo |
 
 ## Patterns
 
@@ -133,7 +133,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `gradient <paleta> [radio=8] [interp=NONE] [bleed=0.5] [-a] [-v] [-w] [-n] [-z 1] [-d]` | `GradientPainter`, `PaintOperations.Gradient` | Completo |
 | `gradientstroke … [interp=LINEAR] … [-a] [-d] [-v] [-w] [-x] [-n] [-z]` | `PaintOperations.Stroke`, `StrokePath` | Completo |
 | Interpolaciones NONE, LINEAR, TAPERED, BEZIER, SIN | `GradientInterpolation` | Completo |
-| Integración con WorldEditCUI | Partículas propias en los puntos | Parcial (sustituida) |
+| Integración con WorldEditCUI | Partículas propias en los puntos | Parcial, sustituida: los puntos del trazo salen con partículas de KomaEdit y no se mandan a WorldEditCUI (KomaEdit no usa su protocolo; la selección de WorldEdit sí la sigue viendo) |
 
 ## Placement Brushes
 
@@ -143,8 +143,8 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `//ezbr scatter` (región `-h`, por defecto `Box` de 40³ en el clic) | `/komaedit pincel scatter` | Completo |
 | `//ezbr array` a lo largo del trazo | `/komaedit pincel array` (clic izquierdo marca el trazo, derecho coloca) | Completo |
 | `ViewDiff` (segundo clic) | Pincel `place` | Completo |
-| `Constant(D:aim)` = mirada al configurar | En los pinceles nuevos `aim` es la mirada de cada clic | Parcial |
-| Visualizador de la alineación con BlockDisplay y su configuración | — | Falta |
+| `Constant(D:aim)` = mirada al configurar | `PlacementSettings.bindAim`: al configurar el pincel, las direcciones fijas que dependen de la mirada (`C(D:aim)`, `C(D:left)`, `-k aim`…) se calculan una vez; `Aim` y `Upward` siguen la de cada clic. `-mirada clic` (alias `-aim click`) vuelve a lo de antes | Completo |
+| Visualizador de la alineación con BlockDisplay y su configuración | `AlignmentGuide` (el mismo cálculo que el clic): con KomaEdit en el cliente, flechas como las del gizmo (verde la primaria, roja la secundaria, azul +z, a trazos la secundaria pedida) con sus nombres; sin el mod, block displays de hormigón solo para quien pincela. `config/komaedit/visualisations.json` (`enabled`, `updateTicks`, `vanillaDisplays`) y un interruptor por jugador en `/kegui ajustes` | Completo |
 
 ## Superwand
 
@@ -276,7 +276,7 @@ KomaEdit tiene un nodo fino por orden o modo y cuatro paquetes (`komaedit.permpa
 | `-w <smoothblocks>` | Los perfiles de `-w` de KomaEdit (`SmoothProfile`), `Panes` incluido | Completo |
 | 2D: Circle, Square, Diamond, RoundedSquare, SuperCircle, CirclesCircle, Strands, Pipe, Polygon, Rectangle, Star, Flower; `basic` y `rope` | Perfiles de `sweep` con sus parámetros (`TubeShapes.Profile`) | Completo |
 | 3D: Beads, Cubes, Chainlink, Fishnet, Honeycomb, Oscillate, Rings, Scales, Noodles | Formas implícitas propias (`EzShapes`) | Completo |
-| 3D: Braids | Trenza de KomaEdit (`braid`) con `Thickness` | Parcial (la trenza es la de KomaEdit) |
+| 3D: Braids | `EzShapes.Braids` con la fórmula de la gráfica Desmos pública que enlaza la wiki: tres hebras de radio `T/(1+T)` desfasadas 2π/3, `Thickness` (0,5) y `Gap` (`Br(G:1)` sale en un ejemplo de la wiki: aquí separa los cruces) | Completo |
 | `//ezspline noise <paleta> <radios> [ruido] [profundidad] [-i expresión]` | `EzShapes.NoiseCut` con cualquier ruido y expresión de corte (`n`, `d`) | Completo |
 | `//ezspline expression <paleta> <radios> [-z] [-o] <expresión>` | Figura Expresión con `-z` y `-o` | Completo |
 
@@ -316,14 +316,12 @@ La wiki solo nombra `//ezsymmetry` y sus cuatro permisos, sin parámetros ni com
 | `//ezsymmetry reflectional` y `reflectional3d` | `/komaedit symmetry mode x\|z\|xz\|y\|xzy…` (alias `simetria`, `sym`; `symmetry/SymmetryGeometry`, `SymmetryService`): espejos en cualquier combinación de ejes, centro en bloque o entre bloques, en tu posición, en un punto o en el centro de la selección | Completo (diseño propio) |
 | `//ezsymmetry rotational` | `/komaedit symmetry mode radial <2-16> [y]` alrededor de un eje vertical | Completo (diseño propio) |
 | — | Estados girados y reflejados (`StateTransform`), copias de lo que se pone y rompe a mano, partículas en los planos y `worldedit on` para reflejar ediciones de WorldEdit y KomaEdit en un solo `//undo` (`SymmetryExtent`) | Propio |
-| `//ezsymmetry translational` | — | Falta |
-| `//ezsymmetry update` («actualiza los bloques según la simetría») | — | Falta |
+| `//ezsymmetry translational` | — | Falta: la wiki solo nombra el permiso («Starts translational symmetry mode»), sin parámetros ni comportamiento |
+| `//ezsymmetry update` («actualiza los bloques según la simetría») | — | Falta: la wiki solo nombra el permiso, sin decir qué bloques toma de origen ni sobre qué región |
 
 ## Lo que queda fuera
 
 - **Simetría traslacional y `update`** (`//ezsymmetry translational|update`): la wiki no dice qué hacen más allá del nombre.
 - **Capas apiladas en la vidriera de imagen**: `/komaedit image` pone una capa de vidrio por píxel; mezclar varias capas tintadas por píxel, como hace `glassgradient`, queda para más adelante.
-- **`debugprint` y `//ezdebug`**: no hacen falta. La barra de progreso y los block displays de la vista previa solo existen en el cliente de quien edita (no son entidades del mundo) y se retiran con `/komaedit cancel`, al caducar, al cambiar de dimensión y al salir; cualquier display con la etiqueta `komaedit_preview` que llegara a cargarse se borra solo.
-- **Visualizador de alineación** de los pinceles de colocación (BlockDisplay por jugador).
-- **`#savedselection`** como máscara.
-- **Código de `palette encode`** compatible con el de ezEdits (no está documentado).
+- **Código de `palette encode`** compatible con el de ezEdits: no está documentado, va atado a la versión de Minecraft y no hay ejemplos públicos; sin descompilar no hay forma fiable de leerlo.
+- **Permiso por máscara y patrón** (`ezedits.mask.*`, `ezedits.pattern.*`): a propósito, para no quitar las máscaras a quien hoy las usa con los permisos de WorldEdit.
