@@ -131,6 +131,17 @@ public final class ScatterPlanner {
 
     /** Media de las direcciones hacia el aire cercano; en una superficie plana es su perpendicular. */
     public static Vec3 normal(RegionSnapshot snapshot, int x, int y, int z) {
+        return normal(snapshot::isAir, x, y, z);
+    }
+
+    /** Si hay aire en un bloque: la normal también se puede leer del mundo sin foto (el visualizador del pincel). */
+    @FunctionalInterface
+    public interface AirTest {
+        boolean isAir(int x, int y, int z);
+    }
+
+    /** La normal aproximada en {@code (x, y, z)}: la media de las direcciones hacia el aire de alrededor. */
+    public static Vec3 normal(AirTest air, int x, int y, int z) {
         double sumX = 0;
         double sumY = 0;
         double sumZ = 0;
@@ -141,7 +152,7 @@ public final class ScatterPlanner {
                     if (squared == 0 || squared > NORMAL_RADIUS * NORMAL_RADIUS + 1) {
                         continue;
                     }
-                    if (snapshot.isAir(x + dx, y + dy, z + dz)) {
+                    if (air.isAir(x + dx, y + dy, z + dz)) {
                         double length = Math.sqrt(squared);
                         sumX += dx / length;
                         sumY += dy / length;

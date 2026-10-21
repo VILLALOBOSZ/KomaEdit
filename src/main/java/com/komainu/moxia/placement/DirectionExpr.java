@@ -54,6 +54,14 @@ public final class DirectionExpr {
         return root.independent();
     }
 
+    /**
+     * La dirección ya calculada con la mirada de {@code view}: lo que dependía del jugador ({@code aim},
+     * {@code left}…) se queda fijo. Conserva el texto original para los mensajes.
+     */
+    public DirectionExpr bind(Context view) {
+        return playerIndependent() ? this : new DirectionExpr(new Constant(root.vector(view)), source);
+    }
+
     @Override
     public String toString() {
         return source;

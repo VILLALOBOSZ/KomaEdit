@@ -708,15 +708,6 @@ public final class EzSpline {
 
         /** Escribe las opciones y devuelve la figura de KomaEdit que la genera. */
         PathShape translate(Map<Parameter, Double> values, Map<String, Double> options) {
-            if (this == BRAIDS) {
-                // La trenza de KomaEdit: el grosor de ezEdits es relativo (0,5 por defecto) y el hueco abre los cruces.
-                double thickness = values.getOrDefault(parameters[0], parameters[0].fallback);
-                double gap = values.getOrDefault(parameters[1], parameters[1].fallback);
-                options.put("thickness", Math.clamp(thickness * 0.6, 0.08, 0.6));
-                options.put("sides", (double) Math.clamp(Math.round(4.0 * (1.0 + gap)), 2L, 32L));
-                options.put("strands", 3.0);
-                return PathShape.BRAID;
-            }
             EzShapes.Form form = switch (this) {
                 case BEADS -> EzShapes.Form.BEADS;
                 case CUBES -> EzShapes.Form.CUBES;
@@ -727,7 +718,7 @@ public final class EzSpline {
                 case RINGS -> EzShapes.Form.RINGS;
                 case SCALES -> EzShapes.Form.SCALES;
                 case NOODLES -> EzShapes.Form.NOODLES;
-                case BRAIDS -> throw new IllegalStateException();
+                case BRAIDS -> EzShapes.Form.BRAIDS;
             };
             options.put(EzShapes.FORM, form.option());
             values.forEach((parameter, value) -> options.put(parameter.option, value));
@@ -871,7 +862,7 @@ public final class EzSpline {
             case "3d" -> {
                 lines.add("//ezspline 3d <forma(parámetros)> <patrón> <radios> [banderas]");
                 lines.add("Formas: " + Shape3D.names());
-                lines.add("Cubes(G) · Braids(T) · Chainlink(E,T,G,M,N,P) · Fishnet(S,D,W) · Honeycomb(C,W,D) · "
+                lines.add("Cubes(G) · Braids(T,G) · Chainlink(E,T,G,M,N,P) · Fishnet(S,D,W) · Honeycomb(C,W,D) · "
                         + "Oscillate(D,I) · Rings(E,T,G,M,N) · Scales(C,H,V,M,N,A,D) · Noodles(A,D,F,T,W,S)");
             }
             case "noise" -> {
