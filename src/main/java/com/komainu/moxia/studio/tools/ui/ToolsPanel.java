@@ -1,6 +1,8 @@
 package com.komainu.moxia.studio.tools.ui;
 
 import com.komainu.moxia.capability.BuildCapability;
+import com.komainu.moxia.hotbar.ui.HotbarAction;
+import com.komainu.moxia.hotbar.ui.HotbarDeck;
 import com.komainu.moxia.studio.ControlHelp;
 import com.komainu.moxia.studio.NumericRange;
 import com.komainu.moxia.studio.ParameterHistory;
@@ -10,6 +12,7 @@ import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.studio.layout.Column;
 import com.komainu.moxia.studio.layout.Rect;
 import com.komainu.moxia.studio.tools.CapabilityCard;
+import com.komainu.moxia.studio.tools.HotbarCard;
 import com.komainu.moxia.studio.tools.MeasureCard;
 import com.komainu.moxia.studio.tools.SymmetryCard;
 import com.komainu.moxia.studio.tools.TerrainCards;
@@ -104,6 +107,28 @@ public final class ToolsPanel {
         default int[] clickedSpot() {
             return null;
         }
+
+        /** Las barras guardadas del jugador (tarjeta Guardar barras), o {@code null} si el servidor no las manda. */
+        default HotbarDeck hotbars() {
+            return null;
+        }
+
+        /** Si la barra que se deja se guarda sola al cambiar. */
+        default boolean hotbarAutosave() {
+            return true;
+        }
+
+        /** Una acción de las barras guardadas, por su paquete (no por el chat). */
+        default void hotbar(HotbarAction action, String name) {
+        }
+
+        /**
+         * «Compartir»: pide al servidor el código de {@code things} ({@code arbol:abeto}); el cliente lo copia al
+         * portapapeles cuando llega.
+         */
+        default void shareExport(String things) {
+            send("komaedit share export " + things);
+        }
     }
 
     public enum Key {
@@ -146,6 +171,7 @@ public final class ToolsPanel {
     private final Map<String, Integer> pages = new HashMap<>();
     private final NumberEdit numbers = new NumberEdit();
     private final BrushSync brush = new BrushSync();
+    private final HotbarsPanel hotbars = new HotbarsPanel();
     /** Alto de una fila de ajuste: 20 normal, 18 en compacto. */
     private int row = Column.ROW;
     private ToolCard selected;
@@ -233,6 +259,11 @@ public final class ToolsPanel {
             namingAction = null;
             biomeSearch = "";
             stampSearch = "";
+            // Las tarjetas que trabajan en un modo (el editor de displays) lo abren al elegirlas.
+            String command = card.selectCommand();
+            if (command != null && card.missingPermission(card.defaults(), host.context()) == null) {
+                send(host, command);
+            }
         }
         browsing = false;
         search = "";
@@ -609,6 +640,11 @@ public final class ToolsPanel {
             drawCapabilities(ui, column, host, info);
             return;
         }
+        if (card instanceof HotbarCard) {
+            // El nombre va arriba: con él se guarda la que llevas y se crea la nueva.
+            drawParam(ui, column, host, card, card.params().getFirst(), info);
+            hotbars.draw(ui, column, host, values, compact);
+        }
 
         List<ToolParam> essentials = new ArrayList<>();
         List<ToolParam> others = new ArrayList<>();
@@ -632,9 +668,10 @@ public final class ToolsPanel {
         if (!compact) {
             drawPresets(ui, column, host, card, info);
         }
-        boolean opened = false;
+        boolean opened = card instanceof HotbarCard;
         for (ToolParam param : essentials) {
-            if (param instanceof ToolParam.Choice choice && choice.style() == ToolParam.Choice.Style.GALLERY) {
+            if (param instanceof ToolParam.Choice choice && choice.style() == ToolParam.Choice.Style.GALLERY
+                    || card instanceof HotbarCard && param == card.params().getFirst()) {
                 continue;
             }
             if (!opened) {
@@ -804,8 +841,10 @@ public final class ToolsPanel {
         }
     }
 
-    private static boolean seeded(ToolCard card) {
-        return card.params().stream().anyMatch(param -> param.id().equals("seed"));
+    /** Si la tarjeta tiene la semilla a la vista con sus valores (la reconstrucción solo la usa al azar). */
+    private boolean seeded(ToolCard card) {
+        ToolValues values = values(card);
+        return card.params().stream().anyMatch(param -> param.id().equals("seed") && param.visible(values));
     }
 
     private void drawPresets(StudioUi ui, Column column, Host host, ToolCard card, ToolsInfo info) {
@@ -824,8 +863,13 @@ public final class ToolsPanel {
             labels.add(host.tr("gui.komaedit.preset.random"));
         }
         List<String> names = new ArrayList<>(saved.keySet());
-        names.forEach(name -> labels.add("#" + name));
-        int[] widths = labels.stream().mapToInt(label -> ui.chipWidth(label)).toArray();
+        // Cada preset guardado lleva detrás su botón «Compartir» (un icono): la pastilla sigue aplicándolo.
+        names.forEach(name -> {
+            labels.add("#" + name);
+            labels.add("");
+        });
+        int[] widths = labels.stream().mapToInt(label -> label.isEmpty() ? SHARE_WIDTH : ui.chipWidth(label))
+                .toArray();
         List<Rect> cells = column.flow(widths, 14);
         String kind = host.tr("gui.komaedit.palette.kind.preset");
         for (int index = 0; index < presets.size(); index++) {
@@ -852,12 +896,23 @@ public final class ToolsPanel {
         for (int index = 0; index < names.size(); index++) {
             String name = names.get(index);
             String settings = saved.get(name);
-            ui.chip(cells.get(next + index), "#" + name, false, FAVORITE)
+            ui.chip(cells.get(next + 2 * index), "#" + name, false, FAVORITE)
                     .tooltip("#" + name + "\n" + settings)
                     .group("tools:preset")
                     .onClick(() -> applySaved(card, name, settings, host));
+            ui.iconButton(cells.get(next + 2 * index + 1), StudioIcons.Icon.SHARE, "", StudioUi.Tone.SECONDARY)
+                    .tooltip(host.tr("gui.komaedit.share.preset", "#" + name) + "\n"
+                            + host.tr("gui.komaedit.help.share.button"))
+                    .group("tools:share")
+                    .onClick(() -> {
+                        host.shareExport(card.id() + ":" + name);
+                        host.status(host.tr("gui.komaedit.status.share.preparing", "#" + name));
+                    });
         }
     }
+
+    /** Ancho del botón «Compartir» de un preset guardado: el icono y un poco de aire. */
+    private static final int SHARE_WIDTH = 16;
 
     /** Aplica un preset de la tarjeta elegida por su id (lo usa la paleta de órdenes). */
     public void applyPreset(ToolCard card, ToolPreset preset, Host host) {
@@ -1788,7 +1843,8 @@ public final class ToolsPanel {
             case LOOK -> clicked(host);
             case HAND -> card instanceof TerrainCards.Stamp ? stampTarget(host)
                     : host.tr("gui.komaedit.tools.footer.hand");
-            case MODE -> card instanceof SymmetryCard
+            case MODE -> card instanceof HotbarCard ? hotbarTarget(host)
+                    : card instanceof SymmetryCard
                     ? host.tr(info.symmetry().active() ? "gui.komaedit.tools.footer.on"
                     : "gui.komaedit.tools.footer.off")
                     : card instanceof MeasureCard ? host.tr("gui.komaedit.tools.footer.client")
@@ -1796,6 +1852,17 @@ public final class ToolsPanel {
                     : Integer.bitCount(info.capabilities().enabled() & info.capabilities().permitted()));
             case SELF -> host.tr("gui.komaedit.tools.footer.here");
         };
+    }
+
+    /** «12 barras guardadas» o, si se crea desde la selección, la selección. */
+    private String hotbarTarget(Host host) {
+        ToolsInfo info = host.info();
+        if (values(selected()).choice("source").equals("selection")) {
+            return info.hasSelection() ? host.tr("gui.komaedit.tools.footer.selection", info.selection()[0],
+                    info.selection()[1], info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
+        }
+        HotbarDeck deck = host.hotbars();
+        return host.tr("gui.komaedit.tools.hotbars.footer", deck == null ? 0 : deck.size());
     }
 
     /** «Montaña · Sumar · semilla 4217»: el sello, el modo de mezcla y la semilla que llevará el pincel. */

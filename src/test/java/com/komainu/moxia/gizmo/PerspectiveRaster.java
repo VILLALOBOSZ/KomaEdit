@@ -129,7 +129,17 @@ public final class PerspectiveRaster implements AutoCloseable {
      * bloque girado, como un block display).
      */
     void quad(Vec3[] corners, int rgb, double shade) {
-        Vec3 normal = corners[1].subtract(corners[0]).cross(corners[2].subtract(corners[0]));
+        int[] flat = new int[256];
+        Arrays.fill(flat, 0xFF000000 | rgb);
+        quad(corners, flat, shade);
+    }
+
+    /**
+     * Un cuadrilátero cualquiera con su textura (la cara de un display girado o escalado), si mira a la cámara. Las
+     * esquinas van en sentido antihorario vistas desde fuera, empezando abajo a la izquierda, como en {@link #corners}.
+     */
+    void quad(Vec3[] corners, int[] texture, double shade) {
+        Vec3 normal = corners[1].subtract(corners[0]).cross(corners[3].subtract(corners[0]));
         if (normal.dot(corners[0].subtract(eye)) >= 0.0) {
             return;
         }
@@ -140,12 +150,10 @@ public final class PerspectiveRaster implements AutoCloseable {
                 return;
             }
         }
-        int[] flat = new int[256];
-        Arrays.fill(flat, 0xFF000000 | rgb);
         triangle(screen[0], screen[1], screen[2], new double[]{0, 1}, new double[]{1, 1}, new double[]{1, 0},
-                flat, shade, 1.0, null);
+                texture, shade, 1.0, null);
         triangle(screen[0], screen[2], screen[3], new double[]{0, 1}, new double[]{1, 0}, new double[]{0, 0},
-                flat, shade, 1.0, null);
+                texture, shade, 1.0, null);
     }
 
     /** Nueva capa de fantasma: profundidades vacías. */

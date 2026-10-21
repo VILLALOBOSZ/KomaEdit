@@ -1,0 +1,10 @@
+1_senalar_sin_caja: KE · Displays · nada elegido · clic en un display para elegirlo · Mayús+clic suma · Alt+clic: solo él, sin su grupo
+2_mover_flecha_x: KE · Displays · 1 elegidos · Mover · global · paso 1/16 · giro 15° · arrastra el gizmo · Alt: sin pasos · Ctrl+1/2/3 herramienta · Supr borra · Esc suelta · gizmo de 0.66 bloques a 3.0
+3_mover_arrastrando: KE · Displays · 1 elegidos · Mover · global · paso 1/16 · giro 15° · 0.8125, 65.19, 0.5000 · gizmo de 0.70 bloques a 3.1
+4_girar_anillo_y: KE · Displays · 1 elegidos · Girar · global · paso 1/16 · giro 15° · +45.0° · gizmo de 0.82 bloques a 3.7
+5_mover_en_local: KE · Displays · 1 elegidos · Mover · local · paso 1/16 · giro 15° · arrastra el gizmo · Alt: sin pasos · Ctrl+1/2/3 herramienta · Supr borra · Esc suelta · gizmo de 0.82 bloques a 3.7
+6_escalar_eje_y: KE · Displays · 1 elegidos · Escalar · local · paso 1/16 · giro 15° · 0.3750 × 0.6250 × 0.3750 · gizmo de 0.66 bloques a 3.0
+7_grupo_tiesto_y_flor: KE · Displays · 2 elegidos · Girar · global · paso 1/16 · giro 15° · +90.0° · gizmo de 0.66 bloques a 3.0
+8_cartel_en_la_pared: KE · Displays · 1 elegidos · Mover · local · paso 1/16 · giro 15° · arrastra el gizmo · Alt: sin pasos · Ctrl+1/2/3 herramienta · Supr borra · Esc suelta · gizmo de 0.56 bloques a 2.5
+9_lejos_mismo_tamano: KE · Displays · 1 elegidos · Mover · global · paso 1/16 · giro 15° · arrastra el gizmo · Alt: sin pasos · Ctrl+1/2/3 herramienta · Supr borra · Esc suelta · gizmo de 1.99 bloques a 8.9
+Texturas de Minecraft: sí

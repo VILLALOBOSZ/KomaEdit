@@ -1,5 +1,6 @@
 package com.komainu.moxia.mixin;
 
+import com.komainu.moxia.rebuild.PlacementHistory;
 import com.komainu.moxia.symmetry.SymmetryService;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
@@ -12,7 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Avisa a la simetría de cada bloque que un jugador coloca con la mano. Fabric no tiene evento de colocar: antes se
  * apunta cómo estaban el sitio y sus vecinos, y después se copia lo que haya aparecido (también la otra mitad de una
- * puerta o una cama, que pone el propio bloque al colocarse).
+ * puerta o una cama, que pone el propio bloque al colocarse). El historial de colocación de la reconstrucción animada
+ * ({@link PlacementHistory}) apunta lo mismo.
  */
 @Mixin(BlockItem.class)
 public abstract class BlockItemMixin {
@@ -21,6 +23,7 @@ public abstract class BlockItemMixin {
     private void komaedit$symmetryBefore(ItemPlacementContext context, CallbackInfoReturnable<ActionResult> callback) {
         if (!context.getWorld().isClient()) {
             SymmetryService.beforePlace(context.getPlayer(), context.getWorld(), context.getBlockPos());
+            PlacementHistory.beforePlace(context.getWorld(), context.getBlockPos());
         }
     }
 
@@ -29,6 +32,8 @@ public abstract class BlockItemMixin {
     private void komaedit$symmetryAfter(ItemPlacementContext context, CallbackInfoReturnable<ActionResult> callback) {
         if (!context.getWorld().isClient()) {
             SymmetryService.afterPlace(context.getPlayer(), context.getWorld(), context.getBlockPos(),
+                    callback.getReturnValue().isAccepted());
+            PlacementHistory.afterPlace(context.getPlayer(), context.getWorld(), context.getBlockPos(),
                     callback.getReturnValue().isAccepted());
         }
     }

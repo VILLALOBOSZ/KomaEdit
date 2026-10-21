@@ -60,6 +60,10 @@ public final class RecipeStore {
         return read(path);
     }
 
+    public static boolean exists(UUID playerId, String name) {
+        return Files.isRegularFile(recipePath(playerId, name));
+    }
+
     public static boolean delete(UUID playerId, String name) {
         Path target = recipePath(playerId, name);
         try {
@@ -105,7 +109,8 @@ public final class RecipeStore {
         }
     }
 
-    static ProceduralRecipe fromJson(JsonObject root, int version) {
+    /** Una receta en el JSON que se guarda (lo usan también los paquetes compartidos). */
+    public static ProceduralRecipe fromJson(JsonObject root, int version) {
         try {
             Map<String, Double> options = new LinkedHashMap<>();
             if (root.has("options")) {
@@ -143,7 +148,7 @@ public final class RecipeStore {
         }
     }
 
-    static JsonObject toJson(ProceduralRecipe recipe) {
+    public static JsonObject toJson(ProceduralRecipe recipe) {
         JsonObject root = new JsonObject();
         root.addProperty("version", ProceduralRecipe.FORMAT_VERSION);
         root.addProperty("name", recipe.name());

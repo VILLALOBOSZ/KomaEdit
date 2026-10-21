@@ -32,7 +32,11 @@ public enum ValueUnit {
     /** Pendiente: bloques que sube por cada bloque, «1.5:1». */
     RATIO("gui.komaedit.unit.ratio", false),
     /** Una altura absoluta del mundo: «y 62». */
-    Y("gui.komaedit.unit.y", false);
+    Y("gui.komaedit.unit.y", false),
+    /** Tiempo: «1.5 s». */
+    SECONDS("gui.komaedit.unit.seconds", false),
+    /** Ritmo de la reconstrucción animada: «4 bloques por tick». */
+    BLOCKS_PER_TICK("gui.komaedit.unit.blocks_per_tick", false);
 
     private final String key;
     private final boolean fraction;
