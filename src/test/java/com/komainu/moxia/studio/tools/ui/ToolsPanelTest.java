@@ -503,6 +503,25 @@ class ToolsPanelTest {
     }
 
     /** Deshacer puede volver a otra herramienta: es la que se recuerda, no la que se dejó al deshacer. */
+    /**
+     * Con «Decorar» como herramienta recordada, al volver a abrir el Studio tras reiniciar se abre el editor de
+     * displays, como al elegirla: antes la tarjeta ofrecía «Cerrar el editor» y un clic en un display no hacía nada.
+     */
+    @Test
+    void aRememberedToolThatWorksInAModeOpensItAgain() {
+        FakeStudioHost host = new FakeStudioHost("es_es", false);
+        host.context = ALL;
+        host.preferences.setTool("display");
+        StudioDriver reopened = new StudioDriver(new StudioView(), host, 960, 1400);
+        reopened.render();
+        assertEquals("display", reopened.view.tools().selected().id());
+        assertEquals(List.of("komaedit display edit on"), host.sent.stream()
+                .filter(command -> command.startsWith("komaedit display")).toList());
+        // Una sola vez: volver a pintar el Studio no la repite.
+        reopened.render();
+        assertEquals(1, host.sent.stream().filter("komaedit display edit on"::equals).count());
+    }
+
     @Test
     void undoingBackToAnotherToolRemembersThatTool() {
         select("tree");

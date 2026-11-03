@@ -247,6 +247,7 @@ public final class ToolsPanel {
         if (remembered != null && selected == null) {
             selected = remembered;
             browsing = false;
+            openMode(remembered, host);
         }
     }
 
@@ -258,17 +259,24 @@ public final class ToolsPanel {
             namingAction = null;
             biomeSearch = "";
             stampSearch = "";
-            // Las tarjetas que trabajan en un modo (el editor de displays) lo abren al elegirlas.
-            String command = card.selectCommand();
-            if (command != null && card.missingPermission(card.defaults(), host.context()) == null) {
-                send(host, command);
-            }
+            openMode(card, host);
         }
         browsing = false;
         search = "";
         host.preferences().pushToolRecent(card.id());
         host.preferences().setTool(card.id());
         host.savePreferences();
+    }
+
+    /**
+     * Las tarjetas que trabajan en un modo (el editor de displays) lo abren al elegirlas, y también al recuperarlas
+     * como la última elegida.
+     */
+    private void openMode(ToolCard card, Host host) {
+        String command = card.selectCommand();
+        if (command != null && card.missingPermission(card.defaults(), host.context()) == null) {
+            send(host, command);
+        }
     }
 
     /** Abre o cierra la cuadrícula de herramientas. */
