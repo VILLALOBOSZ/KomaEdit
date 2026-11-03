@@ -134,7 +134,8 @@ public final class TerrainCommands {
                 case "rio", "arroyo", "canon", "barranco" -> river(player, action, options);
                 case "erosion" -> erosion(player, options);
                 case "pintar" -> {
-                    Renamed.notice(player, "/komaedit terreno pintar", "/komaedit pintar <paleta> natural");
+                    Renamed.notice(player, "/komaedit terreno pintar", "/komaedit pintar <paleta> natural",
+                            paintNow(options));
                     paint(player, options);
                 }
                 case "sellos" -> stamps(context, player, options);
@@ -372,6 +373,19 @@ public final class TerrainCommands {
      * Repinta la superficie de la selección con una paleta de superficie: {@code /komaedit pintar <paleta> natural}
      * (antes {@code terreno pintar <paleta>}).
      */
+    /**
+     * {@code terreno pintar [paleta] [banderas]} con su nombre de ahora: {@code pintar [paleta] natural [banderas]}. El
+     * modo va justo detrás de la paleta: en {@code pintar}, {@code -e} lleva valor y se comería la palabra.
+     */
+    static String paintNow(String options) {
+        String typed = options.strip();
+        boolean palette = !typed.isEmpty() && !typed.startsWith("-");
+        int space = typed.indexOf(' ');
+        String head = !palette ? "" : space < 0 ? typed : typed.substring(0, space);
+        String rest = !palette ? typed : space < 0 ? "" : typed.substring(space + 1).strip();
+        return ("/komaedit pintar " + (head.isEmpty() ? "" : head + " ") + "natural " + rest).strip();
+    }
+
     static void paint(ServerPlayerEntity player, String text) throws IncompleteRegionException {
         KomaPermissions.requireBuild(player, "terrain.paint");
         BrushOptions options = BrushOptions.parse(text, Set.of('e'), Set.of('m'));

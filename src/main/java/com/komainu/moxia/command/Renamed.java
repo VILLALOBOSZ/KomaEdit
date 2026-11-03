@@ -23,11 +23,16 @@ final class Renamed {
 
     /** El aviso, solo la primera vez para este jugador y esta orden. */
     static void notice(ServerPlayerEntity player, String old, String now) {
+        notice(player, old, now, now);
+    }
+
+    /** Como {@link #notice(ServerPlayerEntity, String, String)}, con el botón escribiendo {@code typed}. */
+    static void notice(ServerPlayerEntity player, String old, String now, String typed) {
         if (!TOLD.computeIfAbsent(player.getUuid(), id -> ConcurrentHashMap.newKeySet()).add(old)) {
             return;
         }
         Feedback.info(player, Text.literal(message(old, now) + " ").formatted(Formatting.GRAY)
-                .append(Feedback.fix("[usarla]", now)));
+                .append(Feedback.fix("[usarla]", typed)));
     }
 
     /** «/komaedit snow ahora se llama /komaedit retocar nieve; la de antes sigue valiendo». */
