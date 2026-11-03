@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Cabos sueltos de las auditorías
+
+Se revisaron sobre el código de hoy los 51 hallazgos que dejaron apuntados sin hacer los PR #65, #74, #79, #88 y #94 a #99. Nueve eran fallos o fricciones de uso y se arreglan aquí, cada uno con una prueba que fallaba antes. De los demás, 8 ya estaban arreglados por PR posteriores, 29 se descartan con su motivo y 5 quedan para más adelante. La tabla completa está en el PR.
+
+- **Clic izquierdo, un solo orden.** Las flechas del fantasma, los displays y su gizmo y la imagen de referencia que se edita van ahora antes que la regla, el pincel de la mano y las capacidades, como ya pasaba con el clic derecho. Antes, con la regla o una capacidad puesta no se agarraban las flechas del gizmo, y con una capacidad que rompe, un clic en un display rompía el bloque de detrás. Un clic en el vacío con displays elegidos los suelta solo si nadie más lo quiere. Reparte el clic `LeftClick` (cliente). Prueba: `ClientInputOrderTest`.
+- **Regla: Ctrl+C y Supr ya no hacen dos cosas.** La regla las leía mirando el teclado en cada tick, sin quitárselas a nadie. Con un display elegido, Ctrl+C copiaba el display y además pisaba el portapapeles con las medidas. Con un fantasma, Supr lo quitaba y además borraba los puntos. Ahora van por `KeyboardMixin`, detrás del fantasma, los displays y las referencias. Prueba: `ClientInputOrderTest`.
+- **Editor de displays sin nada elegido: Ctrl+1…6 cambian de casilla.** Antes elegían mover, girar o escalar y se comían la tecla al correr. Prueba: `DisplayRulesTest.withNothingChosenNoKeyIsTheEditors`.
+- **Studio con un fantasma: Ctrl+Retroceso y Ctrl+Supr vuelven a cancelar el trabajo y a limpiar la trayectoria.** Antes solo quitaban el fantasma. `Retroceso` y `Supr` solos lo siguen quitando. Prueba: `GhostRulesTest.keysDoNotStealAnyoneElsesKey`.
+- **Decorar recordado abre el editor de displays.** Al volver al mundo con «Decorar» como herramienta recordada, la tarjeta ofrecía «Cerrar el editor» y un clic en un display no hacía nada. Ahora se abre como al elegirla, una vez por sesión. Prueba: `ToolsPanelTest.aRememberedToolThatWorksInAModeOpensItAgain`.
+- **El Studio mueve al personaje con las teclas de Controles.** Antes eran W, A, S, D, espacio, Mayús y Ctrl fijas, y quien las había cambiado no se movía con el Studio abierto. Solo cuentan las del teclado: los botones del ratón son del Studio. Prueba: `ClientInputOrderTest`.
+- **Nombres de dispositivo de Windows.** Un plano, recorrido o receta llamado `con`, `nul`, `aux`, `prn`, `com1`… o `lpt1`… no se podía guardar en Windows, y el error decía «Función incorrecta». Ahora se rechaza antes de escribir, en cualquier sistema, con «“con” es un nombre reservado de Windows; elige otro». Leer o borrar uno que ya exista sigue valiendo. Prueba: `AtomicStorageTest.aWindowsDeviceNameIsRefusedBeforeWritingAnything`.
+- **Aviso de `terreno pintar`.** El botón [usarla] escribía `/komaedit pintar <paleta> natural` y había que borrar el hueco a mano. Ahora escribe lo que puso el jugador, con `natural` justo detrás de la paleta. Al final no valía: en `pintar`, `-e` lleva valor y se comía la palabra. Prueba: `RenamedCommandsTest.theNewPaintCommandKeepsWhatThePlayerWrote`.
+- **Historial de colocación al parar.** El guardado al parar se escribía en el hilo del servidor. Uno periódico aún en curso podía acabar después y pisarlo con posiciones más viejas, que solo usa el orden `historial` de la reconstrucción. Ahora va a la misma cola de un hilo, detrás de lo anterior. Prueba: `PlacementHistoryTest`.
+- Nada probado aún dentro de Minecraft.
+
 ## 2.0.2 (estable, 2026-10-21)
 
 ### La vista previa en vivo se rehace de verdad
