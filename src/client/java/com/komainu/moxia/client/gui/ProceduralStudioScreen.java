@@ -35,10 +35,13 @@ import com.komainu.moxia.studio.world.PathDrag;
 import com.komainu.moxia.studio.world.SelectionStroke;
 import net.minecraft.block.BlockState;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
@@ -905,19 +908,29 @@ public final class ProceduralStudioScreen extends Screen {
         }
     }
 
-    /** WASD, espacio, Mayús y Ctrl mueven al jugador; con {@code modifiersTaken}, Mayús y Ctrl no (son del lazo). */
+    /**
+     * Las teclas de moverse, saltar, agacharse y correr de Controles (WASD, espacio, Mayús y Ctrl de serie) mueven al
+     * jugador; con {@code modifiersTaken}, agacharse y correr no (Mayús y Ctrl son del lazo).
+     */
     private void updateMovementKeys(boolean modifiersTaken) {
         if (client == null) {
             return;
         }
         long window = client.getWindow().getHandle();
-        client.options.forwardKey.setPressed(down(window, GLFW.GLFW_KEY_W));
-        client.options.backKey.setPressed(down(window, GLFW.GLFW_KEY_S));
-        client.options.leftKey.setPressed(down(window, GLFW.GLFW_KEY_A));
-        client.options.rightKey.setPressed(down(window, GLFW.GLFW_KEY_D));
-        client.options.jumpKey.setPressed(down(window, GLFW.GLFW_KEY_SPACE));
-        client.options.sneakKey.setPressed(!modifiersTaken && down(window, GLFW.GLFW_KEY_LEFT_SHIFT));
-        client.options.sprintKey.setPressed(!modifiersTaken && down(window, GLFW.GLFW_KEY_LEFT_CONTROL));
+        client.options.forwardKey.setPressed(pressed(window, client.options.forwardKey));
+        client.options.backKey.setPressed(pressed(window, client.options.backKey));
+        client.options.leftKey.setPressed(pressed(window, client.options.leftKey));
+        client.options.rightKey.setPressed(pressed(window, client.options.rightKey));
+        client.options.jumpKey.setPressed(pressed(window, client.options.jumpKey));
+        client.options.sneakKey.setPressed(!modifiersTaken && pressed(window, client.options.sneakKey));
+        client.options.sprintKey.setPressed(!modifiersTaken && pressed(window, client.options.sprintKey));
+    }
+
+    /** Si está pulsada la tecla del teclado que tiene asignada en Controles (las del ratón son del Studio). */
+    private static boolean pressed(long window, KeyBinding binding) {
+        InputUtil.Key key = KeyBindingHelper.getBoundKeyOf(binding);
+        return key.getCategory() == InputUtil.Type.KEYSYM && key.getCode() != InputUtil.UNKNOWN_KEY.getCode()
+                && down(window, key.getCode());
     }
 
     private void releaseMovementKeys() {

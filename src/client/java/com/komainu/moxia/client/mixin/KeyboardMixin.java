@@ -5,6 +5,7 @@ import com.komainu.moxia.client.display.DisplayEditorClient;
 import com.komainu.moxia.client.gizmo.GhostClient;
 import com.komainu.moxia.client.hotbar.HotbarControls;
 import com.komainu.moxia.client.reference.ReferenceClient;
+import com.komainu.moxia.client.utility.RulerClient;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
@@ -22,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *     abrir el menú), las flechas lo mueven y Ctrl+R lo gira; sin fantasma solo mira Ctrl+V (pegar);</li>
  *     <li>las imágenes de referencia ({@link ReferenceClient}): Ctrl+I y Ctrl+Mayús+I, e Intro o Esc para dejar de
  *     editar una con su gizmo (nunca con un fantasma en pantalla);</li>
+ *     <li>la regla ({@link RulerClient}), si está puesta: Ctrl+C copia las medidas y Supr las borra;</li>
  *     <li>Ctrl+P, la captura de trayectoria ({@link KomaEditClient}), mientras su entrada de Controles siga sin
  *     asignar.</li>
  * </ol>
@@ -38,7 +40,8 @@ public abstract class KeyboardMixin {
         }
         HotbarControls.otherInput(InputUtil.Type.KEYSYM, key, action);
         if (DisplayEditorClient.onKey(key, action, modifiers) || GhostClient.onKey(key, action, modifiers)
-                || ReferenceClient.onKey(key, action, modifiers) || KomaEditClient.onKey(key, action, modifiers)) {
+                || ReferenceClient.onKey(key, action, modifiers) || RulerClient.onKey(key, action, modifiers)
+                || KomaEditClient.onKey(key, action, modifiers)) {
             callbackInfo.cancel();
         }
     }

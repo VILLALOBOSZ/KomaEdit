@@ -123,6 +123,11 @@ class GhostRulesTest {
         assertEquals(GizmoKeys.Action.CANCEL, keys.match(GizmoKeys.KEY_ESCAPE, 0, enter, backspace)
                 .orElseThrow().action());
         assertEquals(GizmoKeys.Action.CANCEL, keys.match(backspace, 0, enter, backspace).orElseThrow().action());
+        assertEquals(GizmoKeys.Action.CANCEL, keys.match(GizmoKeys.KEY_DELETE, 0, enter, backspace).orElseThrow()
+                .action());
+        // Con Ctrl no: en el Studio, Ctrl+Retroceso cancela el trabajo y Ctrl+Supr borra la trayectoria.
+        assertTrue(keys.match(backspace, GizmoKeys.MOD_CONTROL, enter, backspace).isEmpty());
+        assertTrue(keys.match(GizmoKeys.KEY_DELETE, GizmoKeys.MOD_CONTROL, enter, backspace).isEmpty());
         // Cambiada en Controles: la tecla nueva, sola.
         keys.bind(GizmoKeys.Action.ROTATE, 'U');
         assertEquals(GizmoKeys.Action.ROTATE, keys.match('U', 0, enter, backspace).orElseThrow().action());

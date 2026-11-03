@@ -242,7 +242,22 @@ class DisplayRulesTest {
         assertTrue(keys.match('2', GizmoKeys.MOD_CONTROL).isEmpty(), "con tecla propia, el atajo de serie no");
         assertTrue(DisplayKeys.Action.FORWARD.repeats());
         assertFalse(DisplayKeys.Action.DELETE.repeats());
-        assertTrue(DisplayKeys.Action.STEP.idle());
+    }
+
+    /**
+     * Con el editor abierto y nada elegido, Ctrl+número cambia de casilla corriendo, como siempre: antes elegía mover,
+     * girar o escalar y se comía la tecla.
+     */
+    @Test
+    void withNothingChosenNoKeyIsTheEditors() {
+        DisplayKeys keys = new DisplayKeys();
+        for (char digit = '1'; digit <= '6'; digit++) {
+            assertTrue(keys.match(digit, GizmoKeys.MOD_CONTROL, false).isEmpty(), "Ctrl+" + digit);
+        }
+        assertTrue(keys.match(GizmoKeys.KEY_DELETE, 0, false).isEmpty());
+        assertTrue(keys.match('V', GizmoKeys.MOD_CONTROL, false).isEmpty());
+        assertEquals(DisplayKeys.Action.MOVE, keys.match('1', GizmoKeys.MOD_CONTROL, true).orElseThrow().action());
+        assertEquals(DisplayKeys.Action.ANGLE, keys.match('6', GizmoKeys.MOD_CONTROL, true).orElseThrow().action());
     }
 
     // ---------------------------------------------------------------- colocar

@@ -48,6 +48,23 @@ class RenamedCommandsTest {
                 Renamed.message("/komaedit snow", "/komaedit retocar nieve"));
     }
 
+    /**
+     * El botón [usarla] del aviso de {@code terreno pintar} escribe la orden nueva con lo que escribió el jugador; antes
+     * dejaba {@code <paleta>} en el chat y había que borrarlo a mano.
+     */
+    @Test
+    void theNewPaintCommandKeepsWhatThePlayerWrote() {
+        for (String typed : List.of("pradera", "pradera -m grass_block", "", "natural", "cumbres -e", "-m stone")) {
+            String now = TerrainCommands.paintNow(typed);
+            assertFalse(now.contains("<"), now);
+            assertTrue(now.startsWith("/komaedit pintar "), now);
+            assertEquals(typed, SelectionBrushCommands.withoutNatural(now.substring("/komaedit pintar ".length())),
+                    "pintar … natural hace lo mismo que terreno pintar " + typed);
+        }
+        assertEquals("/komaedit pintar pradera natural -m grass_block",
+                TerrainCommands.paintNow(" pradera -m grass_block "));
+    }
+
     @Test
     void naturalIsTheOldSurfacePaintAndTheRestIsTheBrushOnTheSelection() {
         // pintar <paleta> natural es terreno pintar <paleta>: se le quita la palabra del modo, nada más.

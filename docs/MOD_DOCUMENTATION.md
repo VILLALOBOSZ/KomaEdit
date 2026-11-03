@@ -474,7 +474,7 @@ Hay más comparativas de los cuatro temas en `docs/renders/studio/temas/`: [Herr
 
 ### Atajos de teclado
 
-`F1` o `?` abren la chuleta dentro del Studio; abajo tiene el selector de [tema de color](#temas-de-color) y, arriba a la derecha, **Bienvenida guiada**, que vuelve a lanzar la [bienvenida](#bienvenida-guiada). Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve con `W`, `A`, `S`, `D`.
+`F1` o `?` abren la chuleta dentro del Studio; abajo tiene el selector de [tema de color](#temas-de-color) y, arriba a la derecha, **Bienvenida guiada**, que vuelve a lanzar la [bienvenida](#bienvenida-guiada). Con un campo de texto abierto (nombre, fórmula, buscador, número o biblioteca de bloques) las letras se escriben y ningún atajo se dispara, y el personaje no se mueve. Con el Studio abierto el personaje se mueve, salta, se agacha y corre con las teclas de **Controles** (`W`, `A`, `S`, `D`, espacio, Mayús y Ctrl de serie; si las cambiaste, las tuyas). Con un fantasma a la vista, `Retroceso` y `Supr` lo quitan, pero `Ctrl+Retroceso` y `Ctrl+Supr` siguen cancelando el trabajo y limpiando la trayectoria.
 
 | Tecla | Acción |
 | --- | --- |
@@ -1043,7 +1043,7 @@ Rangos: `maxPerChunk` 1–4096, `maxPerPlayer` 0–1000000, `maxDistance` 4–51
 
 ### Teclas
 
-Como las del fantasma, están en **Controles → KomaEdit** («Displays: …») **sin asignar**, y mientras no las asignes valen los atajos de serie; solo actúan con el editor abierto, sin fantasma, y casi todas con algo elegido.
+Como las del fantasma, están en **Controles → KomaEdit** («Displays: …») **sin asignar**, y mientras no las asignes valen los atajos de serie; solo actúan con el editor abierto, sin fantasma y con algo elegido. Sin nada elegido, todas siguen siendo de Minecraft: Ctrl+1…6 cambian de casilla corriendo, como siempre.
 
 | Acción | De serie |
 | --- | --- |
@@ -5136,6 +5136,8 @@ Solo del cliente: mide con clics sobre el mundo y no manda nada al servidor, as�
 | Ctrl + C | Copia las medidas al portapapeles (también `/kegui regla copiar`). |
 | Supr | Quita todos los puntos (también `/kegui regla borrar`). |
 
+El fantasma, los displays y las imágenes de referencia van antes que la regla: con ella puesta se siguen agarrando sus flechas y piezas con el clic izquierdo, Ctrl+C con un display elegido copia el display (y no las medidas) y Supr con un fantasma lo quita (y no borra los puntos). Lo mismo con un pincel en la mano o una capacidad puesta: un clic en una flecha del gizmo o en un display es del gizmo o del display, nunca rompe el bloque de detrás.
+
 Se mide como se cuenta al construir: **de centro a centro de bloque** (del bloque al de al lado hay 1) y **las cajas cuentan los bloques de los dos extremos** (de 0 a 11 son 12).
 
 | Modo | Puntos | Qué mide |
@@ -5490,7 +5492,7 @@ Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `busc
 ### Guardar
 
 - `save` guarda el **portapapeles de WorldEdit** (`//copy`) con su giro (`//rotate`, `//flip`) ya aplicado, como `//schem save`.
-- **Nombre:** de 1 a 32 letras, números, `_` o `-`, sin mayúsculas. Guardar otra vez con el mismo nombre reemplaza el plano y conserva su fecha de creación.
+- **Nombre:** de 1 a 32 letras, números, `_` o `-`, sin mayúsculas. Guardar otra vez con el mismo nombre reemplaza el plano y conserva su fecha de creación. Los nombres de dispositivo de Windows (`con`, `nul`, `aux`, `prn`, `com1`…`com9`, `lpt1`…`lpt9`) no valen para guardar, en ningún sistema, para que el mundo se pueda abrir también en Windows; vale lo mismo para recorridos, recetas, instancias, paletas y presets. Uno que ya exista se sigue leyendo y borrando.
 - **Etiquetas:** hasta 8, separadas por espacios o comas, con o sin `#` (`rocas musgo`, `#ruinas,#piedra`). Se guardan sin mayúsculas ni tildes: `Árboles` queda `arboles`. `tags <plano> [etiquetas]` las cambia (sin etiquetas, las quita).
 - Junto al esquema se guardan el **autor**, las fechas, el **tamaño** (ancho × alto × fondo), el **número de bloques** que no son aire, las etiquetas y la huella de la miniatura.
 - **Miniatura:** un PNG isométrico de 128×128 pintado en el servidor por código, sin Minecraft cliente: se mira desde el sureste y desde arriba, la cara de arriba sale más clara que la sur y la este, lo lejano un poco más oscuro, las aristas de los bloques se marcan cuando cada bloque ocupa 3 píxeles o más y el fondo es transparente. Se encuadra en la silueta de lo que no es aire, así que el aire de alrededor del portapapeles no la empequeñece. Los colores son los **colores medios de textura** de la tabla del mod (la misma de smoothblocks, `/komaedit image` y `/komaedit color`), con el color de mapa para los bloques de mods; el agua, el césped, la hierba alta y el nenúfar, que Minecraft tiñe según el bioma, llevan un color fijo, y la barrera, la luz y el vacío de estructura no se pintan.

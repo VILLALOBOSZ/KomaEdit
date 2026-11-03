@@ -10,15 +10,18 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public final class AtomicStorage {
     private static final String TEMPORARY_SUFFIX = ".tmp";
     private static final String BACKUP_SUFFIX = ".bak";
+    private static final Pattern WINDOWS_DEVICE = Pattern.compile("(?i)con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]");
 
     private AtomicStorage() {
     }
 
     public static void writeString(Path target, String value) throws IOException {
+        requireWritableName(target);
         Files.createDirectories(target.getParent());
         Path temporary = temporary(target);
         Files.writeString(temporary, value, StandardCharsets.UTF_8);
@@ -26,6 +29,7 @@ public final class AtomicStorage {
     }
 
     public static void replace(Path temporary, Path target) throws IOException {
+        requireWritableName(target);
         Files.createDirectories(target.getParent());
         Path backup = backup(target);
         if (Files.isRegularFile(target)) {
@@ -38,6 +42,21 @@ public final class AtomicStorage {
                 Files.copy(backup, target, StandardCopyOption.REPLACE_EXISTING);
             }
             throw exception;
+        }
+    }
+
+    /**
+     * Los nombres de dispositivo de Windows ({@code con}, {@code nul}, {@code aux}, {@code com1}…) no valen para un
+     * archivo, ni con extensión: en Windows, guardar un plano o un recorrido llamado así fallaba con un error que no se
+     * entiende («Función incorrecta»). Se rechazan antes de escribir, en cualquier sistema, para que el mundo se pueda
+     * abrir también en Windows; leer o borrar uno que ya exista sigue valiendo.
+     */
+    public static void requireWritableName(Path target) throws IOException {
+        String name = target.getFileName().toString();
+        int dot = name.indexOf('.');
+        String stem = (dot < 0 ? name : name.substring(0, dot)).strip();
+        if (WINDOWS_DEVICE.matcher(stem).matches()) {
+            throw new IOException("«" + stem + "» es un nombre reservado de Windows; elige otro");
         }
     }
 

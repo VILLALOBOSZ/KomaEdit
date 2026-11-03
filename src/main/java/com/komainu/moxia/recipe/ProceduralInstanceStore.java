@@ -53,6 +53,7 @@ public final class ProceduralInstanceStore {
         Path blocks = blocksPath(playerId, id);
         try {
             Files.createDirectories(directory);
+            AtomicStorage.requireWritableName(blocks);
             Path temporaryBlocks = AtomicStorage.temporary(blocks);
             try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(
                     new GZIPOutputStream(Files.newOutputStream(temporaryBlocks))

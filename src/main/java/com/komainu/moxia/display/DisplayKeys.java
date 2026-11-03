@@ -67,14 +67,6 @@ public final class DisplayKeys {
                 default -> false;
             };
         }
-
-        /** Las que no necesitan nada elegido. */
-        public boolean idle() {
-            return switch (this) {
-                case MOVE, ROTATE, SCALE, FRAME, STEP, ANGLE -> true;
-                default -> false;
-            };
-        }
     }
 
     public record Press(Action action, boolean shift, boolean control, boolean alt) {
@@ -85,6 +77,14 @@ public final class DisplayKeys {
     public DisplayKeys bind(Action action, int key) {
         bound.put(action, key);
         return this;
+    }
+
+    /**
+     * La acción de una pulsación con lo elegido en pantalla. Sin nada elegido, ninguna tecla es del editor: Ctrl+1…6
+     * cambian de casilla corriendo, y Esc, Supr y Ctrl+V siguen siendo de Minecraft (y del fantasma).
+     */
+    public Optional<Press> match(int key, int modifiers, boolean chosen) {
+        return chosen ? match(key, modifiers) : Optional.empty();
     }
 
     /** La acción de una pulsación; Retroceso también borra. */

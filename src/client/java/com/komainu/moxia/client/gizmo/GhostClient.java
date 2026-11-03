@@ -31,7 +31,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -131,7 +130,6 @@ public final class GhostClient {
         WorldRenderEvents.AFTER_ENTITIES.register(GhostClient::renderBox);
         WorldRenderEvents.LAST.register(GhostClient::render);
         ClientTickEvents.END_CLIENT_TICK.register(GhostClient::tick);
-        ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> onAttack(client, clickCount));
         for (GizmoKeys.Action action : GizmoKeys.Action.values()) {
             if (action != GizmoKeys.Action.CONFIRM && action != GizmoKeys.Action.CANCEL) {
                 BINDINGS.put(action, KeyBindingHelper.registerKeyBinding(new KeyBinding("key.komaedit.ghost_"
@@ -461,8 +459,11 @@ public final class GhostClient {
         return true;
     }
 
-    /** Clic izquierdo: agarra la pieza del gizmo bajo el punto de mira; mientras se arrastra no se rompe nada. */
-    private static boolean onAttack(MinecraftClient client, int clickCount) {
+    /**
+     * Clic izquierdo ({@link com.komainu.moxia.client.LeftClick}): agarra la pieza del gizmo bajo el punto de mira;
+     * mientras se arrastra no se rompe nada.
+     */
+    public static boolean onAttack(MinecraftClient client, int clickCount) {
         if (client.currentScreen != null || !active()) {
             return false;
         }

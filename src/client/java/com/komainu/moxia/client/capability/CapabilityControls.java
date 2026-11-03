@@ -14,7 +14,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
@@ -74,7 +73,6 @@ public final class CapabilityControls {
                     InputUtil.UNKNOWN_KEY.getCode(), "category.komaedit")));
         }
 
-        ClientPreAttackCallback.EVENT.register(CapabilityControls::onAttack);
         // Antes de que Minecraft lea la F en este tick: con «Cambiar estado» y las manos vacías, elige propiedad.
         ClientTickEvents.START_CLIENT_TICK.register(CapabilityControls::consumeSwap);
         ClientTickEvents.END_CLIENT_TICK.register(CapabilityControls::endTick);
@@ -153,7 +151,8 @@ public final class CapabilityControls {
 
     // ---- Entrada ------------------------------------------------------------------------------------------------
 
-    private static boolean onAttack(MinecraftClient client, ClientPlayerEntity player, int clickCount) {
+    /** Clic izquierdo ({@link com.komainu.moxia.client.LeftClick}): {@code true} si es de una capacidad puesta. */
+    public static boolean onAttack(MinecraftClient client, ClientPlayerEntity player, int clickCount) {
         if (client.currentScreen != null || client.world == null) {
             return false;
         }

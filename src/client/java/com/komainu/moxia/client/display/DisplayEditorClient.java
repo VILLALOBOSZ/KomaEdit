@@ -28,7 +28,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
@@ -110,7 +109,6 @@ public final class DisplayEditorClient {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(DisplayEditorClient::reset));
         WorldRenderEvents.LAST.register(DisplayEditorClient::render);
         ClientTickEvents.END_CLIENT_TICK.register(DisplayEditorClient::tick);
-        ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> onAttack(client, clickCount));
         for (DisplayKeys.Action action : DisplayKeys.Action.values()) {
             BINDINGS.put(action, KeyBindingHelper.registerKeyBinding(new KeyBinding("key.komaedit.display_"
                     + action.id(), InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), "category.komaedit")));
@@ -474,7 +472,11 @@ public final class DisplayEditorClient {
 
     // ---------------------------------------------------------------- ratón en el mundo
 
-    private static boolean onAttack(MinecraftClient client, int clickCount) {
+    /**
+     * Clic izquierdo sobre el gizmo o un display ({@link com.komainu.moxia.client.LeftClick}, antes que la regla, el
+     * pincel y las capacidades): {@code true} si era del editor.
+     */
+    public static boolean onAttack(MinecraftClient client, int clickCount) {
         if (client.currentScreen != null || !active()) {
             return false;
         }
@@ -490,7 +492,15 @@ public final class DisplayEditorClient {
             worldDrag = true;
             return true;
         }
-        return click(hoveredDisplay);
+        return hoveredDisplay >= 0 && click(hoveredDisplay);
+    }
+
+    /** Clic izquierdo en el vacío que nadie quiso antes: suelta lo elegido. */
+    public static boolean onAttackEmpty(MinecraftClient client, int clickCount) {
+        if (client.currentScreen != null || !active() || clickCount == 0 || hoveredDisplay >= 0) {
+            return false;
+        }
+        return click(-1);
     }
 
     /** Clic en un display (o en el vacío). */
@@ -578,15 +588,11 @@ public final class DisplayEditorClient {
         if (!active()) {
             return false;
         }
-        Optional<DisplayKeys.Press> press = keys().match(key, modifiers);
+        Optional<DisplayKeys.Press> press = keys().match(key, modifiers, !selection.isEmpty());
         if (press.isEmpty()) {
             return false;
         }
         DisplayKeys.Action pressed = press.get().action();
-        if (selection.isEmpty() && !pressed.idle()) {
-            // Sin nada elegido, Esc, Supr y Ctrl+V siguen siendo de Minecraft (y del fantasma).
-            return false;
-        }
         if (action == GLFW.GLFW_REPEAT && !pressed.repeats()) {
             return true;
         }
