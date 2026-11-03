@@ -277,6 +277,7 @@ public final class BlueprintLibrary {
     }
 
     private static void writeBytes(Path target, byte[] data) throws IOException {
+        AtomicStorage.requireWritableName(target);
         Path temporary = AtomicStorage.temporary(target);
         Files.write(temporary, data);
         AtomicStorage.replace(temporary, target);
