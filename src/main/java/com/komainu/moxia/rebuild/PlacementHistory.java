@@ -36,7 +36,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -56,7 +58,7 @@ import java.util.concurrent.TimeoutException;
 public final class PlacementHistory {
     private static final int SAVE_EVERY_TICKS = 6_000;
     private static final Map<RegistryKey<World>, PlacementLog> LOGS = new HashMap<>();
-    private static final ExecutorService IO = Executors.newSingleThreadExecutor(runnable -> {
+    static final ExecutorService IO = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "KomaEdit historial de colocación");
         thread.setDaemon(true);
         return thread;
@@ -195,13 +197,14 @@ public final class PlacementHistory {
     }
 
     /**
-     * Guarda los mundos con cambios. {@code sync}: en este hilo y esperando a lo que estuviera escribiéndose (al parar
-     * el servidor); si no, en el hilo de guardado.
+     * Guarda los mundos con cambios, en el hilo de guardado. {@code sync}: esperando a que acabe (al parar el
+     * servidor).
      */
     public static void save(boolean sync) {
         if (server == null) {
             return;
         }
+        List<Runnable> writes = new ArrayList<>();
         for (Map.Entry<RegistryKey<World>, PlacementLog> entry : LOGS.entrySet()) {
             PlacementLog log = entry.getValue();
             if (!log.dirty()) {
@@ -210,15 +213,20 @@ public final class PlacementHistory {
             long[] positions = log.positions();
             Path file = file(entry.getKey());
             log.saved();
-            Runnable write = () -> write(file, positions);
-            if (sync) {
-                write.run();
-            } else {
-                IO.execute(write);
-            }
+            writes.add(() -> write(file, positions));
         }
+        run(writes, sync);
+    }
+
+    /**
+     * Escribe siempre en el hilo de guardado, en orden. Al parar, lo último va detrás de lo que estuviera escribiéndose:
+     * antes se escribía en el hilo del servidor y un guardado periódico aún en curso podía acabar después y pisarlo con
+     * posiciones más viejas (y los dos escribían el mismo temporal).
+     */
+    static void run(List<Runnable> writes, boolean sync) {
+        writes.forEach(IO::execute);
         if (sync) {
-            // Lo que se estuviera escribiendo en el otro hilo, antes de dar el mundo por guardado.
+            // Todo lo que hay en cola, también lo de antes, antes de dar el mundo por guardado.
             try {
                 IO.submit(() -> { }).get(10, TimeUnit.SECONDS);
             } catch (InterruptedException exception) {
@@ -229,7 +237,7 @@ public final class PlacementHistory {
         }
     }
 
-    private static void write(Path file, long[] positions) {
+    static void write(Path file, long[] positions) {
         try {
             Files.createDirectories(file.getParent());
             Path temporary = AtomicStorage.temporary(file);
