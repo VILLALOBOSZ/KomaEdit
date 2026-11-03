@@ -110,6 +110,7 @@ public final class KomaEditClient implements ClientModInitializer {
         com.komainu.moxia.client.display.DisplayEditorClient.register();
         com.komainu.moxia.client.utility.UtilitiesClient.register();
         com.komainu.moxia.client.reference.ReferenceClient.register();
+        LeftClick.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openEditor.wasPressed()) {
                 openEditor(client);

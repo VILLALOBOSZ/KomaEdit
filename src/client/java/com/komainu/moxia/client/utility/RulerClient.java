@@ -13,8 +13,6 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.sound.PositionedSoundInstance;
@@ -24,7 +22,6 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -37,13 +34,10 @@ import org.lwjgl.glfw.GLFW;
  */
 public final class RulerClient {
     private static final double REACH = 256.0;
-    private static final Identifier EARLY = Identifier.of("komaedit", "ruler");
     private static final Ruler RULER = new Ruler();
     private static KeyBinding toggle;
     private static boolean active;
     private static boolean useArmed = true;
-    private static boolean copyHeld;
-    private static boolean clearHeld;
     private static RulerPoint hover;
     private static WorldSketch sketch = WorldSketch.EMPTY;
     private static boolean broken;
@@ -54,9 +48,6 @@ public final class RulerClient {
     public static void register() {
         toggle = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.komaedit.ruler", InputUtil.Type.KEYSYM,
                 InputUtil.UNKNOWN_KEY.getCode(), "category.komaedit"));
-        // Antes que pinceles y capacidades: con la regla puesta, el clic izquierdo es suyo.
-        ClientPreAttackCallback.EVENT.addPhaseOrdering(EARLY, Event.DEFAULT_PHASE);
-        ClientPreAttackCallback.EVENT.register(EARLY, (client, player, clickCount) -> onAttack(client, clickCount));
         ClientTickEvents.END_CLIENT_TICK.register(RulerClient::tick);
         WorldRenderEvents.AFTER_ENTITIES.register(RulerClient::renderWorld);
         WorldRenderEvents.LAST.register(RulerClient::renderGhost);
@@ -117,7 +108,11 @@ public final class RulerClient {
         return true;
     }
 
-    private static boolean onAttack(MinecraftClient client, int clickCount) {
+    /**
+     * Clic izquierdo ({@link com.komainu.moxia.client.LeftClick}): después del fantasma, los displays y las imágenes
+     * de referencia, y antes que pinceles y capacidades. Con la regla puesta, el clic que nadie tomó antes es suyo.
+     */
+    public static boolean onAttack(MinecraftClient client, int clickCount) {
         if (!active || client.currentScreen != null || client.player == null) {
             return false;
         }
@@ -129,6 +124,27 @@ public final class RulerClient {
             }
             click(client, 1.0F);
             status(client, RulerReport.summary(RULER, ClientWords.INSTANCE));
+        }
+        return true;
+    }
+
+    /**
+     * Ctrl+C copia las medidas y Supr las borra, desde {@code KeyboardMixin}: detrás del fantasma, los displays y las
+     * imágenes de referencia, así una tecla que ya tomó otro no hace además lo de la regla.
+     */
+    public static boolean onKey(int key, int action, int modifiers) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        boolean copy = key == GLFW.GLFW_KEY_C && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
+        if (!active || client.currentScreen != null || client.player == null || action == GLFW.GLFW_RELEASE
+                || !copy && key != GLFW.GLFW_KEY_DELETE) {
+            return false;
+        }
+        if (action == GLFW.GLFW_PRESS) {
+            if (copy) {
+                copy(client);
+            } else {
+                clear(client);
+            }
         }
         return true;
     }
@@ -146,17 +162,6 @@ public final class RulerClient {
             return;
         }
         if (client.currentScreen == null) {
-            long window = client.getWindow().getHandle();
-            boolean copy = control(client) && InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_C);
-            if (copy && !copyHeld) {
-                copy(client);
-            }
-            copyHeld = copy;
-            boolean clear = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_DELETE);
-            if (clear && !clearHeld) {
-                clear(client);
-            }
-            clearHeld = clear;
             hover = aim(client, shift(client));
         } else {
             hover = null;

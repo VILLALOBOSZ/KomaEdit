@@ -9,7 +9,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
@@ -35,15 +34,6 @@ public final class BrushToolControls {
         WorldRenderEvents.AFTER_ENTITIES.register(PreviewHologramRenderer::render);
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> PreviewHologramRenderer.clear());
 
-        ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> {
-            if (!holdingTool(player)) {
-                return false;
-            }
-            if (clickCount > 0 && client.currentScreen == null) {
-                send(BrushInput.Base.LEFT, player.isSneaking());
-            }
-            return true;
-        });
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!world.isClient() || hand != Hand.MAIN_HAND || !holdingTool(player)) {
                 return ActionResult.PASS;
@@ -74,6 +64,17 @@ public final class BrushToolControls {
         if (pressed) {
             send(BrushInput.Base.SWAP, client.player.isSneaking());
         }
+    }
+
+    /** Clic izquierdo ({@link com.komainu.moxia.client.LeftClick}) con un pincel de KomaEdit en la mano. */
+    public static boolean onAttack(MinecraftClient client, PlayerEntity player, int clickCount) {
+        if (!holdingTool(player)) {
+            return false;
+        }
+        if (clickCount > 0 && client.currentScreen == null) {
+            send(BrushInput.Base.LEFT, player.isSneaking());
+        }
+        return true;
     }
 
     private static boolean holdingTool(PlayerEntity player) {

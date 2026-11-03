@@ -27,7 +27,6 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -95,7 +94,6 @@ public final class ReferenceClient {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(ReferenceClient::leave));
         WorldRenderEvents.LAST.register(ReferenceClient::renderWorld);
         ClientTickEvents.END_CLIENT_TICK.register(ReferenceClient::tick);
-        ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> onAttack(client, clickCount));
         ReferenceWindows.register();
         // Bajo /kegui, como el resto de lo que atiende el propio cliente (también si lo manda el Studio).
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
@@ -396,8 +394,11 @@ public final class ReferenceClient {
         return new GizmoMath.Ray(new Vec3(position.x, position.y, position.z), new Vec3(look.x, look.y, look.z));
     }
 
-    /** Clic izquierdo: agarra la pieza bajo el punto de mira; mientras se arrastra no se rompe nada. */
-    private static boolean onAttack(MinecraftClient client, int clickCount) {
+    /**
+     * Clic izquierdo ({@link com.komainu.moxia.client.LeftClick}): agarra la pieza bajo el punto de mira; mientras se
+     * arrastra no se rompe nada.
+     */
+    public static boolean onAttack(MinecraftClient client, int clickCount) {
         if (!interactive(client)) {
             return false;
         }

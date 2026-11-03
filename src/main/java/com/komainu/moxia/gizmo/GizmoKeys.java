@@ -95,7 +95,8 @@ public final class GizmoKeys {
      * La acción de una pulsación con el fantasma en pantalla.
      *
      * @param confirmKey tecla de «aplicar la vista previa» de Controles (Intro de serie): también coloca el fantasma
-     * @param discardKey tecla de «descartar» (Retroceso de serie): también lo quita
+     * @param discardKey tecla de «descartar» (Retroceso de serie): también lo quita, como Supr; con Ctrl no (en el
+     * Studio, Ctrl+Retroceso cancela el trabajo y Ctrl+Supr borra la trayectoria)
      */
     public Optional<Press> match(int key, int modifiers, int confirmKey, int discardKey) {
         boolean shift = (modifiers & MOD_SHIFT) != 0;
@@ -112,7 +113,7 @@ public final class GizmoKeys {
         if (key == KEY_KP_ENTER || key == confirmKey && confirmKey != UNBOUND) {
             return Optional.of(new Press(Action.CONFIRM, shift, control, alt));
         }
-        if (key == KEY_BACKSPACE || key == KEY_DELETE || key == discardKey && discardKey != UNBOUND) {
+        if (!control && (key == KEY_BACKSPACE || key == KEY_DELETE || key == discardKey && discardKey != UNBOUND)) {
             return Optional.of(new Press(Action.CANCEL, shift, control, alt));
         }
         return Optional.empty();
