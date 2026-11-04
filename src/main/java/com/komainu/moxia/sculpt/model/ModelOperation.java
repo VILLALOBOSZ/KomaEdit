@@ -63,7 +63,7 @@ public record ModelOperation(ModelSettings settings, ModelMaterial added, ModelM
 
     @Override
     public String pattern() {
-        return added.pattern() == null ? "air" : added.pattern();
+        return ModelMaterial.planPattern(added, fill);
     }
 
     @Override

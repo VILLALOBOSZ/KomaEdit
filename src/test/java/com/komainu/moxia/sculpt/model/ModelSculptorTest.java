@@ -183,6 +183,38 @@ class ModelSculptorTest {
         assertTrue(after.solid(0, 0, 0));
     }
 
+    /**
+     * Fundir el borde de algo que vuela (una losa a 8 bloques del suelo, como el alero de un tejado o el borde de una
+     * copa): la piel bajaba por el aire de debajo y el suelo tomaba el material de lo fundido.
+     */
+    @Test
+    void meltingAnOverhangLeavesTheGroundBelowAsItWas() {
+        ModelGrid grid = ModelGrid.create(-10, -10, -10, 21, 21, 21);
+        ModelGrids.box(grid, -10, -10, -10, 10, -7, 10, STONE);
+        ModelGrids.box(grid, -10, -6, -10, 10, -6, 10, GRASS);
+        ModelGrids.box(grid, -4, 2, -4, 4, 3, 4, SAND);
+        ModelSettings settings = ModelSettings.defaults(ModelMode.MELT, 4, 3, 4, 6)
+                .withFalloff(BrushFalloff.CONSTANT);
+        ModelSculptor.Result result = ModelSculptor.apply(grid, settings, MaterialChooser.INHERIT,
+                MaterialChooser.AIR, NO_CANCEL);
+        assertTrue(result.removed() > 0, "funde el borde de la losa");
+        ModelGrid after = result.grid();
+        for (int x = -10; x <= 10; x++) {
+            for (int z = -10; z <= 10; z++) {
+                assertEquals(GRASS, after.materialAt(after.index(x, -6, z)), "el suelo sigue de hierba en " + x + ","
+                        + z);
+            }
+        }
+    }
+
+    /** {@code sculpt set shatter gravel}: las grietas se rellenan con el patrón, no con aire. */
+    @Test
+    void shatterFillsTheCracksWithThePattern() {
+        assertEquals("gravel", ModelMaterial.planPattern(ModelMaterial.SURROUNDING, ModelMaterial.pattern("gravel")));
+        assertEquals("stone", ModelMaterial.planPattern(ModelMaterial.pattern("stone"), ModelMaterial.AIR));
+        assertEquals("air", ModelMaterial.planPattern(ModelMaterial.SURROUNDING, ModelMaterial.AIR));
+    }
+
     // --------------------------------------------------------------------------------------------- Rugosidad
 
     @Test

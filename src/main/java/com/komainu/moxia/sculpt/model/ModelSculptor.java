@@ -407,8 +407,10 @@ public final class ModelSculptor {
             if (grid.contains(x, y + 1, z) && before[grid.index(x, y + 1, z)]) {
                 continue;
             }
+            // Solo baja por lo que se acaba de quitar: el aire de antes (bajo el borde de una copa, un puente o un
+            // alero) no es la columna, y el suelo de abajo no debe tomar el material de lo que estaba encima.
             int below = y - 1;
-            while (below >= grid.minimumY && !after[grid.index(x, below, z)]) {
+            while (below >= grid.minimumY && before[grid.index(x, below, z)] && !after[grid.index(x, below, z)]) {
                 below--;
             }
             if (below < grid.minimumY) {
