@@ -74,6 +74,8 @@ public final class ProceduralStudioScreen extends Screen {
     private StudioUi ui;
     private DrawContextCanvas canvas;
     private ClientStudioHost host;
+    /** Si ya se hizo lo de abrir el Studio ({@link #init()} vuelve a correr al cambiar el tamaño de la ventana). */
+    private boolean opened;
     private boolean cameraDragging;
     private boolean draggingPoint;
     private int draggedPoint = -1;
@@ -122,6 +124,17 @@ public final class ProceduralStudioScreen extends Screen {
         canvas = new DrawContextCanvas(textRenderer);
         ui = new StudioUi(canvas);
         host = new ClientStudioHost(client, view, this::close);
+        // Minecraft rehace la pantalla (init) con cada cambio de tamaño de la ventana: arrastrar su borde la rehacía
+        // decenas de veces por segundo y cada vez mandaba la captura de trayectoria y la receta, hasta agotar el freno
+        // de los botones del servidor. Lo de abrir, una vez.
+        if (!opened) {
+            opened = true;
+            open();
+        }
+    }
+
+    /** Lo que se hace al abrir el Studio: la captura de trayectoria, la receta en curso y el catálogo si hace falta. */
+    private void open() {
         ClientStudioHost.clearNames();
         ButtonCommandClient.send(client, "komaedit path mode on");
         ClientPlayNetworking.send(new RecipeActionPayload(RecipeActionPayload.SYNC, view.figure().draft()));

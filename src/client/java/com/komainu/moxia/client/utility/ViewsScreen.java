@@ -26,6 +26,7 @@ public final class ViewsScreen extends Screen {
     private TextFieldWidget name;
     private UtilityList list;
     private ButtonWidget back;
+    private boolean requested;
     private String message = "";
 
     public ViewsScreen(Screen parent) {
@@ -35,7 +36,11 @@ public final class ViewsScreen extends Screen {
 
     @Override
     protected void init() {
-        ClientViews.requestCatalog();
+        // init vuelve a correr con cada cambio de tamaño de la ventana: el catálogo se pide una vez al abrir.
+        if (!requested) {
+            requested = true;
+            ClientViews.requestCatalog();
+        }
         int width = Math.min(ROW_WIDTH, this.width - 20);
         int left = (this.width - width) / 2;
         String typed = name == null ? "" : name.getText();

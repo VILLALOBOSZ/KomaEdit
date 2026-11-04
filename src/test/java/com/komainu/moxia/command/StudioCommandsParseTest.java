@@ -90,6 +90,32 @@ class StudioCommandsParseTest {
         assertTrue(checked > 1_000, "se han mirado " + checked + " órdenes");
     }
 
+    /**
+     * Lo que enseña {@code /komaedit help} (y escribe en el chat al pulsarlo) existe en el árbol real: cada entrada,
+     * hasta su primer argumento, la lee Brigadier entera. Si una orden cambia de nombre y la ayuda no, falla aquí.
+     */
+    @Test
+    void everyHelpEntryIsARealCommand() {
+        List<String> missing = new ArrayList<>();
+        int checked = 0;
+        for (HelpTopics.Topic topic : HelpTopics.TOPICS) {
+            for (HelpTopics.Entry entry : topic.entries()) {
+                String typed = entry.suggestion().strip();
+                if (!typed.startsWith("/komaedit")) {
+                    continue;
+                }
+                checked++;
+                ParseResults<ServerCommandSource> parse = dispatcher.parse(typed.substring(1), null);
+                if (parse.getReader().canRead()) {
+                    missing.add(topic.id() + ": «" + entry.syntax() + "» (se para en «"
+                            + parse.getReader().getRemaining() + "»)");
+                }
+            }
+        }
+        assertEquals(List.of(), missing, "entradas de la ayuda que no son órdenes");
+        assertTrue(checked > 200, "se han mirado " + checked + " entradas");
+    }
+
     @Test
     void whatTheClientAnswersStartsWithItsOwnCommands() {
         for (ToolCard card : ToolCatalog.ALL) {
