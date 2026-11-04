@@ -12,6 +12,7 @@ import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.world.block.BaseBlock;
@@ -127,6 +128,7 @@ public final class ClipboardScaleService {
                              Consumer<Throwable> failed) {
         hook();
         Captured captured = capture(player, change.mode());
+        Transform transform = captured.holder().getTransform();
         UUID playerId = player.getUuid();
         MinecraftServer server = player.getServer();
         AsyncEngine.submit(playerId, change.rotate() ? "Girar portapapeles" : "Escalar portapapeles",
@@ -137,11 +139,29 @@ public final class ClipboardScaleService {
                         return;
                     }
                     LocalSession session = WorldEditService.context(current).session();
+                    if (!stillCurrent(session, captured.holder(), transform)) {
+                        failed.accept(new IllegalStateException("el portapapeles cambió mientras se calculaba (//copy,"
+                                + " //rotate…): se queda el nuevo; vuelve a pedirlo"));
+                        return;
+                    }
                     PREVIOUS.put(playerId, captured.holder());
                     session.setClipboard(new ClipboardHolder(result.clipboard()));
                     done.accept(result.outcome());
                 }),
                 throwable -> server.execute(() -> failed.accept(throwable)));
+    }
+
+    /**
+     * Si el portapapeles sigue siendo el que se leyó, con el mismo giro pendiente. Escalar uno grande tarda: un
+     * {@code //copy} o un {@code //rotate} hecho mientras tanto se pisaba con el resultado del de antes, y
+     * «restaurar» devolvía el viejo, así que lo nuevo se perdía.
+     */
+    static boolean stillCurrent(LocalSession session, ClipboardHolder read, Transform transform) {
+        try {
+            return session.getClipboard() == read && read.getTransform() == transform;
+        } catch (EmptyClipboardException exception) {
+            return false;
+        }
     }
 
     /** Vuelve a poner el portapapeles de antes del último escalado o giro. */

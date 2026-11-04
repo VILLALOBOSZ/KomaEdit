@@ -493,8 +493,21 @@ final class InitReach {
         return submissions(allClasses());
     }
 
+    /**
+     * Solo lo que se manda a {@code AsyncEngine.submit} (el cálculo y lo que entrega, que corre en el mismo worker): un
+     * cálculo nuevo del mismo jugador, {@code /komaedit cancel} o su desconexión lo interrumpen.
+     */
+    Map<MethodId, MethodId> asyncEngineSubmissions() {
+        return submissions(allClasses(), call -> call.owner.equals(ASYNC_ENGINE));
+    }
+
     /** Lo mismo, solo en esas clases. */
     Map<MethodId, MethodId> submissions(Iterable<String> classes) {
+        return submissions(classes, call -> true);
+    }
+
+    private Map<MethodId, MethodId> submissions(Iterable<String> classes,
+                                                java.util.function.Predicate<MethodInsnNode> which) {
         Map<MethodId, MethodId> entries = new LinkedHashMap<>();
         for (String name : classes) {
             ClassNode node = node(name);
@@ -514,7 +527,8 @@ final class InitReach {
                 MethodId from = new MethodId(name, method.name, method.desc);
                 AbstractInsnNode[] instructions = method.instructions.toArray();
                 for (int index = 0; index < instructions.length; index++) {
-                    if (!(instructions[index] instanceof MethodInsnNode call) || !submits(call) || frames[index] == null) {
+                    if (!(instructions[index] instanceof MethodInsnNode call) || !submits(call) || !which.test(call)
+                            || frames[index] == null) {
                         continue;
                     }
                     Frame<SourceValue> frame = frames[index];

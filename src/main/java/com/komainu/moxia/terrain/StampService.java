@@ -272,13 +272,27 @@ public final class StampService {
             OwnStamps stamps = TerrainService.ownStamps();
             String authorId = owner.toString();
             long created = System.currentTimeMillis();
-            AsyncEngine.submit(owner, "Sello " + name, () -> {
-                StampCapture.Result result = StampCapture.build(name, columns, category, TerrainService.CANCELLATION);
-                OwnStamp meta = new OwnStamp(name, author, authorId, description, created, columns.sizeX(),
-                        columns.sizeZ(), result.above(), result.below(), result.category(), result.hadWater(), source);
+            AsyncEngine.submit(owner, "Sello " + name,
+                    () -> StampCapture.build(name, columns, category, TerrainService.CANCELLATION),
+                    result -> PREVIEWS.execute(() -> save(server, stamps, result, authorId, created)),
+                    throwable -> failed(server, throwable));
+        }
+
+        /**
+         * En el hilo de los sellos, que no se interrumpe: en el cálculo, cualquier otro clic del jugador (o cancelar,
+         * cambiar de dimensión o irse) lo cortaba a medio escribir, y quedaba el PNG sin su JSON.
+         */
+        private void save(MinecraftServer server, OwnStamps stamps, StampCapture.Result result, String authorId,
+                          long created) {
+            OwnStamp meta = new OwnStamp(name, author, authorId, description, created, columns.sizeX(),
+                    columns.sizeZ(), result.above(), result.below(), result.category(), result.hadWater(), source);
+            try {
                 stamps.save(meta, result.stamp(), replace, authorId, manage, OwnStamps.Limits.DEFAULT, unlimited);
-                return result;
-            }, result -> server.execute(() -> {
+            } catch (RuntimeException exception) {
+                failed(server, exception);
+                return;
+            }
+            server.execute(() -> {
                 ServerPlayerEntity current = server.getPlayerManager().getPlayer(owner);
                 if (current != null) {
                     Feedback.ok(current, Text.literal(String.format(Locale.ROOT,
@@ -290,12 +304,16 @@ public final class StampService {
                             .append(Feedback.fix("[describir]", "/komaedit sello describir " + name + " ")));
                 }
                 sendCatalogToAll(server);
-            }), throwable -> server.execute(() -> {
+            });
+        }
+
+        private void failed(MinecraftServer server, Throwable throwable) {
+            server.execute(() -> {
                 ServerPlayerEntity current = server.getPlayerManager().getPlayer(owner);
                 if (current != null && !(throwable instanceof java.util.concurrent.CancellationException)) {
                     Feedback.error(current, "Sello «" + name + "»: " + TerrainService.readable(throwable));
                 }
-            }));
+            });
         }
     }
 
