@@ -178,8 +178,7 @@ public final class LiveService {
     }
 
     private static String readable(Throwable throwable) {
-        String message = throwable.getMessage();
-        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message;
+        return com.komainu.moxia.feedback.FailureReason.of(throwable);
     }
 
     public static void forget(UUID player) {

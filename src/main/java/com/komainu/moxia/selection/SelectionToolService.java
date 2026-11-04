@@ -464,8 +464,7 @@ public final class SelectionToolService {
     }
 
     private static String readable(RuntimeException exception) {
-        String message = exception.getMessage();
-        return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
+        return com.komainu.moxia.feedback.FailureReason.of(exception);
     }
 
     /** Si hay un lazo calculándose para el jugador. */

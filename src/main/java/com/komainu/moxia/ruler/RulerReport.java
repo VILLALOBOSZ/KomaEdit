@@ -46,7 +46,8 @@ public final class RulerReport {
                 lines.add(pending(pending, words));
             }
             case RulerMeasure.Line line -> {
-                lines.add(head + " · " + words.tr("gui.komaedit.ruler.points", line.points().size()));
+                lines.add(head + " · " + words.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.ruler.points", line.points().size()),
+                        line.points().size()));
                 for (int index = 0; index < line.segments().size(); index++) {
                     RulerMeasure.Segment segment = line.segments().get(index);
                     RulerMeasure.Delta delta = segment.delta();

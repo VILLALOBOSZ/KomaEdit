@@ -99,6 +99,30 @@ class CompactModeTest {
                 "con sitio, la descripción sí sale");
     }
 
+    /**
+     * En compacto no hay descripciones, pero sin puntos la Trayectoria dice cómo se pone el primero: hay sitio (no
+     * hay lista) y nada más lo explica.
+     */
+    @Test
+    void anEmptyPathSaysHowToPutTheFirstPoint() {
+        StudioDriver studio = studio(427, 240);
+        studio.view.selectStage(StudioStage.PATH, studio.host);
+        assertTrue(studio.shows("Haz clic en el mundo"), studio.texts().toString());
+    }
+
+    /** Sin ningún plano, la biblioteca vacía explica qué hacer y no se pide elegir uno de una cuadrícula que no hay. */
+    @Test
+    void anEmptyLibraryDoesNotAskToPickFromTheGrid() {
+        StudioDriver studio = studio(427, 240);
+        studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
+        assertFalse(studio.shows("Elige un plano de la cuadrícula"), studio.texts().toString());
+        assertTrue(studio.shows("Aún no hay planos"), studio.texts().toString());
+        StudioDriver some = studio(427, 240);
+        StudioMockupsTest.blueprints(some);
+        some.view.blueprints().select(null);
+        assertTrue(some.shows("Ningún plano elegido"), "con planos, la tarjeta sigue: " + some.texts());
+    }
+
     @Test
     void buttonChoicesBecomeOneRow() {
         StudioDriver studio = studio(427, 240);

@@ -114,7 +114,13 @@ public final class SchematicImport {
         return SchematicNbt.gzip(bytes) || bytes.length > 0 && bytes[0] == NbtElement.COMPOUND_TYPE;
     }
 
+    /**
+     * Lo que se le dice al jugador de un esquema que no se pudo leer: lo que dice el lector de WorldEdit o, si no dice
+     * nada, que está dañado (nunca el nombre de la clase).
+     */
     private static String message(Exception exception) {
-        return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+        String text = exception.getMessage();
+        return text == null || text.isBlank() || exception instanceof NullPointerException
+                ? "el archivo está dañado o no es un esquema de ese formato" : text;
     }
 }

@@ -258,8 +258,9 @@ public final class FigureStages {
                 })
                 .tooltip(host.tr("gui.komaedit.help.path.clear"));
 
-        if (nodes == 0 && !compact) {
-            // Sin puntos, lo primero que hay que saber: cómo se pone uno.
+        if (nodes == 0) {
+            // Sin puntos, lo primero que hay que saber: cómo se pone uno. También en compacto, donde sin puntos sobra
+            // sitio (no hay lista) y no hay otra cosa que lo diga.
             ui.paragraph(column, host.tr("gui.komaedit.path.first"), TEXT_SECONDARY, 0);
         }
         if (nodes >= minimum) {
@@ -371,11 +372,12 @@ public final class FigureStages {
         PathShape shape = draft.shape();
         if (!pathReady(host)) {
             // Lo primero que hay que saber: la figura va por un camino, y sus puntos se ponen con un clic en el mundo.
-            ui.paragraph(column, host.tr("gui.komaedit.figure.need_points", requiredPoints(host)
-                    - host.pathPoints().size()), WARNING, 2);
+            int missing = requiredPoints(host) - host.pathPoints().size();
+            ui.paragraph(column, host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.figure.need_points", missing), missing), WARNING, 2);
         }
         if (!compact) {
-            ui.paragraph(column, host.tr(StudioNames.shapeDescription(shape)), MUTED, 2);
+            // Qué es la figura, entera: es lo que lee quien la elige por primera vez.
+            ui.paragraph(column, host.tr(StudioNames.shapeDescription(shape)), MUTED, 0);
             drawPresets(ui, column, host);
         }
         // Lo esencial a la vista, de arriba abajo: cuánto ocupa, de qué está hecha y cómo cambia a lo largo del
@@ -1082,7 +1084,8 @@ public final class FigureStages {
 
     public String buildLabel(StudioHost host, long now) {
         if (!pathReady(host)) {
-            return host.tr("gui.komaedit.build.missing", requiredPoints(host) - host.pathPoints().size());
+            int missing = requiredPoints(host) - host.pathPoints().size();
+            return host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.build.missing", missing), missing);
         }
         return estimate.armed(now) ? host.tr("gui.komaedit.build_confirm") : host.tr("gui.komaedit.build");
     }

@@ -176,12 +176,7 @@ public final class NatureService {
     }
 
     private static String readable(Throwable throwable) {
-        Throwable current = throwable;
-        while (current.getCause() != null && (current.getMessage() == null || current.getMessage().isBlank())) {
-            current = current.getCause();
-        }
-        String text = current.getMessage();
-        return text == null || text.isBlank() ? current.getClass().getSimpleName() : text;
+        return com.komainu.moxia.feedback.FailureReason.of(throwable);
     }
 
     private static NatureOperation trees(ServerPlayerEntity player, TreeSettings settings, List<BlockPos> points,

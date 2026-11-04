@@ -66,7 +66,7 @@ public final class AnalyzeService {
                 return new Output(report, file, null);
             } catch (IOException exception) {
                 KomaEditMod.LOGGER.warn("Could not write material list {}", file, exception);
-                return new Output(report, null, exception.getMessage());
+                return new Output(report, null, "el detalle está en el registro del servidor");
             }
         }, (current, output) -> show(current, output, lines));
     }

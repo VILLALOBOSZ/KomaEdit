@@ -139,7 +139,11 @@ public final class BlueprintStage {
         // «Al servidor» solo sale en los planos propios: su sitio cuenta si hay alguno, para que la tarjeta no salte.
         boolean shareable = host.blueprints().canShare()
                 && shown.stream().anyMatch(blueprint -> blueprint.mine() && !blueprint.shared());
-        actions(ui, column, host, current, compact, shareable);
+        // Sin ningún plano todavía, «Elige un plano de la cuadrícula» no tiene cuadrícula a la que mirar: lo que
+        // explica qué hacer es la biblioteca vacía, debajo.
+        if (!catalog.list().isEmpty()) {
+            actions(ui, column, host, current, compact, shareable);
+        }
         pasteCode(ui, column, host);
         importFile(ui, column, host);
 
@@ -253,11 +257,14 @@ public final class BlueprintStage {
                 shareable ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0,
                 ui.chipWidth(host.tr("gui.komaedit.share.button")), exportWidth(ui, host)};
         int extra = (buttonRows(worst, column.width() - 12) - 1) * BUTTON_PITCH;
-        Rect card = column.next((compact ? 30 : 42) + extra);
-        ui.fill(card, FIELD);
         Set<String> tags = activeTags();
         String tag = tags.size() == 1 ? "#" + tags.iterator().next() : null;
         boolean stamp = host.blueprints().canStamp();
+        // Sin plano elegido, qué hacer, entero: en las líneas que haga falta.
+        List<String> pick = current == null && (tag == null || !stamp)
+                ? ui.wrap(host.tr("gui.komaedit.blueprint.pick"), column.width() - 16) : List.of();
+        Rect card = column.next(Math.max((compact ? 30 : 42) + extra, 20 + pick.size() * StudioUi.LINE));
+        ui.fill(card, FIELD);
         if (current == null) {
             ui.label(host.tr("gui.komaedit.blueprint.selected_none"), card.x() + 8, card.y() + 5, card.width() - 16,
                     TEXT_SECONDARY);
@@ -270,8 +277,10 @@ public final class BlueprintStage {
                         .tooltip(label + "\n" + host.tr("gui.komaedit.help.blueprint.stamp_tag", tag))
                         .onClick(() -> stamp(host, tag));
             } else {
-                ui.label(host.tr("gui.komaedit.blueprint.pick"), card.x() + 8, card.y() + 17, card.width() - 16,
-                        MUTED);
+                for (int index = 0; index < pick.size(); index++) {
+                    ui.label(pick.get(index), card.x() + 8, card.y() + 17 + index * StudioUi.LINE, card.width() - 16,
+                            MUTED);
+                }
             }
             return;
         }

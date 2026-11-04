@@ -244,6 +244,11 @@ public final class FakeStudioHost implements StudioHost {
         return out.toString();
     }
 
+    /** Las traducciones del idioma de esta prueba. */
+    public Map<String, String> translations() {
+        return lang;
+    }
+
     @Override
     public String tr(String key, Object... arguments) {
         String pattern = lang.get(key);

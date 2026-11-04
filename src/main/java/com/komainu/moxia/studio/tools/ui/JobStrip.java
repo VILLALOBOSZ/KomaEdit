@@ -43,7 +43,7 @@ public final class JobStrip {
         List<String> segments = new ArrayList<>();
         if (line.phase() == ProgressLine.Phase.WAITING) {
             // En la espera, done es lo que queda y total el plazo, en milisegundos.
-            segments.add(actions.tr("gui.komaedit.job.changes", ProgressLine.group(changes)));
+            segments.add(actions.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.job.changes", changes), ProgressLine.group(changes)));
             segments.add(actions.tr("gui.komaedit.job.expires", ProgressLine.duration(line.done() / 1_000.0)));
             segments.add(line.title());
             return segments;

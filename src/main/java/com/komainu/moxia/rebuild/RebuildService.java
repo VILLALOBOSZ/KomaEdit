@@ -555,7 +555,8 @@ public final class RebuildService {
                 };
             } catch (RuntimeException exception) {
                 KomaEditMod.LOGGER.error("Rebuild failed for {}", owner, exception);
-                fail(exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage());
+                fail(com.komainu.moxia.feedback.FailureReason.of(exception, (text, failure) -> {
+                }));
                 return false;
             }
         }

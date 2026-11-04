@@ -809,7 +809,8 @@ public final class DisplayEditorClient {
         if (selection.isEmpty()) {
             line.append(Text.translatable("gui.komaedit.display.hud.empty").formatted(Formatting.GRAY));
         } else {
-            line.append(Text.translatable("gui.komaedit.display.hud.selected", selection.size())
+            line.append(Text.translatable(com.komainu.moxia.studio.Plural.key("gui.komaedit.display.hud.selected", selection.size()),
+                            selection.size())
                     .formatted(Formatting.AQUA));
             if (grouped > 0) {
                 line.append(Text.literal(" ").append(Text.translatable("gui.komaedit.display.hud.grouped"))

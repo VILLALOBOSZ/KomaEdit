@@ -406,12 +406,7 @@ public final class ImageService {
     // ---------------------------------------------------------------- Mensajes
 
     static String readable(Throwable throwable) {
-        Throwable cause = throwable;
-        while (cause.getCause() != null && cause.getMessage() == null) {
-            cause = cause.getCause();
-        }
-        String message = cause.getMessage();
-        return message == null || message.isBlank() ? cause.getClass().getSimpleName() : message;
+        return com.komainu.moxia.feedback.FailureReason.of(throwable);
     }
 
     /** Informativo: no sale con {@code /komaedit quiet}. */

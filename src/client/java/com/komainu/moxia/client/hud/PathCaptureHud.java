@@ -60,8 +60,8 @@ public final class PathCaptureHud {
         int count = payload.points().size();
         state = new State(
                 true,
-                Text.translatable(payload.closed() ? "hud.komaedit.path.status.closed" : "hud.komaedit.path.status",
-                        count),
+                Text.translatable(com.komainu.moxia.studio.Plural.key(payload.closed() ? "hud.komaedit.path.status.closed"
+                        : "hud.komaedit.path.status", count), count),
                 Text.translatable(payload.closed() ? "hud.komaedit.path.closed" : "hud.komaedit.path.open"),
                 Text.translatable("hud.komaedit.path.hint"),
                 List.copyOf(lines),

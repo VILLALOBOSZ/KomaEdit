@@ -218,7 +218,7 @@ public final class SuperwandManager {
                 sync(player, state, null);
             } catch (RuntimeException exception) {
                 state.grab = null;
-                player.sendMessage(message("Supervarita: " + exception.getMessage(), Formatting.RED), true);
+                player.sendMessage(message("Supervarita: " + com.komainu.moxia.feedback.FailureReason.of(exception), Formatting.RED), true);
             }
         }
     }

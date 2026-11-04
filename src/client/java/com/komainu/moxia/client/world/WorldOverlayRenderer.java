@@ -197,8 +197,8 @@ public final class WorldOverlayRenderer {
                 if (currentSelection.complete()) {
                     WorldLabels.dimensions(context, box, SELECTION & 0xFFFFFF);
                     if (blocks != null) {
-                        WorldLabels.draw(context, Text.translatable("gui.komaedit.world.blocks",
-                                        ProgressLine.group(blocks.count())).getString(),
+                        WorldLabels.draw(context, Text.translatable(com.komainu.moxia.studio.Plural.key("gui.komaedit.world.blocks",
+                                        blocks.count()), ProgressLine.group(blocks.count())).getString(),
                                 (box.minX + box.maxX) / 2.0, box.maxY + 0.6, (box.minZ + box.maxZ) / 2.0,
                                 SELECTION & 0xFFFFFF);
                     } else if (SHAPES.contains(currentSelection.shape())) {

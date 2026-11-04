@@ -489,10 +489,7 @@ public final class ShareService {
     }
 
     private static void report(MinecraftServer current, UUID id, String what, Exception exception) {
-        String detail = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
-        if (!(exception instanceof IllegalArgumentException)) {
-            KomaEditMod.LOGGER.warn("KomaEdit share error: {}", detail, exception);
-        }
+        String detail = com.komainu.moxia.feedback.FailureReason.of(exception);
         current.execute(() -> {
             ServerPlayerEntity online = current.getPlayerManager().getPlayer(id);
             if (online != null) {

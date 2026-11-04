@@ -996,7 +996,9 @@ public final class ToolsPanel {
             }
             case ToolParam.Toggle toggle -> {
                 boolean on = current().toggle(toggle.id());
-                ui.toggle(column.next(row), label(host, toggle), on, !current().isDefault(toggle.id()))
+                String name = label(host, toggle);
+                ui.toggle(column.next(ui.toggleHeight(row, column.width(), name)), name, on,
+                                !current().isDefault(toggle.id()))
                         .tooltip(help(host, card, toggle))
                         .hint(host.tr("gui.komaedit.hint.toggle"))
                         .group("tools:" + toggle.id())
@@ -1036,11 +1038,11 @@ public final class ToolsPanel {
     }
 
     private void drawNumber(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Number number) {
-        Rect row = column.next(this.row);
+        NumberView view = numberView(host, card, number);
+        Rect row = column.next(ui.stepperHeight(this.row, column.width(), label(host, number), view.shortValue()));
         if (!ui.visible(row)) {
             return;
         }
-        NumberView view = numberView(host, card, number);
         String defaultText = number.auto() ? host.tr("gui.komaedit.tools.auto")
                 : number.unit().format(number.defaultValue(), number.decimals(), host::tr);
         String key = "tools:number:" + number.id();
@@ -1078,13 +1080,19 @@ public final class ToolsPanel {
 
     private void drawCycle(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
                            ToolsInfo info) {
-        Rect row = column.next(this.row);
+        List<String> options = options(choice, info);
+        String value = current().choice(choice.id());
+        // La opción más larga fija el sitio del valor: las flechas no se mueven al recorrerlas.
+        int widest = ui.width(optionLabel(choice, value, host));
+        for (String option : options) {
+            widest = Math.max(widest, ui.width(optionLabel(choice, option, host)));
+        }
+        String name = label(host, choice);
+        Rect row = column.next(ui.cycleHeight(this.row, column.width(), name, widest));
         if (!ui.visible(row)) {
             return;
         }
-        List<String> options = options(choice, info);
-        String value = current().choice(choice.id());
-        ui.cycle(row, label(host, choice), optionLabel(choice, value, host), !current().isDefault(choice.id()),
+        ui.cycle(row, name, optionLabel(choice, value, host), widest, !current().isDefault(choice.id()),
                         direction -> {
                             int index = Math.max(0, options.indexOf(current().choice(choice.id())));
                             set(current().with(choice.id(),
@@ -1289,9 +1297,7 @@ public final class ToolsPanel {
         String chosenName = ownChosen ? customText : value;
         int pageIndex = Math.clamp(pages.computeIfAbsent(pageKey, ignored -> Math.max(0, page.indexOf(chosenName))
                 / perPage), 0, pageCount - 1);
-        String tabLabel = tab.equals(StampGallery.FAVORITES) ? host.tr("gui.komaedit.tools.stamp.favorites")
-                : tab.equals(StampGallery.MINE) ? host.tr("gui.komaedit.tools.stamp.mine")
-                : host.tr("gui.komaedit.tools.stamp.category." + tab);
+        String tabLabel = stampTabLabel(host, tab);
 
         if (!compact) {
             column.section();
@@ -1342,7 +1348,13 @@ public final class ToolsPanel {
                     .onClick(() -> field = Field.STAMP);
             if (!searching) {
                 String current = tab;
-                ui.cycle(column.next(this.row), host.tr("gui.komaedit.tools.stamp.category"), tabLabel,
+                String category = host.tr("gui.komaedit.tools.stamp.category");
+                int widest = ui.width(tabLabel);
+                for (String each : tabs) {
+                    widest = Math.max(widest, ui.width(stampTabLabel(host, each)));
+                }
+                ui.cycle(column.next(ui.cycleHeight(this.row, column.width(), category, widest)), category, tabLabel,
+                                widest, false,
                                 direction -> stampTab = tabs.get(Math.floorMod(tabs.indexOf(current) + direction,
                                         tabs.size())))
                         .tooltip(host.tr("gui.komaedit.tools.stamp.category.help"))
@@ -1561,10 +1573,15 @@ public final class ToolsPanel {
                 .tooltip(help(host, card, choice))
                 .onClick(() -> field = Field.BIOME);
         if (matches.isEmpty()) {
-            Rect empty = column.next(SMALL_ROW);
+            String text = host.tr(info.biomes().isEmpty() ? "gui.komaedit.tools.biome.none"
+                    : "gui.komaedit.tools.search.empty");
+            List<String> lines = ui.wrap(text, column.width() - 16);
+            Rect empty = column.next(SMALL_ROW - StudioUi.LINE + lines.size() * StudioUi.LINE);
             ui.fill(empty, CARD);
-            ui.label(host.tr(info.biomes().isEmpty() ? "gui.komaedit.tools.biome.none"
-                    : "gui.komaedit.tools.search.empty"), empty.x() + 8, empty.y() + 4, empty.width() - 16, MUTED);
+            for (int index = 0; index < lines.size(); index++) {
+                ui.label(lines.get(index), empty.x() + 8, empty.y() + 4 + index * StudioUi.LINE, empty.width() - 16,
+                        MUTED);
+            }
             return;
         }
         for (String option : matches) {
@@ -1606,11 +1623,13 @@ public final class ToolsPanel {
         return matches;
     }
 
+    private static String stampTabLabel(Host host, String tab) {
+        return tab.equals(StampGallery.FAVORITES) ? host.tr("gui.komaedit.tools.stamp.favorites")
+                : tab.equals(StampGallery.MINE) ? host.tr("gui.komaedit.tools.stamp.mine")
+                : host.tr("gui.komaedit.tools.stamp.category." + tab);
+    }
+
     private void drawBlock(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Block block) {
-        Rect row = column.next(this.row);
-        if (!ui.visible(row)) {
-            return;
-        }
         String value = current().block(block.id());
         String hint = card.autoHint(block.id(), current());
         String shown = value != null ? firstBlock(value) : hint != null ? firstBlock(hint) : null;
@@ -1625,6 +1644,10 @@ public final class ToolsPanel {
             name = described.equals(autoKey) ? host.tr("gui.komaedit.tools.block.none") : described;
         }
         String label = label(host, block);
+        Rect row = column.next(ui.blockRowHeight(this.row, column.width(), label, name));
+        if (!ui.visible(row)) {
+            return;
+        }
         String title = host.tr("gui.komaedit.blocks.for", host.tr(card.nameKey()), label);
         StudioUi.Widget[] zones = ui.blockRow(row, new StudioUi.BlockRow(label, shown, name, value == null,
                 !current().isDefault(block.id()),
@@ -1689,7 +1712,7 @@ public final class ToolsPanel {
         boolean editing = field == Field.TEXT && fieldParam.equals(text.id());
         String value = editing ? input : current().text(text.id());
         String hint = card.autoHint(text.id(), current());
-        String placeholder = hint != null ? hint : host.tr(text.placeholderKey());
+        String placeholder = hint != null ? fitList(ui, hint, box.width() - 12) : host.tr(text.placeholderKey());
         ui.field(box, value, placeholder, editing, false)
                 .key("tools:text:" + text.id())
                 .tooltip(help(host, card, text))
@@ -1704,6 +1727,21 @@ public final class ToolsPanel {
                     input = current().text(text.id());
                     host.status(host.tr("gui.komaedit.tools.status.typing"));
                 });
+    }
+
+    /** Una lista de serie que no cabe en el campo: las primeras que caben y «+N» con las que faltan. */
+    static String fitList(StudioUi ui, String list, int width) {
+        String[] parts = list.split(",");
+        if (ui.width(list) <= width || parts.length < 2) {
+            return list;
+        }
+        for (int shown = parts.length - 1; shown >= 1; shown--) {
+            String text = String.join(",", java.util.Arrays.copyOf(parts, shown)) + " +" + (parts.length - shown);
+            if (ui.width(text) <= width) {
+                return text;
+            }
+        }
+        return list;
     }
 
     // ── Acciones y materiales ───────────────────────────────────────────────────────────────────────────
@@ -1857,16 +1895,21 @@ public final class ToolsPanel {
 
     private void drawSymmetryState(StudioUi ui, Column column, Host host, ToolsInfo info) {
         ToolsInfo.Symmetry symmetry = info.symmetry();
-        Rect card = column.next(30);
-        ui.fill(card, CARD);
-        ui.fill(card.left(2), symmetry.active() ? SUCCESS : DISABLED);
         String state = host.tr(symmetry.active() ? "gui.komaedit.tools.symmetry.on"
                 : "gui.komaedit.tools.symmetry.off", symmetry.mode());
-        ui.bold(state, card.x() + 8, card.y() + 5, card.width() - 16, symmetry.active() ? SUCCESS : TEXT_SECONDARY);
         String center = symmetry.center().isEmpty() ? host.tr("gui.komaedit.tools.symmetry.no_center")
                 : host.tr(symmetry.elsewhere() ? "gui.komaedit.tools.symmetry.center_elsewhere"
                 : "gui.komaedit.tools.symmetry.center", symmetry.center());
-        ui.label(center, card.x() + 8, card.y() + 17, card.width() - 16, symmetry.elsewhere() ? WARNING : MUTED);
+        // Dónde está el centro, entero: en las líneas que haga falta.
+        List<String> lines = ui.wrap(center, column.width() - 16);
+        Rect card = column.next(20 + lines.size() * StudioUi.LINE);
+        ui.fill(card, CARD);
+        ui.fill(card.left(2), symmetry.active() ? SUCCESS : DISABLED);
+        ui.bold(state, card.x() + 8, card.y() + 5, card.width() - 16, symmetry.active() ? SUCCESS : TEXT_SECONDARY);
+        for (int index = 0; index < lines.size(); index++) {
+            ui.label(lines.get(index), card.x() + 8, card.y() + 17 + index * StudioUi.LINE, card.width() - 16,
+                    symmetry.elsewhere() ? WARNING : MUTED);
+        }
         ui.register(card).tooltip(state + "\n" + center);
     }
 
@@ -2007,9 +2050,11 @@ public final class ToolsPanel {
                     ? host.tr("gui.komaedit.tools.footer.selection", info.selection()[0], info.selection()[1],
                     info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
             case PATH_OR_LOOK -> context.pathPoints() > 0
-                    ? host.tr("gui.komaedit.tools.footer.points", context.pathPoints()) : clicked(host);
+                    ? host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.tools.footer.points", context.pathPoints()),
+                    context.pathPoints()) : clicked(host);
             case PATH_OR_SELECTION -> context.pathPoints() > 0
-                    ? host.tr("gui.komaedit.tools.footer.points", context.pathPoints())
+                    ? host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.tools.footer.points", context.pathPoints()),
+                    context.pathPoints())
                     : host.tr(info.hasSelection() ? "gui.komaedit.tools.footer.selection_short"
                     : "gui.komaedit.tools.footer.no_selection");
             case LOOK -> clicked(host);
@@ -2035,7 +2080,8 @@ public final class ToolsPanel {
                     info.selection()[1], info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
         }
         HotbarDeck deck = host.hotbars();
-        return host.tr("gui.komaedit.tools.hotbars.footer", deck == null ? 0 : deck.size());
+        int saved = deck == null ? 0 : deck.size();
+        return host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.tools.hotbars.footer", saved), saved);
     }
 
     /** «Montaña · Sumar · semilla 4217»: el sello, el modo de mezcla y la semilla que llevará el pincel. */
