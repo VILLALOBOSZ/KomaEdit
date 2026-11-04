@@ -76,8 +76,7 @@ public final class UndoGuard {
                     + " cancel";
         }
         return "«" + name + "» aún se está colocando y no está en el historial: deshacer quitaría la edición de antes"
-                + " (y al acabar esta ya no se podría rehacer). Espera a que acabe o párala con /komaedit cancel;"
-                + " después, //undo la deshace";
+                + " (y al acabar esta ya no se podría rehacer). Espera a que acabe o párala con /komaedit cancel";
     }
 
     /**
