@@ -125,6 +125,7 @@ public final class FakeStudioHost implements StudioHost {
     public List<ProceduralRecipe> recipes = new ArrayList<>();
     public List<ProceduralInstanceSummary> instances = new ArrayList<>();
     public final FakeBlueprints blueprints = new FakeBlueprints();
+    public final FakeOwnStamps ownStamps = new FakeOwnStamps();
     public Consumer<String> picker;
     /** Lo que hay en el portapapeles. */
     public String clipboard = "";
@@ -527,6 +528,57 @@ public final class FakeStudioHost implements StudioHost {
         ShareCodePayload current = shareResult;
         shareResult = null;
         return Optional.ofNullable(current);
+    }
+
+    @Override
+    public com.komainu.moxia.studio.tools.ui.OwnStampShelf ownStamps() {
+        return ownStamps;
+    }
+
+    /** Sellos propios de mentira, con su relieve para pintar la miniatura. */
+    public static final class FakeOwnStamps implements com.komainu.moxia.studio.tools.ui.OwnStampShelf {
+        public boolean received = true;
+        public boolean canCapture = true;
+        public final List<com.komainu.moxia.terrain.OwnStampSummary> list = new ArrayList<>();
+        public final Map<String, StudioImage> thumbnails = new LinkedHashMap<>();
+        public int refreshes;
+
+        public void add(com.komainu.moxia.terrain.OwnStampSummary summary,
+                        com.komainu.moxia.terrain.HeightStamp stamp) {
+            list.add(summary);
+            int side = ChoiceThumbnails.SIZE;
+            int[] pixels = com.komainu.moxia.terrain.stamp.StampThumbnails.argb(stamp, summary.category(),
+                    summary.heightRatio(), side);
+            thumbnails.put(summary.hash(), StudioImage.of("own:" + summary.hash(), side, side, () -> pixels));
+            // Como en el cliente: la tarjeta saca de aquí la altura natural de cada sello propio.
+            com.komainu.moxia.terrain.OwnStampIndex.replace(list.stream()
+                    .map(com.komainu.moxia.terrain.OwnStampSummary::info).toList());
+        }
+
+        @Override
+        public boolean received() {
+            return received;
+        }
+
+        @Override
+        public List<com.komainu.moxia.terrain.OwnStampSummary> list() {
+            return list;
+        }
+
+        @Override
+        public StudioImage thumbnail(com.komainu.moxia.terrain.OwnStampSummary stamp) {
+            return thumbnails.get(stamp.hash());
+        }
+
+        @Override
+        public boolean canCapture() {
+            return canCapture;
+        }
+
+        @Override
+        public void refresh(boolean force) {
+            refreshes++;
+        }
     }
 
     /** Planos de mentira, con miniaturas ya hechas. */

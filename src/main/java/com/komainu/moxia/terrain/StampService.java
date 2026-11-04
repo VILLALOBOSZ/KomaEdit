@@ -357,10 +357,10 @@ public final class StampService {
             return;
         }
         String viewer = player.getUuid().toString();
-        List<StampPayloads.Summary> summaries = new ArrayList<>();
+        List<OwnStampSummary> summaries = new ArrayList<>();
         for (OwnStamps.Entry entry : TerrainService.ownStamps().list()) {
             OwnStamp meta = entry.meta();
-            summaries.add(new StampPayloads.Summary(entry.name(), meta.author(), meta.description(), meta.category(),
+            summaries.add(new OwnStampSummary(entry.name(), meta.author(), meta.description(), meta.category(),
                     (float) meta.heightRatio(), (float) entry.neutral(), entry.hash(), meta.sizeX(), meta.sizeZ(),
                     meta.ownedBy(viewer)));
         }

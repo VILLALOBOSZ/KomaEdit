@@ -480,6 +480,14 @@ public final class TerrainCards {
             return List.of(new ToolAction("estimate", List.of(), false, values -> command(values, false) + " -e"));
         }
 
+        /** Sin trayectoria ni selección, un aviso corto que dice qué hacer (cabe entero en el aviso de la tarjeta). */
+        @Override
+        public ToolProblem requirement(ToolValues values, ToolContext context) {
+            ToolProblem problem = super.requirement(values, context);
+            return problem != null && problem.id().equals("no_path_or_selection")
+                    ? ToolProblem.error("no_path_landform") : problem;
+        }
+
         @Override
         public List<ToolPreset> presets() {
             return List.of(

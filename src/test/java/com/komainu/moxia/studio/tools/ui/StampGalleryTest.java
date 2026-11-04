@@ -12,6 +12,9 @@ import com.komainu.moxia.studio.ui.StudioDriver;
 import com.komainu.moxia.studio.ui.StudioKey;
 import com.komainu.moxia.studio.ui.StudioStage;
 import com.komainu.moxia.studio.ui.StudioView;
+import com.komainu.moxia.terrain.OwnStampFixtures;
+import com.komainu.moxia.terrain.OwnStampSummary;
+import com.komainu.moxia.terrain.stamp.StampCategory;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -29,9 +32,11 @@ class StampGalleryTest {
 
     @Test
     void tabsAreTheCategoriesAndFavouritesOnceThereAreSome() {
-        assertEquals(14, StampGallery.tabs(List.of()).size());
+        // «Míos» y las 14 categorías.
+        assertEquals(15, StampGallery.tabs(List.of()).size());
+        assertEquals(StampGallery.MINE, StampGallery.tabs(List.of()).getFirst());
         assertEquals(StampGallery.FAVORITES, StampGallery.tabs(List.of("pico")).getFirst());
-        assertEquals(14, StampGallery.tabs(List.of("no_es_de_serie")).size(), "un favorito que ya no existe no cuenta");
+        assertEquals(15, StampGallery.tabs(List.of("no_es_de_serie")).size(), "un favorito que ya no existe no cuenta");
         assertEquals("volcanes", StampGallery.tabOf("cono_ceniza"));
         assertEquals(List.of("duna", "dunas", "duna_estrella", "duna_lineal", "duna_parabolica", "barjanes"),
                 StampGallery.visible("", "dunas", List.of(), NO_TRANSLATION));
@@ -48,6 +53,57 @@ class StampGalleryTest {
         assertTrue(StampGallery.visible("zzz", "", List.of(), NO_TRANSLATION).isEmpty());
         assertEquals(List.of("tor"), StampGallery.visible("x", "", List.of(),
                 name -> name.equals("tor") ? "x" : ""), "también en el idioma del juego");
+    }
+
+    private static OwnStampSummary own(String name, String author, String description) {
+        return new OwnStampSummary(name, author, description, StampCategory.MOUNTAINS, 0.9f, 0.0f, "h-" + name, 120,
+                90, false);
+    }
+
+    @Test
+    void ownStampsHaveTheirTabAreSearchedAndCanBeFavourites() {
+        List<OwnStampSummary> own = List.of(own("cumbres_de_ana", "Ana", "Encima del pueblo"),
+                own("valle_norte", "Luis", "El valle del río"));
+        assertEquals(List.of("cumbres_de_ana", "valle_norte"), StampGallery.visible("", StampGallery.MINE, List.of(),
+                NO_TRANSLATION, own));
+        assertEquals(List.of("valle_norte"), StampGallery.visible("luis", "", List.of(), NO_TRANSLATION, own),
+                "se busca también por el autor");
+        assertTrue(StampGallery.visible("pueblo", "", List.of(), NO_TRANSLATION, own).contains("cumbres_de_ana"));
+        assertEquals(StampGallery.FAVORITES, StampGallery.tabs(List.of("valle_norte"), own).getFirst(),
+                "un propio favorito abre «Favoritos»");
+        assertEquals(List.of("valle_norte"), StampGallery.visible("", StampGallery.FAVORITES,
+                List.of("valle_norte"), NO_TRANSLATION, own));
+        assertEquals(StampGallery.MINE, StampGallery.tabOf("montana", "valle_norte", own));
+        assertEquals("montanas", StampGallery.tabOf("montana", "", own));
+    }
+
+    @Test
+    void inTheStudioMineListsTheServerStampsAndCapturesTheSelection() {
+        StudioDriver studio = studio();
+        ToolsPanel panel = studio.view.tools();
+        ToolCard card = ToolCatalog.byId("stamp");
+        var peaks = OwnStampFixtures.peaks();
+        studio.host.ownStamps.add(OwnStampFixtures.summary(peaks, "Ana", "Encima del pueblo", 140, 140, true),
+                peaks.stamp());
+        panel.setValues(card, panel.values(card).with("custom", "cumbres_de_ana"));
+        studio.render();
+        assertTrue(studio.has("Míos"), "un sello propio elegido abre «Míos»: " + studio.texts());
+        assertTrue(studio.shows("Guardar la selección como sello"), studio.texts().toString());
+        // La altura natural es la de verdad: unos 68 bloques en 70 de radio, para un radio de 12 unos 12.
+        assertTrue(studio.shows("auto · 12 bloques"), studio.texts().toString());
+        studio.clickKey("tools:stamp_capture");
+        assertTrue(studio.shows("mio_1"), "propone un nombre libre: " + studio.texts());
+        studio.key(StudioKey.of(StudioKey.Code.ENTER));
+        assertEquals("komaedit sello capturar mio_1", studio.host.sent.getLast());
+        // Cuando llega al catálogo queda elegido.
+        studio.host.ownStamps.add(OwnStampFixtures.summary(OwnStampFixtures.cove(), "Ana", "", 120, 120, true)
+                .withName("mio_1"), OwnStampFixtures.cove().stamp());
+        studio.render();
+        assertEquals("mio_1", panel.values(card).text("custom"));
+        // Sin selección, el botón dice por qué no.
+        studio.host.info = ToolsInfo.EMPTY;
+        studio.clickKey("tools:stamp_capture");
+        assertTrue(studio.host.status.startsWith("Selecciona primero"), studio.host.status);
     }
 
     private static StudioDriver studio() {

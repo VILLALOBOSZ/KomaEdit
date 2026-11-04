@@ -395,6 +395,11 @@ public final class ClientStudioHost implements StudioHost {
         return BLUEPRINTS;
     }
 
+    @Override
+    public com.komainu.moxia.studio.tools.ui.OwnStampShelf ownStamps() {
+        return com.komainu.moxia.client.terrain.ClientStampCatalog.SHELF;
+    }
+
     private static final Blueprints BLUEPRINTS = new Blueprints() {
         @Override
         public boolean received() {

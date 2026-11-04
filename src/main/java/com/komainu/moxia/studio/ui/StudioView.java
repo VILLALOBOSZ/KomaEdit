@@ -2208,6 +2208,11 @@ public final class StudioView {
         }
 
         @Override
+        public com.komainu.moxia.studio.tools.ui.OwnStampShelf ownStamps() {
+            return host.ownStamps();
+        }
+
+        @Override
         public boolean hotbarAutosave() {
             return host.hotbarAutosave();
         }
