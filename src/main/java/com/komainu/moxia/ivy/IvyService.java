@@ -293,12 +293,7 @@ public final class IvyService {
     }
 
     private static String readable(Throwable throwable) {
-        Throwable current = throwable;
-        while (current.getCause() != null && (current.getMessage() == null || current.getMessage().isBlank())) {
-            current = current.getCause();
-        }
-        String message = current.getMessage();
-        return message == null || message.isBlank() ? current.getClass().getSimpleName() : message;
+        return com.komainu.moxia.feedback.FailureReason.of(throwable);
     }
 
     private record Seeds(List<IvyGrower.Point> points, String source) {

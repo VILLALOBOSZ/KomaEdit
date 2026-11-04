@@ -133,7 +133,7 @@ public final class KomaEditMod implements ModInitializer {
                 return ActionResult.SUCCESS;
             } catch (Exception exception) {
                 serverPlayer.sendMessage(Feedback.line(Feedback.Level.ERROR,
-                        exception.getMessage() == null ? "No se pudo estampar" : exception.getMessage()), true);
+                        "No se pudo estampar: " + com.komainu.moxia.feedback.FailureReason.of(exception)), true);
                 return ActionResult.FAIL;
             }
         });

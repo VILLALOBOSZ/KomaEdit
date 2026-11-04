@@ -478,11 +478,7 @@ public final class RecipeBuildService {
     }
 
     private static String readable(Throwable throwable) {
-        Throwable current = throwable;
-        while (current.getCause() != null && current.getMessage() == null) {
-            current = current.getCause();
-        }
-        return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage();
+        return com.komainu.moxia.feedback.FailureReason.of(throwable);
     }
 
     private record PlanBundle(

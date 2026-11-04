@@ -305,8 +305,9 @@ public final class BlueprintService {
         try {
             clipboard = read(entry);
         } catch (IOException exception) {
-            throw new IllegalArgumentException("No se pudo leer el plano " + entry.reference() + ": "
-                    + exception.getMessage());
+            KomaEditMod.LOGGER.warn("KomaEdit could not read blueprint {}", entry.reference(), exception);
+            throw new IllegalArgumentException("No se pudo leer el plano " + entry.reference()
+                    + ": el archivo falta o está dañado (el detalle está en el registro del servidor)");
         }
         long blocks = clipboard.getRegion().getVolume();
         Cached cached = new Cached(clipboard, blocks, new BlueprintTemplate[1]);
@@ -484,10 +485,7 @@ public final class BlueprintService {
     }
 
     static void report(MinecraftServer server, UUID playerId, String what, Exception exception) {
-        String detail = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
-        if (!(exception instanceof IllegalArgumentException) && !(exception instanceof WorldEditException)) {
-            KomaEditMod.LOGGER.warn("KomaEdit blueprint error: {}", detail, exception);
-        }
+        String detail = com.komainu.moxia.feedback.FailureReason.of(exception);
         server.execute(() -> {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerId);
             if (player != null) {

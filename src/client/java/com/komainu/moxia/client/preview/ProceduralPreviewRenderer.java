@@ -544,7 +544,7 @@ public final class ProceduralPreviewRenderer {
     }
 
     private static String readable(Throwable throwable) {
-        return throwable.getMessage() == null ? throwable.getClass().getSimpleName() : throwable.getMessage();
+        return com.komainu.moxia.feedback.FailureReason.client(throwable);
     }
 
     private record PreviewRequest(

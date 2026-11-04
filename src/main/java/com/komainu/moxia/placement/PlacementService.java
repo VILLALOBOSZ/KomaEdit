@@ -885,11 +885,11 @@ public final class PlacementService {
 
     static String readable(Throwable throwable) {
         Throwable cause = throwable;
-        while (cause.getCause() != null && (cause.getMessage() == null || cause instanceof RuntimeException
-                && cause.getCause() instanceof IllegalArgumentException)) {
+        while (cause.getCause() != null && cause instanceof RuntimeException
+                && cause.getCause() instanceof IllegalArgumentException) {
             cause = cause.getCause();
         }
-        return cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage();
+        return com.komainu.moxia.feedback.FailureReason.of(cause);
     }
 
     /** Para la ayuda: los nombres de las formas de {@code Shape}. */

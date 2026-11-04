@@ -635,7 +635,7 @@ public final class BatchEditService {
     }
 
     private static String readableMessage(Throwable throwable) {
-        return throwable.getMessage() == null ? throwable.getClass().getSimpleName() : throwable.getMessage();
+        return com.komainu.moxia.feedback.FailureReason.of(throwable);
     }
 
     @FunctionalInterface

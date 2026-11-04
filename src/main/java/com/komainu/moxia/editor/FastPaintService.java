@@ -189,7 +189,7 @@ public final class FastPaintService {
     }
 
     private static String readable(Throwable throwable) {
-        return throwable.getMessage() == null ? throwable.getClass().getSimpleName() : throwable.getMessage();
+        return com.komainu.moxia.feedback.FailureReason.of(throwable);
     }
 
     private static final class Stroke {

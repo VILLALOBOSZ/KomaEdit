@@ -150,8 +150,10 @@ public final class ImageDecoder {
         return reader;
     }
 
+    /** Lo que se le dice al jugador de una imagen que no se pudo leer: sin textos de Java ni nombres de clase. */
     private static String reason(Exception exception) {
-        String message = exception.getMessage();
-        return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
+        return com.komainu.moxia.feedback.FailureReason.usage(exception)
+                ? com.komainu.moxia.feedback.FailureReason.of(exception)
+                : "el archivo está dañado o no es una imagen de ese formato";
     }
 }

@@ -53,7 +53,7 @@ public final class GlassGradientService {
                 throwable -> server.execute(() -> {
                     ServerPlayerEntity current = server.getPlayerManager().getPlayer(playerId);
                     if (current != null && !(throwable instanceof java.util.concurrent.CancellationException)) {
-                        current.sendMessage(prefix().append(Text.literal("Vidriera: " + throwable.getMessage())
+                        current.sendMessage(prefix().append(Text.literal("Vidriera: " + com.komainu.moxia.feedback.FailureReason.of(throwable))
                                 .formatted(Formatting.RED)), false);
                     }
                 })

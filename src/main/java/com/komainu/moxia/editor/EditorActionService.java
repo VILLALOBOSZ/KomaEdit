@@ -300,7 +300,6 @@ public final class EditorActionService {
     }
 
     private static String readable(Exception exception) {
-        String message = exception.getMessage();
-        return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
+        return com.komainu.moxia.feedback.FailureReason.of(exception);
     }
 }

@@ -338,10 +338,6 @@ public final class SculptManager {
     }
 
     private static String readableMessage(Throwable throwable) {
-        Throwable cause = throwable;
-        while (cause.getCause() != null && cause.getMessage() == null) {
-            cause = cause.getCause();
-        }
-        return cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage();
+        return com.komainu.moxia.feedback.FailureReason.of(throwable);
     }
 }

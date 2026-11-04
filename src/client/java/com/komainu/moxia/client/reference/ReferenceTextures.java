@@ -94,15 +94,16 @@ public final class ReferenceTextures {
                         return;
                     }
                     if (failure != null) {
-                        Throwable cause = failure.getCause() == null ? failure : failure.getCause();
-                        slot.error = cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage();
+                        slot.error = com.komainu.moxia.feedback.FailureReason.client(failure);
                         return;
                     }
                     try {
                         slot.texture = upload(decoded);
                     } catch (RuntimeException exception) {
                         KomaEditMod.LOGGER.warn("Could not upload the reference image {}", file, exception);
-                        slot.error = exception.getMessage();
+                        slot.error = com.komainu.moxia.feedback.FailureReason.of(exception, (text, ignored) -> {
+                        }).equals(com.komainu.moxia.feedback.FailureReason.UNEXPECTED)
+                                ? com.komainu.moxia.feedback.FailureReason.UNEXPECTED_CLIENT : exception.getMessage();
                     }
                 }));
     }

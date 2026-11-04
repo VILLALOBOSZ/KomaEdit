@@ -114,7 +114,10 @@ public final class SchematicImport {
         return SchematicNbt.gzip(bytes) || bytes.length > 0 && bytes[0] == NbtElement.COMPOUND_TYPE;
     }
 
+    /** Lo que se le dice al jugador de un esquema que no se pudo leer: sin textos de Java ni nombres de clase. */
     private static String message(Exception exception) {
-        return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+        return com.komainu.moxia.feedback.FailureReason.usage(exception)
+                ? com.komainu.moxia.feedback.FailureReason.of(exception)
+                : "el archivo está dañado o no es un esquema de ese formato";
     }
 }

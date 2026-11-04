@@ -201,7 +201,7 @@ public final class CapabilityService {
         } catch (RuntimeException exception) {
             KomaEditMod.LOGGER.error("Capability action {} failed for {}", payload.action(), player.getUuid(),
                     exception);
-            message(player, "Error: " + exception.getClass().getSimpleName());
+            message(player, com.komainu.moxia.feedback.FailureReason.UNEXPECTED);
         }
     }
 
