@@ -4931,7 +4931,7 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 | Estructura | Abreviatura | Qué es |
 | --- | --- | --- |
 | `Clipboard(Origin:…,PasteMethod:…,FillBias:…,Rotation:…)` | `Cl` | Tu portapapeles de WorldEdit (`//copy`). |
-| `Schematic(Filename:<regex>,Format:…,Origin:…,PasteMethod:…,Rotation:…)` | `Sc(N:…)` | Schematics de la carpeta de WorldEdit cuyo nombre casa con la expresión regular (`.schem`, `.schematic`, `.litematic` y estructuras `.nbt`). |
+| `Schematic(Filename:<regex>,Format:…,Origin:…,PasteMethod:…,Rotation:…)` | `Sc(N:…)` | Schematics de la carpeta de WorldEdit cuyo nombre casa con la expresión regular (`.schem`, `.schematic`, `.litematic` y estructuras `.nbt`). Una expresión que cuesta demasiado de comprobar (repeticiones anidadas como `((\w+)+)+`) se rechaza: «simplifícala». |
 | `Shape(Shape:<forma>,Pattern:<patrón>)` | `Sh(S:…,P:…)` | Una forma pintada con un patrón de WorldEdit. |
 | `Expression(Expression:=<fórmula>,Palette:<paleta>)` | `Ex(E:…,P:…)` | Una fórmula que decide forma y material. |
 | `TexturedShape(Shape:<forma>,TexturingShape:<forma>,Palette:<paleta>)` | `TS(S:…,T:…,P:…)` | Una forma pintada por otra forma o fórmula. |
@@ -6019,8 +6019,13 @@ Un paquete es solo datos: nada de lo que trae se ejecuta, y cada cosa se revisa 
 - **Fórmulas:** la de las recetas con la figura Expresión pasa por el compilador de la figura, que solo conoce números, las variables de la figura y funciones matemáticas (ver [Figura Expresión](#figura-expresión)). Las expresiones de WorldEdit (`=…`) no se aceptan en patrones ni máscaras.
 - **Presets:** se leen con el mismo lector que su orden; uno que apunte a otro preset (`#base`) no entra.
 - **Esquemas de otros formatos:** un plano que llega como `.litematic`, `.nbt` o `.schem` de otra versión se convierte al esquema de los planos y se pone al día con el DataFixer de Minecraft **antes** de revisarlo, así que se revisa lo mismo que se va a colocar. Al leerlo se cortan el tamaño descomprimido, el anidamiento, las regiones, la paleta, los datos de bloque y las entidades. Los carteles pierden también las líneas de antes de 1.20 (`Text1`…`Text4`).
-- **Planos:** el esquema se revisa entero antes de que lo lea WorldEdit: que el tamaño y los datos cuadren, los bloques que faltan y, fuera, todo lo que hace algo al colocarlo. Los bloques de órdenes, los generadores de criaturas, las bóvedas, los portales del End y los bloques con datos de otros mods llegan vacíos; los carteles, sin clics, selectores ni lecturas de datos (el texto y su color sí); los cofres, sin tabla de botín, y sus objetos, sin componentes (sin nombre, encantamientos ni libros escritos); de las entidades solo viajan las de decorado (cuadros, marcos, soportes de armadura, vagonetas y barcas), sin pasajeros, etiquetas ni atributos. Los biomas que no existen pasan a llanura.
+  - Un `.schem` de una versión más nueva de Minecraft, que pasa tal cual, cumple los mismos topes de tamaño, paleta, bloques con datos y entidades.
+  - Un `.schematic` de MCEdit se mide antes de que WorldEdit lo convierta: si dice medir más de lo que cabe o sus bloques no cuadran con su tamaño, se rechaza.
+  - Un esquema que no trae tantos bloques como dice no llega a reservar memoria para ellos.
+- **Planos:** el esquema se revisa entero antes de que lo lea WorldEdit: que el tamaño y los datos cuadren, los bloques que faltan y, fuera, todo lo que hace algo al colocarlo. Los bloques de órdenes, los generadores de criaturas, las bóvedas, los portales del End y los bloques con datos de otros mods llegan vacíos; los carteles, sin clics, selectores ni lecturas de datos (el texto y su color sí); los cofres, sin tabla de botín, y sus objetos, sin componentes (sin nombre, encantamientos ni libros escritos), también los que no dicen su cantidad, que Minecraft lee como uno; de las entidades solo viajan las de decorado (cuadros, marcos, soportes de armadura, vagonetas y barcas), sin pasajeros, etiquetas ni atributos. Los biomas que no existen pasan a llanura.
 - **Versiones:** un tipo que esta versión no conoce (de una más nueva) se salta sin estropear el resto; un paquete con un formato más nuevo que el del mod pide actualizarlo.
+- **Sellos:** el PNG se lee sin descomprimir sus textos (un PNG diminuto podía traer gigas de texto comprimido). El gris neutro se toma del texto sin comprimir `komaedit-neutral`, el que escribe KomaEdit.
+- **Datos anidados:** unos ajustes con miles de niveles se rechazan con «datos demasiado anidados».
 
 ### Permisos y límites de los paquetes
 
@@ -6152,22 +6157,47 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 - Las órdenes se ocultan del autocompletado a quien no puede usar ninguno de sus modos; si solo puede usar algunos, el resto da «Te falta el permiso …».
 - Las máscaras y patrones de WorldEdit (`#palette`, `#near`…) no piden permiso propio.
 - La tabla completa con su equivalente de ezEdits está en `docs/EZEDITS_PARITY.md`.
+- Sin un gestor de permisos que diga otra cosa, WorldEdit-Fabric contesta por su cuenta a los nodos que no conoce. Con `cheat-mode`, con `creative-enable` (a quien esté en creativo) o a quien esté en la lista de operadores con cualquier nivel, también a los de KomaEdit, los de administración incluidos. KomaEdit, por sí solo, solo trata como operador a los de nivel 2 o más. En un servidor con jugadores en creativo, deja esas opciones de WorldEdit apagadas o usa LuckPerms.
 
 ### Lo que llega del cliente
 
 El Studio, el gizmo, los displays, las barras, las vistas y el lazo hablan con el servidor por paquetes, y un cliente modificado puede mandarlos a su antojo. El servidor comprueba cada uno como la orden equivalente:
 
-- **Permisos:** reemplazar, borrar o pintar la selección desde el editor pide `komaedit.build`, no `komaedit.select`.
+- **Acceso:** cada paquete pide acceso a KomaEdit (`komaedit.use` o un paquete de permisos), como las órdenes, que cuelgan de `/komaedit`. Si a alguien se le quita `komaedit.use`, tampoco puede seguir usando por paquete las capacidades, los displays, el lazo, las vistas, las barras, el pincel ni Pegar código.
+- **Permisos:**
+  - Reemplazar, borrar o pintar la selección desde el editor pide `komaedit.build`, no `komaedit.select`.
+  - Cortar por el paquete del editor copia y además borra la selección: pide `komaedit.clipboard` y `komaedit.build`.
+  - Cada clic con un pincel pide el permiso de ese pincel (`komaedit.build.brush.<pincel>`), no solo al ponerlo en la mano: si se lo quitan, deja de funcionar al momento.
 - **Botones del Studio:** su paquete solo lleva órdenes de KomaEdit, y el servidor las ejecuta como si el jugador las escribiera, con sus permisos y sus cuotas: no deja hacer nada que la orden no deje (ver [Botones sin antispam](#botones-sin-antispam)).
+- **Órdenes largas:** por los botones y por la vista previa en vivo llegan órdenes de hasta 8 192 caracteres (por el chat, de 256). Una que agota la pila al leerse no se ejecuta y se avisa al jugador: «la orden está demasiado anidada». Pasa, por ejemplo, con una máscara de WorldEdit con miles de `!` o una expresión con miles de paréntesis. Lo mismo al repetirla, al recalcular su vista previa o en cada clic del pincel de zona.
 - **Zonas:** la selección mágica no lee bloques de chunks sin cargar (no los carga ni los genera); el gizmo, los displays y el lazo ya miraban la distancia, el borde y lo cargado.
-- **Límites:** la pintura rápida del editor se para en `maxBlocksPerOperation` como cualquier edición y no acumula más de 1 024 pasadas en espera.
+- **Límites:**
+  - La pintura rápida del editor se para en `maxBlocksPerOperation` como cualquier edición y no acumula más de 1 024 pasadas en espera.
+  - Copiar y cortar por el paquete del editor (ningún botón los usa hoy, pero un cliente modificado los puede mandar) no pasan de `maxBlocksPerOperation`, lo mismo que se podría pegar después. Con `komaedit.limit.unrestricted`, tampoco de 16 millones de bloques. Además, toda la selección tiene que estar cargada («acércate para copiarla»).
 - **Frenos por jugador** a lo que cuesta en el servidor: unas cuantas peticiones seguidas y unas pocas por segundo; a mano no se nota y las de más se ignoran sin aviso.
   - Barras guardadas: guardar, borrar, importar, exportar, sincronizar y deshacer (cambiar de barra ya tenía su espera).
   - Vistas: compartir una y pedir el catálogo.
   - Pincel de selección: empezar un trazo.
   - Acciones de recetas e instancias.
+  - Lo pesado del editor: deshacer, rehacer, copiar, cortar, pegar, el área mágica y reemplazar, borrar o pintar la selección. Admite 16 seguidas (un salto del historial del Studio son hasta 12) y 2 por segundo después; se avisa en la barra de acción.
+  - El estado de las herramientas del Studio: 10 seguidas y 4 por segundo, más de lo que pide el Studio con el historial abierto.
   - Órdenes de los botones del Studio y de las teclas de KomaEdit; aquí sí se avisa, una vez al cortar.
-- **Miniaturas de planos:** pedir una que ya se está leyendo o enviando no la vuelve a leer, y hay como mucho 1 024 lecturas pendientes por jugador.
+- **Miniaturas de planos y de sellos propios:** pedir una que ya se está leyendo o enviando no la vuelve a leer. Hay como mucho 1 024 lecturas pendientes por jugador en los planos y 512 en los sellos.
+- **Capacidades:** un punto de clic que no es un número va al centro del bloque.
+
+### Lo que manda el servidor
+
+Con KomaEdit en el cliente, el servidor le manda vistas previas, fantasmas, miniaturas, guías y notas. El cliente no se fía de lo que llega: un servidor malicioso no puede escribir donde quiera, llenar la memoria del cliente ni colgarlo.
+
+- **Archivos:** solo baja lo que se pidió al exportar (una descarga por exportación y como mucho 2 minutos), a la carpeta `schematics` y sin pisar otro archivo. El nombre no puede salir de la carpeta, ni ser un dispositivo de Windows (`con`, `nul`, `com1`…, también `com¹`, `com²` y `com³`).
+- **Portapapeles:** el código de una barra solo se copia justo después de pulsar **Exportar** (como mucho 30 segundos y una vez por petición). El de **Compartir** ya funcionaba así.
+- **Memoria:**
+  - Una vista previa o un fantasma a medias no guarda más de 64 MiB; el más grande que manda KomaEdit ocupa unos 30.
+  - Un plan no pasa de 131 072 secciones de 16³.
+  - El cliente guarda como mucho 8 192 notas.
+  - Los giros del fantasma solo se recuerdan para los estados de bloque que existen.
+- **Miniaturas:** solo se aceptan las que pidió el Studio, y solo si el PNG mide como mucho 512 de lado. Se mira antes de decodificarlo.
+- **Guías:** una guía de alineación sin sus tres ejes, o con números que no lo son, no se dibuja. La guía radial no pasa de los brazos que admite la simetría (16).
 
 ### Configuración
 
@@ -6184,7 +6214,7 @@ El Studio, el gizmo, los displays, las barras, las vistas y el lazo hablan con e
 - `arraySnapRadius`: `96` de forma predeterminada (como ezEdits); rango válido `1–256`. Hasta dónde busca superficie `-b` en `array` y su pincel.
 - `previewTimeoutSeconds`: `90` de forma predeterminada; rango válido `10–3600`. Segundos que una [vista previa](#vista-previa-progreso-y-cancelación) espera a `/komaedit confirm` antes de caducar.
 - `previewMaxDisplays`: `1500` de forma predeterminada; rango válido `0–10000`. Block displays como mucho por vista previa; por encima se enseña la superficie o una muestra, y con `0` solo la caja.
-- `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` concede todos los subpermisos como compatibilidad con instalaciones antiguas.
+- `rootPermissionGrantsAll`: `false` de forma predeterminada. Si se activa, `komaedit.use` (o el antiguo `moxia.use`) concede todos los subpermisos como compatibilidad con instalaciones antiguas. Un paquete de permisos no: da acceso a `/komaedit`, pero solo lo que trae.
 
 Los campos que falten (un `config.json` de una versión anterior, como el de la 1.4.0, que no tiene los de la vista previa, `arraySnapRadius` ni los del presupuesto por tick y el plan) toman su valor por defecto; el archivo no se reescribe. Una configuración inválida se rechaza completa y el servidor utiliza límites seguros. Los cambios se aplican con `/komaedit reload` (permiso `komaedit.admin.reload`) o al reiniciar.
 
