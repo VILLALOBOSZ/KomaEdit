@@ -45,7 +45,12 @@ public final class LandformPlanner {
     public static final double MIN_HALF_WIDTH = 4.0;
     public static final double MAX_HALF_WIDTH = 128.0;
     public static final double MAX_HEIGHT = 160.0;
-    private static final Map<HeightStamp, DetailStamp> DETAIL = Collections.synchronizedMap(new WeakHashMap<>());
+    /**
+     * La versión desenfocada de cada sello de detalle, mientras se use el sello. El valor no guarda el sello: si lo
+     * guardara, el {@code WeakHashMap} nunca podría soltarlo (cada sello recapturado o importado que se usara de detalle
+     * se quedaba en memoria, con su copia desenfocada, hasta cerrar el juego).
+     */
+    private static final Map<HeightStamp, Blur> DETAIL = Collections.synchronizedMap(new WeakHashMap<>());
 
     private LandformPlanner() {
     }
@@ -2206,11 +2211,20 @@ public final class LandformPlanner {
     private record DetailStamp(HeightStamp stamp, HeightStamp blurred, double spread) {
     }
 
+    /** Lo que se guarda de cada sello: su versión desenfocada y cuánto se aparta, sin el sello. */
+    record Blur(HeightStamp blurred, double spread) {
+    }
+
     private static DetailStamp detail(HeightStamp stamp) {
+        Blur blur = blur(stamp);
+        return new DetailStamp(stamp, blur.blurred(), blur.spread());
+    }
+
+    static Blur blur(HeightStamp stamp) {
         return DETAIL.computeIfAbsent(stamp, LandformPlanner::prepare);
     }
 
-    private static DetailStamp prepare(HeightStamp stamp) {
+    private static Blur prepare(HeightStamp stamp) {
         int width = stamp.width();
         int height = stamp.height();
         float[] values = new float[width * height];
@@ -2232,7 +2246,7 @@ public final class LandformPlanner {
             }
         }
         double spread = count == 0 ? 0.0 : Math.sqrt(sum / count);
-        return new DetailStamp(stamp, soft, Math.max(1e-4, spread));
+        return new Blur(soft, Math.max(1e-4, spread));
     }
 
     private static float[] gaussian(float[] values, int width, int height, double sigma) {
