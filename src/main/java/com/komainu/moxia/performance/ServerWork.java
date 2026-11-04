@@ -39,6 +39,7 @@ public final class ServerWork {
     private static long lightEnd;
     private static long windowEnd;
     private static int rotation;
+    private static int lightTurn;
 
     private ServerWork() {
     }
@@ -65,9 +66,18 @@ public final class ServerWork {
         ServerTickEvents.END_SERVER_TICK.register(LATE, server -> BUDGET.endTick(System.nanoTime()));
     }
 
-    /** Un servicio ligero: se llama una vez por tick y pide su plazo con {@link #deadline}. */
+    /**
+     * Un servicio ligero: se llama una vez por tick y pide su plazo con {@link #deadline}. Comparten la parte ligera
+     * del presupuesto y el primero cambia en cada tick ({@link Turns}): el que pueda gastarla entera (preparar un
+     * fantasma enorme) no deja sin tiempo para siempre a los de detrás (la foto de los pinceles de los demás).
+     */
     public static void light(Consumer<MinecraftServer> ticker) {
         LIGHT.add(ticker);
+    }
+
+    /** Quita un servicio ligero (las pruebas). */
+    static boolean forgetLight(Consumer<MinecraftServer> ticker) {
+        return LIGHT.remove(ticker);
     }
 
     public static void lane(Lane lane) {
@@ -111,7 +121,7 @@ public final class ServerWork {
         PAUSED.clear();
     }
 
-    private static void tick(MinecraftServer server) {
+    static void tick(MinecraftServer server) {
         long start = System.nanoTime();
         long allowance = BUDGET.allowance();
         windowEnd = start + allowance;
@@ -123,7 +133,7 @@ public final class ServerWork {
         lightEnd = owners.isEmpty() ? windowEnd : start + allowance / 2;
         open = true;
         try {
-            for (Consumer<MinecraftServer> ticker : LIGHT) {
+            for (Consumer<MinecraftServer> ticker : Turns.from(LIGHT, lightTurn++)) {
                 try {
                     ticker.accept(server);
                 } catch (RuntimeException exception) {

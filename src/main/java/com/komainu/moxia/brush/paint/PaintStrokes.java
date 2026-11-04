@@ -13,6 +13,7 @@ import com.komainu.moxia.studio.net.StudioAim;
 import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.performance.Turns;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -148,7 +149,8 @@ public final class PaintStrokes {
             return;
         }
         int now = server.getTicks();
-        for (Stroke stroke : List.copyOf(STROKES.values())) {
+        // Por turnos: con varios pintando, la foto y la escritura del primero no se comen siempre el plazo.
+        for (Stroke stroke : Turns.from(STROKES.values(), now)) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(stroke.playerId);
             if (player == null || !stroke.sameWorld(player)) {
                 STROKES.remove(stroke.playerId);

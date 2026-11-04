@@ -6,6 +6,7 @@ import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.performance.Turns;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.function.pattern.Pattern;
@@ -89,7 +90,8 @@ public final class FastPaintService {
             return;
         }
         long deadline = ServerWork.deadline(MAX_NANOS_PER_TICK);
-        for (Stroke stroke : java.util.List.copyOf(STROKES.values())) {
+        // Por turnos: el que va primero no se queda con el plazo de todos tick tras tick.
+        for (Stroke stroke : Turns.from(STROKES.values(), server.getTicks())) {
             if (System.nanoTime() >= deadline || !STROKES.containsKey(stroke.playerId)) {
                 break;
             }
