@@ -822,7 +822,7 @@ En los dos casos, el chat resume la vista previa en una línea: cambios, cuánto
 - Un cálculo que no sabe cuánto le falta enseña el tiempo que lleva, y la barra va y viene.
 - `/komaedit cancel` para todo lo tuyo que esté en marcha, en la fase que sea: lectura, cálculo, espera en la cola y colocación, y descarta la vista previa y el Build en espera. Lo ya colocado queda en una sola entrada de **//undo**: la colocación se corta siempre entre dos bloques, nunca a medias, y el chat dice cuántos bloques llegó a poner. `/komaedit job cancel` sigue parando solo la colocación.
 - También para el pintado de biomas (`biome` y su pincel), que la bossbar enseña como colocación.
-- Si cambias de dimensión antes de que termine una operación que lee el mundo (operaciones sobre la selección, terraformado, tejados, texto, colocación…), se descarta con un aviso y no cambia nada: lo calculado era de la foto del mundo de antes. Al desconectarte se para todo lo tuyo.
+- Si cambias de dimensión (o reapareces en otra) antes de que termine, lo que se leía o se calculaba para el mundo de antes se descarta con un aviso («…: descartado al cambiar de dimensión») y no cambia nada: operaciones sobre la selección, terraformado, tejados, texto, imágenes, figuras de la trayectoria, generadores, `loft`, la vidriera, Construir del Studio y escalar el portapapeles. Antes, las figuras y los generadores se colocaban en la dimensión nueva con las coordenadas de la anterior. El **[Construir]** que esperaba confirmación también se olvida (y al reaparecer): vuelve a pedirlo. Al desconectarte se para todo lo tuyo.
 
 ### Estimación antes de empezar
 
@@ -1581,7 +1581,9 @@ Agranda, encoge o gira el portapapeles de WorldEdit sin dientes de sierra, con l
 
 - No coloca nada: cambia el portapapeles, que después se pega con `//paste`, con [`/komaedit place Clipboard`](#colocar-estructuras) o con [`bend`](#doblar-estructuras-del-portapapeles).
 - `restore` vuelve al portapapeles de antes del último escalado o giro (se guarda uno por jugador mientras sigue conectado).
-- `/komaedit clipboard` solo dice el tamaño del portapapeles.
+- `/komaedit clipboard` solo dice el tamaño del portapapeles (con su giro pendiente, sin copiarlo).
+- Si mientras se calcula cambias el portapapeles (`//copy`, `//rotate`…), el resultado se descarta y se queda el nuevo: antes lo pisaba, y `restore` devolvía el viejo.
+- Se descarta también si cambias de dimensión mientras calcula (ver [Progreso y cancelación](#progreso-y-cancelación)).
 - Permiso: `komaedit.clipboard` (paquete intermedio).
 
 ### Modos
@@ -4944,8 +4946,8 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 
 ### Comportamiento
 
-- **Clipboard y Schematic:** `Origin` es `INHERENT` (el punto desde el que se copió, por defecto) o `CENTER` (el centro de la caja). `PasteMethod` es `FAST` (vecino más cercano: con giros de 90° es como `//paste`) o `SMOOTHED`, que mira 27 puntos por bloque y coloca el bloque mayoritario cuando la parte llena, multiplicada por `FillBias` (1 por defecto), llega a la mitad: bordes más limpios con giros libres y, con `FillBias` alto, láminas finas que no se rompen. `Rotation` gira la estructura alrededor de su vertical antes que nada, en el sentido de `//rotate` (positivo: de este a sur), igual que el pincel con `-p` y `pincel stamp -r`.
-- **Schematic:** `Filename` es una expresión regular (`arbol_.*` casa con `arbol_1`, `arbol_2`…) sobre el nombre con o sin extensión; admite subcarpetas (`bosque/roble_.*`) y `%p` es tu UUID, para las carpetas por jugador. Cada colocación elige uno al azar de los que casan (hasta 32). `Format` fuerza un formato (`sponge.3`, `mcedit`, `litematic`, `nbt`…); sin él se detecta.
+- **Clipboard y Schematic:** `Origin` es `INHERENT` (el punto desde el que se copió, por defecto) o `CENTER` (el centro de la caja). `PasteMethod` es `FAST` (vecino más cercano: con giros de 90° es como `//paste`) o `SMOOTHED`, que mira 27 puntos por bloque y coloca el bloque mayoritario cuando la parte llena, multiplicada por `FillBias` (1 por defecto), llega a la mitad: bordes más limpios con giros libres y, con `FillBias` alto, láminas finas que no se rompen. `Rotation` gira la estructura alrededor de su vertical antes que nada, en el sentido de `//rotate` (positivo: de este a sur), igual que el pincel con `-p` y `pincel stamp -r`. Con un `//rotate` pendiente, el tamaño se comprueba antes de girarlo (girar copia el portapapeles entero): un portapapeles demasiado grande para el pincel se rechaza sin copiarlo.
+- **Schematic:** `Filename` es una expresión regular (`arbol_.*` casa con `arbol_1`, `arbol_2`…) sobre el nombre con o sin extensión; admite subcarpetas (`bosque/roble_.*`) y `%p` es tu UUID, para las carpetas por jugador. Cada colocación elige uno al azar de los que casan (hasta 32). `Format` fuerza un formato (`sponge.3`, `mcedit`, `litematic`, `nbt`…); sin él se detecta. Cada archivo se lee y se prepara una vez (y otra si cambia): antes, cada clic de un pincel con `Sc(N:…)` volvía a leer del disco y a descomprimir cada archivo que casaba (hasta 32).
 - **Shape:** formas `Cone`, `Crystal(Sides:6,Extrusion:0.5)`, `Cuboid`, `Curl`, `Cylinder`, `Ellipsoid`, `Fur(Strands:18)`, `Heart`, `Jellybean`, `Leaf`, `Lemon`, `Onion`, `Polygon(Sides:6)`, `Pyramid(Sides:4)`, `Supersphere(Exponent:4)`, `Tetrahedron`, `Torus(Thickness:0.5)` o una fórmula propia `=…` (dentro donde vale más que 0). Las geométricas llenan su caja; las orgánicas (corazón, limón, hoja, rizo…) conservan sus proporciones centradas. El pelo cambia en cada colocación.
 - **Expression:** `x`, `y`, `z` van de -1 a 1 y `seed` es un entero distinto en cada colocación. Hasta 0 es aire, entre 0 y 1 elige el bloque de la paleta y de 1 en adelante el último.
 - **TexturedShape:** `S` decide qué se coloca y `T` reparte la paleta con la misma regla que `Expression` (una forma con nombre usa el primer bloque fuera y el último dentro).
@@ -6274,13 +6276,15 @@ KomaEdit está pensado para usarse en un servidor con gente: una edición enorme
 - Todo lo que KomaEdit hace en el hilo del servidor sale de un mismo presupuesto: `tickBudgetMillis` (**6 ms** de serie) por tick, entre todos los jugadores y todas las fases. Antes cada parte tenía el suyo (la colocación 12 ms, la lectura 4, los pinceles 5, la vista previa 4…) y podían sumarse.
 - **Baja solo si el servidor va justo.** KomaEdit mide lo que duran los ticks y a qué ritmo llegan: si el servidor ya gasta casi todo el tick por su cuenta, usa solo lo que sobre hasta 45 ms; si va por debajo de 20 TPS, solo el mínimo (`tickBudgetMinMillis`, **1 ms**). Cuando el servidor se recupera, en un segundo o dos vuelve al presupuesto entero.
 - Se trabaja por tiempo, no por número de bloques: el mismo presupuesto da más bloques por tick en un mundo sencillo y menos donde cada bloque cuesta más (luz, vecinos, entidades de bloque).
-- Lo interactivo (pinceles, vista previa, fantasma, pintura) va primero, pero si hay ediciones pesadas en marcha usa como mucho la mitad del presupuesto.
+- Lo interactivo (pinceles, vista previa, fantasma, pintura) va primero, pero si hay ediciones pesadas en marcha usa como mucho la mitad del presupuesto. **Va por turnos**: cada tick empieza por otro servicio y, dentro de cada uno, por otro jugador. Antes iban siempre en el mismo orden, y preparar el fantasma de un objeto enorme (o la vista previa de un millón de bloques) se comía esa mitad durante segundos: la foto de los pinceles, la pintura y los lazos de los demás se paraban.
+- Comprobar la zona al confirmar una vista previa también sale de ese presupuesto (antes eran 60 000 lecturas del mundo por vista previa y tick, fuera de él).
 - Un servidor con poca gente puede subir `tickBudgetMillis` (por ejemplo a 15) para que las ediciones vayan más rápido; uno muy cargado, bajarlo. Se aplica con `/komaedit reload`.
 
 ### Cola justa
 
 - Lo pesado (leer una selección, colocar, pintar biomas) se reparte **por turnos entre jugadores** en cada tick: cada uno recibe su parte, lo que uno no gasta pasa a los demás y el primero del turno cambia cada tick. Una edición de 20 millones de bloques no bloquea la de 2 000 de otro jugador: las dos avanzan en cada tick y la pequeña acaba en unos ticks.
 - Como mucho `maxConcurrentJobs` ediciones **colocan** a la vez; las demás esperan en la cola por orden de llegada, con su puesto y el tiempo estimado en la barra y en `/komaedit job status`. El tiempo sale del ritmo medido de la cola (las que colocan se lo reparten a partes iguales).
+- **Las pequeñas no esperan**: una edición de 50 000 bloques o menos empieza al momento aunque los sitios estén ocupados, y no ocupa sitio. Antes, con cuatro ediciones de millones de bloques colocando, el retoque de 10 bloques de otro jugador esperaba minutos.
 - `/komaedit cancel` saca tu edición de la cola o la para en cualquier fase.
 
 ### Colocar sin picos
@@ -6290,6 +6294,7 @@ KomaEdit está pensado para usarse en un servidor con gente: una edición enorme
 - Se respetan los ajustes de WorldEdit de cada jugador (`//perf`, `//fast`, `//reorder`): lo que cambia es cuándo se aplican, no cuáles.
 - Sigue siendo **una sola entrada de //undo** aunque dure cientos de ticks, y cancelar deja exactamente lo colocado hasta ahí.
 - De paso se arregla la captura de las instancias del Studio (Construir): leía el mundo cuando lo escrito aún estaba en el búfer y apuntaba el bloque de antes; ahora lee lo colocado.
+- La pintura rápida del editor y el pincel de pintura vacían también por tramos lo que escriben: lo pintado aparece mientras se pinta. Antes la pintura rápida lo aplicaba todo (luz, vecinos y envío) en el tick de soltar el botón, y el pincel de pintura, cada tanda de golpe.
 
 ### Memoria
 
@@ -6309,6 +6314,12 @@ KomaEdit está pensado para usarse en un servidor con gente: una edición enorme
 - `/komaedit jobs pause <jugador>` (alias `pausar`) para sus lecturas, colocaciones y pintados de biomas sin perder nada: termina la ventana que estaba vaciando (para que nada quede sin luz ni sin enviar) y deja de leer y escribir; una edición en pausa no ocupa sitio en la cola. Los cálculos en hilos aparte siguen, y lo que salga espera en la cola hasta reanudar. `resume <jugador>` (alias `reanudar`) sigue donde iba.
 - `/komaedit jobs cancel <jugador>` (alias `cancelar`) hace lo mismo que su `/komaedit cancel`: lo para todo y lo ya colocado queda en su //undo.
 - El jugador recibe un aviso cuando un administrador pausa, reanuda o cancela lo suyo.
+
+### Desconexiones y paradas
+
+- Fabric avisa de que un jugador se ha ido desde el hilo de red. KomaEdit lo pasa al hilo del servidor antes de cerrar lo suyo: antes, salir del juego mientras se colocaba tu edición la cerraba desde otro hilo a la vez que el tick la seguía colocando, y podía **tumbar el servidor** («Accessing PalettedContainer from multiple threads» o `ConcurrentModificationException`).
+- Al parar el servidor, lo de cada jugador conectado se cierra **antes de guardar los mundos** (lo colocado hasta ahí queda en su //undo), y también la cola, la pintura y los biomas de quien ya no está (los invitados de una partida LAN). Lo que acabe de calcularse durante la parada ya no se coloca.
+- Lo que el servidor guarda en memoria de cada jugador (paletas, ruidos, selecciones y presets leídos) se olvida al irse, y los sellos propios borrados dejan de ocupar memoria.
 
 ### Números
 
@@ -6334,7 +6345,8 @@ La duración es el precio de no parar el servidor; con `tickBudgetMillis` a 15 t
 
 ### Limitaciones
 
-- Leer o colocar en chunks sin cargar los carga en el hilo del servidor, como WorldEdit: el tramo que lo hace puede pasarse del presupuesto en ese tick. Lo normal es editar cerca, con los chunks cargados.
+- Leer o colocar en chunks sin cargar los carga en el hilo del servidor, como WorldEdit: el tramo que lo hace puede pasarse del presupuesto en ese tick. Lo normal es editar cerca, con los chunks cargados. La lectura de la selección va **chunk a chunk** (todas las alturas de uno antes de pasar al siguiente) y mira el reloj al entrar en cada uno: antes iba por capas y cada capa volvía a cargar los chunks sin cargar (y podía cargar 32 de una vez).
+- El rayo con el que el servidor mira adónde apuntas (pinceles, guía de alineación, Studio, notas, displays, imagen, trayectoria) **se para en el primer chunk sin cargar**: antes, mirando al horizonte con un pincel de colocación en la mano, cargaba (o generaba) los chunks de más allá de la distancia de visión cada 4 ticks. Lo que hay más allá tampoco lo ves.
 - `//undo` y `//redo` son de WorldEdit y se hacen de golpe: deshacer una edición de millones de bloques para el servidor unos segundos.
 - Si un plan escribe dos veces en la misma posición y la segunda es condicional, y caen en ventanas distintas, gana la primera (la segunda ve el bloque ya cambiado y lo respeta como un cambio a mano). Antes ganaba la última.
 - Las demás protecciones de antes siguen: cálculos asíncronos y cancelables, límites de seguridad de los generadores, hologramas por secciones con caras expuestas, bitácora de cada trabajo y //undo de lo parcial.

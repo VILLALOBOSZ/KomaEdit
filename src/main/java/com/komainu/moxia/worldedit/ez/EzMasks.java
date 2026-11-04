@@ -204,11 +204,16 @@ final class EzMasks {
 
     /** {@code #near}: hay un bloque de la máscara interior a esa distancia, pero no el propio bloque. */
     static final class NearMask extends AbstractMask {
-        private static final int CACHE_LIMIT = 1 << 20;
+        /**
+         * Respuestas de la máscara interior que se guardan. WorldEdit guarda la máscara de un pincel o la {@code //gmask}
+         * mientras dure (y un rato tras irse el jugador): con un millón de entradas eran unos 70 MB por máscara, y
+         * {@code clear()} dejaba la tabla de dos millones de sitios.
+         */
+        static final int CACHE_LIMIT = 1 << 16;
         private final Mask inner;
         private final double minimum;
         private final double maximum;
-        private final Map<BlockVector3, Boolean> cache = new HashMap<>();
+        private Map<BlockVector3, Boolean> cache = new HashMap<>();
 
         NearMask(Mask inner, double minimum, double maximum) {
             this.inner = inner;
@@ -225,9 +230,14 @@ final class EzMasks {
             return nearest >= 0 && nearest >= minimum * minimum - 1.0E-9;
         }
 
+        /** Cuántas respuestas guarda (las pruebas). */
+        synchronized int cached() {
+            return cache.size();
+        }
+
         private boolean innerTest(BlockVector3 vector) {
-            if (cache.size() > CACHE_LIMIT) {
-                cache.clear();
+            if (cache.size() >= CACHE_LIMIT) {
+                cache = new HashMap<>();
             }
             return cache.computeIfAbsent(vector, inner::test);
         }
