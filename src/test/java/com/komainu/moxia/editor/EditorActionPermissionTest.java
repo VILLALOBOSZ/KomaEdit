@@ -39,6 +39,17 @@ class EditorActionPermissionTest {
     }
 
     @Test
+    void cuttingDeletesTheSelectionSoItNeedsTheBuildPermissionToo() {
+        Predicate<String> clipboardOnly = Set.of(KomaPermissions.USE, KomaPermissions.SELECT,
+                KomaPermissions.CLIPBOARD)::contains;
+        assertFalse(EditorActionService.permissions(EditorActionPayload.CLIPBOARD_CUT).stream()
+                .allMatch(node -> PermissionNodes.allows(node, clipboardOnly)), "cortar con solo el portapapeles");
+        assertTrue(EditorActionService.permissions(EditorActionPayload.CLIPBOARD_CUT).contains(KomaPermissions.BUILD));
+        assertTrue(EditorActionService.permissions(EditorActionPayload.CLIPBOARD_COPY).stream()
+                .allMatch(node -> PermissionNodes.allows(node, clipboardOnly)), "copiar sigue con el portapapeles");
+    }
+
+    @Test
     void selectingStaysWithTheSelectPermission() {
         for (int action : new int[]{EditorActionPayload.BOX_PRIMARY, EditorActionPayload.BOX_SECONDARY,
                 EditorActionPayload.MAGIC_BLOCK, EditorActionPayload.MAGIC_AREA}) {

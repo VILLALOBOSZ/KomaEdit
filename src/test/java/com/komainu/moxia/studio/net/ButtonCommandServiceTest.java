@@ -1,7 +1,19 @@
 package com.komainu.moxia.studio.net;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.sk89q.worldedit.internal.expression.Expression;
+import net.minecraft.server.command.CommandOutput;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,6 +77,87 @@ class ButtonCommandServiceTest {
             }
         }
         assertEquals(ButtonCommandService.BURST + 1, messages, "un error por orden atendida y un aviso de freno");
+    }
+
+    /**
+     * Por el chat una orden tiene 256 caracteres; por el paquete, 8192. Una expresión de WorldEdit con 4000 paréntesis
+     * (o una máscara con miles de {@code !}) agota la pila al leerse, y en el hilo del servidor eso lo tumbaba: ahora
+     * no se ejecuta y se le dice al jugador.
+     */
+    @Test
+    void aCommandTooDeepForTheStackDoesNotTakeTheServerDown() throws Exception {
+        String deep = "komaedit expresion " + "(".repeat(4_000) + "x" + ")".repeat(4_000);
+        Outcome outcome = runOnSmallStack(deep);
+        assertEquals(null, outcome.escaped(), "no se escapa de run()");
+        assertFalse(outcome.ran());
+        assertEquals(1, outcome.errors().size());
+        assertTrue(outcome.errors().getFirst().contains(ButtonCommands.TOO_DEEP), outcome.errors().toString());
+    }
+
+    @Test
+    void aNormalExpressionStillRuns() throws Exception {
+        Outcome outcome = runOnSmallStack("komaedit expresion " + "(".repeat(100) + "x" + ")".repeat(100));
+        assertEquals(null, outcome.escaped());
+        assertTrue(outcome.ran());
+        assertEquals(List.of(), outcome.errors());
+    }
+
+    private record Outcome(boolean ran, List<String> errors, Throwable escaped) {
+    }
+
+    /** Como en el hilo del servidor: con la pila de un hilo de la JVM (1 MiB), fijada para que no dependa de ella. */
+    private static Outcome runOnSmallStack(String command) throws InterruptedException {
+        CommandDispatcher<ServerCommandSource> dispatcher = new CommandDispatcher<>();
+        dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("komaedit")
+                .then(LiteralArgumentBuilder.<ServerCommandSource>literal("expresion")
+                        .then(RequiredArgumentBuilder.<ServerCommandSource, String>argument("texto",
+                                        StringArgumentType.greedyString())
+                                .executes(context -> {
+                                    Expression.compile(StringArgumentType.getString(context, "texto"), "x");
+                                    return 1;
+                                }))));
+        List<String> errors = new ArrayList<>();
+        CommandOutput output = new CommandOutput() {
+            @Override
+            public void sendMessage(Text message) {
+                errors.add(message.getString());
+            }
+
+            @Override
+            public boolean shouldReceiveFeedback() {
+                return true;
+            }
+
+            @Override
+            public boolean shouldTrackOutput() {
+                return true;
+            }
+
+            @Override
+            public boolean shouldBroadcastConsoleToOps() {
+                return false;
+            }
+        };
+        ServerCommandSource source = new ServerCommandSource(output, Vec3d.ZERO, Vec2f.ZERO, null, 0, "prueba",
+                Text.literal("prueba"), null, null);
+        boolean[] ran = {false};
+        Throwable[] escaped = {null};
+        Thread thread = new Thread(null, () -> {
+            try {
+                ran[0] = ButtonCommandService.run(dispatcher, source, command, (parse, text) -> {
+                    try {
+                        dispatcher.execute(parse);
+                    } catch (CommandSyntaxException exception) {
+                        throw new IllegalStateException(exception);
+                    }
+                });
+            } catch (Throwable throwable) {
+                escaped[0] = throwable;
+            }
+        }, "servidor de prueba", 1024 * 1024);
+        thread.start();
+        thread.join();
+        return new Outcome(ran[0], errors, escaped[0]);
     }
 
     private record Flood(int ran, int warnings) {

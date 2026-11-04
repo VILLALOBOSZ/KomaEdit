@@ -3,6 +3,7 @@ package com.komainu.moxia.studio.net;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.analysis.MaterialReport;
 import com.komainu.moxia.gradient.SavedPalettes;
+import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.nature.NaturePresets;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.preview.PlanPreviews;
@@ -42,6 +43,11 @@ public final class StudioToolsNetwork {
     private static final Set<UUID> BUSY = new HashSet<>();
     /** Caracteres de cada paleta guardada que llegan al Studio. */
     private static final int PALETTE_PREVIEW = 160;
+    /**
+     * Pedir el estado lee la carpeta de fuentes, los presets, las paletas y el historial, y contesta con un paquete
+     * grande: con freno. El Studio lo pide una vez por segundo con el historial abierto y tras cada salto de él.
+     */
+    static final RequestBudget STATE_REQUESTS = new RequestBudget(10, 4.0);
 
     private StudioToolsNetwork() {
     }
@@ -52,8 +58,11 @@ public final class StudioToolsNetwork {
         PayloadTypeRegistry.playS2C().register(JobStatusPayload.ID, JobStatusPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(MaterialListPayload.ID, MaterialListPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(StudioAimPayload.ID, StudioAimPayload.CODEC);
-        ServerPlayNetworking.registerGlobalReceiver(ToolStateRequestPayload.ID, (payload, context) ->
-                context.server().execute(() -> sendState(context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(ToolStateRequestPayload.ID, (payload, context) -> {
+            if (STATE_REQUESTS.allow(context.player().getUuid(), System.nanoTime())) {
+                context.server().execute(() -> sendState(context.player()));
+            }
+        });
         // Ya en el hilo del servidor y en el orden en que llegó: la orden que el cliente manda justo detrás
         // tiene que encontrarse el clic apuntado (otro execute lo dejaría para después de ella).
         ServerPlayNetworking.registerGlobalReceiver(StudioAimPayload.ID, (payload, context) ->
@@ -142,11 +151,13 @@ public final class StudioToolsNetwork {
     public static void forget(UUID player) {
         BUSY.remove(player);
         StudioAim.forget(player);
+        STATE_REQUESTS.forget(player);
     }
 
     public static void clearAll() {
         BUSY.clear();
         StudioAim.clearAll();
+        STATE_REQUESTS.clear();
     }
 
     /** La lista de {@code analyze} para la tarjeta Materiales del Studio. */
