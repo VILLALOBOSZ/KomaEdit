@@ -166,6 +166,48 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
 
         /** Pide las miniaturas que faltan (solo las que se ven). */
         void request(List<String> hashes);
+
+        /**
+         * Los esquemas de la carpeta {@code schematics} del jugador (la de Litematica), los más nuevos primero. Vacío
+         * si no hay o el cliente no la ve.
+         */
+        default List<LocalFile> localFiles() {
+            return List.of();
+        }
+
+        /**
+         * Sube uno de {@link #localFiles()} para importarlo como plano (el servidor enseña antes lo que trae).
+         *
+         * @return {@code false} si el servidor no lo admite o ya hay una subida en marcha
+         */
+        default boolean upload(String path) {
+            return false;
+        }
+
+        /** ¿Admite el servidor subidas desde el Studio (tiene KomaEdit con esta versión)? */
+        default boolean canUpload() {
+            return false;
+        }
+
+        /**
+         * El Studio va a mandar esta exportación: el cliente deja pasar el archivo que baje por ella (lo que llega sin
+         * pedirlo se tira).
+         */
+        default void expectDownload(String command) {
+        }
+    }
+
+    /**
+     * Un esquema de la carpeta {@code schematics} del jugador.
+     *
+     * @param path     ruta dentro de la carpeta, con {@code /}
+     * @param modified milisegundos desde 1970
+     */
+    record LocalFile(String path, long bytes, long modified) {
+        /** El nombre sin carpetas. */
+        public String name() {
+            return path.substring(path.lastIndexOf('/') + 1);
+        }
     }
 
     /**

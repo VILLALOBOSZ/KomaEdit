@@ -21,8 +21,9 @@ import static com.komainu.moxia.studio.ui.StudioTheme.*;
  * Etapa «Planos» del Studio: la biblioteca de planos en una cuadrícula de miniaturas, con buscador por nombre y
  * etiqueta y filtro de propios o del servidor. Encima de la cuadrícula, siempre en el mismo sitio, el plano elegido
  * con Cargar y Estampar; Colocar (con vista previa) es el botón del pie. Las miniaturas se piden solo para las
- * tarjetas que se ven. Las acciones son las órdenes de siempre ({@code /komaedit blueprint load|place},
- * {@code /komaedit pincel stamp}).
+ * tarjetas que se ven. Las acciones son las órdenes de siempre ({@code /komaedit blueprint load|place|export},
+ * {@code /komaedit pincel stamp}). Debajo, «Importar archivo…» enseña los esquemas de la carpeta {@code schematics} del
+ * jugador (la de Litematica) y sube el elegido para importarlo.
  */
 public final class BlueprintStage {
     public static final String SEARCH_KEY = "blueprint_search";
@@ -31,12 +32,19 @@ public final class BlueprintStage {
     private static final int MIN_CARD = 60;
     private static final int CAPTION = 20;
     private static final int MAX_TAG_CHIPS = 10;
+    /** Formatos de «Exportar», en el orden de la rueda: Litematica, estructura y WorldEdit. */
+    private static final List<String> EXPORT_FORMATS = List.of("litematic", "nbt", "schem");
+    /** Archivos de la carpeta schematics que se enseñan (los más nuevos). */
+    private static final int MAX_LOCAL_FILES = 8;
 
     private String query = "";
     private boolean editing;
     private int scope;
     private String selected = "";
     private int radius;
+    private int exportFormat;
+    /** La lista de «Importar archivo…» abierta. */
+    private boolean importing;
     /** El pincel de estampar que salió de aquí sigue a la etapa: el plano elegido y el radio. */
     private final BrushSync brush = new BrushSync();
     /** Lo que se estampó: una referencia de plano o una etiqueta ({@code #ruinas}). */
@@ -133,6 +141,7 @@ public final class BlueprintStage {
                 && shown.stream().anyMatch(blueprint -> blueprint.mine() && !blueprint.shared());
         actions(ui, column, host, current, compact, shareable);
         pasteCode(ui, column, host);
+        importFile(ui, column, host);
 
         ui.section(column, host.tr("gui.komaedit.blueprint.library", shown.size()));
         if (shown.isEmpty()) {
@@ -242,7 +251,7 @@ public final class BlueprintStage {
         int[] worst = {ui.chipWidth(host.tr("gui.komaedit.blueprint.stamp")) + 8, widest,
                 ui.chipWidth(host.tr("gui.komaedit.blueprint.load")),
                 shareable ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0,
-                ui.chipWidth(host.tr("gui.komaedit.share.button"))};
+                ui.chipWidth(host.tr("gui.komaedit.share.button")), exportWidth(ui, host)};
         int extra = (buttonRows(worst, column.width() - 12) - 1) * BUTTON_PITCH;
         Rect card = column.next((compact ? 30 : 42) + extra);
         ui.fill(card, FIELD);
@@ -290,7 +299,7 @@ public final class BlueprintStage {
         int[] widths = {ui.chipWidth(host.tr("gui.komaedit.blueprint.stamp")) + 8,
                 ui.chipWidth(radiusText), ui.chipWidth(host.tr("gui.komaedit.blueprint.load")),
                 share ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0,
-                ui.chipWidth(host.tr("gui.komaedit.share.button"))};
+                ui.chipWidth(host.tr("gui.komaedit.share.button")), exportWidth(ui, host)};
         List<Rect> cells = Column.flow(widths, 14, buttons.x(), buttons.y(), buttons.width());
         ui.button(cells.get(0), host.tr("gui.komaedit.blueprint.stamp"),
                         stamp ? StudioUi.Tone.SECONDARY : StudioUi.Tone.DISABLED)
@@ -324,6 +333,82 @@ public final class BlueprintStage {
                     host.shareExport("plano:" + reference);
                     host.status(host.tr("gui.komaedit.status.share.preparing", reference));
                 });
+        // «Exportar» y, pegado, el formato a la vista: ‹ .litematic › cambia con un clic o la rueda. Van en un solo
+        // hueco del reparto para que nunca queden en filas distintas.
+        String format = EXPORT_FORMATS.get(exportFormat);
+        int formatWidth = widestFormat(ui, host);
+        Rect exportCell = cells.get(5);
+        ui.button(exportCell.withoutRight(formatWidth, Column.GAP), host.tr("gui.komaedit.blueprint.export"),
+                        StudioUi.Tone.SECONDARY)
+                .tooltip(host.tr("gui.komaedit.blueprint.export") + "\n"
+                        + host.tr("gui.komaedit.help.blueprint.export", format))
+                .onClick(() -> {
+                    String command = "komaedit blueprint export " + reference + " " + format;
+                    host.blueprints().expectDownload(command);
+                    host.send(command);
+                    host.status(host.tr("gui.komaedit.status.blueprint.export", reference, format));
+                });
+        ui.chip(exportCell.rightPart(formatWidth), host.tr("gui.komaedit.blueprint.export_format", format), false,
+                        TEXT_SECONDARY)
+                .tooltip(host.tr("gui.komaedit.blueprint.export_format_name") + "\n"
+                        + host.tr("gui.komaedit.help.blueprint.export_format"))
+                .onScroll(direction -> exportFormat = Math.floorMod(exportFormat + direction, EXPORT_FORMATS.size()))
+                .onClick(() -> exportFormat = Math.floorMod(exportFormat + 1, EXPORT_FORMATS.size()))
+                .onReset(() -> exportFormat = 0);
+    }
+
+    /** «Exportar» con su selector de formato al lado, en un solo hueco. */
+    private static int exportWidth(StudioUi ui, StudioHost host) {
+        return ui.chipWidth(host.tr("gui.komaedit.blueprint.export")) + Column.GAP + widestFormat(ui, host);
+    }
+
+    /** El selector de formato con el nombre más largo, para que la tarjeta no salte al cambiarlo. */
+    private static int widestFormat(StudioUi ui, StudioHost host) {
+        int widest = 0;
+        for (String format : EXPORT_FORMATS) {
+            widest = Math.max(widest, ui.chipWidth(host.tr("gui.komaedit.blueprint.export_format", format)));
+        }
+        return widest;
+    }
+
+    /**
+     * «Importar archivo…»: abre la lista de los esquemas de la carpeta {@code schematics} del jugador, los más nuevos
+     * primero. Un clic sube el archivo y el servidor enseña lo que trae (la ventana de importar) antes de guardarlo.
+     */
+    private void importFile(StudioUi ui, Column column, StudioHost host) {
+        StudioHost.Blueprints catalog = host.blueprints();
+        boolean can = catalog.canUpload();
+        String label = host.tr(importing ? "gui.komaedit.blueprint.import_close" : "gui.komaedit.blueprint.import_file");
+        ui.button(column.next(16), label, can ? StudioUi.Tone.SECONDARY : StudioUi.Tone.DISABLED)
+                .tooltip(host.tr("gui.komaedit.blueprint.import_file") + "\n" + host.tr(can
+                        ? "gui.komaedit.help.blueprint.import_file" : "gui.komaedit.help.blueprint.upload_denied"))
+                .onClick(() -> importing = can && !importing);
+        if (!importing || !can) {
+            return;
+        }
+        ui.section(column, host.tr("gui.komaedit.blueprint.import_from"));
+        List<StudioHost.LocalFile> files = catalog.localFiles();
+        if (files.isEmpty()) {
+            ui.paragraph(column, host.tr("gui.komaedit.blueprint.import_none"), MUTED, 0);
+            return;
+        }
+        for (StudioHost.LocalFile file : files.subList(0, Math.min(MAX_LOCAL_FILES, files.size()))) {
+            Rect row = column.next(14);
+            String size = host.tr("gui.komaedit.blueprint.import_size", Math.max(1, (file.bytes() + 1023) / 1024));
+            ui.fill(row, ui.hovered(row) ? CARD_HOVER : CARD);
+            ui.label(file.path(), row.x() + 6, row.y() + 3, row.width() - ui.width(size) - 18, TEXT);
+            ui.rightAligned(size, row.right() - 6, row.y() + 3, MUTED);
+            ui.register(row)
+                    .tooltip(file.path() + " · " + size + "\n" + host.tr("gui.komaedit.help.blueprint.import_pick"))
+                    .onClick(() -> {
+                        boolean started = catalog.upload(file.path());
+                        host.status(host.tr(started ? "gui.komaedit.status.blueprint.uploading"
+                                : "gui.komaedit.status.blueprint.upload_busy", file.name()));
+                        if (started) {
+                            importing = false;
+                        }
+                    });
+        }
     }
 
     /** «Pegar código»: lo que llega de otro servidor (paletas, presets, planos…), enseñando antes qué trae. */

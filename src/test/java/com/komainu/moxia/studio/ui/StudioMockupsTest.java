@@ -94,6 +94,8 @@ class StudioMockupsTest {
             driver.view.selectStage(StudioStage.PATH, driver.host);
         }));
         scenes.add(new Scene("1080p_gui3_planos_es.png", 640, 360, 3, "es_es", StudioMockupsTest::blueprints));
+        scenes.add(new Scene("1080p_gui3_planos_importar_es.png", 640, 360, 3, "es_es",
+                StudioMockupsTest::blueprintFiles));
         scenes.add(new Scene("1080p_gui3_compartir_es.png", 640, 360, 3, "es_es", StudioMockupsTest::shareOffer));
         scenes.add(new Scene("1080p_gui3_bloques_es.png", 640, 360, 3, "es_es", driver -> {
             tools(driver, "roof");
@@ -295,7 +297,8 @@ class StudioMockupsTest {
             tools(driver, "tree");
             driver.host.ghost = GhostFooterTest.ghost("Árbol roble", "giro 0° · 7×19×7",
                     "124, 65, -38 · (+2, 0, -1)", "", new int[5]);
-            int[] title = driver.where("Árbol roble · giro 0° · 7×19×7");
+            // El pie dice lo que es y su giro; las medidas van en el tooltip que sale al pasar el ratón.
+            int[] title = driver.where("Árbol roble · giro 0°");
             driver.mouseX = title[0];
             driver.mouseY = title[1];
         }));
@@ -599,6 +602,18 @@ class StudioMockupsTest {
         driver.view.selectStage(StudioStage.BLUEPRINTS, driver.host);
         driver.view.blueprints().select(BlueprintRef.display("casita", BlueprintScope.SHARED));
         driver.host.status = "";
+    }
+
+    /** «Importar archivo…» abierto: los esquemas de la carpeta schematics del jugador, los más nuevos primero. */
+    static void blueprintFiles(StudioDriver driver) {
+        blueprints(driver);
+        List<StudioHost.LocalFile> files = driver.host.blueprints.localFiles;
+        files.add(new StudioHost.LocalFile("Casa del herrero.litematic", 48_211, 4L));
+        files.add(new StudioHost.LocalFile("aldea/molino.litematic", 131_072, 3L));
+        files.add(new StudioHost.LocalFile("igloo.nbt", 2_048, 2L));
+        files.add(new StudioHost.LocalFile("puente_piedra.schem", 9_550, 1L));
+        driver.render();
+        driver.click("Importar archivo…");
     }
 
     /** La ventana «Importar» con un paquete que trae de todo: nuevo, con bloques cambiados, que choca y que no entra. */

@@ -153,6 +153,24 @@ public final class WorldEditService {
         return region.getVolume();
     }
 
+    /**
+     * La selección copiada a un portapapeles aparte, con sus entidades y el origen en la esquina mínima, sin tocar el
+     * portapapeles del jugador (para exportarla como esquema).
+     */
+    public static Clipboard copySelectionApart(ServerPlayerEntity player)
+            throws IncompleteRegionException, WorldEditException {
+        PlayerContext context = context(player);
+        Region region = context.session().getSelection(context.world()).clone();
+        BlockArrayClipboard clipboard = new BlockArrayClipboard(region);
+        ForwardExtentCopy copy = new ForwardExtentCopy(context.world(), region, region.getMinimumPoint(), clipboard,
+                region.getMinimumPoint());
+        copy.setCopyingEntities(true);
+        copy.setCopyingBiomes(false);
+        Operations.complete(copy);
+        clipboard.setOrigin(region.getMinimumPoint());
+        return clipboard;
+    }
+
     public static int pasteClipboard(ServerPlayerEntity player, BlockPos position) throws WorldEditException {
         PlayerContext context = context(player);
         ClipboardHolder clipboard = context.session().getClipboard();
