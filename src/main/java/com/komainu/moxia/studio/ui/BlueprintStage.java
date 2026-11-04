@@ -251,7 +251,8 @@ public final class BlueprintStage {
         int[] worst = {ui.chipWidth(host.tr("gui.komaedit.blueprint.stamp")) + 8, widest,
                 ui.chipWidth(host.tr("gui.komaedit.blueprint.load")),
                 shareable ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0,
-                ui.chipWidth(host.tr("gui.komaedit.share.button")), widestExport(ui, host)};
+                ui.chipWidth(host.tr("gui.komaedit.share.button")), ui.chipWidth(host.tr("gui.komaedit.blueprint.export")),
+                widestFormat(ui, host)};
         int extra = (buttonRows(worst, column.width() - 12) - 1) * BUTTON_PITCH;
         Rect card = column.next((compact ? 30 : 42) + extra);
         ui.fill(card, FIELD);
@@ -299,7 +300,8 @@ public final class BlueprintStage {
         int[] widths = {ui.chipWidth(host.tr("gui.komaedit.blueprint.stamp")) + 8,
                 ui.chipWidth(radiusText), ui.chipWidth(host.tr("gui.komaedit.blueprint.load")),
                 share ? ui.chipWidth(host.tr("gui.komaedit.blueprint.share")) : 0,
-                ui.chipWidth(host.tr("gui.komaedit.share.button")), widestExport(ui, host)};
+                ui.chipWidth(host.tr("gui.komaedit.share.button")), ui.chipWidth(host.tr("gui.komaedit.blueprint.export")),
+                widestFormat(ui, host)};
         List<Rect> cells = Column.flow(widths, 14, buttons.x(), buttons.y(), buttons.width());
         ui.button(cells.get(0), host.tr("gui.komaedit.blueprint.stamp"),
                         stamp ? StudioUi.Tone.SECONDARY : StudioUi.Tone.DISABLED)
@@ -333,23 +335,30 @@ public final class BlueprintStage {
                     host.shareExport("plano:" + reference);
                     host.status(host.tr("gui.komaedit.status.share.preparing", reference));
                 });
+        // «Exportar» y, al lado, el formato a la vista: ‹ .litematic › cambia con un clic o la rueda.
         String format = EXPORT_FORMATS.get(exportFormat);
-        String exportLabel = host.tr("gui.komaedit.blueprint.export", format);
-        ui.button(cells.get(5), exportLabel, StudioUi.Tone.SECONDARY)
-                .tooltip(exportLabel + "\n" + host.tr("gui.komaedit.help.blueprint.export", format))
-                .onScroll(direction -> exportFormat = Math.floorMod(exportFormat + direction, EXPORT_FORMATS.size()))
-                .onReset(() -> exportFormat = 0)
+        ui.button(cells.get(5), host.tr("gui.komaedit.blueprint.export"), StudioUi.Tone.SECONDARY)
+                .tooltip(host.tr("gui.komaedit.blueprint.export") + "\n"
+                        + host.tr("gui.komaedit.help.blueprint.export", format))
                 .onClick(() -> {
-                    host.send("komaedit blueprint export " + reference + " " + format);
+                    String command = "komaedit blueprint export " + reference + " " + format;
+                    host.blueprints().expectDownload(command);
+                    host.send(command);
                     host.status(host.tr("gui.komaedit.status.blueprint.export", reference, format));
                 });
+        ui.chip(cells.get(6), host.tr("gui.komaedit.blueprint.export_format", format), false, TEXT_SECONDARY)
+                .tooltip(host.tr("gui.komaedit.blueprint.export_format_name") + "\n"
+                        + host.tr("gui.komaedit.help.blueprint.export_format"))
+                .onScroll(direction -> exportFormat = Math.floorMod(exportFormat + direction, EXPORT_FORMATS.size()))
+                .onClick(() -> exportFormat = Math.floorMod(exportFormat + 1, EXPORT_FORMATS.size()))
+                .onReset(() -> exportFormat = 0);
     }
 
-    /** El botón «Exportar» con el formato de nombre más largo, para que la tarjeta no salte al cambiarlo. */
-    private static int widestExport(StudioUi ui, StudioHost host) {
+    /** El selector de formato con el nombre más largo, para que la tarjeta no salte al cambiarlo. */
+    private static int widestFormat(StudioUi ui, StudioHost host) {
         int widest = 0;
         for (String format : EXPORT_FORMATS) {
-            widest = Math.max(widest, ui.chipWidth(host.tr("gui.komaedit.blueprint.export", format)));
+            widest = Math.max(widest, ui.chipWidth(host.tr("gui.komaedit.blueprint.export_format", format)));
         }
         return widest;
     }
@@ -369,6 +378,7 @@ public final class BlueprintStage {
         if (!importing || !can) {
             return;
         }
+        ui.section(column, host.tr("gui.komaedit.blueprint.import_from"));
         List<StudioHost.LocalFile> files = catalog.localFiles();
         if (files.isEmpty()) {
             ui.paragraph(column, host.tr("gui.komaedit.blueprint.import_none"), MUTED, 0);

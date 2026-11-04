@@ -463,6 +463,11 @@ public final class ClientStudioHost implements StudioHost {
         public boolean canUpload() {
             return ClientPlayNetworking.canSend(BlueprintPayloads.Upload.ID);
         }
+
+        @Override
+        public void expectDownload(String command) {
+            ClientSchematicFiles.expect(command);
+        }
     };
 
     @Override

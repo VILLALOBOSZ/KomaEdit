@@ -155,11 +155,60 @@ public final class FileChunks {
     }
 
     /**
+     * Lo que pueden juntar a la vez varios {@link Assembler}: cuántos envíos a medias y cuántos bytes en vuelo entre
+     * todos. En el servidor, uno para las subidas de todos los jugadores: abrir muchas a medias no agota la memoria.
+     */
+    public static final class Pool {
+        private final int maxOpen;
+        private final long maxBytes;
+        private int open;
+        private long bytes;
+
+        public Pool(int maxOpen, long maxBytes) {
+            this.maxOpen = Math.max(1, maxOpen);
+            this.maxBytes = Math.max(CHUNK_BYTES, maxBytes);
+        }
+
+        synchronized boolean tryOpen() {
+            if (open >= maxOpen) {
+                return false;
+            }
+            open++;
+            return true;
+        }
+
+        synchronized boolean tryReserve(long amount) {
+            if (bytes + amount > maxBytes) {
+                return false;
+            }
+            bytes += amount;
+            return true;
+        }
+
+        synchronized void release(long amount) {
+            bytes = Math.max(0L, bytes - amount);
+            open = Math.max(0, open - 1);
+        }
+
+        /** Envíos a medias ahora. */
+        public synchronized int openTransfers() {
+            return open;
+        }
+
+        /** Bytes en vuelo ahora. */
+        public synchronized long bytesInFlight() {
+            return bytes;
+        }
+    }
+
+    /**
      * Junta los trozos de un envío. Solo hay uno a medias: si empieza otro, el anterior se olvida. Los trozos que no
-     * cuadran (otro número de trozos para el mismo envío, de más) tiran el envío entero.
+     * cuadran (otro número de trozos para el mismo envío, de más) tiran el envío entero. Cada envío a medias ocupa un
+     * hueco de su {@link Pool} y sus bytes, hasta que acaba o se tira.
      */
     public static final class Assembler {
         private final int maxBytes;
+        private final Pool pool;
         private int transfer = -1;
         private String name;
         private String hash;
@@ -168,23 +217,33 @@ public final class FileChunks {
         private long bytes;
         private long startedAt;
 
-        /** @param maxBytes lo que puede ocupar el archivo entero (como mucho {@link #MAX_BYTES}) */
+        /** Con su propio {@link Pool}: un envío a la vez. */
         public Assembler(int maxBytes) {
+            this(maxBytes, new Pool(1, MAX_BYTES));
+        }
+
+        /** @param maxBytes lo que puede ocupar el archivo entero (como mucho {@link #MAX_BYTES}) */
+        public Assembler(int maxBytes, Pool pool) {
             this.maxBytes = Math.min(MAX_BYTES, Math.max(CHUNK_BYTES, maxBytes));
+            this.pool = pool;
         }
 
         /**
          * @param now el reloj de quien recibe, para {@link #stale}
          * @return el archivo, si este era el último trozo (falta comprobar su huella, {@link Complete#verify()})
-         * @throws IllegalArgumentException si el archivo es demasiado grande o sus trozos no cuadran
+         * @throws IllegalArgumentException si el archivo es demasiado grande, sus trozos no cuadran o no queda sitio
+         *                                  en el {@link Pool}
          */
         public synchronized Optional<Complete> accept(Chunk chunk, long now) {
-            if (chunk.transfer() != transfer || !chunk.name().equals(name) || !chunk.hash().equals(hash)) {
+            if (starts(chunk)) {
+                clear();
                 // Todos los trozos menos el último van llenos: con tantos, no cabe.
                 if ((long) (chunk.total() - 1) * CHUNK_BYTES >= maxBytes) {
-                    clear();
                     throw new IllegalArgumentException("El archivo es demasiado grande (máximo " + maxBytes / 1024
                             + " KiB)");
+                }
+                if (!pool.tryOpen()) {
+                    throw new IllegalArgumentException("Hay demasiados archivos llegando a la vez: prueba en un rato");
                 }
                 transfer = chunk.transfer();
                 name = chunk.name();
@@ -199,12 +258,16 @@ public final class FileChunks {
                 throw new IllegalArgumentException("Los trozos del archivo no cuadran");
             }
             if (parts[chunk.index()] == null) {
-                bytes += chunk.data().length;
-                if (bytes > maxBytes) {
+                if (bytes + chunk.data().length > maxBytes) {
                     clear();
                     throw new IllegalArgumentException("El archivo es demasiado grande (máximo " + maxBytes / 1024
                             + " KiB)");
                 }
+                if (!pool.tryReserve(chunk.data().length)) {
+                    clear();
+                    throw new IllegalArgumentException("Hay demasiados archivos llegando a la vez: prueba en un rato");
+                }
+                bytes += chunk.data().length;
                 parts[chunk.index()] = chunk.data();
                 received++;
             }
@@ -231,13 +294,22 @@ public final class FileChunks {
             return parts != null;
         }
 
+        /** El envío que se está juntando, o {@code -1}. */
+        public synchronized int transfer() {
+            return parts == null ? -1 : transfer;
+        }
+
         /** ¿Este trozo empieza un envío nuevo (otro que el que se está juntando)? */
         public synchronized boolean starts(Chunk chunk) {
             return parts == null || chunk.transfer() != transfer || !chunk.name().equals(name)
                     || !chunk.hash().equals(hash);
         }
 
+        /** Tira lo que haya a medias y devuelve su sitio al {@link Pool}. */
         public synchronized void clear() {
+            if (parts != null) {
+                pool.release(bytes);
+            }
             transfer = -1;
             name = null;
             hash = null;

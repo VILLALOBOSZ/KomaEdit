@@ -542,6 +542,7 @@ public final class FakeStudioHost implements StudioHost {
         public final List<String> requested = new ArrayList<>();
         public final List<LocalFile> localFiles = new ArrayList<>();
         public final List<String> uploaded = new ArrayList<>();
+        public final List<String> expectedDownloads = new ArrayList<>();
         public boolean canUpload = true;
 
         @Override
@@ -603,6 +604,11 @@ public final class FakeStudioHost implements StudioHost {
         @Override
         public boolean canUpload() {
             return canUpload;
+        }
+
+        @Override
+        public void expectDownload(String command) {
+            expectedDownloads.add(command);
         }
     }
 

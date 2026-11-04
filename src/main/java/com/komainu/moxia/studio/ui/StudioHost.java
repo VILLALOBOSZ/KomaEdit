@@ -188,6 +188,13 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
         default boolean canUpload() {
             return false;
         }
+
+        /**
+         * El Studio va a mandar esta exportación: el cliente deja pasar el archivo que baje por ella (lo que llega sin
+         * pedirlo se tira).
+         */
+        default void expectDownload(String command) {
+        }
     }
 
     /**

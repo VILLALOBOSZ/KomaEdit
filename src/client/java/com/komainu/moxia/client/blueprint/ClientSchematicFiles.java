@@ -2,9 +2,11 @@ package com.komainu.moxia.client.blueprint;
 
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.blueprint.BlueprintPayloads;
+import com.komainu.moxia.blueprint.DownloadInbox;
 import com.komainu.moxia.blueprint.FileChunks;
 import com.komainu.moxia.studio.ui.StudioHost;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
@@ -32,12 +34,12 @@ import java.util.stream.Stream;
  * servidor baja aquí, y lo que hay aquí se puede subir para importarlo como plano. Leer y escribir archivos va en un
  * hilo propio; la red y los mensajes, en el del cliente.
  *
- * <p>Lo que baja solo entra en esa carpeta, con un nombre comprobado ({@link FileChunks#validName}), sin pisar nada
- * (si ya hay uno, {@code casa-2.litematic}) y como mucho {@link #MAX_DOWNLOADS} por conexión.</p>
+ * <p>Solo baja lo que el jugador pidió ({@link DownloadInbox}): cada vez que exporta (el botón del Studio o la orden
+ * escrita, que se ve pasar con {@code ClientSendMessageEvents}) entra un archivo durante un rato; lo demás se tira sin
+ * escribir nada ni avisar. Lo que entra va a esa carpeta, con un nombre comprobado ({@link FileChunks#validName}) y sin
+ * pisar nada (si ya hay uno, {@code casa-2.litematic}).</p>
  */
 public final class ClientSchematicFiles {
-    /** Archivos que pueden bajar en una conexión: un servidor no llena la carpeta. */
-    private static final int MAX_DOWNLOADS = 64;
     /** Trozos que suben por tick (32 KiB). */
     private static final int CHUNKS_PER_TICK = 2;
     private static final int MAX_LISTED = 300;
@@ -48,9 +50,8 @@ public final class ClientSchematicFiles {
         thread.setDaemon(true);
         return thread;
     });
-    private static final FileChunks.Assembler DOWNLOADS = new FileChunks.Assembler(FileChunks.MAX_BYTES);
+    private static final DownloadInbox DOWNLOADS = new DownloadInbox();
     private static final Deque<FileChunks.Chunk> OUTGOING = new ArrayDeque<>();
-    private static int downloads;
     private static int transfer = (int) (System.nanoTime() & 0x3FFF_FFFF);
     private static volatile List<StudioHost.LocalFile> listed = List.of();
     private static volatile boolean listing;
@@ -62,12 +63,18 @@ public final class ClientSchematicFiles {
     public static void register() {
         ClientPlayNetworking.registerGlobalReceiver(BlueprintPayloads.Download.ID,
                 (payload, context) -> context.client().execute(() -> receive(payload.chunk())));
+        // Lo que escribe el jugador (y lo que el Studio manda por el chat a un servidor anterior).
+        ClientSendMessageEvents.COMMAND.register(ClientSchematicFiles::expect);
         ClientTickEvents.END_CLIENT_TICK.register(client -> send());
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(() -> {
             DOWNLOADS.clear();
             OUTGOING.clear();
-            downloads = 0;
         }));
+    }
+
+    /** El jugador mandó esta orden: si es una exportación, su archivo podrá bajar. */
+    public static void expect(String command) {
+        DOWNLOADS.expect(command, System.currentTimeMillis());
     }
 
     /** {@code <juego>/schematics}. */
@@ -80,17 +87,14 @@ public final class ClientSchematicFiles {
     private static void receive(FileChunks.Chunk chunk) {
         FileChunks.Complete complete;
         try {
-            complete = DOWNLOADS.accept(chunk, System.currentTimeMillis()).orElse(null);
+            // Sin pedirlo, vacío: ni se junta ni se avisa.
+            complete = DOWNLOADS.receive(chunk, System.currentTimeMillis()).orElse(null);
         } catch (IllegalArgumentException exception) {
             message(Text.translatable("gui.komaedit.blueprint.download_failed", chunk.name(), exception.getMessage()),
                     Formatting.RED);
             return;
         }
         if (complete == null) {
-            return;
-        }
-        if (++downloads > MAX_DOWNLOADS) {
-            message(Text.translatable("gui.komaedit.blueprint.download_limit", MAX_DOWNLOADS), Formatting.RED);
             return;
         }
         MinecraftClient client = MinecraftClient.getInstance();

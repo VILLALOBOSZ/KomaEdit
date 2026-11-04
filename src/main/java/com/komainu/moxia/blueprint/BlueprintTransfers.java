@@ -31,6 +31,11 @@ public final class BlueprintTransfers {
     /** Trozos de subida por jugador y tick como mucho (el cliente manda dos): más deprisa, la subida se corta. */
     private static final int UPLOAD_CHUNKS_PER_TICK = 8;
     private static final Map<UUID, FileChunks.Queue> DOWNLOADS = new ConcurrentHashMap<>();
+    /**
+     * Subidas a medias entre todos los jugadores y lo que ocupan, como mucho: muchos jugadores (o bots) empezando
+     * subidas sin acabarlas no agotan la memoria del servidor.
+     */
+    private static final FileChunks.Pool UPLOAD_POOL = new FileChunks.Pool(4, 32L * 1024 * 1024);
     private static final Map<UUID, FileChunks.Assembler> UPLOADS = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> CHUNKS_THIS_TICK = new ConcurrentHashMap<>();
     /** La subida que se rechazó al empezar (sin permiso, sin cuota): sus trozos se ignoran sin repetir el aviso. */
@@ -48,7 +53,10 @@ public final class BlueprintTransfers {
         ServerTickEvents.END_SERVER_TICK.register(BlueprintTransfers::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             DOWNLOADS.remove(handler.player.getUuid());
-            UPLOADS.remove(handler.player.getUuid());
+            FileChunks.Assembler upload = UPLOADS.remove(handler.player.getUuid());
+            if (upload != null) {
+                upload.clear();
+            }
             CHUNKS_THIS_TICK.remove(handler.player.getUuid());
             REFUSED.remove(handler.player.getUuid());
         });
@@ -79,27 +87,30 @@ public final class BlueprintTransfers {
             return;
         }
         int max = (int) Math.min(FileChunks.MAX_BYTES, ShareConfig.limits().maxFileBytes());
-        FileChunks.Assembler assembler = UPLOADS.computeIfAbsent(id, key -> new FileChunks.Assembler(max));
+        FileChunks.Assembler assembler = UPLOADS.computeIfAbsent(id, key -> new FileChunks.Assembler(max,
+                UPLOAD_POOL));
         if (CHUNKS_THIS_TICK.merge(id, 1, Integer::sum) > UPLOAD_CHUNKS_PER_TICK) {
             assembler.clear();
             refuse(player, chunk, "llega demasiado deprisa");
             return;
         }
-        if (assembler.starts(chunk)) {
-            // Cada subida cuenta como una importación desde el primer trozo: con permiso y cuota, o no se junta nada.
-            try {
-                ShareService.chargeImport(player);
-            } catch (IllegalArgumentException exception) {
-                refuse(player, chunk, exception.getMessage());
-                return;
-            }
-        }
+        boolean starting = assembler.starts(chunk);
         Optional<FileChunks.Complete> complete;
         try {
             complete = assembler.accept(chunk, System.currentTimeMillis());
         } catch (IllegalArgumentException exception) {
             refuse(player, chunk, exception.getMessage());
             return;
+        }
+        if (starting) {
+            // Cada subida cuenta como una importación desde el primer trozo: con permiso y cuota, o se tira.
+            try {
+                ShareService.chargeImport(player);
+            } catch (IllegalArgumentException exception) {
+                assembler.clear();
+                refuse(player, chunk, exception.getMessage());
+                return;
+            }
         }
         complete.ifPresent(file -> {
             try {
@@ -119,7 +130,14 @@ public final class BlueprintTransfers {
         CHUNKS_THIS_TICK.clear();
         if (!UPLOADS.isEmpty()) {
             long before = System.currentTimeMillis() - STALE_MILLIS;
-            UPLOADS.values().removeIf(assembler -> assembler.stale(before) || !assembler.pending());
+            UPLOADS.values().removeIf(assembler -> {
+                boolean drop = assembler.stale(before) || !assembler.pending();
+                if (drop) {
+                    // Devuelve su sitio en UPLOAD_POOL.
+                    assembler.clear();
+                }
+                return drop;
+            });
         }
         if (DOWNLOADS.isEmpty()) {
             return;

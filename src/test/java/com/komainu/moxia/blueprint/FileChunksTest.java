@@ -83,6 +83,33 @@ class FileChunksTest {
     }
 
     @Test
+    void aSharedPoolCapsHalfDoneTransfersAndBytesInFlight() {
+        FileChunks.Pool pool = new FileChunks.Pool(2, 40 * 1024);
+        FileChunks.Assembler first = new FileChunks.Assembler(FileChunks.MAX_BYTES, pool);
+        FileChunks.Assembler second = new FileChunks.Assembler(FileChunks.MAX_BYTES, pool);
+        FileChunks.Assembler third = new FileChunks.Assembler(FileChunks.MAX_BYTES, pool);
+        List<FileChunks.Chunk> a = FileChunks.split(1, "a.nbt", bytes(100_000, 1));
+        List<FileChunks.Chunk> b = FileChunks.split(2, "b.nbt", bytes(100_000, 2));
+        first.accept(a.getFirst(), 0L);
+        second.accept(b.getFirst(), 0L);
+        assertEquals(2, pool.openTransfers());
+        IllegalArgumentException crowded = assertThrows(IllegalArgumentException.class,
+                () -> third.accept(FileChunks.split(3, "c.nbt", bytes(100, 3)).getFirst(), 0L));
+        assertTrue(crowded.getMessage().contains("demasiados archivos"), crowded.getMessage());
+        assertEquals(32 * 1024, pool.bytesInFlight());
+        assertThrows(IllegalArgumentException.class, () -> first.accept(a.get(1), 0L),
+                "48 KiB en vuelo no caben en 40");
+        assertFalse(first.pending(), "el que no cabe se tira entero");
+        assertEquals(1, pool.openTransfers());
+        assertEquals(16 * 1024, pool.bytesInFlight());
+        second.clear();
+        assertEquals(0, pool.openTransfers());
+        assertEquals(0, pool.bytesInFlight());
+        assertTrue(third.accept(FileChunks.split(4, "c.nbt", bytes(100, 3)).getFirst(), 0L).isPresent());
+        assertEquals(0, pool.bytesInFlight(), "uno que acaba devuelve su sitio");
+    }
+
+    @Test
     void aNewTransferReplacesAHalfDoneOneAndStaleOnesAreSeen() {
         FileChunks.Assembler assembler = new FileChunks.Assembler(FileChunks.MAX_BYTES);
         List<FileChunks.Chunk> old = FileChunks.split(1, "vieja.nbt", bytes(50_000, 4));

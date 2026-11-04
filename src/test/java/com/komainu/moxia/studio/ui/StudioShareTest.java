@@ -47,16 +47,20 @@ class StudioShareTest {
     }
 
     @Test
-    void exportSendsTheChosenFormatAndTheWheelChangesIt() {
+    void exportShowsItsFormatAndAsksForTheDownloadBeforeSending() {
         studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
         studio.view.blueprints().select("torre");
-        studio.click("Exportar .litematic");
+        studio.render();
+        assertTrue(studio.has("‹ .litematic ›"), "el formato se ve sin pasar el ratón: " + studio.texts());
+        studio.click("Exportar");
         assertEquals("komaedit blueprint export torre litematic", studio.host.last());
-        studio.wheel("Exportar .litematic", 1);
-        studio.click("Exportar .nbt");
+        assertEquals(List.of("komaedit blueprint export torre litematic"), studio.host.blueprints.expectedDownloads,
+                "el cliente sabe que ese archivo lo pidió el jugador");
+        studio.click("‹ .litematic ›");
+        studio.click("Exportar");
         assertEquals("komaedit blueprint export torre nbt", studio.host.last());
-        studio.wheel("Exportar .nbt", 1);
-        assertTrue(studio.has("Exportar .schem"), studio.texts().toString());
+        studio.wheel("‹ .nbt ›", 1);
+        assertTrue(studio.has("‹ .schem ›"), studio.texts().toString());
     }
 
     @Test
@@ -67,6 +71,8 @@ class StudioShareTest {
         studio.render();
         assertFalse(studio.has("igloo.nbt"), "la lista va cerrada hasta pulsar el botón");
         studio.click("Importar archivo…");
+        assertTrue(studio.shows("De tu carpeta schematics".toUpperCase()) || studio.shows("De tu carpeta schematics"),
+                "la lista dice de dónde salen: " + studio.texts());
         assertTrue(studio.has("aldea/molino.litematic"), studio.texts().toString());
         assertTrue(studio.has("128 KiB"), studio.texts().toString());
         studio.click("igloo.nbt");
@@ -77,6 +83,14 @@ class StudioShareTest {
         studio.host.blueprints.canUpload = false;
         studio.click("Importar archivo…");
         assertFalse(studio.has("igloo.nbt"), "sin subidas en el servidor, el botón no abre nada");
+    }
+
+    @Test
+    void anEmptySchematicsFolderSaysWhereToPutTheFiles() {
+        studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
+        studio.render();
+        studio.click("Importar archivo…");
+        assertTrue(studio.shows(".minecraft/schematics"), studio.texts().toString());
     }
 
     @Test
