@@ -58,9 +58,11 @@ public final class PlacementBuilder {
                 perUnit.z() * target.z() / natural.z() * factor
         );
 
-        Mat3 input = Mat3.rotation(Alignment.UP, structure.inputRotation());
+        // En el sentido de //rotate, -revolver, el pincel con -p, estampar y el gizmo: positivo es horario mirando
+        // desde la punta del eje (con la vertical, de este a sur). Mat3.rotation sigue la mano derecha: va al revés.
+        Mat3 input = Mat3.rotation(Alignment.UP, -structure.inputRotation());
         Mat3 orientation = Mat3.rotation(settings.orientationAxis().evaluate(context.view()),
-                settings.orientationAngle());
+                -settings.orientationAngle());
         boolean[] flips = settings.flips();
         Mat3 mirror = Mat3.diagonal(
                 flips[0] && random.nextBoolean() ? -1 : 1,

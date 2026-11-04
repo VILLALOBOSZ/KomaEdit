@@ -180,4 +180,66 @@ class AlignmentTest {
                         null, new Vec3(0, 0, 0), new Vec3(0, 0, 0), new SplittableRandom(5), null), 1.0);
         assertEquals(1.0, Math.abs(rotated.rotation().determinant()), 1.0E-9);
     }
+
+    /**
+     * {@code Cl(R:90)}, {@code Bp(R:90)} y {@code -c 90} giraban de este a norte, al revés que {@code //rotate},
+     * {@code -revolver}, el pincel {@code place -p}, {@code pincel stamp -r 90} y Ctrl+R del gizmo: la misma casa salía
+     * girada 180° entre colocarla y estamparla.
+     */
+    @Test
+    void rotationsGoTheWayOfWorldEditRotate() {
+        PlacementSettings settings = PlacementSettings.parse(PlacementSettings.Kind.PLACE, "Sh(S:Cuboid,P:stone) C C");
+        Structure turned = new Structure() {
+            @Override
+            public Vec3 min() {
+                return new Vec3(-1, 0, -1);
+            }
+
+            @Override
+            public Vec3 max() {
+                return new Vec3(1, 1, 1);
+            }
+
+            @Override
+            public Vec3 naturalSize() {
+                return new Vec3(2, 1, 2);
+            }
+
+            @Override
+            public Vec3 blocksPerUnit() {
+                return new Vec3(1, 1, 1);
+            }
+
+            @Override
+            public Sampler sampler(long seed) {
+                return (x, y, z) -> 0;
+            }
+
+            @Override
+            public boolean usesPattern() {
+                return false;
+            }
+
+            @Override
+            public double inputRotation() {
+                return 90.0;
+            }
+
+            @Override
+            public String describe() {
+                return "girada 90°";
+            }
+        };
+        Alignment.Context context = Alignment.Context.at(new Vec3(0.5, 0.5, 0.5), new Vec3(0, 0, 0),
+                Alignment.EAST, 1);
+        Placement withInput = new PlacementBuilder(settings, java.util.List.of(turned), PlacementBuilder.Offsets.NONE)
+                .build(new Vec3(0, 0, 0), context, 1.0);
+        assertVector(new Vec3(0, 0, 1), withInput.rotation().apply(new Vec3(1, 0, 0)), "R:90 lleva el este al sur");
+        PlacementSettings oriented = PlacementSettings.parse(PlacementSettings.Kind.PLACE,
+                "Sh(S:Cuboid,P:stone) C C -k y -c 90");
+        Placement withFlag = new PlacementBuilder(oriented, java.util.List.of(
+                StructureSpec.parse(oriented.structure()).procedural(1)), PlacementBuilder.Offsets.NONE)
+                .build(new Vec3(0, 0, 0), context, 1.0);
+        assertVector(new Vec3(0, 0, 1), withFlag.rotation().apply(new Vec3(1, 0, 0)), "-c 90 lleva el este al sur");
+    }
 }
