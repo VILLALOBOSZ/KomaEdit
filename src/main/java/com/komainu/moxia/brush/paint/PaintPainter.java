@@ -4,10 +4,9 @@ import com.komainu.moxia.brush.ez.BrushNoise;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * El pincel de pintura en Java puro: recolorea la superficie bajo cada toque con un degradado de la paleta, sin
@@ -115,11 +114,17 @@ public final class PaintPainter {
         /** Bloques recordados como mucho; con más, el trazo sigue como si empezara otro. */
         static final int MAX_BLOCKS = 600_000;
         private final long salt;
+        private final int limit;
         private final Map<Long, Mark> marks = new HashMap<>();
 
         /** @param salt la sal del trazo: la trama y lo que se cubre salen de aquí */
         public Memory(long salt) {
+            this(salt, MAX_BLOCKS);
+        }
+
+        Memory(long salt, int limit) {
             this.salt = salt;
+            this.limit = limit;
         }
 
         public long salt() {
@@ -129,7 +134,7 @@ public final class PaintPainter {
         private Mark mark(long key, int origin) {
             Mark mark = marks.get(key);
             if (mark == null) {
-                if (marks.size() >= MAX_BLOCKS) {
+                if (marks.size() >= limit) {
                     marks.clear();
                 }
                 mark = new Mark(origin);
@@ -180,17 +185,19 @@ public final class PaintPainter {
             double[] measured = surface.heights(dabs.getFirst(), settings.footprint());
             pass = pass.withHeights(measured[0], measured[1]);
         }
-        Set<Long> touched = new LinkedHashSet<>();
+        // Cada bloque con su marca: si la memoria se vacía a mitad de la tanda, lo ya pintado sigue aquí.
+        Map<Long, Mark> touched = new LinkedHashMap<>();
         for (Dab dab : dabs) {
             checkCancelled.run();
             paintDab(world, surface, dab, pass, memory, touched);
         }
         int changed = 0;
-        for (long key : touched) {
+        for (Map.Entry<Long, Mark> entry : touched.entrySet()) {
+            long key = entry.getKey();
             int x = unpackX(key);
             int y = unpackY(key);
             int z = unpackZ(key);
-            int painted = memory.marks.get(key).painted;
+            int painted = entry.getValue().painted;
             if (painted >= 0 && world.paletteIndex(x, y, z) != painted) {
                 sink.paint(x, y, z, painted);
                 changed++;
@@ -200,7 +207,7 @@ public final class PaintPainter {
     }
 
     private static void paintDab(PaintWorld world, Surface surface, Dab dab, Settings settings, Memory memory,
-                                 Set<Long> touched) {
+                                 Map<Long, Mark> touched) {
         int reach = reach(dab, settings.footprint());
         int centerX = (int) Math.floor(dab.x());
         int centerZ = (int) Math.floor(dab.z());
@@ -260,7 +267,7 @@ public final class PaintPainter {
                     next = Math.clamp(next, 0, last);
                     if (next != mark.painted) {
                         mark.painted = next;
-                        touched.add(key);
+                        touched.put(key, mark);
                     }
                 }
             }

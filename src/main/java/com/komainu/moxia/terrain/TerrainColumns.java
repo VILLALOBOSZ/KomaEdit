@@ -42,7 +42,8 @@ public final class TerrainColumns {
 
     /**
      * Lee las columnas de un rectángulo. Una columna es editable si tiene suelo, ese bloque de suelo se puede
-     * escribir y cumple la máscara.
+     * escribir y cumple la máscara. Si el suelo llega hasta lo más alto de la caja leída no se sabe dónde acaba (un
+     * cortado más alto que la captura): no se toca, porque bajarlo dejaría una muesca con lo de encima colgando.
      */
     public static TerrainColumns read(TerrainView view, int minimumX, int minimumZ, int maximumX, int maximumZ,
                                       Runnable checkCancelled) {
@@ -66,7 +67,7 @@ public final class TerrainColumns {
                 int lowest = NONE;
                 int highest = NONE;
                 for (int y = top; y >= bottom; y--) {
-                    if (view.writable(x, y, z)) {
+                    if (view.changeable(x, y, z)) {
                         if (highest == NONE) {
                             highest = y;
                         }
@@ -88,7 +89,7 @@ public final class TerrainColumns {
                 columns.liquidId[index] = ground == NONE ? null : liquidBlock;
                 columns.lowestWritable[index] = lowest;
                 columns.highestWritable[index] = highest;
-                columns.editable[index] = ground != NONE && view.writable(x, ground, z)
+                columns.editable[index] = ground != NONE && ground < top && view.changeable(x, ground, z)
                         && view.maskAllows(x, ground, z);
             }
         }

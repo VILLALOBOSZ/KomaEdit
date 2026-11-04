@@ -16,7 +16,7 @@ public final class PaintTerrain {
             "diorite", "andesite", "deepslate", "cobbled_deepslate", "tuff", "calcite", "dripstone_block",
             "terracotta", "snow_block", "ice", "packed_ice", "blue_ice", "obsidian", "netherrack", "soul_soil",
             "basalt", "smooth_basalt", "blackstone", "end_stone", "magma_block", "crimson_nylium", "warped_nylium",
-            "sculk", "bedrock", "amethyst_block", "budding_amethyst", "raw_iron_block", "raw_copper_block",
+            "sculk", "amethyst_block", "budding_amethyst", "raw_iron_block", "raw_copper_block",
             "raw_gold_block", "pale_moss_block", "mud", "packed_mud");
 
     private PaintTerrain() {

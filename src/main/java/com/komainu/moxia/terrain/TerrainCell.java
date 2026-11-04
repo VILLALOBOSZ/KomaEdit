@@ -23,6 +23,14 @@ public enum TerrainCell {
     }
 
     /**
+     * Bloques que el terraformado nunca cambia: la bedrock del fondo del mundo (y del techo del Nether). Sin ella un
+     * cráter o un río en un mundo plano abría agujeros al vacío.
+     */
+    public static boolean fixed(String blockId) {
+        return blockId != null && (blockId.equals("minecraft:bedrock") || blockId.equals("bedrock"));
+    }
+
+    /**
      * Clasifica un bloque por su id y lo que dice Minecraft de él.
      *
      * @param solid bloque macizo (cubo opaco); lo que no lo es y no es aire ni líquido cuenta como suelto

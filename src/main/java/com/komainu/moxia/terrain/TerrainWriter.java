@@ -150,7 +150,7 @@ public final class TerrainWriter {
                 SurfacePalette.Column wall = new SurfacePalette.Column(top, 90.0, TerrainColumns.NONE,
                         null, null);
                 for (int y = top - 1; y > lowestNeighbour; y--) {
-                    if (view.writable(x, y, z) && view.cell(x, y, z) == TerrainCell.GROUND) {
+                    if (view.changeable(x, y, z) && view.cell(x, y, z) == TerrainCell.GROUND) {
                         sink.set(x, y, z, palette.material(x, y, z, 0, wall));
                     }
                 }
@@ -181,7 +181,7 @@ public final class TerrainWriter {
             clearTop = Math.max(clearTop, y - 1);
         }
         for (int y = newTop + 1; y <= clearTop; y++) {
-            if (!view.writable(x, y, z)) {
+            if (!view.changeable(x, y, z)) {
                 continue;
             }
             if (fluidLevel != TerrainColumns.NONE && y <= fluidLevel) {
@@ -203,7 +203,7 @@ public final class TerrainWriter {
         // La superficie nueva y sus capas: lo que se rellena entero y lo que se repinta si es suelo.
         int bottom = Math.min(newTop, oldTop) - fillDepth;
         for (int y = newTop; y >= bottom; y--) {
-            if (!view.writable(x, y, z)) {
+            if (!view.changeable(x, y, z)) {
                 continue;
             }
             int depth = newTop - y;
