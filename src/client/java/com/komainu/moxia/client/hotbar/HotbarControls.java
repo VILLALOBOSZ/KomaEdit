@@ -38,6 +38,8 @@ public final class HotbarControls {
     private static KeyBinding menuKey;
     /** Quién espera un código exportado (el menú o el Studio); si nadie, se copia y se avisa en la barra de acción. */
     private static Consumer<String> exportListener;
+    /** Los códigos que se pidieron con «Exportar» y aún no llegaron. */
+    private static final com.komainu.moxia.hotbar.HotbarExportGate EXPORTS = new com.komainu.moxia.hotbar.HotbarExportGate();
     private static int seenVersion = -1;
     private static List<String> seenNames = List.of();
 
@@ -53,6 +55,7 @@ public final class HotbarControls {
             ClientHotbars.clear();
             SWITCHER.cancel();
             exportListener = null;
+            EXPORTS.clear();
         });
         // Sin asignar en Controles: Alt izquierdo es también el «mirar libre» de Cobblemon al montar y Minecraft solo
         // atiende una entrada por tecla. Mientras siga sin asignar vale Alt izquierdo, leído aparte (stripDown).
@@ -199,6 +202,7 @@ public final class HotbarControls {
      */
     public static void export(String name, Consumer<String> listener) {
         exportListener = listener;
+        EXPORTS.expect(System.currentTimeMillis());
         send(HotbarActionPayload.of(HotbarActionPayload.Kind.EXPORT, name));
     }
 
@@ -241,6 +245,10 @@ public final class HotbarControls {
     }
 
     private static void exported(MinecraftClient client, HotbarTextPayload payload) {
+        // Solo lo que se pidió: el servidor no escribe en el portapapeles cuando quiere.
+        if (!EXPORTS.accept(System.currentTimeMillis())) {
+            return;
+        }
         client.keyboard.setClipboard(payload.text());
         String notice = I18n.translate(payload.hotbars() == 1 ? "gui.komaedit.hotbar.status.copied_one"
                 : "gui.komaedit.hotbar.status.copied", payload.hotbars(), payload.text().length());

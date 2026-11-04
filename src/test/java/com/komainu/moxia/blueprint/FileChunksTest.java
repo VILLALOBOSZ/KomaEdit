@@ -126,7 +126,9 @@ class FileChunksTest {
         assertTrue(FileChunks.validName("Casa del herrero (v2).litematic"));
         assertTrue(FileChunks.validName("pueblo_ñandú.nbt"));
         for (String bad : new String[]{"../casa.litematic", "casa/x.litematic", "casa\\x.nbt", "casa.exe",
-                ".litematic", "con.nbt", "COM1.schem", "nul.tar.nbt", "", "a..b.schem", "casa.litematic "}) {
+                ".litematic", "con.nbt", "COM1.schem", "nul.tar.nbt", "", "a..b.schem", "casa.litematic ",
+                // Windows reserva también los de cifras voladas, que \p{N} deja pasar.
+                "com¹.litematic", "LPT³.nbt", "com².casa.schem"}) {
             assertFalse(FileChunks.validName(bad), bad);
             assertThrows(IllegalArgumentException.class, () -> new FileChunks.Chunk(1, bad, "0".repeat(64), 0, 1,
                     new byte[1]), bad);

@@ -7,6 +7,7 @@ import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.registry.DynamicRegistryManager;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -36,6 +37,33 @@ class AlignmentGuidePayloadTest {
 
         assertFalse(roundTrip(AlignmentGuidePayload.NONE).visible());
         assertEquals(AlignmentGuidePayload.NONE, AlignmentGuidePayload.of(null));
+    }
+
+    /** Lo que mandaría un servidor malicioso: «listo» sin ejes, o con números que no lo son. */
+    @Test
+    void aBrokenGuideFromTheServerIsReadAsNothing() {
+        RegistryByteBuf buffer = new RegistryByteBuf(Unpooled.buffer(), DynamicRegistryManager.EMPTY);
+        buffer.writeBoolean(true);
+        buffer.writeByte(AlignmentGuide.State.READY.ordinal());
+        buffer.writeBoolean(false);
+        buffer.writeDouble(0.5);
+        buffer.writeDouble(64.5);
+        buffer.writeDouble(0.5);
+        for (int vector = 0; vector < 5; vector++) {
+            buffer.writeBoolean(false);
+        }
+        AlignmentGuidePayload empty = AlignmentGuidePayload.CODEC.decode(buffer);
+        assertFalse(empty.visible());
+        assertDoesNotThrow(() -> AlignmentGuide.shape(empty.guide() == null ? new AlignmentGuide.Result(
+                AlignmentGuide.State.WAITING, new Vec3(0, 0, 0), null, null, null, null, null, false) : empty.guide(),
+                1.0));
+
+        AlignmentGuide.Result nan = new AlignmentGuide.Result(AlignmentGuide.State.READY,
+                new Vec3(Double.NaN, 64.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0), new Vec3(0, 0, 1), null, null,
+                false);
+        RegistryByteBuf second = new RegistryByteBuf(Unpooled.buffer(), DynamicRegistryManager.EMPTY);
+        AlignmentGuidePayload.CODEC.encode(second, new AlignmentGuidePayload(nan));
+        assertFalse(AlignmentGuidePayload.CODEC.decode(second).visible());
     }
 
     @Test

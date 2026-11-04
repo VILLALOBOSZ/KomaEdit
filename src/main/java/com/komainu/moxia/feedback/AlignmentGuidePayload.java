@@ -87,7 +87,22 @@ public record AlignmentGuidePayload(AlignmentGuide.Result guide) implements Cust
                 vectors[index] = new Vec3(buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
             }
         }
+        // Lo manda el servidor: un «listo» sin sus tres ejes (o con números que no lo son) se tiraba al dibujarlo y
+        // cerraba el juego. Se lee como nada.
+        if (!finite(origin) || state == AlignmentGuide.State.READY
+                && (vectors[0] == null || vectors[1] == null || vectors[2] == null)) {
+            return NONE;
+        }
+        for (Vec3 vector : vectors) {
+            if (vector != null && !finite(vector)) {
+                return NONE;
+            }
+        }
         return new AlignmentGuidePayload(new AlignmentGuide.Result(state, origin, vectors[0], vectors[1], vectors[2],
                 vectors[3], vectors[4], random));
+    }
+
+    private static boolean finite(Vec3 vector) {
+        return Double.isFinite(vector.x()) && Double.isFinite(vector.y()) && Double.isFinite(vector.z());
     }
 }

@@ -46,6 +46,28 @@ public final class ThumbnailChunks {
         return hash != null && HASH.matcher(hash).matches();
     }
 
+    /** Lado más largo de una miniatura que el cliente acepta: las de KomaEdit miden {@link BlueprintThumbnail#SIZE}. */
+    public static final int MAX_SIDE = 512;
+
+    /**
+     * ¿Es un PNG de como mucho {@code maxSide} de lado? Se mira la cabecera ({@code IHDR}) antes de decodificarlo: un
+     * PNG de 256 KiB puede decir que mide 30000 × 30000, y el cliente reservaba esa imagen entera en memoria.
+     */
+    public static boolean fits(byte[] png, int maxSide) {
+        if (png == null || png.length < 24 || (png[0] & 0xFF) != 0x89 || png[1] != 'P' || png[2] != 'N'
+                || png[3] != 'G' || png[12] != 'I' || png[13] != 'H' || png[14] != 'D' || png[15] != 'R') {
+            return false;
+        }
+        long width = readInt(png, 16);
+        long height = readInt(png, 20);
+        return width >= 1 && height >= 1 && width <= maxSide && height <= maxSide;
+    }
+
+    private static long readInt(byte[] data, int at) {
+        return (data[at] & 0xFFL) << 24 | (data[at + 1] & 0xFF) << 16 | (data[at + 2] & 0xFF) << 8
+                | data[at + 3] & 0xFF;
+    }
+
     public static List<Chunk> split(byte[] png) {
         return split(BlueprintLibrary.sha256(png), png, CHUNK_BYTES);
     }

@@ -123,6 +123,50 @@ class PreviewPlanCodecTest {
                 byPosition(plan.positions(), plan.states(), plan.kinds(), plan.faces()));
     }
 
+    /**
+     * Un servidor malicioso que anuncia 4096 partes enormes y no manda nunca la última: antes se guardaba hasta 1 GiB
+     * en el cliente (y otro tanto en el fantasma). El mismo arreglo para todas: aquí no se reserva ese giga.
+     */
+    @Test
+    void aPlanThatNeverEndsCannotFillTheClientMemory() {
+        byte[] part = new byte[PreviewPlanCodec.MAX_PART_BYTES];
+        PreviewPlanCodec.Assembler assembler = new PreviewPlanCodec.Assembler();
+        int accepted = 0;
+        try {
+            for (int index = 0; index < PreviewPlanCodec.MAX_PARTS - 1; index++) {
+                assembler.accept(7, index, PreviewPlanCodec.MAX_PARTS, part);
+                accepted++;
+            }
+        } catch (IllegalArgumentException expected) {
+            // Se tira el plan entero.
+        }
+        assertTrue((long) accepted * PreviewPlanCodec.MAX_PART_BYTES <= PreviewPlanCodec.MAX_PLAN_BYTES,
+                accepted + " partes guardadas");
+        assertEquals(0, assembler.received(), "lo que había se suelta");
+    }
+
+    /** Una entrada en cada sección: el cliente prepara cada sección para dibujarla y las recorre cada fotograma. */
+    @Test
+    void aPlanSpreadOverTooManySectionsIsRefused() {
+        int count = PreviewPlanCodec.MAX_SECTIONS + 5_000;
+        long[] positions = new long[count];
+        int[] states = new int[count];
+        byte[] kinds = new byte[count];
+        byte[] faces = new byte[count];
+        for (int index = 0; index < count; index++) {
+            positions[index] = PackedBlockPlan.pack((index % 512) * 16, 64, (index / 512) * 16);
+            states[index] = 1;
+            faces[index] = 1;
+        }
+        PreviewPlanCodec.Header wide = new PreviewPlanCodec.Header(4, 0, 64, 0, 512 * 16, 64, 300 * 16, count, count,
+                0L, DisplaySampler.Mode.SURFACE, count);
+        List<byte[]> parts = PreviewPlanCodec.encode(wide, positions, states, kinds, faces,
+                PreviewPlanCodec.MAX_PART_BYTES);
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+                () -> PreviewPlanCodec.decode(parts));
+        assertTrue(refused.getMessage().contains("secciones"), refused.getMessage());
+    }
+
     @Test
     void assemblerWaitsForEveryPartInAnyOrder() {
         Sample sample = random(3_000, 5L);
