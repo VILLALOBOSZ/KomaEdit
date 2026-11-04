@@ -2,6 +2,7 @@ package com.komainu.moxia.client.gui;
 
 import com.komainu.moxia.brush.BrushInput;
 import com.komainu.moxia.brush.BrushToolPayload;
+import com.komainu.moxia.client.ButtonCommandClient;
 import com.komainu.moxia.client.display.DisplayEditorClient;
 import com.komainu.moxia.client.gizmo.GhostClient;
 import com.komainu.moxia.client.gui.studio.ClientStudioAim;
@@ -122,7 +123,7 @@ public final class ProceduralStudioScreen extends Screen {
         ui = new StudioUi(canvas);
         host = new ClientStudioHost(client, view, this::close);
         ClientStudioHost.clearNames();
-        sendCommand("komaedit path mode on");
+        ButtonCommandClient.send(client, "komaedit path mode on");
         ClientPlayNetworking.send(new RecipeActionPayload(RecipeActionPayload.SYNC, view.figure().draft()));
         if (view.stage() == StudioStage.BLUEPRINTS) {
             view.blueprints().opened(host);
@@ -164,7 +165,7 @@ public final class ProceduralStudioScreen extends Screen {
             ClientPlayNetworking.send(new SelectionPayloads.Brush(SelectionPayloads.Brush.END, 0, BlockPos.ORIGIN, 0, 0,
                     false));
         }
-        sendCommand("komaedit path mode off");
+        ButtonCommandClient.send(client, "komaedit path mode off");
         // Fuera del Studio todo vuelve a ir donde se mira.
         ClientStudioAim.clear();
         DisplayEditorClient.studioClosed();
@@ -900,12 +901,6 @@ public final class ProceduralStudioScreen extends Screen {
     private void sendEditor(int action, int index, BlockPos position) {
         ProceduralRecipe draft = view.figure().draft();
         ClientPlayNetworking.send(new EditorActionPayload(action, index, position, draft.radius(), draft.pattern()));
-    }
-
-    private void sendCommand(String command) {
-        if (client != null && client.player != null && client.player.networkHandler != null) {
-            client.player.networkHandler.sendChatCommand(command);
-        }
     }
 
     /**
