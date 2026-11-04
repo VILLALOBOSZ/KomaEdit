@@ -164,4 +164,24 @@ class ImageGeometryTest {
     private static int[] position(ImageLayout layout, int u, int v) {
         return new int[]{layout.worldX(u, v), layout.worldY(u, v), layout.worldZ(u, v)};
     }
+
+    /**
+     * Una imagen en el techo, vista desde abajo, salía en espejo: lo alto de la imagen iba hacia delante como en el
+     * suelo. La cara que se ve (derecha × arriba) tiene que mirar a quien la mira: arriba en el suelo, abajo en el techo.
+     */
+    @Test
+    void imagesOnCeilingsAreNotMirrored() {
+        int[][] facings = {{0, 0, -1}, {1, 0, 0}, {0, 0, 1}, {-1, 0, 0}};
+        for (int[] facing : facings) {
+            int[] right = {-facing[2], 0, facing[0]};
+            int[] floor = ImageLayout.horizontalUp(facing, false);
+            int[] ceiling = ImageLayout.horizontalUp(facing, true);
+            assertEquals(1, cross(right, floor)[1], "en el suelo se ve desde arriba");
+            assertEquals(-1, cross(right, ceiling)[1], "en el techo se ve desde abajo");
+        }
+    }
+
+    private static int[] cross(int[] a, int[] b) {
+        return new int[]{a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
+    }
 }

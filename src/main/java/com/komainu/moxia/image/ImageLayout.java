@@ -93,6 +93,15 @@ public record ImageLayout(int x, int y, int z, int[] right, int[] up, int width,
     }
 
     /** El eje en el que la selección tiene un bloque de grosor: 0 = X, 1 = Y, 2 = Z. Una línea no vale. */
+    /**
+     * Lo alto de una imagen tumbada vista por quien mira con {@code facing} (horizontal): en el suelo, lo de delante;
+     * en un techo, mirando hacia arriba, lo alto de la pantalla es lo que queda detrás. Con lo de delante también en el
+     * techo la imagen salía en espejo (las letras al revés). La derecha es siempre la de quien mira.
+     */
+    public static int[] horizontalUp(int[] facing, boolean fromBelow) {
+        return fromBelow ? new int[]{-facing[0], 0, -facing[2]} : new int[]{facing[0], 0, facing[2]};
+    }
+
     public static int flatAxis(int[] min, int[] max) {
         int[] size = {max[0] - min[0] + 1, max[1] - min[1] + 1, max[2] - min[2] + 1};
         int flat = -1;

@@ -223,6 +223,14 @@ public final class SurfaceOps {
                 if (settings.carveOnly() && !occupancy[index] || settings.expandOnly() && occupancy[index]) {
                     return occupancy[index];
                 }
+                if (occupancy[index] && mask != null && !mask.test(bx, by, bz)) {
+                    return true;
+                }
+                if (result[index] != field.values[index] > 0.0F) {
+                    // Lo que -m, -c/-e o la topología no dejaron cambiar se queda como está, también con -w: antes
+                    // el campo lo convertía en losas o escaleras aunque la máscara lo protegiera.
+                    return result[index];
+                }
                 return field.sample(x, y, z) > 0.0;
             }
         };
