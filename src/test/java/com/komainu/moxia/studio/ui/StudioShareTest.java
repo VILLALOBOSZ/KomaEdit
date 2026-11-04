@@ -47,6 +47,39 @@ class StudioShareTest {
     }
 
     @Test
+    void exportSendsTheChosenFormatAndTheWheelChangesIt() {
+        studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
+        studio.view.blueprints().select("torre");
+        studio.click("Exportar .litematic");
+        assertEquals("komaedit blueprint export torre litematic", studio.host.last());
+        studio.wheel("Exportar .litematic", 1);
+        studio.click("Exportar .nbt");
+        assertEquals("komaedit blueprint export torre nbt", studio.host.last());
+        studio.wheel("Exportar .nbt", 1);
+        assertTrue(studio.has("Exportar .schem"), studio.texts().toString());
+    }
+
+    @Test
+    void importFileListsTheSchematicsFolderAndUploadsTheChosenOne() {
+        studio.host.blueprints.localFiles.add(new StudioHost.LocalFile("aldea/molino.litematic", 131_072, 2L));
+        studio.host.blueprints.localFiles.add(new StudioHost.LocalFile("igloo.nbt", 900, 1L));
+        studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
+        studio.render();
+        assertFalse(studio.has("igloo.nbt"), "la lista va cerrada hasta pulsar el botón");
+        studio.click("Importar archivo…");
+        assertTrue(studio.has("aldea/molino.litematic"), studio.texts().toString());
+        assertTrue(studio.has("128 KiB"), studio.texts().toString());
+        studio.click("igloo.nbt");
+        assertEquals(List.of("igloo.nbt"), studio.host.blueprints.uploaded);
+        assertTrue(studio.host.status.contains("Subiendo igloo.nbt"), studio.host.status);
+        assertFalse(studio.has("aldea/molino.litematic"), "al subir uno, la lista se cierra");
+
+        studio.host.blueprints.canUpload = false;
+        studio.click("Importar archivo…");
+        assertFalse(studio.has("igloo.nbt"), "sin subidas en el servidor, el botón no abre nada");
+    }
+
+    @Test
     void pasteCodeSendsTheClipboardOnlyIfItIsACode() {
         studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
         studio.host.clipboard = "hola, esto no es un código";

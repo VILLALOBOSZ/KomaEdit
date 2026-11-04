@@ -47,7 +47,7 @@ public final class SchematicUpgrade {
 
         @Override
         public int current() {
-            return SharedConstants.getGameVersion().getSaveVersion().getId();
+            return SharedConstants.WORLD_VERSION;
         }
 
         @Override

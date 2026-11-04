@@ -1,6 +1,7 @@
 package com.komainu.moxia.share;
 
 import com.komainu.moxia.blueprint.BlueprintService;
+import com.komainu.moxia.schematic.SchematicUpgrade;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.nature.NaturePresets;
 import com.komainu.moxia.noise.SavedNoises;
@@ -25,7 +26,8 @@ public final class ShareKinds {
         REGISTRY.register(NatureKind.rock(target -> NaturePresets.rocks(target.id())));
         REGISTRY.register(new SculptKind(SculptKind.Store.GAME));
         REGISTRY.register(new RecipeKind(RecipeKind.Store.GAME));
-        REGISTRY.register(new BlueprintKind(BlueprintService::library, BlueprintService::importShared));
+        REGISTRY.register(new BlueprintKind(BlueprintService::library, BlueprintService::importShared,
+                SchematicUpgrade.vanilla(), BlueprintService::legacyToSponge));
     }
 
     private ShareKinds() {

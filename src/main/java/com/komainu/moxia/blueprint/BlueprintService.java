@@ -175,7 +175,12 @@ public final class BlueprintService {
     record Voxels(BlueprintThumbnail.Grid grid, int blocks) {
     }
 
-    private static byte[] write(Clipboard clipboard) throws IOException {
+    /** Lo pesado de los planos (leer, escribir y convertir esquemas), en su hilo. */
+    static void background(Runnable task) {
+        IO.execute(task);
+    }
+
+    static byte[] write(Clipboard clipboard) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (ClipboardWriter writer = FORMAT.getWriter(output)) {
             writer.write(clipboard);
@@ -345,6 +350,19 @@ public final class BlueprintService {
         }
     }
 
+    /**
+     * Un {@code .schematic} de MCEdit (de antes de 1.13, con ids numéricos) a {@code sponge.3}: lo lee WorldEdit con su
+     * tabla de ids antiguos. Se usa al importar uno.
+     */
+    public static byte[] legacyToSponge(byte[] schematic) throws IOException {
+        Clipboard clipboard;
+        try (ClipboardReader reader = BuiltInClipboardFormat.MCEDIT_SCHEMATIC.getReader(
+                new ByteArrayInputStream(schematic))) {
+            clipboard = reader.read();
+        }
+        return write(clipboard);
+    }
+
     static Clipboard read(BlueprintLibrary.Entry entry) throws IOException {
         ClipboardFormat format = ClipboardFormats.findByAlias(entry.meta().schematicFormat());
         if (format == null) {
@@ -465,7 +483,7 @@ public final class BlueprintService {
         });
     }
 
-    private static void report(MinecraftServer server, UUID playerId, String what, Exception exception) {
+    static void report(MinecraftServer server, UUID playerId, String what, Exception exception) {
         String detail = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
         if (!(exception instanceof IllegalArgumentException) && !(exception instanceof WorldEditException)) {
             KomaEditMod.LOGGER.warn("KomaEdit blueprint error: {}", detail, exception);

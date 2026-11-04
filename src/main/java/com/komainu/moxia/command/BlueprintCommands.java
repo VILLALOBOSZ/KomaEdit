@@ -1,5 +1,6 @@
 package com.komainu.moxia.command;
 
+import com.komainu.moxia.blueprint.BlueprintExport;
 import com.komainu.moxia.blueprint.BlueprintLibrary;
 import com.komainu.moxia.blueprint.BlueprintMeta;
 import com.komainu.moxia.blueprint.BlueprintPermissions;
@@ -10,6 +11,9 @@ import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.placement.PlacementService;
 import com.komainu.moxia.placement.PlacementSettings;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.schematic.SchematicFormat;
+import com.komainu.moxia.share.SharePermissions;
+import com.komainu.moxia.share.ShareService;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -40,7 +44,8 @@ import static net.minecraft.server.command.CommandManager.literal;
 /**
  * {@code /komaedit blueprint} (alias {@code planos}, {@code plano}): la biblioteca de planos, como los Blueprints de
  * Axiom. Guarda el portapapeles con miniatura y etiquetas, lo busca, lo carga, lo coloca con la colocación de
- * KomaEdit y lo comparte con el servidor. El pincel que los reparte es {@code /komaedit pincel stamp}.
+ * KomaEdit y lo comparte con el servidor. Importa y exporta {@code .litematic}, estructuras {@code .nbt} y
+ * {@code .schem}. El pincel que los reparte es {@code /komaedit pincel stamp}.
  */
 public final class BlueprintCommands {
     private static final int PAGE = 8;
@@ -48,6 +53,7 @@ public final class BlueprintCommands {
             .withZone(ZoneId.systemDefault());
     private static final List<String> PLACE_HINTS = List.of("Constant", "Random", "SurfaceNormal", "Aim",
             "-r", "Y", "-f", "XZ", "-a", "-v");
+    private static final List<String> EXPORT_HINTS = List.of("litematic", "nbt", "schem", "-servidor");
 
     private BlueprintCommands() {
     }
@@ -117,6 +123,26 @@ public final class BlueprintCommands {
                             .executes(context -> EzCommandSupport.run(context, player -> {
                                 EzCommandSupport.ok(player, BlueprintService.share(player,
                                         single(StringArgumentType.getString(context, "args"))));
+                                return 1;
+                            }))));
+        }
+        for (String export : new String[]{"export", "exportar"}) {
+            command.then(literal(export)
+                    .requires(source -> EzCommandSupport.can(source, BlueprintPermissions.LOAD)
+                            || EzCommandSupport.can(source, BlueprintPermissions.SAVE))
+                    .then(argument("args", StringArgumentType.greedyString()).suggests(exportSuggestions())
+                            .executes(context -> EzCommandSupport.run(context, player -> {
+                                EzCommandSupport.info(player, BlueprintExport.export(player,
+                                        StringArgumentType.getString(context, "args")));
+                                return 1;
+                            }))));
+        }
+        for (String importName : new String[]{"import", "importar"}) {
+            command.then(literal(importName).requires(EzCommandSupport.node(SharePermissions.IMPORT))
+                    .executes(context -> EzCommandSupport.run(context, BlueprintCommands::importable))
+                    .then(argument("args", StringArgumentType.greedyString()).suggests(importSuggestions())
+                            .executes(context -> EzCommandSupport.run(context, player -> {
+                                ShareService.importSchematic(player, StringArgumentType.getString(context, "args"));
                                 return 1;
                             }))));
         }
@@ -204,6 +230,32 @@ public final class BlueprintCommands {
         return line;
     }
 
+    /** Los esquemas sueltos de {@code config/komaedit/imports}, con un botón para importar cada uno. */
+    private static int importable(ServerPlayerEntity player) {
+        List<String> files = schematicFiles();
+        if (files.isEmpty()) {
+            EzCommandSupport.send(player, Text.literal("No hay esquemas en config/komaedit/imports: deja ahí un "
+                    + ".litematic, una estructura .nbt o un .schem, o súbelo desde el Studio (Planos, Importar archivo)")
+                    .formatted(Formatting.YELLOW));
+            return 0;
+        }
+        MutableText line = Text.literal("Esquemas para importar: ").formatted(Formatting.YELLOW);
+        for (String file : files) {
+            line.append(EzCommandSupport.button(file, "/komaedit blueprint import " + file, Formatting.WHITE))
+                    .append(" ");
+        }
+        EzCommandSupport.send(player, line);
+        return files.size();
+    }
+
+    private static List<String> schematicFiles() {
+        try {
+            return ShareService.importable().stream().filter(SchematicFormat::schematicFile).toList();
+        } catch (RuntimeException exception) {
+            return List.of();
+        }
+    }
+
     private static int info(ServerPlayerEntity player, String reference) {
         BlueprintLibrary.Entry entry = BlueprintService.library().require(player.getUuid(),
                 BlueprintRef.parse(reference));
@@ -277,6 +329,43 @@ public final class BlueprintCommands {
                             && reference.startsWith(typed)) {
                         builder.suggest(reference);
                     }
+                }
+            }
+            return builder.buildFuture();
+        };
+    }
+
+    /** Planos, portapapeles o selección; detrás, el formato y {@code -servidor}. */
+    private static SuggestionProvider<ServerCommandSource> exportSuggestions() {
+        return (context, builder) -> {
+            String remaining = builder.getRemaining();
+            if (!remaining.contains(" ")) {
+                String typed = remaining.toLowerCase(Locale.ROOT);
+                for (String source : List.of("portapapeles", "seleccion")) {
+                    if (source.startsWith(typed)) {
+                        builder.suggest(source);
+                    }
+                }
+                return blueprintSuggestions(false).getSuggestions(context, builder);
+            }
+            var tail = builder.createOffset(builder.getStart() + remaining.lastIndexOf(' ') + 1);
+            String typed = remaining.substring(remaining.lastIndexOf(' ') + 1).toLowerCase(Locale.ROOT);
+            for (String hint : EXPORT_HINTS) {
+                if (hint.startsWith(typed)) {
+                    tail.suggest(hint);
+                }
+            }
+            return tail.buildFuture();
+        };
+    }
+
+    /** Los esquemas de {@code config/komaedit/imports}. */
+    private static SuggestionProvider<ServerCommandSource> importSuggestions() {
+        return (context, builder) -> {
+            String typed = builder.getRemainingLowerCase();
+            for (String file : schematicFiles()) {
+                if (file.toLowerCase(Locale.ROOT).startsWith(typed)) {
+                    builder.suggest(file);
                 }
             }
             return builder.buildFuture();

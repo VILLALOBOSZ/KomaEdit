@@ -129,4 +129,47 @@ public final class BlueprintPayloads {
             return new Thumbnail(new ThumbnailChunks.Chunk(hash, index, total, data));
         }
     }
+
+    /** Del servidor: un trozo de un esquema exportado, para la carpeta {@code schematics} del cliente. */
+    public record Download(FileChunks.Chunk chunk) implements CustomPayload {
+        public static final Id<Download> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "blueprint_download"));
+        public static final PacketCodec<PacketByteBuf, Download> CODEC = PacketCodec.ofStatic(
+                (buffer, payload) -> writeChunk(buffer, payload.chunk()), buffer -> new Download(readChunk(buffer)));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /** Del cliente: un trozo de un esquema de su carpeta {@code schematics}, para importarlo como plano. */
+    public record Upload(FileChunks.Chunk chunk) implements CustomPayload {
+        public static final Id<Upload> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "blueprint_upload"));
+        public static final PacketCodec<PacketByteBuf, Upload> CODEC = PacketCodec.ofStatic(
+                (buffer, payload) -> writeChunk(buffer, payload.chunk()), buffer -> new Upload(readChunk(buffer)));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    private static void writeChunk(PacketByteBuf buffer, FileChunks.Chunk chunk) {
+        buffer.writeVarInt(chunk.transfer());
+        buffer.writeString(chunk.name(), 128);
+        buffer.writeString(chunk.hash(), 64);
+        buffer.writeVarInt(chunk.index());
+        buffer.writeVarInt(chunk.total());
+        buffer.writeByteArray(chunk.data());
+    }
+
+    private static FileChunks.Chunk readChunk(PacketByteBuf buffer) {
+        int transfer = buffer.readVarInt();
+        String name = buffer.readString(128);
+        String hash = buffer.readString(64);
+        int index = buffer.readVarInt();
+        int total = buffer.readVarInt();
+        byte[] data = buffer.readByteArray(FileChunks.CHUNK_BYTES);
+        return new FileChunks.Chunk(transfer, name, hash, index, total, data);
+    }
 }

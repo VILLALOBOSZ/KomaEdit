@@ -68,6 +68,7 @@ public final class KomaEditClient implements ClientModInitializer {
                 BlueprintPayloads.Thumbnail.ID,
                 (payload, context) -> context.client().execute(() -> ClientBlueprintCatalog.receive(payload.chunk()))
         );
+        com.komainu.moxia.client.blueprint.ClientSchematicFiles.register();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             if (client.currentScreen instanceof ProceduralStudioScreen) {
                 client.setScreen(null);

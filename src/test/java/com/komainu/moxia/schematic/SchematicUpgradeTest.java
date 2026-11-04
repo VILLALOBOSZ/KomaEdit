@@ -4,6 +4,7 @@ import net.minecraft.SharedConstants;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -19,6 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * que devuelve) y con el de Minecraft de verdad (la hierba de 1.20.2 y los carteles de antes de 1.20).
  */
 class SchematicUpgradeTest {
+    @BeforeAll
+    static void minecraftVersion() {
+        // El DataFixer de Minecraft pregunta la versión del juego; en el juego ya está puesta.
+        SharedConstants.createGameVersion();
+    }
+
     /** Cambia {@code grass} por {@code short_grass} y {@code Sign} por {@code minecraft:sign}; falla con la lava. */
     private static final SchematicUpgrade.Fixer FAKE = new SchematicUpgrade.Fixer() {
         @Override
@@ -81,7 +88,6 @@ class SchematicUpgradeTest {
 
     @Test
     void vanillaFixerUpdatesGrassAndOldSigns() {
-        SharedConstants.createGameVersion();
         SchematicUpgrade.Fixer vanilla = SchematicUpgrade.vanilla();
         assertEquals(3955, vanilla.current(), "Minecraft 1.21.1");
         NbtCompound sign = new NbtCompound();
