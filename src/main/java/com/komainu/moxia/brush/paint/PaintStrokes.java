@@ -13,6 +13,8 @@ import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.komainu.moxia.studio.net.StudioAim;
 import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.PlacementRun;
 import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.performance.Turns;
 import com.sk89q.worldedit.EditSession;
@@ -207,6 +209,8 @@ public final class PaintStrokes {
         private PaintBrush.Planned planned;
         private int applied;
         private EditSession session;
+        /** El vaciado de la tanda escrita (luz, vecinos, envío), repartido entre ticks; {@code null} si no hay. */
+        private PlacementRun.Flush flushing;
         private double heightLow;
         private double heightHigh;
         private long changed;
@@ -372,6 +376,16 @@ public final class PaintStrokes {
             if (session == null) {
                 session = context.session().createEditSession(context.actor());
             }
+            if (flushing != null) {
+                // Con el plazo del tick: vaciar la tanda de golpe (flushSession) eran decenas de miles de bloques con
+                // su luz, vecinos y envío en un solo tick.
+                if (flushing.resume(ServerWork.deadline(APPLY_NANOS_PER_TICK))) {
+                    flushing = null;
+                    planned = null;
+                    stage = Stage.IDLE;
+                }
+                return;
+            }
             try {
                 OperationPolicy.validate(player, changed + planned.size() - applied, 0);
             } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -401,10 +415,14 @@ public final class PaintStrokes {
                 return;
             }
             if (applied >= planned.size()) {
-                // Lo escrito tiene que estar en el mundo antes de la foto de la tanda siguiente.
-                session.flushSession();
-                planned = null;
-                stage = Stage.IDLE;
+                // Lo escrito tiene que estar en el mundo antes de la foto de la tanda siguiente: la tanda siguiente
+                // espera a que se vacíe, repartido entre ticks.
+                flushing = BatchEditService.session(session).flush();
+                if (flushing == null || flushing.resume(deadline)) {
+                    flushing = null;
+                    planned = null;
+                    stage = Stage.IDLE;
+                }
             }
         }
 
@@ -427,6 +445,14 @@ public final class PaintStrokes {
                 return;
             }
             try {
+                if (flushing != null) {
+                    // Lo que quedaba por vaciar de la última tanda, ya sin plazo.
+                    int guard = 0;
+                    while (!flushing.resume(Long.MAX_VALUE) && guard++ < 1_000_000) {
+                        Thread.onSpinWait();
+                    }
+                    flushing = null;
+                }
                 session.close();
             } finally {
                 if (session.size() > 0) {
