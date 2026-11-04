@@ -101,13 +101,13 @@ La etapa **Figuras** funciona como Herramientas: con una figura elegida, arriba 
 - **Familias**, como grupos de la cuadrícula: ★ Favoritas, Tubo (Perfil 2D, Trenza, Tubo erosionado, Expresión), Eslabones (Cadena, Cuentas, Anillos, Nudos, Espiral, Noodles), Pieles (Escamas, Escamas espinadas, Cuadros 3D, Armadura hex, Celdas Voronoi, Panal, Red), Orgánicas (el resto) y **Estructuras** (lo que antes era una etapa aparte). Una figura nueva sin familia asignada aparece en Orgánicas.
 - **Favoritas:** la ★ de cada botón la marca o la desmarca. **Recientes:** las últimas figuras elegidas, junto al nombre de la elegida.
 - Favoritas y recientes son de cada jugador y se guardan en su equipo en `config/komaedit/studio.json` (no viajan con recetas ni paquetes). Un archivo roto se ignora y se empieza de cero.
-- La descripción completa de cada figura sale en su tooltip; con sitio, la de la elegida se ve también bajo su nombre. En el modo compacto no hay descripciones.
+- La descripción completa de cada figura sale en su tooltip; con sitio, la de la elegida se ve también entera bajo su nombre (en las líneas que haga falta). En el modo compacto no hay descripciones.
 
 ### Tamaño, material y variaciones
 
 Con una figura elegida, la etapa **Figuras** tiene, de arriba abajo, lo que se toca de verdad:
 
-1. Su nombre (pulsarlo abre la cuadrícula), su descripción y los presets (**Compacto**, **De serie**, **Amplio**, **Robusto**, **Azar**). Si faltan puntos, encima, en amarillo: «Faltan 2 puntos: ponlos con un clic en el mundo.»
+1. Su nombre (pulsarlo abre la cuadrícula), su descripción y los presets (**Compacto**, **De serie**, **Amplio**, **Robusto**, **Azar**). Si faltan puntos, encima, en amarillo: «Faltan 2 puntos: ponlos con un clic en el mundo.» (con uno, «Falta 1 punto: ponlo con un clic en el mundo.», y el botón dice «Construir · falta 1 punto»).
 2. **Tamaño:** radio, espaciado y grosor (con el nombre que les da cada figura: «Paso de trenza», «Grosor de hebra»), y la altura en las que la tienen. En Perfil 2D, el perfil y si va hueco; en Expresión, la fórmula.
 3. **Material:** el bloque, con su biblioteca y su cuentagotas, y el interruptor **Degradado**. Con él encendido, la fila del bloque pasa a ser la **Paleta** (‹ › o la rueda); al apagarlo vuelve el bloque y al encenderlo otra vez, la misma paleta.
 4. **Variaciones** (ver [Variaciones de la figura](#variaciones-de-la-figura)). Cada una es una fila con su **dibujo**, su nombre, una frase de lo que hace y un interruptor; toda la fila la pone o la quita y el clic derecho la quita. Puesta, sus controles salen justo debajo. El título dice cuántas hay puestas.
@@ -528,7 +528,10 @@ Con menos de 300 píxeles de alto escalado (854×480 con GUI 2, 1080p con GUI 4)
 
 - Las etapas encogen su alto (hasta 12 píxeles, el de su icono) y, si hace falta, el hueco entre ellas (a 1 píxel) para que las siete quepan sin desplazarse con cualquier escala de GUI.
 - Con menos de 600 píxeles de ancho escalado el panel se queda en 230 píxeles (el mínimo), para dejar al mundo al menos la mitad de la pantalla. Ahí el chat vanilla (320 píxeles) puede quedar en parte bajo el panel.
-- Los textos que no caben se recortan con «…»; el texto completo sale en el tooltip.
+- **Nada se corta.** Una fila reparte su ancho entre la etiqueta y lo que enseña: en ‹ valor ›, el sitio del valor lo fija su opción más larga, así las flechas no se mueven al recorrerlas. Si la etiqueta y el valor no caben juntos (en compacto, «Nivel del agua ‹ Arriba del todo ›» o «Muros y hastiales · El de los muros»), la fila pasa a **dos líneas**: la etiqueta arriba y el valor, con sus flechas o sus − +, en la de abajo. Igual las filas numéricas, las de bloque y, en compacto, los interruptores. Los avisos de varias palabras (dónde está el centro de la simetría, «elige un plano de la cuadrícula», el mundo que aún no mandó sus biomas) van en las líneas que haga falta, y las listas de serie que no caben en un campo salen como «deepslate,tuff +4».
+- Solo se recortan con «…», con el texto completo en el tooltip, los nombres de las barras guardadas (los pone el jugador), qué hace cada variación de la figura (dos líneas bajo su dibujo) y lo escrito en un campo de texto.
+- `StudioTextsFitTest` lo comprueba: cada tarjeta en cada modo y manera de usarse, y las demás etapas, a 854×480 con GUI 2 y 1080p con GUI 4, 3 y 2, en español e inglés, desplazando el panel de arriba abajo con **Más ajustes** abierto.
+- Cambiar el tamaño de la ventana con el Studio abierto solo recoloca el panel: lo de abrir el Studio (la captura de trayectoria, la receta en curso) se manda una vez.
 - Con menos de 330 píxeles de alto la chuleta se muestra en dos columnas.
 - Lo que queda desplazado bajo la barra o el pie del panel no responde a clics.
 - El reparto lo calcula `StudioLayout` sin Minecraft y sus pruebas lo comprueban a 1080p, 1440p, 4K, 720p, 1366×768 y 854×480 con todas las escalas de GUI: nada se sale del panel, nada se solapa, las siete etapas y sus grupos caben, la barra de progreso y los dos botones del pie caben, el panel no pisa el chat cuando hay sitio y de serie no pasa del 40 % de una pantalla grande. `GalleryNamesTest` comprueba que ningún nombre de galería, herramienta o figura se corta a 1080p con GUI 2, 3 y 4, 1440p con GUI 3 y 854×480 con GUI 2, en los dos idiomas.
@@ -666,16 +669,12 @@ Las figuras centradas usan tu posición como centro; el arco y la catenaria van 
 /komaedit help build               figuras, con todas las figuras clicables, y sus atajos (pillar, cloud, web…)
 /komaedit help tubes               tubos, banderas y fórmula
 /komaedit help spline              spline de ezEdits
-/komaedit help edit                doblar, degradados y jobs
-/komaedit help region              hiedra, envejecer, retocar, enredaderas, musgo y losas
+/komaedit help edit                doblar, escalar y girar el portapapeles, degradados y jobs
+/komaedit help region              sobre lo construido: hiedra, envejecer, retocar, enredaderas, musgo y losas
+/komaedit help sculpt              pinceles de modelado (esculpir, roca, soldar, fundir, rugosidad, grietas)
 /komaedit help deform              deformar, superficie, suavizar y smoothblocks
 /komaedit help texture             texturizado, vidriera e imagen en bloques
 /komaedit help generators          formas sueltas, terreno con ruido y flujo
-/komaedit help edit                doblar, escalar y girar el portapapeles, degradados y jobs
-/komaedit help sculpt              pinceles de modelado (esculpir, roca, soldar, fundir, rugosidad, grietas)
-/komaedit help region              hiedra, envejecer y retocar
-/komaedit help symmetry            modo simetría
-/komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
 /komaedit help roof                tejados y lofts (lonas, velas, puentes colgantes)
 /komaedit help terrain             terraformado: relieve, rampas, ríos, erosión y pintar
 /komaedit help placement           colocar, arrays y dispersión de estructuras
@@ -684,14 +683,20 @@ Las figuras centradas usan tu posición como centro; el arco y la catenaria van 
 /komaedit help brushes             pinceles y supervarita
 /komaedit help palette             paletas guardadas
 /komaedit help color               color y sombreado
+/komaedit help hotbar              barras guardadas
 /komaedit help noise               ruidos guardados
 /komaedit help sel                 selecciones guardadas y utilidades de selección
 /komaedit help capability          construir a mano (menú rápido)
 /komaedit help preview             vista previa, progreso y cancelación
 /komaedit help utilidades          texto, materiales, gravedad, nieve, agua y biomas
-/komaedit help project             proyecto, menús, quiet, permisos y recarga
+/komaedit help fluidos             agua y lava: rellenar, bola, cascadas y flujos sueltos
 /komaedit help blueprint           planos: guardar, buscar, colocar y estampar
-/komaedit help project             proyecto y menús
+/komaedit help rebuild             reconstrucción animada
+/komaedit help share               compartir paquetes
+/komaedit help display             decorar con displays
+/komaedit help view                vistas guardadas
+/komaedit help note                notas en el mundo
+/komaedit help project             proyecto, menús, quiet, permisos, recarga y bienvenida
 ```
 
 El tema también se encuentra por el nombre de cualquiera de sus órdenes y alias: `/komaedit help bioma` abre las utilidades y `/komaedit help erosion`, los tubos (la orden `/komaedit erosion` es el tubo erosionado; la erosión del terreno es `/komaedit terreno erosion`, en `help terrain`).
@@ -1203,7 +1208,7 @@ Sutiles y desactivables (en los ajustes, con su volumen): un clic al aplicar una
 - **Una línea por acción.** La vista previa: «Vista previa de Texturizar: 12 300 cambios (240 quitados) · 40×12×38 · ~4 s [Aplicar] [Descartar]», con el detalle (cuánto se pone y se quita, la muestra, el plazo) al pasar el ratón por el resumen. El final de cada edición: «Texturizar completada: 12 300 bloques · 15 cambios manuales conservados · //undo», o «cancelada», «parada en el límite de WorldEdit» o «falló» con la causa y lo que quedó colocado, en la misma línea. El Build grande en espera, también en una.
 - **Lo efímero va a la barra de acción**, no al chat: «leyendo N bloques…», «calculando fuera del hilo del servidor…», «preparando la vista previa…», «N bloques en cola», «confirmado: comprobando la zona…», «aplicando…». La bossbar sigue enseñando el progreso.
 - **Los errores dicen la causa y cómo arreglarlo.** Si escribiste algo desconocido con una propuesta («Forma 3D desconocida: helx · ¿Quisiste decir «helix»?»), el botón **[corregir]** escribe en el chat la orden con la palabra cambiada, para revisarla y mandarla. Sin selección de WorldEdit, el error lo dice y el botón **[//wand]** escribe la orden de la varita.
-- **Nunca el texto de Java.** Si una orden falla por algo que no se esperaba (un número que no cabe, un fallo del propio mod), el chat dice «Fallo inesperado de KomaEdit: avisa a un admin (el detalle está en el registro del servidor)» y el detalle va a `latest.log`; ni el nombre de la excepción ni su texto en inglés llegan al jugador.
+- **Nunca el texto de Java.** Si una orden o una edición falla por algo que no se esperaba (un número que no cabe, un fallo del propio mod), el chat dice «Fallo inesperado de KomaEdit: avisa a un admin (el detalle está en el registro del servidor)» y el detalle va a `latest.log`; ni el nombre de la excepción ni su texto en inglés llegan al jugador. Vale para las órdenes y para lo que avisa por su cuenta (la cola, la vista previa, el fantasma, los pinceles, los planos, compartir, las capacidades, el terreno, las imágenes…). El límite de bloques de WorldEdit se dice con su número («WorldEdit llegó a su límite de 50 000 bloques por operación · //limit lo sube») y la falta de selección, como tal. Lo que falla en el propio cliente (la vista previa de la figura, una imagen de referencia) dice «Fallo inesperado de KomaEdit (el detalle está en el registro del juego)».
 - `/komaedit quiet` silencia lo informativo y lo efímero de la barra de acción; los errores, los avisos, las respuestas a consultas y el final de cada edición salen siempre (ver [Mensajes](#mensajes-komaedit-quiet)).
 
 ### Rendimiento y limitaciones

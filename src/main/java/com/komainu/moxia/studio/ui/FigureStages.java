@@ -258,8 +258,9 @@ public final class FigureStages {
                 })
                 .tooltip(host.tr("gui.komaedit.help.path.clear"));
 
-        if (nodes == 0 && !compact) {
-            // Sin puntos, lo primero que hay que saber: cómo se pone uno.
+        if (nodes == 0) {
+            // Sin puntos, lo primero que hay que saber: cómo se pone uno. También en compacto, donde sin puntos sobra
+            // sitio (no hay lista) y no hay otra cosa que lo diga.
             ui.paragraph(column, host.tr("gui.komaedit.path.first"), TEXT_SECONDARY, 0);
         }
         if (nodes >= minimum) {

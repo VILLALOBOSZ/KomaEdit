@@ -139,7 +139,11 @@ public final class BlueprintStage {
         // «Al servidor» solo sale en los planos propios: su sitio cuenta si hay alguno, para que la tarjeta no salte.
         boolean shareable = host.blueprints().canShare()
                 && shown.stream().anyMatch(blueprint -> blueprint.mine() && !blueprint.shared());
-        actions(ui, column, host, current, compact, shareable);
+        // Sin ningún plano todavía, «Elige un plano de la cuadrícula» no tiene cuadrícula a la que mirar: lo que
+        // explica qué hacer es la biblioteca vacía, debajo.
+        if (!catalog.list().isEmpty()) {
+            actions(ui, column, host, current, compact, shareable);
+        }
         pasteCode(ui, column, host);
         importFile(ui, column, host);
 

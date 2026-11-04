@@ -68,6 +68,28 @@ class ClientAuditMockupsTest {
                         "png", folder.resolve(name).toFile());
             }
         }
+        // Lo que ve quien llega por primera vez a cada etapa sin nada hecho, y una figura con un punto puesto.
+        java.util.Map<String, java.util.function.Consumer<StudioDriver>> stages = new java.util.LinkedHashMap<>();
+        stages.put("planos_vacio", driver -> driver.view.selectStage(StudioStage.BLUEPRINTS, driver.host));
+        stages.put("recetas_vacio", driver -> driver.view.selectStage(StudioStage.RECIPES, driver.host));
+        stages.put("instancias_vacio", driver -> driver.view.selectStage(StudioStage.INSTANCES, driver.host));
+        stages.put("trayectoria_vacia", driver -> driver.view.selectStage(StudioStage.PATH, driver.host));
+        stages.put("figura_un_punto", driver -> {
+            driver.host.points.add(new int[]{120, 64, -40});
+            driver.view.selectStage(StudioStage.FIGURE, driver.host);
+        });
+        for (var stage : stages.entrySet()) {
+            for (int[] screen : new int[][]{{427, 240, 2}, {640, 360, 3}}) {
+                StudioDriver driver = new StudioDriver("es_es", screen[0], screen[1]);
+                driver.host.context = StudioMockupsTest.SELECTED;
+                driver.host.info = StudioMockupsTest.info();
+                stage.getValue().accept(driver);
+                driver.host.status = "";
+                String name = (screen[0] == 427 ? "854_gui2_" : "1080p_gui3_") + stage.getKey() + "_es.png";
+                ImageIO.write(driver.paint(screen[2], ui -> StudioMockupsTest.world(ui, screen[0], screen[1])),
+                        "png", folder.resolve(name).toFile());
+            }
+        }
     }
 
     /** Pasa páginas hasta que se vea un texto que empieza por {@code prefix} y lo deja en el primer tercio. */
