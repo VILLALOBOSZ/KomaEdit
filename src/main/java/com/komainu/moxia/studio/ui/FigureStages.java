@@ -375,7 +375,8 @@ public final class FigureStages {
                     - host.pathPoints().size()), WARNING, 2);
         }
         if (!compact) {
-            ui.paragraph(column, host.tr(StudioNames.shapeDescription(shape)), MUTED, 2);
+            // Qué es la figura, entera: es lo que lee quien la elige por primera vez.
+            ui.paragraph(column, host.tr(StudioNames.shapeDescription(shape)), MUTED, 0);
             drawPresets(ui, column, host);
         }
         // Lo esencial a la vista, de arriba abajo: cuánto ocupa, de qué está hecha y cómo cambia a lo largo del

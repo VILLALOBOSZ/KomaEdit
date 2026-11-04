@@ -649,6 +649,7 @@ public final class StudioUi {
      */
     public Widget stepper(Rect row, Stepper model) {
         boolean hovered = hovered(row);
+        boolean tall = tall(row);
         fill(row, hovered ? CARD_HOVER : CARD);
         int barY = row.bottom() - 2;
         fill(new Rect(row.x(), barY, row.width(), 2), TRACK);
@@ -660,28 +661,32 @@ public final class StudioUi {
         }
 
         String shown = model.editing() ? model.input() + "_" : model.value();
-        // Si la etiqueta y el valor con su unidad no caben, la unidad va en corto («18 bl.»).
+        // Si la etiqueta y el valor con su unidad no caben, la unidad va en corto («18 bl.»). En una fila de dos
+        // líneas ({@link #stepperHeight}) la etiqueta va arriba y el valor tiene la de abajo para él.
         int room = row.width() - 2 * STEP_BUTTON - 16;
-        if (!model.editing() && width(model.label()) + width(shown) + 12 > room) {
+        if (!model.editing() && (tall ? width(shown) > room : width(model.label()) + width(shown) + 12 > room)) {
             shown = model.shortValue();
         }
         int valueWidth = Math.max(26, width(shown) + 8);
-        Rect plus = new Rect(row.right() - 2 - STEP_BUTTON, row.y() + 2, STEP_BUTTON, row.height() - 6);
+        int controlsY = tall ? row.y() + LINE + 2 : row.y() + 2;
+        Rect plus = new Rect(row.right() - 2 - STEP_BUTTON, controlsY, STEP_BUTTON, row.bottom() - 4 - controlsY);
         Rect value = new Rect(plus.x() - valueWidth, plus.y(), valueWidth, plus.height());
         Rect minus = new Rect(value.x() - STEP_BUTTON, plus.y(), STEP_BUTTON, plus.height());
         int labelX = row.x() + 8;
+        int labelY = tall ? row.y() + 4 : row.centerY() - 5;
+        int labelRight = tall ? row.right() - 8 : minus.x() - 4;
         if (model.modified()) {
-            fill(new Rect(row.x() + 3, row.centerY() - 2, 2, 2), ACCENT);
+            fill(new Rect(row.x() + 3, labelY + 3, 2, 2), ACCENT);
         }
         if (model.dragging() && !model.low().isEmpty()) {
             // Al arrastrar, los extremos en palabras: hacia dónde va cada lado.
-            int right = minus.x() - 6;
-            label(model.low(), labelX, row.centerY() - 5, (right - labelX) / 2 - 4, ACCENT_TEXT);
-            rightAligned(fit(model.high(), (right - labelX) / 2 - 4), right, row.centerY() - 5, ACCENT_TEXT);
+            int right = labelRight - 2;
+            label(model.low(), labelX, labelY, (right - labelX) / 2 - 4, ACCENT_TEXT);
+            rightAligned(fit(model.high(), (right - labelX) / 2 - 4), right, labelY, ACCENT_TEXT);
         } else {
             String label = model.editing() && !model.range().isEmpty() ? model.label() + " · " + model.range()
                     : model.label();
-            label(label, labelX, row.centerY() - 5, minus.x() - labelX - 4,
+            label(label, labelX, labelY, labelRight - labelX,
                     model.editing() ? MUTED : hovered ? TEXT : TEXT_SECONDARY);
         }
         stepButton(minus, "−");
@@ -703,7 +708,8 @@ public final class StudioUi {
             centered(shown, value, model.modified() || valueHovered ? TEXT_STRONG : TEXT);
         }
 
-        Rect zone = new Rect(minus.x(), row.y(), row.right() - minus.x(), row.height());
+        Rect zone = tall ? new Rect(row.x(), minus.y(), row.width(), row.bottom() - minus.y())
+                : new Rect(minus.x(), row.y(), row.right() - minus.x(), row.height());
         return register(row)
                 .valueZone(zone)
                 .onClick((x, y) -> {
@@ -731,17 +737,39 @@ public final class StudioUi {
 
     /** Como {@link #cycle(Rect, String, String, IntConsumer)}; {@code modified} pone el punto de «cambiado». */
     public Widget cycle(Rect row, String label, String value, boolean modified, IntConsumer step) {
+        return cycle(row, label, value, width(value), modified, step);
+    }
+
+    /**
+     * Fila ‹ valor ›. {@code valueRoom} es lo que ocupa la opción más larga: la etiqueta y el valor se reparten el
+     * ancho según lo que necesitan (así las flechas no se mueven al recorrer las opciones) y, en una fila de dos
+     * líneas ({@link #cycleHeight}), la etiqueta va arriba y ‹ valor › ocupa la de abajo entera.
+     */
+    public Widget cycle(Rect row, String label, String value, int valueRoom, boolean modified, IntConsumer step) {
         boolean hovered = hovered(row);
+        boolean tall = tall(row);
         fill(row, hovered ? CARD_HOVER : CARD);
-        int valueWidth = Math.min(Math.max(90, row.width() * 3 / 5), row.width() - 60);
-        Rect next = new Rect(row.right() - 2 - STEP_BUTTON, row.y() + 2, STEP_BUTTON, row.height() - 4);
-        Rect shown = new Rect(next.x() - (valueWidth - 2 * STEP_BUTTON), next.y(), valueWidth - 2 * STEP_BUTTON,
-                next.height());
-        Rect previous = new Rect(shown.x() - STEP_BUTTON, next.y(), STEP_BUTTON, next.height());
-        if (modified) {
-            fill(new Rect(row.x() + 3, row.centerY() - 1, 2, 2), ACCENT);
+        int labelY = tall ? row.y() + 4 : row.centerY() - 4;
+        Rect next;
+        Rect shown;
+        Rect previous;
+        if (tall) {
+            int top = row.y() + LINE + 2;
+            next = new Rect(row.right() - 2 - STEP_BUTTON, top, STEP_BUTTON, row.bottom() - 2 - top);
+            previous = new Rect(row.x() + 4, top, STEP_BUTTON, next.height());
+            shown = new Rect(previous.right(), top, next.x() - previous.right(), next.height());
+        } else {
+            int valueWidth = cycleValueWidth(row.width(), label, valueRoom);
+            next = new Rect(row.right() - 2 - STEP_BUTTON, row.y() + 2, STEP_BUTTON, row.height() - 4);
+            shown = new Rect(next.x() - (valueWidth - 2 * STEP_BUTTON), next.y(), valueWidth - 2 * STEP_BUTTON,
+                    next.height());
+            previous = new Rect(shown.x() - STEP_BUTTON, next.y(), STEP_BUTTON, next.height());
         }
-        label(label, row.x() + 8, row.centerY() - 4, previous.x() - row.x() - 12, hovered ? TEXT : TEXT_SECONDARY);
+        if (modified) {
+            fill(new Rect(row.x() + 3, labelY + 3, 2, 2), ACCENT);
+        }
+        label(label, row.x() + 8, labelY, (tall ? row.right() - 8 : previous.x() - 4) - row.x() - 8,
+                hovered ? TEXT : TEXT_SECONDARY);
         stepButton(previous, "‹");
         stepButton(next, "›");
         centered(fit(value, shown.width() - 2), shown, modified ? TEXT_STRONG : TEXT);
@@ -756,6 +784,53 @@ public final class StudioUi {
                     }
                 })
                 .onScroll(step);
+    }
+
+    // ── Filas de dos líneas ─────────────────────────────────────────────────────────────────────────────
+
+    /** Una fila con una línea más que la de serie ({@link #twoLines}): la etiqueta va arriba. */
+    private static boolean tall(Rect row) {
+        return row.height() >= ROW + 6;
+    }
+
+    /** El alto de una fila de serie {@code base} que necesita dos líneas. */
+    public static int twoLines(int base) {
+        return base + LINE;
+    }
+
+    /** Ancho de ‹ valor › en una línea: el de siempre, ajustado para que quepan la etiqueta y la opción más larga. */
+    private int cycleValueWidth(int rowWidth, String label, int valueRoom) {
+        int classic = Math.min(Math.max(90, rowWidth * 3 / 5), rowWidth - 60);
+        int need = valueRoom + 8 + 2 * STEP_BUTTON;
+        int most = rowWidth - 14 - width(label);
+        return need <= most ? Math.clamp(classic, need, most) : classic;
+    }
+
+    /** Alto de una fila ‹ valor › de {@code width}: {@code base}, o dos líneas si la etiqueta y el valor no caben. */
+    public int cycleHeight(int base, int width, String label, int valueRoom) {
+        return valueRoom + 8 + 2 * STEP_BUTTON <= width - 14 - width(label) ? base : twoLines(base);
+    }
+
+    /**
+     * Alto de una fila numérica: dos líneas si la etiqueta no cabe junto al valor en corto (con sitio para dos
+     * cifras más, así la fila no cambia de alto al subir el número).
+     */
+    public int stepperHeight(int base, int width, String label, String shortValue) {
+        int value = Math.max(26, width(shortValue) + 8 + 12);
+        return width(label) <= width - 2 - 2 * STEP_BUTTON - value - 12 ? base : twoLines(base);
+    }
+
+    /** Alto de un interruptor: en una fila baja (compacto) el nombre que no cabe en una línea pide dos. */
+    public int toggleHeight(int base, int width, String label) {
+        if (width(label) <= width - 38 || base >= GRID_CELL_TALL - 2) {
+            return base;
+        }
+        return twoLines(base);
+    }
+
+    /** Alto de una fila de bloque: dos líneas si la etiqueta y el nombre del bloque no caben juntos. */
+    public int blockRowHeight(int base, int width, String label, String name) {
+        return width(label) + 6 + width(name) <= width - 45 ? base : twoLines(base);
     }
 
     /** Interruptor: etiqueta y un pulsador a la derecha. Toda la fila lo cambia. */
@@ -843,13 +918,20 @@ public final class StudioUi {
         }
         int textX = row.x() + 23;
         int nameRight = dropper.x() - 4;
-        // La etiqueta se queda con lo que no ocupa el nombre (al menos la mitad), así un nombre corto no la corta.
-        int labelWidth = Math.min(width(model.label()), Math.max((dropper.x() - textX) / 2,
-                nameRight - textX - 6 - width(model.name())));
-        label(model.label(), textX, row.centerY() - 4, labelWidth, hovered ? TEXT : TEXT_SECONDARY);
-        int nameLeft = textX + labelWidth + 6;
-        String name = fit(model.name(), nameRight - nameLeft);
-        rightAligned(name, nameRight, row.centerY() - 4, model.automatic() ? MUTED : TEXT);
+        if (tall(row)) {
+            // Dos líneas ({@link #blockRowHeight}): la etiqueta arriba y el nombre del bloque debajo, enteros.
+            label(model.label(), textX, row.y() + 4, nameRight - textX, hovered ? TEXT : TEXT_SECONDARY);
+            String name = fit(model.name(), nameRight - textX);
+            rightAligned(name, nameRight, row.y() + 5 + LINE, model.automatic() ? MUTED : TEXT);
+        } else {
+            // La etiqueta se queda con lo que no ocupa el nombre (al menos la mitad), así un nombre corto no la corta.
+            int labelWidth = Math.min(width(model.label()), Math.max((dropper.x() - textX) / 2,
+                    nameRight - textX - 6 - width(model.name())));
+            label(model.label(), textX, row.centerY() - 4, labelWidth, hovered ? TEXT : TEXT_SECONDARY);
+            int nameLeft = textX + labelWidth + 6;
+            String name = fit(model.name(), nameRight - nameLeft);
+            rightAligned(name, nameRight, row.centerY() - 4, model.automatic() ? MUTED : TEXT);
+        }
         Widget main = register(row).tooltip(model.help());
         Widget eyedropper = null;
         if (model.eyedropper()) {
