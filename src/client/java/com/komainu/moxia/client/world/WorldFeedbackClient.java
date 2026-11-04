@@ -1,5 +1,6 @@
 package com.komainu.moxia.client.world;
 
+import com.komainu.moxia.client.ButtonCommandClient;
 import com.komainu.moxia.client.gui.studio.ToolClientState;
 import com.komainu.moxia.feedback.AlignmentGuidePayload;
 import com.komainu.moxia.feedback.Feedback;
@@ -116,21 +117,21 @@ public final class WorldFeedbackClient {
         boolean pending = previewWaiting() && System.nanoTime() - lastPreviewKey > PREVIEW_KEY_GAP_NANOS;
         while (confirm.wasPressed()) {
             if (player != null && pending) {
-                player.networkHandler.sendChatCommand("komaedit confirm");
+                ButtonCommandClient.send(client, "komaedit confirm");
                 lastPreviewKey = System.nanoTime();
                 pending = false;
             }
         }
         while (discard.wasPressed()) {
             if (player != null && pending) {
-                player.networkHandler.sendChatCommand("komaedit confirm cancel");
+                ButtonCommandClient.send(client, "komaedit confirm cancel");
                 lastPreviewKey = System.nanoTime();
                 pending = false;
             }
         }
         while (repeat.wasPressed()) {
             if (player != null) {
-                player.networkHandler.sendChatCommand(InputUtil.isKeyPressed(client.getWindow().getHandle(),
+                ButtonCommandClient.send(client, InputUtil.isKeyPressed(client.getWindow().getHandle(),
                         GLFW.GLFW_KEY_LEFT_SHIFT) || player.isSneaking() ? "komaedit repeat -v" : "komaedit repeat");
             }
         }

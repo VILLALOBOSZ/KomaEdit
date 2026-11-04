@@ -17,6 +17,17 @@ La biblioteca de planos y Compartir entre servidores solo leían y escribían `.
 - **Pruebas:** `PackedStatesTest` (entradas que cruzan longs comparadas con una referencia bit a bit; paletas de 1, 2, 3, 4, 17 y 300), `LitematicCodecTest`, `StructureCodecTest`, `SpongeCodecTest` (ida y vuelta, tamaños negativos, varias regiones, archivos rotos y bombas), `SchematicUpgradeTest` (con el DataFixer de verdad), `SchematicPacksTest` (un `.litematic` de 1.19.4 con bloques de órdenes, carteles con clics y libros), `FileChunksTest`, `BlueprintExportTest` y casos nuevos en `ShareFilesTest` y `StudioShareTest`. Maqueta nueva: `1080p_gui3_planos_importar_es.png`.
 - Nada probado aún dentro de Minecraft ni con Litematica abierto.
 
+### Los botones del Studio ya no echan por spam
+
+- **El fallo (apuntado en el #74 y aplazado en el #102):** cada botón del Studio escribía su orden en el chat, y cada orden suma al antispam de Minecraft, que echa a quien no es OP. Con unos once clics casi seguidos (plantar árboles, añadir puntos, probar presets), un builder sin OP salía expulsado.
+- **Ahora** todo lo que el cliente manda por su cuenta va por un paquete propio (`button_command`), que no cuenta como chat:
+  - Todos los botones del Studio, abrir y cerrar el Studio, las pantallas de notas y vistas, y las teclas de confirmar, descartar, repetir, pegar con el gizmo y la captura de trayectoria.
+  - El servidor ejecuta la misma orden como si se escribiera: los mismos permisos, cuotas, sitio del clic, avisos y errores. Solo acepta órdenes de KomaEdit y lleva un freno por jugador muy por encima de lo que da una mano.
+  - Siguen en el chat lo que escribe el jugador, los botones del propio chat ([confirmar], [corregir]…) y las órdenes del cliente (`/kegui`, `/kedisplay`), que no salen de él.
+- **Versiones mezcladas:** con un servidor anterior, los botones van por el chat como antes, pero el cliente lleva la cuenta del antispam y, antes de que Minecraft eche al jugador, no manda la orden y dice cuánto esperar. Un cliente anterior con un servidor nuevo sigue por el chat.
+- **Pruebas:** `ButtonClicksEndToEndTest` (treinta clics en el Studio de verdad: antes, expulsión al undécimo), `ButtonCommandPermissionsTest` (sin el permiso, la misma negativa que la orden), `ButtonCommandServiceTest`, `ButtonCommandsTest`, `CommandRouterTest`, `ChatSpamGuardTest` y `ChatCommandsAuditTest`, que falla si una orden de chat nueva no pasa por `ButtonCommandClient`.
+- Nada probado aún dentro de Minecraft.
+
 ### Cabos sueltos de las auditorías
 
 Se revisaron sobre el código de hoy los 51 hallazgos que dejaron apuntados sin hacer los PR #65, #74, #79, #88 y #94 a #99. Nueve eran fallos o fricciones de uso y se arreglan aquí, cada uno con una prueba que fallaba antes. De los demás, 8 ya estaban arreglados por PR posteriores, 29 se descartan con su motivo y 5 quedan para más adelante. La tabla completa está en el PR.

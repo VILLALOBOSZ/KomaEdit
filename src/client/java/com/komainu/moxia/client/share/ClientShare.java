@@ -1,5 +1,6 @@
 package com.komainu.moxia.client.share;
 
+import com.komainu.moxia.client.ButtonCommandClient;
 import com.komainu.moxia.share.ShareCodePayload;
 import com.komainu.moxia.share.ShareImportPayload;
 import com.komainu.moxia.share.ShareOfferPayload;
@@ -72,8 +73,7 @@ public final class ClientShare {
             return true;
         }
         String command = "komaedit share import " + code;
-        if (command.length() < CHAT_LIMIT && client.player != null && client.player.networkHandler != null) {
-            client.player.networkHandler.sendChatCommand(command);
+        if (command.length() < CHAT_LIMIT && ButtonCommandClient.send(client, command)) {
             return true;
         }
         offerExpectedUntil = 0L;

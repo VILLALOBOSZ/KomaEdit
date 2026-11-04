@@ -105,6 +105,7 @@ public final class KomaEditClient implements ClientModInitializer {
         com.komainu.moxia.client.hotbar.HotbarControls.register();
         com.komainu.moxia.client.gui.studio.ToolClientState.register();
         com.komainu.moxia.client.gui.studio.LiveClient.register();
+        ButtonCommandClient.register();
         com.komainu.moxia.client.share.ClientShare.register();
         WorldFeedbackClient.register();
         com.komainu.moxia.client.gizmo.GhostClient.register();
@@ -154,9 +155,7 @@ public final class KomaEditClient implements ClientModInitializer {
     }
 
     private static void togglePathCapture(MinecraftClient client) {
-        if (client.player != null && client.player.networkHandler != null) {
-            client.player.networkHandler.sendChatCommand("komaedit path mode toggle");
-        }
+        ButtonCommandClient.send(client, "komaedit path mode toggle");
     }
 
     /** Los ajustes de lo que se ve en el mundo; después del comando, para que el chat no la cierre. */

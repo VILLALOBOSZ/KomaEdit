@@ -2,6 +2,7 @@ package com.komainu.moxia.client.gui.studio;
 
 import com.komainu.moxia.blueprint.BlueprintPayloads;
 import com.komainu.moxia.blueprint.BlueprintSummary;
+import com.komainu.moxia.client.ButtonCommandClient;
 import com.komainu.moxia.client.blueprint.ClientBlueprintCatalog;
 import com.komainu.moxia.client.blueprint.ClientSchematicFiles;
 import com.komainu.moxia.client.preview.PathHologramRenderer;
@@ -112,9 +113,8 @@ public final class ClientStudioHost implements StudioHost {
 
     @Override
     public void send(String command) {
-        if (client != null && client.player != null && client.player.networkHandler != null) {
-            client.player.networkHandler.sendChatCommand(command);
-        }
+        // Por el paquete de los botones (sin antispam); con un servidor anterior, por el chat sin pasarse de él.
+        ButtonCommandClient.send(client, command, text -> view.status(text.getString(), now()));
     }
 
     @Override

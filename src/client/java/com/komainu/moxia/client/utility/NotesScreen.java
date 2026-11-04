@@ -1,5 +1,6 @@
 package com.komainu.moxia.client.utility;
 
+import com.komainu.moxia.client.ButtonCommandClient;
 import com.komainu.moxia.notes.NoteRequest;
 import com.komainu.moxia.notes.NoteSketch;
 import com.komainu.moxia.notes.WorldNote;
@@ -108,7 +109,7 @@ public final class NotesScreen extends Screen {
         if (player == null || value.isEmpty()) {
             return;
         }
-        player.networkHandler.sendChatCommand("komaedit nota poner " + NoteRequest.quote(value)
+        ButtonCommandClient.send(client, "komaedit nota poner " + NoteRequest.quote(value)
                 + (team ? " -e" : ""));
         text.setText("");
     }
@@ -140,15 +141,15 @@ public final class NotesScreen extends Screen {
         for (WorldNote note : notes) {
             List<ButtonWidget> buttons = new ArrayList<>();
             buttons.add(UtilityList.button(Text.translatable("gui.komaedit.notes.go"), null, button -> {
-                player.networkHandler.sendChatCommand("komaedit nota ir " + note.id());
+                ButtonCommandClient.send(client, "komaedit nota ir " + note.id());
                 close();
             }));
             buttons.add(UtilityList.button(Text.translatable(note.resolved() ? "gui.komaedit.notes.reopen"
-                    : "gui.komaedit.notes.resolve"), null, button -> player.networkHandler.sendChatCommand(
+                    : "gui.komaedit.notes.resolve"), null, button -> ButtonCommandClient.send(client,
                     "komaedit nota " + (note.resolved() ? "reabrir " : "resolver ") + note.id())));
             if (note.authorId().equals(player.getUuid()) || note.team() && ClientNotes.manages()) {
                 buttons.add(UtilityList.button(Text.translatable("gui.komaedit.notes.delete"), null,
-                        button -> player.networkHandler.sendChatCommand("komaedit nota borrar " + note.id())));
+                        button -> ButtonCommandClient.send(client, "komaedit nota borrar " + note.id())));
             }
             String detail = NoteSketch.meta(note, ZoneId.systemDefault(), now, ClientWords.INSTANCE) + " · "
                     + ClientWords.INSTANCE.tr("gui.komaedit.views.distance",
