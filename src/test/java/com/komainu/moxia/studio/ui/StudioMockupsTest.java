@@ -297,7 +297,8 @@ class StudioMockupsTest {
             tools(driver, "tree");
             driver.host.ghost = GhostFooterTest.ghost("Árbol roble", "giro 0° · 7×19×7",
                     "124, 65, -38 · (+2, 0, -1)", "", new int[5]);
-            int[] title = driver.where("Árbol roble · giro 0° · 7×19×7");
+            // El pie dice lo que es y su giro; las medidas van en el tooltip que sale al pasar el ratón.
+            int[] title = driver.where("Árbol roble · giro 0°");
             driver.mouseX = title[0];
             driver.mouseY = title[1];
         }));
