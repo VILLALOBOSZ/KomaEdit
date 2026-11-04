@@ -2,16 +2,21 @@ package com.komainu.moxia.editor;
 
 import com.komainu.moxia.edit.BatchEditService;
 import com.komainu.moxia.edit.BlockBounds;
+import com.komainu.moxia.edit.EditLimits;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathEditing;
 import com.komainu.moxia.path.PathHistory;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.path.PathManager;
+import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.region.RegionOperationService;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.function.pattern.Pattern;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -20,7 +25,18 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.Optional;
+import java.util.UUID;
+
 public final class EditorActionService {
+    /**
+     * Lo que cuesta de verdad en el servidor (deshacer, copiar, el área mágica, encolar la selección entera…), con
+     * freno: por el chat, el antispam de Minecraft deja una orden por segundo a quien no es OP; por este paquete, un
+     * cliente modificado lo pedía sin parar. El ráfaga cabe en un salto del historial del Studio (hasta 12 pasos).
+     */
+    static final RequestBudget HEAVY = new RequestBudget(16, 2.0);
+    static final String TOO_FAST = "Vas demasiado deprisa con el editor: espera un momento";
+
     private EditorActionService() {
     }
 
@@ -30,6 +46,10 @@ public final class EditorActionService {
                 throw new IllegalArgumentException("No tienes permiso para usar el editor");
             }
             requireAction(player, payload.action());
+            if (!admit(player.getUuid(), payload.action(), System.nanoTime())) {
+                message(player, TOO_FAST);
+                return;
+            }
             validatePosition(player.getServerWorld(), payload.position());
             switch (payload.action()) {
                 case EditorActionPayload.PATH_ADD -> {
@@ -122,7 +142,19 @@ public final class EditorActionService {
     }
 
     private static void requireAction(ServerPlayerEntity player, int action) {
-        KomaPermissions.require(player, permission(action));
+        for (String node : permissions(action)) {
+            KomaPermissions.require(player, node);
+        }
+    }
+
+    /**
+     * Todo lo que pide cada acción: cortar copia (portapapeles) y además borra la selección entera, como
+     * {@link EditorActionPayload#SELECTION_DELETE} (construir). Antes bastaba el portapapeles para borrar.
+     */
+    static java.util.List<String> permissions(int action) {
+        return action == EditorActionPayload.CLIPBOARD_CUT
+                ? java.util.List.of(KomaPermissions.CLIPBOARD, KomaPermissions.BUILD)
+                : java.util.List.of(permission(action));
     }
 
     /** El permiso que pide cada acción del paquete. */
@@ -181,7 +213,69 @@ public final class EditorActionService {
         message(player, "Borrado en cola: " + queued + " posiciones");
     }
 
+    /** ¿Se atiende la acción? Las ligeras (puntos, caja, pincel) siempre; las pesadas, con {@link #HEAVY}. */
+    static boolean admit(UUID player, int action, long nanos) {
+        return !heavy(action) || HEAVY.allow(player, nanos);
+    }
+
+    /** Las acciones que leen o encolan mucho en el hilo del servidor. */
+    static boolean heavy(int action) {
+        return switch (action) {
+            case EditorActionPayload.MAGIC_AREA, EditorActionPayload.UNDO, EditorActionPayload.REDO,
+                 EditorActionPayload.PAINT_SELECTION, EditorActionPayload.SELECTION_REPLACE,
+                 EditorActionPayload.SELECTION_DELETE, EditorActionPayload.CLIPBOARD_COPY,
+                 EditorActionPayload.CLIPBOARD_CUT, EditorActionPayload.CLIPBOARD_PASTE -> true;
+            default -> false;
+        };
+    }
+
+    public static void forget(UUID player) {
+        HEAVY.forget(player);
+    }
+
+    /**
+     * Copiar lee la selección entera de una vez, en el hilo del servidor y en memoria: no pasa del límite por edición
+     * del jugador (que es lo que podría pegar después) ni de lo que KomaEdit lee de una vez. Antes no miraba nada, y
+     * una selección de punta a punta del mundo agotaba la memoria del servidor.
+     */
+    static Optional<EditLimits.Excess> copyExcess(long volume, long limit) {
+        return EditLimits.check(EditLimits.Kind.SERVER, volume, limit)
+                .or(() -> EditLimits.check(EditLimits.Kind.CAPTURE, volume, RegionOperationService.MAX_CAPTURE_BLOCKS));
+    }
+
+    /**
+     * ¿Están cargados todos los chunks de la caja? Copiar no genera terreno: con la selección en chunks sin cargar,
+     * WorldEdit los cargaba (o generaba) uno tras otro sin soltar el hilo del servidor.
+     */
+    static boolean loaded(int minX, int minZ, int maxX, int maxZ, ChunkCheck chunks) {
+        for (int chunkX = minX >> 4; chunkX <= maxX >> 4; chunkX++) {
+            for (int chunkZ = minZ >> 4; chunkZ <= maxZ >> 4; chunkZ++) {
+                if (!chunks.loaded(chunkX, chunkZ)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @FunctionalInterface
+    interface ChunkCheck {
+        boolean loaded(int chunkX, int chunkZ);
+    }
+
     private static void copySelection(ServerPlayerEntity player) throws Exception {
+        WorldEditService.PlayerContext context = WorldEditService.context(player);
+        Region selection = context.session().getSelection(context.world());
+        copyExcess(selection.getVolume(), OperationPolicy.limit(player)).ifPresent(excess -> {
+            throw new IllegalArgumentException(excess.message("La selección", false));
+        });
+        BlockVector3 low = selection.getMinimumPoint();
+        BlockVector3 high = selection.getMaximumPoint();
+        ServerWorld world = player.getServerWorld();
+        if (!loaded(low.x(), low.z(), high.x(), high.z(),
+                (chunkX, chunkZ) -> world.getChunkManager().isChunkLoaded(chunkX, chunkZ))) {
+            throw new IllegalArgumentException("Parte de la selección no está cargada: acércate para copiarla");
+        }
         long copied = WorldEditService.copySelection(player);
         message(player, "Copiado: " + ProgressLine.group(copied) + " bloques · Ctrl+V para posicionar");
     }

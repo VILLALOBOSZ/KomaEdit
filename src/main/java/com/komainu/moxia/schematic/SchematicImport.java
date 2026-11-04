@@ -49,6 +49,7 @@ public final class SchematicImport {
                 throw new IllegalArgumentException("Es un esquema antiguo de MCEdit (.schematic, de antes de 1.13): "
                         + "ábrelo con //schem load y guárdalo como plano");
             }
+            checkLegacy(root, limits);
             byte[] converted;
             try {
                 converted = legacy.toSponge(bytes);
@@ -66,6 +67,7 @@ public final class SchematicImport {
             NbtCompound body = root.getCompound("Schematic");
             int dataVersion = body.getInt("DataVersion");
             if (dataVersion >= fixer.current()) {
+                SpongeCodec.checkLimits(root, limits);
                 List<String> warnings = new ArrayList<>();
                 if (dataVersion > fixer.current()) {
                     warnings.add("Es de una versión más nueva de Minecraft (datos " + dataVersion + "; aquí, "
@@ -86,6 +88,25 @@ public final class SchematicImport {
                     + "); se puede importar solo una");
         }
         return new Prepared(SchematicIo.toSponge(data), format, data.info(), warnings);
+    }
+
+    /**
+     * Antes de dárselo a WorldEdit: sus medidas caben en los topes y cuadran con sus bloques. WorldEdit reserva la
+     * caja entera con lo que dice la cabecera, y un {@code .schematic} de unos cien bytes que decía medir 32767 ×
+     * 32767 agotaba la memoria del servidor.
+     */
+    static void checkLegacy(NbtCompound root, SchematicLimits limits) {
+        int width = root.getShort("Width");
+        int height = root.getShort("Height");
+        int length = root.getShort("Length");
+        if (width < 1 || height < 1 || length < 1) {
+            throw new IllegalArgumentException("El esquema de MCEdit no tiene un tamaño válido");
+        }
+        limits.checkBox(width, height, length);
+        long volume = (long) width * height * length;
+        if (root.getByteArray("Blocks").length != volume || root.getByteArray("Data").length != volume) {
+            throw new IllegalArgumentException("El esquema de MCEdit está dañado (sus bloques no cuadran con su tamaño)");
+        }
     }
 
     /** ¿Tiene pinta de esquema (NBT con gzip), y no de ZIP ni de texto? */

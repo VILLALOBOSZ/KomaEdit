@@ -379,4 +379,13 @@ public final class PermissionNodes {
         }
         return false;
     }
+
+    /**
+     * Con {@code rootPermissionGrantsAll}, ¿lo concede todo la raíz? Solo {@code komaedit.use} (o el
+     * {@code moxia.use} de antes), como dice la documentación: no un paquete, que también da acceso a
+     * {@code /komaedit} y con esto daba hasta los permisos de administración a quien solo tenía el básico.
+     */
+    public static boolean rootGrantsAll(boolean rootPermissionGrantsAll, Predicate<String> held) {
+        return rootPermissionGrantsAll && (held.test("komaedit.use") || held.test("moxia.use"));
+    }
 }

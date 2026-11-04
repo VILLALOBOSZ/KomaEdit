@@ -28,6 +28,17 @@ public final class PreviewPlanCodec {
     public static final int MAX_PART_BYTES = 256 * 1024;
     public static final int MAX_PARTS = 4096;
     public static final int MAX_ENTRIES = 1 << 21;
+    /**
+     * Lo que el cliente junta de un plan como mucho: uno de {@link #MAX_ENTRIES} entradas, cada una en su sección,
+     * ocupa unos 30 MiB. Antes el tope eran {@link #MAX_PARTS} partes enteras (1 GiB), y un servidor malicioso que
+     * no mandaba nunca la última parte dejaba ese giga en la memoria del cliente, dos veces (vista previa y fantasma).
+     */
+    public static final long MAX_PLAN_BYTES = 64L * 1024 * 1024;
+    /**
+     * Secciones de 16³ como mucho (y una más por parte, que una sección puede quedar entre dos): el cliente prepara
+     * cada una para dibujarla y las recorre en cada fotograma.
+     */
+    public static final int MAX_SECTIONS = 131_072;
     private static final int MAGIC_K = 'K';
     private static final int MAGIC_P = 'P';
     private static final PreviewDisplays.Kind[] KINDS = PreviewDisplays.Kind.values();
@@ -208,9 +219,13 @@ public final class PreviewPlanCodec {
         byte[] kinds = new byte[entries];
         byte[] faces = new byte[entries];
         int filled = 0;
+        int runs = 0;
         for (int partIndex = 0; partIndex < parts.size(); partIndex++) {
             Reader reader = partIndex == 0 ? first : new Reader(parts.get(partIndex));
             while (reader.remaining() > 0) {
+                if (++runs > MAX_SECTIONS + parts.size()) {
+                    throw new IllegalArgumentException("El plan ocupa más de " + MAX_SECTIONS + " secciones");
+                }
                 int sectionX = reader.zigzag();
                 int sectionY = reader.zigzag();
                 int sectionZ = reader.zigzag();
@@ -268,7 +283,7 @@ public final class PreviewPlanCodec {
             if (parts[part] == null) {
                 received++;
                 bytes += data.length;
-                if (bytes > (long) MAX_PARTS * MAX_PART_BYTES) {
+                if (bytes > MAX_PLAN_BYTES) {
                     clear();
                     throw new IllegalArgumentException("Plan demasiado grande");
                 }

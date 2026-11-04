@@ -253,6 +253,96 @@ class SchematicSanitizerTest {
         assertEquals(result.blocks(), SchematicSanitizer.sanitize(result.data(), again, Long.MAX_VALUE).blocks());
     }
 
+    /** 2×1×1 con la paleta, los bloques y los datos de bloque que se le den. */
+    private static byte[] tiny(List<String> palette, int[] blocks, NbtList blockEntities) throws IOException {
+        NbtCompound body = new NbtCompound();
+        body.putInt("Version", 3);
+        body.putInt("DataVersion", 3955);
+        body.putShort("Width", (short) 2);
+        body.putShort("Height", (short) 1);
+        body.putShort("Length", (short) 1);
+        body.putIntArray("Offset", new int[]{0, 0, 0});
+        NbtCompound container = paletted(palette, blocks);
+        container.put("BlockEntities", blockEntities);
+        body.put("Blocks", container);
+        NbtCompound root = new NbtCompound();
+        root.put("Schematic", body);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        NbtIo.writeCompressed(root, output);
+        return output.toByteArray();
+    }
+
+    /**
+     * Sin {@code count}, Minecraft lee una unidad: el objeto existe igual. Antes el saneado no lo veía como objeto y
+     * dejaba sus componentes (un libro con una orden al pulsar) y los objetos prohibidos.
+     */
+    @Test
+    void itemsWithoutACountAreStillCleaned() throws IOException {
+        NbtCompound book = new NbtCompound();
+        book.putByte("Slot", (byte) 0);
+        book.putString("id", "minecraft:written_book");
+        NbtCompound content = new NbtCompound();
+        NbtList pages = new NbtList();
+        NbtCompound page = new NbtCompound();
+        page.putString("raw", "{\"text\":\"x\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/op a\"}}");
+        pages.add(page);
+        content.put("pages", pages);
+        NbtCompound components = new NbtCompound();
+        components.put("minecraft:written_book_content", content);
+        book.put("components", components);
+        NbtCompound order = new NbtCompound();
+        order.putString("id", "minecraft:command_block");
+        NbtCompound sword = new NbtCompound();
+        sword.putString("id", "minecraft:diamond_sword");
+        sword.put("components", new NbtCompound());
+        NbtList items = new NbtList();
+        items.add(book);
+        items.add(order);
+        NbtCompound chest = new NbtCompound();
+        chest.put("Items", items);
+        NbtCompound lectern = new NbtCompound();
+        lectern.put("Book", sword);
+        NbtList entities = new NbtList();
+        entities.add(blockEntity("minecraft:chest", new int[]{0, 0, 0}, chest));
+        // Un objeto suelto en un compuesto (como el libro de un atril), no en una lista.
+        entities.add(blockEntity("minecraft:chest", new int[]{1, 0, 0}, lectern));
+        ShareCheck check = ShareFixtures.check();
+        check.begin();
+        NbtCompound body = read(SchematicSanitizer.sanitize(tiny(List.of("minecraft:chest[facing=north,type=single]"),
+                new int[]{0, 0}, entities), check, Long.MAX_VALUE).data());
+        NbtList kept = body.getCompound("Blocks").getList("BlockEntities", NbtElement.COMPOUND_TYPE);
+        NbtList cleanedItems = kept.getCompound(0).getCompound("Data").getList("Items", NbtElement.COMPOUND_TYPE);
+        assertEquals(1, cleanedItems.size(), "el bloque de órdenes sin cantidad tampoco entra: " + cleanedItems);
+        assertEquals("minecraft:written_book", cleanedItems.getCompound(0).getString("id"));
+        assertFalse(cleanedItems.getCompound(0).contains("components"), cleanedItems.toString());
+        assertEquals(2, kept.size());
+        NbtCompound single = kept.getCompound(1).getCompound("Data").getCompound("Book");
+        assertEquals("minecraft:diamond_sword", single.getString("id"));
+        assertFalse(single.contains("components"), single.toString());
+    }
+
+    /**
+     * Una paleta en la que nada se junta (sin aire, el bloque de órdenes pasa a aire y queda solo): antes la nueva no
+     * se escribía y llegaba la de origen, con el bloque de órdenes dentro.
+     */
+    @Test
+    void aSubstitutedPaletteIsWrittenEvenIfNothingMerges() throws IOException {
+        ShareCheck check = ShareFixtures.check();
+        check.begin();
+        NbtCompound body = read(SchematicSanitizer.sanitize(tiny(List.of(
+                "minecraft:command_block[conditional=false,facing=up]", "minecraft:stone"), new int[]{0, 1},
+                new NbtList()), check, Long.MAX_VALUE).data());
+        List<String> blocks = blocks(body.getCompound("Blocks"));
+        assertEquals(List.of("minecraft:air", "minecraft:stone"), blocks);
+        assertFalse(body.getCompound("Blocks").getCompound("Palette").getKeys().stream()
+                .anyMatch(key -> key.contains("command_block")));
+        NbtCompound modded = read(SchematicSanitizer.sanitize(tiny(List.of(
+                "biomesoplenty:fir_stairs[facing=east,half=bottom]", "minecraft:stone"), new int[]{0, 1},
+                new NbtList()), check, Long.MAX_VALUE).data());
+        assertEquals(List.of("minecraft:oak_stairs[facing=east,half=bottom]", "minecraft:stone"),
+                blocks(modded.getCompound("Blocks")));
+    }
+
     @Test
     void brokenOrHugeSchematicsAreRefused() throws IOException {
         ShareCheck check = ShareFixtures.check();

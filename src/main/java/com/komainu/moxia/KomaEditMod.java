@@ -182,6 +182,7 @@ public final class KomaEditMod implements ModInitializer {
             SnapshotCaptureService.cancel(handler.player.getUuid());
             AsyncEngine.cancel(handler.player.getUuid());
             FastPaintService.remove(handler.player.getUuid());
+            com.komainu.moxia.editor.EditorActionService.forget(handler.player.getUuid());
             RecipeActionService.forget(handler.player.getUuid());
             IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());

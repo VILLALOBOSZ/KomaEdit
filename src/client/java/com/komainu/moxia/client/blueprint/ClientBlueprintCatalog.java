@@ -113,11 +113,19 @@ public final class ClientBlueprintCatalog {
 
     /** Un trozo de miniatura; cuando llega el último se convierte en textura. */
     public static void receive(ThumbnailChunks.Chunk chunk) {
+        // Solo las que se pidieron: un servidor no llena la memoria del cliente mandando miniaturas sin parar.
+        if (!REQUESTED.contains(chunk.hash()) || TEXTURES.containsKey(chunk.hash())) {
+            return;
+        }
         ASSEMBLER.accept(chunk).ifPresent(png -> register(chunk.hash(), png));
     }
 
     private static void register(String hash, byte[] png) {
         MinecraftClient client = MinecraftClient.getInstance();
+        if (!ThumbnailChunks.fits(png, ThumbnailChunks.MAX_SIDE)) {
+            KomaEditMod.LOGGER.warn("KomaEdit ignored a blueprint thumbnail that is not a small PNG");
+            return;
+        }
         try {
             NativeImage image = NativeImage.read(png);
             Identifier id = Identifier.of(KomaEditMod.MOD_ID, "blueprint/" + hash.substring(0, 40));

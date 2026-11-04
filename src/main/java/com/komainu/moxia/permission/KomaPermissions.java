@@ -56,14 +56,16 @@ public final class KomaPermissions {
             return canAccess(player);
         }
         return PermissionNodes.allows(permission, node -> permission(player, node))
-                || KomaEditConfig.settings().rootPermissionGrantsAll() && canAccess(player);
+                || PermissionNodes.rootGrantsAll(KomaEditConfig.settings().rootPermissionGrantsAll(),
+                node -> permission(player, node));
     }
 
     /** ¿Puede usar alguna función de la familia? Sirve para mostrar u ocultar una orden con varios modos. */
     public static boolean canAny(ServerPlayerEntity player, String prefix) {
         return operator(player)
                 || PermissionNodes.allowsAny(prefix, node -> permission(player, node))
-                || KomaEditConfig.settings().rootPermissionGrantsAll() && canAccess(player);
+                || PermissionNodes.rootGrantsAll(KomaEditConfig.settings().rootPermissionGrantsAll(),
+                node -> permission(player, node));
     }
 
     public static boolean canBuild(ServerPlayerEntity player, String shapeId) {
