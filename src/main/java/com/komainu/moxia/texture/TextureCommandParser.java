@@ -154,7 +154,7 @@ public final class TextureCommandParser {
         BLOCK_LIGHT("blocklight", "Textura por luz de bloque", Set.of("-v", "-s", "-l"), Set.of(), "luzbloque"),
         CELLS("cells", "Textura de celdas", Set.of(), Set.of("-s", "-r"), "celdas"),
         CURVATURE("curvature", "Textura por curvatura", Set.of(), Set.of(), "curvatura"),
-        FLOW("flow", "Textura de flujo", Set.of("-f"), Set.of(), "flujo"),
+        FLOW("flow", "Textura de flujo", Set.of("-f"), Set.of("-s"), "flujo"),
         NOISE("noise", "Textura de ruido", Set.of(), Set.of("-z", "-s"), "ruido"),
         POINT_LIGHT("pointlight", "Luz puntual", Set.of("-f"), Set.of("-l", "-o", "-r"), "luzpuntual"),
         SHIFT("shift", "Desplazar paleta", Set.of(), Set.of(), "desplazar"),
