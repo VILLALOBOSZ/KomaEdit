@@ -176,6 +176,10 @@ public final class CapabilityService {
     // ---- Red ---------------------------------------------------------------------------------------------------
 
     public static void handle(ServerPlayerEntity player, CapabilityActionPayload payload) {
+        if (!KomaPermissions.canAccess(player)) {
+            // Como las órdenes, que cuelgan de /komaedit: sin acceso a KomaEdit, el paquete no hace nada.
+            return;
+        }
         try {
             switch (payload.action()) {
                 case SYNC -> sync(player);
@@ -565,9 +569,9 @@ public final class CapabilityService {
 
     private static Vec3d clampHit(Vec3d hit, BlockPos pos) {
         return new Vec3d(
-                Math.clamp(hit.x, pos.getX(), pos.getX() + 1.0),
-                Math.clamp(hit.y, pos.getY(), pos.getY() + 1.0),
-                Math.clamp(hit.z, pos.getZ(), pos.getZ() + 1.0)
+                CapabilityRules.hitCoordinate(hit.x, pos.getX()),
+                CapabilityRules.hitCoordinate(hit.y, pos.getY()),
+                CapabilityRules.hitCoordinate(hit.z, pos.getZ())
         );
     }
 

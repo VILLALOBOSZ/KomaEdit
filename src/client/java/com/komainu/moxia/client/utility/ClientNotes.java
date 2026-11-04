@@ -71,7 +71,7 @@ public final class ClientNotes {
             dimension = payload.dimension();
         }
         if (payload.dimension().equals(dimension)) {
-            payload.notes().forEach(note -> NOTES.put(note.id(), note));
+            NotePayloads.merge(NOTES, payload.notes());
         }
         canWrite = payload.canWrite();
         canShare = payload.canShare();

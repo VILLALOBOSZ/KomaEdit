@@ -7,6 +7,7 @@ import com.komainu.moxia.progress.ProgressBars;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.recipe.RecipeBuildService;
 import com.komainu.moxia.sculpt.SnapshotCaptureService;
+import com.komainu.moxia.studio.net.ButtonCommands;
 import com.komainu.moxia.studio.net.StudioAim;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -127,13 +128,18 @@ public final class LiveService {
                 return readable(exception);
             }
         }
-        try {
-            int result = player.getServer().getCommandManager().getDispatcher().execute(request.command(),
-                    player.getCommandSource());
-            return result > 0 ? null : "la orden no hizo nada (mira el chat)";
-        } catch (CommandSyntaxException exception) {
-            return exception.getMessage();
-        }
+        String[] problem = {null};
+        // Llega con hasta 8192 caracteres, como la de los botones: si agota la pila al leerse, no tumba el servidor.
+        boolean fits = ButtonCommands.withinStack(() -> {
+            try {
+                int result = player.getServer().getCommandManager().getDispatcher().execute(request.command(),
+                        player.getCommandSource());
+                problem[0] = result > 0 ? null : "la orden no hizo nada (mira el chat)";
+            } catch (CommandSyntaxException exception) {
+                problem[0] = exception.getMessage();
+            }
+        });
+        return fits ? problem[0] : ButtonCommands.TOO_DEEP;
     }
 
     /**

@@ -1037,12 +1037,25 @@ public abstract sealed class EzBrush {
         }
 
         private int execute(ServerPlayerEntity player) {
-            try {
-                return player.getServer().getCommandManager().getDispatcher().execute(spec.full(),
-                        player.getCommandSource());
-            } catch (com.mojang.brigadier.exceptions.CommandSyntaxException exception) {
-                throw new IllegalArgumentException("/" + spec.full() + ": " + exception.getRawMessage().getString());
+            int[] result = {0};
+            String[] problem = {null};
+            // La orden se guardó sin ejecutarse (pudo llegar por el paquete de los botones, con 8192 caracteres): si
+            // agota la pila al leerse en cada clic, no tumba el servidor.
+            boolean fits = com.komainu.moxia.studio.net.ButtonCommands.withinStack(() -> {
+                try {
+                    result[0] = player.getServer().getCommandManager().getDispatcher().execute(spec.full(),
+                            player.getCommandSource());
+                } catch (com.mojang.brigadier.exceptions.CommandSyntaxException exception) {
+                    problem[0] = exception.getRawMessage().getString();
+                }
+            });
+            if (!fits) {
+                problem[0] = com.komainu.moxia.studio.net.ButtonCommands.TOO_DEEP;
             }
+            if (problem[0] != null) {
+                throw new IllegalArgumentException("/" + spec.full() + ": " + problem[0]);
+            }
+            return result[0];
         }
     }
 }

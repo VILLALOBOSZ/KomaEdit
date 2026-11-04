@@ -74,6 +74,9 @@ public final class ShareService {
         PayloadTypeRegistry.playC2S().register(ShareImportPayload.ID, ShareImportPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ShareImportPayload.ID, (payload, context) ->
                 context.server().execute(() -> {
+                    if (!KomaPermissions.canAccess(context.player())) {
+                        return;
+                    }
                     try {
                         importCode(context.player(), payload.code());
                     } catch (IllegalArgumentException exception) {

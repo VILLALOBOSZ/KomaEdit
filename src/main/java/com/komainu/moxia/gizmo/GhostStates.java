@@ -29,8 +29,19 @@ public final class GhostStates implements GhostPlacement.StateMapper {
         if (orientation == Orientation.IDENTITY) {
             return state;
         }
+        if (!cacheable(state, Block.STATE_IDS.size())) {
+            return Block.getRawIdFromState(transform(Block.getStateFromRawId(state), orientation));
+        }
         return MAPPED.computeIfAbsent(key(state, orientation), ignored ->
                 Block.getRawIdFromState(transform(Block.getStateFromRawId(state), orientation)));
+    }
+
+    /**
+     * ¿Se guarda el resultado de este estado? Solo los que existen: los ids del fantasma los manda el servidor, y uno
+     * malicioso que mandaba paletas de ids inventados (que se leen como aire) llenaba los cachés sin fin.
+     */
+    static boolean cacheable(int state, int registered) {
+        return state >= 0 && state < registered;
     }
 
     /** Si todos esos estados quedan bien con la orientación (de pie, siempre). */
@@ -38,9 +49,12 @@ public final class GhostStates implements GhostPlacement.StateMapper {
         if (orientation.upright()) {
             return true;
         }
+        int registered = Block.STATE_IDS.size();
         for (int state : palette) {
-            boolean admitted = ADMITTED.computeIfAbsent(key(state, orientation), ignored ->
-                    admits(Block.getStateFromRawId(state), orientation));
+            boolean admitted = cacheable(state, registered)
+                    ? ADMITTED.computeIfAbsent(key(state, orientation), ignored ->
+                    admits(Block.getStateFromRawId(state), orientation))
+                    : admits(Block.getStateFromRawId(state), orientation);
             if (!admitted) {
                 return false;
             }

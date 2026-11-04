@@ -51,6 +51,18 @@ public final class CapabilityRules {
     }
 
     /**
+     * Una coordenada del punto del clic que manda el cliente, dentro de su bloque: {@code Math.clamp} deja pasar
+     * {@code NaN} (y con él, lo que decide la mitad de una losa o el lado de una escalera), así que lo que no es un
+     * número va al centro del bloque.
+     */
+    public static double hitCoordinate(double value, int block) {
+        if (!Double.isFinite(value)) {
+            return block + 0.5;
+        }
+        return Math.clamp(value, block, block + 1.0);
+    }
+
+    /**
      * ¿Llega a la posición? Como Minecraft: la distancia de los ojos al punto más cercano del bloque, con un bloque
      * de margen.
      */

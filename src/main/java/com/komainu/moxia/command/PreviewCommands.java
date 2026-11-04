@@ -93,13 +93,24 @@ final class PreviewCommands {
         }
         String command = last.get().commandFor(preview);
         Feedback.status(player, "Repitiendo /" + command);
-        try {
-            return context.getSource().getServer().getCommandManager().getDispatcher()
-                    .execute(command, context.getSource());
-        } catch (CommandSyntaxException exception) {
-            return Feedback.fail(context.getSource(), Text.literal("No se pudo repetir: " + exception.getMessage())
+        int[] result = {0};
+        CommandSyntaxException[] failed = {null};
+        // La orden pudo llegar por el paquete de los botones (8192 caracteres): repetida desde aquí, con la pila más
+        // honda, no puede tumbar el servidor si no cabe.
+        boolean fits = com.komainu.moxia.studio.net.ButtonCommands.withinStack(() -> {
+            try {
+                result[0] = context.getSource().getServer().getCommandManager().getDispatcher()
+                        .execute(command, context.getSource());
+            } catch (CommandSyntaxException exception) {
+                failed[0] = exception;
+            }
+        });
+        if (!fits || failed[0] != null) {
+            String why = fits ? failed[0].getMessage() : com.komainu.moxia.studio.net.ButtonCommands.TOO_DEEP;
+            return Feedback.fail(context.getSource(), Text.literal("No se pudo repetir: " + why)
                     .append(" ").append(Feedback.fix("[editar]", command)));
         }
+        return result[0];
     }
 
     /** Engancha {@code -v}/{@code --preview} en las órdenes ya registradas bajo {@code root}. */

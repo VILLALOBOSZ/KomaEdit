@@ -39,6 +39,25 @@ public final class ButtonCommands {
         return Optional.empty();
     }
 
+    /** Lo que se contesta a una orden que no cabe en la pila del hilo del servidor ({@link #withinStack}). */
+    public static final String TOO_DEEP = "la orden está demasiado anidada (miles de «!» o de paréntesis): "
+            + "escríbela más sencilla";
+
+    /**
+     * Ejecuta {@code run} y dice si cupo en la pila. Por el paquete de los botones y por el de la vista previa en vivo
+     * llegan órdenes de hasta {@value ButtonCommandPayload#MAX_COMMAND} caracteres (por el chat, de 256): una máscara
+     * de WorldEdit con miles de {@code !} o una expresión con miles de paréntesis agota la pila al leerse, y en el hilo
+     * del servidor eso lo tumbaba entero.
+     */
+    public static boolean withinStack(Runnable run) {
+        try {
+            run.run();
+            return true;
+        } catch (StackOverflowError error) {
+            return false;
+        }
+    }
+
     /** La primera palabra de la orden, tal cual (las órdenes distinguen mayúsculas). */
     public static String root(String command) {
         int space = command.indexOf(' ');

@@ -64,6 +64,8 @@ public final class SchematicSanitizer {
     private static final Set<String> STRIPPED_KEYS = Set.of("LootTable", "LootTableSeed", "Lock", "lock", "bees",
             "Passengers", "Tags", "Attributes", "attributes", "ActiveEffects", "active_effects", "data",
             "Brain", "Leash", "leash", "Owner", "owner");
+    /** Lo que se queda de un objeto: su id, su cantidad y su hueco. */
+    private static final Set<String> ITEM_KEYS = Set.of("id", "count", "Count", "Slot");
     /** Objetos que no entran por un paquete: guardan órdenes, estructuras o datos de criaturas. */
     private static final Set<String> RESTRICTED_ITEMS = Set.of("minecraft:command_block",
             "minecraft:chain_command_block", "minecraft:repeating_command_block", "minecraft:command_block_minecart",
@@ -169,6 +171,10 @@ public final class SchematicSanitizer {
         }
         int[] remap = new int[size];
         boolean[] air = new boolean[size];
+        // Alguna entrada cambió (un bloque de órdenes por aire, uno de un mod por el suyo de vanilla): la paleta
+        // nueva se escribe aunque no se junte ninguna. Antes solo se escribía si se juntaban, y si no, se quedaba la
+        // de origen con lo que había que quitar.
+        boolean renamed = false;
         Map<String, Integer> merged = new LinkedHashMap<>();
         for (int index = 0; index < size; index++) {
             String key = byIndex.get(index);
@@ -182,6 +188,7 @@ public final class SchematicSanitizer {
             Integer target = merged.putIfAbsent(fixed, merged.size());
             remap[index] = target == null ? merged.size() - 1 : target;
             air[index] = blocks && air(fixed);
+            renamed |= !fixed.equals(key);
         }
         byte[] data = container.getByteArray("Data");
         boolean same = merged.size() == size;
@@ -220,10 +227,12 @@ public final class SchematicSanitizer {
         if (count != volume) {
             throw new IllegalArgumentException("Al esquema le faltan bloques (" + count + " de " + volume + ")");
         }
-        if (rewritten != null) {
+        if (rewritten != null || renamed) {
             NbtCompound fixedPalette = new NbtCompound();
             merged.forEach(fixedPalette::putInt);
             container.put("Palette", fixedPalette);
+        }
+        if (rewritten != null) {
             container.putByteArray("Data", rewritten.toByteArray());
         }
         return blocks ? solid : 0;
@@ -371,10 +380,20 @@ public final class SchematicSanitizer {
         }
     }
 
+    /**
+     * ¿Es un objeto? Lo que tiene {@code id} y cantidad, componentes, datos de antes de 1.20.5 o hueco, o solo eso.
+     * Sin {@code count} también lo es: Minecraft lee 1 si falta, y antes un objeto así se quedaba con sus
+     * componentes (un libro con órdenes al pulsar, objetos encantados de más) y saltaba la lista de prohibidos.
+     */
     private static boolean item(NbtCompound compound) {
-        return compound.contains("id", NbtElement.STRING_TYPE)
-                && (compound.contains("count", NbtElement.NUMBER_TYPE) || compound.contains("Count",
-                NbtElement.NUMBER_TYPE));
+        if (!compound.contains("id", NbtElement.STRING_TYPE)) {
+            return false;
+        }
+        if (compound.contains("count", NbtElement.NUMBER_TYPE) || compound.contains("Count", NbtElement.NUMBER_TYPE)
+                || compound.contains("components") || compound.contains("tag") || compound.contains("Slot")) {
+            return true;
+        }
+        return ITEM_KEYS.containsAll(compound.getKeys());
     }
 
     /** Deja el objeto en su id, su cantidad y su hueco. {@code false} si no puede entrar. */

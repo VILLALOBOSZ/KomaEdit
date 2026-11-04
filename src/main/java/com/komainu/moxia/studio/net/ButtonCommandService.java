@@ -86,18 +86,30 @@ public final class ButtonCommandService {
      * Lo que hace Minecraft con una orden escrita sin firma ({@code ServerPlayNetworkHandler.executeCommand}): la lee
      * con la fuente del jugador, con sus permisos, y la ejecuta con {@code execute} ({@code CommandManager.execute},
      * que contesta los errores igual que en el chat). Una orden con texto firmado (como {@code /msg}) no entra:
-     * KomaEdit no tiene ninguna y sin firma no se le dejaría pasar.
+     * KomaEdit no tiene ninguna y sin firma no se le dejaría pasar. Una orden que agota la pila al leerse
+     * ({@link ButtonCommands#withinStack}) no se ejecuta y se le dice al jugador.
      *
      * @return si se ejecutó
      */
     public static boolean run(CommandDispatcher<ServerCommandSource> dispatcher, ServerCommandSource source,
                               String command, BiConsumer<ParseResults<ServerCommandSource>, String> execute) {
-        ParseResults<ServerCommandSource> parse = dispatcher.parse(command, source);
-        if (SignedArgumentList.isNotEmpty(parse)) {
+        boolean[] signed = {false};
+        boolean fits = ButtonCommands.withinStack(() -> {
+            ParseResults<ServerCommandSource> parse = dispatcher.parse(command, source);
+            if (SignedArgumentList.isNotEmpty(parse)) {
+                signed[0] = true;
+                return;
+            }
+            execute.accept(parse, command);
+        });
+        if (!fits) {
+            source.sendError(Text.literal("No se ejecuta: " + ButtonCommands.TOO_DEEP));
+            return false;
+        }
+        if (signed[0]) {
             source.sendError(Text.literal("Esa orden lleva texto firmado: escríbela en el chat"));
             return false;
         }
-        execute.accept(parse, command);
         return true;
     }
 

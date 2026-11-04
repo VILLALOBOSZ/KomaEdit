@@ -367,7 +367,8 @@ public final class PlacementService {
                     String name = file.getFileName().toString();
                     int dot = name.lastIndexOf('.');
                     String base = dot < 0 ? name : name.substring(0, dot);
-                    if (pattern.matcher(name).matches() || pattern.matcher(base).matches()) {
+                    // Con tope: la expresión la escribe el jugador y esto corre en el hilo del servidor.
+                    if (BoundedMatch.matches(pattern, name) || BoundedMatch.matches(pattern, base)) {
                         matches.add(file);
                     }
                 });

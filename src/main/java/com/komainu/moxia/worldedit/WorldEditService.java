@@ -111,12 +111,19 @@ public final class WorldEditService {
         context.session().dispatchCUISelection(context.actor());
     }
 
+    /** Deshacer del Studio: como {@code //undo}, que espera si hay una edición de KomaEdit colocándose. */
     public static boolean undo(ServerPlayerEntity player) {
+        UndoGuard.GAME.before(player.getUuid(), false).ifPresent(reason -> {
+            throw new IllegalStateException(reason);
+        });
         PlayerContext context = context(player);
         return context.session().undo(null, context.actor()) != null;
     }
 
     public static boolean redo(ServerPlayerEntity player) {
+        UndoGuard.GAME.before(player.getUuid(), true).ifPresent(reason -> {
+            throw new IllegalStateException(reason);
+        });
         PlayerContext context = context(player);
         return context.session().redo(null, context.actor()) != null;
     }

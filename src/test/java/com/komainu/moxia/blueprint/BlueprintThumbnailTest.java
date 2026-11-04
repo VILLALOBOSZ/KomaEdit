@@ -36,6 +36,24 @@ class BlueprintThumbnailTest {
         assertTrue(brightness(left) > brightness(right), "el sur más claro que el este");
     }
 
+    /**
+     * El cliente mira la cabecera antes de decodificar lo que le llega como miniatura: un PNG pequeño que dice medir
+     * 30000 × 30000 le hacía reservar la imagen entera.
+     */
+    @Test
+    void theClientOnlyDecodesSmallThumbnails() {
+        assertTrue(ThumbnailChunks.fits(BlueprintThumbnail.png(BlueprintFixtures.house()), ThumbnailChunks.MAX_SIDE),
+                "las de KomaEdit");
+        byte[] huge = new byte[64];
+        byte[] head = {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52,
+                0, 0, 0x75, 0x30, 0, 0, 0x75, 0x30};
+        System.arraycopy(head, 0, huge, 0, head.length);
+        org.junit.jupiter.api.Assertions.assertFalse(ThumbnailChunks.fits(huge, ThumbnailChunks.MAX_SIDE),
+                "30000 × 30000");
+        org.junit.jupiter.api.Assertions.assertFalse(ThumbnailChunks.fits(new byte[]{1, 2, 3},
+                ThumbnailChunks.MAX_SIDE), "lo que no es un PNG");
+    }
+
     @Test
     void theSamePlanAlwaysGivesTheSamePng() throws IOException {
         byte[] first = BlueprintThumbnail.png(BlueprintFixtures.house());

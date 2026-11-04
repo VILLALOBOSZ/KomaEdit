@@ -27,6 +27,47 @@ Repaso entero de figuras, generadores, terreno, pinceles, colocación, gizmo, pl
 - Renders del antes y el después en `docs/renders/auditoria_herramientas/` (`KOMAEDIT_AUDIT_RENDER=<carpeta>` y `KOMAEDIT_PLACEMENT_RENDER`).
 - Nada probado aún dentro de Minecraft.
 
+### Auditoría de seguridad, red y archivos
+
+Repaso entero de lo que llega del cliente (los 24 paquetes), de los archivos que no son nuestros y de lo que el servidor manda al cliente. Cada arreglo lleva su prueba.
+
+- **Servidor:**
+  - Una orden de los botones o de la vista previa en vivo que agota la pila al leerse ya no tumba el servidor: se rechaza con «demasiado anidada». Lo mismo al repetirla, al recalcularla o en el pincel de zona.
+  - Copiar y cortar por el paquete del editor respetan el límite por edición y solo leen chunks cargados. Cortar pide también `komaedit.build`.
+  - Freno para lo pesado del editor (deshacer, copiar, el área mágica…) y para el estado de herramientas del Studio.
+  - Las miniaturas de sellos propios no se leen dos veces y tienen tope.
+- **Archivos que entran:**
+  - El saneado de planos limpia también los objetos que no dicen su cantidad.
+  - La paleta corregida se escribe aunque no se junte ninguna entrada.
+  - Un `.schem` de una versión más nueva cumple los topes de tamaño, paleta, datos y entidades.
+  - El `.schematic` de MCEdit se mide antes de dárselo a WorldEdit.
+  - Los PNG de sellos se leen sin descomprimir sus textos.
+  - La expresión de `Schematic(N:…)` tiene un tope de trabajo.
+  - Un paquete con datos muy anidados se rechaza con mensaje.
+  - Un `.schem` que no trae sus bloques no reserva memoria para ellos.
+- **Permisos:**
+  - Los paquetes del cliente piden acceso a KomaEdit como las órdenes: capacidades, displays, lazo, vistas, barras, pincel y Pegar código.
+  - Cada clic de pincel pide el permiso de ese pincel.
+  - Con `rootPermissionGrantsAll`, un paquete de permisos ya no da todo; solo `komaedit.use`, como decía la documentación.
+- **Cliente** (frente a un servidor malicioso):
+  - Las guías de alineación y de simetría rotas no se dibujan.
+  - Las vistas previas y los fantasmas a medias tienen tope de memoria y de secciones.
+  - Los giros del fantasma solo se recuerdan para estados que existen.
+  - Las miniaturas no pedidas, o con un PNG enorme, se ignoran.
+  - El código de barras solo va al portapapeles tras pulsar **Exportar**.
+  - El cliente guarda como mucho 8 192 notas.
+  - Los nombres de descarga `com¹`…`lpt³` se rechazan.
+- Documentado: WorldEdit-Fabric concede por su cuenta los nodos que no conoce cuando no hay gestor de permisos (`cheat-mode`, `creative-enable`, operadores de cualquier nivel).
+
+### Auditoría de datos, guardado y deshacer
+
+- **`//undo` con una edición de KomaEdit a medias.** La cola de edición, la reconstrucción y los biomas solo entran en el historial de WorldEdit al acabar. Un `//undo` (o deshacer en el Studio, pensando en la que se coloca) deshacía la edición de antes y, al acabar la nueva, WorldEdit borraba lo que se podía rehacer: la de antes se perdía y el mundo quedaba mezclado. Ahora `//undo`, `//redo`, `/undo`, `/redo` y los botones del Studio esperan y dicen por qué (espera a que acabe o párala con `/komaedit cancel`). Un trazo de pintar abierto se cierra antes, así deshacer quita justo ese trazo.
+- **Reconstrucción tras una caída.** Los cofres, barriles y carteles volvían con lo leído al empezar: si alguien sacaba objetos entre la lectura y el vaciado (o una tolva los metía), tras la caída se duplicaban o se perdían. Cada bloque con datos se apunta ahora en `<id>.taken` antes de quitarlo y vuelve con eso.
+- **Cancelar una reconstrucción y caerse.** La marca de deshacer se escribía en el hilo de la reconstrucción, que podía estar ordenando la obra de otro jugador; si el servidor se caía entretanto, al arrancar se levantaba la obra que se estaba cancelando. Ahora se escribe al momento.
+- **Parar el servidor mientras se ordena una obra enorme.** Si ordenarla tardaba más que la espera al parar (30 s), su archivo se escribía después y la obra se levantaba en el siguiente arranque sin haberla empezado. Ahora se borra.
+- **Paletas, ruidos, selecciones y presets de árboles y rocas de una versión más nueva** (al volver de una prerelease a la estable): guardar o borrar uno reescribía el archivo sin lo que esta versión no entiende. Ahora se usan pero no se cambian hasta actualizar.
+- **Planos sin miniatura.** Guardar uno sin miniatura (compartir uno que no la tenía) dejaba la copia de la anterior y, al arrancar, la recuperación la volvía a poner.
+
 ### Sellos sacados del mundo y relieve a lo largo de la trayectoria
 
 - **Sellos propios del mundo.** Un trozo de terreno que te gusta se guarda como sello con `/komaedit sello capturar [nombre] [descripción…]` o, en **Estampar relieve**, con **Guardar la selección como sello**. Lee la altura del suelo de cada columna (sin troncos, hojas ni plantas y, si no se pide `-w`, sin el agua), la suaviza sin apartarse medio bloque de lo leído para que al escalarlo no salgan escalones, recorta el nivel base del borde, funde el borde y lo guarda en 16 bits con sus proporciones de verdad (lo que sube y lo que hunde). La lectura va repartida entre ticks y el cálculo en un worker.

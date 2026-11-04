@@ -86,7 +86,8 @@ public final class FileChunks {
         String base = lower.substring(0, lower.length() - extension.length()).strip();
         int dot = base.indexOf('.');
         String device = dot < 0 ? base : base.substring(0, dot);
-        return !device.matches("con|prn|aux|nul|com[0-9]|lpt[0-9]");
+        // Como AtomicStorage: Windows también reserva COM¹, COM², COM³ y LPT¹… (el nombre admite cualquier cifra).
+        return !device.matches("con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]");
     }
 
     /**

@@ -153,7 +153,8 @@ public final class DisplayService {
     // ---------------------------------------------------------------- permisos y zonas
 
     public static boolean allowed(ServerPlayerEntity player) {
-        return KomaPermissions.can(player, PERMISSION);
+        // Con acceso a KomaEdit, como las órdenes: los paquetes del editor no lo saltan.
+        return KomaPermissions.canAccess(player) && KomaPermissions.can(player, PERMISSION);
     }
 
     private static void require(ServerPlayerEntity player) {

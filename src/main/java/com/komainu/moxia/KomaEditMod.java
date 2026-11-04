@@ -89,6 +89,8 @@ public final class KomaEditMod implements ModInitializer {
         com.komainu.moxia.views.ViewService.register();
         com.komainu.moxia.notes.NoteService.register();
         MoxiaCommands.register();
+        // Después de las órdenes de WorldEdit: //undo y //redo esperan si hay una edición de KomaEdit colocándose.
+        com.komainu.moxia.worldedit.UndoGuards.register();
         com.komainu.moxia.worldedit.EzExtensions.register();
         com.komainu.moxia.worldedit.KomaClipboardFormats.register();
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
@@ -180,6 +182,7 @@ public final class KomaEditMod implements ModInitializer {
             SnapshotCaptureService.cancel(handler.player.getUuid());
             AsyncEngine.cancel(handler.player.getUuid());
             FastPaintService.remove(handler.player.getUuid());
+            com.komainu.moxia.editor.EditorActionService.forget(handler.player.getUuid());
             RecipeActionService.forget(handler.player.getUuid());
             IvyService.cancel(handler.player.getUuid());
             PathManager.remove(handler.player.getUuid());

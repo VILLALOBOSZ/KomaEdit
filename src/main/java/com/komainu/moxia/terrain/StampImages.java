@@ -1,8 +1,5 @@
 package com.komainu.moxia.terrain;
 
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -15,9 +12,11 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -33,8 +32,21 @@ public final class StampImages {
     private StampImages() {
     }
 
+    /** Lo más que se lee de un PNG de sello: uno de 1024×1024 a 16 bits ocupa unos 2 MiB. */
+    static final int MAX_PNG_BYTES = 32 * 1024 * 1024;
+
+    /**
+     * Lee un sello. El gris neutro se busca a mano en los textos sin comprimir ({@code tEXt}) y la imagen se lee sin
+     * sus metadatos: el lector de Java descomprime entero cada texto comprimido ({@code zTXt}, {@code iTXt}), y un
+     * PNG de 1×1 de unos KiB traía gigas de texto que agotaban la memoria del servidor.
+     */
     public static HeightStamp read(String name, InputStream input) throws IOException {
-        try (ImageInputStream stream = ImageIO.createImageInputStream(input)) {
+        byte[] bytes = input.readNBytes(MAX_PNG_BYTES + 1);
+        if (bytes.length > MAX_PNG_BYTES) {
+            throw new IOException("La imagen ocupa más de " + MAX_PNG_BYTES / (1024 * 1024) + " MiB");
+        }
+        double neutral = neutral(bytes);
+        try (ImageInputStream stream = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
             if (stream == null) {
                 throw new IOException("No se puede leer la imagen");
             }
@@ -44,14 +56,13 @@ public final class StampImages {
             }
             ImageReader reader = readers.next();
             try {
-                reader.setInput(stream, true, false);
+                reader.setInput(stream, true, true);
                 int width = reader.getWidth(0);
                 int height = reader.getHeight(0);
                 if (width > HeightStamp.MAX_SIZE || height > HeightStamp.MAX_SIZE) {
                     throw new IOException("La imagen mide " + width + "×" + height + "; el máximo es "
                             + HeightStamp.MAX_SIZE + "×" + HeightStamp.MAX_SIZE);
                 }
-                double neutral = neutral(reader.getImageMetadata(0));
                 BufferedImage image = reader.read(0);
                 return fromImage(name, image, neutral);
             } finally {
@@ -148,29 +159,39 @@ public final class StampImages {
         }
     }
 
-    private static double neutral(IIOMetadata metadata) {
-        if (metadata == null || !java.util.Arrays.asList(metadata.getMetadataFormatNames()).contains(PNG_FORMAT)) {
+    /**
+     * El gris neutro guardado en un texto {@code tEXt} ({@code komaedit-neutral}), recorriendo los trozos del PNG sin
+     * descomprimir nada; 0 si no está o no se entiende.
+     */
+    static double neutral(byte[] png) {
+        if (png.length < 8 || (png[0] & 0xFF) != 0x89 || png[1] != 'P' || png[2] != 'N' || png[3] != 'G') {
             return 0.0;
         }
-        Node root = metadata.getAsTree(PNG_FORMAT);
-        for (Node chunk = root.getFirstChild(); chunk != null; chunk = chunk.getNextSibling()) {
-            if (!chunk.getNodeName().equals("tEXt")) {
-                continue;
+        int position = 8;
+        while (position + 8 <= png.length) {
+            long length = ((png[position] & 0xFFL) << 24) | ((png[position + 1] & 0xFF) << 16)
+                    | ((png[position + 2] & 0xFF) << 8) | (png[position + 3] & 0xFF);
+            String type = new String(png, position + 4, 4, StandardCharsets.ISO_8859_1);
+            int data = position + 8;
+            if (length > png.length - data) {
+                return 0.0;
             }
-            for (Node entry = chunk.getFirstChild(); entry != null; entry = entry.getNextSibling()) {
-                NamedNodeMap attributes = entry.getAttributes();
-                if (attributes == null || attributes.getNamedItem("keyword") == null) {
-                    continue;
-                }
-                if (NEUTRAL_KEY.equals(attributes.getNamedItem("keyword").getNodeValue())) {
+            if (type.equals("IEND")) {
+                return 0.0;
+            }
+            if (type.equals("tEXt")) {
+                String text = new String(png, data, (int) length, StandardCharsets.ISO_8859_1);
+                int separator = text.indexOf('\0');
+                if (separator > 0 && text.substring(0, separator).equals(NEUTRAL_KEY)) {
                     try {
-                        double value = Double.parseDouble(attributes.getNamedItem("value").getNodeValue());
-                        return Math.clamp(value, 0.0, 1.0);
-                    } catch (NumberFormatException | NullPointerException exception) {
+                        double value = Double.parseDouble(text.substring(separator + 1).strip());
+                        return Double.isFinite(value) ? Math.clamp(value, 0.0, 1.0) : 0.0;
+                    } catch (NumberFormatException exception) {
                         return 0.0;
                     }
                 }
             }
+            position = data + (int) length + 4;
         }
         return 0.0;
     }

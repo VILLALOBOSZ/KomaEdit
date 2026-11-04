@@ -420,6 +420,10 @@ public final class ShareCodec {
         } catch (IllegalStateException | ClassCastException | UnsupportedOperationException
                  | NumberFormatException exception) {
             throw new IllegalArgumentException("El paquete está dañado (campo con un tipo inesperado)");
+        } catch (StackOverflowError tooDeep) {
+            // Gson lee sin recursión, pero copiar los ajustes sí la usa: unos datos con miles de niveles agotaban la
+            // pila del hilo de los paquetes, que moría sin decirle nada al jugador.
+            throw new IllegalArgumentException("El paquete está dañado (datos demasiado anidados)");
         }
     }
 

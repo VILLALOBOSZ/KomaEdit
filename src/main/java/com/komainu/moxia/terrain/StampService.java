@@ -29,10 +29,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -59,7 +57,8 @@ public final class StampService {
     private static final int PREVIEW_BYTES_PER_TICK = 48 * 1024;
     private static final long CATALOG_COOLDOWN_MILLIS = 250L;
     private static final Map<UUID, Capture> JOBS = new ConcurrentHashMap<>();
-    private static final Map<UUID, Queue<OwnStamps.Preview>> OUTBOX = new ConcurrentHashMap<>();
+    /** Las miniaturas que se le deben a cada jugador: sin repetir y con tope ({@link StampPreviewOutbox}). */
+    private static final Map<UUID, StampPreviewOutbox<OwnStamps.Preview>> OUTBOX = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LAST_CATALOG = new ConcurrentHashMap<>();
     private static final ExecutorService PREVIEWS = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "KomaEdit sellos");
@@ -335,20 +334,33 @@ public final class StampService {
             }
             case StampPayloads.StampsRequest.PREVIEWS -> {
                 UUID viewer = player.getUuid();
-                List<String> hashes = List.copyOf(request.values());
+                StampPreviewOutbox<OwnStamps.Preview> outbox = OUTBOX.computeIfAbsent(viewer,
+                        key -> new StampPreviewOutbox<>());
+                // La que ya se lee o espera no se vuelve a leer: pedirlas sin parar no cuesta nada.
+                List<String> wanted = new ArrayList<>();
+                for (String hash : request.values()) {
+                    if (!wanted.contains(hash) && outbox.request(hash)) {
+                        wanted.add(hash);
+                    }
+                }
+                if (wanted.isEmpty()) {
+                    return;
+                }
                 OwnStamps stamps = TerrainService.ownStamps();
                 PREVIEWS.execute(() -> {
+                    List<String> missing = new ArrayList<>(wanted);
                     for (OwnStamps.Entry entry : stamps.list()) {
-                        if (hashes.contains(entry.hash())) {
+                        if (missing.remove(entry.hash())) {
                             try {
-                                OUTBOX.computeIfAbsent(viewer, key -> new ConcurrentLinkedQueue<>())
-                                        .add(stamps.preview(entry, OwnStamps.Preview.SIDE));
+                                outbox.offer(entry.hash(), stamps.preview(entry, OwnStamps.Preview.SIDE));
                             } catch (RuntimeException exception) {
+                                outbox.failed(entry.hash());
                                 KomaEditMod.LOGGER.warn("KomaEdit: no se pudo leer el sello {}: {}", entry.name(),
                                         exception.getMessage());
                             }
                         }
                     }
+                    missing.forEach(outbox::failed);
                 });
             }
             default -> {
@@ -386,20 +398,17 @@ public final class StampService {
         if (OUTBOX.isEmpty()) {
             return;
         }
-        for (Map.Entry<UUID, Queue<OwnStamps.Preview>> entry : OUTBOX.entrySet()) {
+        for (Map.Entry<UUID, StampPreviewOutbox<OwnStamps.Preview>> entry : OUTBOX.entrySet()) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
-            Queue<OwnStamps.Preview> queue = entry.getValue();
             if (player == null || !ServerPlayNetworking.canSend(player, StampPayloads.StampsPreview.ID)) {
-                queue.clear();
                 continue;
             }
-            int budget = PREVIEW_BYTES_PER_TICK;
-            OwnStamps.Preview preview;
-            while (budget > 0 && (preview = queue.poll()) != null) {
+            for (OwnStamps.Preview preview : entry.getValue().poll(PREVIEW_BYTES_PER_TICK,
+                    ready -> ready.values().length * 2)) {
                 ServerPlayNetworking.send(player, new StampPayloads.StampsPreview(preview));
-                budget -= preview.values().length * 2;
             }
         }
-        OUTBOX.values().removeIf(Queue::isEmpty);
+        OUTBOX.entrySet().removeIf(entry -> entry.getValue().isEmpty()
+                || server.getPlayerManager().getPlayer(entry.getKey()) == null);
     }
 }

@@ -56,7 +56,9 @@ public record SymmetryGuidePayload(boolean active, boolean radial, boolean mirro
             return NONE;
         }
         int flags = buffer.readByte();
+        // Los brazos los dibuja el cliente en cada fotograma: los que diga el servidor, dentro de lo que existe.
+        int arms = Math.clamp(buffer.readVarInt(), 0, com.komainu.moxia.symmetry.SymmetryMode.MAX_ARMS);
         return new SymmetryGuidePayload(true, (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0,
-                (flags & 8) != 0, buffer.readVarInt(), buffer.readInt(), buffer.readInt(), buffer.readInt());
+                (flags & 8) != 0, arms, buffer.readInt(), buffer.readInt(), buffer.readInt());
     }
 }

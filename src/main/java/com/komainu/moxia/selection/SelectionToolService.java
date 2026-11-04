@@ -116,6 +116,10 @@ public final class SelectionToolService {
 
     /** Un lazo terminado en el cliente: se comprueba y se empieza a proyectar (acaba en unos ticks). */
     public static void lasso(ServerPlayerEntity player, SelectionPayloads.Lasso payload) {
+        if (!KomaPermissions.canAccess(player)) {
+            // Como las órdenes, que cuelgan de /komaedit: sin acceso a KomaEdit, el paquete no hace nada.
+            return;
+        }
         try {
             KomaPermissions.require(player, LASSO);
             LassoCamera camera = payload.camera();
@@ -177,6 +181,10 @@ public final class SelectionToolService {
     // ── Pincel ───────────────────────────────────────────────────────────────────────────────────────────
 
     public static void brush(ServerPlayerEntity player, SelectionPayloads.Brush payload) {
+        if (!KomaPermissions.canAccess(player)) {
+            // Como las órdenes, que cuelgan de /komaedit: sin acceso a KomaEdit, el paquete no hace nada.
+            return;
+        }
         State state = state(player);
         try {
             KomaPermissions.require(player, BRUSH);

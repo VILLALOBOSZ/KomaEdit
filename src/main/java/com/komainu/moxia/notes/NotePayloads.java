@@ -14,8 +14,22 @@ import java.util.UUID;
 public final class NotePayloads {
     /** Notas por paquete; una sincronización entera va en varios. */
     public static final int PAGE = 128;
+    /**
+     * Notas que el cliente guarda como mucho. Las páginas sin {@code reset} suman notas nuevas: un servidor malicioso
+     * que no paraba de mandarlas llenaba la memoria del cliente, que además las recorre en cada tick.
+     */
+    public static final int MAX_CLIENT_NOTES = 8_192;
 
     private NotePayloads() {
+    }
+
+    /** Suma una página a lo que tiene el cliente: las que ya conoce se cambian; las nuevas, hasta el tope. */
+    public static void merge(java.util.Map<String, WorldNote> known, List<WorldNote> page) {
+        for (WorldNote note : page) {
+            if (known.containsKey(note.id()) || known.size() < MAX_CLIENT_NOTES) {
+                known.put(note.id(), note);
+            }
+        }
     }
 
     /**

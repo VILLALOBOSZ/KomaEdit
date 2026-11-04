@@ -84,12 +84,24 @@ public final class EzBrushManager {
                     Formatting.YELLOW), true);
             return;
         }
+        // El permiso de este pincel, en cada clic: si se lo quitan con el pincel en la mano, deja de funcionar ya.
+        String node = permission(tool.brush.type());
+        if (!com.komainu.moxia.permission.KomaPermissions.can(player, node)) {
+            player.sendMessage(message(tool.brush.type().displayName() + ": te falta el permiso " + node,
+                    Formatting.RED), true);
+            return;
+        }
         try {
             tool.brush.handle(new Session(player, state, tool), input);
         } catch (IllegalArgumentException | IllegalStateException exception) {
             player.sendMessage(message(tool.brush.type().displayName() + ": " + exception.getMessage(),
                     Formatting.RED), true);
         }
+    }
+
+    /** El nodo de cada pincel, el mismo que pide {@code /komaedit pincel} al ponerlo en la mano. */
+    static String permission(EzBrushType type) {
+        return com.komainu.moxia.permission.KomaPermissions.BUILD + ".brush." + type.id();
     }
 
     static Text message(String text, Formatting color) {

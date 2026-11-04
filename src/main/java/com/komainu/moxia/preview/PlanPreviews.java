@@ -757,10 +757,20 @@ public final class PlanPreviews {
     }
 
     private static void dispatch(ServerPlayerEntity player, String command) {
-        try {
-            player.getServer().getCommandManager().getDispatcher().execute(command, player.getCommandSource());
-        } catch (CommandSyntaxException exception) {
-            throw new IllegalStateException(exception.getMessage(), exception);
+        CommandSyntaxException[] failed = {null};
+        // Se recalcula desde el tick, con otra pila: una orden larga de los botones no puede tumbar el servidor.
+        boolean fits = com.komainu.moxia.studio.net.ButtonCommands.withinStack(() -> {
+            try {
+                player.getServer().getCommandManager().getDispatcher().execute(command, player.getCommandSource());
+            } catch (CommandSyntaxException exception) {
+                failed[0] = exception;
+            }
+        });
+        if (!fits) {
+            throw new IllegalStateException(com.komainu.moxia.studio.net.ButtonCommands.TOO_DEEP);
+        }
+        if (failed[0] != null) {
+            throw new IllegalStateException(failed[0].getMessage(), failed[0]);
         }
     }
 
