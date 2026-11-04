@@ -49,6 +49,26 @@ public final class NamedDefinitions {
         this.kind = kind;
     }
 
+    /**
+     * Olvida lo leído de los archivos de esa carpeta (la del proyecto de un jugador, al irse). Sin esto, cada jugador
+     * que alguna vez usó una paleta o un ruido guardados dejaba sus archivos leídos (hasta 512 entradas de 16 KB) en
+     * memoria mientras durara el servidor, y en un solo jugador pasaban al siguiente mundo.
+     */
+    public static void forgetUnder(Path directory) {
+        Path root = directory.toAbsolutePath().normalize();
+        READ.keySet().removeIf(path -> path.startsWith(root));
+    }
+
+    /** Olvida todo lo leído (al pararse el servidor). */
+    public static void forgetAll() {
+        READ.clear();
+    }
+
+    /** Si hay algo leído de ese archivo en memoria (las pruebas). */
+    static boolean remembers(Path file) {
+        return READ.containsKey(file.toAbsolutePath().normalize());
+    }
+
     public static String normalizeName(String name) {
         String normalized = name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
         if (normalized.startsWith("#")) {

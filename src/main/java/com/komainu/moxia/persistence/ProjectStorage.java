@@ -47,11 +47,16 @@ public final class ProjectStorage {
     }
 
     public static void unbind(UUID playerId) {
-        PLAYER_ROOTS.remove(playerId);
+        Path root = PLAYER_ROOTS.remove(playerId);
+        if (root != null) {
+            // Sus paletas, ruidos, selecciones y presets leídos no se quedan en memoria al irse.
+            NamedDefinitions.forgetUnder(root);
+        }
     }
 
     public static void clearBindings() {
         PLAYER_ROOTS.clear();
+        NamedDefinitions.forgetAll();
     }
 
     public static Path namespace(UUID playerId, String name) {
