@@ -2583,7 +2583,10 @@ public final class ShapeGenerator {
         return Math.clamp((int) Math.round(Math.PI * 2.0 * radius / 8.5), minimum, maximum);
     }
 
-    private static List<Double> stations(SampledPath path, double spacing) {
+    private static List<Double> stations(SampledPath path, double requested) {
+        // Un hueco negativo (rings con g:-0.75 y un grosor pequeño) daba un paso negativo o nulo: el bucle no
+        // acababa nunca y llenaba la memoria del servidor.
+        double spacing = requested >= 0.5 ? requested : 0.5;
         List<Double> distances = new ArrayList<>();
         double maximum = path.closed() ? path.length() - 1.0E-6 : path.length() + 1.0E-6;
         for (double distance = 0.0; distance <= maximum; distance += spacing) {
