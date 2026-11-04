@@ -113,6 +113,24 @@ class BlueprintLibraryTest {
                 false, true), "un compartido no se vuelve a compartir");
     }
 
+    /**
+     * Un plano que se vuelve a guardar sin miniatura (compartir uno que no la tenía) quitaba el PNG pero dejaba su
+     * copia, y al arrancar el servidor la recuperación la volvía a poner: salía la miniatura del plano de antes.
+     */
+    @Test
+    void aBlueprintSavedWithoutThumbnailDoesNotGetTheOldOneBackOnRestart() {
+        BlueprintLibrary library = new BlueprintLibrary(root);
+        BlueprintMeta casa = meta("casa", ALICE, "Alicia", List.of(), 9, 9, 7, 300);
+        library.save(casa, schematic("a"), new byte[]{1, 2}, BlueprintLimits.DEFAULT, false);
+        library.save(casa, schematic("b"), new byte[]{3, 4}, BlueprintLimits.DEFAULT, false);
+        library.save(casa, schematic("c"), new byte[0], BlueprintLimits.DEFAULT, false);
+        BlueprintLibrary restarted = new BlueprintLibrary(root);
+        restarted.recover();
+        BlueprintLibrary.Entry entry = restarted.require(ALICE, BlueprintRef.parse("casa"));
+        assertFalse(Files.exists(entry.thumbnail()), "sin miniatura, como se guardó");
+        assertArrayEquals(schematic("c"), restarted.readSchematic(entry));
+    }
+
     @Test
     void deleteRemovesEveryFileAndRetagOnlyTouchesTheJson() throws IOException {
         BlueprintLibrary library = new BlueprintLibrary(root);
