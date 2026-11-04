@@ -107,6 +107,23 @@ class SpongeCodecTest {
         assertRejected(many, "bloques con datos");
     }
 
+    /** Un esquema que dice medir 256³ y trae dos bytes: antes se reservaba la rejilla entera (64 MiB) para nada. */
+    @Test
+    void aHugeHeaderWithoutBlocksReservesNothing() {
+        NbtCompound root = SpongeCodec.write(SchematicFixtures.random(2, 2, 2, 3, 1));
+        NbtCompound body = root.getCompound("Schematic");
+        body.putShort("Width", (short) 256);
+        body.putShort("Height", (short) 256);
+        body.putShort("Length", (short) 256);
+        body.getCompound("Blocks").putByteArray("Data", new byte[]{0, 1});
+        com.sun.management.ThreadMXBean threads =
+                (com.sun.management.ThreadMXBean) java.lang.management.ManagementFactory.getThreadMXBean();
+        long before = threads.getCurrentThreadAllocatedBytes();
+        assertRejected(root, "faltan bloques");
+        long spent = threads.getCurrentThreadAllocatedBytes() - before;
+        assertTrue(spent < 16L * 1024 * 1024, "se reservaron " + spent / (1024 * 1024) + " MiB");
+    }
+
     @Test
     void unreadableStatesBecomeAirWithAWarning() {
         List<String> warnings = new ArrayList<>();

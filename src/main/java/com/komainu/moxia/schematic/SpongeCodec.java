@@ -263,6 +263,11 @@ public final class SpongeCodec {
     }
 
     private static int[] varints(byte[] data, int volume, int paletteSize) {
+        // Cada bloque ocupa un byte como poco: con menos datos que bloques no se reserva la rejilla (hasta 64 MiB
+        // con un archivo de unos cien bytes).
+        if (data.length < volume) {
+            throw new IllegalArgumentException("Al esquema le faltan bloques");
+        }
         int[] values = new int[volume];
         int count = 0;
         int position = 0;

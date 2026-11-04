@@ -119,6 +119,10 @@ public final class HotbarService {
     // ---- Paquetes del cliente ----------------------------------------------------------------------------------
 
     private static void handle(ServerPlayerEntity player, HotbarActionPayload payload) {
+        if (!KomaPermissions.canAccess(player)) {
+            // Como las órdenes, que cuelgan de /komaedit: sin acceso a KomaEdit, el paquete no hace nada.
+            return;
+        }
         if (payload.kind() != HotbarActionPayload.Kind.APPLY && !REQUESTS.allow(player.getUuid(), System.nanoTime())) {
             return;
         }

@@ -54,12 +54,16 @@ public final class ViewService {
                 ViewPayloads.ViewResultPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ViewPayloads.ViewJumpPayload.ID, (payload, context) ->
                 context.server().execute(() -> {
+                    if (!KomaPermissions.canAccess(context.player())) {
+                        return;
+                    }
                     String problem = jump(context.player(), payload.target());
                     reply(context.player(), true, problem);
                 }));
         ServerPlayNetworking.registerGlobalReceiver(ViewPayloads.ViewSharePayload.ID, (payload, context) ->
                 context.server().execute(() -> {
-                    if (!REQUESTS.allow(context.player().getUuid(), System.nanoTime())) {
+                    if (!KomaPermissions.canAccess(context.player())
+                            || !REQUESTS.allow(context.player().getUuid(), System.nanoTime())) {
                         return;
                     }
                     String message;
@@ -76,7 +80,8 @@ public final class ViewService {
                 }));
         ServerPlayNetworking.registerGlobalReceiver(ViewPayloads.ViewCatalogRequest.ID, (payload, context) ->
                 context.server().execute(() -> {
-                    if (REQUESTS.allow(context.player().getUuid(), System.nanoTime())) {
+                    if (KomaPermissions.canAccess(context.player())
+                            && REQUESTS.allow(context.player().getUuid(), System.nanoTime())) {
                         sendCatalog(context.player());
                     }
                 }));

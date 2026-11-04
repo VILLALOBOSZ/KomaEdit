@@ -105,4 +105,18 @@ class PermissionNodesTest {
         assertNotNull(PermissionNodes.find("komaedit.build.brush.scatter"));
         assertEquals(PermissionNodes.Pack.ADVANCED, PermissionNodes.find("komaedit.build.array").pack());
     }
+
+    /**
+     * {@code rootPermissionGrantsAll} da todo a quien tiene {@code komaedit.use}, como dice la documentación. Antes
+     * miraba si el jugador entraba en {@code /komaedit}, y eso también lo da un paquete: con el básico se tenían los
+     * permisos de administración (cambiar de modo de juego, recargar, borrar lo compartido por otros).
+     */
+    @Test
+    void theRootOptionDoesNotTurnAPackIntoEverything() {
+        assertFalse(PermissionNodes.rootGrantsAll(true, holding("komaedit.permpack.basic")));
+        assertFalse(PermissionNodes.rootGrantsAll(true, holding("komaedit.permpack.advanced")));
+        assertTrue(PermissionNodes.rootGrantsAll(true, holding("komaedit.use")));
+        assertTrue(PermissionNodes.rootGrantsAll(true, holding("moxia.use")), "el nombre de antes");
+        assertFalse(PermissionNodes.rootGrantsAll(false, holding("komaedit.use")), "con la opción apagada");
+    }
 }

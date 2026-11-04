@@ -176,6 +176,10 @@ public final class CapabilityService {
     // ---- Red ---------------------------------------------------------------------------------------------------
 
     public static void handle(ServerPlayerEntity player, CapabilityActionPayload payload) {
+        if (!KomaPermissions.canAccess(player)) {
+            // Como las órdenes, que cuelgan de /komaedit: sin acceso a KomaEdit, el paquete no hace nada.
+            return;
+        }
         try {
             switch (payload.action()) {
                 case SYNC -> sync(player);

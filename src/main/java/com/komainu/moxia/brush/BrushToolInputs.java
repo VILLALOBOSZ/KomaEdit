@@ -97,7 +97,7 @@ public final class BrushToolInputs {
     public static void handle(ServerPlayerEntity player, BrushInput input) {
         String toolId = BrushTool.id(player.getMainHandStack());
         BrushTool.Kind kind = BrushTool.kind(toolId);
-        if (kind == null) {
+        if (kind == null || !KomaPermissions.canAccess(player)) {
             return;
         }
         if (kind == BrushTool.Kind.SUPERWAND ? !KomaPermissions.can(player, KomaPermissions.SELECT + ".superwand")
