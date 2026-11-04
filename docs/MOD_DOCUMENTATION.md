@@ -912,7 +912,7 @@ A la vista en la barra de acción, en el pie del Studio (con casillas) y en la l
 - Que sigas pudiendo usar KomaEdit y, en las figuras del Studio, construir esa figura.
 - Que quepa en la altura del mundo, dentro del borde, a menos de 512 bloques de ti y en chunks cargados.
 - Que el objeto admita ese giro (por si el cliente se equivoca).
-- **El destino se lee al confirmar**, repartido entre ticks (unos 4 ms por tick): cada escritura lleva la condición de lo que había en ese momento, así que si algo cambia mientras se coloca, esa posición no se pisa. Si alguna posición cae donde no puedes construir (la protección del spawn, el borde), no se coloca nada y te dice dónde.
+- **El destino se lee al confirmar**, repartido entre ticks (unos 4 ms por tick): cada escritura lleva la condición de lo que había en ese momento, así que si algo cambia mientras se coloca, esa posición no se pisa. Si alguna posición cae donde no puedes construir (la protección del spawn, el borde), no se coloca nada y te dice dónde. Es una ayuda del fantasma, no una protección: las órdenes que colocan sin fantasma escriben como WorldEdit, que no mira la protección del spawn; lo que decide quién puede hacerlo son los permisos.
 - Que no tengas otra edición colocándose (espera o `/komaedit cancel`).
 
 **Cuándo se quita solo:** al lanzar otra orden que coloque algo (otro fantasma o una vista previa), al cambiar de dimensión, al reaparecer, al desconectarte y tras media hora sin usarlo.
