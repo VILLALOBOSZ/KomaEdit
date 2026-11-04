@@ -31,6 +31,27 @@ class JobQueueTest {
         assertThrows(IllegalStateException.class, () -> queue.add("a", 5L), "una edición por jugador");
     }
 
+    /**
+     * Con los sitios llenos de ediciones enormes (minutos cada una), un retoque de otro jugador esperaba a que acabara
+     * una. Las pequeñas no esperan ni ocupan sitio; las grandes siguen por orden de llegada.
+     */
+    @Test
+    void aSmallEditDoesNotWaitBehindHugeOnes() {
+        JobQueue<String> queue = new JobQueue<>();
+        Set<String> paused = new HashSet<>();
+        queue.add("enorme_1", 20_000_000L);
+        queue.add("enorme_2", 16_000_000L);
+        assertEquals(List.of("enorme_1", "enorme_2"), queue.admit(2, 50_000L, paused::contains));
+        queue.add("grande", 3_000_000L);
+        queue.add("retoque", 10L);
+        queue.add("otra_grande", 2_000_000L);
+        assertEquals(List.of("retoque"), queue.admit(2, 50_000L, paused::contains), "el retoque no espera");
+        assertTrue(queue.active("retoque"));
+        assertFalse(queue.active("grande"), "las grandes esperan su sitio");
+        queue.remove("enorme_1");
+        assertEquals(List.of("grande"), queue.admit(2, 50_000L, paused::contains), "por orden de llegada");
+    }
+
     @Test
     void cancellingFromAnyPlaceLetsTheNextIn() {
         JobQueue<String> queue = new JobQueue<>();
