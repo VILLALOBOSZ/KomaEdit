@@ -34,12 +34,31 @@ public final class TerrainWriter {
         String blockId();
     }
 
+    /** Qué columnas se quedan con los bloques de superficie que tenían aunque cambien de altura. */
+    @FunctionalInterface
+    public interface KeepSurface {
+        KeepSurface NONE = (x, z) -> false;
+
+        boolean keep(int x, int z);
+    }
+
+    private static final SurfacePalette CONSERVE = SurfacePalette.parse("conservar");
+
     /**
      * @param repaintAll repinta también las columnas que no cambian de altura (la orden de pintar)
      * @return columnas que han cambiado
      */
     public static int write(TerrainColumns original, HeightField target, Fluids fluids, SurfacePalette palette,
                             boolean repaintAll, BlockSink sink, Runnable checkCancelled) {
+        return write(original, target, fluids, palette, repaintAll, sink, checkCancelled, KeepSurface.NONE);
+    }
+
+    /**
+     * @param keep las columnas que conservan sus bloques (como la paleta {@code conservar}): lo que apenas cambia en
+     *             el borde de un relieve grande, para no dejar una franja repintada con costura
+     */
+    public static int write(TerrainColumns original, HeightField target, Fluids fluids, SurfacePalette palette,
+                            boolean repaintAll, BlockSink sink, Runnable checkCancelled, KeepSurface keep) {
         palette = resolvePeak(palette, target);
         TerrainView view = original.view();
         boolean[] changedMask = new boolean[original.sizeX() * original.sizeZ()];
@@ -65,7 +84,8 @@ public final class TerrainWriter {
                     changedColumns++;
                     changedMask[original.index(x, z)] = true;
                 }
-                writeColumn(view, original, target, fluids, fluidLevel, palette, x, z, oldTop, newTop, sink);
+                writeColumn(view, original, target, fluids, fluidLevel, keep.keep(x, z) ? CONSERVE : palette, x,
+                        z, oldTop, newTop, sink);
             }
         }
         if (!palette.keepsExisting()) {

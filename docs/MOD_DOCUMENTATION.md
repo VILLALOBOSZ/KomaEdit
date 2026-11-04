@@ -3700,9 +3700,20 @@ Tallan un cauce a lo largo de la trayectoria (curva suave por sus puntos; tambi�
 
 Un relieve grande que sigue la [trayectoria](#trayectorias-y-hologramas) (la curva suave por sus puntos, abierta o cerrada) o, sin trayectoria, los puntos de la selección (de `//pos1` a `//pos2`), como el río:
 
-- **Cordillera** (`range`, `sierra`): una cresta que serpentea alrededor de la curva, con **cumbres y collados** (las cumbres son pirámides algo más altas y afiladas que la ladera), **ramales** grandes que bajan a los lados con valles entre ellos, **costillas y barrancos** por toda la ladera que siempre bajan de la cresta al pie, y un **pie** ancho y tendido, con lomas sueltas, que llega a cero sin escalón y se funde con el terreno. Baja al acercarse a los extremos.
-- **Costa** (`coast`, `acantilado`): tierra alta con **acantilado** a un lado de la línea, con tramos de cortado vertical y tramos de ladera empinada, **calas y cabos** (la línea se mueve con un ruido grande), **barranqueras** que bajan por el cortado, un **canchal** al pie y **farallones** sueltos en el agua; al otro lado, el fondo del mar baja. La tierra va donde el terreno ya es más alto (`-l auto`, de serie) o a la `izquierda` o `derecha`, mirando en el sentido de los puntos. Con agua (de serie), el **mar** se llena hasta un bloque por debajo del suelo de la línea, solo en las zonas que no tocan ninguna columna seca más baja (por donde se escaparía); el agua que ya hubiera se queda.
-- **Valle** (`valley`): un cauce que sigue la curva con la sección `v` (de río, de serie), `u` (glaciar: fondo ancho y paredes empinadas con hombros redondos) o `canon` (paredes a escalones como estratos), cuyo fondo **siempre baja** en el sentido del agua (hacia el extremo más bajo, como el río), con **valles laterales** que llegan colgados y apuntan aguas arriba. Con `-f agua`, un **río** por el fondo con el tallado de [Ríos y cañones](#ríos-y-cañones).
+- **Cordillera** (`range`, `sierra`): una cresta que serpentea alrededor de la curva, con **cumbres y collados** (las cumbres son pirámides algo más altas y afiladas que la ladera), **ramales** grandes que bajan a los lados con valles entre ellos, **costillas y barrancos** por toda la ladera que siempre bajan de la cresta al pie, y un **pie** ancho y tendido que llega a cero sin escalón y se funde con el terreno. Una vertiente es más tendida que la otra y cambian de lado a lo largo, así que la sección no es una tienda simétrica. La caída del pie lleva ruido (las curvas de nivel serpentean en lugar de dar anillos paralelos) y hay **lomas sueltas** de tamaños distintos. Sobre terreno irregular, el pie se suma a los bultos que había, no los alisa. Baja al acercarse a los extremos.
+- **Costa** (`coast`, `acantilado`): tierra alta con **acantilado** a un lado de la línea:
+  - La **altura cambia**: cabos altos y tramos bajos que bajan hasta las **calas**, y la orilla entra y sale por su cuenta en lugar de ir paralela a la línea.
+  - El cortado tiene tramos verticales y tramos de ladera empinada, con **barranqueras** que bajan por él.
+  - Arriba, la tierra llega al borde a su nivel o algo más baja: no hay pretil.
+  - Al pie, **rocas y canchal**, y una **playa** pequeña en cada cala.
+  - **Farallones** de tamaños distintos: agujas, torres anchas, un arco caído (dos pilares juntos) o cascotes.
+  - Al otro lado, el fondo del mar baja.
+  - La tierra va donde el terreno ya es más alto (`-l auto`, de serie) o a la `izquierda` o `derecha`, mirando en el sentido de los puntos.
+  - Con agua (de serie), el **mar** se llena al nivel del agua que ya hubiera o, si no hay, a un bloque por debajo del suelo de la línea. Nunca pasa del punto más bajo del borde de lo cambiado, por donde se escaparía, así que llena justo lo que queda encerrado. Si así no cabe mar, el chat lo dice («sin mar: por el borde se escaparía»), o dice qué parte se ha llenado, y el fondo queda seco para llenarlo con [Agua y lava](#agua-y-lava).
+- **Valle** (`valley`): un cauce que sigue la curva, cuyo fondo **siempre baja** en el sentido del agua (hacia el extremo más bajo, como el río). Tiene **valles laterales** que llegan colgados y apuntan aguas arriba, y en los extremos se abre en un **embudo o circo** que se funde con el terreno, sin pared cortada. Con `-f agua`, un **río** por el fondo con el tallado de [Ríos y cañones](#ríos-y-cañones). La sección puede ser:
+  - `v` (de río, de serie): las laderas llevan **barrancos dendríticos**, con espaciado, largo, hondura y rumbo distintos, que se tuercen al subir y se abren en ramas.
+  - `u` (glaciar): fondo ancho y paredes empinadas que suben a **hombros y crestas** de altura cambiante, con la pendiente variando a lo largo, **conos de derrubios** al pie de cada canal y valles colgados anchos.
+  - `canon`: paredes a escalones como estratos.
 
 **Ajustes:**
 
@@ -3712,8 +3723,10 @@ Un relieve grande que sigue la [trayectoria](#trayectorias-y-hologramas) (la cur
 - **Variación** (`-x`, de 0 a 100, 65 de serie): cuánto varían las cumbres y los collados, cuánto serpentea la cresta, los ramales y valles laterales, las calas y los barrancos. Con 0 sale una forma regular. La **semilla** (`-s`) la fija; sin ella, una al azar que el chat dice para repetirla.
 - **Sellos** (`-h`): de dónde sale el detalle fino de las laderas. De cada sello solo se toma lo fino (el relieve menos su versión desenfocada: cárcavas, crestas, derrubios), repartido a lo largo de la línea con giro y espejo al azar y mezclado entre vecinos con pesos suaves, así **nunca se ve la forma redonda de un sello ni una costura**. Vale una categoría (`cordilleras`, `rocas`…), sellos sueltos separados por comas (`sierra,macizo`, también propios) o `ninguno` (solo ruido). En `auto`, los de cada relieve: cordilleras, acantilados, cañones o glaciares.
 - **Modo:** los del [pincel de relieve](#pincel-de-relieve-sellos). `sumar` (de serie en la cordillera y la costa) sigue las subidas y bajadas del terreno; `maximo` (de serie en el valle) no apila sobre lo que ya está más alto (en el valle, no rellena lo que ya está más hondo) y entra poco a poco en la falda, así no deja escalón; `aplanar` deja el terreno a la altura de la forma puesta sobre el nivel de la zona (el terreno desenfocado).
-- **Erosión** (`-r`, de 0 a 100, 40 de serie): al final, la [erosión hidráulica](#erosión-física) solo sobre lo que ha cambiado, con un margen por el que corren las gotas que se funde con lo de alrededor, y una pasada térmica corta. Lo que arrastran no se amontona en el borde.
-- **Paleta:** en `auto`, la de los sellos elegidos o la de cada relieve: `alpino` (hierba, roca y nieve en lo alto) en la cordillera, `costa` en el acantilado y `pradera`, `glaciar` o `mesa` en el valle según la sección. Pinta por pendiente y altura como el resto del terraformado.
+- **Erosión** (`-r`, de 0 a 100, 40 de serie): al final, la [erosión hidráulica](#erosión-física) y una pasada térmica corta, solo donde la forma cambia de verdad (más de bloque y medio). Lleva un margen por el que corren las gotas, que se funde con lo de alrededor, y lo que arrastran no se amontona en el borde. Va por manchas y cada surco tiene su propia hondura, para que una ladera lisa no se llene de surcos paralelos a la misma distancia. En el valle solo retoca sus barrancos.
+- **Paleta:** en `auto`, la de los sellos elegidos o la de cada relieve: `alpino` (hierba, roca y nieve en lo alto) en la cordillera, `costa` (arena, grava y piedra al pie y en el fondo) en el acantilado, y `pradera`, `glaciar` o `mesa` en el valle según la sección. Pinta por pendiente y altura como el resto del terraformado, pero solo lo que cambia de naturaleza: las paredes, lo que sube mucho y el lecho.
+  - Lo que apenas cambia de altura, y lo que queda tendido (el pie de una sierra, el fondo y las laderas suaves de un valle), **conserva su suelo**.
+  - La frontera entre lo repintado y lo conservado va tramada por manchas y bloque a bloque, así no queda una costura recta ni una franja de otro color.
 
 **En el Studio:** tarjeta **Trazar relieve** del grupo Terreno, también en **Usar con** de la etapa [Trayectoria](#trayectorias-y-hologramas). A la vista: **Cordillera, Costa o Valle**, el ancho, la altura (o la hondura) y, según el relieve, la sección del valle o a qué lado queda la tierra de la costa. En **Más ajustes**: el perfil a lo largo, la variación, la semilla, los sellos, el modo, la erosión, el agua, la paleta, la máscara y **Estimar**. Presets **Sierra alta**, **Estribaciones**, **Acantilados**, **Valle glaciar** y **Cañón**. Sin trayectoria ni selección, la tarjeta dice «Marca por dónde va: dos puntos o más» con **Marcar puntos**, y el botón queda en «Faltan puntos».
 
@@ -3737,17 +3750,17 @@ Un relieve grande que sigue la [trayectoria](#trayectorias-y-hologramas) (la cur
 
 ![Recorrido largo sobre terreno irregular](renders/terreno/cordillera_recorrido_largo_arriba.png)
 
-![Sobre terreno irregular: el pie se funde con las lomas que había](renders/terreno/cordillera_irregular_perspectiva.png)
+![Sobre terreno irregular: el pie se suma a las lomas que había y conserva su suelo](renders/terreno/cordillera_irregular_perspectiva.png)
 
 ![Trayectoria cerrada: un anillo de montañas](renders/terreno/cordillera_cerrada_perspectiva.png)
 
-![Costa junto al mar: acantilado, calas, barranqueras y farallones](renders/terreno/costa_curva_suave_perspectiva.png)
+![Costa junto al mar: cabos altos y tramos bajos hasta las calas, farallones de tamaños distintos y rocas al pie](renders/terreno/costa_curva_suave_perspectiva.png)
 
-![Acantilado sobre terreno irregular, con la tierra a la izquierda](renders/terreno/costa_irregular_perspectiva.png)
+![Acantilado sobre terreno irregular, con la tierra a la izquierda: el mar llena solo lo que queda encerrado](renders/terreno/costa_irregular_perspectiva.png)
 
-![Valle en V con río sobre una ladera irregular, con valles laterales colgados](renders/terreno/valle_v_irregular_perspectiva.png)
+![Valle en V con río sobre una ladera irregular: barrancos ramificados, embudo en la cabecera y el suelo de antes en lo tendido](renders/terreno/valle_v_irregular_perspectiva.png)
 
-![Valle glaciar en U por una curva cerrada](renders/terreno/valle_u_curva_cerrada_perspectiva.png)
+![Valle glaciar en U por una curva cerrada: las paredes suben a hombros y crestas de altura distinta](renders/terreno/valle_u_curva_cerrada_perspectiva.png)
 
 ![Cañón escalonado con río sobre llano](renders/terreno/canon_llano_perspectiva.png)
 
@@ -3757,7 +3770,12 @@ Un relieve grande que sigue la [trayectoria](#trayectorias-y-hologramas) (la cur
 
 - **Permisos:** `komaedit.build.terrain.range`, `komaedit.build.terrain.coast` y `komaedit.build.terrain.valley` (paquete intermedio), o `komaedit.build`.
 - **Rendimiento:** el cálculo es un campo de distancias a los tramos de la curva (no a sus puntos, que dejarían muescas) más el ruido y el detalle de los sellos: una cordillera de 300 bloques de largo y 110 de ancho tarda unos dos segundos en un worker con la erosión y la paleta incluidas, y una de 600 unos cuatro. El servidor no se para: lo que más se nota es leer la zona, repartido entre ticks, y colocar, por la cola de siempre.
-- **Limitaciones:** lee la caja que rodea la curva con el alcance de la forma (algo más que medio ancho a cada lado) y de 16 bloques por debajo del punto más bajo a la altura más un margen por encima del más alto; pasa por el límite de volumen de las operaciones de región (16 millones de bloques leídos): una cordillera muy larga o muy en diagonal se hace por tramos. Un relieve a lo largo de la línea no sabe del terreno de fuera de esa caja: en una ladera muy empinada conviene `maximo`. El mapa de alturas es de una sola capa, sin voladizos. En la costa, el agua solo se pone donde no se escaparía: sobre terreno irregular abierto puede quedar un fondo seco que se llena con [Agua y lava](#agua-y-lava).
+- **Limitaciones:**
+  - Lee la caja que rodea la curva con el alcance de la forma: algo más que medio ancho a cada lado y, de alto, de 16 bloques por debajo del punto más bajo a un margen por encima del más alto.
+  - Pasa por el límite de volumen de las operaciones de región (16 millones de bloques leídos): una cordillera muy larga o muy en diagonal se hace por tramos.
+  - Un relieve a lo largo de la línea no sabe del terreno de fuera de esa caja: en una ladera muy empinada conviene `maximo`.
+  - El mapa de alturas es de una sola capa, sin voladizos: los arcos de los farallones son dos pilares, sin hueco por debajo.
+  - En la costa, el agua solo se pone donde no se escaparía. Sobre terreno irregular abierto el mar puede quedar como un brazo encerrado junto al acantilado, o no caber, y el chat lo avisa.
 
 ### Erosión física
 

@@ -464,8 +464,11 @@ public final class StudioView {
                 boolean brief = widget.overValue(mouseX, mouseY) && !widget.brief().isEmpty();
                 String text = brief ? widget.brief() : widget.tooltip();
                 if (!text.isEmpty() && !brief && widget.tooltipAnchor() != null) {
-                    // Pegado al control (debajo o encima) y dentro del panel: no tapa la fila del ratón.
-                    ui.tooltip(text, widget.tooltipAnchor(), frame.panel());
+                    // Pegado al control (debajo o encima) y dentro de su columna: no tapa la fila del ratón.
+                    Rect panel = frame.panel();
+                    Rect across = widget.tooltipAcross();
+                    ui.tooltip(text, widget.tooltipAnchor(), across == null ? panel
+                            : new Rect(across.x(), panel.y(), across.width(), panel.height()));
                 } else if (!text.isEmpty()) {
                     ui.tooltip(text, mouseX, mouseY, frame.screen());
                 }

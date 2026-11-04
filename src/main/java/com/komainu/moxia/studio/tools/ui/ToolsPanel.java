@@ -1386,7 +1386,7 @@ public final class ToolsPanel {
                         + host.tr(choice.optionKey(option) + ".help");
                 ui.tile(cell, image, icon(card), lines != null ? lines : List.of(ui.fit(label, tile - 4)), chosen)
                         .tooltip(help)
-                        .tooltipBelow(cell)
+                        .tooltipBelow(cell, row)
                         .hint(host.tr("gui.komaedit.tools.stamp.tile.help"))
                         .group("tools:" + choice.id())
                         .onReset(() -> toggleStampFavorite(option, host, choice, own))
@@ -1397,7 +1397,7 @@ public final class ToolsPanel {
                     ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x() - 1,
                             star.y() - 1, favorite || ui.hovered(star) ? FAVORITE : MUTED);
                     ui.register(star).tooltip(host.tr("gui.komaedit.tools.stamp.favorite") + "\n" + label)
-                            .tooltipBelow(cell)
+                            .tooltipBelow(cell, row)
                             .hint(host.tr("gui.komaedit.tools.stamp.tile.help"))
                             .onClick(() -> toggleStampFavorite(option, host, choice, own));
                 }

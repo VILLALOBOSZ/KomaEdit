@@ -216,10 +216,12 @@ public record LandformRequest(LandformPlanner.Kind kind, double width, double he
         }
         return switch (kind) {
             case RANGE -> "alpino";
-            case COAST -> "costa";
+            // Al pie del acantilado, arena, grava y piedra junto al agua; no hierba hasta la orilla.
+            case COAST -> "costa,orilla:sand|gravel|sand|stone@2,lecho:sand|gravel|stone|gravel";
             case VALLEY -> switch (form) {
                 case V -> "pradera";
-                case U -> "glaciar";
+                // Sin las motas de hielo sueltas del glaciar: roca y grava en las paredes, nieve arriba.
+                case U -> "glaciar,llano:snow_block,pendiente:stone|andesite|stone|gravel@38,lecho:gravel|stone";
                 case CANYON -> "mesa";
             };
         };

@@ -68,18 +68,33 @@ public final class TerrainJobs {
                                    TerrainWriter.BlockSink sink, Runnable checkCancelled) {
         TerrainColumns columns = TerrainColumns.read(view, checkCancelled);
         HeightField field = columns.heights();
-        LandformPlanner.Result result = LandformPlanner.plan(field, samples, closed, settings, checkCancelled);
+        LandformPlanner.Result result = LandformPlanner.plan(field, samples, closed, settings,
+                index -> columns.liquidTop(field.xOf(index), field.zOf(index)), checkCancelled);
         int changed = TerrainWriter.write(columns, field, result.hasWater() ? result : null, palette, false, sink,
-                checkCancelled);
+                checkCancelled, result::keepSurface);
         String detail = switch (settings.kind()) {
             case RANGE -> String.format(Locale.ROOT, "cumbre a Y %.0f, %d ramales", result.highest(),
                     result.branches());
             case COAST -> String.format(Locale.ROOT, "acantilado hasta Y %.0f, %d farallones%s", result.highest(),
-                    result.branches(), result.hasWater() ? ", con mar" : "");
+                    result.branches(), seaText(settings, result));
             case VALLEY -> String.format(Locale.ROOT, "fondo a Y %.0f, %d valles laterales%s", result.lowest(),
                     result.branches(), result.hasWater() ? ", con río" : "");
         };
         return new Summary(changed, detail);
+    }
+
+    /** Lo que dice el chat del mar: si se llenó, si solo en parte o si no se pudo porque se escaparía. */
+    static String seaText(LandformPlanner.Settings settings, LandformPlanner.Result result) {
+        if (!settings.water()) {
+            return "";
+        }
+        if (result.seaShare() >= 0.5) {
+            return ", con mar";
+        }
+        if (result.seaShare() > 0.02) {
+            return ", con mar solo en parte: por el resto se escaparía";
+        }
+        return ", sin mar: por el borde se escaparía (llénalo con Poner agua o lava)";
     }
 
     public enum Erosion {

@@ -263,9 +263,18 @@ public final class LandformPlanner {
         }
     }
 
-    /** Lo que ha salido: el mapa ya cambiado, el agua que se pone y unas cifras para el chat. */
-    public record Result(HeightField field, int[] fluidLevels, int changedColumns, double highest, double lowest,
-                         int branches) implements TerrainWriter.Fluids {
+    /**
+     * Lo que ha salido: el mapa ya cambiado, el agua que se pone y unas cifras para el chat.
+     *
+     * @param seaShare en la costa con agua, la parte del lado del mar que se ha podido llenar (de 0 a 1)
+     */
+    /**
+     * @param gentleRise lo más que puede subir una columna tendida sin repintarse (el pie de una sierra, el fondo y
+     *                   las laderas suaves de un valle conservan su suelo), o menos infinito para no conservarla
+     */
+    public record Result(HeightField field, HeightField original, int[] fluidLevels, int changedColumns,
+                         double highest, double lowest, int branches, double seaShare, long seed, double gentleRise)
+            implements TerrainWriter.Fluids {
         @Override
         public int level(int x, int z) {
             int index = field.index(x, z);
@@ -288,6 +297,33 @@ public final class LandformPlanner {
             }
             return false;
         }
+
+        /**
+         * Si la columna se queda con los bloques que tenía: donde la forma apenas la cambia (en el pie, en el borde),
+         * con una frontera movida por un ruido, para que la pintura nueva no deje una costura recta.
+         */
+        public boolean keepSurface(int x, int z) {
+            int index = field.index(x, z);
+            if (index < 0 || Double.isNaN(field.at(index)) || Double.isNaN(original.at(index))) {
+                return true;
+            }
+            if (fluidLevels != null && fluidLevels[index] != TerrainColumns.NONE) {
+                return false;
+            }
+            double change = Math.abs(Math.round(field.at(index)) - Math.round(original.at(index)));
+            // Una franja ancha y tramada: manchas grandes de ruido y, dentro, bloque a bloque al azar.
+            double patch = 0.5 + 0.5 * StampNoise.fbm(x / 9.0, z / 9.0, seed + 300L, 2);
+            double grain = StampNoise.unit(seed + 301L, x * 73_856_093 ^ z * 19_349_663);
+            double threshold = 1.5 + 6.0 * patch * (0.4 + 0.6 * grain);
+            if (change < threshold) {
+                return true;
+            }
+            // Lo que queda tendido conserva su suelo (hierba, podzol, arena...): la paleta pinta las paredes, lo que
+            // sube mucho y el lecho. La frontera va por una pendiente movida por el mismo ruido.
+            double rise = Math.round(field.at(index)) - Math.round(original.at(index));
+            double gentle = 20.0 + 14.0 * patch * (0.4 + 0.6 * grain);
+            return rise <= gentleRise * (0.6 + 0.8 * patch) && field.slopeDegrees(x, z) < gentle;
+        }
     }
 
     /**
@@ -298,6 +334,24 @@ public final class LandformPlanner {
      */
     public static Result plan(HeightField field, List<double[]> path, boolean closed, Settings settings,
                               Runnable checkCancelled) {
+        return plan(field, path, closed, settings, index -> TerrainColumns.NONE, checkCancelled);
+    }
+
+    /** Dónde hay ya agua o lava: la altura de su superficie en cada columna del mapa, o {@link TerrainColumns#NONE}. */
+    @FunctionalInterface
+    public interface WaterTable {
+        int level(int index);
+    }
+
+    /**
+     * Cambia {@code field} con el relieve.
+     *
+     * @param path   puntos de la trayectoria muestreada {x, y, z}, como mucho a un bloque unos de otros
+     * @param closed si la trayectoria vuelve al principio
+     * @param water  el agua que ya hay (la costa la usa como nivel del mar)
+     */
+    public static Result plan(HeightField field, List<double[]> path, boolean closed, Settings settings,
+                              WaterTable water, Runnable checkCancelled) {
         Track track = Track.of(path, closed);
         HeightField original = field.copy();
         int columns = field.columns();
@@ -306,7 +360,7 @@ public final class LandformPlanner {
         double[] cover = new double[columns];
         Shape shape = switch (settings.kind) {
             case RANGE -> range(field, track, base, settings, relief, cover, checkCancelled);
-            case COAST -> coast(field, track, base, settings, relief, cover, checkCancelled);
+            case COAST -> coast(field, track, base, settings, relief, cover, water, checkCancelled);
             case VALLEY -> valley(field, track, base, settings, relief, cover, checkCancelled);
         };
         if (!settings.stamps.isEmpty() && settings.variation > 0.0) {
@@ -315,30 +369,54 @@ public final class LandformPlanner {
         // Nada pasa del alcance: lo que llegue al borde (un ramal, un valle lateral) se apaga antes, sin escalón.
         double reach = settings.reach();
         double[] distance = pathDistance(field, track, reach, checkCancelled);
+        double[] fade = new double[columns];
         for (int index = 0; index < columns; index++) {
-            double fade = 1.0 - smooth((distance[index] - reach * 0.82) / (reach * 0.18));
-            relief[index] *= fade;
-            cover[index] *= fade;
+            fade[index] = 1.0 - smooth((distance[index] - reach * 0.82) / (reach * 0.18));
+            relief[index] *= fade[index];
+            cover[index] *= fade[index];
         }
         boolean[] touched = new boolean[columns];
+        boolean[] strong = new boolean[columns];
+        double ramp = Math.max(1.0, settings.height * 0.12);
         for (int index = 0; index < columns; index++) {
             if (!field.editableAt(index) || Double.isNaN(original.at(index))) {
                 continue;
             }
             double now = original.at(index);
-            double wanted = blend(settings.blend, now, base[index], relief[index], cover[index],
-                    Math.max(1.0, settings.height * 0.12));
+            double wanted;
+            if (shape.absolute != null && !Double.isNaN(shape.absolute[index])) {
+                // Lo que tiene que quedar a una altura dada (el fondo del mar), sea cual sea el modo.
+                wanted = now + (shape.absolute[index] - now) * fade[index];
+            } else {
+                wanted = blend(settings.blend, now, base[index], relief[index], cover[index], ramp,
+                        settings.height);
+            }
             if (Math.abs(wanted - now) > 1e-6) {
                 field.setAt(index, wanted);
                 touched[index] = true;
+                strong[index] = Math.abs(wanted - now) >= 1.5;
             }
         }
         if (settings.erosion > 0.0) {
-            erode(field, touched, settings, checkCancelled);
+            // Solo donde la forma cambia de verdad: en el pie, el terreno de antes sigue con sus bultos.
+            erode(field, strong, settings, checkCancelled);
+            for (int index = 0; index < columns; index++) {
+                touched[index] |= strong[index];
+            }
         }
         int[] levels = null;
+        int wet = 0;
+        int sea = 0;
         if (settings.water && settings.kind == Kind.COAST) {
-            levels = sea(field, original, shape, settings, checkCancelled);
+            levels = sea(field, shape, settings, water, checkCancelled);
+            for (int index = 0; index < columns; index++) {
+                if (shape.seaSide != null && shape.seaSide[index]) {
+                    sea++;
+                    if (levels[index] != TerrainColumns.NONE) {
+                        wet++;
+                    }
+                }
+            }
         } else if (settings.water && settings.kind == Kind.VALLEY && shape.axis != null) {
             levels = river(field, shape, settings, touched, checkCancelled);
         }
@@ -356,20 +434,36 @@ public final class LandformPlanner {
             highest = Math.max(highest, height);
             lowest = Math.min(lowest, height);
         }
-        return new Result(field, levels, changed, highest, lowest, shape.branches);
+        double seaShare = sea == 0 ? 0.0 : wet / (double) sea;
+        double gentleRise = switch (settings.kind) {
+            case RANGE -> settings.height * 0.2;
+            case VALLEY -> settings.height * 0.1;
+            case COAST -> Double.NEGATIVE_INFINITY;
+        };
+        return new Result(field, original, levels, changed, highest, lowest, shape.branches, seaShare,
+                settings.seed, gentleRise);
     }
 
     /**
      * La altura de una columna según el modo; en lo que sube y en lo que hunde, al revés. En máximo la forma entra
-     * poco a poco en su falda ({@code ramp} bloques), como en el pincel: donde no asoma, el terreno no cambia.
+     * poco a poco en su falda ({@code ramp} bloques), como en el pincel: donde no asoma, el terreno no cambia; y
+     * mientras la forma es baja se suma al terreno, así el pie conserva las lomas que había y solo lo alto deja de
+     * apilarse.
      */
-    static double blend(Blend blend, double current, double base, double relief, double cover, double ramp) {
+    static double blend(Blend blend, double current, double base, double relief, double cover, double ramp,
+                        double height) {
         return switch (blend) {
             case ADD -> current + relief;
             case MAX -> {
-                double target = relief >= 0.0 ? smoothMax(current, base + relief, 1.5)
-                        : smoothMin(current, base + relief, 1.5);
-                yield current + (target - current) * smooth(Math.abs(relief) / ramp);
+                if (relief < 0.0) {
+                    // Lo que se talla queda a la altura de la forma: sin los bultos de antes en las paredes.
+                    double target = smoothMin(current, base + relief, 1.5);
+                    yield current + (target - current) * smooth(-relief / ramp);
+                }
+                double share = smooth(relief / Math.max(1.0, height * 0.4));
+                double shape = base + relief + (current - base) * (1.0 - share);
+                double target = smoothMax(current, shape, 1.5);
+                yield current + (target - current) * smooth(relief / ramp);
             }
             case FLATTEN -> current + (base + relief - current) * cover;
         };
@@ -518,10 +612,19 @@ public final class LandformPlanner {
     // ---------------------------------------------------------------- campos de distancia
 
     /** Un tramo de cresta o de cauce con su altura y su medio ancho en cada extremo. */
+    /**
+     * @param skewA cuánto más ancho es el lado derecho que el izquierdo en el principio del tramo (de -1 a 1): una
+     *              ladera tendida y la otra empinada
+     */
     private record Ridge(double ax, double az, double bx, double bz, double ha, double hb, double wa, double wb,
-                         double sa, double sb) {
+                         double sa, double sb, double skewA, double skewB) {
+        Ridge(double ax, double az, double bx, double bz, double ha, double hb, double wa, double wb, double sa,
+              double sb) {
+            this(ax, az, bx, bz, ha, hb, wa, wb, sa, sb, 0.0, 0.0);
+        }
+
         double reach() {
-            return Math.max(wa, wb);
+            return Math.max(wa, wb) * (1.0 + Math.max(Math.abs(skewA), Math.abs(skewB)));
         }
     }
 
@@ -538,6 +641,10 @@ public final class LandformPlanner {
         double[] detailScale;
         /** El eje del valle, por donde va el río. */
         List<double[]> axis;
+        /** Alturas que tienen que quedar tal cual, sea cual sea el modo (el fondo del mar), o NaN. */
+        double[] absolute;
+        /** Las columnas del lado del mar de la costa. */
+        boolean[] seaSide;
         /** Medio ancho del fondo del valle. */
         double floorHalfWidth;
     }
@@ -548,6 +655,12 @@ public final class LandformPlanner {
      */
     private static void ridges(HeightField field, double[] warpX, double[] warpZ, List<Ridge> ridges, double power,
                                double[] into, double[] nearest, Runnable checkCancelled) {
+        ridges(field, warpX, warpZ, ridges, power, into, nearest, null, checkCancelled);
+    }
+
+    /** @param stretch lo que se alarga la distancia en cada columna (las curvas de nivel del pie serpentean), o null */
+    private static void ridges(HeightField field, double[] warpX, double[] warpZ, List<Ridge> ridges, double power,
+                               double[] into, double[] nearest, double[] stretch, Runnable checkCancelled) {
         for (Ridge ridge : ridges) {
             checkCancelled.run();
             double reach = ridge.reach() + 2.0;
@@ -571,7 +684,15 @@ public final class LandformPlanner {
                     if (nearest != null && distance < nearest[index]) {
                         nearest[index] = distance;
                     }
+                    if (stretch != null) {
+                        distance *= stretch[index];
+                    }
                     double width = ridge.wa + (ridge.wb - ridge.wa) * t;
+                    double skew = ridge.skewA + (ridge.skewB - ridge.skewA) * t;
+                    if (skew != 0.0) {
+                        double side = (px - ridge.ax) * (-dz) + (pz - ridge.az) * dx;
+                        width *= 1.0 + skew * Math.signum(side);
+                    }
                     if (distance >= width) {
                         continue;
                     }
@@ -687,10 +808,15 @@ public final class LandformPlanner {
         }
         List<Ridge> core = new ArrayList<>();
         int step = (int) Math.max(1, Math.round(SEGMENT / SPACING));
+        double[] skew = new double[count];
+        for (int index = 0; index < count; index++) {
+            // Una vertiente más tendida que la otra, y cambia de lado a lo largo de la sierra.
+            skew[index] = variation * 0.4 * track.along(track.s[index], halfWidth * 2.6, seed + 140L, 2);
+        }
         for (int index = 0; index < count - 1; index += step) {
             int next = Math.min(count - 1, index + step);
             core.add(new Ridge(crestX[index], crestZ[index], crestX[next], crestZ[next], crestH[index], crestH[next],
-                    crestW[index], crestW[next], track.s[index], track.s[next]));
+                    crestW[index], crestW[next], track.s[index], track.s[next], skew[index], skew[next]));
         }
         Spurs spurs = spurs(track, crestX, crestZ, crestH, crestW, settings);
         List<Ridge> summits = summits(track, crestX, crestZ, crestH, crestW, settings);
@@ -699,8 +825,19 @@ public final class LandformPlanner {
         double[] nearest = new double[columns];
         Arrays.fill(nearest, Double.POSITIVE_INFINITY);
         double[] envelope = new double[columns];
-        ridges(field, warped[0], warped[1], core, PROFILE, envelope, nearest, checkCancelled);
-        ridges(field, warped[0], warped[1], spurs.ridges, PROFILE, envelope, null, checkCancelled);
+        // La caída del pie con ruido: las curvas de nivel serpentean en lugar de dar anillos paralelos.
+        double[] stretch = new double[columns];
+        for (int index = 0; index < columns; index++) {
+            double x = warped[0][index];
+            double z = warped[1][index];
+            stretch[index] = 1.0 + variation * (0.22 * StampNoise.fbm(x / (halfWidth * 0.3), z / (halfWidth * 0.3),
+                    seed + 141L, 3) + 0.07 * StampNoise.fbm(x / (halfWidth * 0.09), z / (halfWidth * 0.09),
+                    seed + 142L, 2));
+        }
+        ridges(field, warped[0], warped[1], core, PROFILE, envelope, nearest, stretch, checkCancelled);
+        ridges(field, warped[0], warped[1], spurs.ridges, PROFILE, envelope, null, stretch, checkCancelled);
+        ridges(field, warped[0], warped[1], foothills(track, crestX, crestZ, crestH, crestW, settings), 1.7,
+                envelope, null, checkCancelled);
         ridges(field, warped[0], warped[1], summits, 1.25, envelope, null, checkCancelled);
         Frames frames = frames(field, warped, track, crestX, crestZ, crestW, halfWidth * 1.35 + 4.0,
                 halfWidth * 2.5, checkCancelled);
@@ -745,6 +882,40 @@ public final class LandformPlanner {
         shape.branches = spurs.count;
         shape.detailScale = detailScale;
         return shape;
+    }
+
+    /** Lomas sueltas en el pie a los dos lados, de tamaños distintos: el pie no es una falda lisa. */
+    private static List<Ridge> foothills(Track track, double[] crestX, double[] crestZ, double[] crestH,
+                                         double[] crestW, Settings settings) {
+        List<Ridge> result = new ArrayList<>();
+        double variation = settings.variation;
+        if (variation <= 0.05) {
+            return result;
+        }
+        double halfWidth = settings.halfWidth;
+        int serial = 0;
+        for (int sideIndex = 0; sideIndex < 2; sideIndex++) {
+            double side = sideIndex == 0 ? 1.0 : -1.0;
+            double position = halfWidth * 0.4 * StampNoise.unit(settings.seed + 150L, sideIndex);
+            while (position < track.length) {
+                int index = (int) Math.min(track.count - 1, Math.round(position / track.length
+                        * (track.count - 1)));
+                double unit = StampNoise.unit(settings.seed + 151L, serial++);
+                position += halfWidth * (0.25 + 0.6 * unit) / Math.max(0.3, variation);
+                double crest = crestH[index];
+                if (crest < settings.height * 0.1) {
+                    continue;
+                }
+                double out = crestW[index] * (0.6 + 0.45 * StampNoise.unit(settings.seed + 152L, serial));
+                double along = (StampNoise.unit(settings.seed + 153L, serial) - 0.5) * halfWidth * 0.4;
+                double x = crestX[index] + side * track.rightX(index) * out + track.tx[index] * along;
+                double z = crestZ[index] + side * track.rightZ(index) * out + track.tz[index] * along;
+                double radius = halfWidth * (0.12 + 0.18 * StampNoise.unit(settings.seed + 154L, serial));
+                double tall = crest * (0.06 + 0.12 * StampNoise.unit(settings.seed + 155L, serial)) * variation;
+                result.add(new Ridge(x, z, x, z, tall, tall, radius, radius, 0.0, 0.0));
+            }
+        }
+        return result;
     }
 
     /** Perfil de la ladera: cóncavo, empinado arriba y tendido en el pie, que llega a cero sin escalón. */
@@ -957,7 +1128,7 @@ public final class LandformPlanner {
             while (position < track.length) {
                 int index = (int) Math.min(count - 1, Math.round(position / track.length * (count - 1)));
                 double unit = StampNoise.unit(settings.seed + 91L, serial[0]++);
-                position += halfWidth * (1.0 + 1.1 * unit) * (1.5 - 0.6 * variation);
+                position += halfWidth * (0.6 + 0.9 * unit) * (1.5 - 0.6 * variation);
                 double crest = crestH[index];
                 if (crest < height * 0.25) {
                     continue;
@@ -965,7 +1136,7 @@ public final class LandformPlanner {
                 double angle = Math.toRadians((StampNoise.unit(settings.seed + 92L, serial[0]) - 0.5) * 70.0);
                 double dirX = side * track.rightX(index) * Math.cos(angle) + track.tx[index] * Math.sin(angle);
                 double dirZ = side * track.rightZ(index) * Math.cos(angle) + track.tz[index] * Math.sin(angle);
-                double length = crestW[index] * (0.85 + 0.45 * StampNoise.unit(settings.seed + 93L, serial[0]))
+                double length = crestW[index] * (0.95 + 0.55 * StampNoise.unit(settings.seed + 93L, serial[0]))
                         * (0.7 + 0.3 * variation);
                 double start = crest * (0.8 + 0.12 * StampNoise.unit(settings.seed + 94L, serial[0]));
                 double width = crestW[index] * (0.36 + 0.14 * StampNoise.unit(settings.seed + 95L, serial[0]));
@@ -1051,7 +1222,7 @@ public final class LandformPlanner {
     // ---------------------------------------------------------------- costa
 
     private static Shape coast(HeightField field, Track track, double[] base, Settings settings, double[] relief,
-                               double[] cover, Runnable checkCancelled) {
+                               double[] cover, WaterTable water, Runnable checkCancelled) {
         double halfWidth = settings.halfWidth;
         double height = settings.height;
         double variation = settings.variation;
@@ -1067,11 +1238,13 @@ public final class LandformPlanner {
             case LEFT -> -1.0;
             case AUTO -> landSide(field, base, lateral, halfWidth);
         };
-        double cliff = Math.clamp(height * 0.2, 2.0, 10.0);
-        double depth = Math.clamp(height * 0.3, 3.0, 16.0);
+        Coves coves = Coves.of(track, settings);
+        double seaLevel = seaLevel(field, base, lateral, nearest, beyond, sideSign, settings, water);
+        double depth = Math.clamp(height * 0.35, 4.0, 18.0);
         double[] detailScale = new double[columns];
-        double seaSum = 0.0;
-        int seaCount = 0;
+        double[] absolute = new double[columns];
+        Arrays.fill(absolute, Double.NaN);
+        boolean[] seaSide = new boolean[columns];
         for (int index = 0; index < columns; index++) {
             if (Double.isNaN(nearest[index]) || Double.isNaN(base[index])) {
                 continue;
@@ -1079,59 +1252,289 @@ public final class LandformPlanner {
             checkCancelledEvery(index, checkCancelled);
             double x = field.xOf(index) + 0.5;
             double z = field.zOf(index) + 0.5;
-            double envelope = track.envelope(along[index], settings.profile, halfWidth);
+            double s = along[index];
+            double envelope = track.envelope(s, settings.profile, halfWidth);
             double ends = 1.0 - smooth(beyond[index] / (halfWidth * 0.8));
-            // Calas y cabos: la línea se mueve con un ruido grande; el borde del cortado, con uno pequeño.
-            double warpT = variation * (halfWidth * 0.22 * StampNoise.fbm(x / (halfWidth * 1.3),
-                    z / (halfWidth * 1.3), seed + 11L, 3) + 1.6 * StampNoise.fbm(x / 6.0, z / 6.0, seed + 12L, 2));
-            double t = lateral[index] * sideSign + warpT;
-            double local = height * envelope * ends * (1.0 + 0.28 * variation * StampNoise.fbm(x / (halfWidth * 1.6),
-                    z / (halfWidth * 1.6), seed + 13L, 2));
-            double value;
+            double inlet = coves.inlet(s);
+            // La línea de costa entra y sale por su cuenta: calas que se meten, cabos que salen y un borde roto.
+            double shore = coves.offset(s) + variation * (halfWidth * 0.12 * StampNoise.fbm(x / (halfWidth * 0.9),
+                    z / (halfWidth * 0.9), seed + 11L, 3) + 1.8 * StampNoise.fbm(x / 5.0, z / 5.0, seed + 12L, 2));
+            double t = lateral[index] * sideSign - shore;
+            // La altura cambia de verdad: cabos altos y tramos bajos que bajan a la cala.
+            double local = height * envelope * ends * coves.height(s) * (1.0 - 0.75 * inlet)
+                    * (1.0 + 0.15 * variation * StampNoise.fbm(x / (halfWidth * 0.7), z / (halfWidth * 0.7),
+                    seed + 13L, 2));
             if (t >= 0.0) {
-                // Tramos de cortado vertical y tramos de ladera empinada.
                 double steepness = 0.5 + 0.5 * StampNoise.fbm(x / (halfWidth * 0.8), z / (halfWidth * 0.8),
                         seed + 16L, 2);
-                double cliffHere = Math.clamp(cliff * (0.45 + 1.6 * variation * steepness), 2.0, 18.0);
-                double rise = smooth(t / cliffHere);
-                double inland = 1.0 - smooth((t - halfWidth * 0.5) / (halfWidth * 0.7));
-                double rolling = 1.0 + variation * (0.16 * StampNoise.fbm(x / (halfWidth * 0.6),
-                        z / (halfWidth * 0.6), seed + 14L, 3) + 0.1 * (StampNoise.ridged(x / 14.0, z / 14.0,
-                        seed + 15L, 3) - 0.4));
-                // Barranqueras que bajan por el cortado: muescas estrechas a lo largo de la línea.
-                double cleftNoise = pathNoise(track, along[index], 9.0, t / (halfWidth * 0.5), seed + 17L, false);
-                double cleft = Math.max(0.0, 1.0 - Math.abs(cleftNoise - 0.5) * 9.0)
-                        * (1.0 - smooth((t - halfWidth * 0.12) / (halfWidth * 0.3)));
-                value = local * rise * inland * Math.max(0.2, rolling) * (1.0 - 0.45 * variation * cleft);
-                detailScale[index] = value * variation * 0.8;
+                // En la cala la ladera es tendida hasta la playa; en el cabo, un cortado.
+                double cliffHere = Math.clamp(2.0 + height * (0.06 + 0.3 * variation * steepness)
+                        + inlet * halfWidth * 0.45, 2.0, halfWidth * 0.6);
+                // Empinado abajo (roca hasta el agua) y redondeado arriba.
+                double rise = 1.0 - Math.pow(1.0 - Math.clamp(t / cliffHere, 0.0, 1.0), 2.2);
+                // Arriba la tierra sigue a su nivel o sube un poco hacia dentro: nada de reborde en el borde.
+                double plateau = 0.9 + 0.1 * smooth(t / (halfWidth * 0.45));
+                double inland = 1.0 - smooth((t - halfWidth * 0.75) / (halfWidth * 0.65));
+                double rolling = variation * (0.06 * StampNoise.fbm(x / (halfWidth * 0.5), z / (halfWidth * 0.5),
+                        seed + 14L, 3) + 0.04 * (StampNoise.ridged(x / 12.0, z / 12.0, seed + 15L, 3) - 0.4));
+                double cleftNoise = pathNoise(track, s, 7.0 + 6.0 * variation, t / (halfWidth * 0.5), seed + 17L,
+                        false);
+                double cleft = Math.max(0.0, 1.0 - Math.abs(cleftNoise - 0.5) * 8.0)
+                        * (1.0 - smooth((t - halfWidth * 0.1) / (halfWidth * 0.3)));
+                double raised = local * rise * (plateau + rolling * smooth(t / (halfWidth * 0.2))) * inland
+                        * (1.0 - 0.5 * variation * cleft);
+                relief[index] = raised;
+                detailScale[index] = raised * variation * 0.8;
+                cover[index] = inland * ends;
             } else {
                 double off = -t;
-                double floor = depth * envelope * ends * smooth(off / (halfWidth * 0.55));
-                // Canchal al pie del acantilado: lo que se ha caído.
-                double scree = local * 0.14 * Math.exp(-Math.pow((off - cliff * 0.35) / (cliff * 0.7), 2.0));
-                value = -floor + scree;
-                if (off < halfWidth * 0.5) {
-                    seaSum += base[index];
-                    seaCount++;
-                }
+                seaSide[index] = nearest[index] < settings.reach() * 0.95;
+                // El fondo, a una altura dada bajo el mar; al pie, el canchal y las rocas caídas, y en las calas una
+                // playa que sale del agua.
+                // El fondo es una cubeta: baja desde la orilla y vuelve a subir suave hacia fuera, sin muro.
+                double bowl = smooth(off / (halfWidth * 0.4)) * (1.0 - smooth((off - halfWidth * 0.8)
+                        / (halfWidth * 0.55)));
+                double floor = seaLevel - 1.0 - depth * envelope * ends * bowl;
+                // Al pie, una franja estrecha de canchal a ras del agua con rocas caídas que asoman.
+                double foot = Math.exp(-Math.pow(off / (1.5 + local * 0.08), 2.0));
+                double screeTop = seaLevel - 0.6 + 1.4 * StampNoise.fbm(x / 3.0, z / 3.0, seed + 18L, 2)
+                        + rocks(x, z, seed) * (1.5 + local * 0.1);
+                double scree = floor + (screeTop - floor) * foot;
+                double beachTop = seaLevel + 1.0 - off * 0.2;
+                double beach = floor + (beachTop - floor) * (1.0 - smooth(off / (halfWidth * 0.3)));
+                double feature = scree * (1.0 - inlet) + beach * inlet;
+                double carved = Math.min(field.at(index), floor);
+                double target = feature - floor > 0.3 ? Math.max(carved, feature) : carved;
+                // Pasados los extremos de una costa abierta, el fondo vuelve al terreno: nada de foso que siga.
+                absolute[index] = field.at(index) + (target - field.at(index)) * ends;
+                seaSide[index] &= ends > 0.05;
+                cover[index] = ends;
             }
-            relief[index] = value;
-            cover[index] = (1.0 - smooth((nearest[index] - settings.reach() * 0.75) / (settings.reach() * 0.25)))
-                    * ends;
         }
-        int stacks = stacks(field, track, settings, sideSign, cliff, relief, checkCancelled);
+        int stacks = stacks(field, track, settings, sideSign, coves, seaLevel, absolute, checkCancelled);
         Shape shape = new Shape();
         shape.distance = nearest;
         shape.lateral = lateral;
         shape.detailScale = detailScale;
         shape.branches = stacks;
-        shape.seaLevel = seaCount == 0 ? Double.NaN : Math.floor(seaSum / seaCount) - 1.0;
+        shape.absolute = absolute;
+        shape.seaSide = seaSide;
+        shape.seaLevel = seaLevel;
         for (int index = 0; index < columns; index++) {
             if (!Double.isNaN(lateral[index])) {
                 lateral[index] *= sideSign;
             }
         }
         return shape;
+    }
+
+    /** Rocas sueltas al pie: bultos pequeños y desiguales donde un ruido celular cae cerca de su centro. */
+    private static double rocks(double x, double z, long seed) {
+        double cell = 3.5;
+        int cellX = (int) Math.floor(x / cell);
+        int cellZ = (int) Math.floor(z / cell);
+        double best = 0.0;
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                long key = seed * 31L + (cellX + dx) * 73_856_093L + (cellZ + dz) * 19_349_663L;
+                double chance = StampNoise.unit(key, 0);
+                if (chance > 0.45) {
+                    continue;
+                }
+                double cx = (cellX + dx + StampNoise.unit(key, 1)) * cell;
+                double cz = (cellZ + dz + StampNoise.unit(key, 2)) * cell;
+                double radius = 0.8 + 1.6 * StampNoise.unit(key, 3);
+                double distance = Math.hypot(x - cx, z - cz) / radius;
+                if (distance < 1.0) {
+                    best = Math.max(best, (0.5 + StampNoise.unit(key, 4)) * Math.pow(1.0 - distance, 0.6));
+                }
+            }
+        }
+        return best;
+    }
+
+    /**
+     * El nivel del mar: el del agua que ya haya al lado del mar, si hay. Si no, un bloque por debajo del suelo de la
+     * línea, pero nunca más alto que el terreno más bajo del borde de fuera del lado del mar: así el agua no tiene
+     * por dónde escaparse y el acantilado sale algo más alto en lugar de quedar un foso seco.
+     */
+    private static double seaLevel(HeightField field, double[] base, double[] lateral, double[] nearest,
+                                   double[] beyond, double sideSign, Settings settings, WaterTable water) {
+        double halfWidth = settings.halfWidth;
+        double reach = settings.reach();
+        List<Integer> levels = new ArrayList<>();
+        double sum = 0.0;
+        int count = 0;
+        double rim = Double.POSITIVE_INFINITY;
+        for (int index = 0; index < field.columns(); index++) {
+            double side = lateral[index];
+            if (Double.isNaN(side) || Double.isNaN(base[index])) {
+                continue;
+            }
+            double t = side * sideSign;
+            if (t < 0.0 && t > -halfWidth) {
+                int level = water.level(index);
+                if (level != TerrainColumns.NONE && level > field.at(index)) {
+                    levels.add(level);
+                }
+            }
+            if (Math.abs(t) < 3.0 && beyond[index] <= 0.0) {
+                sum += base[index];
+                count++;
+            }
+            // El borde de fuera del lado del mar: lo que queda entre lo que cambia y lo que no.
+            if (t < 0.0 && nearest[index] > reach * 0.84 && nearest[index] < reach * 0.98) {
+                rim = Math.min(rim, Math.round(field.at(index)));
+            }
+        }
+        if (levels.size() > 16) {
+            Collections.sort(levels);
+            return levels.get(levels.size() / 2);
+        }
+        double wanted = count == 0 ? 0.0 : Math.floor(sum / count) - 1.0;
+        return Double.isInfinite(rim) ? wanted : Math.min(wanted, rim);
+    }
+
+    /**
+     * Las calas y los cabos a lo largo de la costa: cuánto entra la línea en la tierra (o sale al mar) y cuánto baja el
+     * acantilado al llegar a una cala, más la altura que cambia de cabo a cabo.
+     */
+    private record Coves(double[] at, double[] width, double[] depth, Track track, Settings settings) {
+        static Coves of(Track track, Settings settings) {
+            double halfWidth = settings.halfWidth;
+            int wanted = settings.variation <= 0.05 ? 0
+                    : Math.max(1, (int) Math.round(track.length / (halfWidth * 1.6) * settings.variation));
+            double[] at = new double[wanted];
+            double[] width = new double[wanted];
+            double[] depth = new double[wanted];
+            for (int index = 0; index < wanted; index++) {
+                at[index] = (index + 0.25 + 0.5 * StampNoise.unit(settings.seed + 170L, index)) / wanted
+                        * track.length;
+                width[index] = halfWidth * (0.22 + 0.35 * StampNoise.unit(settings.seed + 171L, index));
+                // Casi todas entran (calas); alguna sale (un cabo).
+                double unit = StampNoise.unit(settings.seed + 172L, index);
+                depth[index] = halfWidth * (unit < 0.25 ? -(0.15 + 0.2 * unit / 0.25) : 0.2 + 0.4 * unit);
+            }
+            return new Coves(at, width, depth, track, settings);
+        }
+
+        /** Cuánto se mete la línea en la tierra en ese punto del recorrido (negativo: sale al mar). */
+        double offset(double s) {
+            double total = 0.0;
+            for (int index = 0; index < at.length; index++) {
+                total += depth[index] * bump(s, index);
+            }
+            return total * settings.variation;
+        }
+
+        /** De 0 a 1: lo metido que está ese punto en una cala. */
+        double inlet(double s) {
+            double total = 0.0;
+            for (int index = 0; index < at.length; index++) {
+                if (depth[index] > 0.0) {
+                    total = Math.max(total, bump(s, index) * Math.min(1.0, depth[index] / (settings.halfWidth
+                            * 0.35)));
+                }
+            }
+            return total * Math.min(1.0, settings.variation * 1.4);
+        }
+
+        /** La altura del acantilado a lo largo: de 0,45 a 1,15 de la pedida. */
+        double height(double s) {
+            double wave = track.along(s, settings.halfWidth * 1.8, settings.seed + 173L, 3);
+            return 1.0 + settings.variation * 0.55 * wave;
+        }
+
+        private double bump(double s, int index) {
+            double gap = Math.abs(s - at[index]);
+            if (track.closed) {
+                gap = Math.min(gap, track.length - gap);
+            }
+            double u = gap / width[index];
+            return u >= 1.0 ? 0.0 : Math.pow(1.0 - u * u, 2.0);
+        }
+    }
+
+    /**
+     * Farallones de tamaños distintos frente a la costa, más junto a los cabos: agujas altas, torres anchas de lo alto
+     * plano, pares que quedaron de un arco caído y montones de rocas.
+     */
+    private static int stacks(HeightField field, Track track, Settings settings, double sideSign, Coves coves,
+                              double seaLevel, double[] absolute, Runnable checkCancelled) {
+        double variation = settings.variation;
+        if (variation < 0.15) {
+            return 0;
+        }
+        double halfWidth = settings.halfWidth;
+        int wanted = (int) Math.round(track.length / Math.max(8.0, halfWidth * 0.7) * variation);
+        int placed = 0;
+        for (int serial = 0; serial < wanted; serial++) {
+            checkCancelled.run();
+            double position = StampNoise.unit(settings.seed + 120L, serial) * track.length;
+            int index = (int) Math.min(track.count - 1, Math.round(position / track.length * (track.count - 1)));
+            double envelope = track.envelope(track.s[index], settings.profile, halfWidth);
+            if (envelope < 0.4 || coves.inlet(track.s[index]) > 0.4) {
+                continue;
+            }
+            double kind = StampNoise.unit(settings.seed + 125L, serial);
+            double off = coves.offset(track.s[index]) - halfWidth * (0.04 + 0.22 * StampNoise.unit(settings.seed
+                    + 121L, serial));
+            double cx = track.x[index] + track.rightX(index) * sideSign * off;
+            double cz = track.z[index] + track.rightZ(index) * sideSign * off;
+            double tall = settings.height * envelope * coves.height(track.s[index]);
+            if (kind < 0.35) {
+                pillar(field, absolute, cx, cz, 1.4 + 1.8 * StampNoise.unit(settings.seed + 122L, serial),
+                        seaLevel + tall * (0.55 + 0.45 * StampNoise.unit(settings.seed + 123L, serial)), 0.35,
+                        settings.seed + serial);
+            } else if (kind < 0.6) {
+                pillar(field, absolute, cx, cz, 3.0 + 3.5 * StampNoise.unit(settings.seed + 122L, serial),
+                        seaLevel + tall * (0.3 + 0.35 * StampNoise.unit(settings.seed + 123L, serial)), 0.18,
+                        settings.seed + serial);
+            } else if (kind < 0.8) {
+                // Un arco caído: dos patas con un hueco entre ellas.
+                double gapX = -track.tz[index] * 0.0 + track.tx[index] * 3.5;
+                double gapZ = track.tz[index] * 3.5;
+                double top = seaLevel + tall * (0.4 + 0.3 * StampNoise.unit(settings.seed + 123L, serial));
+                pillar(field, absolute, cx - gapX, cz - gapZ, 2.2, top, 0.3, settings.seed + serial);
+                pillar(field, absolute, cx + gapX, cz + gapZ, 1.8, top * 0.97 + seaLevel * 0.03, 0.3,
+                        settings.seed + serial + 7L);
+            } else {
+                // Un montón de rocas de lo que se derrumbó.
+                for (int piece = 0; piece < 4; piece++) {
+                    double angle = StampNoise.unit(settings.seed + 126L, serial * 8 + piece) * 2.0 * Math.PI;
+                    double spread = 1.5 + 3.0 * StampNoise.unit(settings.seed + 127L, serial * 8 + piece);
+                    pillar(field, absolute, cx + Math.cos(angle) * spread, cz + Math.sin(angle) * spread,
+                            1.2 + 1.6 * StampNoise.unit(settings.seed + 128L, serial * 8 + piece),
+                            seaLevel + 1.0 + tall * 0.12 * StampNoise.unit(settings.seed + 129L, serial * 8 + piece),
+                            0.5, settings.seed + serial * 8 + piece);
+                }
+            }
+            placed++;
+        }
+        return placed;
+    }
+
+    /** Una aguja o una torre en el mar: sube del fondo hasta {@code top} con el borde roto por un ruido. */
+    private static void pillar(HeightField field, double[] absolute, double cx, double cz, double radius, double top,
+                               double power, long seed) {
+        int reach = (int) Math.ceil(radius * 1.3) + 1;
+        for (int z = (int) Math.floor(cz) - reach; z <= (int) Math.floor(cz) + reach; z++) {
+            for (int x = (int) Math.floor(cx) - reach; x <= (int) Math.floor(cx) + reach; x++) {
+                int column = field.index(x, z);
+                if (column < 0) {
+                    continue;
+                }
+                double distance = Math.hypot(x + 0.5 - cx, z + 0.5 - cz)
+                        * (1.0 + 0.3 * StampNoise.noise(x * 0.45, z * 0.45, seed));
+                if (distance >= radius) {
+                    continue;
+                }
+                double floor = Double.isNaN(absolute[column]) ? field.at(column) : absolute[column];
+                double value = floor + (top - floor) * Math.pow(1.0 - distance / radius, power);
+                absolute[column] = Double.isNaN(absolute[column]) ? Math.max(field.at(column), value)
+                        : Math.max(absolute[column], value);
+            }
+        }
     }
 
     /** El lado donde el terreno ya es más alto (la tierra); a la derecha si los dos están igual. */
@@ -1158,50 +1561,6 @@ public final class LandformPlanner {
             return 1.0;
         }
         return left / leftCount > right / rightCount + 0.5 ? -1.0 : 1.0;
-    }
-
-    /** Farallones: agujas sueltas en el agua cerca del cortado, más cuanta más variación. */
-    private static int stacks(HeightField field, Track track, Settings settings, double sideSign, double cliff,
-                              double[] relief, Runnable checkCancelled) {
-        double variation = settings.variation;
-        if (variation < 0.15) {
-            return 0;
-        }
-        double halfWidth = settings.halfWidth;
-        int wanted = (int) Math.round(track.length / Math.max(8.0, halfWidth * 0.9) * variation);
-        int placed = 0;
-        for (int serial = 0; serial < wanted; serial++) {
-            checkCancelled.run();
-            double position = StampNoise.unit(settings.seed + 120L, serial) * track.length;
-            int index = (int) Math.min(track.count - 1, Math.round(position / track.length * (track.count - 1)));
-            double envelope = track.envelope(track.s[index], settings.profile, halfWidth);
-            if (envelope < 0.4) {
-                continue;
-            }
-            double off = cliff + halfWidth * (0.05 + 0.25 * StampNoise.unit(settings.seed + 121L, serial));
-            double cx = track.x[index] - track.rightX(index) * sideSign * off;
-            double cz = track.z[index] - track.rightZ(index) * sideSign * off;
-            double radius = 1.8 + 3.2 * StampNoise.unit(settings.seed + 122L, serial);
-            double top = settings.height * envelope * (0.35 + 0.5 * StampNoise.unit(settings.seed + 123L, serial));
-            int reach = (int) Math.ceil(radius) + 1;
-            for (int z = (int) Math.floor(cz) - reach; z <= (int) Math.floor(cz) + reach; z++) {
-                for (int x = (int) Math.floor(cx) - reach; x <= (int) Math.floor(cx) + reach; x++) {
-                    int column = field.index(x, z);
-                    if (column < 0) {
-                        continue;
-                    }
-                    double distance = Math.hypot(x + 0.5 - cx, z + 0.5 - cz)
-                            * (1.0 + 0.25 * StampNoise.noise(x * 0.4, z * 0.4, settings.seed + 124L + serial));
-                    if (distance >= radius) {
-                        continue;
-                    }
-                    double value = top * Math.pow(1.0 - distance / radius, 0.45);
-                    relief[column] = Math.max(relief[column], value);
-                }
-            }
-            placed++;
-        }
-        return placed;
     }
 
     /**
@@ -1264,73 +1623,126 @@ public final class LandformPlanner {
     }
 
     /**
-     * El mar del lado bajo de la costa: se llena hasta un bloque por debajo del suelo de la línea, solo en las zonas de
-     * agua que no tocan ninguna columna seca más baja (por donde se escaparía).
+     * El mar del lado bajo de la costa, como se llena un hueco: hasta el nivel del mar donde nada lo deja escapar y,
+     * donde el borde tiene un paso más bajo, solo hasta ese paso (y si el paso da al borde de lo leído, nada). El agua
+     * que ya hubiera cuenta como pared.
      */
-    private static int[] sea(HeightField field, HeightField original, Shape shape, Settings settings,
+    private static int[] sea(HeightField field, Shape shape, Settings settings, WaterTable water,
                              Runnable checkCancelled) {
         int columns = field.columns();
         int[] levels = new int[columns];
         Arrays.fill(levels, TerrainColumns.NONE);
-        if (Double.isNaN(shape.seaLevel)) {
+        if (Double.isNaN(shape.seaLevel) || shape.seaSide == null) {
             return levels;
         }
-        int level = (int) shape.seaLevel;
-        boolean[] wet = new boolean[columns];
-        for (int index = 0; index < columns; index++) {
-            if (field.editableAt(index) && !Double.isNaN(shape.lateral[index]) && shape.lateral[index] < 0.0
-                    && Math.round(field.at(index)) < level) {
-                wet[index] = true;
-            }
-        }
         int sizeX = field.sizeX();
-        int[] component = new int[columns];
-        Arrays.fill(component, -1);
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-        List<Integer> members = new ArrayList<>();
-        int label = 0;
-        for (int start = 0; start < columns; start++) {
-            if (!wet[start] || component[start] >= 0) {
+        int level = (int) Math.round(shape.seaLevel);
+        // El nivel no pasa del punto más bajo del borde de lo que se cambió (ya cambiado): por ahí se escaparía.
+        for (int index = 0; index < columns; index++) {
+            if (!shape.seaSide[index]) {
                 continue;
             }
+            int x = index % sizeX;
+            int[] around = {x > 0 ? index - 1 : -1, x < sizeX - 1 ? index + 1 : -1, index - sizeX,
+                    index + sizeX < columns ? index + sizeX : -1};
+            for (int neighbour : around) {
+                if (neighbour < 0 || shape.seaSide[neighbour] || Double.isNaN(field.at(neighbour))) {
+                    continue;
+                }
+                int wall = top(field, neighbour);
+                int existing = water.level(neighbour);
+                if (existing != TerrainColumns.NONE) {
+                    wall = Math.max(wall, existing + 1);
+                }
+                level = Math.min(level, wall);
+            }
+        }
+        ArrayDeque<int[]> work = new ArrayDeque<>();
+        List<Integer> start = new ArrayList<>();
+        for (int index = 0; index < columns; index++) {
+            if (shape.seaSide[index] && field.editableAt(index) && top(field, index) < level) {
+                start.add(index);
+            }
+        }
+        work.add(new int[]{level});
+        List<List<Integer>> groups = new ArrayList<>();
+        groups.add(start);
+        boolean[] member = new boolean[columns];
+        boolean[] seen = new boolean[columns];
+        int rounds = 0;
+        while (!work.isEmpty() && rounds++ < 4_096) {
             checkCancelled.run();
-            boolean leaks = false;
-            members.clear();
-            queue.add(start);
-            component[start] = label;
-            while (!queue.isEmpty()) {
-                int index = queue.poll();
-                members.add(index);
-                int x = index % sizeX;
-                int[] neighbours = {index - 1, index + 1, index - sizeX, index + sizeX};
-                for (int neighbour : neighbours) {
-                    boolean outside = neighbour < 0 || neighbour >= columns
-                            || (neighbour == index - 1 && x == 0) || (neighbour == index + 1 && x == sizeX - 1);
-                    if (outside) {
-                        leaks = true;
-                        continue;
-                    }
-                    if (wet[neighbour]) {
-                        if (component[neighbour] < 0) {
-                            component[neighbour] = label;
-                            queue.add(neighbour);
+            int current = work.poll()[0];
+            List<Integer> group = groups.removeFirst();
+            for (int index : group) {
+                member[index] = top(field, index) < current;
+            }
+            for (int origin : group) {
+                if (!member[origin] || seen[origin]) {
+                    continue;
+                }
+                // Una zona de agua seguida con este nivel y el paso más bajo de su borde.
+                List<Integer> zone = new ArrayList<>();
+                ArrayDeque<Integer> queue = new ArrayDeque<>();
+                queue.add(origin);
+                seen[origin] = true;
+                int rim = Integer.MAX_VALUE;
+                while (!queue.isEmpty()) {
+                    int index = queue.poll();
+                    zone.add(index);
+                    int x = index % sizeX;
+                    int[] around = {x > 0 ? index - 1 : -1, x < sizeX - 1 ? index + 1 : -1,
+                            index - sizeX, index + sizeX < columns ? index + sizeX : -1};
+                    for (int neighbour : around) {
+                        if (neighbour < 0) {
+                            rim = Integer.MIN_VALUE;
+                            continue;
                         }
-                        continue;
+                        if (member[neighbour]) {
+                            if (!seen[neighbour]) {
+                                seen[neighbour] = true;
+                                queue.add(neighbour);
+                            }
+                            continue;
+                        }
+                        double ground = field.at(neighbour);
+                        int wall = Double.isNaN(ground) ? Integer.MIN_VALUE : (int) Math.round(ground);
+                        int existing = water.level(neighbour);
+                        if (existing != TerrainColumns.NONE) {
+                            wall = Math.max(wall, existing + 1);
+                        }
+                        rim = Math.min(rim, wall);
                     }
-                    double ground = Double.isNaN(field.at(neighbour)) ? original.at(neighbour) : field.at(neighbour);
-                    if (Double.isNaN(ground) || Math.round(ground) < level) {
-                        leaks = true;
+                }
+                if (rim >= current) {
+                    for (int index : zone) {
+                        levels[index] = current;
+                    }
+                } else if (rim > Integer.MIN_VALUE) {
+                    // Se escaparía por el paso: el agua se queda a su altura, en lo que siga por debajo.
+                    for (int index : zone) {
+                        seen[index] = false;
+                        member[index] = false;
+                    }
+                    groups.add(zone);
+                    work.add(new int[]{rim});
+                } else {
+                    for (int index : zone) {
+                        member[index] = false;
                     }
                 }
             }
-            if (!leaks) {
-                for (int index : members) {
-                    levels[index] = level;
+            for (int index : group) {
+                if (levels[index] == TerrainColumns.NONE) {
+                    member[index] = false;
                 }
             }
-            label++;
         }
         return levels;
+    }
+
+    private static int top(HeightField field, int index) {
+        return (int) Math.round(field.at(index));
     }
 
     // ---------------------------------------------------------------- valle
@@ -1349,17 +1761,20 @@ public final class LandformPlanner {
         double[] raw = new double[count];
         for (int index = 0; index < count; index++) {
             double distance = track.s[index];
-            double envelope = track.envelope(distance, settings.profile, halfWidth);
+            double envelope = valleyEnvelope(track, distance, settings);
             double meander = variation * (settings.form == Form.CANYON ? 0.3 : 0.16) * halfWidth
                     * track.along(distance, halfWidth * 2.0, seed + 31L, 2);
             axisX[index] = track.x[index] + track.rightX(index) * meander;
             axisZ[index] = track.z[index] + track.rightZ(index) * meander;
-            axisW[index] = halfWidth * (0.6 + 0.4 * Math.sqrt(envelope))
-                    * (1.0 + 0.16 * variation * track.along(distance, halfWidth * 1.7, seed + 32L, 2));
+            // En los extremos el valle se abre en un circo o embudo que se funde con el terreno, no en una pared.
+            axisW[index] = halfWidth * (1.0 + 0.45 * (1.0 - envelope))
+                    * (1.0 + 0.22 * variation * track.along(distance, halfWidth * 1.7, seed + 32L, 2))
+                    * (settings.form == Form.U ? 1.0 + 0.16 * variation * track.along(distance, halfWidth * 0.6,
+                    seed + 36L, 2) : 1.0);
             double here = regionalAt(field, base, axisX[index], axisZ[index]);
             ground[index] = Double.isNaN(here) ? track.y[index] - 1.0 : here;
-            double carve = depth * envelope * (1.0 - 0.28 * variation
-                    + 0.28 * variation * (0.5 + 0.5 * track.along(distance, halfWidth * 1.4, seed + 33L, 2)));
+            double carve = depth * envelope * (1.0 - 0.4 * variation
+                    + 0.4 * variation * (0.5 + 0.5 * track.along(distance, halfWidth * 1.4, seed + 33L, 2)));
             raw[index] = ground[index] - carve;
         }
         double[] bed;
@@ -1407,30 +1822,72 @@ public final class LandformPlanner {
         }
         double outside = 0.32;
         int step = (int) Math.max(1, Math.round(SEGMENT / SPACING));
+        double[] skew = new double[count];
+        double[] steep = new double[count];
+        for (int index = 0; index < count; index++) {
+            // Una ladera más tendida que la otra, y pendiente que cambia a lo largo.
+            double strong = form == Form.U ? 1.6 : 1.0;
+            skew[index] = variation * 0.32 * strong * track.along(track.s[index], halfWidth * 2.4, seed + 34L, 2);
+            steep[index] = Math.max(0.45, 1.0 + variation * 0.45 * strong
+                    * track.along(track.s[index], halfWidth * 1.3, seed + 35L, 2));
+        }
         for (int index = 0; index < count - 1; index += step) {
             int next = Math.min(count - 1, index + step);
             carve(field, warped, axisX[index], axisZ[index], axisX[next], axisZ[next], bed[index], bed[next],
                     ground[index], ground[next], axisW[index], axisW[next], form, floor, outside, target, nearest,
-                    seed, checkCancelled);
+                    skew[index], skew[next], steep[index], steep[next], checkCancelled);
         }
         int tributaries = tributaries(field, warped, track, axisX, axisZ, axisW, bed, ground, settings, target,
                 checkCancelled);
+        List<double[]> outlets = new ArrayList<>();
+        double[] gullies = gullies(field, warped, track, axisX, axisZ, axisW, bed, ground, settings, floor, outlets,
+                checkCancelled);
+        // En el glaciar, un cono de derrubios a la salida de cada canal: el canchal al pie de la pared.
+        double[] cones = form == Form.U ? new double[columns] : null;
+        if (cones != null) {
+            List<Ridge> heaps = new ArrayList<>();
+            for (double[] outlet : outlets) {
+                double radius = outlet[3] * (0.1 + 0.05 * StampNoise.unit(seed + 191L, heaps.size()));
+                double tall = depth * (0.1 + 0.12 * StampNoise.unit(seed + 192L, heaps.size()));
+                heaps.add(new Ridge(outlet[0], outlet[1], outlet[0], outlet[1], tall, tall, radius, radius, 0.0,
+                        0.0));
+            }
+            ridges(field, warped[0], warped[1], heaps, 1.6, cones, null, checkCancelled);
+        }
         double[] detailScale = new double[columns];
         for (int index = 0; index < columns; index++) {
             if (Double.isInfinite(target[index]) || Double.isNaN(base[index])) {
                 continue;
             }
             double value = Math.min(0.0, target[index] - base[index]);
-            // Laderas con resaltes y canales: el ruido pesa en las paredes, no en el fondo ni en el borde.
             double x = warped[0][index];
             double z = warped[1][index];
             double share = Math.clamp(-value / Math.max(1.0, depth), 0.0, 1.0);
             double wall = 4.0 * share * (1.0 - share);
-            double ridgedNoise = StampNoise.ridged(x / Math.max(6.0, halfWidth * 0.3),
-                    z / Math.max(6.0, halfWidth * 0.3), seed + 41L, 4);
-            value += variation * wall * depth * 0.16 * (ridgedNoise - 0.38);
-            relief[index] = Math.min(0.0, value);
-            detailScale[index] = -relief[index] * variation * wall;
+            // Barrancos que se ramifican por las laderas, cada uno con su largo y su hondura; apenas muerden el borde.
+            if (gullies != null && gullies[index] > 0.0) {
+                value -= gullies[index] * smooth((-value + 1.0) / Math.max(1.0, depth * 0.15));
+            }
+            // Un poco de textura que no se repite.
+            double fine = StampNoise.fbm(x / 7.0, z / 7.0, seed + 41L, 3);
+            value += variation * wall * depth * 0.05 * fine;
+            if (cones != null && cones[index] > 0.0) {
+                value = Math.min(0.0, value + cones[index] * smooth((share - 0.55) / 0.3));
+            }
+            double carved = Math.min(0.0, value);
+            double shoulder = 0.0;
+            if (form == Form.U && variation > 0.05) {
+                // El glaciar no deja un canal: las paredes suben a hombros y crestas que crecen y se apagan a lo
+                // largo, así que la pared es alta en unos sitios y baja en otros.
+                double u = nearest[index] / halfWidth;
+                double rise = smooth((u - 0.7) / 0.35) * (1.0 - smooth((u - 1.12) / 0.38));
+                double crest = 0.5 + 0.5 * StampNoise.fbm(x / (halfWidth * 0.9), z / (halfWidth * 0.9),
+                        seed + 43L, 3);
+                double rough = 0.8 + 0.2 * StampNoise.fbm(x / 9.0, z / 9.0, seed + 44L, 2);
+                shoulder = depth * variation * 1.1 * Math.max(0.0, crest - 0.32) * rise * rough;
+            }
+            relief[index] = carved + shoulder;
+            detailScale[index] = (-carved * wall + shoulder * 0.5) * variation;
             double width = halfWidth * 1.2;
             cover[index] = 1.0 - smooth((nearest[index] - width * 0.85) / (width * 0.3));
         }
@@ -1473,11 +1930,128 @@ public final class LandformPlanner {
         return result.fluidLevels();
     }
 
-    /** Un tramo del cauce: el fondo a la altura del lecho y las paredes hasta el terreno, y por fuera un talud suave. */
+    /** De 0 a 1 a lo largo del valle: como la de siempre, pero con los extremos largos para que se abran en embudo. */
+    private static double valleyEnvelope(Track track, double distance, Settings settings) {
+        if (track.closed) {
+            return 1.0;
+        }
+        double ends = Math.min(0.5 * track.length, settings.halfWidth * 1.4);
+        double ramp = smoother(distance / ends) * smoother((track.length - distance) / ends);
+        double u = Math.clamp(distance / track.length, 0.0, 1.0);
+        return switch (settings.profile) {
+            case BELL -> ramp * (0.8 + 0.2 * Math.sin(Math.PI * u));
+            case FLAT -> ramp;
+            case RISING -> ramp * (0.22 + 0.78 * Math.pow(u, 1.1));
+            case FALLING -> ramp * (0.22 + 0.78 * Math.pow(1.0 - u, 1.1));
+        };
+    }
+
+    /**
+     * Barrancos en las laderas del valle, como los que deja el agua: salen del pie de la pared con espaciado, largo,
+     * hondura y rumbo al azar, se tuercen al subir y se abren en ramas hacia arriba (dendríticos). Da lo que hunde
+     * cada columna (0 donde no hay barranco).
+     */
+    private static double[] gullies(HeightField field, double[][] warped, Track track, double[] axisX,
+                                    double[] axisZ, double[] axisW, double[] bed, double[] ground, Settings settings,
+                                    double floor, List<double[]> outlets, Runnable checkCancelled) {
+        double variation = settings.variation;
+        if (variation <= 0.05) {
+            return null;
+        }
+        double halfWidth = settings.halfWidth;
+        int count = track.count;
+        List<Ridge> ridges = new ArrayList<>();
+        int[] serial = {0};
+        for (int sideIndex = 0; sideIndex < 2; sideIndex++) {
+            double side = sideIndex == 0 ? 1.0 : -1.0;
+            double position = halfWidth * 0.3 * StampNoise.unit(settings.seed + 180L, sideIndex);
+            while (position < track.length) {
+                checkCancelled.run();
+                int index = (int) Math.min(count - 1, Math.round(position / track.length * (count - 1)));
+                double unit = StampNoise.unit(settings.seed + 181L, serial[0]++);
+                // Espaciado irregular de verdad: unos juntos, otros con mucha ladera lisa en medio.
+                position += halfWidth * (0.25 + 1.2 * Math.pow(unit, 1.6)) * (1.3 - 0.4 * variation);
+                double drop = ground[index] - bed[index];
+                if (drop < 4.0) {
+                    continue;
+                }
+                double angle = Math.toRadians((StampNoise.unit(settings.seed + 182L, serial[0]) - 0.5) * 80.0);
+                double dirX = side * track.rightX(index) * Math.cos(angle) + track.tx[index] * Math.sin(angle);
+                double dirZ = side * track.rightZ(index) * Math.cos(angle) + track.tz[index] * Math.sin(angle);
+                double startX = axisX[index] + side * track.rightX(index) * axisW[index] * (floor + 0.06);
+                double startZ = axisZ[index] + side * track.rightZ(index) * axisW[index] * (floor + 0.06);
+                double length = axisW[index] * (1.0 - floor) * (0.45 + 0.6 * StampNoise.unit(settings.seed + 183L,
+                        serial[0]));
+                double hollow = drop * variation * (0.08 + 0.36 * Math.pow(StampNoise.unit(settings.seed + 184L,
+                        serial[0]), 1.5));
+                double width = 1.5 + axisW[index] * (0.035 + 0.06 * StampNoise.unit(settings.seed + 185L,
+                        serial[0]));
+                gully(ridges, startX, startZ, dirX, dirZ, length, hollow, width, 0, settings, serial);
+                if (outlets != null) {
+                    outlets.add(new double[]{startX, startZ, hollow, axisW[index]});
+                }
+            }
+        }
+        double[] into = new double[field.columns()];
+        ridges(field, warped[0], warped[1], ridges, 1.3, into, null, checkCancelled);
+        return into;
+    }
+
+    /** Un barranco en tramos: hondo en la parte baja, nada arriba; a media subida puede abrir ramas. */
+    private static void gully(List<Ridge> into, double startX, double startZ, double dirX, double dirZ,
+                              double length, double hollow, double width, int level, Settings settings,
+                              int[] serial) {
+        int pieces = Math.max(3, (int) Math.ceil(length / 2.5));
+        double px = startX;
+        double pz = startZ;
+        long seed = settings.seed;
+        double previous = hollow * profile(0.0);
+        double pw = width;
+        for (int piece = 1; piece <= pieces; piece++) {
+            double t = piece / (double) pieces;
+            double turn = (StampNoise.unit(seed + 186L, serial[0]++) - 0.5) * 0.5;
+            double cos = Math.cos(turn);
+            double sin = Math.sin(turn);
+            double nextX = dirX * cos - dirZ * sin;
+            double nextZ = dirX * sin + dirZ * cos;
+            dirX = nextX;
+            dirZ = nextZ;
+            double qx = px + dirX * length / pieces;
+            double qz = pz + dirZ * length / pieces;
+            double here = hollow * profile(t);
+            double qw = width * (1.0 - 0.45 * t);
+            into.add(new Ridge(px, pz, qx, qz, previous, here, pw, qw, 0.0, 0.0));
+            if (level < 2 && t > 0.25 && t < 0.8 && StampNoise.unit(seed + 187L, serial[0]++) < 0.55) {
+                double branch = (StampNoise.unit(seed + 188L, serial[0]++) < 0.5 ? -1.0 : 1.0)
+                        * Math.toRadians(25.0 + 35.0 * StampNoise.unit(seed + 189L, serial[0]++));
+                double childX = dirX * Math.cos(branch) - dirZ * Math.sin(branch);
+                double childZ = dirX * Math.sin(branch) + dirZ * Math.cos(branch);
+                gully(into, qx, qz, childX, childZ, length * (1.0 - t) * (0.45 + 0.35 * StampNoise.unit(seed + 190L,
+                        serial[0]++)), here * 0.8, qw * 0.8, level + 1, settings, serial);
+            }
+            px = qx;
+            pz = qz;
+            previous = here;
+            pw = qw;
+        }
+    }
+
+    /** La hondura de un barranco a lo largo: de poco en la salida a lo más hondo pronto y a nada arriba. */
+    private static double profile(double t) {
+        return smooth(t / 0.2) * Math.pow(1.0 - t, 0.8) + 0.25 * (1.0 - smooth(t / 0.2));
+    }
+
+    /**
+     * Un tramo del cauce: el fondo a la altura del lecho y las paredes hasta el terreno, y por fuera un talud suave.
+     * Cada columna se queda con el mínimo de todos los tramos. Más allá de las puntas, el lecho, el borde y el ancho
+     * siguen la recta del tramo en lugar de quedarse en los del extremo: si no, la punta redonda del tramo siguiente,
+     * con el lecho más bajo, mordería un poco el anterior y dejaría un diente cada tramo, que al redondear a bloques
+     * se ve como costillas por las paredes.
+     */
     private static void carve(HeightField field, double[][] warped, double ax, double az, double bx, double bz,
                               double bedA, double bedB, double groundA, double groundB, double widthA, double widthB,
-                              Form form, double floor, double outside, double[] target, double[] nearest, long seed,
-                              Runnable checkCancelled) {
+                              Form form, double floor, double outside, double[] target, double[] nearest,
+                              double skewA, double skewB, double steepA, double steepB, Runnable checkCancelled) {
         checkCancelled.run();
         double reach = Math.max(widthA, widthB) * 1.5 + 2.0;
         int lowX = (int) Math.floor(Math.min(ax, bx) - reach);
@@ -1492,20 +2066,27 @@ public final class LandformPlanner {
                 int index = field.index(x, z);
                 double px = warped[0][index];
                 double pz = warped[1][index];
-                double t = lengthSquared < 1e-12 ? 0.0
-                        : Math.clamp(((px - ax) * dx + (pz - az) * dz) / lengthSquared, 0.0, 1.0);
+                double along = lengthSquared < 1e-12 ? 0.0
+                        : ((px - ax) * dx + (pz - az) * dz) / lengthSquared;
+                double t = Math.clamp(along, 0.0, 1.0);
                 double distance = Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
                 if (distance < nearest[index]) {
                     nearest[index] = distance;
                 }
-                double width = widthA + (widthB - widthA) * t;
+                double e = Math.clamp(along, -0.5, 1.5);
+                double side = Math.signum((px - ax) * (-dz) + (pz - az) * dx);
+                double skew = Math.clamp(skewA + (skewB - skewA) * e, -0.9, 0.9);
+                double steep = Math.max(0.45, steepA + (steepB - steepA) * e);
+                double width = Math.max(1.0, widthA + (widthB - widthA) * e) * (1.0 + skew * side);
                 double u = distance / width;
                 if (u > 1.5) {
                     continue;
                 }
-                double bed = bedA + (bedB - bedA) * t;
-                double rim = Math.max(bed, groundA + (groundB - groundA) * t);
-                double value = u <= 1.0 ? bed + (rim - bed) * section(u, form, floor)
+                double bed = bedA + (bedB - bedA) * e;
+                double rim = Math.max(bed, groundA + (groundB - groundA) * e);
+                double shaped = u <= floor ? 0.0 : floor + (1.0 - floor) * Math.pow((u - floor) / (1.0 - floor),
+                        steep);
+                double value = u <= 1.0 ? bed + (rim - bed) * section(shaped, form, floor)
                         : rim + (u - 1.0) * width * outside;
                 if (value < target[index]) {
                     target[index] = value;
@@ -1554,8 +2135,8 @@ public final class LandformPlanner {
         boolean downstreamForward = track.closed || bed[count - 1] <= bed[0];
         int made = 0;
         int serial = 0;
-        double[] ignored = new double[field.columns()];
-        Arrays.fill(ignored, Double.POSITIVE_INFINITY);
+        double[] own = new double[field.columns()];
+        double[] ownNearest = new double[field.columns()];
         for (int sideIndex = 0; sideIndex < 2; sideIndex++) {
             double side = sideIndex == 0 ? 1.0 : -1.0;
             double position = halfWidth * (0.9 + 0.8 * StampNoise.unit(settings.seed + 140L, sideIndex));
@@ -1575,13 +2156,19 @@ public final class LandformPlanner {
                 double dirZ = side * track.rightZ(index) * Math.cos(angle)
                         - downstream * track.tz[index] * Math.sin(angle);
                 double length = axisW[index] * (0.6 + 0.45 * StampNoise.unit(settings.seed + 143L, serial));
-                double width = axisW[index] * (0.22 + 0.1 * StampNoise.unit(settings.seed + 144L, serial));
-                double hanging = bed[index] + drop * (0.25 + 0.3 * StampNoise.unit(settings.seed + 145L, serial));
+                boolean glacial = settings.form == Form.U;
+                double width = axisW[index] * (glacial ? 0.32 + 0.12 * StampNoise.unit(settings.seed + 144L, serial)
+                        : 0.22 + 0.1 * StampNoise.unit(settings.seed + 144L, serial));
+                double hanging = bed[index] + drop * (glacial
+                        ? 0.45 + 0.25 * StampNoise.unit(settings.seed + 145L, serial)
+                        : 0.25 + 0.3 * StampNoise.unit(settings.seed + 145L, serial));
                 double startX = axisX[index] + dirX * axisW[index] * 0.35;
                 double startZ = axisZ[index] + dirZ * axisW[index] * 0.35;
                 int pieces = Math.max(3, (int) Math.ceil(length / 3.0));
                 double px = startX;
                 double pz = startZ;
+                Arrays.fill(own, Double.POSITIVE_INFINITY);
+                Arrays.fill(ownNearest, Double.POSITIVE_INFINITY);
                 for (int piece = 1; piece <= pieces; piece++) {
                     double t0 = (piece - 1) / (double) pieces;
                     double t1 = piece / (double) pieces;
@@ -1593,10 +2180,14 @@ public final class LandformPlanner {
                     double bed1 = hanging + (rim1 - hanging) * Math.pow(t1, 1.6);
                     double w0 = width * (1.0 - 0.6 * t0);
                     double w1 = width * (1.0 - 0.6 * t1);
-                    carve(field, warped, px, pz, qx, qz, bed0, bed1, rim0, rim1, w0, w1, Form.V, 0.05, 0.35,
-                            target, ignored, settings.seed, checkCancelled);
+                    carve(field, warped, px, pz, qx, qz, bed0, bed1, rim0, rim1, w0, w1,
+                            settings.form == Form.U ? Form.U : Form.V, settings.form == Form.U ? 0.2 : 0.05, 0.35,
+                            own, ownNearest, 0.0, 0.0, 1.0, 1.0, checkCancelled);
                     px = qx;
                     pz = qz;
+                }
+                for (int column = 0; column < own.length; column++) {
+                    target[column] = Math.min(target[column], own[column]);
                 }
                 made++;
             }
@@ -1830,13 +2421,24 @@ public final class LandformPlanner {
         HydraulicErosion.run(work, drops, checkCancelled);
         ThermalErosion.run(work, new ThermalErosion.Settings(3, 58.0, 0.5), checkCancelled);
         double pile = 3.0 + 0.06 * settings.height;
-        double dig = 4.0 + 0.3 * settings.height;
+        // En el valle ya hay barrancos: la erosión solo los retoca, sin abrir surcos hondos propios.
+        boolean valley = settings.kind == Kind.VALLEY;
+        double dig = valley ? 2.5 + 0.1 * settings.height : 4.0 + 0.3 * settings.height;
+        double patchScale = Math.max(8.0, settings.halfWidth * 0.45);
         for (int index = 0; index < columns; index++) {
             if (!work.editableAt(index)) {
                 continue;
             }
             double before = field.at(index);
-            double change = Math.clamp(work.at(index) - before, -dig, pile);
+            // Las gotas en una ladera lisa abren surcos paralelos y a la misma distancia (como pana): por manchas,
+            // y cada surco con su hondura, se quedan en unos sitios sí y en otros no, y unos más que otros.
+            double x = field.xOf(index);
+            double z = field.zOf(index);
+            double patch = smooth((StampNoise.fbm(x / patchScale, z / patchScale, settings.seed + 210L, 3) + 0.15)
+                    / 0.6);
+            double grain = 0.35 + 0.65 * (0.5 + 0.5 * StampNoise.fbm(x / 5.0, z / 5.0, settings.seed + 211L, 2));
+            double strength = (valley ? patch : 0.3 + 0.7 * patch) * grain;
+            double change = Math.clamp(work.at(index) - before, -dig, pile) * strength;
             double fade = smooth(depth[index] / (double) EROSION_MARGIN);
             if (change * fade != 0.0) {
                 field.setAt(index, before + change * fade);

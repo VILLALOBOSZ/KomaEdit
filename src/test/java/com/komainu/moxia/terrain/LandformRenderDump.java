@@ -20,6 +20,10 @@ import java.util.List;
 @EnabledIfEnvironmentVariable(named = "KOMAEDIT_LANDFORM_RENDER", matches = ".+")
 class LandformRenderDump {
     private static final Runnable NO_CANCEL = FakeTerrain.NO_CANCEL;
+    /** Las paletas automáticas de la orden, las mismas que en el juego. */
+    private static final String COAST_PALETTE = LandformRequest.parse(LandformPlanner.Kind.COAST, "").paletteName();
+    private static final String GLACIAL_PALETTE = LandformRequest.parse(LandformPlanner.Kind.VALLEY, "u")
+            .paletteName();
 
     @Test
     void dumpLandforms() throws IOException {
@@ -131,26 +135,26 @@ class LandformRenderDump {
         scenes.add(new Scene("cordillera_cerrada", "cordillera · trayectoria cerrada (un anillo)",
                 TerrainScenes.flat(300, 150, 30), ring(150, 150, 95, 70, 9), true,
                 range(40, 36, 0.7, 61L), "alpino", "pradera"));
-        List<double[]> shore = TerrainScenes.curve(new double[][]{{10, 29, 120}, {90, 29, 160}, {170, 29, 120},
-                {240, 29, 150}, {295, 29, 130}});
+        List<double[]> shore = TerrainScenes.curve(new double[][]{{60, 29, 170}, {140, 29, 210}, {220, 29, 170},
+                {290, 29, 200}, {345, 29, 180}});
         scenes.add(new Scene("costa_curva_suave", "costa · curva suave junto al mar (a Y 26)",
-                withSea(shore(300, 120, 300, shore), 26), shore, false, coast(46, 30, 0.75, 71L, LandformPlanner.Side.AUTO), "costa",
-                "pradera"));
+                withSea(shore(400, 120, 340, shore), 26), shore, false,
+                coast(46, 30, 0.75, 71L, LandformPlanner.Side.AUTO), COAST_PALETTE, "pradera"));
         scenes.add(new Scene("costa_irregular", "costa · acantilado sobre terreno irregular (tierra a la izquierda)",
-                hills(300, 140, 260, 83L, 36, 10), TerrainScenes.curve(new double[][]{{20, 40, 60},
-                {110, 40, 120}, {150, 40, 210}, {280, 40, 230}}), false, coast(44, 26, 0.75, 89L, LandformPlanner.Side.LEFT), "costa",
-                "pradera"));
+                hills(380, 140, 360, 83L, 36, 10), TerrainScenes.curve(new double[][]{{70, 40, 90},
+                {160, 40, 150}, {200, 40, 240}, {320, 40, 270}}), false,
+                coast(44, 26, 0.75, 89L, LandformPlanner.Side.LEFT), COAST_PALETTE, "pradera"));
         scenes.add(new Scene("valle_v_irregular", "valle en V con río · sobre terreno irregular",
-                slopeHills(300, 170, 260, 97L), TerrainScenes.curve(new double[][]{{20, 70, 40},
-                {110, 60, 110}, {170, 50, 120}, {280, 40, 220}}), false,
+                slopeHills(380, 170, 340, 97L), TerrainScenes.curve(new double[][]{{60, 70, 70},
+                {150, 60, 140}, {210, 50, 150}, {320, 40, 260}}), false,
                 valley(46, 30, 0.7, 101L, LandformPlanner.Form.V, true), "pradera", "bosque"));
         scenes.add(new Scene("valle_u_curva_cerrada", "valle glaciar en U · curva cerrada",
-                hills(280, 170, 280, 103L, 70, 10), TerrainScenes.curve(new double[][]{{40, 72, 250},
-                {70, 72, 90}, {140, 72, 50}, {200, 72, 110}, {220, 72, 250}}), false,
-                valley(40, 34, 0.65, 107L, LandformPlanner.Form.U, false), "glaciar", "nevado"));
+                hills(340, 170, 340, 103L, 70, 10), TerrainScenes.curve(new double[][]{{70, 72, 270},
+                {100, 72, 120}, {170, 72, 80}, {230, 72, 140}, {250, 72, 270}}), false,
+                valley(40, 34, 0.65, 107L, LandformPlanner.Form.U, false), GLACIAL_PALETTE, "nevado"));
         scenes.add(new Scene("canon_llano", "cañón escalonado · sobre llano",
-                TerrainScenes.flat(300, 140, 80), TerrainScenes.curve(new double[][]{{10, 81, 130},
-                {100, 81, 90}, {190, 81, 170}, {295, 81, 120}}), false,
+                TerrainScenes.flat(380, 140, 80), TerrainScenes.curve(new double[][]{{60, 81, 150},
+                {140, 81, 110}, {230, 81, 190}, {320, 81, 140}}), false,
                 valley(34, 40, 0.7, 109L, LandformPlanner.Form.CANYON, true), "mesa", "mesa"));
         return scenes;
     }

@@ -15,6 +15,16 @@
   - **Valle:** en V, en U o cañón escalonado, con el fondo que siempre baja, valles laterales colgados y, si se pide, un río.
   - Ajustes de ancho, altura, perfil a lo largo, variación con semilla, familia de sellos para el detalle, modo de mezcla (sumar, máximo, aplanar), erosión y paleta. Es un campo continuo sobre la curva, sin estampar por trozos: no hay costuras ni en las curvas cerradas. Vista previa, confirmación de lo grande, `-e`, un `//undo` y `/komaedit cancel` como el resto del terraformado.
   - Permisos `komaedit.build.terrain.range`, `.terrain.coast` y `.terrain.valley` (intermedio).
+- **Tras revisar los renders:**
+  - **Costa.** El acantilado ya no es una presa: cabos altos y tramos bajos hasta las calas, una orilla que entra y sale y farallones distintos (agujas, torres anchas, un arco caído, cascotes). Abajo, rocas y una playa en cada cala; arriba, sin pretil.
+  - **Mar de la costa.** Se llena justo lo que queda encerrado: el nivel nunca pasa del punto más bajo del borde. Si no cabe, el chat lo dice y no pone «con mar».
+  - **Valle en V.** Barrancos dendríticos con espaciado, largo, hondura y rumbo distintos, y embudo en los extremos. Se quitan las costillas paralelas, que venían de dos sitios:
+    - la punta de cada tramo del cauce, con el lecho más bajo, mordía el anterior;
+    - la erosión abría surcos a la misma distancia en una ladera lisa (ahora va por manchas).
+  - **Valle en U.** Las paredes suben a hombros y crestas de altura cambiante, con la pendiente variando a lo largo, conos de derrubios al pie de cada canal y valles colgados más anchos. La paleta `glaciar` ya no salpica hielo suelto por las paredes.
+  - **Cordillera.** Vertientes asimétricas que cambian de lado, ramales más largos, lomas sueltas en el pie y una caída con ruido: ya no hay anillos concéntricos. Sobre terreno irregular, el pie se suma a los bultos que había, también con `maximo`, y la erosión solo va donde la forma cambia de verdad.
+  - **Pintura.** Solo se repinta lo que cambia de naturaleza: paredes, lo que sube mucho y el lecho. Lo tendido conserva su suelo, con una frontera tramada.
+  - **Studio.** La descripción de un sello de «Míos» ya no se sale de la columna ni pisa la barra de desplazamiento.
 - Renders de los dos (`KOMAEDIT_LANDFORM_RENDER=<carpeta>`) y maquetas del Studio nuevas; `KOMAEDIT_STUDIO_MOCKUPS_ONLY=<texto>` pinta solo las maquetas que lo llevan en el nombre.
 - Nada probado aún dentro de Minecraft.
 

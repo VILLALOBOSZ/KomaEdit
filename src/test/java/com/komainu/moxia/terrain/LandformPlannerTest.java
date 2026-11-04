@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LandformPlannerTest {
@@ -39,8 +40,33 @@ class LandformPlannerTest {
     }
 
     @Test
+    void aValleyKeepsTheGroundOfItsFloorAndRepaintsItsWalls() {
+        // Solo se repinta lo que cambia de naturaleza: el fondo tendido conserva su suelo aunque baje mucho, la pared
+        // empinada se pinta y lo que no cambia se queda como estaba.
+        HeightField field = new HeightField(0, 0, 200, 120);
+        for (int z = 0; z < 120; z++) {
+            for (int x = 0; x < 200; x++) {
+                field.define(x, z, 60.0, true, 0.0, 200.0);
+            }
+        }
+        List<double[]> path = TerrainScenes.curve(new double[][]{{10, 61, 60}, {100, 61, 60}, {190, 61, 60}});
+        LandformPlanner.Settings settings = new LandformPlanner.Settings(LandformPlanner.Kind.VALLEY, 30, 30,
+                LandformPlanner.Profile.FLAT, 0.0, 5L, LandformPlanner.Side.RIGHT, LandformPlanner.Form.U,
+                LandformPlanner.Blend.MAX, 0.0, false, List.of());
+        LandformPlanner.Result result = LandformPlanner.plan(field, path, false, settings, NO_CANCEL);
+        for (int x = 70; x <= 130; x += 10) {
+            assertTrue(result.field().get(x, 60) < 45.0, "el fondo baja en " + x);
+            assertTrue(result.keepSurface(x, 60), "el fondo conserva su suelo en " + x);
+            assertTrue(result.field().slopeDegrees(x, 80) > 40.0, "la pared es empinada en " + x);
+            assertFalse(result.keepSurface(x, 80), "la pared se repinta en " + x);
+            assertTrue(result.keepSurface(x, 115), "lo de fuera se queda en " + x);
+        }
+    }
+
+    @Test
     void nothingChangesBeyondTheReachAndNothingShootsUp() {
         for (LandformPlanner.Kind kind : LandformPlanner.Kind.values()) {
+            HeightField plain = null;
             for (double erosion : new double[]{0.0, 0.6}) {
                 HeightField field = hills(260, 53L);
                 HeightField before = field.copy();
@@ -56,14 +82,18 @@ class LandformPlannerTest {
                         assertEquals(0.0, change, 1e-9, kind + " con erosión " + erosion + " cambia " + x + ", " + z
                                 + " fuera de su alcance");
                     }
-                    // Al pie, lo que arrastran las gotas se reparte: nada de columnas que se disparen.
+                    // Al pie, lo que arrastran las gotas se reparte: nada de columnas que se disparen. En la costa,
+                    // la tierra alta sigue tierra adentro (se apaga despacio): ahí cuenta solo lo que añade la erosión.
                     if (distanceToPath(path, x, z) > settings.halfWidth() * 1.1) {
-                        assertTrue(change < 4.0 + settings.height() * 0.3, kind + " con erosión " + erosion
-                                + " amontona " + change + " al pie en " + x + ", " + z);
+                        double pile = kind == LandformPlanner.Kind.COAST
+                                ? plain == null ? 0.0 : field.at(index) - plain.at(index) : change;
+                        assertTrue(pile < 4.0 + settings.height() * 0.3, kind + " con erosión " + erosion
+                                + " amontona " + pile + " al pie en " + x + ", " + z);
                     }
                     assertTrue(change < settings.height() * 1.4 + 2.0 && change > -(settings.height() * 1.4 + 2.0),
                             kind + " con erosión " + erosion + " salta " + change + " en " + x + ", " + z);
                 }
+                plain = field;
             }
         }
     }
