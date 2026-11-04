@@ -121,6 +121,41 @@ public final class Orientation {
         return find(inverseAxis, inverseSign);
     }
 
+    /**
+     * La orientación de una matriz por filas ({@code mundo = M · local}, {@code m[fila * 3 + columna]}) si es una de
+     * las 48: cada columna, un eje del mundo con signo (con una tolerancia de 1e-6 para los restos de los senos).
+     * {@code null} si gira en un ángulo libre, escala o no es una matriz de giro.
+     */
+    public static Orientation ofMatrix(double[] m) {
+        if (m.length != 9) {
+            throw new IllegalArgumentException("Una matriz 3×3 tiene 9 valores");
+        }
+        int[] axes = new int[3];
+        int[] signs = new int[3];
+        boolean[] used = new boolean[3];
+        for (int column = 0; column < 3; column++) {
+            int found = -1;
+            for (int row = 0; row < 3; row++) {
+                double value = m[row * 3 + column];
+                if (Math.abs(Math.abs(value) - 1.0) < 1.0E-6) {
+                    if (found >= 0) {
+                        return null;
+                    }
+                    found = row;
+                    signs[column] = value > 0 ? 1 : -1;
+                } else if (!(Math.abs(value) < 1.0E-6)) {
+                    return null;
+                }
+            }
+            if (found < 0 || used[found]) {
+                return null;
+            }
+            used[found] = true;
+            axes[column] = found;
+        }
+        return find(axes, signs);
+    }
+
     private static Orientation find(int[] axes, int[] signs) {
         for (int permutation = 0; permutation < PERMUTATIONS.length; permutation++) {
             int[] candidate = PERMUTATIONS[permutation];

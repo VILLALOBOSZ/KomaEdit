@@ -49,6 +49,27 @@ class PropertyCycleTest {
         assertFalse(PropertyCycle.editable(new PropertyCycle.Property("single", List.of("only"), "only")));
     }
 
+    /** Girar media cama o medio cofre doble partía el bloque: la otra mitad no los sigue. */
+    @Test
+    void bedsAndDoubleChestsDoNotTurnHalfOfThemselves() {
+        PropertyCycle.Property bedPart = new PropertyCycle.Property("part", List.of("head", "foot"), "head");
+        PropertyCycle.Property occupied = new PropertyCycle.Property("occupied", List.of("true", "false"), "false");
+        assertEquals(List.of("occupied"), names(PropertyCycle.ordered(List.of(FACING, bedPart, occupied))));
+        PropertyCycle.Property left = new PropertyCycle.Property("type", List.of("single", "left", "right"), "left");
+        assertEquals(List.of("waterlogged"), names(PropertyCycle.ordered(List.of(FACING, left, WATERLOGGED))));
+        PropertyCycle.Property single = new PropertyCycle.Property("type", List.of("single", "left", "right"),
+                "single");
+        assertEquals(List.of("facing", "waterlogged"),
+                names(PropertyCycle.ordered(List.of(FACING, single, WATERLOGGED))), "un cofre suelto sí gira");
+        PropertyCycle.Property slab = new PropertyCycle.Property("type", List.of("top", "bottom", "double"), "top");
+        assertEquals(List.of("type", "waterlogged"), names(PropertyCycle.ordered(List.of(slab, WATERLOGGED))),
+                "la losa sigue cambiando de tipo");
+    }
+
+    private static List<String> names(List<PropertyCycle.Property> properties) {
+        return properties.stream().map(PropertyCycle.Property::name).toList();
+    }
+
     @Test
     void valuesWrapForwardAndBackward() {
         assertEquals("south", PropertyCycle.step(FACING, 1));

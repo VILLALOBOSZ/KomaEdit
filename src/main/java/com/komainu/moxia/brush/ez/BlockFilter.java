@@ -49,7 +49,7 @@ public final class BlockFilter implements BrushMask {
         }
         List<Term> include = new ArrayList<>();
         List<Term> exclude = new ArrayList<>();
-        for (String raw : input.split(",")) {
+        for (String raw : input.split("[,;]")) {
             String text = raw.trim().toLowerCase(Locale.ROOT);
             if (text.isEmpty()) {
                 continue;
@@ -76,6 +76,10 @@ public final class BlockFilter implements BrushMask {
                 if (text.startsWith("#") || text.isEmpty()) {
                     throw new IllegalArgumentException("Máscara desconocida: " + text
                             + " (usa #fullblock, #solid, #existing o ids de bloque)");
+                }
+                if (text.indexOf('[') >= 0) {
+                    throw new IllegalArgumentException("Esta lista no mira el estado de los bloques: quita «"
+                            + text.substring(text.indexOf('[')) + "» o usa una máscara con -m");
                 }
                 yield new Term(Kind.ID, PaletteShift.normalize(text));
             }

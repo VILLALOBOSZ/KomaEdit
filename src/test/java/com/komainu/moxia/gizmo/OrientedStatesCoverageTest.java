@@ -1,5 +1,8 @@
 package com.komainu.moxia.gizmo;
 
+import com.komainu.moxia.placement.Mat3;
+import com.komainu.moxia.placement.PlacementStates;
+import com.komainu.moxia.shape.Vec3;
 import com.komainu.moxia.symmetry.StateTransform;
 import com.komainu.moxia.symmetry.SymmetryTransform;
 import org.junit.jupiter.api.Test;
@@ -10,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -299,6 +305,129 @@ class OrientedStatesCoverageTest {
                 }
             }
         }
+    }
+
+    /**
+     * {@code place}, {@code scatter}, {@code array} y sus pinceles giran con una {@link Mat3} (o la base entera del
+     * pincel): si es una de las 48 orientaciones, los estados van por {@link OrientedStates} como en el fantasma; si es
+     * un giro libre, por WorldEdit. Los restos de los senos no deben sacar un giro exacto del camino exacto.
+     */
+    @Test
+    void placementMatricesAreTheExactOrientations() {
+        for (int index = 0; index < Orientation.COUNT; index++) {
+            Orientation orientation = Orientation.of(index);
+            double[] m = new double[9];
+            int[] basis = new int[9];
+            for (int column = 0; column < 3; column++) {
+                int[] world = orientation.apply(column == 0 ? 1 : 0, column == 1 ? 1 : 0, column == 2 ? 1 : 0);
+                for (int row = 0; row < 3; row++) {
+                    m[row * 3 + column] = world[row] + (world[row] == 0 ? 3.0E-17 : -2.0E-16);
+                    basis[row * 3 + column] = world[row];
+                }
+            }
+            Mat3 matrix = new Mat3(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]);
+            assertSame(orientation, PlacementStates.exact(matrix), "matriz de " + orientation);
+            assertSame(orientation, PlacementStates.exact(basis), "base de " + orientation);
+        }
+        Vec3 up = new Vec3(0, 1, 0);
+        for (int quarter = 0; quarter < 4; quarter++) {
+            assertNotNull(PlacementStates.exact(Mat3.rotation(up, 90.0 * quarter)), quarter + " cuartos");
+            assertNotNull(PlacementStates.exact(Mat3.quarterTurns(0, quarter).multiply(Mat3.diagonal(1, 1, -1))));
+        }
+        assertNull(PlacementStates.exact(Mat3.rotation(up, 30.0)), "30° es libre");
+        assertNull(PlacementStates.exact(Mat3.rotation(new Vec3(1, 1, 0), 90.0)), "eje en diagonal");
+        assertNull(PlacementStates.exact(Mat3.diagonal(2, 1, 1)), "con escala no es un giro");
+        assertNull(PlacementStates.exact(new Mat3(1, 0, 0, 1, 0, 0, 0, 0, 1)), "dos columnas al mismo eje");
+    }
+
+    /**
+     * Lo que dejó el #96: con {@code BlockTransformExtent} un raíl girado 90° seguía de norte a sur, una puerta volteada
+     * no cambiaba la bisagra y boca abajo no cambiaba de mitad. Con la matriz de la colocación pasada a orientación,
+     * cada propiedad va a donde va el bloque.
+     */
+    @Test
+    void placementTurnsRailsDoorsAndHingesWithTheGeometry() {
+        Vec3 up = new Vec3(0, 1, 0);
+        List<Mat3> matrices = new ArrayList<>();
+        for (int quarter = 0; quarter < 4; quarter++) {
+            Mat3 turn = Mat3.rotation(up, 90.0 * quarter);
+            matrices.add(turn);
+            matrices.add(turn.multiply(Mat3.diagonal(-1, 1, 1)));
+            matrices.add(turn.multiply(Mat3.diagonal(1, -1, 1)));
+        }
+        for (Mat3 matrix : matrices) {
+            Orientation orientation = PlacementStates.exact(matrix);
+            assertNotNull(orientation, matrix.toString());
+            boolean flipped = matrix.m00() * matrix.m22() - matrix.m02() * matrix.m20() < 0;
+            boolean upsideDown = matrix.m11() < 0;
+            for (String shape : RAIL) {
+                Map<String, String> rail = new LinkedHashMap<>();
+                rail.put("shape", shape);
+                rail.put("waterlogged", "false");
+                String turned = OrientedStates.apply(rail, BLOCKS.get("rail"), orientation).get("shape");
+                assertEquals(railShape(shape, matrix), turned, shape + " con " + matrix);
+            }
+            for (String hinge : List.of("left", "right")) {
+                for (String half : List.of("upper", "lower")) {
+                    Map<String, String> door = new LinkedHashMap<>();
+                    door.put("facing", "north");
+                    door.put("half", half);
+                    door.put("hinge", hinge);
+                    door.put("open", "false");
+                    door.put("powered", "false");
+                    Map<String, String> turned = OrientedStates.apply(door, BLOCKS.get("oak_door"), orientation);
+                    assertEquals(flipped ? swap(hinge, "left", "right") : hinge, turned.get("hinge"),
+                            "bisagra con " + matrix);
+                    assertEquals(upsideDown ? swap(half, "upper", "lower") : half, turned.get("half"),
+                            "mitad con " + matrix);
+                    assertEquals(horizontal(matrix.apply(0, 0, -1)), turned.get("facing"), "frente con " + matrix);
+                }
+            }
+            Map<String, String> lever = new LinkedHashMap<>();
+            lever.put("face", "floor");
+            lever.put("facing", "east");
+            lever.put("powered", "false");
+            Map<String, String> turnedLever = OrientedStates.apply(lever, BLOCKS.get("lever"), orientation);
+            assertEquals(upsideDown ? "ceiling" : "floor", turnedLever.get("face"), "palanca con " + matrix);
+        }
+    }
+
+    /**
+     * La forma de raíl que sale de llevar sus dos extremos con la matriz; la subida va hacia donde va su lado alto, y
+     * boca abajo hacia el otro (la rampa baja hacia donde antes subía).
+     */
+    private static String railShape(String shape, Mat3 matrix) {
+        if (shape.startsWith("ascending_")) {
+            Vec3 toward = matrix.apply(vector(shape.substring("ascending_".length())));
+            return "ascending_" + horizontal(matrix.m11() < 0 ? toward.multiply(-1) : toward);
+        }
+        String[] ends = shape.split("_");
+        String first = horizontal(matrix.apply(vector(ends[0])));
+        String second = horizontal(matrix.apply(vector(ends[1])));
+        for (String candidate : RAIL) {
+            String[] parts = candidate.split("_");
+            if (parts.length == 2 && !candidate.startsWith("ascending") && (parts[0].equals(first)
+                    && parts[1].equals(second) || parts[0].equals(second) && parts[1].equals(first))) {
+                return candidate;
+            }
+        }
+        throw new AssertionError("sin forma para " + first + " y " + second);
+    }
+
+    private static Vec3 vector(String direction) {
+        return switch (direction) {
+            case "north" -> new Vec3(0, 0, -1);
+            case "south" -> new Vec3(0, 0, 1);
+            case "west" -> new Vec3(-1, 0, 0);
+            default -> new Vec3(1, 0, 0);
+        };
+    }
+
+    private static String horizontal(Vec3 direction) {
+        if (Math.abs(direction.x()) > Math.abs(direction.z())) {
+            return direction.x() > 0 ? "east" : "west";
+        }
+        return direction.z() > 0 ? "south" : "north";
     }
 
     /** ¿Tiene el bloque cada dirección girada (frente, eje, frente y arriba del crafter)? */

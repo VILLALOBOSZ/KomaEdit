@@ -414,17 +414,13 @@ final class RoofCommands {
 
         /** Bloque entero de una escalera o losa: {@code oak_stairs} → {@code oak_planks}. */
         private static String fullBlock(Identifier piece) {
-            String path = piece.getPath();
-            String stem = path.endsWith("_stairs") ? path.substring(0, path.length() - "_stairs".length())
-                    : path.endsWith("_slab") ? path.substring(0, path.length() - "_slab".length()) : path;
-            for (String candidate : List.of(stem, stem + "s", stem + "_planks", stem + "_block")) {
-                Identifier id = Identifier.of(piece.getNamespace(), candidate);
-                if (Registries.BLOCK.containsId(id)) {
-                    return id.toString();
-                }
+            String path = fullBlockPath(piece.getPath(),
+                    candidate -> Registries.BLOCK.containsId(Identifier.of(piece.getNamespace(), candidate)));
+            if (path == null) {
+                throw new IllegalArgumentException("No encuentro el bloque entero de " + piece
+                        + ": usa el bloque entero como material y -escaleras/-losas para las piezas");
             }
-            throw new IllegalArgumentException("No encuentro el bloque entero de " + piece
-                    + ": usa el bloque entero como material y -escaleras/-losas para las piezas");
+            return Identifier.of(piece.getNamespace(), path).toString();
         }
     }
 
@@ -533,5 +529,21 @@ final class RoofCommands {
 
     private static String readable(Throwable throwable) {
         return EzCommandSupport.reason(throwable);
+    }
+
+    /**
+     * El bloque entero de una pieza ({@code oak_stairs} → {@code oak_planks}), o {@code null}. Los tablones van antes
+     * que el nombre a secas: {@code bamboo} es la planta, y un tejado de {@code bamboo_stairs} salía de cañas.
+     */
+    static String fullBlockPath(String piecePath, java.util.function.Predicate<String> exists) {
+        String stem = piecePath.endsWith("_stairs") ? piecePath.substring(0, piecePath.length() - "_stairs".length())
+                : piecePath.endsWith("_slab") ? piecePath.substring(0, piecePath.length() - "_slab".length())
+                : piecePath;
+        for (String candidate : List.of(stem + "_planks", stem, stem + "s", stem + "_block")) {
+            if (exists.test(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 }

@@ -357,6 +357,60 @@ class TerrainToolsTest {
         assertTrue(crater.top(40, 40) < 30 && crater.top(40 + 13, 40) > 30, "fondo hundido y borde alto");
     }
 
+    /**
+     * Un mundo plano: bedrock en −64 y el suelo en −61. Un cráter o un río hondo vaciaban la columna entera, bedrock
+     * incluida, y abrían agujeros al vacío (y el lecho del río cambiaba la bedrock por grava que caía).
+     */
+    @Test
+    void terrainToolsNeverTouchTheBedrock() {
+        for (int tool = 0; tool < 2; tool++) {
+            FakeTerrain terrain = new FakeTerrain(0, -64, 0, 64, 40, 64);
+            for (int z = 0; z < 64; z++) {
+                for (int x = 0; x < 64; x++) {
+                    terrain.put(x, -64, z, "minecraft:bedrock");
+                    terrain.put(x, -63, z, "minecraft:dirt");
+                    terrain.put(x, -62, z, "minecraft:dirt");
+                    terrain.put(x, -61, z, "minecraft:grass_block");
+                }
+            }
+            if (tool == 0) {
+                TerrainJobs.stamp(terrain, new StampBrush.Settings(StampLibrary.get("crater"), StampBrush.Mode.RAISE,
+                        24, 12, 1.0, 0.0, -61), 32, 32, SurfacePalette.natural(), terrain, NO_CANCEL);
+            } else {
+                TerrainJobs.river(terrain, TerrainScenes.curve(new double[][]{{2, 0, 32}, {62, 0, 32}}),
+                        RiverPlanner.preset("canon"), SurfacePalette.natural(), terrain, NO_CANCEL);
+            }
+            int lowered = 0;
+            for (int z = 0; z < 64; z++) {
+                for (int x = 0; x < 64; x++) {
+                    assertEquals("minecraft:bedrock", terrain.blockId(x, -64, z),
+                            (tool == 0 ? "cráter" : "cañón") + " en " + x + "," + z);
+                    if (terrain.top(x, z) < -61) {
+                        lowered++;
+                    }
+                }
+            }
+            assertTrue(lowered > 20, "sigue hundiendo lo que puede: " + lowered);
+        }
+    }
+
+    /**
+     * Un cortado más alto que la caja leída: el suelo llega hasta arriba y no se sabe dónde acaba. Bajarlo dejaba una
+     * muesca con lo de encima colgando (el pincel de relieve al pie de un acantilado, un río junto a una ladera alta).
+     */
+    @Test
+    void columnsTallerThanTheReadBoxAreLeftAlone() {
+        FakeTerrain terrain = FakeTerrain.columns(64, 40, 64, (x, z) -> x >= 40 ? 80 : 10);
+        TerrainJobs.stamp(terrain, new StampBrush.Settings(StampLibrary.get("mesa"), StampBrush.Mode.FLATTEN, 30, 0,
+                1.0, 0.0, 10), 40, 32, SurfacePalette.natural(), terrain, NO_CANCEL);
+        for (int z = 0; z < 64; z++) {
+            for (int x = 40; x < 64; x++) {
+                assertEquals(39, terrain.top(x, z), "el cortado sigue entero en " + x + "," + z);
+            }
+        }
+        assertEquals(10, terrain.top(30, 32), "lo de abajo se trabaja como siempre");
+    }
+
     @Test
     void flattenModeMovesTowardsTheClickHeight() {
         FakeTerrain terrain = TerrainScenes.hills(80, 80, 6L);

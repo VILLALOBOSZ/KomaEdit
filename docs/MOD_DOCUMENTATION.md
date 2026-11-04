@@ -1234,8 +1234,6 @@ Las figuras convierten una trayectoria tridimensional en superficies o volúmene
 - Hexarmor
 - Voronoi
 - Knots
-- DNA
-- Tendrils
 - Nubes orgánicas
 - Telarañas adaptativas
 - Perfil 2D (espacio de tubo)
@@ -1401,7 +1399,7 @@ También está disponible con el comando general:
 
 | Control / bandera | Opción de receta | Efecto |
 | --- | --- | --- |
-| Radio / `<radios>` | radio + `k0`…`k5`, `p1`…`p4` | Radio base. Con varios valores (`2,10,2`, hasta 8) el grosor sigue esos fotogramas con interpolación monótona; `2,0.3:12,2` fija la posición del intermedio. Sin comillas: `2_10_2`. |
+| Radio / `<radios>` | radio + `k0`…`k7`, `p1`…`p6` | Radio base. Con varios valores (`2,10,2`, hasta 8) el grosor sigue esos fotogramas con interpolación monótona; `2,0.3:12,2` fija la posición del intermedio. Sin comillas: `2_10_2`. |
 | Lados / puntas | `sides` | Lados del polígono, puntas de la estrella, pétalos de la flor o hebras de la cuerda (Studio 2–8, comando hasta 32 con `star12`). |
 | Pared (hueco), `-hollow <n>` | `hollow`, `wall` | Grosor de pared en bloques cuando el relleno es **Hueco**. |
 | Giro, `-r <a>[,<b>]` | `angle`, `rollend` | Giro inicial de la sección; con dos valores gira de `a` a `b` a lo largo del recorrido. |
@@ -1492,7 +1490,7 @@ El motor por defecto es el clásico: las recetas, instancias e instantáneas exi
 
 - **Mismas proporciones:** radio, espaciado, grosor y giro se leen con las mismas fórmulas que el motor clásico, igual que `extrusion`, `gap`, `stretch` (longitud del eslabón), `majorexponent`, `minorexponent` y `thickness`. El hilo de grosor `n` mide lo mismo que el pincel clásico (`n − 0,65` de radio).
 - **Sin huecos:** el alma de cada hilo queda cubierta en cualquier dirección y la cinta de Oscillate no se puede atravesar. Por eso hilos y cintas tienen un radio (o semigrosor) mínimo de `0,87` bloques: con grosor `1` salen algo más gruesos que en el motor clásico.
-- **Hereda el espacio de tubo:** extremos (`end`), normales (`normal`), radios por fotogramas (`k0`…`k5`, `p1`…`p4`), torsión (`twist`, `rollend`), curva Kochanek–Bartels (`tension`, `bias`, `continuity`), calidad (`quality`), losas y escaleras en la superficie (`smooth`, `coverage`) y la escala, espaciado y torsión de la sección Deformar, que se aplican al evaluar cada bloque.
+- **Hereda el espacio de tubo:** extremos (`end`), normales (`normal`), radios por fotogramas (`k0`…`k7`, `p1`…`p6`), torsión (`twist`, `rollend`), curva Kochanek–Bartels (`tension`, `bias`, `continuity`), calidad (`quality`), losas y escaleras en la superficie (`smooth`, `coverage`) y la escala, espaciado y torsión de la sección Deformar, que se aplican al evaluar cada bloque.
 - **Espaciado sin aplastar:** el espaciado de la curva de modificadores y `stretch` separan los motivos (eslabones, anillos, cuentas, nudos) o abren la hélice sin aplastar el alambre. En Chainlink `stretch` conserva su significado clásico y alarga cada eslabón.
 - **Extremos:** con `flat` el primer y el último motivo salen enteros, como en el motor clásico; las figuras continuas se cortan en el plano del extremo. `round`, `spike`, `soft` y `cube` actúan sobre la figura como en `sweep`.
 - **Lazos cerrados:** el paso se ajusta para que quepa un número entero de motivos; en Chainlink y Honeycomb el número es par para que la alternancia empalme sin costura.
@@ -1533,7 +1531,7 @@ Curva un módulo copiado con WorldEdit (un tramo de muro, puente, calzada, vía 
 
 ### Comportamiento
 
-- Se usa el portapapeles de WorldEdit (`//copy`). Su origen, el bloque donde estabas al copiar, es el que recorre la trayectoria.
+- Se usa el portapapeles de WorldEdit (`//copy`), con su `//rotate` y `//flip` pendientes ya aplicados. Su origen, el bloque donde estabas al copiar, es el que recorre la trayectoria.
 - **Repetir:** en un recorrido abierto caben tantas copias enteras como permita la longitud, centradas, sin trozos cortados. En uno cerrado, las copias se ajustan un poco para que el lazo empalme sin costura.
 - **Estirar:** una sola copia ocupa todo el recorrido.
 - Igual que las figuras de tubo, se trabaja al revés: cada bloque del mundo cercano al eje pregunta qué bloque del módulo le toca. Por fuera de las curvas el módulo se estira sin abrir huecos; por dentro se comprime y puede perder algún detalle fino.
@@ -2230,7 +2228,7 @@ Cúpula, cono y aguja se centran en la caja de la planta; lo que de la planta qu
 | `-ventana <bloque>` | `-window` | Ventana de las buhardillas (`glass_pane` por defecto; los paneles y barrotes se unen a lo largo del muro). |
 | `-lado <n\|s\|e\|o>` | `-bajo` | Lado bajo del tejado a un agua; por defecto, el de la selección más cercano a ti. |
 | `-lados <n>` | `-sides` | Lados de la aguja (3 a 32). |
-| `-h <bloques>` | `-altura` | Altura de cúpula, cono, aguja o pagoda. |
+| `-h <bloques>` | `-altura` | Altura de cúpula, cono, aguja o pagoda: de lo alto de los muros a la cúspide, con o sin alero. |
 | `-pretil <bloques>` | `-parapet` | Altura del pretil del tejado plano (0 a 6, 1 por defecto). |
 | `-q <bloques>` | `-quiebro` | Mansarda: hasta dónde llega el faldón empinado (por defecto 1 o 2 bloques, según el fondo). Holandés: hasta dónde llegan las aguas de los remates antes del hastial pequeño (por defecto, la mitad). |
 | `-d` | `-detectar`, `-muros` | La planta sale de los muros, no de la selección. |
@@ -2545,6 +2543,13 @@ Banderas:
 /komaedit surface rockify 3 -w SlabsAndStairs
 ```
 
+### Rendimiento y limitaciones
+
+- Se lee la selección más un margen de `radio + radioSuave × iteraciones + 2` bloques (como mucho 32), así el borde de la selección ve lo que hay al otro lado. Solo se escribe dentro de la selección; amplíala si quieres que la superficie crezca hacia fuera.
+- `-t` es más lento: comprueba cada cambio con sus 26 vecinos, en dos pasadas.
+- `-m` admite cualquier máscara de WorldEdit; lo que no la cumple no se toca, tampoco con `-w` (no se convierte en losas ni escaleras). La máscara global (`//gmask`) se respeta al escribir.
+- Radio de 0 a 32; suavizado de radio 0–8 y 0–16 iteraciones.
+
 ## Texturizado
 
 ### Objetivo y acceso
@@ -2563,7 +2568,7 @@ Los argumentos van por posición y las banderas en cualquier sitio. Un argumento
 
 ### Comportamiento
 
-- **Paleta**: cualquier paleta de [Paletas con nombre](#paletas-con-nombre) (`##Grayscale`, `-##Magma(1:8)`, `stone,andesite,cobblestone`…) o una [guardada](#paletas-guardadas) (`#nombre`), con al menos dos bloques; cada entrada es un bloque o un patrón de WorldEdit sin comas (`oak_stairs[facing=east]`, `#clipboard`). Cada modo da a cada bloque un valor de 0 a 1 y se coloca el bloque de esa posición de la paleta: 0 es el principio y 1 el final.
+- **Paleta**: cualquier paleta de [Paletas con nombre](#paletas-con-nombre) (`##Grayscale`, `-##Magma(1:8)`, `stone,andesite,cobblestone`…) o una [guardada](#paletas-guardadas) (`#nombre`), con al menos dos bloques; cada entrada es un bloque o un patrón de WorldEdit sin comas ni `#` (`oak_stairs[facing=east]`, `50%stone`); un `#nombre` siempre es una paleta guardada, así que `#clipboard` y los demás patrones de WorldEdit con `#` no van en la paleta. Cada modo da a cada bloque un valor de 0 a 1 y se coloca el bloque de esa posición de la paleta: 0 es el principio y 1 el final.
 - **Convención**: lo ocluido, cóncavo, poco iluminado o de cara a la luz va hacia el **principio** de la paleta. `##Grayscale` empieza en negro, así que las grietas salen oscuras con `ambient`; para que las caras iluminadas salgan claras con `pointlight` o `sunlight` usa `-##Grayscale`.
 - **Superficie**: `ambient`, `curvature`, `pointlight`, `sunlight`, `blocklight` y `flow` solo cambian los bloques con alguna cara al aire (el interior no se ve). `axisgradient`, `noise` y `cells` cambian todos los bloques de la máscara. Si la selección no tiene superficie (por ejemplo, solo el interior de un muro) avisa de que hay que ampliarla para que incluya aire; la lectura ya coge un margen alrededor.
 - **Máscara**: qué bloques se texturizan. Ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región).
@@ -2702,10 +2707,9 @@ Ejemplos:
 
 ### Rendimiento y limitaciones
 
-- Se lee la selección más un margen de `radio + radioSuave × iteraciones + 2` bloques (como mucho 32), así el borde de la selección ve lo que hay al otro lado. Solo se escribe dentro de la selección; amplíala si quieres que la superficie crezca hacia fuera.
-- `-t` es más lento: comprueba cada cambio con sus 26 vecinos, en dos pasadas.
-- `-m` usa una lista de bloques y etiquetas, no la sintaxis completa de máscaras de WorldEdit. La máscara global (`//gmask`) se respeta al escribir.
-- Radio de 0 a 32; suavizado de radio 0–8 y 0–16 iteraciones.
+- Capas de 1 a 16, longitud de 1 a 512 y calidad de 1 a 10. El cálculo va en un worker; los colores repetidos se calculan una vez.
+- Error medio del degradado #E8D44D → #5A2FB2 en 24 pasos sobre negro: 0,163 con una capa, 0,016 con tres y 0,005 con cinco; con tres capas y `-b`, 0,003.
+- El color real depende del brillo, la niebla y el paquete de texturas; se calcula con las texturas de vanilla y la mezcla alfa estándar. Lo que haya en el sitio de la vidriera se sustituye.
 
 ## Color y sombreado
 
@@ -3057,9 +3061,6 @@ El holograma de las figuras dibuja cada pieza con su forma: losas y escaleras po
 - No hay niveles de agua como pieza.
 - En tubos huecos no se añaden piezas fuera ni se abre la pared; en tubos, los materiales fijos no se guardan en la receta del Studio.
 - Si junto a la obra ya había escaleras en el mundo, Minecraft puede doblar las del borde hacia ellas.
-- Capas de 1 a 16, longitud de 1 a 512 y calidad de 1 a 10. El cálculo va en un worker; los colores repetidos se calculan una vez.
-- Error medio del degradado #E8D44D → #5A2FB2 en 24 pasos sobre negro: 0,163 con una capa, 0,016 con tres y 0,005 con cinco; con tres capas y `-b`, 0,003.
-- El color real depende del brillo, la niebla y el paquete de texturas; se calcula con las texturas de vanilla y la mezcla alfa estándar. Lo que haya en el sitio de la vidriera se sustituye.
 
 ## Formas sueltas
 
@@ -3345,7 +3346,7 @@ Cambiar estado, Extruir y Arrastrar actúan una vez por pulsación; Reemplazar, 
 
 - Las propiedades se recorren en este orden: `facing`, `half`, `type`, `shape`, `axis`, `rotation`, `open`, `hinge`, `face`, `attachment`, `hanging`, `north`, `east`, `south`, `west`, `up`, `down`, `layers`, `waterlogged`, `lit`, `persistent`… y después las demás del bloque.
 - La propiedad elegida se recuerda; si el bloque apuntado no la tiene, se usa la primera suya. El mensaje de la barra dice cuál es y cuántas tiene el bloque (`propiedad 2/4: half = top`).
-- No se retocan las mitades de los bloques de dos partes (`half` de puertas y plantas altas, `part` de camas): cambiar una sola dejaría la otra huérfana.
+- No se retocan las mitades de los bloques de dos partes (`half` de puertas y plantas altas, `part` de camas): cambiar una sola dejaría la otra huérfana. Por lo mismo una cama no gira (`facing`) y un cofre no cambia de `type` ni, si es doble, de dirección: la otra mitad no los sigue. Las puertas sí, porque Minecraft copia el cambio a su otra mitad.
 - Con actualizaciones, un vecino puede volver a corregir el bloque (por ejemplo la forma de una escalera); con Sin actualizaciones se queda como lo dejes.
 
 ### Reemplazar
@@ -3361,7 +3362,7 @@ Cambiar estado, Extruir y Arrastrar actúan una vez por pulsación; Reemplazar, 
 - Como mucho los bloques por capa elegidos (`/komaedit capability extrude <n>` o la rueda; 256 de serie) y nunca más que `maxLayerBlocks` del servidor. Si la capa era mayor, el mensaje lo dice.
 - Encoger quita la capa al descubierto; un bloque anegado deja su agua.
 - Una copia anegada solo queda anegada si va a parar a agua.
-- Cada extrusión o encogido es un solo `//undo`. Se copia el estado del bloque, no su contenido: un cofre o un cartel salen vacíos.
+- Cada extrusión o encogido de más de un bloque es un solo `//undo` (el de un bloque, como colocarlo a mano, no entra en el historial y el chat no lo ofrece). Se copia el estado del bloque, no su contenido: un cofre o un cartel salen vacíos.
 
 ### Arrastrar
 
@@ -3369,7 +3370,7 @@ Cambiar estado, Extruir y Arrastrar actúan una vez por pulsación; Reemplazar, 
 - El final es el punto del eje más cercano a la línea de tu mirada, así que se puede estirar hacia el aire o hacia atrás, a través del propio origen. Si miras casi a lo largo del eje se usa la distancia al bloque mirado (o tu alcance).
 - Mientras el origen está fijado se ve en amarillo y lo que ocupará el estirado, en azul. La barra recuerda «Arrastre: elige el final».
 - Las copias solo van a posiciones libres; lo que haya en medio se respeta. Como mucho `maxSmearLength` bloques de largo y `maxLayerBlocks` en total; el final tiene que estar a menos de `maxReach` de tus ojos.
-- Cada arrastre es un solo `//undo`. Cambiar de dimensión, desactivar Arrastrar o el clic izquierdo sueltan el origen.
+- Cada arrastre de más de un bloque es un solo `//undo`. Cambiar de dimensión, desactivar Arrastrar o el clic izquierdo sueltan el origen.
 
 ### Colocar en el aire y alcance largo
 
@@ -3461,6 +3462,7 @@ Herramientas de paisaje como las de goBrush, Axiom (Elevation, Slope) o Arceon (
 - **En el Studio:** grupo Terreno de la etapa [Herramientas](#herramientas): Estampar relieve con la galería de miniaturas (y sus sellos propios en «Míos»), Pintar (con la superficie natural como modo), Hacer rampa, Excavar río, Trazar relieve y Erosionar, con **Estimar** (`-e`) y el interruptor [Pincel o selección](#pincel-o-selección).
 - **Todo en un worker y un solo //undo:** el pincel va por el camino de los pinceles (captura repartida entre ticks, cálculo fuera del hilo del servidor, `-p` para vista previa) y las órdenes por el motor de las operaciones de región: lectura repartida entre ticks, cálculo en un worker, la estimación de `/komaedit estimate` (bloques, chunks, caja, memoria y tiempo, con la [confirmación de Build grandes](#confirmación-de-build-grandes) por encima del umbral) y escritura por lotes solo donde el bloque no haya cambiado mientras tanto. `-e` solo estima, sin construir.
 - **Máscara `-m`:** decide qué columnas se tocan mirando su **bloque de superficie**. En las órdenes es una máscara de WorldEdit (`grass_block,dirt`, `!stone`, `#existing`…, ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región)); en el pincel, la de los pinceles: una lista (`#fullblock`, `grass_block,sand`, `!sand`) o cualquier máscara de WorldEdit, como en el resto de pinceles. Así se erosiona solo la hierba o se talla un río sin tocar un camino de piedra.
+- **Lo que no se toca:** la **bedrock** (el fondo del mundo y el techo del Nether): un cráter o un río hondo en un mundo plano llegan como mucho hasta ella, sin abrir agujeros al vacío. Tampoco las columnas cuyo suelo llega hasta lo más alto de lo leído (un cortado más alto que la zona del pincel o de la trayectoria): no se sabe dónde acaba y bajarlas dejaría una muesca con lo de encima colgando.
 
 ### Paleta de superficie
 
@@ -4807,7 +4809,7 @@ Cada colocación pasa por esta cadena, en este orden:
 6. **Desplazamientos** de la estructura (`RO`, `WO`, `OJ`).
 
 - Se trabaja al revés: cada bloque del mundo de la caja orientada pregunta qué bloque de la estructura le toca. Ni con giros libres ni al ampliar quedan agujeros. Con giros de 90° y escala 1, el portapapeles se copia exacto.
-- Las escaleras, troncos, vallas y demás bloques con dirección se giran con la orientación de cada colocación (con giros libres, a la dirección más cercana); las simetrías invierten escaleras, losas y cofres.
+- Los bloques con dirección se giran con la orientación de cada colocación. Con giros de 90° y volteos (también con `-r`, `-f` y las alineaciones a los ejes) es la misma transformación que el [gizmo](#colocar-con-gizmo) y la [simetría](#simetría): escaleras con su esquina, troncos, puertas con su bisagra y su mitad, raíles (rectos, en curva y en rampa), cofres dobles, losas, palancas y campanas de techo, carteles de 16 pasos… Con giros libres, a la dirección más cercana (los raíles y las bisagras se quedan como estaban).
 - El aire de la estructura no se coloca salvo con `-a` (al revés que `//paste -a`). Donde se solapan colocaciones gana la última, pero su aire nunca borra un bloque que otra acaba de poner.
 - Se coloca de abajo arriba, en una sola edición deshacible con `//undo`. El cálculo va en un worker; si hace falta leer el mundo (superficies, normales, `-b`), la lectura se reparte entre ticks y, dentro de lo leído, cada bloque solo se cambia si sigue igual que al leerlo.
 - La semilla (`-i`) fija todo lo aleatorio: con la misma semilla y el mismo mundo sale lo mismo. Sin `-i` se elige una al azar y `scatter` la dice al empezar.
@@ -4818,7 +4820,7 @@ Cada colocación pasa por esta cadena, en este orden:
 | --- | --- |
 | `-s <ancho,alto,fondo>` | Dimensiones de la caja en bloques (un número solo vale para los tres). |
 | `-o <mín,máx>` | Escala aleatoria por colocación. Por defecto `1,1`. |
-| `-k <dirección>` y `-c <grados>` | Orientación: gira la estructura `-c` grados alrededor de `-k` (por defecto `y` y `0`). |
+| `-k <dirección>` y `-c <grados>` | Orientación: gira la estructura `-c` grados alrededor de `-k` (por defecto `y` y `0`), en el sentido de `//rotate`: positivo es horario mirando desde la punta del eje (con `y`, de este a sur). |
 | `-f <ejes>` | Simetrías aleatorias en `X`, `Y`, `Z`, `XY`, `XZ`, `YZ` o `XYZ`. |
 | `-r <eje>` | Giros aleatorios de 90° alrededor de `X`, `Y` o `Z`. |
 | `-a` | Coloca también el aire de la estructura. |
@@ -4932,7 +4934,7 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 
 | Estructura | Abreviatura | Qué es |
 | --- | --- | --- |
-| `Clipboard(Origin:…,PasteMethod:…,FillBias:…,Rotation:…)` | `Cl` | Tu portapapeles de WorldEdit (`//copy`). |
+| `Clipboard(Origin:…,PasteMethod:…,FillBias:…,Rotation:…)` | `Cl` | Tu portapapeles de WorldEdit (`//copy`), con su `//rotate` y `//flip` pendientes ya aplicados, como `//paste`. |
 | `Schematic(Filename:<regex>,Format:…,Origin:…,PasteMethod:…,Rotation:…)` | `Sc(N:…)` | Schematics de la carpeta de WorldEdit cuyo nombre casa con la expresión regular (`.schem`, `.schematic`, `.litematic` y estructuras `.nbt`). Una expresión que cuesta demasiado de comprobar (repeticiones anidadas como `((\w+)+)+`) se rechaza: «simplifícala». |
 | `Shape(Shape:<forma>,Pattern:<patrón>)` | `Sh(S:…,P:…)` | Una forma pintada con un patrón de WorldEdit. |
 | `Expression(Expression:=<fórmula>,Palette:<paleta>)` | `Ex(E:…,P:…)` | Una fórmula que decide forma y material. |
@@ -4942,7 +4944,7 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 
 ### Comportamiento
 
-- **Clipboard y Schematic:** `Origin` es `INHERENT` (el punto desde el que se copió, por defecto) o `CENTER` (el centro de la caja). `PasteMethod` es `FAST` (vecino más cercano: con giros de 90° es como `//paste`) o `SMOOTHED`, que mira 27 puntos por bloque y coloca el bloque mayoritario cuando la parte llena, multiplicada por `FillBias` (1 por defecto), llega a la mitad: bordes más limpios con giros libres y, con `FillBias` alto, láminas finas que no se rompen. `Rotation` gira la estructura alrededor de su vertical antes que nada.
+- **Clipboard y Schematic:** `Origin` es `INHERENT` (el punto desde el que se copió, por defecto) o `CENTER` (el centro de la caja). `PasteMethod` es `FAST` (vecino más cercano: con giros de 90° es como `//paste`) o `SMOOTHED`, que mira 27 puntos por bloque y coloca el bloque mayoritario cuando la parte llena, multiplicada por `FillBias` (1 por defecto), llega a la mitad: bordes más limpios con giros libres y, con `FillBias` alto, láminas finas que no se rompen. `Rotation` gira la estructura alrededor de su vertical antes que nada, en el sentido de `//rotate` (positivo: de este a sur), igual que el pincel con `-p` y `pincel stamp -r`.
 - **Schematic:** `Filename` es una expresión regular (`arbol_.*` casa con `arbol_1`, `arbol_2`…) sobre el nombre con o sin extensión; admite subcarpetas (`bosque/roble_.*`) y `%p` es tu UUID, para las carpetas por jugador. Cada colocación elige uno al azar de los que casan (hasta 32). `Format` fuerza un formato (`sponge.3`, `mcedit`, `litematic`, `nbt`…); sin él se detecta.
 - **Shape:** formas `Cone`, `Crystal(Sides:6,Extrusion:0.5)`, `Cuboid`, `Curl`, `Cylinder`, `Ellipsoid`, `Fur(Strands:18)`, `Heart`, `Jellybean`, `Leaf`, `Lemon`, `Onion`, `Polygon(Sides:6)`, `Pyramid(Sides:4)`, `Supersphere(Exponent:4)`, `Tetrahedron`, `Torus(Thickness:0.5)` o una fórmula propia `=…` (dentro donde vale más que 0). Las geométricas llenan su caja; las orgánicas (corazón, limón, hoja, rizo…) conservan sus proporciones centradas. El pelo cambia en cada colocación.
 - **Expression:** `x`, `y`, `z` van de -1 a 1 y `seed` es un entero distinto en cada colocación. Hasta 0 es aire, entre 0 y 1 elige el bloque de la paleta y de 1 en adelante el último.
@@ -5643,7 +5645,7 @@ Una biblioteca de planos como los Blueprints de Axiom: guarda lo que copias con 
 /komaedit pincel stamp <planos|#etiqueta> [radio] [banderas]
 ```
 
-Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `buscar`, `ver`, `cargar`, `colocar`, `etiquetas`, `compartir`, `borrar`, `exportar` e `importar` para las subórdenes; `estampar` para el pincel. En el Studio, la etapa **Planos** (tecla `0`). Ayuda: `/komaedit help blueprint`.
+Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `buscar`, `ver`, `cargar`, `colocar`, `etiquetas`, `compartir`, `borrar`, `exportar` e `importar` para las subórdenes; `estampar` para el pincel. En el Studio, la etapa **Planos** (tecla `5`). Ayuda: `/komaedit help blueprint`.
 
 Los planos entran y salen también como **`.litematic`** (Litematica), **estructuras `.nbt`** (las del bloque de estructura) y **`.schem`** de WorldEdit: ver [Importar y exportar: Litematica y estructuras](#importar-y-exportar-litematica-y-estructuras).
 

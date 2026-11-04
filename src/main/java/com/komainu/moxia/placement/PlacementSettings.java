@@ -72,7 +72,7 @@ public record PlacementSettings(
     /** Parámetros de {@code scatter}. */
     public record Scatter(
             String region,
-            List<Vec3> directions,
+            List<DirectionExpr> directions,
             double threshold,
             String mask,
             double density,
@@ -82,6 +82,27 @@ public record PlacementSettings(
     ) {
         static Scatter defaults() {
             return new Scatter(null, List.of(), 0.5, null, 2.0, 15, null, false);
+        }
+
+        /**
+         * Las direcciones de {@code -d} con la mirada de quien lanza la orden ({@code aim}, {@code forward},
+         * {@code left}…), normalizadas. Antes se calculaban al leer la orden sin jugador: {@code -d forward} era
+         * siempre el este.
+         */
+        public List<Vec3> directions(DirectionExpr.Context view) {
+            List<Vec3> result = new ArrayList<>(directions.size());
+            for (DirectionExpr direction : directions) {
+                result.add(direction.evaluate(view).normalized());
+            }
+            return List.copyOf(result);
+        }
+
+        Scatter bind(DirectionExpr.Context view) {
+            List<DirectionExpr> bound = new ArrayList<>(directions.size());
+            for (DirectionExpr direction : directions) {
+                bound.add(direction.bind(view));
+            }
+            return new Scatter(region, List.copyOf(bound), threshold, mask, density, iterations, cover, trim);
         }
     }
 
@@ -137,7 +158,7 @@ public record PlacementSettings(
         Scatter scatter = Scatter.defaults();
         Array array = Array.defaults();
         String region = scatter.region();
-        List<Vec3> directions = new ArrayList<>();
+        List<DirectionExpr> directions = new ArrayList<>();
         double threshold = scatter.threshold();
         String mask = null;
         double density = scatter.density();
@@ -221,8 +242,9 @@ public record PlacementSettings(
                 case "-d" -> {
                     only(kind, Kind.SCATTER, flag);
                     for (String direction : ParamText.split(value, ',')) {
-                        directions.add(DirectionExpr.parse(direction).evaluate(DirectionExpr.Context.NONE)
-                                .normalized());
+                        DirectionExpr parsed = DirectionExpr.parse(direction);
+                        parsed.evaluate(DirectionExpr.Context.NONE).normalized();
+                        directions.add(parsed);
                     }
                 }
                 case "-e" -> {
@@ -345,7 +367,7 @@ public record PlacementSettings(
         }
         return new PlacementSettings(kind, structure, primary.bind(view), secondary.bind(view), dimensions,
                 minimumScale, maximumScale, orientationAxis.bind(view), orientationAngle, flips, rotationAxis,
-                placeAir, snap, perturb, smooth, seed, randomSeed, scatter, array, copies, false);
+                placeAir, snap, perturb, smooth, seed, randomSeed, scatter.bind(view), array, copies, false);
     }
 
     public boolean needsNormal() {

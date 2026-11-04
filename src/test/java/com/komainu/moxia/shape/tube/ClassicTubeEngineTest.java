@@ -50,6 +50,38 @@ class ClassicTubeEngineTest {
                 "las figuras sin versión exacta ignoran la opción");
     }
 
+    /**
+     * {@code build "rings(t:0.9,e:3,g:-0.75)"}: con el hueco negativo el paso entre anillos salía negativo y el motor
+     * clásico se quedaba en un bucle sin fin que llenaba la memoria del servidor.
+     */
+    @Test
+    void negativeGapsNeverLoopForever() {
+        SampledPath path = straight(40);
+        for (Map<String, Double> options : List.of(Map.of("thickness", 0.9, "extrusion", 3.0, "gap", -0.75),
+                Map.of("thickness", 0.3, "extrusion", 1.0, "gap", -0.75))) {
+            Set<BlockVector3> blocks = org.junit.jupiter.api.Assertions.assertTimeoutPreemptively(
+                    java.time.Duration.ofSeconds(120),
+                    () -> ShapeGenerator.generate(path, with(PathShape.RINGS.defaults(), options)));
+            assertFalse(blocks.isEmpty(), options.toString());
+        }
+    }
+
+    /**
+     * {@code build scales stone 3}: el largo de la escama se acotaba entre 5 y el radio × 1,45, y con radios pequeños el
+     * mínimo pasaba del máximo y salía «5.0 > 4.35». Lo mismo en spiked_scales, hexarmor y tiles.
+     */
+    @Test
+    void scaledArmourWorksWithSmallRadii() {
+        SampledPath path = straight(30);
+        for (PathShape shape : List.of(PathShape.SCALES, PathShape.SPIKED_SCALES, PathShape.HEX_ARMOR,
+                PathShape.TILES)) {
+            for (int radius = 1; radius <= 4; radius++) {
+                ShapeParameters parameters = shape.defaults().withRadius(radius);
+                assertFalse(ShapeGenerator.generate(path, parameters).isEmpty(), shape.id() + " radio " + radius);
+            }
+        }
+    }
+
     @Test
     void engineAcceptsSymbolicNames() {
         assertEquals(1.0, ShapeExpression.parse("chainlink(engine:exact)").options().get("engine", -1.0));

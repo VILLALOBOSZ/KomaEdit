@@ -30,7 +30,7 @@ public final class BrushMasks {
         if (text == null) {
             return BlockFilter.FULL_BLOCK;
         }
-        if (RegionMasks.plainList(text, CLASSES)) {
+        if (simple(text)) {
             return BlockFilter.parse(text);
         }
         return new WorldEditMask(RegionMasks.worldEdit(player, text));
@@ -44,7 +44,15 @@ public final class BrushMasks {
         if (text == null) {
             return BlockFilter.FULL_BLOCK;
         }
-        return RegionMasks.plainList(text, CLASSES) ? BlockFilter.parse(text) : null;
+        return simple(text) ? BlockFilter.parse(text) : null;
+    }
+
+    /**
+     * Una lista que lee {@link BlockFilter}: ids sin propiedades. Con propiedades ({@code oak_stairs[half=top]}) va a
+     * WorldEdit: la lista las cortaba y casaba con todas las escaleras de roble sin avisar.
+     */
+    static boolean simple(String text) {
+        return RegionMasks.plainList(text, CLASSES) && text.indexOf('[') < 0;
     }
 
     /** La máscara de un clic: la ya leída del pincel ({@link #fixed}) o, si no la hay, leída ahora. */

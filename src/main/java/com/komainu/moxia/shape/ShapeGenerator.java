@@ -1026,7 +1026,7 @@ public final class ShapeGenerator {
         double angularPitch = Math.PI * 2.0 / columns;
         double tileAngularWidth = angularPitch * 1.04;
         double tileWidth = radius * tileAngularWidth;
-        double tileLength = Math.clamp(tileWidth * 1.05, 5.0, radius * 1.45);
+        double tileLength = Math.clamp(tileWidth * 1.05, Math.min(5.0, radius * 1.45), radius * 1.45);
         double rowPitch = tileLength * 0.62;
         double inclinedRise = Math.tan(Math.toRadians(SCALE_INCLINATION_DEGREES)) * tileLength;
         double relief = Math.clamp(
@@ -1080,7 +1080,7 @@ public final class ShapeGenerator {
         double angularPitch = Math.PI * 2.0 / columns;
         double tileAngularWidth = angularPitch * 0.66;
         double tileWidth = radius * tileAngularWidth;
-        double tileLength = Math.clamp(tileWidth * 1.38, 6.0, radius * 1.35);
+        double tileLength = Math.clamp(tileWidth * 1.38, Math.min(6.0, radius * 1.35), radius * 1.35);
         double rowPitch = tileLength * scaledSpacing(parameters, 0.58, 1.35);
         double relief = Math.clamp(
                 Math.max(parameters.thickness() + 2.0, tileWidth * 0.24),
@@ -1120,7 +1120,7 @@ public final class ShapeGenerator {
         int columns = surfaceColumns(radius, 6, 28);
         double angularPitch = Math.PI * 2.0 / columns;
         double panelWidth = radius * angularPitch * 0.74;
-        double panelLength = Math.clamp(panelWidth * 0.88, 4.0, radius * 0.92);
+        double panelLength = Math.clamp(panelWidth * 0.88, Math.min(4.0, radius * 0.92), radius * 0.92);
         double rowPitch = panelLength * scaledSpacing(parameters, 0.55, 1.42);
         double relief = Math.clamp(parameters.thickness() + radius * 0.08, 2.0, 6.0);
         double baseRadius = Math.max(1.0, radius - relief);
@@ -2031,7 +2031,7 @@ public final class ShapeGenerator {
         double angularPitch = Math.PI * 2.0 / columns;
         double tileAngularWidth = angularPitch * 0.92;
         double tileWidth = radius * tileAngularWidth;
-        double tileLength = Math.clamp(tileWidth * 0.96, 5.0, radius * 1.40);
+        double tileLength = Math.clamp(tileWidth * 0.96, Math.min(5.0, radius * 1.40), radius * 1.40);
         double rowPitch = tileLength * scaledSpacing(parameters, 0.58, 1.35);
         double inclinedRise = Math.tan(Math.toRadians(13.0)) * tileLength;
         double relief = Math.clamp(
@@ -2583,7 +2583,10 @@ public final class ShapeGenerator {
         return Math.clamp((int) Math.round(Math.PI * 2.0 * radius / 8.5), minimum, maximum);
     }
 
-    private static List<Double> stations(SampledPath path, double spacing) {
+    private static List<Double> stations(SampledPath path, double requested) {
+        // Un hueco negativo (rings con g:-0.75 y un grosor pequeño) daba un paso negativo o nulo: el bucle no
+        // acababa nunca y llenaba la memoria del servidor.
+        double spacing = requested >= 0.5 ? requested : 0.5;
         List<Double> distances = new ArrayList<>();
         double maximum = path.closed() ? path.length() - 1.0E-6 : path.length() + 1.0E-6;
         for (double distance = 0.0; distance <= maximum; distance += spacing) {

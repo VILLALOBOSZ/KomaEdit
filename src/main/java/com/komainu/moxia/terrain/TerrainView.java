@@ -25,6 +25,11 @@ public interface TerrainView {
     /** Si se puede escribir en esa posición (dentro de la selección o de la zona del pincel). */
     boolean writable(int x, int y, int z);
 
+    /** Si la herramienta puede cambiar ese bloque: se puede escribir ahí y no es bedrock ({@link TerrainCell#fixed}). */
+    default boolean changeable(int x, int y, int z) {
+        return writable(x, y, z) && !TerrainCell.fixed(blockId(x, y, z));
+    }
+
     /** Máscara {@code -m}: se pregunta por el bloque de superficie de cada columna. Sin máscara, todo vale. */
     default boolean maskAllows(int x, int y, int z) {
         return true;

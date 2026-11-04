@@ -115,7 +115,10 @@ public record TreeSettings(
                 OptionalLong.of(value), trunk, leaves, roots, mask, variation, preview, preset);
     }
 
-    /** Variante de un clic del pincel: otra altura, grosor e inclinación dentro de {@code amount}. */
+    /**
+     * Variante de un clic del pincel (o de cada sitio con varios puntos): otra altura, grosor e inclinación dentro de
+     * {@code amount}. El rumbo de {@code -i} se conserva; sin él sigue al azar.
+     */
     public TreeSettings vary(double amount, java.util.random.RandomGenerator random) {
         if (amount <= 0.0) {
             return this;
@@ -125,7 +128,7 @@ public record TreeSettings(
         double tilt = Math.clamp(lean + random.nextDouble() * amount * 14.0, 0.0, 75.0);
         double crown = width * (1.0 + (random.nextDouble() * 2.0 - 1.0) * amount * 0.4);
         return new TreeSettings(species, Math.clamp(varied, MIN_HEIGHT, MAX_HEIGHT), Math.clamp(thick, 0.25, 4.0),
-                branches, density, Math.clamp(crown, 0.3, 3.0), tilt, Double.NaN, curvature, seed, trunk, leaves,
+                branches, density, Math.clamp(crown, 0.3, 3.0), tilt, azimuth, curvature, seed, trunk, leaves,
                 roots, mask, variation, preview, preset);
     }
 

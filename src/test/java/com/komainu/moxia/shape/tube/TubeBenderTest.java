@@ -3,6 +3,8 @@ package com.komainu.moxia.shape.tube;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.shape.SampledPath;
 import com.sk89q.worldedit.math.BlockVector3;
+import it.unimi.dsi.fastutil.longs.Long2IntMap;
+import it.unimi.dsi.fastutil.longs.Long2IntMaps;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import org.junit.jupiter.api.Test;
 
@@ -210,6 +212,35 @@ class TubeBenderTest {
         assertTrue(middle[0] <= 2, "a un octavo del recorrido apenas ha girado: " + middle[0] + "×" + middle[1]);
         int[] last = extent(ranged, 39, 39);
         assertTrue(last[0] >= 2 && last[1] <= 1, "al final, de canto: " + last[0] + "×" + last[1]);
+    }
+
+    /**
+     * {@code bend -g -3} con un módulo de 8: las copias se solapan 3 bloques, pero el resto de dividir por el periodo
+     * (5) nunca daba las columnas 5 a 7 y el recorrido acababa con el principio de otra copia en vez del final.
+     */
+    @Test
+    void overlappingCopiesEndWithTheEndOfTheModule() {
+        TubeBender.Template module = new TubeBender.Template();
+        for (int x = 0; x < 8; x++) {
+            module.add(x, 0, 0, x == 0 ? 1 : x == 7 ? 2 : 0);
+        }
+        Long2IntOpenHashMap bent = TubeBender.bend(straight(0, 0, 0, 40, 0, 0), module,
+                new TubeBender.Settings(TubeBender.Mode.REPEAT, TubeBender.Axis.X, TubeSettings.NormalMode.CONSISTENT,
+                        -3, 0, 0.0, 0.0, 0.0), LIMIT);
+        int lastX = Integer.MIN_VALUE;
+        int lastIndex = -1;
+        int ends = 0;
+        for (Long2IntMap.Entry entry : Long2IntMaps.fastIterable(bent)) {
+            int x = PackedBlockPlan.unpackX(entry.getLongKey());
+            int index = TubeBender.paletteIndex(entry.getIntValue());
+            ends += index == 2 ? 1 : 0;
+            if (x > lastX) {
+                lastX = x;
+                lastIndex = index;
+            }
+        }
+        assertEquals(2, lastIndex, "el recorrido acaba con el final del módulo");
+        assertEquals(1, ends, "las demás copias quedan tapadas por la siguiente en el solape");
     }
 
     @Test

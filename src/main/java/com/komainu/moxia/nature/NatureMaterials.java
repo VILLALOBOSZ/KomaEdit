@@ -118,6 +118,15 @@ final class NatureMaterials {
     }
 
     /**
+     * La mancha de corteza de una celda: de 2 × 3 × 2 bloques en cualquier sitio. Con {@code y / 3} las de alrededor de
+     * y = 0 medían 5 de alto (de −2 a 2 caían en la misma).
+     */
+    static long patch(long key) {
+        return PackedBlockPlan.pack(PackedBlockPlan.unpackX(key) >> 1, Math.floorDiv(PackedBlockPlan.unpackY(key), 3),
+                PackedBlockPlan.unpackZ(key) >> 1);
+    }
+
+    /**
      * Entrada de la paleta para la celda. En la madera va por manchas (corteza con vetas), en las hojas mezclada.
      */
     private BlockState[] pick(BlockState[][] palette, long key, boolean patches) {
@@ -126,10 +135,7 @@ final class NatureMaterials {
         }
         double value;
         if (patches) {
-            int x = PackedBlockPlan.unpackX(key) >> 1;
-            int y = PackedBlockPlan.unpackY(key) / 3;
-            int z = PackedBlockPlan.unpackZ(key) >> 1;
-            value = TreeBuilder.unit(PackedBlockPlan.pack(x, y, z), seed + 11);
+            value = TreeBuilder.unit(patch(key), seed + 11);
         } else {
             value = TreeBuilder.unit(key, seed + 7);
         }

@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+### Auditoría de las herramientas: que hagan lo que dicen
+
+Repaso entero de figuras, generadores, terreno, pinceles, colocación, gizmo, planos y capacidades contra lo que dicen la ayuda, las tarjetas y la documentación, con los bordes del mundo, coordenadas negativas, giros y volteos. Cada arreglo lleva su prueba.
+
+- **Lo grave:**
+  - `build "rings(g:-0.75 …)"` (y cualquier figura por estaciones con hueco negativo) se quedaba en un bucle sin fin que llenaba la memoria del servidor.
+  - El terraformado (cráter, restar, río, cañón, erosión) vaciaba columnas por debajo de lo escribible: en un mundo plano quitaba la **bedrock** y abría agujeros al vacío. La bedrock ya no se toca.
+  - Bajar el terreno al pie de un **cortado más alto que la zona leída** (pincel de relieve, río, rampa, relieve por la trayectoria) dejaba una muesca con lo de encima colgando. Esas columnas ya no se tocan.
+  - `pintar -t` en una selección grande, o el pincel `-t` de radio 32, lanzaba `NullPointerException` sin pintar.
+  - `sello capturar` dejaba huecos donde había chunks sin cargar (y leía una columna por tick): ahora los carga.
+  - `scatter` y `array -b` tomaban el fondo del mundo (−64, el suelo del Nether) por superficie y colocaban desde dentro de la bedrock.
+  - Modelado: fundir o hundir el borde de algo que vuela (copa, puente, alero) pintaba el suelo de debajo con su material; `sculpt set shatter <patrón>` rellenaba las grietas de aire.
+  - `noisegen -t` tapaba cada lago con la siguiente entrada de la paleta.
+- **Giros y portapapeles:**
+  - `place`, `scatter`, `array`, sus pinceles y `place -p` giran raíles, bisagras, mitades de puerta y palancas de techo como el gizmo cuando el giro es de 90° o un volteo (lo que dejó el #96).
+  - El portapapeles se usa con su `//rotate` y `//flip` pendientes en `place`/`scatter`/`array Clipboard`, sus pinceles, `ezspline structure`, `bend`, kitbash y el pegado del editor, como en `paste`.
+  - `R:` (`Cl`, `Sc`, `Bp`) y `-c` giran en el sentido de `//rotate` (positivo, de este a sur), como `-revolver`, el pincel con `-p`, `pincel stamp -r` y el gizmo; antes iban al revés.
+  - `scatter -d forward|left|aim` sigue la mirada (era siempre el este).
+  - El centro del portapapeles y de la selección (`place -p` con centro, `scatter -h Active(P:false)`) ya no se mueve un bloque en coordenadas negativas.
+- **Figuras y generadores:** `roof cone|spire -h` llega a la altura pedida (salía unos 3 bloques más baja); los árboles del pincel y de varios puntos conservan el rumbo de `-i grados,rumbo`; `scales`, `spiked_scales`, `hexarmor` y `tiles` funcionan con radio 1–4; `smoothblocks` no pone bloques enteros en los huecos cuando el material no tiene losa; `ezsp 2d Strands` no gira salvo con `-t`; `bend -g` negativo acaba con el final del módulo; `noisegen heightmap|terrain` respeta esferas y otras selecciones no cúbicas; la vidriera `-b` no elige coral vivo; `roof … bamboo_stairs` usa tablones de bambú y no la planta; las imágenes en el techo ya no salen en espejo; `texture flow` acepta `-s`.
+- **Pinceles y capacidades:** las máscaras de pincel con estado (`-m oak_stairs[half=top]`) van a WorldEdit en vez de ignorar el estado, y `-m a;b` parte por el punto y coma; `pintar` sin Huella pinta el borde de las selecciones grandes con la misma fuerza; `surface … -m … -w` no convierte en piezas lo que protege la máscara; el pincel de selección con Ctrl quita también el aire; Extruir, Encoger y Arrastrar de un solo bloque ya no ofrecen un `//undo` que desharía otra cosa; Retocar no gira media cama ni medio cofre doble; `capability option flyspeed` va de ×0,5 a ×20 (`off`, la normal).
+- **Ayuda y documentación:** el ejemplo de `pincel gradient` y la ayuda de `clipboard rotate`; secciones de la vidriera, `surface` y Smoothblocks con sus limitaciones en su sitio; tecla de Planos, fotogramas `k0…k7`/`p1…p6`, figuras que no existían y `#clipboard` en las paletas.
+- Renders del antes y el después en `docs/renders/auditoria_herramientas/` (`KOMAEDIT_AUDIT_RENDER=<carpeta>` y `KOMAEDIT_PLACEMENT_RENDER`).
+- Nada probado aún dentro de Minecraft.
+
 ### Auditoría de seguridad, red y archivos
 
 Repaso entero de lo que llega del cliente (los 24 paquetes), de los archivos que no son nuestros y de lo que el servidor manda al cliente. Cada arreglo lleva su prueba.

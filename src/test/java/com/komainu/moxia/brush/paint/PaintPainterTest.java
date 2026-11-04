@@ -79,6 +79,28 @@ class PaintPainterTest {
         return sum / count;
     }
 
+    /**
+     * La memoria del trazo se vacía al pasar de su tope (600 000 bloques). Pasaba a mitad de una tanda: con
+     * {@code /komaedit pintar -t} en una selección grande, o el pincel {@code -t} de radio 32, los bloques pintados
+     * antes de vaciarla ya no estaban y saltaba un {@code NullPointerException} sin pintar nada.
+     */
+    @Test
+    void aFullMemoryInTheMiddleOfABatchStillPaintsEverything() {
+        PaintPainter.Settings settings = settings(PaintGradient.HEIGHT, 1.0, 1.0).withHeights(-20, 0);
+        FakePaintWorld world = FakePaintWorld.flat(12, PALETTE);
+        Map<Long, Integer> writes = new LinkedHashMap<>();
+        PaintPainter.Result result = PaintPainter.paint(world, List.of(dab(world, -4, 0, 8, 0), dab(world, 4, 0, 8, 0)),
+                settings, new PaintPainter.Memory(5L, 50), (x, y, z, index) -> writes.put(PaintPainter.pack(x, y, z),
+                        index), NO_CANCEL);
+        FakePaintWorld reference = FakePaintWorld.flat(12, PALETTE);
+        Map<Long, Integer> expected = new LinkedHashMap<>();
+        PaintPainter.paint(reference, List.of(dab(reference, -4, 0, 8, 0), dab(reference, 4, 0, 8, 0)), settings,
+                new PaintPainter.Memory(5L), (x, y, z, index) -> expected.put(PaintPainter.pack(x, y, z), index),
+                NO_CANCEL);
+        assertTrue(result.changed() > 100, "pinta: " + result.changed());
+        assertEquals(expected.keySet(), writes.keySet(), "los mismos bloques que sin vaciar la memoria");
+    }
+
     @Test
     void bySlopeTheFlatStaysGrassAndTheWallTurnsToStone() {
         FakePaintWorld world = FakePaintWorld.hill(32, PALETTE);

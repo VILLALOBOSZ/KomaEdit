@@ -238,6 +238,29 @@ class RoofGeneratorTest {
         }
     }
 
+    /**
+     * {@code -h} es la altura de la cúspide sobre lo alto de los muros, como en la cúpula y la pagoda. En el cono y la
+     * aguja la pendiente se calculaba con el radio que incluye el alero, y la cúspide salía unos 3 bloques más baja
+     * ({@code roof spire -lados 8 -h 12} de la documentación, sobre una torre de 8×8, llegaba a 9).
+     */
+    @Test
+    void roundRoofsReachTheRequestedHeight() {
+        for (int side : new int[]{8, 9, 12}) {
+            Footprint tower = Footprint.rectangle(0, 0, side - 1, side - 1, BASE);
+            for (String type : List.of("dome", "cone", "spire", "spire -lados 4", "spire -lados 6")) {
+                for (int overhang = 0; overhang <= 2; overhang++) {
+                    for (int height : new int[]{6, 12, 20}) {
+                        String flags = type + " -h " + height + " -a " + overhang;
+                        RoofResult result = roof(tower, flags);
+                        int reached = result.roofMaxY() - BASE;
+                        assertTrue(Math.abs(reached - height) <= 1, flags + " en " + side + "×" + side
+                                + ": la cúspide queda a " + reached);
+                    }
+                }
+            }
+        }
+    }
+
     @Test
     void dormersKeepTheAtticSealed() {
         Footprint house = Footprint.rectangle(0, 0, 16, 10, BASE);

@@ -32,6 +32,18 @@ public final class DeformOperation implements RegionOperation {
         this.profile = profile == null ? SmoothProfile.NONE : profile;
     }
 
+    /**
+     * Lo que se escribe en una celda con pieza: la pieza si el material la tiene; si no, el bloque entero donde ya
+     * había bloque, y nada en una pieza añadida en un hueco de aire. Sin losa ni escalera de ese material (cristal,
+     * hojas) un bloque entero en el hueco engordaba la forma; es lo mismo que hace {@code BatchEditService}.
+     */
+    static <T> T piece(T full, byte piece, T shaped) {
+        if (shaped != null) {
+            return shaped;
+        }
+        return SmoothPiece.isAdded(piece) ? null : full;
+    }
+
     /** Recorre la selección (su caja). */
     public static Planner inSelection(java.util.function.BiFunction<Volume, Runnable, DeformField> fields) {
         return (volume, checkCancelled) -> {
@@ -62,8 +74,9 @@ public final class DeformOperation implements RegionOperation {
                     shaped = SmoothBlockStates.shape(state.toBaseBlock(), piece, profile.materials());
                     shapes.put(key, shaped);
                 }
-                if (shaped != null) {
-                    state = shaped;
+                state = piece(state, piece, shaped);
+                if (state == null) {
+                    return;
                 }
             }
             edits.setInCapture(x, y, z, state);

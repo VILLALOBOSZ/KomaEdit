@@ -173,4 +173,11 @@ class TextureParsingTest {
         assertThrows(IllegalArgumentException.class, () -> Vectors.direction("0;0;0"));
         assertThrows(IllegalArgumentException.class, () -> Vectors.direction("sideways"));
     }
+
+    /** {@code texture flow}: el chat decía «(semilla N)» pero {@code -s N} daba «Bandera desconocida para flow». */
+    @Test
+    void flowTakesTheSeedItPrints() {
+        TextureCommandParser.Request request = TextureCommandParser.parse("flow", "#existing ##Magma -s 42", 1L);
+        assertEquals(42L, ((TextureFields.Flow) request.field()).seed());
+    }
 }

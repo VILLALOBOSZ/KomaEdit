@@ -72,6 +72,33 @@ class SurfaceAndSmoothingTest {
         }
     }
 
+    /**
+     * {@code surface rockify 3 -m grass_block -w SlabsAndStairs}: con {@code -w} las piezas salen de {@code solid},
+     * que volvía al campo en lo que la máscara protegía, y la piedra protegida acababa en losas y escaleras.
+     */
+    @Test
+    void maskedCellsStayWholeWithPieces() {
+        Volume volume = cube();
+        SurfaceOps.Settings onlyGrass = new SurfaceOps.Settings(3, SurfaceOps.Displacement.white(1), 0, 0,
+                true, false, (x, y, z) -> volume.materialAt(x, y, z) == Shapes.GRASS, false);
+        DeformField field = SurfaceOps.apply(volume, onlyGrass, Shapes.NO_CANCEL);
+        int checked = 0;
+        for (int index = 0; index < volume.material.length; index++) {
+            if (volume.material[index] != Shapes.STONE || !volume.selected[index]) {
+                continue;
+            }
+            int x = volume.x(index);
+            int y = volume.y(index);
+            int z = volume.z(index);
+            for (int corner = 0; corner < 8; corner++) {
+                assertTrue(field.solid(x + ((corner & 1) == 0 ? 0.25 : 0.75), y + ((corner & 2) == 0 ? 0.25 : 0.75),
+                        z + ((corner & 4) == 0 ? 0.25 : 0.75)), "piedra protegida entera en " + x + "," + y + "," + z);
+            }
+            checked++;
+        }
+        assertTrue(checked > 0);
+    }
+
     @Test
     void topologyFlagKeepsOnePieceWithoutHoles() {
         Volume volume = cube();

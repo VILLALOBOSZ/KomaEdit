@@ -85,6 +85,22 @@ class PaintSelectionTest {
         assertTrue(cover.capture() >= cover.vertical());
     }
 
+    /**
+     * Sin modo Huella la documentación dice «la misma fuerza» en toda la selección, pero el cuadrado difuminaba el
+     * borde de las grandes: con 200 de ancho el anillo de fuera recibía la mitad.
+     */
+    @Test
+    void wideSelectionsArePaintedAtFullStrengthToTheEdge() {
+        for (int width : new int[]{1, 2, 9, 64, 99, 100, 180, 200, 351, 1000}) {
+            PaintSelection.Cover cover = PaintSelection.Cover.of(0, 0, 0, width - 1, 40, width / 2, false,
+                    PaintFootprint.square().extent(), 0.3, 1);
+            double radius = cover.dab().radius();
+            double edge = (width - 1 + 0.5) - cover.dab().x();
+            double shape = PaintFootprint.square().shape(edge / radius, 0.0);
+            assertEquals(1.0, PaintFootprint.intensity(shape, cover.hardness()), 1.0E-9, "ancho " + width);
+        }
+    }
+
     @Test
     void theFootprintModeGoesFromTheCentreOfTheSelectionToItsEdge() {
         FakePaintWorld world = FakePaintWorld.flat(20, PALETTE);

@@ -3,9 +3,11 @@ package com.komainu.moxia.placement;
 import com.komainu.moxia.blueprint.BlueprintService;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.BlockBounds;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.gizmo.Orientation;
 import com.komainu.moxia.gradient.SavedPalettes;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.performance.AsyncEngine;
@@ -32,7 +34,6 @@ import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
-import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.function.mask.Mask;
 import com.sk89q.worldedit.function.pattern.Pattern;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -484,7 +485,7 @@ public final class PlacementService {
                     if (keep) {
                         region.shift(offset);
                     } else {
-                        BlockVector3 middle = region.getMinimumPoint().add(region.getMaximumPoint()).divide(2);
+                        BlockVector3 middle = BlockBounds.middle(region.getMinimumPoint(), region.getMaximumPoint());
                         region.shift(center.subtract(middle));
                     }
                 } catch (RegionOperationException exception) {
@@ -668,7 +669,7 @@ public final class PlacementService {
                     }
                     PlacementSettings.Scatter scatter = settings.scatter();
                     ScatterPlanner.Result result = ScatterPlanner.plan(snapshot,
-                            new ScatterPlanner.Settings(scatter.directions(), scatter.threshold(), scatter.density(),
+                            new ScatterPlanner.Settings(scatter.directions(view), scatter.threshold(), scatter.density(),
                                     scatter.iterations(), settings.seed()),
                             mask == null ? null : (x, y, z) -> mask.mask().test(BlockVector3.at(x, y, z)));
                     if (result.found() == 0) {
@@ -746,6 +747,7 @@ public final class PlacementService {
             BlockState air = BlockTypes.AIR.getDefaultState();
             Long2ObjectOpenHashMap<BlockState> rotated = new Long2ObjectOpenHashMap<>();
             AffineTransform[] transforms = new AffineTransform[placements.size()];
+            Orientation[] orientations = new Orientation[placements.size()];
             boolean patterned = false;
             int written = 0;
             for (int index = 0; index < count; index++) {
@@ -785,13 +787,10 @@ public final class PlacementService {
                         int structure = resolved.structures().indexOf(placement.structure());
                         BlockState base = resolved.palettes().get(structure).get(paletteIndex);
                         if (transforms[placementIndex] == null) {
-                            Mat3 matrix = placement.rotation();
-                            transforms[placementIndex] = new AffineTransform(
-                                    matrix.m00(), matrix.m01(), matrix.m02(), 0,
-                                    matrix.m10(), matrix.m11(), matrix.m12(), 0,
-                                    matrix.m20(), matrix.m21(), matrix.m22(), 0);
+                            transforms[placementIndex] = PlacementStates.affine(placement.rotation());
+                            orientations[placementIndex] = PlacementStates.exact(placement.rotation());
                         }
-                        state = BlockTransformExtent.transform(base, transforms[placementIndex]);
+                        state = PlacementStates.turn(base, orientations[placementIndex], transforms[placementIndex]);
                         rotated.put(cacheKey, state);
                     }
                     if (piece != SmoothPiece.FULL) {

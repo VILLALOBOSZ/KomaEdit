@@ -65,7 +65,9 @@ public final class GlassColors {
         String line;
         while ((line = reader.readLine()) != null) {
             String[] parts = line.trim().split("\\s+");
-            if (parts.length == 4 && !parts[0].startsWith("#")) {
+            // Sin el coral vivo: fuera del agua muere, se vuelve gris y el color del degradado ya no es el que se dijo.
+            boolean liveCoral = parts[0].endsWith("_coral_block") && !parts[0].startsWith("minecraft:dead_");
+            if (parts.length == 4 && !parts[0].startsWith("#") && !liveCoral) {
                 result.add(new Swatch(parts[0], Integer.parseInt(parts[1]), Integer.parseInt(parts[2]),
                         Integer.parseInt(parts[3]), 1.0));
             }

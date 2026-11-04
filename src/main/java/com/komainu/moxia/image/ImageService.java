@@ -308,7 +308,7 @@ public final class ImageService {
             int[] up;
             if (axis == 1) {
                 right = vector(facing.rotateYClockwise());
-                up = vector(facing);
+                up = ImageLayout.horizontalUp(vector(facing), player.getEyeY() < min[1] + 0.5);
             } else {
                 double plane = min[axis] + 0.5;
                 double eye = axis == 0 ? player.getX() : player.getZ();
@@ -345,7 +345,7 @@ public final class ImageService {
                 where = request.surface() ? "sobre la pared" : "delante de la pared";
             } else {
                 right = vector(facing.rotateYClockwise());
-                up = vector(facing);
+                up = ImageLayout.horizontalUp(vector(facing), side == Direction.DOWN);
                 fallback = Anchor.CENTER;
                 where = side == Direction.UP ? (request.surface() ? "en el suelo" : "sobre el suelo")
                         : (request.surface() ? "en el techo" : "bajo el techo");
@@ -361,7 +361,7 @@ public final class ImageService {
                         : Direction.DOWN, 2);
                 target = new int[]{position.getX(), position.getY(), position.getZ()};
                 right = vector(facing.rotateYClockwise());
-                up = vector(facing);
+                up = ImageLayout.horizontalUp(vector(facing), pitch < 0);
                 fallback = Anchor.CENTER;
                 where = "en horizontal, " + (pitch < 0 ? "sobre" : "bajo") + " ti";
             } else {

@@ -1,5 +1,6 @@
 package com.komainu.moxia.brush.place;
 
+import com.komainu.moxia.edit.BlockBounds;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.sk89q.worldedit.EmptyClipboardException;
@@ -76,7 +77,7 @@ public record ClipboardStructure(boolean center, int quarterTurns) implements St
                     + " bloques; máximo " + MAX_BLOCKS + ")");
         }
         BlockVector3 origin = center
-                ? region.getMinimumPoint().add(region.getMaximumPoint()).divide(2)
+                ? BlockBounds.middle(region.getMinimumPoint(), region.getMaximumPoint())
                 : clipboard.getOrigin();
         int count = (int) volume;
         int[] xs = new int[count];

@@ -183,7 +183,7 @@ public final class NoiseGenerator {
         if (!smooth) {
             int full = (int) Math.round(columnHeight);
             for (int step = 0; step < full && base + step <= ceiling; step++) {
-                if (base + step >= worldMinimum) {
+                if (base + step >= worldMinimum && !outside(volume, x, base + step, z)) {
                     out.add(x, base + step, z, layer(step, height, palette));
                 }
             }
@@ -199,7 +199,12 @@ public final class NoiseGenerator {
             while (last + 1 < palette.size() && palette.liquid()[last + 1]) {
                 last++;
             }
-            lakeTop = Math.max(solid, (int) Math.ceil((last + 1) * (double) height / palette.size()));
+            // Hasta el último escalón de la franja líquida: con ceil((last+1)·h/n) entraba el primero de la siguiente
+            // entrada y cada lago salía tapado de arena (32 de alto y cinco entradas, por ejemplo).
+            lakeTop = solid;
+            while (lakeTop < height && palette.liquid()[layer(lakeTop, height, palette)]) {
+                lakeTop++;
+            }
             fraction = 0.0;
         }
         for (int step = 0; step < lakeTop; step++) {
@@ -207,7 +212,7 @@ public final class NoiseGenerator {
             if (y > ceiling) {
                 return;
             }
-            if (y < worldMinimum) {
+            if (y < worldMinimum || outside(volume, x, y, z)) {
                 continue;
             }
             int index = layer(step, height, palette);
@@ -221,12 +226,22 @@ public final class NoiseGenerator {
         }
         int y = base + lakeTop;
         int index = layer(lakeTop, height, palette);
-        if (fraction > 0.0 && palette.snow()[index] && y <= ceiling && y >= worldMinimum) {
+        if (fraction > 0.0 && palette.snow()[index] && y <= ceiling && y >= worldMinimum
+                && !outside(volume, x, y, z)) {
             int layers = (int) Math.round(fraction * 8);
             if (layers > 0) {
                 out.add(x, y, z, index, Math.min(8, layers));
             }
         }
+    }
+
+    /**
+     * Fuera de la forma de la selección, dentro de su altura: el terreno es el mismo que en su caja y la forma lo
+     * recorta (antes una esfera se llenaba desde el suelo de la caja). Por encima de la selección no: una altura
+     * mayor que la suya puede salir por arriba, como dice la documentación.
+     */
+    static boolean outside(Volume volume, int x, int y, int z) {
+        return y >= volume.minimumY() && y <= volume.maximumY() && !volume.contains(x, y, z);
     }
 
     /** Entrada de la paleta para el escalón {@code step} de una columna de {@code height}. */
@@ -288,7 +303,7 @@ public final class NoiseGenerator {
                     if (y > ceiling) {
                         break;
                     }
-                    if (y < worldMinimum) {
+                    if (y < worldMinimum || outside(volume, x, y, z)) {
                         continue;
                     }
                     double t = (step + 0.5) / height;

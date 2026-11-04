@@ -1,10 +1,11 @@
 package com.komainu.moxia.brush.place;
 
 import com.komainu.moxia.edit.PackedBlockPlan;
+import com.komainu.moxia.gizmo.Orientation;
+import com.komainu.moxia.placement.PlacementStates;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.BrushOperation;
 import com.komainu.moxia.sculpt.WorldSnapshot;
-import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.world.block.BlockState;
@@ -39,6 +40,7 @@ public record PlacementOperation(String label, PlacementTemplate template, int[]
                 basis[3], basis[4], basis[5], 0,
                 basis[6], basis[7], basis[8], 0
         );
+        Orientation exact = PlacementStates.exact(basis);
         Map<BlockState, BlockState> rotated = new IdentityHashMap<>();
         PackedBlockPlan.Builder builder = PackedBlockPlan.builder(Math.min(template.size(), 65_536));
         int[] count = {0};
@@ -49,7 +51,7 @@ public record PlacementOperation(String label, PlacementTemplate template, int[]
             if ((count[0] & 4_095) == 0 && Thread.currentThread().isInterrupted()) {
                 throw new IllegalStateException("Cálculo cancelado");
             }
-            BlockState placed = rotated.computeIfAbsent(state, value -> BlockTransformExtent.transform(value, transform));
+            BlockState placed = rotated.computeIfAbsent(state, value -> PlacementStates.turn(value, exact, transform));
             builder.addOverride(
                     target.x() + Alignment.applyX(basis, x, y, z),
                     target.y() + Alignment.applyY(basis, x, y, z),

@@ -51,6 +51,22 @@ class NatureSettingsTest {
         assertThrows(IllegalArgumentException.class, () -> TreeSettings.parse("oak -i 90"));
     }
 
+    /**
+     * El pincel y los varios puntos varían cada árbol con {@code vary}: la inclinación cambia, pero el rumbo de
+     * {@code -i 25,90} se perdía y cada árbol caía hacia un lado al azar.
+     */
+    @Test
+    void varyingKeepsTheHeading() {
+        TreeSettings tree = TreeSettings.parse("palm 18 -i 25,90");
+        for (int seed = 0; seed < 20; seed++) {
+            TreeSettings varied = tree.vary(0.2, new SplittableRandom(seed));
+            assertEquals(90.0, varied.azimuth(), "semilla " + seed);
+            assertTrue(varied.lean() >= 25.0);
+        }
+        assertTrue(Double.isNaN(TreeSettings.parse("palm 18").vary(0.2, new SplittableRandom(1)).azimuth()),
+                "sin -i, al azar");
+    }
+
     @Test
     void presetsKeepWhatIsSavedAndTakeWhatIsTyped() {
         TreeSettings tree = TreeSettings.parse("#mio 25 -s 3", PRESETS);

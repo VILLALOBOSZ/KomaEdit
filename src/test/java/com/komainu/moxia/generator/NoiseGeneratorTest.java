@@ -1,5 +1,6 @@
 package com.komainu.moxia.generator;
 
+import com.komainu.moxia.edit.PackedBlockPlan;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -115,6 +116,85 @@ class NoiseGeneratorTest {
             if (columns.get(key)[1] > 12 && blocks.y(index) < 10) {
                 assertTrue(blocks.material(index) != 0);
             }
+        }
+    }
+
+    /**
+     * El ejemplo de la documentación ({@code water,sand,grass_block,stone,snow … -t}) en una selección de 32 de alto:
+     * cada franja mide 6,4 y el lago llegaba un escalón de más, que ya era de arena: todos los lagos salían tapados.
+     */
+    @Test
+    void smoothLakesAreNeverCoveredByTheNextEntry() {
+        PaletteTraits palette = PaletteTraits.of(List.of("water", "sand", "grass_block", "stone", "snow"));
+        Volume volume = Volume.box(0, 0, 0, 0, 31, 0);
+        for (double columnHeight = 0.5; columnHeight < 6.4; columnHeight += 0.05) {
+            GeneratedBlocks blocks = new GeneratedBlocks(64);
+            NoiseGenerator.column(0, 0, 0, columnHeight, 32, true, palette, volume, false, -64, 319, blocks);
+            int top = -1;
+            for (int index = 0; index < blocks.size(); index++) {
+                top = Math.max(top, blocks.y(index));
+            }
+            for (int index = 0; index < blocks.size(); index++) {
+                if (blocks.y(index) == top && columnHeight < 6.0) {
+                    assertEquals(0, blocks.material(index), "lo de arriba es agua con " + columnHeight);
+                }
+            }
+            // Con 6 escalones o más la orilla queda seca justo al nivel del agua, pero nunca tapada por encima.
+            assertEquals(5, top, "el lago llega a lo alto de su franja (6,4 escalones) con " + columnHeight);
+        }
+    }
+
+    /** Una esfera: heightmap y terrain empezaban en el suelo de la caja y salían por debajo de la esfera. */
+    @Test
+    void heightmapAndTerrainKeepToASphere() {
+        Volume sphere = new Volume() {
+            @Override
+            public boolean contains(int x, int y, int z) {
+                return (x - 16) * (x - 16) + (y - 16) * (y - 16) + (z - 16) * (z - 16) <= 196;
+            }
+
+            @Override
+            public int minimumX() {
+                return 2;
+            }
+
+            @Override
+            public int minimumY() {
+                return 2;
+            }
+
+            @Override
+            public int minimumZ() {
+                return 2;
+            }
+
+            @Override
+            public int maximumX() {
+                return 30;
+            }
+
+            @Override
+            public int maximumY() {
+                return 30;
+            }
+
+            @Override
+            public int maximumZ() {
+                return 30;
+            }
+        };
+        for (String args : List.of("x Perlin(F:0.05)", "x Perlin(F:0.05) -t")) {
+            GeneratedBlocks blocks = run(NoiseGenerator.Mode.HEIGHTMAP, args, STRATA, sphere, null);
+            assertTrue(blocks.size() > 500, args);
+            for (int index = 0; index < blocks.size(); index++) {
+                assertTrue(sphere.contains(blocks.x(index), blocks.y(index), blocks.z(index)),
+                        args + " fuera en " + blocks.x(index) + "," + blocks.y(index) + "," + blocks.z(index));
+            }
+        }
+        GeneratedBlocks terrain = run(NoiseGenerator.Mode.TERRAIN, "x Perlin(F:0.05) 0 0.5", STRATA, sphere, null);
+        assertTrue(terrain.size() > 500);
+        for (int index = 0; index < terrain.size(); index++) {
+            assertTrue(sphere.contains(terrain.x(index), terrain.y(index), terrain.z(index)), "terrain fuera");
         }
     }
 

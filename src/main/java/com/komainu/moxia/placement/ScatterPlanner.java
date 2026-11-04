@@ -122,7 +122,7 @@ public final class ScatterPlanner {
 
     static boolean touchesAir(RegionSnapshot snapshot, int x, int y, int z) {
         for (int[] face : FACES) {
-            if (snapshot.isAir(x + face[0], y + face[1], z + face[2])) {
+            if (open(snapshot, x + face[0], y + face[1], z + face[2])) {
                 return true;
             }
         }
@@ -131,7 +131,16 @@ public final class ScatterPlanner {
 
     /** Media de las direcciones hacia el aire cercano; en una superficie plana es su perpendicular. */
     public static Vec3 normal(RegionSnapshot snapshot, int x, int y, int z) {
-        return normal(snapshot::isAir, x, y, z);
+        return normal((ax, ay, az) -> open(snapshot, ax, ay, az), x, y, z);
+    }
+
+    /**
+     * ¿Hay aire? Por encima y por debajo de la foto no: la captura solo se recorta en vertical en los límites del
+     * mundo, y fuera de ellos no se puede poner nada. Antes la cara de abajo del suelo del mundo (la bedrock en −64,
+     * el suelo del Nether en 0) contaba como superficie y la estructura crecía desde fuera hacia dentro de ella.
+     */
+    static boolean open(RegionSnapshot snapshot, int x, int y, int z) {
+        return y >= snapshot.minimumY() && y <= snapshot.maximumY() && snapshot.isAir(x, y, z);
     }
 
     /** Si hay aire en un bloque: la normal también se puede leer del mundo sin foto (el visualizador del pincel). */
@@ -179,7 +188,7 @@ public final class ScatterPlanner {
         int[] best = null;
         double bestDot = Double.NEGATIVE_INFINITY;
         for (int[] face : FACES) {
-            if (!snapshot.isAir(x + face[0], y + face[1], z + face[2])) {
+            if (!open(snapshot, x + face[0], y + face[1], z + face[2])) {
                 continue;
             }
             double dot = face[0] * normal.x() + face[1] * normal.y() + face[2] * normal.z();

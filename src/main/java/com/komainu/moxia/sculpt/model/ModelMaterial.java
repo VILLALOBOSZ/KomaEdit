@@ -29,6 +29,18 @@ public record ModelMaterial(List<BlockState> palette, String pattern, boolean ai
         return new ModelMaterial(List.of(), pattern, false);
     }
 
+    /**
+     * El patrón de WorldEdit del plan: el de lo añadido o, en las grietas de {@code shatter}, el del relleno. Antes
+     * solo se miraba lo añadido, que en las grietas es el material de alrededor: {@code sculpt set shatter gravel}
+     * rellenaba de aire.
+     */
+    public static String planPattern(ModelMaterial added, ModelMaterial fill) {
+        if (added.pattern() != null) {
+            return added.pattern();
+        }
+        return fill.pattern() != null ? fill.pattern() : "air";
+    }
+
     /** ¿Pide el texto el material de alrededor? ({@code auto}, {@code alrededor}, {@code surrounding}). */
     public static boolean surrounding(String input) {
         return input != null && switch (input.trim().toLowerCase(Locale.ROOT)) {

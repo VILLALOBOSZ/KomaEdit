@@ -75,8 +75,9 @@ public final class CapabilityRules {
     }
 
     /** Velocidad de vuelo (en décimas de la normal) dentro del límite del servidor. */
+    /** Velocidad de vuelo en décimas: de ×0,5 (como el menú y la documentación) al tope del servidor. */
     public static int flySpeed(int requested, CapabilityLimits limits) {
-        return Math.clamp(requested, 1, limits.maxFlySpeed());
+        return Math.clamp(requested, Math.min(5, limits.maxFlySpeed()), limits.maxFlySpeed());
     }
 
     private static double distanceToSpan(double coordinate, int block) {
