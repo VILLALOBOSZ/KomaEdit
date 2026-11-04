@@ -1,5 +1,7 @@
 package com.komainu.moxia.studio.live;
 
+import com.komainu.moxia.studio.net.ButtonCommands;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -11,7 +13,6 @@ import java.util.Set;
  * Lógica pura sobre la petición.
  */
 public final class LiveRequests {
-    private static final Set<String> ROOTS = Set.of("komaedit", "ke", "moxia", "mx");
     private static final Set<String> PREVIEW_FLAGS = Set.of("-v", "--preview");
 
     private LiveRequests() {
@@ -23,7 +24,7 @@ public final class LiveRequests {
             return Optional.empty();
         }
         List<String> words = List.of(request.command().toLowerCase(Locale.ROOT).split("\\s+"));
-        if (words.isEmpty() || !ROOTS.contains(words.getFirst())) {
+        if (words.isEmpty() || !ButtonCommands.ROOTS.contains(words.getFirst())) {
             return Optional.of("la vista previa en vivo solo rehace órdenes de KomaEdit");
         }
         if (words.stream().noneMatch(PREVIEW_FLAGS::contains)) {

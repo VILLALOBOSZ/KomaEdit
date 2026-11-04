@@ -202,6 +202,28 @@ Al rehacerse en vivo, lo de antes sigue a la vista hasta que lo nuevo está list
 
 El modo y el límite se recuerdan para todas las herramientas en `studio.json` (`"preview"` y `"liveLimit"`). Quien tenía guardado «sin vista previa» de una versión anterior (era lo de serie y se guardaba igual que si se hubiera elegido) pasa una vez a en vivo; si se vuelve a apagar, se queda apagada. Sin vista previa: el sello (que va al pincel), Materiales, Bioma, Simetría y Capacidades.
 
+### Botones sin antispam
+
+Minecraft cuenta cada orden de chat para su antispam y echa a quien no es OP si manda unas diez seguidas. Antes, los botones del Studio escribían su orden en el chat, y con once clics casi seguidos (plantar árboles, añadir puntos, probar presets) un builder sin OP salía expulsado.
+
+Ahora, con un servidor de esta versión, lo que pulsas va por un paquete propio de KomaEdit y no cuenta como chat. No hay que hacer nada para usarlo:
+
+- **Qué va por él:** todos los botones del Studio (Construir, Estimar, Guardar preset, Crear barra, los mandos de Reconstruir paso a paso, las acciones de Más ajustes, la trayectoria, los planos, Color, Compartir, Confirmar y Descartar del pie…), abrir y cerrar el Studio, las pantallas de notas y vistas, y las teclas de KomaEdit: confirmar y descartar la vista previa, repetir la última operación, pegar con el gizmo y la captura de trayectoria.
+- **Hace lo mismo que la orden:** el servidor la ejecuta como si la escribieras, con tus permisos, tus cuotas y el sitio donde hiciste clic, y contesta los mismos avisos y errores. Sin un permiso, el botón recibe la misma negativa que la orden.
+- **Solo órdenes de KomaEdit.** Las de Minecraft o de otros mods no pasan por él.
+- **Freno:** muy por encima de lo que da una mano (treinta clics seguidos pasan de sobra). Si un cliente lo inunda, lo demás se descarta con un solo aviso en el chat: «Vas demasiado deprisa con los botones: espera un momento».
+
+**Sigue yendo por el chat** lo que escribes tú y los botones del propio chat ([confirmar], [corregir], [usarla]…), que se pulsan de uno en uno. Las órdenes del propio cliente (`/kegui`, `/kedisplay`) no salen del cliente y no cuentan.
+
+**Con versiones mezcladas:**
+
+- **Cliente de esta versión con un servidor anterior:** los botones van por el chat como antes, pero el cliente lleva la cuenta del antispam. Antes de que Minecraft te eche, no manda la orden y dice cuánto esperar, en el pie del Studio o en la barra de acción: «Espera 2 s: con este servidor (KomaEdit anterior) más órdenes seguidas te echarían por spam». Salen ocho seguidas y luego algo menos de una por segundo. La cuenta va con margen para un servidor algo lento (hasta 15 ticks por segundo), no ve lo que escribes a mano y no frena a los OP ni al anfitrión de la partida, a quienes Minecraft no echa.
+- **Cliente anterior con un servidor de esta versión:** todo sigue como antes, por el chat.
+
+**Rendimiento:** en el servidor no hay nada nuevo que calcular: es la misma orden de siempre, y el freno es una cuenta por jugador.
+
+**Limitaciones:** con un servidor anterior, si se frena un cambio del [pincel que sigue al Studio](#el-pincel-sigue-al-studio), no llega al pincel hasta el siguiente cambio. Por debajo de 15 ticks por segundo y pulsando sin parar, la cuenta del cliente puede quedarse corta.
+
 ### Antes de construir
 
 - El pie muestra **≈ N bloques**, el recuento del último holograma (con `…` mientras se recalcula).
@@ -210,7 +232,7 @@ El modo y el límite se recuerdan para todas las herramientas en `studio.json` (
 
 ### Herramientas
 
-La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo tenían orden. **Construir** manda exactamente la orden que se escribiría en el chat; el servidor la analiza, comprueba los permisos y la ejecuta como siempre: el Studio no repite ninguna lógica.
+La etapa **Herramientas** (`1`) lleva al Studio las herramientas que antes solo tenían orden. **Construir** manda exactamente la orden que se escribiría en el chat (por su propio paquete, sin contar para el antispam: ver [Botones sin antispam](#botones-sin-antispam)); el servidor la analiza, comprueba los permisos y la ejecuta como siempre: el Studio no repite ninguna lógica.
 
 Son veintiuna tarjetas, cada una con un nombre que dice lo que hace y un icono propio, en cinco grupos:
 
@@ -242,7 +264,7 @@ Son veintiuna tarjetas, cada una con un nombre que dice lo que hace y un icono p
 - **Decorar (displays):** al elegirla se abre el [editor de displays](#decorar-con-displays): un clic en un display lo elige y su gizmo se arrastra con el ratón; un clic en un bloque (o **Poner**) crea uno contra su cara. A la vista, el tipo (**Bloque**, **Objeto**, **Texto**), el bloque («El de la mano» si no eliges ninguno), la vista del objeto o el texto con su color, y el paso de mover. En **Más ajustes**, el fondo, la sombra y la alineación del texto, el paso de girar, los ejes del objeto (local), brillo, sombra en el suelo, distancia de vista, mirar a la cámara y contorno brillante, y los botones **Usar estos pasos**, **Aplicar ajustes**, **Duplicar**, **Agrupar**, **Desagrupar**, **Enderezar**, **Borrar** y **Cerrar el editor**.
 - **Simetría:** enseña el estado del servidor (activa o apagada, modo y centro, avisando si el centro está en otra dimensión) y lo sigue si se cambia por el chat. Modo (X, Z, XZ, Y, XY, ZY, XZY y Radial), brazos y espejo arriba ↔ abajo del radial, e interruptor **Reflejar WorldEdit y KomaEdit**. Construir activa con ese modo (o lo aplica si ya estaba activa).
 - **Seleccionar:** la herramienta del ratón en el mundo (**Caja**, **Lazo** o **Mano alzada**), la profundidad del lazo, el radio y la forma del pincel y si cuenta lo no sólido; **Aplicar** amplía, reduce, invierte, pasa a caja o quita la selección, y **Deshacer trazo** (en Más ajustes) vuelve atrás el último lazo, trazo u operación. Ver [Selección a mano: lazo y pincel](#selección-a-mano-lazo-y-pincel).
-- **Guardar barras:** arriba, el **Nombre** y **Guardar la que llevas**; debajo, **Tus barras** con sus nueve huecos (clic: usarla; clic derecho: copiar su código; la × la borra con un segundo clic), **Pegar código**, **Copiar todas**, **La que dejas se guarda sola** y **Volver a la barra de antes**; y al final **Crear una barra** desde una paleta, un degradado de color, la selección, un sello o un tejado (ver [Barras guardadas](#barras-guardadas)). En supervivencia, un aviso dice que cambiar solo mueve lo que llevas. Nada de esto va por el chat salvo Crear barra.
+- **Guardar barras:** arriba, el **Nombre** y **Guardar la que llevas**; debajo, **Tus barras** con sus nueve huecos (clic: usarla; clic derecho: copiar su código; la × la borra con un segundo clic), **Pegar código**, **Copiar todas**, **La que dejas se guarda sola** y **Volver a la barra de antes**; y al final **Crear una barra** desde una paleta, un degradado de color, la selección, un sello o un tejado (ver [Barras guardadas](#barras-guardadas)). En supervivencia, un aviso dice que cambiar solo mueve lo que llevas. Nada de esto va por el chat (Crear barra, por el paquete de los [botones](#botones-sin-antispam)).
 - **Construir a mano:** un interruptor por capacidad (como el menú de la `Z`), apagado con candado y «sin permiso» si falta el nodo, y un aviso si no estás en creativo. Distancia en el aire, alcance, bloques por capa y velocidad de vuelo se mandan al dejar de tocarlos (0,6 s), para no llenar el chat; Reemplazar familia y lo que sigue Extruir, al momento.
 - **Añadir una tarjeta** (para quien programa): una línea en el catálogo con su grupo y su icono; ver [docs/ARCHITECTURE.md](ARCHITECTURE.md#herramientas-del-studio-catálogo-y-categorías).
 
@@ -521,6 +543,7 @@ Todo el Studio (barra, etapas, contenido, pie, paleta, historial y biblioteca de
 - Lo que explica cada control es `ControlHelp` (qué hace y sus extremos, de `gui.komaedit.tools.<herramienta>.ends.<ajuste>` o `gui.komaedit.ends.<control>`); `ControlHelpTest` exige que cada ajuste de herramienta diga lo que hace sin repetir su etiqueta, que los números lleven sus extremos (salvo semilla, rumbo y altura absoluta) y que ninguna herramienta enseñe más de cuatro ajustes antes de Más ajustes (las galerías, los buscadores y el interruptor no cuentan).
 - La [bienvenida guiada](#bienvenida-guiada) es `WelcomeTour` (la máquina de estados, sin Minecraft ni dibujo: pasos, golpes, cuándo avanza, permisos y supervivencia), `WelcomeGuide` (la engancha a `StudioView`: le cuenta lo que se ve, prepara cada golpe y sostiene la vista previa) y `WelcomeBubble` (la burbuja, la tarjeta y el borde). Señala con **anclas con nombre** de `StudioUi` (`tool:tree`, `stamp:montana`, `preset:random`, `footer:build`, `ghost:place`, `top:history`, `history:undo`…), registradas enteras aunque el recorte las tape, para poder desplazar hasta ellas. `WelcomeTourTest` prueba la máquina (avanzar con la acción de verdad, saltar, sin permiso, en supervivencia y relanzar), `StudioWelcomeTest` la hace entera pulsando los controles del Studio (y comprueba que nada se manda sin vista previa ni sin Aplicar, que se guarda que ya se vio y que al cerrar vuelve lo de antes) y `StudioWelcomeMockupsTest` pinta sus maquetas; `StudioThemeContrastTest` mide sus textos en los cuatro temas.
 - El ratón en el mundo son modelos sin Minecraft que usa la pantalla: `StudioView.worldAction` (qué hace un clic en cada etapa), `BoxSelect` (la caja, sus caras y el doble clic), `PathDrag` (agarrar, meter y añadir puntos) y `BrushStroke` (el ritmo del pincel). El relevo de mallas del fantasma en vivo es `MeshHandover`.
+- Los [botones sin antispam](#botones-sin-antispam): `CommandRouter` (por dónde sale cada orden del cliente), `ChatSpamGuard` (la cuenta del antispam con un servidor anterior), `ButtonCommands` (qué lleva el paquete) y `ButtonCommandService` (el servidor). `ButtonClicksEndToEndTest` pulsa Plantar treinta veces en el Studio de verdad contra el antispam de Minecraft de prueba (`VanillaAntispam`), `ButtonCommandPermissionsTest` compara la negativa del botón con la de la orden con el árbol de órdenes real, y `ChatCommandsAuditTest` no deja escribir órdenes en el chat fuera de `ButtonCommandClient`. Ver [docs/ARCHITECTURE.md](ARCHITECTURE.md#órdenes-de-los-botones).
 - La vista previa en vivo, de punta a punta: `LivePreview` (cuándo manda el Studio), `LivePreviewRequestPayload` y `LivePreviewResultPayload` (su red), `LiveService` con `LiveQueue` (solo la última por jugador), `LiveRequests` (qué admite) y `LiveAnchors` (el sitio del Construir, a través de `StudioAim`) en el servidor, `PreviewHandover` (la vista previa de bloques que sigue a la vista mientras llega la nueva) y `StudioGhostLink` (qué fantasma es del Studio, en el cliente). `LivePreviewEndToEndTest` lo recorre entero con un servidor y un cliente de prueba (`LiveLoop`) que usan esas mismas piezas.
 
 ## Trayectorias y hologramas
@@ -5945,6 +5968,7 @@ Los operadores poseen acceso total. Para otros jugadores, KomaEdit consulta perm
 El Studio, el gizmo, los displays, las barras, las vistas y el lazo hablan con el servidor por paquetes, y un cliente modificado puede mandarlos a su antojo. El servidor comprueba cada uno como la orden equivalente:
 
 - **Permisos:** reemplazar, borrar o pintar la selección desde el editor pide `komaedit.build`, no `komaedit.select`.
+- **Botones del Studio:** su paquete solo lleva órdenes de KomaEdit, y el servidor las ejecuta como si el jugador las escribiera, con sus permisos y sus cuotas: no deja hacer nada que la orden no deje (ver [Botones sin antispam](#botones-sin-antispam)).
 - **Zonas:** la selección mágica no lee bloques de chunks sin cargar (no los carga ni los genera); el gizmo, los displays y el lazo ya miraban la distancia, el borde y lo cargado.
 - **Límites:** la pintura rápida del editor se para en `maxBlocksPerOperation` como cualquier edición y no acumula más de 1 024 pasadas en espera.
 - **Frenos por jugador** a lo que cuesta en el servidor: unas cuantas peticiones seguidas y unas pocas por segundo; a mano no se nota y las de más se ignoran sin aviso.
@@ -5952,6 +5976,7 @@ El Studio, el gizmo, los displays, las barras, las vistas y el lazo hablan con e
   - Vistas: compartir una y pedir el catálogo.
   - Pincel de selección: empezar un trazo.
   - Acciones de recetas e instancias.
+  - Órdenes de los botones del Studio y de las teclas de KomaEdit; aquí sí se avisa, una vez al cortar.
 - **Miniaturas de planos:** pedir una que ya se está leyendo o enviando no la vuelve a leer, y hay como mucho 1 024 lecturas pendientes por jugador.
 
 ### Configuración

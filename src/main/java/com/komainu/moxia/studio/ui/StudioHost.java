@@ -82,7 +82,7 @@ public interface StudioHost extends ToolsPanel.Host, ColorStage.Host {
 
     /**
      * Manda una petición de la vista previa en vivo: el Construir que la abre o un cambio después. De serie (un
-     * servidor sin la red de la vista previa en vivo) va como siempre: la orden por el chat o la figura con
+     * servidor sin la red de la vista previa en vivo) va como siempre: la orden con {@link #send} o la figura con
      * {@link #recipeAction}.
      *
      * @return si fue por la red de la vista previa en vivo (sin antispam, solo cuenta la última y con respuesta)
