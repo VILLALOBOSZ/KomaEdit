@@ -215,6 +215,8 @@ public final class PermissionNodes {
         add(BlueprintPermissions.SAVE, Pack.INTERMEDIATE, KomaPermissions.CLIPBOARD, null,
                 "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
         add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
+        add(com.komainu.moxia.terrain.StampService.CAPTURE, Pack.INTERMEDIATE, null, null,
+                "Capturar sellos de relieve del mundo y borrar o describir los propios (/komaedit sello)");
         add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
         add(KomaPermissions.REBUILD, Pack.INTERMEDIATE, build, null,
                 "/komaedit rebuild (reconstrucción animada de la selección, el portapapeles o un plano)");
@@ -279,6 +281,10 @@ public final class PermissionNodes {
         add(KomaPermissions.LIMIT_UNRESTRICTED, Pack.ADMIN, null, null, "Sin límite de bloques por operación");
         add(BlueprintPermissions.MANAGE, Pack.ADMIN, null, null,
                 "Borrar o reemplazar los planos compartidos de otros jugadores");
+        add(com.komainu.moxia.terrain.StampService.MANAGE, Pack.ADMIN, null, null,
+                "Borrar, describir o sustituir los sellos propios de otros jugadores");
+        add(com.komainu.moxia.terrain.StampService.UNLIMITED, Pack.ADMIN, null, null,
+                "Sin los topes de sellos propios (200 en el servidor y 40 por jugador)");
         add(BlueprintPermissions.UNLIMITED, Pack.ADMIN, null, null,
                 "Sin los límites de número y tamaño de planos de blueprints.json");
         add(SharePermissions.UNLIMITED, Pack.ADMIN, null, null,

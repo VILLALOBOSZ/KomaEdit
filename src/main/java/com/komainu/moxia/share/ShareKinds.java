@@ -26,6 +26,7 @@ public final class ShareKinds {
         REGISTRY.register(new SculptKind(SculptKind.Store.GAME));
         REGISTRY.register(new RecipeKind(RecipeKind.Store.GAME));
         REGISTRY.register(new BlueprintKind(BlueprintService::library, BlueprintService::importShared));
+        REGISTRY.register(new StampKind(com.komainu.moxia.terrain.TerrainService::ownStamps));
     }
 
     private ShareKinds() {

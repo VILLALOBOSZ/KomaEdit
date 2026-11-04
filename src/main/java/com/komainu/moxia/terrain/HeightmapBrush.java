@@ -65,6 +65,10 @@ public final class HeightmapBrush {
             throw new IllegalArgumentException("No se pudo leer el sello " + name + ": " + exception.getMessage(),
                     exception);
         }
+        if (StampLibrary.info(stamp.name()) == null && OwnStampIndex.get(stamp.name()) == null) {
+            // Un sello propio recién puesto en la carpeta: se lee su JSON para su altura natural y su paleta.
+            TerrainService.ownStamps().list();
+        }
         if (options.has('c')) {
             stamp = stamp.withNeutral(options.flagDecimal('c', stamp.neutral(), 0.0, 1.0, "El gris neutro"));
         }
@@ -119,20 +123,28 @@ public final class HeightmapBrush {
                 TerrainBlocks.resolve(palette), variation, seed, options.has('k'));
     }
 
-    /** La altura natural del sello para un radio: la de su receta, o la mitad del radio en un PNG propio. */
+    /**
+     * La altura natural del sello para un radio: la de su receta; en uno capturado, la de verdad (sale con las
+     * proporciones del sitio); en un PNG propio sin más, la mitad del radio.
+     */
     public static int naturalHeight(String stamp, int radius) {
-        StampInfo info = StampLibrary.info(stamp);
+        StampInfo info = info(stamp);
         return info != null ? info.naturalHeight(radius, MAX_HEIGHT)
                 : (int) Math.clamp(Math.round(radius * CUSTOM_RATIO), 1L, MAX_HEIGHT);
     }
 
-    /** La paleta escrita, o con {@code auto} (o sin escribir) la de la categoría del sello. */
+    /** La paleta escrita, o con {@code auto} (o sin escribir) la de la categoría del sello (o del capturado). */
     public static String paletteFor(String stamp, String written) {
         if (written != null && !written.isBlank() && !written.equalsIgnoreCase(AUTO_PALETTE)) {
             return written;
         }
-        StampInfo info = StampLibrary.info(stamp);
+        StampInfo info = info(stamp);
         return info == null ? SurfacePalette.DEFAULT : info.palette();
+    }
+
+    private static StampInfo info(String stamp) {
+        StampInfo info = StampLibrary.info(stamp);
+        return info != null ? info : OwnStampIndex.get(stamp);
     }
 
     private static long parseSeed(String text) {
