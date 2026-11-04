@@ -287,30 +287,33 @@ public final class TubeBender {
      * lo largo. Sin sección variable una unidad es un bloque de arco.
      */
     private record Layout(Mode mode, boolean closed, double length, double period, double templateLength,
-                          double start, double used, double scale) {
+                          double start, double used, double scale, int copies) {
         /** @param inherentRadius radio propio de la plantilla con sección variable; {@code NaN} sin ella */
         static Layout of(TubeCenterline line, double inherentRadius, Grid grid, Settings settings) {
             double templateLength = grid.lengthAlong;
-            double period = Math.max(1.0, templateLength + settings.gap());
+            // Un hueco negativo solapa las copias; como mucho hasta dejar un bloque de cada una.
+            double gap = Math.max(settings.gap(), 1.0 - templateLength);
+            double period = Math.max(1.0, templateLength + gap);
             double length = Double.isNaN(inherentRadius) ? line.length
                     : line.longitudinal[line.count - 1] * inherentRadius;
             if (settings.mode() == Mode.STRETCH) {
                 return new Layout(Mode.STRETCH, line.closed, length, period, templateLength, 0.0, length,
-                        templateLength / length);
+                        templateLength / length, 1);
             }
             if (line.closed) {
                 int copies = Math.max(1, (int) Math.round(length / period));
                 return new Layout(Mode.REPEAT, true, length, period, templateLength, 0.0, length,
-                        copies * period / length);
+                        copies * period / length, copies);
             }
-            int copies = (int) Math.floor((length + settings.gap()) / period + 1.0E-6);
+            int copies = (int) Math.floor((length + gap) / period + 1.0E-6);
             if (copies < 1) {
                 throw new IllegalArgumentException(String.format(Locale.ROOT,
                         "El recorrido (%.0f bloques) es más corto que la estructura (%d bloques); "
                                 + "alárgalo o usa el modo estirar", length, (int) templateLength));
             }
-            double used = copies * period - settings.gap();
-            return new Layout(Mode.REPEAT, false, length, period, templateLength, (length - used) * 0.5, used, 1.0);
+            double used = copies * period - gap;
+            return new Layout(Mode.REPEAT, false, length, period, templateLength, (length - used) * 0.5, used, 1.0,
+                    copies);
         }
 
         /** Coordenada a lo largo de la plantilla en [0, longitud) o {@code NaN} si cae en un hueco o fuera. */
@@ -325,7 +328,13 @@ public final class TubeBender {
             if (position < 0.0 || position >= (closed ? length * scale : used)) {
                 return Double.NaN;
             }
-            double local = position - Math.floor(position / period) * period;
+            // Con copias solapadas (hueco negativo) la última llega entera hasta su final: con el resto de dividir por
+            // el periodo, sus últimas columnas no salían y el recorrido acababa con el principio de otra copia.
+            double copy = Math.floor(position / period);
+            if (!closed) {
+                copy = Math.min(copy, copies - 1);
+            }
+            double local = position - copy * period;
             return local < templateLength ? local : Double.NaN;
         }
     }
