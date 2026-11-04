@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Auditoría del cliente y de lo que ve el jugador
+
+Repaso del Studio etapa por etapa y tarjeta por tarjeta con las maquetas reales (854×480 con GUI 2, 1080p con GUI 4, 3 y 2, en español e inglés), del dibujo en el mundo, la entrada, el ciclo de vida del cliente, los idiomas, los mensajes y la ayuda. Cada arreglo lleva su prueba.
+
+- **Nada se corta en el Studio** (lo que dejó el #97): una fila reparte su ancho entre la etiqueta y su valor (en ‹ valor ›, según la opción más larga, así las flechas no se mueven) y, si no caben juntos, pasa a **dos líneas** con la etiqueta arriba: «Nivel del agua ‹ Arriba del todo ›», «Muros y hastiales · El de los muros», «Paso al mover», «Pendiente del primer tramo», «Fuente ‹ Sans (Lato Bold) ›», «A lo largo ‹ La de cada relieve ›»… Igual las filas numéricas, las de bloque y los interruptores en compacto. El centro de la simetría, «elige un plano» y los biomas que faltan van en las líneas que haga falta; la descripción de la figura, entera. `StudioTextsFitTest` recorre cada tarjeta y etapa a los cuatro tamaños en los dos idiomas sin admitir ningún «…» (52 cortados en español y 34 en inglés antes).
+- **Redimensionar la ventana con el Studio abierto** ya no lo deja sin responder: Minecraft rehace la pantalla con cada cambio de tamaño y cada vez se mandaban la captura de trayectoria y la receta, hasta agotar el freno de los botones del servidor («Vas demasiado deprisa»). La pantalla de vistas pedía el catálogo igual.
+- **Mensajes sin textos de Java** (lo que dejó el #95): `FailureReason` es el motivo común de las órdenes y de los ~24 servicios que decían «mensaje o nombre de la clase» (la cola, la vista previa, el fantasma, los pinceles, los planos, compartir, las capacidades —«Error: NullPointerException»—, el terreno, las imágenes…). Lo inesperado: «Fallo inesperado de KomaEdit: avisa a un admin» y el detalle al registro; el límite de WorldEdit con su número y cómo subirlo.
+- **Plurales:** «Falta 1 punto», «Construir · falta 1 punto», «1 punto», «1 bloque», «1 cambio», «1 elegido» (antes «Faltan 1 puntos»…).
+- **Estados vacíos:** la Trayectoria sin puntos dice cómo se pone el primero también en compacto; la biblioteca de Planos vacía ya no pide elegir de una cuadrícula que no hay.
+- **Ayuda:** cada entrada de `/komaedit help` existe en el árbol real de órdenes (prueba nueva) y la lista de temas de la documentación tiene los 34 (faltaban siete y se repetían cinco).
+- **Idiomas:** prueba de que ninguna clave sobra y de que cada plural tiene su singular en los dos idiomas.
+- **Memoria del cliente:** las miniaturas del Studio tienen tope (las de las variaciones, por material, crecían sin límite).
+- Maquetas del antes y el después en `docs/renders/auditoria_cliente/` (`KOMAEDIT_CLIENT_AUDIT_RENDER=<carpeta>`). Las del Studio de la documentación siguen iguales píxel a píxel.
+- Nada probado aún dentro de Minecraft.
+
 ### Auditoría de las herramientas: que hagan lo que dicen
 
 Repaso entero de figuras, generadores, terreno, pinceles, colocación, gizmo, planos y capacidades contra lo que dicen la ayuda, las tarjetas y la documentación, con los bordes del mundo, coordenadas negativas, giros y volteos. Cada arreglo lleva su prueba.
