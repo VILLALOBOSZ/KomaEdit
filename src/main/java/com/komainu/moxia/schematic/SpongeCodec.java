@@ -39,6 +39,35 @@ public final class SpongeCodec {
         return body.getInt("Version");
     }
 
+    /**
+     * Los topes de un {@code sponge.3} que se queda tal cual, sin pasar por {@link #read}: el tamaño de la caja, la
+     * paleta y cuántos bloques con datos y entidades trae. Sin esto, uno con {@code DataVersion} de una versión más
+     * nueva se saltaba todos los topes (medio millón de soportes de armadura en unos pocos KiB).
+     */
+    public static void checkLimits(NbtCompound root, SchematicLimits limits) {
+        NbtCompound body = root.contains("Schematic", NbtElement.COMPOUND_TYPE) ? root.getCompound("Schematic") : root;
+        limits.checkBox(Short.toUnsignedInt(body.getShort("Width")), Short.toUnsignedInt(body.getShort("Height")),
+                Short.toUnsignedInt(body.getShort("Length")));
+        NbtCompound blocks = body.getCompound("Blocks");
+        for (NbtCompound container : List.of(blocks, body.getCompound("Biomes"))) {
+            int size = container.getCompound("Palette").getSize();
+            if (size > limits.maxPalette()) {
+                throw new IllegalArgumentException("La paleta del esquema tiene " + size + " estados; el máximo es "
+                        + limits.maxPalette());
+            }
+        }
+        int blockEntities = blocks.getList("BlockEntities", NbtElement.COMPOUND_TYPE).size();
+        if (blockEntities > limits.maxBlockEntities()) {
+            throw new IllegalArgumentException("El esquema trae " + blockEntities
+                    + " bloques con datos; el máximo es " + limits.maxBlockEntities());
+        }
+        int entities = body.getList("Entities", NbtElement.COMPOUND_TYPE).size();
+        if (entities > limits.maxEntities()) {
+            throw new IllegalArgumentException("El esquema trae " + entities + " entidades; el máximo es "
+                    + limits.maxEntities());
+        }
+    }
+
     public static SchematicData read(NbtCompound root, SchematicLimits limits, List<String> warnings) {
         NbtCompound body = root.contains("Schematic", NbtElement.COMPOUND_TYPE) ? root.getCompound("Schematic") : root;
         int version = body.getInt("Version");
