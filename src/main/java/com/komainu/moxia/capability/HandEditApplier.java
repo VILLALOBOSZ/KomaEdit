@@ -41,7 +41,19 @@ public final class HandEditApplier {
             .with(SideEffect.UPDATE, SideEffect.State.OFF);
 
     /** Resultado: bloques cambiados, posiciones descartadas y el motivo de la primera que se descartó. */
-    public record Result(int changed, int skipped, String reason) {
+    /**
+     * @param remembered si la edición quedó en el historial de WorldEdit: un solo bloque no (como colocarlo a mano),
+     *                   salvo que se pierdan los datos de un bloque con entidad
+     */
+    public record Result(int changed, int skipped, String reason, boolean remembered) {
+        public static Result of(int changed, int skipped, String reason, boolean dataLost) {
+            return new Result(changed, skipped, reason, changed > 1 || dataLost && changed > 0);
+        }
+
+        /** Lo que se dice tras el resumen: «· //undo» solo si //undo la deshace (si no, desharía otra cosa). */
+        public String undoHint() {
+            return remembered ? " · //undo" : "";
+        }
     }
 
     private HandEditApplier() {
@@ -78,7 +90,7 @@ public final class HandEditApplier {
             }
         }
         if (accepted.isEmpty()) {
-            return new Result(0, skipped, reason);
+            return Result.of(0, skipped, reason, false);
         }
 
         WorldEditService.PlayerContext context = WorldEditService.context(player);
@@ -122,13 +134,13 @@ public final class HandEditApplier {
             reason = "Has llegado al límite de bloques de WorldEdit";
         } finally {
             session.close();
-            if (session.size() > 1 || dataLost && session.size() > 0) {
+            if (Result.of(session.size(), skipped, reason, dataLost).remembered()) {
                 EditHistory.label(session, "Edición a mano");
                 context.session().remember(session);
             }
         }
         feedback(world, placed, broken);
-        return new Result(session.size(), skipped, reason);
+        return Result.of(session.size(), skipped, reason, dataLost);
     }
 
     /** Motivo para no poder poner {@code state} en {@code pos}, o {@code null} si se puede. */

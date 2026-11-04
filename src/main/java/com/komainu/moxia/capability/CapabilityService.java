@@ -322,7 +322,7 @@ public final class CapabilityService {
         HandEditApplier.Result result = HandEditApplier.apply(player, edits, updates);
         requireChanged(result);
         message(player, (shrink ? "Encogido: " : "Extruido: ") + ProgressLine.group(result.changed()) + " bloques"
-                + (layer.truncated() ? " (límite de " + limit + ")" : "") + skipped(result) + " · //undo");
+                + (layer.truncated() ? " (límite de " + limit + ")" : "") + skipped(result) + result.undoHint());
     }
 
     private static void replace(ServerPlayerEntity player, CapabilitySettings settings, BlockPos pos, Direction face,
@@ -510,7 +510,7 @@ public final class CapabilityService {
         sync(player);
         requireChanged(result);
         message(player, "Estirado: " + ProgressLine.group(result.changed()) + " bloques" + (truncated ? " (límite)" : "")
-                + skipped(result) + " · //undo");
+                + skipped(result) + result.undoHint());
     }
 
     // ---- Apoyo -------------------------------------------------------------------------------------------------

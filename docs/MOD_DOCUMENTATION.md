@@ -3344,7 +3344,7 @@ Cambiar estado, Extruir y Arrastrar actúan una vez por pulsación; Reemplazar, 
 
 - Las propiedades se recorren en este orden: `facing`, `half`, `type`, `shape`, `axis`, `rotation`, `open`, `hinge`, `face`, `attachment`, `hanging`, `north`, `east`, `south`, `west`, `up`, `down`, `layers`, `waterlogged`, `lit`, `persistent`… y después las demás del bloque.
 - La propiedad elegida se recuerda; si el bloque apuntado no la tiene, se usa la primera suya. El mensaje de la barra dice cuál es y cuántas tiene el bloque (`propiedad 2/4: half = top`).
-- No se retocan las mitades de los bloques de dos partes (`half` de puertas y plantas altas, `part` de camas): cambiar una sola dejaría la otra huérfana.
+- No se retocan las mitades de los bloques de dos partes (`half` de puertas y plantas altas, `part` de camas): cambiar una sola dejaría la otra huérfana. Por lo mismo una cama no gira (`facing`) y un cofre no cambia de `type` ni, si es doble, de dirección: la otra mitad no los sigue. Las puertas sí, porque Minecraft copia el cambio a su otra mitad.
 - Con actualizaciones, un vecino puede volver a corregir el bloque (por ejemplo la forma de una escalera); con Sin actualizaciones se queda como lo dejes.
 
 ### Reemplazar
@@ -3360,7 +3360,7 @@ Cambiar estado, Extruir y Arrastrar actúan una vez por pulsación; Reemplazar, 
 - Como mucho los bloques por capa elegidos (`/komaedit capability extrude <n>` o la rueda; 256 de serie) y nunca más que `maxLayerBlocks` del servidor. Si la capa era mayor, el mensaje lo dice.
 - Encoger quita la capa al descubierto; un bloque anegado deja su agua.
 - Una copia anegada solo queda anegada si va a parar a agua.
-- Cada extrusión o encogido es un solo `//undo`. Se copia el estado del bloque, no su contenido: un cofre o un cartel salen vacíos.
+- Cada extrusión o encogido de más de un bloque es un solo `//undo` (el de un bloque, como colocarlo a mano, no entra en el historial y el chat no lo ofrece). Se copia el estado del bloque, no su contenido: un cofre o un cartel salen vacíos.
 
 ### Arrastrar
 
@@ -3368,7 +3368,7 @@ Cambiar estado, Extruir y Arrastrar actúan una vez por pulsación; Reemplazar, 
 - El final es el punto del eje más cercano a la línea de tu mirada, así que se puede estirar hacia el aire o hacia atrás, a través del propio origen. Si miras casi a lo largo del eje se usa la distancia al bloque mirado (o tu alcance).
 - Mientras el origen está fijado se ve en amarillo y lo que ocupará el estirado, en azul. La barra recuerda «Arrastre: elige el final».
 - Las copias solo van a posiciones libres; lo que haya en medio se respeta. Como mucho `maxSmearLength` bloques de largo y `maxLayerBlocks` en total; el final tiene que estar a menos de `maxReach` de tus ojos.
-- Cada arrastre es un solo `//undo`. Cambiar de dimensión, desactivar Arrastrar o el clic izquierdo sueltan el origen.
+- Cada arrastre de más de un bloque es un solo `//undo`. Cambiar de dimensión, desactivar Arrastrar o el clic izquierdo sueltan el origen.
 
 ### Colocar en el aire y alcance largo
 

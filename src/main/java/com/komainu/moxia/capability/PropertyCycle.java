@@ -45,17 +45,33 @@ public final class PropertyCycle {
         return !(property.name().equals("part") && values.contains("head") && values.contains("foot"));
     }
 
-    /** Propiedades retocables en el orden en que se recorren. */
+    /**
+     * Propiedades retocables en el orden en que se recorren. Una cama no gira (la otra mitad no la sigue y el bloque se
+     * parte), y un cofre no cambia de tipo ni, si es doble, de dirección (quedaría medio cofre suelto).
+     */
     public static List<Property> ordered(List<Property> properties) {
+        boolean bed = false;
+        boolean doubleChest = false;
+        for (Property property : properties) {
+            Set<String> values = Set.copyOf(property.values());
+            bed |= property.name().equals("part") && values.contains("head") && values.contains("foot");
+            doubleChest |= chestType(property) && !property.value().equals("single");
+        }
         List<Property> editable = new ArrayList<>();
         for (Property property : properties) {
-            if (editable(property)) {
+            boolean facing = property.name().equals("facing");
+            if (editable(property) && !chestType(property) && !(facing && (bed || doubleChest))) {
                 editable.add(property);
             }
         }
         List<Property> sorted = new ArrayList<>(editable);
         sorted.sort(Comparator.comparingInt(property -> rank(property.name(), editable.indexOf(property))));
         return List.copyOf(sorted);
+    }
+
+    private static boolean chestType(Property property) {
+        return property.name().equals("type") && property.values().contains("left")
+                && property.values().contains("right") && property.values().contains("single");
     }
 
     /** La propiedad activa: {@code preferred} si el bloque la tiene, si no la primera; {@code null} si no hay. */
