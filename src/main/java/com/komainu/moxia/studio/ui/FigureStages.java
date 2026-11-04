@@ -264,7 +264,7 @@ public final class FigureStages {
         }
         if (nodes >= minimum) {
             ui.section(column, host.tr("gui.komaedit.path.use_with"));
-            String[] targets = {"figure", "river", "ramp", "tree", "loft"};
+            String[] targets = {"figure", "landform", "river", "ramp", "tree", "loft"};
             String[] labels = new String[targets.length];
             int[] widths = new int[targets.length];
             for (int index = 0; index < targets.length; index++) {
@@ -277,6 +277,7 @@ public final class FigureStages {
                 String target = targets[index];
                 StudioIcons.Icon icon = switch (target) {
                     case "figure" -> StudioIcons.Icon.FIGURE;
+                    case "landform" -> StudioIcons.Icon.LANDFORM;
                     case "river" -> StudioIcons.Icon.RIVER;
                     case "ramp" -> StudioIcons.Icon.RAMP;
                     case "tree" -> StudioIcons.Icon.TREE;

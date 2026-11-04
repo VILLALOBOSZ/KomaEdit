@@ -201,6 +201,12 @@ public final class PermissionNodes {
         add(build + ".terrain.ramp", Pack.INTERMEDIATE, build, null, "/komaedit terreno rampa");
         add(build + ".terrain.river", Pack.INTERMEDIATE, build, null, "/komaedit terreno rio|arroyo");
         add(build + ".terrain.canyon", Pack.INTERMEDIATE, build, null, "/komaedit terreno canon|barranco");
+        add(build + ".terrain.range", Pack.INTERMEDIATE, build, null,
+                "/komaedit terreno cordillera (una sierra a lo largo de la trayectoria)");
+        add(build + ".terrain.coast", Pack.INTERMEDIATE, build, null,
+                "/komaedit terreno costa (acantilado y mar a un lado de la trayectoria)");
+        add(build + ".terrain.valley", Pack.INTERMEDIATE, build, null,
+                "/komaedit terreno valle (valle o cañón que sigue la trayectoria)");
         add(build + ".terrain.paint", Pack.INTERMEDIATE, build, null, "/komaedit terreno pintar");
         add(build + ".roof", Pack.INTERMEDIATE, build, null, "/komaedit roof (tejados)");
         add(build + ".loft", Pack.INTERMEDIATE, build, null, "/komaedit loft (superficies entre curvas)");
@@ -209,6 +215,8 @@ public final class PermissionNodes {
         add(BlueprintPermissions.SAVE, Pack.INTERMEDIATE, KomaPermissions.CLIPBOARD, null,
                 "Guardar, etiquetar y borrar planos propios (/komaedit blueprint save|tags|delete)");
         add(BlueprintPermissions.PLACE, Pack.INTERMEDIATE, build, null, "/komaedit blueprint place");
+        add(com.komainu.moxia.terrain.StampService.CAPTURE, Pack.INTERMEDIATE, null, null,
+                "Capturar sellos de relieve del mundo y borrar o describir los propios (/komaedit sello)");
         add(BlueprintPermissions.STAMP, Pack.INTERMEDIATE, build, null, "/komaedit pincel stamp (estampar planos)");
         add(KomaPermissions.REBUILD, Pack.INTERMEDIATE, build, null,
                 "/komaedit rebuild (reconstrucción animada de la selección, el portapapeles o un plano)");
@@ -273,6 +281,10 @@ public final class PermissionNodes {
         add(KomaPermissions.LIMIT_UNRESTRICTED, Pack.ADMIN, null, null, "Sin límite de bloques por operación");
         add(BlueprintPermissions.MANAGE, Pack.ADMIN, null, null,
                 "Borrar o reemplazar los planos compartidos de otros jugadores");
+        add(com.komainu.moxia.terrain.StampService.MANAGE, Pack.ADMIN, null, null,
+                "Borrar, describir o sustituir los sellos propios de otros jugadores");
+        add(com.komainu.moxia.terrain.StampService.UNLIMITED, Pack.ADMIN, null, null,
+                "Sin los topes de sellos propios (200 en el servidor y 40 por jugador)");
         add(BlueprintPermissions.UNLIMITED, Pack.ADMIN, null, null,
                 "Sin los límites de número y tamaño de planos de blueprints.json");
         add(SharePermissions.UNLIMITED, Pack.ADMIN, null, null,

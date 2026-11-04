@@ -16,6 +16,7 @@ import com.komainu.moxia.studio.net.JobStatusPayload;
 import com.komainu.moxia.studio.tools.ToolCatalog;
 import com.komainu.moxia.studio.tools.ToolContext;
 import com.komainu.moxia.studio.tools.ui.ToolsInfo;
+import com.komainu.moxia.terrain.OwnStampFixtures;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -329,6 +330,47 @@ class StudioMockupsTest {
             driver.clickValue("Category");
         }));
         scenes.add(new Scene("854_gui2_sello_es.png", 427, 240, 2, "es_es", StudioMockupsTest::stampGallery));
+        // «Míos»: los sellos propios del servidor, con «Guardar la selección como sello» arriba.
+        scenes.add(new Scene("1080p_gui3_sello_mios_es.png", 640, 360, 3, "es_es", driver -> {
+            ownStamps(driver);
+            int[] tile = driver.where("cumbres de ana");
+            driver.mouseX = tile[0];
+            driver.mouseY = tile[1];
+        }));
+        scenes.add(new Scene("1080p_gui3_sello_capturar_es.png", 640, 360, 3, "es_es", driver -> {
+            ownStamps(driver);
+            driver.clickKey("tools:stamp_capture");
+        }));
+        scenes.add(new Scene("1080p_gui2_sello_mios_en.png", 960, 540, 2, "en_us", StudioMockupsTest::ownStamps));
+        scenes.add(new Scene("1080p_gui3_sello_mios_vacio_es.png", 640, 360, 3, "es_es", driver -> {
+            tools(driver, "stamp");
+            driver.clickValue("Categoría");
+            for (int step = 0; step < 13; step++) {
+                driver.clickValue("Categoría");
+            }
+        }));
+        // Trazar relieve: cordillera, costa y valle por la trayectoria; sin trayectoria ni selección, qué falta.
+        scenes.add(new Scene("1080p_gui3_relieve_cordillera_es.png", 640, 360, 3, "es_es", driver -> {
+            path(driver, 5);
+            tools(driver, "landform");
+        }));
+        scenes.add(new Scene("1080p_gui3_relieve_valle_es.png", 640, 360, 3, "es_es", driver -> {
+            path(driver, 4);
+            tool(driver, "landform", "landform", "valle", "section", "u");
+        }));
+        scenes.add(new Scene("1080p_gui3_relieve_sin_trayectoria_es.png", 640, 360, 3, "es_es", driver -> {
+            driver.host.context = new ToolContext(true, ToolCatalog.permissionNodes(), false, 0L, 0, false);
+            driver.host.info = ToolsInfo.EMPTY;
+            tool(driver, "landform", "landform", "costa");
+        }));
+        scenes.add(new Scene("1080p_gui2_relieve_costa_en.png", 960, 540, 2, "en_us", driver -> {
+            path(driver, 4);
+            tool(driver, "landform", "landform", "costa");
+        }));
+        scenes.add(new Scene("854_gui2_relieve_es.png", 427, 240, 2, "es_es", driver -> {
+            path(driver, 4);
+            tools(driver, "landform");
+        }));
         // 1080p con GUI 4 (la automática): compacto.
         scenes.add(new Scene("1080p_gui4_arbol_es.png", 480, 270, 4, "es_es", driver -> tools(driver, "tree")));
         scenes.add(new Scene("1080p_gui4_tejado_en.png", 480, 270, 4, "en_us", driver -> tools(driver, "roof")));
@@ -347,8 +389,16 @@ class StudioMockupsTest {
         }));
         scenes.add(new Scene("854_gui2_planos_es.png", 427, 240, 2, "es_es", StudioMockupsTest::blueprints));
         scenes.add(new Scene("854_gui2_compartir_es.png", 427, 240, 2, "es_es", StudioMockupsTest::shareOffer));
+        // KOMAEDIT_STUDIO_MOCKUPS_ONLY=sello pinta solo las maquetas cuyo archivo lo lleva (y no los temas).
+        String only = System.getenv("KOMAEDIT_STUDIO_MOCKUPS_ONLY");
         for (Scene scene : scenes) {
+            if (only != null && !only.isBlank() && !scene.file().contains(only)) {
+                continue;
+            }
             ImageIO.write(paint(scene, StudioPalette.DEFAULT, null), "png", folder.resolve(scene.file()).toFile());
+        }
+        if (only != null && !only.isBlank()) {
+            return;
         }
         try {
             themes(folder.resolve("temas"));
@@ -579,6 +629,21 @@ class StudioMockupsTest {
         driver.host.preferences.toggleStampFavorite("volcan");
         driver.host.preferences.toggleStampFavorite("pico");
         tools(driver, "stamp");
+    }
+
+    /** Tres sellos propios capturados del mundo, con «Cumbres de Ana» elegido. */
+    static void ownStamps(StudioDriver driver) {
+        FakeStudioHost.FakeOwnStamps shelf = driver.host.ownStamps;
+        var peaks = OwnStampFixtures.peaks();
+        shelf.add(OwnStampFixtures.summary(peaks, "Ana", "Las cumbres que hay encima del pueblo", 140, 140, true),
+                peaks.stamp());
+        var valley = OwnStampFixtures.valley();
+        shelf.add(OwnStampFixtures.summary(valley, "Villalobos", "El valle del norte, con sus laderas de hierba",
+                160, 120, false), valley.stamp());
+        var cove = OwnStampFixtures.cove();
+        shelf.add(OwnStampFixtures.summary(cove, "Varo", "Cala con playa, leída con el agua quitada", 120, 120,
+                false), cove.stamp());
+        tool(driver, "stamp", "custom", "cumbres_de_ana");
     }
 
     static void path(StudioDriver driver, int points) {

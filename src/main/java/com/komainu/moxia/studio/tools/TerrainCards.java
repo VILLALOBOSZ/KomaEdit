@@ -3,9 +3,12 @@ package com.komainu.moxia.studio.tools;
 import com.komainu.moxia.studio.ValueUnit;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.terrain.HeightmapBrush;
+import com.komainu.moxia.terrain.LandformPlanner;
+import com.komainu.moxia.terrain.LandformRequest;
 import com.komainu.moxia.terrain.RiverPlanner;
 import com.komainu.moxia.terrain.StampLibrary;
 import com.komainu.moxia.terrain.SurfacePalette;
+import com.komainu.moxia.terrain.stamp.StampCategory;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -332,6 +335,176 @@ public final class TerrainCards {
                 case "transition" -> format(base.transition());
                 case "level" -> format(base.level());
                 case "smoothing" -> format(base.smoothing());
+                default -> null;
+            };
+        }
+
+        @Override
+        public List<ToolProblem> validate(ToolValues values) {
+            List<ToolProblem> problems = new ArrayList<>();
+            noSpaces(values, "mask", problems);
+            return problems;
+        }
+    }
+
+    /**
+     * {@code /komaedit terreno cordillera|costa|valle}: un relieve que sigue la trayectoria. Sin trayectoria vale la
+     * selección (de pos1 a pos2), como el río; sin ninguna de las dos, el botón se apaga y dice qué falta.
+     */
+    public static final class Landform extends ToolCard {
+        public static final String RANGE_NODE = KomaPermissions.BUILD + ".terrain.range";
+        public static final String COAST_NODE = KomaPermissions.BUILD + ".terrain.coast";
+        public static final String VALLEY_NODE = KomaPermissions.BUILD + ".terrain.valley";
+        static final List<String> FAMILIES = families();
+
+        Landform() {
+            super("landform", ToolTarget.PATH_OR_SELECTION,
+                    List.of("cordillera", "sierra", "montanas", "costa", "acantilado", "litoral", "valle", "canon",
+                            "cañón", "glaciar", "trayectoria", "range", "coast", "cliff", "valley", "terreno",
+                            "terrain"),
+                    List.of(
+                            choice("landform", ToolParam.Choice.Style.BUTTONS, "cordillera", "costa", "valle"),
+                            auto("width", LandformRequest.MIN_WIDTH, LandformRequest.MAX_WIDTH, 2, 10, 0, 100)
+                                    .unit(ValueUnit.BLOCKS),
+                            when(values -> !valley(values), auto("height", 2, 160, 1, 5, 0, 40)
+                                    .unit(ValueUnit.BLOCKS)),
+                            when(Landform::valley, auto("depth", 2, 160, 1, 5, 0, 24).unit(ValueUnit.BLOCKS)),
+                            when(Landform::valley, choice("section", ToolParam.Choice.Style.BUTTONS, "v", "u",
+                                    "canon")),
+                            when(values -> values.choice("landform").equals("costa"),
+                                    choice("land_side", ToolParam.Choice.Style.CYCLE, "auto", "izquierda", "derecha")),
+                            choice("along", ToolParam.Choice.Style.CYCLE, "auto", "campana", "plano", "sube",
+                                    "baja"),
+                            number("variation", 0, 100, 5, 25, LandformRequest.DEFAULT_VARIATION)
+                                    .unit(ValueUnit.PERCENT_POINTS),
+                            seed(),
+                            new ToolParam.Choice("family", FAMILIES, LandformRequest.AUTO,
+                                    ToolParam.Choice.Style.CYCLE, "", null),
+                            choice("mode", ToolParam.Choice.Style.BUTTONS, "auto", "sumar", "maximo", "aplanar"),
+                            number("erosion", 0, 100, 5, 25, LandformRequest.DEFAULT_EROSION)
+                                    .unit(ValueUnit.PERCENT_POINTS),
+                            when(values -> !values.choice("landform").equals("cordillera"),
+                                    choice("water", ToolParam.Choice.Style.CYCLE, "auto", "agua", "seco")),
+                            landformPalette(),
+                            mask()
+                    ));
+        }
+
+        private static List<String> families() {
+            List<String> options = new ArrayList<>(List.of(LandformRequest.AUTO, LandformRequest.NONE));
+            for (StampCategory category : StampCategory.values()) {
+                options.add(category.id());
+            }
+            return List.copyOf(options);
+        }
+
+        private static ToolParam.Choice landformPalette() {
+            List<String> options = new ArrayList<>();
+            options.add(LandformRequest.AUTO);
+            options.addAll(palettes());
+            return new ToolParam.Choice("palette", options, LandformRequest.AUTO, ToolParam.Choice.Style.CYCLE, "",
+                    null);
+        }
+
+        static boolean valley(ToolValues values) {
+            return values.choice("landform").equals("valle");
+        }
+
+        static LandformPlanner.Kind kind(ToolValues values) {
+            return LandformPlanner.Kind.byId(values.choice("landform"));
+        }
+
+        @Override
+        public List<String> essentials() {
+            return List.of("landform", "width", "height", "depth", "section", "land_side");
+        }
+
+        @Override
+        public String command(ToolValues values, boolean preview) {
+            LandformPlanner.Kind kind = kind(values);
+            String heightParam = valley(values) ? "depth" : "height";
+            CommandLine line = new CommandLine("komaedit terreno " + kind.id());
+            Integer width = values.number("width");
+            Integer height = values.number(heightParam);
+            if (width != null || height != null) {
+                // Son posicionales: con la altura hay que escribir también el ancho.
+                line.word(width != null ? values.formatted("width")
+                        : Integer.toString(LandformRequest.defaultWidth(kind)));
+                line.word(height != null ? values.formatted(heightParam) : null);
+            }
+            if (!values.choice("mode").equals("auto")) {
+                line.word(values.choice("mode"));
+            }
+            if (valley(values)) {
+                line.word(values.choice("section"));
+            }
+            if (!values.choice("palette").equals(LandformRequest.AUTO)) {
+                line.word(values.choice("palette"));
+            }
+            if (!values.choice("along").equals("auto")) {
+                line.flag("-p", values.choice("along"));
+            }
+            if (values.param("land_side").visible(values) && !values.choice("land_side").equals("auto")) {
+                line.flag("-l", values.choice("land_side"));
+            }
+            if (values.param("water").visible(values) && !values.choice("water").equals("auto")) {
+                line.flag("-f", values.choice("water"));
+            }
+            if (!values.choice("family").equals(LandformRequest.AUTO)) {
+                line.flag("-h", values.choice("family"));
+            }
+            return line.changed(values, "variation", "-x")
+                    .changed(values, "erosion", "-r")
+                    .flag("-s", values.formatted("seed"))
+                    .flag("-m", values.text("mask"))
+                    .flag(previewFlag(), preview)
+                    .build();
+        }
+
+        @Override
+        public List<String> permissions(ToolValues values) {
+            return List.of(switch (kind(values)) {
+                case RANGE -> RANGE_NODE;
+                case COAST -> COAST_NODE;
+                case VALLEY -> VALLEY_NODE;
+            });
+        }
+
+        @Override
+        public java.util.Set<String> allPermissions() {
+            return new java.util.LinkedHashSet<>(List.of(RANGE_NODE, COAST_NODE, VALLEY_NODE));
+        }
+
+        @Override
+        public List<ToolAction> actions() {
+            return List.of(new ToolAction("estimate", List.of(), false, values -> command(values, false) + " -e"));
+        }
+
+        /** Sin trayectoria ni selección, un aviso corto que dice qué hacer (cabe entero en el aviso de la tarjeta). */
+        @Override
+        public ToolProblem requirement(ToolValues values, ToolContext context) {
+            ToolProblem problem = super.requirement(values, context);
+            return problem != null && problem.id().equals("no_path_or_selection")
+                    ? ToolProblem.error("no_path_landform") : problem;
+        }
+
+        @Override
+        public List<ToolPreset> presets() {
+            return List.of(
+                    ToolPreset.of("high_range", "landform", "cordillera", "width", 140, "height", 60),
+                    ToolPreset.of("foothills", "landform", "cordillera", "width", 90, "height", 18, "variation", 45,
+                            "erosion", 70),
+                    ToolPreset.of("cliffs", "landform", "costa", "width", 60, "height", 30),
+                    ToolPreset.of("glacial_valley", "landform", "valle", "section", "u", "width", 100, "depth", 32),
+                    ToolPreset.of("canyon", "landform", "valle", "section", "canon", "width", 70, "depth", 36));
+        }
+
+        @Override
+        public String autoHint(String paramId, ToolValues values) {
+            LandformPlanner.Kind kind = kind(values);
+            return switch (paramId) {
+                case "width" -> Integer.toString(LandformRequest.defaultWidth(kind));
+                case "height", "depth" -> Integer.toString(LandformRequest.defaultHeight(kind));
                 default -> null;
             };
         }

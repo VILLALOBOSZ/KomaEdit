@@ -16,7 +16,7 @@ Los workers reciben datos inmutables (`WorldSnapshot`, parámetros, trayectorias
 | `sculpt` | Brochas de volumen/altura, máscaras, perfiles y previews; `sculpt.model`: pinceles de modelado (esculpir, roca, soldar, fundir, rugosidad, grietas) como lógica pura sobre `ModelGrid` y su `ModelOperation` |
 | `clipboard` | Escalar y girar el portapapeles: Scale2x, Scale3x y RotSprite en 3D sobre `VoxelVolume` (puros) y `ClipboardScaleService`, que lee y sustituye el portapapeles de WorldEdit |
 | `noise` | Perlin, fBM, ridged y Worley deterministas |
-| `terrain` | Terraformado sobre mapas de alturas: sellos, rampas, ríos, erosión y paleta de superficie |
+| `terrain` | Terraformado sobre mapas de alturas: sellos (de serie y propios, capturados del mundo), rampas, ríos, cordilleras, costas y valles por la trayectoria, erosión y paleta de superficie |
 | `placement` | Colocación de estructuras (place, array, scatter): alineación, formas procedurales, dispersión y voxelizado |
 | `edit` | Plan compacto (comprimido por páginas y volcado a disco si es enorme: `PlanPages`, `PlanSpill`), la cola de colocación (`BatchEditService`), la colocación por ventanas (`PlacementRun`) y los avisos de límite (`EditLimits`) |
 | `performance` | Pool acotado y cancelación de cálculos (`AsyncEngine`), cuotas (`OperationPolicy`) y el trabajo en el hilo del servidor: presupuesto por tick (`TickBudget`), reparto por turnos (`FairShare`), cola (`JobQueue`, `QueueEstimate`, `RateMeter`) y su unión con Minecraft (`ServerWork`) |
@@ -280,7 +280,7 @@ Tres más siguen el bytecode compilado con ASM (`InitReach`, en las pruebas; Gra
 
 Las pruebas no dependen del PC: ni de la hora, ni del idioma del sistema, ni de los recursos que Loom descarga (los nombres de bloque en español solo se leen al pintar las maquetas), ni del orden en que corren (Gradle las reparte entre varias JVM), ni de lo rápida o cargada que esté la máquina. Lo que reparte trabajo entre ticks con un presupuesto en nanosegundos recibe el reloj (`SnapshotCaptureService.tick(online, clock)`, `WorldSnapshot.Capture.step(…, clock)`, `EditRequests.clock`) y sus pruebas le pasan uno falso que avanza lo mismo por lectura. Lo que tarda y no aporta en cada build va detrás de una variable de entorno:
 
-- **Renders y maquetas**: `KOMAEDIT_<TEMA>_RENDER=<carpeta>` (o `KOMAEDIT_RENDER_DIR`, `KOMAEDIT_STUDIO_MOCKUPS`) escribe los PNG; `KOMAEDIT_MC_JAR=<jar del cliente>` les pone las texturas del juego (`preview.TextureTiles`, común a los rasterizadores).
+- **Renders y maquetas**: `KOMAEDIT_<TEMA>_RENDER=<carpeta>` (o `KOMAEDIT_RENDER_DIR`, `KOMAEDIT_STUDIO_MOCKUPS`, con `KOMAEDIT_STUDIO_MOCKUPS_ONLY=<texto>` para pintar solo las que lo llevan en el nombre) escribe los PNG; `KOMAEDIT_MC_JAR=<jar del cliente>` les pone las texturas del juego (`preview.TextureTiles`, común a los rasterizadores).
 - **Benchmarks**: `KOMAEDIT_BRUSH_BENCHMARK=<archivo>` y `KOMAEDIT_PAINT_BENCHMARK=<archivo>` miden y escriben la tabla.
 - **Pasada entera** (`KOMAEDIT_FULL_TESTS=1`, `FullTests`): las que recorren todas las combinaciones (formas de `ezspline`, especies y semillas de árboles, los 80 PNG de sellos frente a sus recetas) pasan en cada build por una muestra fija y aquí por todo; y los límites de tiempo de reloj («figuras grandes en menos de 8 s», `FullTests.assertFasterThan`) solo se comprueban aquí: en una máquina cargada fallan sin que nada esté mal. Pásala al tocar esos generadores o su rendimiento.
 
@@ -325,6 +325,16 @@ int alcance = donde.reach();                                 // bloques desde el
 ```
 
 `relief` es puro y no guarda estado: se puede llamar desde un worker. Con `StampVariation.NONE` sale el sello tal cual; con la misma semilla y el mismo clic, la misma colocación. `StampThumbnails.argb(sello, categoría, alturaNatural, lado)` pinta también un PNG propio. `StampLibrary.render(nombre, lado, semilla)` genera una variante entera con otra semilla (erosión incluida: centenares de milisegundos, solo para herramientas que lo necesiten).
+
+### Sellos propios del mundo
+
+`terrain.StampCapture` (puro) convierte las alturas enteras de la superficie en un `HeightStamp`: suavizado que no se aparta medio bloque de lo leído (así no quedan terrazas al escalarlo), nivel base con la mediana del borde, borde fundido, cuadrado con margen neutro y gris neutro 0, 1 o 0,5 según suba, hunda o las dos cosas (con 0,5 `reliefAt` es proporcional a los dos lados). `OwnStamp` es su JSON y `OwnStamps` el almacén de la carpeta de `StampCatalog` (PNG de 16 bits primero, JSON el último, con `AtomicStorage`; dueño, topes y la huella de cada PNG). `OwnStampIndex` deja la altura natural y la paleta de los propios a `HeightmapBrush` en los dos lados: el servidor lo rellena al listar la carpeta y el cliente con el catálogo.
+
+`StampService` es el juego: un `ServerWork.Lane` lee las columnas (mapa de alturas sin hojas hacia abajo, con `TerrainCell` como el resto del terreno; un chunk sin cargar por tick), `AsyncEngine` calcula y guarda, y el catálogo (`StampPayloads.StampsCatalog`, con `OwnStampSummary`) y el relieve en pequeño de cada miniatura (`StampsPreview`, 64 × 64 en 16 bits, pedido por huella y mandado con un presupuesto por tick) van al Studio, que lo pinta con `StampThumbnails` como los de serie (`client.terrain.ClientStampCatalog`, `studio.tools.ui.OwnStampShelf`). En los paquetes es `share.StampKind`.
+
+### Relieve a lo largo de la trayectoria
+
+`terrain.LandformPlanner` (puro, sobre un `HeightField`) hace la cordillera, la costa y el valle. La forma grande nunca se estampa por trozos: es el máximo de núcleos sobre los tramos de la curva (`ridges`: altura por perfil de la distancia al tramo, con la altura y el ancho interpolados), así la cresta es continua aunque la curva se cierre. Lo que cambia a lo largo sale de ruido en una dimensión (`Track.along`, cerrado en una trayectoria cerrada) y lo que cambia de un sitio a otro, de ruido en coordenadas del mundo o del recorrido (`frames`: el punto más cercano y, si lo hay, el de otra parte lejana del recorrido, mezclados donde las dos distancias se igualan, para que el ruido no tenga costura en el lado de dentro de una curva cerrada). Los sellos solo ponen el detalle fino (el relieve menos su versión desenfocada, mezclado entre sellos con su huella como peso). Al final, `blend` con los modos del pincel, la erosión hidráulica sobre lo tocado con un margen que se funde (lo que sale del borde no se amontona) y, en la costa, el mar por zonas que no tocan nada seco más bajo; en el valle, el río de `RiverPlanner` por el eje. `LandformRequest` lee la orden (y las pruebas de la tarjeta), `TerrainJobs.landform` la lleva de la vista al escritor de bloques y `TerrainCommands` a `TerrainService` (captura, worker, estimación, vista previa y cola de siempre).
 
 ## Máscaras y patrones en WorldEdit
 

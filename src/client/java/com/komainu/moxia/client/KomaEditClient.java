@@ -68,6 +68,16 @@ public final class KomaEditClient implements ClientModInitializer {
                 BlueprintPayloads.Thumbnail.ID,
                 (payload, context) -> context.client().execute(() -> ClientBlueprintCatalog.receive(payload.chunk()))
         );
+        ClientPlayNetworking.registerGlobalReceiver(
+                com.komainu.moxia.terrain.StampPayloads.StampsCatalog.ID,
+                (payload, context) -> context.client().execute(
+                        () -> com.komainu.moxia.client.terrain.ClientStampCatalog.update(payload))
+        );
+        ClientPlayNetworking.registerGlobalReceiver(
+                com.komainu.moxia.terrain.StampPayloads.StampsPreview.ID,
+                (payload, context) -> context.client().execute(
+                        () -> com.komainu.moxia.client.terrain.ClientStampCatalog.receive(payload.preview()))
+        );
         com.komainu.moxia.client.blueprint.ClientSchematicFiles.register();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             if (client.currentScreen instanceof ProceduralStudioScreen) {
@@ -81,6 +91,7 @@ public final class KomaEditClient implements ClientModInitializer {
             ClientRecipeCatalog.clear();
             ClientInstanceCatalog.clear();
             client.execute(ClientBlueprintCatalog::clear);
+            client.execute(com.komainu.moxia.client.terrain.ClientStampCatalog::clear);
         });
         WorldRenderEvents.AFTER_ENTITIES.register(PathHologramRenderer::render);
         WorldRenderEvents.AFTER_ENTITIES.register(EditorOverlayRenderer::render);

@@ -36,6 +36,7 @@ import java.util.concurrent.CancellationException;
  */
 public final class TerrainService {
     private static volatile StampCatalog catalog;
+    private static volatile OwnStamps ownStamps;
 
     private TerrainService() {
     }
@@ -71,6 +72,22 @@ public final class TerrainService {
                                 current.directory(), exception.getMessage());
                     }
                     catalog = current;
+                }
+            }
+        }
+        return current;
+    }
+
+    /** Los sellos propios del servidor, en la misma carpeta que {@link #catalog()}. */
+    public static OwnStamps ownStamps() {
+        OwnStamps current = ownStamps;
+        if (current == null) {
+            synchronized (TerrainService.class) {
+                current = ownStamps;
+                if (current == null) {
+                    current = new OwnStamps(catalog());
+                    current.list();
+                    ownStamps = current;
                 }
             }
         }

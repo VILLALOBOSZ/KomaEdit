@@ -82,6 +82,7 @@ public final class KomaEditMod implements ModInitializer {
                 context.server().execute(() -> RecipeActionService.handle(context.player(), payload))
         );
         com.komainu.moxia.blueprint.BlueprintNetwork.register();
+        com.komainu.moxia.terrain.StampService.register();
         com.komainu.moxia.blueprint.BlueprintTransfers.register();
         com.komainu.moxia.hotbar.HotbarService.register();
         com.komainu.moxia.share.ShareService.register();

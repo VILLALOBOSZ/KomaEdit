@@ -1012,6 +1012,7 @@ public final class StudioUi {
         private Runnable reset;
         private String tooltip = "";
         private Rect tooltipAnchor;
+        private Rect tooltipAcross;
         private String brief = "";
         private String hint = "";
         private String group;
@@ -1046,10 +1047,19 @@ public final class StudioUi {
             return this;
         }
 
-        /** El tooltip sale pegado a {@code anchor} (debajo o encima) en vez de junto al ratón. */
-        public Widget tooltipBelow(Rect anchor) {
+        /**
+         * El tooltip sale pegado a {@code anchor} (debajo o encima) en vez de junto al ratón, y a lo ancho no pasa de
+         * {@code across} (la columna donde está el control): así no pisa la barra de desplazamiento.
+         */
+        public Widget tooltipBelow(Rect anchor, Rect across) {
             this.tooltipAnchor = anchor;
+            this.tooltipAcross = across;
             return this;
+        }
+
+        /** Lo que puede ocupar a lo ancho el tooltip pegado, o {@code null} para todo el panel. */
+        public Rect tooltipAcross() {
+            return tooltipAcross;
         }
 
         /** Dónde se pega el tooltip, o {@code null} para sacarlo junto al ratón. */

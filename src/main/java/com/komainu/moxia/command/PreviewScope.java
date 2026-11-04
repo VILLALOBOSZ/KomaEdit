@@ -26,7 +26,8 @@ final class PreviewScope {
             "symmetry", "simetria", "sym", "capability", "capacidad", "color", "colour", "analyze", "analizar",
             "materiales", "biome", "bioma", "gradient", "clipboard", "portapapeles", "repeat", "repetir", "jobs",
             "trabajos", "trozo", "part", "debug", "debugprint", "rebuild", "reconstruir", "share", "compartir",
-            "display", "displays", "decorar", "vista", "vistas", "view", "views", "nota", "notas", "note", "notes");
+            "display", "displays", "decorar", "vista", "vistas", "view", "views", "nota", "notas", "note", "notes",
+            "sello");
     private static final Set<String> PALETTE = Set.of("palette", "paleta");
     /** De las paletas solo editan el mundo estas. */
     private static final Set<String> PALETTE_EDITS = Set.of("swap", "place");

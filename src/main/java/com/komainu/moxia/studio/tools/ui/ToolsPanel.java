@@ -32,7 +32,9 @@ import com.komainu.moxia.studio.ui.NumberView;
 import com.komainu.moxia.studio.ui.StudioIcons;
 import com.komainu.moxia.studio.ui.StudioImage;
 import com.komainu.moxia.studio.ui.StudioUi;
+import com.komainu.moxia.terrain.OwnStampSummary;
 import com.komainu.moxia.terrain.StampLibrary;
+import com.komainu.moxia.terrain.StampService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -104,6 +106,11 @@ public final class ToolsPanel {
 
         /** Donde el jugador hizo clic en el mundo con el Studio abierto ({x, y, z} del bloque), o {@code null}. */
         default int[] clickedSpot() {
+            return null;
+        }
+
+        /** Los sellos propios del servidor (la pestaña «Míos»), o {@code null} si el servidor no los manda. */
+        default OwnStampShelf ownStamps() {
             return null;
         }
 
@@ -186,6 +193,10 @@ public final class ToolsPanel {
     private String stampSearch = "";
     private String stampTab;
     private ToolAction namingAction;
+    /** Escribiendo el nombre del sello que se va a capturar (en «Míos»). */
+    private boolean capturingStamp;
+    /** El sello que se mandó capturar: al llegar al catálogo se elige. */
+    private String pendingCapture;
     private long lastRequest = Long.MIN_VALUE / 2;
     private long pendingSince;
     private long dirtySince = -1;
@@ -843,7 +854,8 @@ public final class ToolsPanel {
      */
     private void drawProblem(StudioUi ui, Column column, Host host, ToolProblem problem) {
         String text = problemText(host, problem);
-        boolean path = problem.id().equals("no_path_or_selection") || problem.id().equals("loft_points");
+        boolean path = problem.id().equals("no_path_or_selection") || problem.id().equals("no_path_landform")
+                || problem.id().equals("loft_points");
         String action = path ? host.tr("gui.komaedit.tools.problem.go_path") : "";
         int actionWidth = action.isEmpty() ? 0 : ui.width(action) + 12;
         List<String> lines = ui.wrap(text, column.width() - 16 - actionWidth);
@@ -1197,21 +1209,33 @@ public final class ToolsPanel {
     }
 
     /**
-     * La galería de sellos de relieve: un buscador, la pestaña de categoría (o las favoritas) y sus miniaturas en
-     * color, con una estrella para marcar favoritos. Escribiendo se buscan en todas las categorías a la vez. En
-     * compacto no hay sitio para el buscador ni para la fila de la categoría: el título dice la categoría y sus ‹ ›
-     * pasan de página y, al acabar una categoría, a la siguiente.
+     * La galería de sellos de relieve: un buscador, la pestaña (las favoritas, «Míos» o una categoría) y sus
+     * miniaturas en color, con una estrella para marcar favoritos. Escribiendo se buscan en todas a la vez. «Míos» son
+     * los sellos propios del servidor; arriba lleva «Guardar la selección como sello». En compacto no hay sitio para
+     * el buscador ni para la fila de la categoría: el título dice la pestaña y sus ‹ › pasan de página y, al acabar
+     * una, a la siguiente.
      */
     private void drawStampGallery(StudioUi ui, Column column, Host host, ToolCard card, ToolParam.Choice choice,
                                   boolean compact) {
         String value = current().choice(choice.id());
-        boolean custom = !current().text("custom").isBlank();
+        String customText = current().text("custom").strip();
+        boolean custom = !customText.isEmpty();
         StudioPreferences preferences = host.preferences();
+        OwnStampShelf shelf = host.ownStamps();
+        if (shelf != null) {
+            shelf.refresh(false);
+        }
+        List<OwnStampSummary> own = shelf == null ? List.of() : shelf.list();
+        adoptCaptured(own);
+        customText = current().text("custom").strip();
+        custom = !customText.isEmpty();
+        boolean ownChosen = custom && StampGallery.isOwn(customText, own);
         List<String> favorites = preferences.stampFavorites();
-        List<String> tabs = StampGallery.tabs(favorites);
+        List<String> tabs = StampGallery.tabs(favorites, own);
         java.util.function.Function<String, String> text = name -> host.tr(choice.optionKey(name)) + " "
                 + host.tr(choice.optionKey(name) + ".help");
-        String tab = stampTab != null && tabs.contains(stampTab) ? stampTab : StampGallery.tabOf(value);
+        String tab = stampTab != null && tabs.contains(stampTab) ? stampTab
+                : StampGallery.tabOf(value, customText, own);
         boolean searching = !compact && !stampSearch.isEmpty();
         List<String> shown;
         GalleryLayout layout;
@@ -1219,20 +1243,25 @@ public final class ToolsPanel {
         int pageCount;
         String pageKey;
         if (compact) {
-            // Una sola fila: cada página es de una categoría y las páginas van seguidas de una a otra.
+            // Una sola fila: cada página es de una pestaña y las páginas van seguidas de una a otra.
             List<String> every = new ArrayList<>();
-            tabs.forEach(each -> every.addAll(StampGallery.visible("", each, favorites, text)));
-            layout = galleryLayout(ui, every.stream().map(name -> host.tr(choice.optionKey(name))).toList(),
+            tabs.forEach(each -> every.addAll(StampGallery.visible("", each, favorites, text, own)));
+            layout = galleryLayout(ui, every.stream().map(name -> stampLabel(host, choice, name, own)).toList(),
                     column.width());
             perPage = layout.perRow();
             List<List<String>> chunks = new ArrayList<>();
             List<String> chunkTabs = new ArrayList<>();
             int home = 0;
+            String chosenTab = StampGallery.tabOf(value, customText, own);
+            String chosen = ownChosen ? customText : value;
             for (String each : tabs) {
-                List<String> names = StampGallery.visible("", each, favorites, text);
+                List<String> names = StampGallery.visible("", each, favorites, text, own);
+                if (names.isEmpty()) {
+                    continue;
+                }
                 for (int from = 0; from < names.size(); from += perPage) {
                     List<String> chunk = names.subList(from, Math.min(names.size(), from + perPage));
-                    if (each.equals(StampGallery.tabOf(value)) && chunk.contains(value)) {
+                    if (each.equals(chosenTab) && chunk.contains(chosen)) {
                         home = chunks.size();
                     }
                     chunks.add(chunk);
@@ -1246,8 +1275,8 @@ public final class ToolsPanel {
             shown = chunks.get(at);
             tab = chunkTabs.get(at);
         } else {
-            shown = StampGallery.visible(stampSearch, tab, favorites, text);
-            List<String> labels = shown.stream().map(name -> host.tr(choice.optionKey(name))).toList();
+            shown = StampGallery.visible(stampSearch, tab, favorites, text, own);
+            List<String> labels = shown.stream().map(name -> stampLabel(host, choice, name, own)).toList();
             layout = galleryLayout(ui, labels.isEmpty() ? List.of("") : labels, column.width());
             perPage = layout.perRow() * Math.clamp(card.galleryRows(choice.id()), 1, galleryRows);
             pageCount = Math.max(1, (shown.size() + perPage - 1) / perPage);
@@ -1257,32 +1286,36 @@ public final class ToolsPanel {
         int tile = layout.tile();
         int tileHeight = (compact ? COMPACT_TILE_PICTURE : TILE_PICTURE) + layout.lines() * StudioUi.TILE_LINE + 6;
         List<String> page = shown;
-        int pageIndex = Math.clamp(pages.computeIfAbsent(pageKey, ignored -> Math.max(0, page.indexOf(value))
+        String chosenName = ownChosen ? customText : value;
+        int pageIndex = Math.clamp(pages.computeIfAbsent(pageKey, ignored -> Math.max(0, page.indexOf(chosenName))
                 / perPage), 0, pageCount - 1);
         String tabLabel = tab.equals(StampGallery.FAVORITES) ? host.tr("gui.komaedit.tools.stamp.favorites")
+                : tab.equals(StampGallery.MINE) ? host.tr("gui.komaedit.tools.stamp.mine")
                 : host.tr("gui.komaedit.tools.stamp.category." + tab);
 
         if (!compact) {
             column.section();
         }
         Rect title = column.next(10);
-        if (!current().isDefault(choice.id())) {
+        if (!current().isDefault(choice.id()) || custom) {
             ui.fill(new Rect(title.x() - 5, title.y() + 4, 2, 2), ACCENT);
         }
         String caption = (compact ? tabLabel : label(host, choice)).toUpperCase(Locale.ROOT);
         int arrows = pageCount > 1 ? 36 : 0;
-        int starWidth = custom ? 0 : 14;
+        boolean starred = !custom || ownChosen;
+        int starWidth = starred ? 14 : 0;
         ui.label(caption, title.x(), title.y() + 1, title.width() - arrows - starWidth, MUTED);
         int nameX = title.x() + ui.width(caption) + 6;
-        String chosenName = custom ? current().text("custom").strip() : host.tr(choice.optionKey(value));
-        ui.label(chosenName, nameX, title.y() + 1, title.right() - arrows - starWidth - nameX, TEXT);
-        if (!custom) {
-            boolean favorite = preferences.isStampFavorite(value);
+        String titleName = custom ? stampLabel(host, choice, customText, own) : host.tr(choice.optionKey(value));
+        ui.label(titleName, nameX, title.y() + 1, title.right() - arrows - starWidth - nameX, TEXT);
+        if (starred) {
+            String starOf = ownChosen ? customText : value;
+            boolean favorite = preferences.isStampFavorite(starOf);
             Rect star = new Rect(title.right() - arrows - 14, title.y() - 2, 13, 13);
             ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x(), star.y(),
                     favorite || ui.hovered(star) ? FAVORITE : MUTED);
             ui.register(star).tooltip(host.tr("gui.komaedit.tools.stamp.favorite"))
-                    .onClick(() -> toggleStampFavorite(value, host, choice));
+                    .onClick(() -> toggleStampFavorite(starOf, host, choice, own));
         }
         if (pageCount > 1) {
             Rect previous = new Rect(title.right() - 34, title.y() - 2, 16, 13);
@@ -1316,11 +1349,17 @@ public final class ToolsPanel {
                         .hint(host.tr("gui.komaedit.hint.cycle"))
                         .group("tools:stamp:category");
             }
+            if (!searching && tab.equals(StampGallery.MINE)) {
+                drawCaptureRow(ui, column, host, shelf, own);
+            }
         }
         if (shown.isEmpty()) {
             Rect empty = column.next(tileHeight);
-            ui.label(host.tr(searching ? "gui.komaedit.tools.stamp.no_results"
-                    : "gui.komaedit.tools.stamp.no_favorites"), empty.x() + 2, empty.y() + 4, empty.width() - 4, MUTED);
+            String message = searching ? "gui.komaedit.tools.stamp.no_results"
+                    : tab.equals(StampGallery.MINE) ? (shelf != null && !shelf.received()
+                    ? "gui.komaedit.tools.stamp.mine.loading" : "gui.komaedit.tools.stamp.mine.empty")
+                    : "gui.komaedit.tools.stamp.no_favorites";
+            ui.paragraph(new Column(empty.x() + 2, empty.y() + 4, empty.width() - 4), host.tr(message), MUTED, 3);
             return;
         }
         int start = compact ? 0 : pageIndex * perPage;
@@ -1334,40 +1373,138 @@ public final class ToolsPanel {
                 if (!ui.visible(cell)) {
                     continue;
                 }
-                boolean chosen = option.equals(value) && !custom;
+                OwnStampSummary mine = StampGallery.isOwn(option, own) ? findOwn(own, option) : null;
+                boolean chosen = mine != null ? ownChosen && customText.equals(option)
+                        : option.equals(value) && !custom;
                 boolean favorite = preferences.isStampFavorite(option);
-                StudioImage image = ChoiceThumbnails.get(card.id(), choice.id(), option);
-                String label = host.tr(choice.optionKey(option));
+                StudioImage image = mine != null ? shelf.thumbnail(mine)
+                        : ChoiceThumbnails.get(card.id(), choice.id(), option);
+                String label = stampLabel(host, choice, option, own);
                 List<String> lines = ui.nameLines(label, tile - 4, layout.lines());
                 // Nombre y una frase, debajo de la miniatura: qué hacen los clics lo dice el pie.
-                String help = label + "\n" + host.tr(choice.optionKey(option) + ".help");
+                String help = mine != null ? ownHelp(host, mine) : label + "\n"
+                        + host.tr(choice.optionKey(option) + ".help");
                 ui.tile(cell, image, icon(card), lines != null ? lines : List.of(ui.fit(label, tile - 4)), chosen)
                         .tooltip(help)
-                        .tooltipBelow(cell)
+                        .tooltipBelow(cell, row)
                         .hint(host.tr("gui.komaedit.tools.stamp.tile.help"))
                         .group("tools:" + choice.id())
-                        .onReset(() -> toggleStampFavorite(option, host, choice))
-                        .onClick(() -> set(current().with(choice.id(), option).with("custom", "")));
+                        .onReset(() -> toggleStampFavorite(option, host, choice, own))
+                        .onClick(() -> set(mine != null ? current().with("custom", option)
+                                : current().with(choice.id(), option).with("custom", "")));
                 if (favorite || ui.hovered(cell)) {
                     Rect star = new Rect(cell.right() - 12, cell.y() + 1, 11, 11);
                     ui.icon(favorite ? StudioIcons.Icon.STAR : StudioIcons.Icon.STAR_EMPTY, star.x() - 1,
                             star.y() - 1, favorite || ui.hovered(star) ? FAVORITE : MUTED);
                     ui.register(star).tooltip(host.tr("gui.komaedit.tools.stamp.favorite") + "\n" + label)
-                            .tooltipBelow(cell)
+                            .tooltipBelow(cell, row)
                             .hint(host.tr("gui.komaedit.tools.stamp.tile.help"))
-                            .onClick(() -> toggleStampFavorite(option, host, choice));
+                            .onClick(() -> toggleStampFavorite(option, host, choice, own));
                 }
             }
         }
     }
 
-    private void toggleStampFavorite(String stamp, Host host, ToolParam.Choice choice) {
+    /**
+     * Arriba de «Míos»: «Guardar la selección como sello» y, al pulsarlo, el nombre (con uno libre ya escrito) y
+     * «Guardar». Apagado sin selección o sin permiso, con el porqué en la ayuda.
+     */
+    private void drawCaptureRow(StudioUi ui, Column column, Host host, OwnStampShelf shelf,
+                                List<OwnStampSummary> own) {
+        boolean allowed = shelf != null && shelf.canCapture();
+        boolean selection = host.info().hasSelection();
+        String why = !allowed ? host.tr("gui.komaedit.tools.problem.permission", StampService.CAPTURE)
+                : !selection ? host.tr("gui.komaedit.tools.stamp.capture.no_selection") : null;
+        Rect button = column.next(SMALL_ROW);
+        ui.iconButton(button, StudioIcons.Icon.SELECTION, host.tr("gui.komaedit.tools.stamp.capture"),
+                        why != null ? StudioUi.Tone.DISABLED : capturingStamp ? StudioUi.Tone.SELECTED
+                                : StudioUi.Tone.PRIMARY)
+                .key("tools:stamp_capture")
+                .tooltip(host.tr("gui.komaedit.tools.stamp.capture") + "\n"
+                        + host.tr("gui.komaedit.tools.stamp.capture.help") + (why == null ? "" : "\n" + why))
+                .onClick(() -> {
+                    if (why != null) {
+                        host.status(why);
+                        return;
+                    }
+                    capturingStamp = !capturingStamp;
+                    namingAction = null;
+                    field = capturingStamp ? Field.PRESET_NAME : Field.NONE;
+                    input = capturingStamp ? freeStampName(own) : "";
+                });
+        if (!capturingStamp) {
+            return;
+        }
+        Rect row = column.next(18);
+        Rect save = row.rightPart(70);
+        Rect name = row.withoutRight(70, Column.GAP);
+        boolean editing = field == Field.PRESET_NAME;
+        ui.field(name, editing ? input : "", host.tr("gui.komaedit.tools.stamp.capture.name"), editing,
+                        !input.isEmpty() && !validName(input))
+                .key("tools:stamp_capture_name")
+                .onClick(() -> field = Field.PRESET_NAME);
+        ui.button(save, host.tr("gui.komaedit.save"), validName(input) ? StudioUi.Tone.PRIMARY
+                : StudioUi.Tone.DISABLED).onClick(() -> saveNamed(host));
+    }
+
+    /** {@code mio_1}, {@code mio_2}…: el primero que no tenga ya un sello propio. */
+    static String freeStampName(List<OwnStampSummary> own) {
+        for (int number = 1; number < 10_000; number++) {
+            String name = "mio_" + number;
+            if (!StampGallery.isOwn(name, own)) {
+                return name;
+            }
+        }
+        return "mio";
+    }
+
+    /** Cuando llega el sello que se acaba de capturar, queda elegido y se ve en «Míos». */
+    private void adoptCaptured(List<OwnStampSummary> own) {
+        if (pendingCapture != null && StampGallery.isOwn(pendingCapture, own)) {
+            set(current().with("custom", pendingCapture));
+            stampTab = StampGallery.MINE;
+            pages.remove("stamp:" + StampGallery.MINE);
+            pendingCapture = null;
+        }
+    }
+
+    private static OwnStampSummary findOwn(List<OwnStampSummary> own, String name) {
+        for (OwnStampSummary stamp : own) {
+            if (stamp.name().equals(name)) {
+                return stamp;
+            }
+        }
+        return null;
+    }
+
+    /** El nombre de un sello: el traducido si es de serie; el propio, con espacios. */
+    private static String stampLabel(Host host, ToolParam.Choice choice, String name, List<OwnStampSummary> own) {
+        OwnStampSummary mine = findOwn(own, name);
+        if (mine != null) {
+            return mine.label();
+        }
+        return StampLibrary.has(name) ? host.tr(choice.optionKey(name)) : name;
+    }
+
+    /** La ayuda de un sello propio: su descripción, quién lo hizo y cuánto mide. */
+    private static String ownHelp(Host host, OwnStampSummary stamp) {
+        StringBuilder help = new StringBuilder(stamp.label());
+        if (!stamp.description().isEmpty()) {
+            help.append('\n').append(stamp.description());
+        }
+        help.append('\n').append(stamp.author().isEmpty() ? host.tr("gui.komaedit.tools.stamp.mine.server")
+                : host.tr("gui.komaedit.tools.stamp.mine.by", stamp.author()));
+        help.append('\n').append(host.tr("gui.komaedit.tools.stamp.mine.size", stamp.sizeX(), stamp.sizeZ(),
+                Math.round(stamp.heightRatio() * Math.max(stamp.sizeX(), stamp.sizeZ()) / 2.0)));
+        return help.toString();
+    }
+
+    private void toggleStampFavorite(String stamp, Host host, ToolParam.Choice choice, List<OwnStampSummary> own) {
         boolean added = host.preferences().toggleStampFavorite(stamp);
         host.savePreferences();
         host.status(host.tr(added ? "gui.komaedit.favorite.added" : "gui.komaedit.favorite.removed",
-                host.tr(choice.optionKey(stamp))));
+                stampLabel(host, choice, stamp, own)));
     }
-
     /** Reparto de una galería: cuántas miniaturas por fila, su ancho, cuántas líneas de nombre y cada nombre. */
     record GalleryLayout(int perRow, int tile, int lines, List<List<String>> names) {
     }
@@ -1624,6 +1761,19 @@ public final class ToolsPanel {
     }
 
     private void saveNamed(Host host) {
+        if (capturingStamp) {
+            if (!validName(input)) {
+                host.status(host.tr("gui.komaedit.tools.status.bad_name"));
+                return;
+            }
+            send(host, "komaedit sello capturar " + input);
+            host.status(host.tr("gui.komaedit.tools.stamp.capture.sent", input));
+            pendingCapture = input;
+            capturingStamp = false;
+            field = Field.NONE;
+            input = "";
+            return;
+        }
         if (namingAction == null || !validName(input)) {
             host.status(host.tr("gui.komaedit.tools.status.bad_name"));
             return;
@@ -1894,7 +2044,9 @@ public final class ToolsPanel {
         String custom = values.text("custom").strip();
         ToolParam.Choice stamp = (ToolParam.Choice) values.param("stamp");
         ToolParam.Choice mode = (ToolParam.Choice) values.param("mode");
-        String name = custom.isEmpty() ? host.tr(stamp.optionKey(values.choice("stamp"))) : custom;
+        List<OwnStampSummary> own = host.ownStamps() == null ? List.of() : host.ownStamps().list();
+        String name = custom.isEmpty() ? host.tr(stamp.optionKey(values.choice("stamp")))
+                : stampLabel(host, stamp, custom, own);
         Integer seed = values.number("seed");
         boolean locked = values.toggle("lock_seed");
         String seedText = seed == null
@@ -1972,7 +2124,8 @@ public final class ToolsPanel {
         commitField(host);
         ToolProblem problem = blocking(host);
         if (problem != null) {
-            if (problem.id().equals("no_path_or_selection") || problem.id().equals("loft_points")) {
+            if (problem.id().equals("no_path_or_selection") || problem.id().equals("no_path_landform")
+                    || problem.id().equals("loft_points")) {
                 host.goToPath();
             }
             host.status(problemText(host, problem));
@@ -2156,14 +2309,21 @@ public final class ToolsPanel {
                         stopEditing();
                     }
                     case STAMP -> {
-                        // Intro elige el primero de lo encontrado y vuelve a su categoría.
+                        // Intro elige el primero de lo encontrado y vuelve a su pestaña.
                         ToolParam.Choice choice = (ToolParam.Choice) current().param("stamp");
+                        List<OwnStampSummary> own = host.ownStamps() == null ? List.of() : host.ownStamps().list();
                         List<String> found = StampGallery.visible(stampSearch, "", host.preferences()
                                 .stampFavorites(), name -> host.tr(choice.optionKey(name)) + " "
-                                + host.tr(choice.optionKey(name) + ".help"));
+                                + host.tr(choice.optionKey(name) + ".help"), own);
                         if (!found.isEmpty() && !stampSearch.isEmpty()) {
-                            set(current().with("stamp", found.getFirst()).with("custom", ""));
-                            stampTab = StampGallery.tabOf(found.getFirst());
+                            String first = found.getFirst();
+                            if (StampGallery.isOwn(first, own)) {
+                                set(current().with("custom", first));
+                                stampTab = StampGallery.MINE;
+                            } else {
+                                set(current().with("stamp", first).with("custom", ""));
+                                stampTab = StampGallery.tabOf(first);
+                            }
                         }
                         stampSearch = "";
                         stopEditing();
@@ -2194,6 +2354,7 @@ public final class ToolsPanel {
                     }
                     case PRESET_NAME -> {
                         namingAction = null;
+                        capturingStamp = false;
                         stopEditing();
                     }
                     default -> stopEditing();
