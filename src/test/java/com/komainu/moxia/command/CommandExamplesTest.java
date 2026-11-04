@@ -187,6 +187,15 @@ class CommandExamplesTest {
                     if (resolved.type() == EzBrushType.ZONE) {
                         ZoneCommand.parse(resolved.options());
                     }
+                    if (resolved.type() == EzBrushType.GRADIENT || resolved.type() == EzBrushType.GRADIENT_STROKE) {
+                        // Lo mismo que lee EzBrush: radio, interpolación y sangrado (la ayuda traía palabras de más).
+                        com.komainu.moxia.brush.ez.BrushOptions options = resolved.type().options(resolved.options());
+                        options.integer(1, 8, 1, com.komainu.moxia.brush.ez.EzBrush.MAX_RADIUS, "El radio");
+                        if (options.positional(2) != null) {
+                            com.komainu.moxia.brush.ez.GradientInterpolation.byName(options.positional(2));
+                        }
+                        options.decimal(3, 0.5, 0.0, 4.0, "El sangrado");
+                    }
                 }
             }
             case "nota", "notas", "note", "notes" -> {

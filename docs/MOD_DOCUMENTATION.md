@@ -1233,8 +1233,6 @@ Las figuras convierten una trayectoria tridimensional en superficies o volúmene
 - Hexarmor
 - Voronoi
 - Knots
-- DNA
-- Tendrils
 - Nubes orgánicas
 - Telarañas adaptativas
 - Perfil 2D (espacio de tubo)
@@ -1400,7 +1398,7 @@ También está disponible con el comando general:
 
 | Control / bandera | Opción de receta | Efecto |
 | --- | --- | --- |
-| Radio / `<radios>` | radio + `k0`…`k5`, `p1`…`p4` | Radio base. Con varios valores (`2,10,2`, hasta 8) el grosor sigue esos fotogramas con interpolación monótona; `2,0.3:12,2` fija la posición del intermedio. Sin comillas: `2_10_2`. |
+| Radio / `<radios>` | radio + `k0`…`k7`, `p1`…`p6` | Radio base. Con varios valores (`2,10,2`, hasta 8) el grosor sigue esos fotogramas con interpolación monótona; `2,0.3:12,2` fija la posición del intermedio. Sin comillas: `2_10_2`. |
 | Lados / puntas | `sides` | Lados del polígono, puntas de la estrella, pétalos de la flor o hebras de la cuerda (Studio 2–8, comando hasta 32 con `star12`). |
 | Pared (hueco), `-hollow <n>` | `hollow`, `wall` | Grosor de pared en bloques cuando el relleno es **Hueco**. |
 | Giro, `-r <a>[,<b>]` | `angle`, `rollend` | Giro inicial de la sección; con dos valores gira de `a` a `b` a lo largo del recorrido. |
@@ -1491,7 +1489,7 @@ El motor por defecto es el clásico: las recetas, instancias e instantáneas exi
 
 - **Mismas proporciones:** radio, espaciado, grosor y giro se leen con las mismas fórmulas que el motor clásico, igual que `extrusion`, `gap`, `stretch` (longitud del eslabón), `majorexponent`, `minorexponent` y `thickness`. El hilo de grosor `n` mide lo mismo que el pincel clásico (`n − 0,65` de radio).
 - **Sin huecos:** el alma de cada hilo queda cubierta en cualquier dirección y la cinta de Oscillate no se puede atravesar. Por eso hilos y cintas tienen un radio (o semigrosor) mínimo de `0,87` bloques: con grosor `1` salen algo más gruesos que en el motor clásico.
-- **Hereda el espacio de tubo:** extremos (`end`), normales (`normal`), radios por fotogramas (`k0`…`k5`, `p1`…`p4`), torsión (`twist`, `rollend`), curva Kochanek–Bartels (`tension`, `bias`, `continuity`), calidad (`quality`), losas y escaleras en la superficie (`smooth`, `coverage`) y la escala, espaciado y torsión de la sección Deformar, que se aplican al evaluar cada bloque.
+- **Hereda el espacio de tubo:** extremos (`end`), normales (`normal`), radios por fotogramas (`k0`…`k7`, `p1`…`p6`), torsión (`twist`, `rollend`), curva Kochanek–Bartels (`tension`, `bias`, `continuity`), calidad (`quality`), losas y escaleras en la superficie (`smooth`, `coverage`) y la escala, espaciado y torsión de la sección Deformar, que se aplican al evaluar cada bloque.
 - **Espaciado sin aplastar:** el espaciado de la curva de modificadores y `stretch` separan los motivos (eslabones, anillos, cuentas, nudos) o abren la hélice sin aplastar el alambre. En Chainlink `stretch` conserva su significado clásico y alarga cada eslabón.
 - **Extremos:** con `flat` el primer y el último motivo salen enteros, como en el motor clásico; las figuras continuas se cortan en el plano del extremo. `round`, `spike`, `soft` y `cube` actúan sobre la figura como en `sweep`.
 - **Lazos cerrados:** el paso se ajusta para que quepa un número entero de motivos; en Chainlink y Honeycomb el número es par para que la alternancia empalme sin costura.
@@ -2544,6 +2542,13 @@ Banderas:
 /komaedit surface rockify 3 -w SlabsAndStairs
 ```
 
+### Rendimiento y limitaciones
+
+- Se lee la selección más un margen de `radio + radioSuave × iteraciones + 2` bloques (como mucho 32), así el borde de la selección ve lo que hay al otro lado. Solo se escribe dentro de la selección; amplíala si quieres que la superficie crezca hacia fuera.
+- `-t` es más lento: comprueba cada cambio con sus 26 vecinos, en dos pasadas.
+- `-m` admite cualquier máscara de WorldEdit; lo que no la cumple no se toca, tampoco con `-w` (no se convierte en losas ni escaleras). La máscara global (`//gmask`) se respeta al escribir.
+- Radio de 0 a 32; suavizado de radio 0–8 y 0–16 iteraciones.
+
 ## Texturizado
 
 ### Objetivo y acceso
@@ -2562,7 +2567,7 @@ Los argumentos van por posición y las banderas en cualquier sitio. Un argumento
 
 ### Comportamiento
 
-- **Paleta**: cualquier paleta de [Paletas con nombre](#paletas-con-nombre) (`##Grayscale`, `-##Magma(1:8)`, `stone,andesite,cobblestone`…) o una [guardada](#paletas-guardadas) (`#nombre`), con al menos dos bloques; cada entrada es un bloque o un patrón de WorldEdit sin comas (`oak_stairs[facing=east]`, `#clipboard`). Cada modo da a cada bloque un valor de 0 a 1 y se coloca el bloque de esa posición de la paleta: 0 es el principio y 1 el final.
+- **Paleta**: cualquier paleta de [Paletas con nombre](#paletas-con-nombre) (`##Grayscale`, `-##Magma(1:8)`, `stone,andesite,cobblestone`…) o una [guardada](#paletas-guardadas) (`#nombre`), con al menos dos bloques; cada entrada es un bloque o un patrón de WorldEdit sin comas ni `#` (`oak_stairs[facing=east]`, `50%stone`); un `#nombre` siempre es una paleta guardada, así que `#clipboard` y los demás patrones de WorldEdit con `#` no van en la paleta. Cada modo da a cada bloque un valor de 0 a 1 y se coloca el bloque de esa posición de la paleta: 0 es el principio y 1 el final.
 - **Convención**: lo ocluido, cóncavo, poco iluminado o de cara a la luz va hacia el **principio** de la paleta. `##Grayscale` empieza en negro, así que las grietas salen oscuras con `ambient`; para que las caras iluminadas salgan claras con `pointlight` o `sunlight` usa `-##Grayscale`.
 - **Superficie**: `ambient`, `curvature`, `pointlight`, `sunlight`, `blocklight` y `flow` solo cambian los bloques con alguna cara al aire (el interior no se ve). `axisgradient`, `noise` y `cells` cambian todos los bloques de la máscara. Si la selección no tiene superficie (por ejemplo, solo el interior de un muro) avisa de que hay que ampliarla para que incluya aire; la lectura ya coge un margen alrededor.
 - **Máscara**: qué bloques se texturizan. Ver [Máscaras de las operaciones de región](#máscaras-de-las-operaciones-de-región).
@@ -2701,10 +2706,9 @@ Ejemplos:
 
 ### Rendimiento y limitaciones
 
-- Se lee la selección más un margen de `radio + radioSuave × iteraciones + 2` bloques (como mucho 32), así el borde de la selección ve lo que hay al otro lado. Solo se escribe dentro de la selección; amplíala si quieres que la superficie crezca hacia fuera.
-- `-t` es más lento: comprueba cada cambio con sus 26 vecinos, en dos pasadas.
-- `-m` usa una lista de bloques y etiquetas, no la sintaxis completa de máscaras de WorldEdit. La máscara global (`//gmask`) se respeta al escribir.
-- Radio de 0 a 32; suavizado de radio 0–8 y 0–16 iteraciones.
+- Capas de 1 a 16, longitud de 1 a 512 y calidad de 1 a 10. El cálculo va en un worker; los colores repetidos se calculan una vez.
+- Error medio del degradado #E8D44D → #5A2FB2 en 24 pasos sobre negro: 0,163 con una capa, 0,016 con tres y 0,005 con cinco; con tres capas y `-b`, 0,003.
+- El color real depende del brillo, la niebla y el paquete de texturas; se calcula con las texturas de vanilla y la mezcla alfa estándar. Lo que haya en el sitio de la vidriera se sustituye.
 
 ## Color y sombreado
 
@@ -3056,9 +3060,6 @@ El holograma de las figuras dibuja cada pieza con su forma: losas y escaleras po
 - No hay niveles de agua como pieza.
 - En tubos huecos no se añaden piezas fuera ni se abre la pared; en tubos, los materiales fijos no se guardan en la receta del Studio.
 - Si junto a la obra ya había escaleras en el mundo, Minecraft puede doblar las del borde hacia ellas.
-- Capas de 1 a 16, longitud de 1 a 512 y calidad de 1 a 10. El cálculo va en un worker; los colores repetidos se calculan una vez.
-- Error medio del degradado #E8D44D → #5A2FB2 en 24 pasos sobre negro: 0,163 con una capa, 0,016 con tres y 0,005 con cinco; con tres capas y `-b`, 0,003.
-- El color real depende del brillo, la niebla y el paquete de texturas; se calcula con las texturas de vanilla y la mezcla alfa estándar. Lo que haya en el sitio de la vidriera se sustituye.
 
 ## Formas sueltas
 
@@ -5642,7 +5643,7 @@ Una biblioteca de planos como los Blueprints de Axiom: guarda lo que copias con 
 /komaedit pincel stamp <planos|#etiqueta> [radio] [banderas]
 ```
 
-Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `buscar`, `ver`, `cargar`, `colocar`, `etiquetas`, `compartir`, `borrar`, `exportar` e `importar` para las subórdenes; `estampar` para el pincel. En el Studio, la etapa **Planos** (tecla `0`). Ayuda: `/komaedit help blueprint`.
+Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `buscar`, `ver`, `cargar`, `colocar`, `etiquetas`, `compartir`, `borrar`, `exportar` e `importar` para las subórdenes; `estampar` para el pincel. En el Studio, la etapa **Planos** (tecla `5`). Ayuda: `/komaedit help blueprint`.
 
 Los planos entran y salen también como **`.litematic`** (Litematica), **estructuras `.nbt`** (las del bloque de estructura) y **`.schem`** de WorldEdit: ver [Importar y exportar: Litematica y estructuras](#importar-y-exportar-litematica-y-estructuras).
 

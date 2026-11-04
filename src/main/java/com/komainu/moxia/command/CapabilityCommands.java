@@ -112,8 +112,16 @@ public final class CapabilityCommands {
         });
     }
 
-    private static int value(CapabilityOption option, String raw) {
+    static int value(CapabilityOption option, String raw) {
         String value = raw.toLowerCase(Locale.ROOT);
+        if (option == CapabilityOption.FLY_SPEED && List.of("off", "no", "false").contains(value)) {
+            // La normal; antes «off» era 0 y «on», ×0,1.
+            return 10;
+        }
+        if (option == CapabilityOption.FLY_SPEED && List.of("on", "si", "sí", "true").contains(value)) {
+            throw new IllegalArgumentException("La velocidad de vuelo es un multiplicador de 0.5 a 20 (por ejemplo "
+                    + "2.5), u off para la normal");
+        }
         if (List.of("on", "si", "sí", "true", "state", "estado").contains(value)) {
             return 1;
         }

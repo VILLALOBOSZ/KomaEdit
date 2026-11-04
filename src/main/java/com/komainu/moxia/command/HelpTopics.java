@@ -120,7 +120,7 @@ public final class HelpTopics {
                     new Entry("/komaedit bend [repeat|stretch] [-n upright|horizontal]", "Dobla el portapapeles por la trayectoria"),
                     new Entry("/komaedit clipboard scale <factor> [nearest|scale2x|scale3x|rotsprite]",
                             "Agranda o encoge el portapapeles sin dientes de sierra (alias portapapeles escalar)"),
-                    new Entry("/komaedit clipboard rotate <grados> [rotsprite|nearest]",
+                    new Entry("/komaedit clipboard rotate <grados> [rotsprite|nearest|scale2x|scale3x]",
                             "Gira el portapapeles cualquier ángulo; escaleras y troncos giran con él (alias girar)"),
                     new Entry("/komaedit clipboard restore", "Vuelve al portapapeles de antes del último escalado o giro"),
                     new Entry("/komaedit gradient preset <paleta>", "Degradado de paleta sobre la selección"),
@@ -350,7 +350,7 @@ public final class HelpTopics {
                             "Liga un pincel al objeto de la mano (alias ezbrush): paletteshift, gradient, "
                                     + "gradientstroke, petalpainter, place, scatter, array, tree, rock, biome, "
                                     + "heightmap, stamp, sculpt, paint, zone y retocar"),
-                    new Entry("/komaedit pincel gradient ##Magma 8 tapered linear bezier 0.5 -p",
+                    new Entry("/komaedit pincel gradient ##Magma 8 tapered 0.5 -p",
                             "Ejemplo: degradado con holograma; -p deja verlo antes de aplicarlo"),
                     new Entry("/komaedit pincel aplicar|cancelar", "Aplica o descarta el holograma del pincel"),
                     new Entry("/komaedit pincel quitar", "Quita el pincel del objeto de la mano"),

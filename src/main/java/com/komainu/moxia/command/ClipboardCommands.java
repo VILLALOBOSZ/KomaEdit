@@ -119,7 +119,7 @@ public final class ClipboardCommands {
             BlockVector3 size = clipboard.getDimensions();
             EzCommandSupport.info(player, "Portapapeles de " + size.x() + "×" + size.y() + "×" + size.z()
                     + ". /komaedit clipboard scale <factor> [nearest|scale2x|scale3x|rotsprite] ·"
-                    + " rotate <grados> [rotsprite|nearest] · restore");
+                    + " rotate <grados> [rotsprite|nearest|scale2x|scale3x] · restore");
             return 1;
         });
     }
