@@ -128,6 +128,15 @@ class SelectionOperationsTest {
         grown.forEach(block -> assertEquals(10, BlockSet.z(block), "por la fachada, sin meterse"));
     }
 
+    /** Ctrl con el pincel de selección «borra todo lo que toque, aire incluido»: el aire seleccionado se quedaba. */
+    @Test
+    void subtractingTakesTheAirToo() {
+        TestTerrain terrain = TestTerrain.flat(GROUND);
+        BlockSet erase = BrushShape.CUBE.stamp(0, GROUND, 0, 1, Voxels.whole(terrain), false);
+        assertEquals(27, erase.size(), "el cubo entero, también la capa de aire");
+        assertTrue(erase.contains(0, GROUND + 1, 0));
+    }
+
     @Test
     void theBrushOnlyTakesMatter() {
         TestTerrain terrain = TestTerrain.flat(GROUND).set(1, GROUND + 1, 0, Voxels.NON_SOLID);

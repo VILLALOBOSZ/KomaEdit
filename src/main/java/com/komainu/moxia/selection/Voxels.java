@@ -26,6 +26,29 @@ public interface Voxels {
         return kind == SOLID || nonSolid && kind == NON_SOLID;
     }
 
+    /**
+     * El mismo mundo donde todo cuenta, también el aire: lo que borra Ctrl con el pincel de selección («borra todo
+     * lo que toque, aire incluido»). Antes restaba solo lo que cuenta al añadir y el aire seleccionado se quedaba.
+     */
+    static Voxels whole(Voxels world) {
+        return new Voxels() {
+            @Override
+            public int kind(int x, int y, int z) {
+                return SOLID;
+            }
+
+            @Override
+            public int minY() {
+                return world.minY();
+            }
+
+            @Override
+            public int maxY() {
+                return world.maxY();
+            }
+        };
+    }
+
     /** Si el bloque cuenta, mirando el mundo. */
     default boolean counts(int x, int y, int z, boolean nonSolid) {
         return y >= minY() && y <= maxY() && counts(kind(x, y, z), nonSolid);

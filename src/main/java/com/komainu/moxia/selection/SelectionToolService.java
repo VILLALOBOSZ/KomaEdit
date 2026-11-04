@@ -226,8 +226,9 @@ public final class SelectionToolService {
 
     /** Una pasada: se pinta la forma en {@code position} y la selección cambia ya, sin esperar a soltar. */
     private static void dab(ServerPlayerEntity player, Stroke stroke, BlockPos position) {
+        Voxels world = new ServerVoxels(player.getServerWorld());
         BlockSet stamp = stroke.shape.stamp(position.getX(), position.getY(), position.getZ(), stroke.radius,
-                new ServerVoxels(player.getServerWorld()), stroke.nonSolid);
+                stroke.mode == SelectionCombine.SUBTRACT ? Voxels.whole(world) : world, stroke.nonSolid);
         switch (stroke.mode) {
             case REPLACE, ADD -> stroke.working.addAll(stamp);
             case SUBTRACT -> stroke.working.removeAll(stamp);
