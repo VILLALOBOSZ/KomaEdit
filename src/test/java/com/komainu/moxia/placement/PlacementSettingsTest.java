@@ -53,13 +53,29 @@ class PlacementSettingsTest {
         assertEquals(TubeSettings.NormalMode.CONSISTENT, array.array().normalMode());
     }
 
+    /** {@code scatter … -d forward}: se calculaba sin jugador y filtraba siempre hacia el este, mirases a donde mirases. */
+    @Test
+    void scatterDirectionsFollowTheView() {
+        PlacementSettings settings = PlacementSettings.parse(PlacementSettings.Kind.SCATTER, "Cl C C -d forward,left");
+        DirectionExpr.Context south = new DirectionExpr.Context(new Vec3(0, -0.3, 1));
+        List<Vec3> directions = settings.scatter().directions(south);
+        assertEquals(0.0, directions.get(0).x(), 1.0E-9);
+        assertEquals(1.0, directions.get(0).z(), 1.0E-9, "delante es el sur");
+        assertEquals(1.0, directions.get(1).x(), 1.0E-9, "mirando al sur, la izquierda es el este");
+        DirectionExpr.Context north = new DirectionExpr.Context(new Vec3(0, 0, -1));
+        PlacementSettings brush = settings.bindAim(north);
+        assertEquals(-1.0, brush.scatter().directions(south).get(0).z(), 1.0E-9,
+                "en el pincel se fija con la mirada al configurarlo");
+    }
+
     @Test
     void scatterFlags() {
         PlacementSettings settings = PlacementSettings.parse(PlacementSettings.Kind.SCATTER,
                 "Cl S R -h Box(D:\"60,30,60\") -d west,up -e 0.6 -m \"!red_wool\" -n 0.5% -u 0 -l pink_wool -t");
         PlacementSettings.Scatter scatter = settings.scatter();
         assertEquals("Box(D:\"60,30,60\")", scatter.region());
-        assertEquals(List.of(new Vec3(-1, 0, 0), new Vec3(0, 1, 0)), scatter.directions());
+        assertEquals(List.of(new Vec3(-1, 0, 0), new Vec3(0, 1, 0)),
+                scatter.directions(DirectionExpr.Context.NONE));
         assertEquals(0.6, scatter.threshold());
         assertEquals("!red_wool", scatter.mask());
         assertEquals(0.5, scatter.density());

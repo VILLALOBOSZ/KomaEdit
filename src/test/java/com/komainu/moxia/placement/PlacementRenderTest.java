@@ -235,7 +235,7 @@ class PlacementRenderTest {
             StructureSpec spec = StructureSpec.parse(settings.structure());
             Structure structure = spec.procedural() ? spec.procedural(1) : tree();
             ScatterPlanner.Result planned = ScatterPlanner.plan(snapshot, new ScatterPlanner.Settings(
-                    settings.scatter().directions(), settings.scatter().threshold(), settings.scatter().density(),
+                    settings.scatter().directions(DirectionExpr.Context.NONE), settings.scatter().threshold(), settings.scatter().density(),
                     settings.scatter().iterations(), settings.seed()), null);
             PlacementBuilder builder = new PlacementBuilder(settings, List.of(structure), spec.offsets());
             List<Placement> placements = new ArrayList<>();

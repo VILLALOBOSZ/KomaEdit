@@ -668,7 +668,7 @@ public final class PlacementService {
                     }
                     PlacementSettings.Scatter scatter = settings.scatter();
                     ScatterPlanner.Result result = ScatterPlanner.plan(snapshot,
-                            new ScatterPlanner.Settings(scatter.directions(), scatter.threshold(), scatter.density(),
+                            new ScatterPlanner.Settings(scatter.directions(view), scatter.threshold(), scatter.density(),
                                     scatter.iterations(), settings.seed()),
                             mask == null ? null : (x, y, z) -> mask.mask().test(BlockVector3.at(x, y, z)));
                     if (result.found() == 0) {
