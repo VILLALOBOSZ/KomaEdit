@@ -50,6 +50,25 @@ class ChoiceThumbnailsTest {
         check("stamp", "stamp", List.of("montana", "crater", "colina"));
     }
 
+    /**
+     * Las de las variaciones van por color de material: un juego largo eligiendo materiales no puede quedarse con
+     * todas en memoria. Las menos usadas salen y la que se sigue usando se queda.
+     */
+    @Test
+    void theCacheHasALimitAndKeepsWhatIsInUse() {
+        StudioImage kept = ChoiceThumbnails.cached("test/kept", () -> StudioImage.of("test/kept", 1, 1,
+                () -> new int[1]));
+        for (int index = 0; index < ChoiceThumbnails.MAX_READY + 200; index++) {
+            String key = "test/material/" + index;
+            ChoiceThumbnails.cached(key, () -> StudioImage.of(key, 1, 1, () -> new int[1]));
+            ChoiceThumbnails.cached("test/kept", () -> {
+                throw new AssertionError("la que se sigue usando no se vuelve a pintar");
+            });
+        }
+        assertTrue(ChoiceThumbnails.readyCount() <= ChoiceThumbnails.MAX_READY, "como mucho el tope");
+        assertEquals(kept, ChoiceThumbnails.cached("test/kept", () -> null));
+    }
+
     @Test
     void otherChoicesHaveNoThumbnail() {
         assertFalse(ChoiceThumbnails.supports("river", "kind"));

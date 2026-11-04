@@ -21,6 +21,8 @@ import com.komainu.moxia.studio.tools.ui.PaintPreview;
 import com.komainu.moxia.studio.tools.ui.StampPreview;
 
 import java.awt.image.BufferedImage;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +41,18 @@ import java.util.concurrent.Executors;
 public final class ChoiceThumbnails {
     /** Lado en píxeles de cada miniatura. */
     public static final int SIZE = 96;
-    private static final Map<String, StudioImage> READY = new ConcurrentHashMap<>();
+    /**
+     * Las miniaturas hechas, las menos usadas fuera pasado el tope: las de las variaciones van por color de material y
+     * sin tope crecían con cada material que se elegía mientras durase el juego.
+     */
+    static final int MAX_READY = 512;
+    private static final Map<String, StudioImage> READY = Collections.synchronizedMap(
+            new LinkedHashMap<>(64, 0.75F, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, StudioImage> eldest) {
+                    return size() > MAX_READY;
+                }
+            });
     private static final Set<String> PENDING = ConcurrentHashMap.newKeySet();
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "KomaEdit studio thumbnails");
@@ -90,6 +103,11 @@ public final class ChoiceThumbnails {
      * Una miniatura por su clave: la hecha, o {@code null} mientras se pinta en segundo plano (o ya hecha, si se pide
      * con {@link #setBlocking}). Lo que no se puede pintar se queda sin miniatura.
      */
+    /** Cuántas miniaturas hay hechas (para las pruebas). */
+    static int readyCount() {
+        return READY.size();
+    }
+
     static StudioImage cached(String key, java.util.function.Supplier<StudioImage> painter) {
         StudioImage ready = READY.get(key);
         if (ready != null || PENDING.contains(key)) {

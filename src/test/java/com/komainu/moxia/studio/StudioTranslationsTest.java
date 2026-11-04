@@ -161,6 +161,73 @@ class StudioTranslationsTest {
         assertTrue(found.isEmpty(), "Textos sin traducir:\n" + String.join("\n", found));
     }
 
+    /** Toda clave que se dice en singular con 1 ({@link Plural#key}) tiene su {@code .one} en los dos idiomas. */
+    @Test
+    void everyPluralHasItsSingular() throws IOException {
+        Pattern plural = Pattern.compile("Plural\\.key\\(\\s*\"([a-z0-9_.]+)\"");
+        // Las dos claves de un «? :» (la trayectoria cerrada o abierta).
+        Pattern choice = Pattern.compile("Plural\\.key\\(\\s*[^\"]*?\\?\\s*\"([a-z0-9_.]+)\""
+                + "\\s*:\\s*\"([a-z0-9_.]+)\"");
+        List<String> keys = new ArrayList<>();
+        for (Path root : List.of(CLIENT_SOURCES, Path.of("src", "main", "java"))) {
+            try (Stream<Path> files = Files.walk(root)) {
+                for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                    String source = Files.readString(file);
+                    Matcher matcher = plural.matcher(source);
+                    while (matcher.find()) {
+                        keys.add(matcher.group(1));
+                        keys.add(matcher.group(1) + ".one");
+                    }
+                    matcher = choice.matcher(source);
+                    while (matcher.find()) {
+                        for (int group = 1; group <= 2; group++) {
+                            keys.add(matcher.group(group));
+                            keys.add(matcher.group(group) + ".one");
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue(keys.size() >= 26, "se encontraron " + keys.size() + " claves en plural");
+        assertPresentInBothLanguages(keys);
+    }
+
+    /**
+     * Ninguna clave sobra: cada una se escribe tal cual en el código, sale de un prefijo que el código completa
+     * ({@code "gui.komaedit.tools.param." + id}) o es otra con {@code .help}, {@code .tooltip}, {@code .one} o
+     * {@code .short} detrás.
+     */
+    @Test
+    void noKeyIsLeftOver() throws IOException {
+        Pattern literal = Pattern.compile("\"((?:[^\"\\\\\\n]|\\\\.)*)\"");
+        Set<String> literals = new java.util.HashSet<>();
+        for (Path root : List.of(CLIENT_SOURCES, Path.of("src", "main", "java"), Path.of("src", "main", "resources"))) {
+            try (Stream<Path> files = Files.walk(root)) {
+                for (Path file : files.filter(path -> path.toString().endsWith(".java")
+                        || path.toString().endsWith(".json") && !path.toString().contains("lang")).toList()) {
+                    String source = Files.readString(file).replaceAll("(?s)/\\*.*?\\*/", "")
+                            .replaceAll("'(?:[^'\\\\\\n]|\\\\.)'", "''");
+                    Matcher matcher = literal.matcher(source);
+                    while (matcher.find()) {
+                        literals.add(matcher.group(1));
+                    }
+                }
+            }
+        }
+        List<String> prefixes = literals.stream().filter(text -> text.length() > 8
+                && (text.endsWith(".") || text.endsWith("_"))).toList();
+        List<String> leftOver = new ArrayList<>();
+        for (String key : lang("es_es").keySet()) {
+            String base = key.replaceAll("\\.(help|tooltip|one|short)$", "");
+            boolean used = literals.contains(key) || literals.contains(base)
+                    || prefixes.stream().anyMatch(prefix -> key.startsWith(prefix) || base.startsWith(prefix));
+            if (!used) {
+                leftOver.add(key);
+            }
+        }
+        assertEquals(List.of(), leftOver, "claves de idioma que no usa nada");
+    }
+
     @Test
     void placeholdersMatchBetweenLanguages() throws IOException {
         JsonObject spanish = lang("es_es");

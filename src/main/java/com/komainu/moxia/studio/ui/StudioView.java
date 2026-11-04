@@ -800,7 +800,7 @@ public final class StudioView {
                 int points = host.pathPoints().size();
                 String target = FigureStages.shapeName(host, draft.shape()) + " · "
                         + FigureStages.materialSummary(host, draft) + " · "
-                        + host.tr("gui.komaedit.tools.footer.points", points);
+                        + host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.tools.footer.points", points), points);
                 int blocks = host.previewBlocks();
                 String estimate = blocks < 0 || !figure.pathReady(host) ? ""
                         : host.tr("gui.komaedit.estimate", BuildEstimate.compact(blocks))
@@ -1186,7 +1186,8 @@ public final class StudioView {
             if (current) {
                 ui.fill(row.left(2), ACCENT);
             }
-            String blocks = host.tr("gui.komaedit.history.blocks", ProgressLine.group(entry.blocks()));
+            String blocks = host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.history.blocks", entry.blocks()),
+                    ProgressLine.group(entry.blocks()));
             int blocksWidth = ui.width(blocks);
             ui.label(entry.label(), row.x() + 6, row.y() + 4, row.width() - blocksWidth - 16,
                     undone ? DISABLED : current ? TEXT_STRONG : TEXT_SECONDARY);

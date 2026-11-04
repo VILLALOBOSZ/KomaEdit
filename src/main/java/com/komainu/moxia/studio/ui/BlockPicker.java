@@ -150,7 +150,8 @@ public final class BlockPicker {
                 y += STEP;
             }
         }
-        ui.label(host.tr("gui.komaedit.blocks.count", matches.size()), x, y + 2, width, MUTED);
+        ui.label(host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.blocks.count", matches.size()), matches.size()), x, y + 2,
+                width, MUTED);
         y += 12;
         Rect grid = new Rect(x, y, width, modal.bottom() - 18 - y);
         int columns = Math.max(4, (grid.width() + 2) / STEP);

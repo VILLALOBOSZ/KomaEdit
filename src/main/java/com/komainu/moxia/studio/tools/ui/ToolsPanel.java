@@ -2050,9 +2050,11 @@ public final class ToolsPanel {
                     ? host.tr("gui.komaedit.tools.footer.selection", info.selection()[0], info.selection()[1],
                     info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
             case PATH_OR_LOOK -> context.pathPoints() > 0
-                    ? host.tr("gui.komaedit.tools.footer.points", context.pathPoints()) : clicked(host);
+                    ? host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.tools.footer.points", context.pathPoints()),
+                    context.pathPoints()) : clicked(host);
             case PATH_OR_SELECTION -> context.pathPoints() > 0
-                    ? host.tr("gui.komaedit.tools.footer.points", context.pathPoints())
+                    ? host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.tools.footer.points", context.pathPoints()),
+                    context.pathPoints())
                     : host.tr(info.hasSelection() ? "gui.komaedit.tools.footer.selection_short"
                     : "gui.komaedit.tools.footer.no_selection");
             case LOOK -> clicked(host);
@@ -2078,7 +2080,8 @@ public final class ToolsPanel {
                     info.selection()[1], info.selection()[2]) : host.tr("gui.komaedit.tools.footer.no_selection");
         }
         HotbarDeck deck = host.hotbars();
-        return host.tr("gui.komaedit.tools.hotbars.footer", deck == null ? 0 : deck.size());
+        int saved = deck == null ? 0 : deck.size();
+        return host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.tools.hotbars.footer", saved), saved);
     }
 
     /** «Montaña · Sumar · semilla 4217»: el sello, el modo de mezcla y la semilla que llevará el pincel. */

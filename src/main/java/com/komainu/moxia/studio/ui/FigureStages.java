@@ -371,8 +371,8 @@ public final class FigureStages {
         PathShape shape = draft.shape();
         if (!pathReady(host)) {
             // Lo primero que hay que saber: la figura va por un camino, y sus puntos se ponen con un clic en el mundo.
-            ui.paragraph(column, host.tr("gui.komaedit.figure.need_points", requiredPoints(host)
-                    - host.pathPoints().size()), WARNING, 2);
+            int missing = requiredPoints(host) - host.pathPoints().size();
+            ui.paragraph(column, host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.figure.need_points", missing), missing), WARNING, 2);
         }
         if (!compact) {
             // Qué es la figura, entera: es lo que lee quien la elige por primera vez.
@@ -1083,7 +1083,8 @@ public final class FigureStages {
 
     public String buildLabel(StudioHost host, long now) {
         if (!pathReady(host)) {
-            return host.tr("gui.komaedit.build.missing", requiredPoints(host) - host.pathPoints().size());
+            int missing = requiredPoints(host) - host.pathPoints().size();
+            return host.tr(com.komainu.moxia.studio.Plural.key("gui.komaedit.build.missing", missing), missing);
         }
         return estimate.armed(now) ? host.tr("gui.komaedit.build_confirm") : host.tr("gui.komaedit.build");
     }

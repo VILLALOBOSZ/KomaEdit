@@ -159,7 +159,8 @@ public final class WorldFeedbackClient {
         if (client.inGameHud == null) {
             return;
         }
-        Text hint = prefix().append(Text.translatable("gui.komaedit.world.preview_ready",
+        Text hint = prefix().append(Text.translatable(com.komainu.moxia.studio.Plural.key("gui.komaedit.world.preview_ready",
+                        header.changes()),
                 Text.literal(ProgressLine.group(header.changes())).formatted(Formatting.WHITE),
                 confirm.getBoundKeyLocalizedText().copy().formatted(Formatting.GREEN),
                 discard.getBoundKeyLocalizedText().copy().formatted(Formatting.RED)).formatted(Formatting.GRAY));

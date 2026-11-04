@@ -109,7 +109,7 @@ public final class ClientSchematicFiles {
                 });
             } catch (IOException | RuntimeException exception) {
                 client.execute(() -> message(Text.translatable("gui.komaedit.blueprint.download_failed",
-                        complete.name(), String.valueOf(exception.getMessage())), Formatting.RED));
+                        complete.name(), com.komainu.moxia.feedback.FailureReason.client(exception)), Formatting.RED));
             }
         });
     }
@@ -197,14 +197,14 @@ public final class ClientSchematicFiles {
         IO.execute(() -> {
             try {
                 if (Files.size(file) > FileChunks.MAX_BYTES) {
-                    throw new IOException(Files.size(file) / 1024 + " KiB; el máximo es " + FileChunks.MAX_BYTES / 1024
-                            + " KiB");
+                    throw new IllegalArgumentException(Files.size(file) / 1024 + " KiB; el máximo es "
+                            + FileChunks.MAX_BYTES / 1024 + " KiB");
                 }
                 List<FileChunks.Chunk> chunks = FileChunks.split(id, name, Files.readAllBytes(file));
                 client.execute(() -> OUTGOING.addAll(chunks));
             } catch (IOException | RuntimeException exception) {
                 client.execute(() -> message(Text.translatable("gui.komaedit.blueprint.upload_failed", name,
-                        String.valueOf(exception.getMessage())), Formatting.RED));
+                        com.komainu.moxia.feedback.FailureReason.client(exception)), Formatting.RED));
             }
         });
         return true;
