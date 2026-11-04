@@ -170,6 +170,7 @@ El botón del reloj de la barra abre la lista de los últimos cambios en el mund
 
 - Un clic en una fila deshace (o rehace) hasta dejarla como la última hecha; **Deshacer** y **Rehacer** van paso a paso, igual que `Ctrl+Z` / `Ctrl+Y`.
 - Es el historial de WorldEdit de tu sesión, así que también salen los `//set` y demás órdenes de WorldEdit (como «WorldEdit»). El servidor lo manda con el estado del Studio cada segundo mientras la lista está abierta.
+- Una edición de KomaEdit entra en la lista **al acabar**. Mientras se coloca (o espera en la cola), una reconstrucción se levanta o se pinta un bioma, deshacer y rehacer (aquí, `Ctrl+Z`, `//undo` y `//redo`) esperan y dicen por qué: deshacer quitaría la edición de antes y, al acabar la que se coloca, WorldEdit borraría lo que se podía rehacer. Espera a que acabe, o párala con `/komaedit cancel` y después deshazla. Un trazo de pintar abierto se cierra antes, así deshacer quita justo ese trazo.
 
 ### Paleta de órdenes
 
@@ -4482,6 +4483,7 @@ Alias: `/komaedit paleta`.
 - `save` guarda la paleta ya desplegada: si guardas `#hielo,stone` y luego borras `#hielo`, la nueva sigue igual. `-f` sustituye una que ya exista.
 - `fetch world` lee bloques en fila desde el bloque al que miras (o el que pisas) hacia donde miras o hacia `-d`; `fetch selection` lee una selección de 1×1×N de pos1 a pos2; `fetch hotbar` toma los bloques de la barra rápida. Con largo 0 (por defecto) lee hasta encontrar aire. Solo guarda las propiedades que no son las de por defecto.
 - `place` pone la paleta en fila delante de ti; se deshace con `//undo`.
+- Si `palettes.json` lo guardó una versión más nueva de KomaEdit (tras volver de una prerelease a la estable), sus paletas se usan, pero `save` y `delete` se niegan hasta actualizar: reescribirlo con esta versión quitaría lo que no entiende. Lo mismo con los ruidos, las selecciones y los presets de árboles y rocas.
 - `swap` cambia, dentro de la selección, el bloque n del origen por el n del destino. `-a` no toca el aire del origen, `-s` estira el destino para cubrir todo el origen (sin él, lo que sobra del origen se queda igual), `-f` encaja el origen solo por tipo y `-b` copia las propiedades del bloque original sobre el nuevo cuando las admite. Va por el motor de operaciones sobre la selección: lectura repartida, cálculo en un worker y un solo `//undo`.
 - `print` muestra la paleta (`-v` con id completo y estados); al pulsarla se copia.
 - `encode` da un código `kp1:…` que se copia al pulsarlo; `decode` lo convierte otra vez en bloques. El formato es propio de KomaEdit y admite bloques de mods (los de Minecraft van sin `minecraft:` para acortarlo).
@@ -5919,10 +5921,15 @@ Cada posición se escribe solo si sigue como se dejó: al vaciar, si sigue como 
 
 ### Reinicios y caídas
 
-Una obra no se queda a medias por un reinicio. Antes de vaciar nada, la reconstrucción guarda en `<mundo>/komaedit/rebuilds/<id>.bin` lo que tiene que quedar y lo que había (con sus datos), y lo borra al terminar o cancelar.
+Una obra no se queda a medias por un reinicio. Antes de vaciar nada, la reconstrucción guarda en `<mundo>/komaedit/rebuilds/<id>.bin` lo que tiene que quedar y lo que había (con sus datos), y lo borra al terminar o cancelar. Al lado van dos archivos más, que también se borran al acabar:
 
-- **Al parar el servidor** (`/stop`, cerrar el mundo), cada reconstrucción en marcha **termina al momento**, sin animación ni presupuesto, antes de que se guarde el mundo; la que se estaba cancelando termina de deshacerse. Lo que aún leía u ordenaba se olvida (no había tocado nada).
-- **Si el servidor se cae** sin pararse, en el primer tick tras arrancar (cuando WorldEdit ya tiene sus registros) se encuentra el archivo y la obra se termina sola, repartida entre ticks, antes de que nadie pueda empezar otra: cada chunk está como se guardó por última vez (con la obra entera, vaciada o a medio levantar), así que se mira posición a posición: si tiene lo que debe quedar, nada; si está vacía o tiene lo de antes, se pone la obra; si tiene otra cosa, alguien la cambió y se deja. Si se estaba cancelando (queda una marca `<id>.restore`), se deja como estaba antes en vez de acabarla. Quien la lanzó recibe un aviso al terminar si está conectado, y queda en `latest.log`.
+- `<id>.taken`: cada bloque con datos (un cofre, un barril, un cartel) tal como estaba **al quitarlo**, apuntado en el disco antes de quitarlo del mundo. Así, si alguien saca objetos de un cofre (o una tolva lo llena) entre la lectura y el vaciado y el servidor se cae antes de volver a ponerlo, el cofre vuelve con lo que llevaba al quitarse: ni se duplican los objetos sacados ni se pierden los metidos.
+- `<id>.restore`: se estaba cancelando. Se escribe al pulsar cancelar, antes de deshacer nada.
+
+Qué pasa en cada caso:
+
+- **Al parar el servidor** (`/stop`, cerrar el mundo), cada reconstrucción en marcha **termina al momento**, sin animación ni presupuesto, antes de que se guarde el mundo; la que se estaba cancelando termina de deshacerse. Lo que aún leía u ordenaba se olvida (no había tocado nada); si ordenar una obra enorme tarda más que la espera al parar (30 s), el archivo que se escriba después se borra solo y la obra no se levanta en el próximo arranque.
+- **Si el servidor se cae** sin pararse, en el primer tick tras arrancar (cuando WorldEdit ya tiene sus registros) se encuentra el archivo y la obra se termina sola, repartida entre ticks, antes de que nadie pueda empezar otra: cada chunk está como se guardó por última vez (con la obra entera, vaciada o a medio levantar), así que se mira posición a posición: si tiene lo que debe quedar, nada; si está vacía o tiene lo de antes, se pone la obra; si tiene otra cosa, alguien la cambió y se deja. Los bloques con datos vuelven como se apuntaron al quitarlos. Si se estaba cancelando (queda la marca `<id>.restore`), se deja como estaba antes en vez de acabarla. Quien la lanzó recibe un aviso al terminar si está conectado, y queda en `latest.log`.
 - Si una reconstrucción falla a medias en el juego, se termina igual, sin animación, con lo guardado.
 - Lo recuperado tras una caída no deja `//undo` (la sesión de WorldEdit no sobrevive al reinicio). Un archivo de una dimensión que ya no existe se queda en disco y se avisa en `latest.log`.
 
@@ -6103,7 +6110,8 @@ El proyecto persistente evita perder recetas e instancias al desconectarse y per
 - Los jobs activos escriben progreso como máximo una vez por segundo para no convertir el disco en un cuello de botella.
 - Tras un cierre inesperado, los jobs `RUNNING` pasan a `INTERRUPTED`; no se reanudan automáticamente porque el mundo pudo cambiar mientras el servidor estaba apagado.
 - Un job que termina o se cancela borra su archivo: en `jobs` solo quedan los que una caída dejó a medias, y `project status` cuenta esos. Los terminados que dejaron versiones anteriores se borran la próxima vez que entra el jugador; un archivo ilegible se queda en disco y se avisa en `latest.log`.
-- Las operaciones ya confirmadas siguen usando el historial de WorldEdit para `//undo`; la bitácora persistente es de diagnóstico, no una sustitución del historial.
+- Las operaciones ya confirmadas siguen usando el historial de WorldEdit para `//undo`; la bitácora persistente es de diagnóstico, no una sustitución del historial. Mientras una edición tuya se coloca, `//undo` y `//redo` esperan (ver [Historial del mundo](#historial-del-mundo)).
+- Un archivo de una versión más nueva del mod no se reescribe: las paletas, ruidos, selecciones y presets guardados se usan pero no se cambian; las notas, las vistas y las barras ilegibles se apartan como `*.broken-N.json`.
 - Los backups son manuales y por jugador. Los administradores deben incluir la carpeta `komaedit` del mundo en su estrategia normal de respaldo.
 - Una receta o instancia que no se pueda leer (dañada, o de una versión que usaba una figura ya retirada) se omite del catálogo y se registra en `latest.log` con su nombre de archivo; el archivo se queda en disco y el resto del proyecto sigue funcionando.
 

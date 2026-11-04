@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Auditoría de datos, guardado y deshacer
+
+- **`//undo` con una edición de KomaEdit a medias.** La cola de edición, la reconstrucción y los biomas solo entran en el historial de WorldEdit al acabar. Un `//undo` (o deshacer en el Studio, pensando en la que se coloca) deshacía la edición de antes y, al acabar la nueva, WorldEdit borraba lo que se podía rehacer: la de antes se perdía y el mundo quedaba mezclado. Ahora `//undo`, `//redo`, `/undo`, `/redo` y los botones del Studio esperan y dicen por qué (espera a que acabe o párala con `/komaedit cancel`). Un trazo de pintar abierto se cierra antes, así deshacer quita justo ese trazo.
+- **Reconstrucción tras una caída.** Los cofres, barriles y carteles volvían con lo leído al empezar: si alguien sacaba objetos entre la lectura y el vaciado (o una tolva los metía), tras la caída se duplicaban o se perdían. Cada bloque con datos se apunta ahora en `<id>.taken` antes de quitarlo y vuelve con eso.
+- **Cancelar una reconstrucción y caerse.** La marca de deshacer se escribía en el hilo de la reconstrucción, que podía estar ordenando la obra de otro jugador; si el servidor se caía entretanto, al arrancar se levantaba la obra que se estaba cancelando. Ahora se escribe al momento.
+- **Parar el servidor mientras se ordena una obra enorme.** Si ordenarla tardaba más que la espera al parar (30 s), su archivo se escribía después y la obra se levantaba en el siguiente arranque sin haberla empezado. Ahora se borra.
+- **Paletas, ruidos, selecciones y presets de árboles y rocas de una versión más nueva** (al volver de una prerelease a la estable): guardar o borrar uno reescribía el archivo sin lo que esta versión no entiende. Ahora se usan pero no se cambian hasta actualizar.
+- **Planos sin miniatura.** Guardar uno sin miniatura (compartir uno que no la tenía) dejaba la copia de la anterior y, al arrancar, la recuperación la volvía a poner.
+
 ### Sellos sacados del mundo y relieve a lo largo de la trayectoria
 
 - **Sellos propios del mundo.** Un trozo de terreno que te gusta se guarda como sello con `/komaedit sello capturar [nombre] [descripción…]` o, en **Estampar relieve**, con **Guardar la selección como sello**. Lee la altura del suelo de cada columna (sin troncos, hojas ni plantas y, si no se pide `-w`, sin el agua), la suaviza sin apartarse medio bloque de lo leído para que al escalarlo no salgan escalones, recorta el nivel base del borde, funde el borde y lo guarda en 16 bits con sus proporciones de verdad (lo que sube y lo que hunde). La lectura va repartida entre ticks y el cálculo en un worker.

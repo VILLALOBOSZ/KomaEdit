@@ -257,7 +257,10 @@ public final class BlueprintLibrary {
             if (thumbnail.length > 0) {
                 writeBytes(png, thumbnail);
             } else {
+                // Con su copia: si no, al arrancar se recuperaba de ella la miniatura del plano de antes.
                 Files.deleteIfExists(png);
+                Files.deleteIfExists(AtomicStorage.backup(png));
+                Files.deleteIfExists(AtomicStorage.temporary(png));
             }
             writeMeta(directory, meta);
             return new Entry(meta, directory.resolve(meta.name() + SCHEMATIC), png);
