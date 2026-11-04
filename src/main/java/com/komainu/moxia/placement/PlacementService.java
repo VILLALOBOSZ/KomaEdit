@@ -70,6 +70,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
@@ -269,7 +270,7 @@ public final class PlacementService {
                 List<Structure> structures = new ArrayList<>();
                 List<List<BlockState>> palettes = new ArrayList<>();
                 for (Path file : schematics(player, spec.filename())) {
-                    Captured captured = capture(read(file, spec.format()), spec, file.getFileName().toString());
+                    Captured captured = captureSchematic(file, spec);
                     structures.add(captured.structure());
                     palettes.add(captured.palette());
                 }
@@ -300,6 +301,44 @@ public final class PlacementService {
     }
 
     private record Captured(VoxelStructure structure, List<BlockState> palette) {
+    }
+
+    /** Las estructuras de {@code Schematic(…)} ya recorridas, por archivo y ajustes; con tope de bloques de caja. */
+    private static final Map<String, CapturedSchematic> SCHEMATICS = new LinkedHashMap<>(16, 0.75F, true);
+    private static final long SCHEMATIC_CACHE_VOLUME = 4_000_000L;
+    private static long schematicVolume;
+
+    private record CapturedSchematic(Captured captured, long volume) {
+    }
+
+    /**
+     * Un {@code Schematic(…)} leído y recorrido a vóxeles una vez por archivo (y fecha) y ajustes: cada clic de un
+     * pincel de dispersión con 32 árboles de 64³ leía, descomprimía y recorría los 32 en el hilo del servidor (segundos
+     * por clic). Lo que se guarda es inmutable.
+     */
+    private static Captured captureSchematic(Path file, StructureSpec spec) {
+        String key = BlueprintService.key(file) + "|" + spec.format() + "|" + spec.origin() + "|" + spec.centered()
+                + "|" + spec.smooth() + "|" + spec.fillBias() + "|" + spec.rotation();
+        synchronized (SCHEMATICS) {
+            CapturedSchematic cached = SCHEMATICS.get(key);
+            if (cached != null) {
+                return cached.captured();
+            }
+        }
+        Clipboard clipboard = read(file, spec.format());
+        Captured captured = capture(clipboard, spec, file.getFileName().toString());
+        long volume = Math.max(1L, clipboard.getRegion().getVolume());
+        synchronized (SCHEMATICS) {
+            if (volume <= SCHEMATIC_CACHE_VOLUME && SCHEMATICS.put(key, new CapturedSchematic(captured, volume)) == null) {
+                schematicVolume += volume;
+            }
+            var oldest = SCHEMATICS.values().iterator();
+            while (schematicVolume > SCHEMATIC_CACHE_VOLUME && oldest.hasNext()) {
+                schematicVolume -= oldest.next().volume();
+                oldest.remove();
+            }
+        }
+        return captured;
     }
 
     /** Copia los bloques (sin NBT) a una estructura de vóxeles con su origen (INHERENT o CENTER). */
@@ -393,6 +432,14 @@ public final class PlacementService {
     }
 
     private static Clipboard read(Path file, String formatName) {
+        try {
+            return BlueprintService.schematic(file, () -> readFromDisk(file, formatName));
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("No se pudo leer " + file.getFileName() + ": " + exception.getMessage());
+        }
+    }
+
+    private static Clipboard readFromDisk(Path file, String formatName) {
         ClipboardFormat format = formatName == null
                 ? ClipboardFormats.findByFile(file.toFile())
                 : ClipboardFormats.findByAlias(formatName);
