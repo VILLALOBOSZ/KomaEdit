@@ -813,7 +813,7 @@ public final class LandformPlanner {
         double eta = Math.abs(t) / across;
         // Dos tamaños: barrancos grandes cada poco más de media ladera y costillas finas entre ellos.
         double ridged = 0.62 * pathNoise(track, s, along * 2.3, eta * 0.8, seed + 7L, true)
-                + 0.38 * pathNoise(track, s, along, eta, seed, true);
+                + 0.38 * pathNoise(track, s, along, eta * 1.8, seed, true);
         double amount = settings.variation * 0.95;
         return 1.0 - amount * strength + amount * strength * (0.34 + 0.95 * ridged);
     }
@@ -823,7 +823,8 @@ public final class LandformPlanner {
      * costura: se mezcla con el de una vuelta antes según lo recorrido.
      */
     private static double pathNoise(Track track, double s, double along, double eta, long seed, boolean ridged) {
-        double bend = 0.45 * StampNoise.fbm(s / (along * 2.3), eta * 1.3, seed + 1L, 2);
+        // Las costillas se tuercen al bajar y se cortan a trozos: no salen rectas ni de compás.
+        double bend = 0.85 * StampNoise.fbm(s / (along * 2.3), eta * 1.6, seed + 1L, 2);
         double value = sample(s / along + bend, eta, seed, ridged);
         if (track.closed) {
             double turn = (s - track.length) / along + bend;

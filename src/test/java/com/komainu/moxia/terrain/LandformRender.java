@@ -69,14 +69,14 @@ final class LandformRender {
         int sizeZ = terrain.sizeZ();
         double[] tops = tops(terrain);
         double[] soft = soften(tops, sizeX, sizeZ);
-        double maximum = Arrays.stream(tops).max().orElse(0.0);
+        double middle = Arrays.stream(tops).filter(top -> top >= 0).average().orElse(0.0);
         double centerX = terrain.minimumX() + sizeX / 2.0;
         double centerZ = terrain.minimumZ() + sizeZ / 2.0;
         double span = Math.max(sizeX, sizeZ) * distanceFactor;
         double yawRadians = Math.toRadians(yaw);
         double pitchRadians = Math.toRadians(pitch);
         Vec3 eye = new Vec3(centerX + Math.sin(yawRadians) * Math.cos(pitchRadians) * span,
-                maximum * 0.35 + Math.sin(pitchRadians) * span,
+                middle + Math.sin(pitchRadians) * span,
                 centerZ - Math.cos(yawRadians) * Math.cos(pitchRadians) * span);
         Map<Integer, int[]> textures = new HashMap<>();
         try (PerspectiveRaster raster = new PerspectiveRaster(width, height, eye, yaw, pitch, 42.0)) {

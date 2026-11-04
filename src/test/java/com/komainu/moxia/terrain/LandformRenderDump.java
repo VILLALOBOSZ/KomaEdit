@@ -32,6 +32,78 @@ class LandformRenderDump {
             }
             render(directory, scene);
         }
+        if (only == null || only.isBlank() || "sello_capturado".contains(only)) {
+            captured(directory);
+        }
+    }
+
+    /**
+     * Un valle cogido del mundo y estampado al doble de grande: con las alturas enteras tal cual, cada bloque se vuelve
+     * una terraza; capturado por KomaEdit (sin escalones, 16 bits), sale liso.
+     */
+    private static void captured(Path directory) throws IOException {
+        FakeTerrain source = slopeHills(140, 170, 140, 97L);
+        TerrainJobs.paint(source, SurfacePalette.parse("bosque"), source, NO_CANCEL);
+        TerrainJobs.landform(source, TerrainScenes.curve(new double[][]{{10, 60, 30}, {70, 55, 70},
+                        {130, 50, 110}}), false, valley(30, 16, 0.7, 5L, LandformPlanner.Form.V, false),
+                SurfacePalette.parse("pradera"), source, NO_CANCEL);
+        int fromX = 30;
+        int fromZ = 30;
+        int side = 80;
+        StampCapture.Columns columns = new StampCapture.Columns(side, side);
+        int lowest = Integer.MAX_VALUE;
+        int highest = Integer.MIN_VALUE;
+        for (int z = 0; z < side; z++) {
+            for (int x = 0; x < side; x++) {
+                int top = source.top(fromX + x, fromZ + z);
+                columns.set(x, z, top, false, source.blockId(fromX + x, top, fromZ + z));
+                lowest = Math.min(lowest, top);
+                highest = Math.max(highest, top);
+            }
+        }
+        StampCapture.Result smooth = StampCapture.build("capturado", columns, null, NO_CANCEL);
+        // Lo mismo sin quitar los escalones: el gris de cada columna, tal cual.
+        float[] raw = new float[side * side];
+        for (int z = 0; z < side; z++) {
+            for (int x = 0; x < side; x++) {
+                raw[z * side + x] = (float) ((columns.surface(x, z) - lowest) / (double) (highest - lowest));
+            }
+        }
+        HeightStamp naive = new HeightStamp("tal_cual", side, side, raw, 0.0);
+        double scale = 2.0;
+        BufferedImage original = LandformRender.perspective(window(source, fromX, fromZ, side), 640, 420, 150.0,
+                34.0, 1.35);
+        List<BufferedImage> views = new ArrayList<>(List.of(original));
+        List<String> labels = new ArrayList<>(List.of("el trozo de mundo (80 × 80)"));
+        for (HeightStamp stamp : List.of(naive, smooth.stamp())) {
+            FakeTerrain target = TerrainScenes.flat(200, 170, 70);
+            TerrainJobs.paint(target, SurfacePalette.parse("pradera"), target, NO_CANCEL);
+            double height = (stamp == naive ? highest - lowest : smooth.above() + smooth.below()) * scale;
+            double base = 70;
+            TerrainJobs.stamp(target, new StampBrush.Settings(stamp, StampBrush.Mode.RAISE, side / 2.0 * scale,
+                    stamp == naive ? height : Math.max(smooth.above(), smooth.below()) * scale, 1.0, 0.0, base),
+                    100, 100, SurfacePalette.parse("pradera"), target, NO_CANCEL);
+            views.add(LandformRender.perspective(window(target, 20, 20, 160), 640, 420, 150.0, 34.0, 1.2));
+            labels.add(stamp == naive ? "estampado al doble, alturas tal cual: terrazas"
+                    : "estampado al doble, capturado por KomaEdit: liso");
+        }
+        TerrainRender.save(TerrainRender.row(views, labels), directory.resolve("sello_capturado_escalones.png"));
+    }
+
+    /** Un trozo cuadrado de un terreno, para verlo de cerca. */
+    private static FakeTerrain window(FakeTerrain terrain, int fromX, int fromZ, int side) {
+        FakeTerrain copy = new FakeTerrain(0, terrain.minimumY(), 0, side, terrain.sizeY(), side);
+        for (int z = 0; z < side; z++) {
+            for (int x = 0; x < side; x++) {
+                for (int y = terrain.minimumY(); y <= terrain.maximumY(); y++) {
+                    String block = terrain.blockId(fromX + x, y, fromZ + z);
+                    if (!block.equals("minecraft:air")) {
+                        copy.put(x, y, z, block);
+                    }
+                }
+            }
+        }
+        return copy;
     }
 
     private record Scene(String name, String label, FakeTerrain terrain, List<double[]> path, boolean closed,
@@ -44,10 +116,6 @@ class LandformRenderDump {
                 TerrainScenes.flat(300, 150, 30), TerrainScenes.curve(new double[][]{
                 {30, 31, 200}, {95, 31, 150}, {165, 31, 165}, {230, 31, 95}, {270, 31, 40}}), false,
                 range(56, 46, 0.7, 11L), "alpino", "pradera"));
-        scenes.add(new Scene("cordillera_erosion_fuerte", "cordillera · curva suave, erosión al máximo",
-                TerrainScenes.flat(300, 150, 30), TerrainScenes.curve(new double[][]{
-                {30, 31, 200}, {95, 31, 150}, {165, 31, 165}, {230, 31, 95}, {270, 31, 40}}), false,
-                withErosion(range(56, 46, 0.7, 11L), 1.0), "alpino", "pradera"));
         scenes.add(new Scene("cordillera_curva_cerrada", "cordillera · curva cerrada sobre llano",
                 TerrainScenes.flat(280, 150, 30), TerrainScenes.curve(new double[][]{
                 {50, 31, 240}, {60, 31, 120}, {110, 31, 55}, {165, 31, 60}, {205, 31, 120}, {215, 31, 240}}),
@@ -91,12 +159,6 @@ class LandformRenderDump {
         return new LandformPlanner.Settings(LandformPlanner.Kind.RANGE, halfWidth, height,
                 LandformPlanner.Profile.BELL, variation, seed, LandformPlanner.Side.RIGHT, LandformPlanner.Form.V,
                 LandformPlanner.Blend.ADD, 0.5, false, family(StampCategory.RANGES));
-    }
-
-    private static LandformPlanner.Settings withErosion(LandformPlanner.Settings settings, double erosion) {
-        return new LandformPlanner.Settings(settings.kind(), settings.halfWidth(), settings.height(),
-                settings.profile(), settings.variation(), settings.seed(), settings.side(), settings.form(),
-                settings.blend(), erosion, settings.water(), settings.stamps());
     }
 
     private static LandformPlanner.Settings coast(double halfWidth, double height, double variation, long seed,

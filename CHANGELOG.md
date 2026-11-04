@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Sellos sacados del mundo y relieve a lo largo de la trayectoria
+
+- **Sellos propios del mundo.** Un trozo de terreno que te gusta se guarda como sello con `/komaedit sello capturar [nombre] [descripción…]` o, en **Estampar relieve**, con **Guardar la selección como sello**. Lee la altura del suelo de cada columna (sin troncos, hojas ni plantas y, si no se pide `-w`, sin el agua), la suaviza sin apartarse medio bloque de lo leído para que al escalarlo no salgan escalones, recorta el nivel base del borde, funde el borde y lo guarda en 16 bits con sus proporciones de verdad (lo que sube y lo que hunde). La lectura va repartida entre ticks y el cálculo en un worker.
+  - Son del servidor, con su autor, en `config/komaedit/heightmaps/` (PNG y JSON), junto a los PNG puestos a mano. Topes: 200 por servidor, 40 por jugador y 512 × 512 columnas por sello.
+  - Salen en la galería, en la pestaña nueva **Míos**, con miniatura (con los colores de la categoría que se elige por lo que había arriba), buscador (también por autor), favoritos y descripción; la altura natural y la paleta automática son las suyas.
+  - `sello`, `sello describir` y `sello borrar`; viajan en los `.kpack` como `sello:<nombre>` (el PNG se lee y se vuelve a escribir al llegar).
+  - Permisos `komaedit.stamps.capture` (intermedio), `komaedit.admin.stamps` y `komaedit.limit.stamps` (admin).
+- **Cordilleras, costas y valles por la trayectoria.** `/komaedit terreno cordillera|costa|valle` y la tarjeta **Trazar relieve** (también en **Usar con** de la etapa Trayectoria):
+  - **Cordillera:** cresta seguida con cumbres y collados, ramales y costillas que bajan al pie, y un pie tendido que se funde con el terreno; baja al acercarse a los extremos.
+  - **Costa:** acantilado a un lado de la línea con calas, barranqueras, canchal y farallones, y el mar al otro (solo donde no se escapa); la tierra va sola donde ya es más alto.
+  - **Valle:** en V, en U o cañón escalonado, con el fondo que siempre baja, valles laterales colgados y, si se pide, un río.
+  - Ajustes de ancho, altura, perfil a lo largo, variación con semilla, familia de sellos para el detalle, modo de mezcla (sumar, máximo, aplanar), erosión y paleta. Es un campo continuo sobre la curva, sin estampar por trozos: no hay costuras ni en las curvas cerradas. Vista previa, confirmación de lo grande, `-e`, un `//undo` y `/komaedit cancel` como el resto del terraformado.
+  - Permisos `komaedit.build.terrain.range`, `.terrain.coast` y `.terrain.valley` (intermedio).
+- Renders de los dos (`KOMAEDIT_LANDFORM_RENDER=<carpeta>`) y maquetas del Studio nuevas; `KOMAEDIT_STUDIO_MOCKUPS_ONLY=<texto>` pinta solo las maquetas que lo llevan en el nombre.
+- Nada probado aún dentro de Minecraft.
+
 ### Cabos sueltos de las auditorías
 
 Se revisaron sobre el código de hoy los 51 hallazgos que dejaron apuntados sin hacer los PR #65, #74, #79, #88 y #94 a #99. Nueve eran fallos o fricciones de uso y se arreglan aquí, cada uno con una prueba que fallaba antes. De los demás, 8 ya estaban arreglados por PR posteriores, 29 se descartan con su motivo y 5 quedan para más adelante. La tabla completa está en el PR.
