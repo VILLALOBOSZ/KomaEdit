@@ -431,12 +431,22 @@ public final class PlacementService {
         return matches;
     }
 
-    private static Clipboard read(Path file, String formatName) {
+    static Clipboard read(Path file, String formatName) {
         try {
             return BlueprintService.schematic(file, () -> readFromDisk(file, formatName));
         } catch (IOException exception) {
-            throw new IllegalArgumentException("No se pudo leer " + file.getFileName() + ": " + exception.getMessage());
+            throw unreadable(file, exception);
         }
+    }
+
+    /**
+     * Un esquema de la carpeta que no se pudo leer: lo dice sin el texto de Java («Not in GZIP format», «null» o la
+     * ruta del servidor), y el detalle va al registro.
+     */
+    private static IllegalArgumentException unreadable(Path file, IOException exception) {
+        com.komainu.moxia.KomaEditMod.LOGGER.warn("KomaEdit could not read schematic {}", file, exception);
+        return new IllegalArgumentException("No se pudo leer " + file.getFileName()
+                + ": el archivo falta o está dañado (el detalle está en el registro del servidor)");
     }
 
     private static Clipboard readFromDisk(Path file, String formatName) {
@@ -451,7 +461,7 @@ public final class PlacementService {
         try (InputStream stream = Files.newInputStream(file); ClipboardReader reader = format.getReader(stream)) {
             return reader.read();
         } catch (IOException exception) {
-            throw new IllegalArgumentException("No se pudo leer " + file.getFileName() + ": " + exception.getMessage());
+            throw unreadable(file, exception);
         }
     }
 
