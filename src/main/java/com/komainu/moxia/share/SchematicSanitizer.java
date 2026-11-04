@@ -42,6 +42,8 @@ public final class SchematicSanitizer {
     static final int MAX_SIDE = 65_535;
     private static final String PLAINS = "minecraft:plains";
     private static final Set<String> SIGNS = Set.of("minecraft:sign", "minecraft:hanging_sign");
+    private static final List<String> OLD_SIGN_KEYS = List.of("Text1", "Text2", "Text3", "Text4", "FilteredText1",
+            "FilteredText2", "FilteredText3", "FilteredText4", "Color", "GlowingText");
     /** Datos de bloque que se quedan (saneados); el resto se quita y el bloque se coloca con los de serie. */
     private static final Set<String> KEPT_BLOCK_ENTITIES = Set.of("minecraft:sign", "minecraft:hanging_sign",
             "minecraft:chest", "minecraft:trapped_chest", "minecraft:barrel", "minecraft:shulker_box",
@@ -274,6 +276,10 @@ public final class SchematicSanitizer {
             NbtCompound data = entry.getCompound("Data");
             clean(data, check);
             if (SIGNS.contains(id)) {
+                // Las líneas de antes de 1.20, que el DataFixer copia a front_text pero deja: fuera, con sus clics.
+                for (String old : OLD_SIGN_KEYS) {
+                    data.remove(old);
+                }
                 for (String side : new String[]{"front_text", "back_text"}) {
                     if (data.contains(side, NbtElement.COMPOUND_TYPE)) {
                         NbtCompound text = data.getCompound(side);

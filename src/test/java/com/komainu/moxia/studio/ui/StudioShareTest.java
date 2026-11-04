@@ -47,6 +47,53 @@ class StudioShareTest {
     }
 
     @Test
+    void exportShowsItsFormatAndAsksForTheDownloadBeforeSending() {
+        studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
+        studio.view.blueprints().select("torre");
+        studio.render();
+        assertTrue(studio.has("‹ .litematic ›"), "el formato se ve sin pasar el ratón: " + studio.texts());
+        studio.click("Exportar");
+        assertEquals("komaedit blueprint export torre litematic", studio.host.last());
+        assertEquals(List.of("komaedit blueprint export torre litematic"), studio.host.blueprints.expectedDownloads,
+                "el cliente sabe que ese archivo lo pidió el jugador");
+        studio.click("‹ .litematic ›");
+        studio.click("Exportar");
+        assertEquals("komaedit blueprint export torre nbt", studio.host.last());
+        studio.wheel("‹ .nbt ›", 1);
+        assertTrue(studio.has("‹ .schem ›"), studio.texts().toString());
+    }
+
+    @Test
+    void importFileListsTheSchematicsFolderAndUploadsTheChosenOne() {
+        studio.host.blueprints.localFiles.add(new StudioHost.LocalFile("aldea/molino.litematic", 131_072, 2L));
+        studio.host.blueprints.localFiles.add(new StudioHost.LocalFile("igloo.nbt", 900, 1L));
+        studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
+        studio.render();
+        assertFalse(studio.has("igloo.nbt"), "la lista va cerrada hasta pulsar el botón");
+        studio.click("Importar archivo…");
+        assertTrue(studio.shows("De tu carpeta schematics".toUpperCase()) || studio.shows("De tu carpeta schematics"),
+                "la lista dice de dónde salen: " + studio.texts());
+        assertTrue(studio.has("aldea/molino.litematic"), studio.texts().toString());
+        assertTrue(studio.has("128 KiB"), studio.texts().toString());
+        studio.click("igloo.nbt");
+        assertEquals(List.of("igloo.nbt"), studio.host.blueprints.uploaded);
+        assertTrue(studio.host.status.contains("Subiendo igloo.nbt"), studio.host.status);
+        assertFalse(studio.has("aldea/molino.litematic"), "al subir uno, la lista se cierra");
+
+        studio.host.blueprints.canUpload = false;
+        studio.click("Importar archivo…");
+        assertFalse(studio.has("igloo.nbt"), "sin subidas en el servidor, el botón no abre nada");
+    }
+
+    @Test
+    void anEmptySchematicsFolderSaysWhereToPutTheFiles() {
+        studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
+        studio.render();
+        studio.click("Importar archivo…");
+        assertTrue(studio.shows(".minecraft/schematics"), studio.texts().toString());
+    }
+
+    @Test
     void pasteCodeSendsTheClipboardOnlyIfItIsACode() {
         studio.view.selectStage(StudioStage.BLUEPRINTS, studio.host);
         studio.host.clipboard = "hola, esto no es un código";

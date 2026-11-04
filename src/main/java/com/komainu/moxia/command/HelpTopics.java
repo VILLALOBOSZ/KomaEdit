@@ -527,6 +527,12 @@ public final class HelpTopics {
                     new Entry("/komaedit blueprint tags <plano> [etiquetas]", "Cambia sus etiquetas (vacío: quitarlas)"),
                     new Entry("/komaedit blueprint share <plano>", "Lo comparte con todo el servidor (servidor/…)"),
                     new Entry("/komaedit blueprint delete <plano>", "Lo borra (alias borrar)"),
+                    new Entry("/komaedit blueprint export <plano|portapapeles|seleccion> [litematic|nbt|schem]"
+                            + " [nombre] [-servidor]", "A tu carpeta schematics, para Litematica o un bloque de"
+                            + " estructura (alias exportar)"),
+                    new Entry("/komaedit blueprint import <archivo> [región]",
+                            "Un .litematic, .nbt o .schem de config/komaedit/imports; enseña antes lo que trae"
+                                    + " (alias importar)"),
                     new Entry("/komaedit pincel stamp <planos|#etiqueta> [radio] [-n %] [-d separación] [-r giro]"
                             + " [-f volteo] [-g apoyar|centro|no]", "Pincel estampar: planos al azar sobre el suelo"),
                     new Entry("/komaedit scatter Bp(T:rocas) SurfaceNormal Random -n 1",
@@ -565,7 +571,8 @@ public final class HelpTopics {
                                     + " todos); -f lo guarda en config/komaedit/exports como .kpack"),
                     new Entry("/komaedit share import <código>", "Enseña lo que trae y lo que choca antes de guardar"),
                     new Entry("/komaedit share import archivo <nombre>",
-                            "Un .kpack (o un .txt con un código) de config/komaedit/imports"),
+                            "Un .kpack (o un .txt con un código) de config/komaedit/imports; un .litematic, .nbt o"
+                                    + " .schem entra como plano"),
                     new Entry("/komaedit share files", "Los archivos que hay para importar (alias archivos)"),
                     new Entry("/komaedit share accept [renombrar|reemplazar|saltar]",
                             "Importa lo enseñado; lo que choca, con otro nombre, sustituyéndolo o sin tocar"),

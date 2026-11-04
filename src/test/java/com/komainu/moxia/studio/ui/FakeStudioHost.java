@@ -592,6 +592,10 @@ public final class FakeStudioHost implements StudioHost {
         public boolean canShare = true;
         public int refreshes;
         public final List<String> requested = new ArrayList<>();
+        public final List<LocalFile> localFiles = new ArrayList<>();
+        public final List<String> uploaded = new ArrayList<>();
+        public final List<String> expectedDownloads = new ArrayList<>();
+        public boolean canUpload = true;
 
         @Override
         public boolean received() {
@@ -636,6 +640,27 @@ public final class FakeStudioHost implements StudioHost {
         @Override
         public void request(List<String> hashes) {
             requested.addAll(hashes);
+        }
+
+        @Override
+        public List<LocalFile> localFiles() {
+            return localFiles;
+        }
+
+        @Override
+        public boolean upload(String path) {
+            uploaded.add(path);
+            return true;
+        }
+
+        @Override
+        public boolean canUpload() {
+            return canUpload;
+        }
+
+        @Override
+        public void expectDownload(String command) {
+            expectedDownloads.add(command);
         }
     }
 

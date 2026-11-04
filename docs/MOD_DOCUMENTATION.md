@@ -4931,7 +4931,7 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 | Estructura | Abreviatura | Qué es |
 | --- | --- | --- |
 | `Clipboard(Origin:…,PasteMethod:…,FillBias:…,Rotation:…)` | `Cl` | Tu portapapeles de WorldEdit (`//copy`). |
-| `Schematic(Filename:<regex>,Format:…,Origin:…,PasteMethod:…,Rotation:…)` | `Sc(N:…)` | Schematics de la carpeta de WorldEdit cuyo nombre casa con la expresión regular. |
+| `Schematic(Filename:<regex>,Format:…,Origin:…,PasteMethod:…,Rotation:…)` | `Sc(N:…)` | Schematics de la carpeta de WorldEdit cuyo nombre casa con la expresión regular (`.schem`, `.schematic`, `.litematic` y estructuras `.nbt`). |
 | `Shape(Shape:<forma>,Pattern:<patrón>)` | `Sh(S:…,P:…)` | Una forma pintada con un patrón de WorldEdit. |
 | `Expression(Expression:=<fórmula>,Palette:<paleta>)` | `Ex(E:…,P:…)` | Una fórmula que decide forma y material. |
 | `TexturedShape(Shape:<forma>,TexturingShape:<forma>,Palette:<paleta>)` | `TS(S:…,T:…,P:…)` | Una forma pintada por otra forma o fórmula. |
@@ -4941,7 +4941,7 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 ### Comportamiento
 
 - **Clipboard y Schematic:** `Origin` es `INHERENT` (el punto desde el que se copió, por defecto) o `CENTER` (el centro de la caja). `PasteMethod` es `FAST` (vecino más cercano: con giros de 90° es como `//paste`) o `SMOOTHED`, que mira 27 puntos por bloque y coloca el bloque mayoritario cuando la parte llena, multiplicada por `FillBias` (1 por defecto), llega a la mitad: bordes más limpios con giros libres y, con `FillBias` alto, láminas finas que no se rompen. `Rotation` gira la estructura alrededor de su vertical antes que nada.
-- **Schematic:** `Filename` es una expresión regular (`arbol_.*` casa con `arbol_1`, `arbol_2`…) sobre el nombre con o sin extensión; admite subcarpetas (`bosque/roble_.*`) y `%p` es tu UUID, para las carpetas por jugador. Cada colocación elige uno al azar de los que casan (hasta 32). `Format` fuerza un formato (`sponge.3`, `mcedit`…); sin él se detecta.
+- **Schematic:** `Filename` es una expresión regular (`arbol_.*` casa con `arbol_1`, `arbol_2`…) sobre el nombre con o sin extensión; admite subcarpetas (`bosque/roble_.*`) y `%p` es tu UUID, para las carpetas por jugador. Cada colocación elige uno al azar de los que casan (hasta 32). `Format` fuerza un formato (`sponge.3`, `mcedit`, `litematic`, `nbt`…); sin él se detecta.
 - **Shape:** formas `Cone`, `Crystal(Sides:6,Extrusion:0.5)`, `Cuboid`, `Curl`, `Cylinder`, `Ellipsoid`, `Fur(Strands:18)`, `Heart`, `Jellybean`, `Leaf`, `Lemon`, `Onion`, `Polygon(Sides:6)`, `Pyramid(Sides:4)`, `Supersphere(Exponent:4)`, `Tetrahedron`, `Torus(Thickness:0.5)` o una fórmula propia `=…` (dentro donde vale más que 0). Las geométricas llenan su caja; las orgánicas (corazón, limón, hoja, rizo…) conservan sus proporciones centradas. El pelo cambia en cada colocación.
 - **Expression:** `x`, `y`, `z` van de -1 a 1 y `seed` es un entero distinto en cada colocación. Hasta 0 es aire, entre 0 y 1 elige el bloque de la paleta y de 1 en adelante el último.
 - **TexturedShape:** `S` decide qué se coloca y `T` reparte la paleta con la misma regla que `Expression` (una forma con nombre usa el primer bloque fuera y el último dentro).
@@ -5636,10 +5636,14 @@ Una biblioteca de planos como los Blueprints de Axiom: guarda lo que copias con 
 /komaedit blueprint tags <plano> [etiquetas]
 /komaedit blueprint share <plano>
 /komaedit blueprint delete <plano>
+/komaedit blueprint export <plano|portapapeles|seleccion> [litematic|nbt|schem] [nombre] [-servidor]
+/komaedit blueprint import [archivo] [región]
 /komaedit pincel stamp <planos|#etiqueta> [radio] [banderas]
 ```
 
-Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `buscar`, `ver`, `cargar`, `colocar`, `etiquetas`, `compartir` y `borrar` para las subórdenes; `estampar` para el pincel. En el Studio, la etapa **Planos** (tecla `0`). Ayuda: `/komaedit help blueprint`.
+Alias: `planos`, `plano` y `blueprints` para la orden; `guardar`, `lista`, `buscar`, `ver`, `cargar`, `colocar`, `etiquetas`, `compartir`, `borrar`, `exportar` e `importar` para las subórdenes; `estampar` para el pincel. En el Studio, la etapa **Planos** (tecla `0`). Ayuda: `/komaedit help blueprint`.
+
+Los planos entran y salen también como **`.litematic`** (Litematica), **estructuras `.nbt`** (las del bloque de estructura) y **`.schem`** de WorldEdit: ver [Importar y exportar: Litematica y estructuras](#importar-y-exportar-litematica-y-estructuras).
 
 ### Guardar
 
@@ -5717,6 +5721,58 @@ Comportamiento:
 - Cada clic vuelve a leer la lista: los planos nuevos de una etiqueta entran solos. Un nombre o una etiqueta que no existe da error al ponerlo en la mano.
 - Cada pasada es **una entrada de `//undo`**; con `-p`, antes se ve en el holograma.
 
+### Importar y exportar: Litematica y estructuras
+
+**Objetivo.** Entre builders casi todo se comparte en `.litematic`, y los datapacks y el bloque de estructura usan las estructuras `.nbt` de Minecraft. KomaEdit los lee y los escribe él mismo (sin Litematica instalado ni código suyo), así que un plano sale para Litematica y un `.litematic` entra en la biblioteca sin pasar por otro programa.
+
+**Acceso.**
+
+- **Exportar** un plano, el portapapeles o la selección: `/komaedit blueprint export <plano|portapapeles|seleccion> [formato] [nombre] [-servidor]`, o el botón **Exportar** de la tarjeta del plano elegido en el Studio, con el formato al lado (`‹ .litematic ›`).
+- **Importar** desde el Studio: **Importar archivo…** (etapa Planos) enseña los esquemas de tu carpeta `schematics`; un clic sube el elegido. Desde el servidor: deja el archivo en `config/komaedit/imports/` y usa `/komaedit blueprint import <archivo> [región]` (sin archivo, la lista con un botón por esquema). `/komaedit share import archivo <archivo>` hace lo mismo.
+- Permisos: exportar un plano pide `komaedit.blueprint.load`; el portapapeles o la selección, `komaedit.blueprint.save`. Importar pide `komaedit.share.import` y `komaedit.blueprint.save`, como un paquete. Escribir en el disco del servidor (`-servidor`) pide `komaedit.share.file`.
+
+**Formatos.** No hay que saber de qué formato es un archivo: al importar se deduce por lo que hay dentro, y al exportar se escribe `.litematic` si no se pide otro.
+
+| Formato | Extensión | Lee | Escribe | Notas |
+| --- | --- | --- | --- | --- |
+| Litematica | `.litematic` | versiones 1 a 7, una región o varias | versión 7 (la de Litematica para Minecraft 1.20.5 y siguientes), una región | con nombre, autor, descripción (las etiquetas del plano), tamaño, bloques, fechas y miniatura |
+| Estructura de Minecraft | `.nbt` | `palette` y `palettes` (la primera variante) | todos los bloques de la caja, también el aire | el bloque de estructura carga hasta 48 de lado; más grande, `/place template` |
+| WorldEdit | `.schem` | Sponge 1, 2 y 3 | Sponge 3 | el de los planos |
+| MCEdit | `.schematic` | al importar, con WorldEdit | no | de antes de 1.13 |
+
+**Exportar.**
+
+- **Formato** (`litematic`, `litematica`, `nbt`, `estructura`, `schem`): detrás de lo que se exporta, en cualquier orden con el nombre. En el Studio va a la vista junto a **Exportar** (`‹ .litematic ›`): un clic o la rueda lo cambian (`litematic` → `nbt` → `schem`).
+- **Nombre**: el del plano, `portapapeles` o `seleccion` si no se escribe otro. Se limpia como un nombre de plano (`Puente Norte` no vale: una palabra; `puente_norte` sí).
+- **Adónde**: si tu cliente tiene KomaEdit, el archivo **baja a tu carpeta `schematics`** (la de Litematica: `.minecraft/schematics`), en trozos de 16 KiB y como mucho 32 KiB por tick, sin pisar uno que ya exista (`torre.litematic`, `torre-2.litematic`…). El cliente solo guarda lo que tú pediste: cada exportación (con el botón del Studio o escribiendo la orden) deja bajar **un** archivo durante 2 minutos, y lo que llega sin pedirlo se descarta sin escribir nada ni avisar. Sin KomaEdit en el cliente, o con `-servidor`, se escribe en `config/komaedit/exports/` del servidor (hace falta `komaedit.share.file` y `allowFiles` en `share.json`). El chat dice cuándo ha llegado y dónde está.
+- **Lo que lleva**: los bloques con sus estados, los datos de bloque (cofres con su contenido, carteles con su texto…) y las entidades. El portapapeles sale con su giro (`//rotate`, `//flip`) aplicado, como `//schem save`; la selección, con sus entidades y el origen en su esquina.
+- **Origen**: en un `.litematic` la región va desplazada respecto al origen como en el portapapeles, así que Litematica la coloca como haría `//paste`. Una estructura `.nbt` siempre tiene el origen en su esquina.
+- **Miniatura** de Litematica (`PreviewImageData`): la del plano, o una isométrica de 140×140 pintada como las de la biblioteca para el portapapeles y la selección.
+- Exportar cuenta como una exportación de paquetes para `exportsPerHour` de `share.json`; el tamaño del plano, como al guardar (`maxVolume` y `maxSide` de `blueprints.json`, salvo `komaedit.limit.blueprints`). Un archivo de más de 16 MiB no se manda.
+
+**Importar.**
+
+- Antes de guardar nada sale la ventana **Importar** (o la lista del chat) con el nombre del plano, lo que choca con uno tuyo y lo que se cambia; luego **Importar**, **Con otro nombre**, **Reemplazar** o **Cancelar**, como un paquete (ver [Compartir entre servidores](#compartir-entre-servidores)).
+- **Nombre** del plano: el del archivo, sin extensión, en minúsculas, sin tildes y con `_` en los espacios (`Casa Pequeña (v2).litematic` → `casa_pequena_v2`). **Autor**: el que dice el archivo, o tú.
+- **Varias regiones**: un `.litematic` con varias se junta en un plano con cada región en su sitio. Donde se pisan, el aire de una no borra lo de otra y gana la última por orden alfabético. La ventana dice cuántas regiones hay y sus nombres; para quedarte con una, `/komaedit blueprint import <archivo> <región>` (sin distinguir mayúsculas; la región puede llevar espacios, como `Unnamed 1`). Las regiones con tamaño negativo (seleccionadas «hacia atrás» en Litematica) se colocan donde tocan.
+- **Versiones anteriores**: un archivo de otra versión de Minecraft pasa por el **DataFixer de Minecraft**, el mismo que pone al día los mundos: estados de bloque (`grass` → `short_grass`…), datos de bloque (carteles de antes de 1.20, objetos de antes de 1.20.5) y entidades. Uno de una versión más nueva entra con un aviso y lo que no exista se cambia.
+- **Bloques que faltan**: los de mods que no están, o de otra versión, se cambian por el más parecido por su nombre y se avisa, como con los planos de otro servidor.
+- **Datos de bloque y entidades**: se conservan con las reglas de los planos que llegan de otros: cofres con sus objetos (sin nombres, encantamientos ni libros escritos), carteles con su texto (sin clics) y las entidades de decorado (cuadros, marcos, soportes, vagonetas y barcas). Lo demás se quita y se avisa.
+- Los ticks pendientes (`PendingBlockTicks`, `PendingFluidTicks`) no se importan: el portapapeles de WorldEdit no los guarda.
+- Cada archivo cuenta como una importación para `importsPerHour` de `share.json`; uno que se sube desde el Studio cuenta desde que empieza a subir, aunque luego se cancele.
+
+**Lo que se comprueba.** Los archivos llegan de otros jugadores, así que antes de importar nada se miran el tamaño del archivo y lo que ocupa al descomprimirlo, el anidamiento de sus datos, el tamaño de cada región y de la caja entera, la paleta, el número de bloques con datos y de entidades, y que los bloques cuadren con su tamaño y con su paleta. Lo que no pasa se rechaza con un mensaje que dice qué falla («Los bloques de la región «casa» no cuadran con su tamaño», «El esquema mide 5000 bloques de lado; el máximo es 4096»…). Solo se lee de `config/komaedit/imports/` y de lo que sube el propio jugador, que llega en trozos con su huella y a un ritmo máximo; el servidor junta pocas subidas a la vez entre todos los jugadores y con un tope de memoria. En el cliente solo se escribe en `schematics` y solo lo que el jugador pidió. Después cuentan los límites de `blueprints.json` y de `share.json` de siempre.
+
+**En WorldEdit.** Los `.litematic` y las `.nbt` de la carpeta de schematics de WorldEdit (`config/worldedit/schematics`) valen también en `//schem load`, en `//schem save <nombre> litematic` (o `nbt`), en la estructura `Schematic(N:…)` de la colocación y en la máscara `#schemblocks`.
+
+**Rendimiento y limitaciones.**
+
+- Leer, convertir y escribir va en el hilo de los planos («KomaEdit planos» en el servidor, «KomaEdit esquemas» en el cliente); en el del servidor solo se leen el portapapeles o la selección y se mandan los trozos. Colocar un plano importado va por el camino de siempre (fantasma, vista previa, presupuesto por tick).
+- Subir o bajar un archivo de 1 MiB tarda unos 2 s; los planos normales ocupan mucho menos.
+- La región de un archivo subido desde el Studio no se elige: entran todas juntas. Para una sola, el archivo en `config/komaedit/imports/` y `/komaedit blueprint import <archivo> <región>`.
+- Al exportar a `.litematic` sale siempre una región; al exportar a `.nbt` se pierde el desplazamiento del origen.
+- Nada de esto se ha probado aún dentro de Minecraft ni con Litematica abierto: las pruebas son de JUnit (ida y vuelta en los formatos, empaquetado, regiones, versiones antiguas y archivos rotos o hechos a mala idea).
+
 ### Etapa Planos del Studio
 
 La etapa **Planos** (`5`) es la biblioteca con miniaturas. El plano elegido se coloca con un **clic en el mundo** (en ese bloque, con su fantasma), con el botón del pie, **Colocar plano** (en el último clic o, sin clic, en tu posición, con vista previa), o con `B`. Tras **Estampar**, el clic en el mundo pinta con el pincel de estampar y los cambios de la etapa (otro plano, otro radio) le llegan solos.
@@ -5726,12 +5782,16 @@ La etapa **Planos** (`5`) es la biblioteca con miniaturas. El plano elegido se c
 - **Buscador** (clic o `/` en la etapa): lo mismo que `search`. `Esc` lo borra y `Intro` elige el primero. A su lado, **Mostrar**: Todos, Míos o Servidor (un clic o la rueda).
 - **Etiquetas:** una fila de pastillas con las más usadas que caben: un clic filtra por la etiqueta y otro la quita.
 - **Plano elegido**, en una tarjeta de alto fijo encima de la cuadrícula (así no salta al elegir; si sus botones no caben en una fila, la tarjeta tiene dos): nombre, tamaño, bloques y autor, y los botones **Estampar** (el pincel en la mano con ese plano), **Radio** (auto, o el del pincel, con un clic o la rueda), **Cargar** (al portapapeles), **Al servidor** (lo copia a los planos del servidor; en los tuyos, si puedes) y **Compartir** (un código para llevarlo a otro servidor, ver [Compartir entre servidores](#compartir-entre-servidores)). Sin plano elegido y con una sola etiqueta activa sale **Estampar #etiqueta**, para estamparla entera. Sin permiso, el botón sale apagado y lo dice al pasar el ratón.
+- **Exportar** y, al lado, el formato (`‹ .litematic ›`), en la tarjeta del plano elegido: lo baja a tu carpeta `schematics` (la de Litematica). Un clic o la rueda sobre el formato lo cambian (`.litematic`, `.nbt`, `.schem`).
 - **Pegar código de otro servidor**, debajo de la tarjeta: importa lo que tengas copiado (planos, paletas, presets…), enseñando antes qué trae.
+- **Importar archivo…**, debajo: abre la lista **De tu carpeta schematics** con sus esquemas (`.litematic`, `.nbt`, `.schem` y `.schematic`, hasta tres carpetas por debajo), los más nuevos primero, con su tamaño. Un clic sube el archivo y sale la ventana **Importar** con lo que trae. Si la carpeta está vacía, la lista dice dónde está (`.minecraft/schematics`, donde guarda Litematica) y qué dejar ahí. En un servidor sin esta versión de KomaEdit el botón sale apagado y dice cómo hacerlo con la carpeta `config/komaedit/imports`.
+
+![Importar archivo en la etapa Planos](renders/studio/1080p_gui3_planos_importar_es.png)
 - **Cuadrícula** de miniaturas con el nombre (en dos líneas, partido tras `_` o `-`, si no cabe en una) y el tamaño debajo, tantas columnas como quepan (como poco dos); los compartidos llevan una estrella dorada. Un clic elige el plano.
 - La biblioteca se pide al abrir la etapa. Sin planos, **Guardar el portapapeles…** abre el chat con `/komaedit blueprint save ` escrito.
 - En el modo compacto no salen las pastillas de etiquetas y la tarjeta del plano elegido enseña el nombre y el tamaño en una sola línea (el resto, en su tooltip).
 - Las miniaturas se piden solo para las tarjetas que se ven y llegan **en trozos de 4 KiB**, como mucho 16 KiB por tick y jugador, para no atascar la conexión. El cliente las guarda por su huella (SHA-256): no se vuelven a pedir mientras el plano no cambie, caben 256 en memoria y se borran al salir del servidor.
-- La etapa se dibuja con el código común del Studio (ver [Cómo está hecho](#cómo-está-hecho)); sus maquetas son `docs/renders/studio/1080p_gui3_planos_es.png` y `854_gui2_planos_es.png`.
+- La etapa se dibuja con el código común del Studio (ver [Cómo está hecho](#cómo-está-hecho)); sus maquetas son `docs/renders/studio/1080p_gui3_planos_es.png`, `1080p_gui3_planos_importar_es.png` y `854_gui2_planos_es.png`.
 
 ### Permisos y límites
 
@@ -5932,7 +5992,7 @@ Alias: `compartir` para la orden; `exportar`, `importar`, `file`, `archivos`, `a
 
 ### Importar
 
-1. `/komaedit share import <código>`, o `import archivo <nombre>` para un `.kpack` de `config/komaedit/imports/` (vale también un `.txt` con un código pegado de Discord). `/komaedit share files` lista esos archivos con un botón cada uno.
+1. `/komaedit share import <código>`, o `import archivo <nombre>` para un `.kpack` de `config/komaedit/imports/` (vale también un `.txt` con un código pegado de Discord, y un `.litematic`, una estructura `.nbt` o un `.schem`, que entran como un plano: ver [Importar y exportar: Litematica y estructuras](#importar-y-exportar-litematica-y-estructuras)). `/komaedit share files` lista esos archivos con un botón cada uno. Los nombres pueden llevar espacios, tildes, paréntesis y corchetes, como los que guarda Litematica; sin extensión se prueban `.kpack`, `.litematic`, `.nbt`, `.schem`, `.schematic` y `.txt`.
 2. **Antes de guardar nada** dice qué trae, de quién y de qué versión de KomaEdit, cada cosa con su estado: **+** nueva, **!** choca con algo que ya tienes (mismo tipo y nombre, o repetida en el paquete), **×** no se puede importar (con el motivo: te falta el permiso, datos que no valen…) y **?** un tipo de una versión más nueva del mod. Debajo de cada una, lo que hubo que cambiar para este servidor (bloques que faltan, biomas…).
 3. Lo que choca: **[Importar con otro nombre]** (`torre` → `torre_2`), **[Reemplazar]** o **[Saltar]** (se queda lo tuyo); sin choques, **[Importar]**. **[Cancelar]** no guarda nada. La importación pendiente caduca a los 10 minutos.
 4. Cada cosa se guarda donde va (paletas con tus paletas, planos en tu biblioteca…) y se dice qué pasó con cada una. Los planos se leen con WorldEdit y se les pinta la miniatura en el hilo de los planos; el aviso llega al terminar.
@@ -5958,6 +6018,7 @@ Un paquete es solo datos: nada de lo que trae se ejecuta, y cada cosa se revisa 
 - **Bloques:** los que no existen en este servidor (de un mod que no está o de otra versión) pasan al **más parecido por su nombre**: primero el mismo nombre en Minecraft y después la misma forma (escalera, losa, muro, tronco…) con más palabras en común (`biomesoplenty:fir_stairs` → `oak_stairs`, `create:andesite_casing` → `andesite`); si no se parece a nada, aire. Las propiedades que el nuevo bloque no tiene se quitan. Los bloques de órdenes, de estructura y de puzle pasan a aire siempre.
 - **Fórmulas:** la de las recetas con la figura Expresión pasa por el compilador de la figura, que solo conoce números, las variables de la figura y funciones matemáticas (ver [Figura Expresión](#figura-expresión)). Las expresiones de WorldEdit (`=…`) no se aceptan en patrones ni máscaras.
 - **Presets:** se leen con el mismo lector que su orden; uno que apunte a otro preset (`#base`) no entra.
+- **Esquemas de otros formatos:** un plano que llega como `.litematic`, `.nbt` o `.schem` de otra versión se convierte al esquema de los planos y se pone al día con el DataFixer de Minecraft **antes** de revisarlo, así que se revisa lo mismo que se va a colocar. Al leerlo se cortan el tamaño descomprimido, el anidamiento, las regiones, la paleta, los datos de bloque y las entidades. Los carteles pierden también las líneas de antes de 1.20 (`Text1`…`Text4`).
 - **Planos:** el esquema se revisa entero antes de que lo lea WorldEdit: que el tamaño y los datos cuadren, los bloques que faltan y, fuera, todo lo que hace algo al colocarlo. Los bloques de órdenes, los generadores de criaturas, las bóvedas, los portales del End y los bloques con datos de otros mods llegan vacíos; los carteles, sin clics, selectores ni lecturas de datos (el texto y su color sí); los cofres, sin tabla de botín, y sus objetos, sin componentes (sin nombre, encantamientos ni libros escritos); de las entidades solo viajan las de decorado (cuadros, marcos, soportes de armadura, vagonetas y barcas), sin pasajeros, etiquetas ni atributos. Los biomas que no existen pasan a llanura.
 - **Versiones:** un tipo que esta versión no conoce (de una más nueva) se salta sin estropear el resto; un paquete con un formato más nuevo que el del mod pide actualizarlo.
 
@@ -5997,7 +6058,7 @@ Para quien quiera escribir herramientas que lean o hagan paquetes:
 - **Código:** `kpack1:` y, en Base64 apto para URL sin relleno, los bytes del JSON comprimidos con Deflate sin cabecera y con un diccionario fijo de palabras frecuentes (`ShareCodec.DICTIONARY`, que no cambia nunca: otro diccionario sería `kpack2:`).
 - **Archivo `.kpack`:** un ZIP con `pack.json` (el mismo JSON) y los adjuntos en `blobs/<n>.bin`.
 - **JSON**, con claves cortas para que el código ocupe poco: `{"f": 1, "n": "nombre", "a": "autor", "m": "versión del mod", "t": fecha en ms, "i": [{"k": "palette", "n": "rocas", "v": 1, "d": {…}, "b": adjunto}]}`. `f` es la versión del formato; `v`, la de los datos de cada tipo; `b`, el esquema de un plano (en Base64 dentro del código, la ruta del adjunto en el archivo).
-- **Datos de cada tipo:** paleta `{"e": "stone;andesite"}` (sin `minecraft:`); ruido, árbol y roca `{"t": "<el texto guardado>"}`; escultura y receta, el mismo JSON que se guarda en disco; plano `{"size": [x, y, z], "blocks": n, "tags": […], "author": "…"}` y el esquema `sponge.3` como adjunto.
+- **Datos de cada tipo:** paleta `{"e": "stone;andesite"}` (sin `minecraft:`); ruido, árbol y roca `{"t": "<el texto guardado>"}`; escultura y receta, el mismo JSON que se guarda en disco; plano `{"size": [x, y, z], "blocks": n, "tags": […], "author": "…"}` y el esquema `sponge.3` como adjunto. Al importar, el adjunto de un plano puede ser también un `.litematic` (con `"region": "<nombre>"` para quedarse con una), una estructura `.nbt` o un `.schem` de otra versión.
 - Cada versión escribe su formato y sigue leyendo los anteriores (una prueba lee un código de la primera versión en cada build).
 
 ### Rendimiento y limitaciones

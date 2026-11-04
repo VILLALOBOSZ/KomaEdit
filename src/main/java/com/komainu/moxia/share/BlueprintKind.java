@@ -7,6 +7,9 @@ import com.komainu.moxia.blueprint.BlueprintLibrary;
 import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.blueprint.BlueprintRef;
 import com.komainu.moxia.blueprint.BlueprintTags;
+import com.komainu.moxia.schematic.SchematicImport;
+import com.komainu.moxia.schematic.SchematicLimits;
+import com.komainu.moxia.schematic.SchematicUpgrade;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +17,11 @@ import java.util.function.Supplier;
 
 /**
  * Planos de la biblioteca. Datos: {@code {"size":[x,y,z], "blocks":n, "tags":[…], "author":"…"}} y el esquema
- * {@code sponge.3} como adjunto. Al importarlo el esquema pasa por {@link SchematicSanitizer} (bloques que faltan,
- * bloques de órdenes, carteles, cofres y entidades) y el tamaño y los bloques se calculan de nuevo, sin creer lo que
- * dice el paquete. La miniatura no viaja: se pinta aquí al guardarlo.
+ * {@code sponge.3} como adjunto. Al importarlo el adjunto puede ser también un {@code .litematic} (con
+ * {@code "region"} para quedarse con una sola), una estructura {@code .nbt} o un {@code .schem} de otra versión: se
+ * convierte a {@code sponge.3} y se pone al día con el DataFixer ({@link SchematicImport}). Después pasa por
+ * {@link SchematicSanitizer} (bloques que faltan, bloques de órdenes, carteles, cofres y entidades) y el tamaño y los
+ * bloques se calculan de nuevo, sin creer lo que dice el paquete. La miniatura no viaja: se pinta aquí al guardarlo.
  */
 public final class BlueprintKind implements ShareKind {
     /** Guarda un plano ya saneado; en el juego, {@code BlueprintService.importShared} (lee y pinta en su hilo). */
@@ -32,10 +37,20 @@ public final class BlueprintKind implements ShareKind {
 
     private final Supplier<BlueprintLibrary> library;
     private final Sink sink;
+    private final SchematicUpgrade.Fixer fixer;
+    private final SchematicImport.Legacy legacy;
 
     public BlueprintKind(Supplier<BlueprintLibrary> library, Sink sink) {
+        this(library, sink, SchematicUpgrade.vanilla(), null);
+    }
+
+    /** @param legacy convierte los {@code .schematic} de MCEdit (en el juego, con WorldEdit), o {@code null} */
+    public BlueprintKind(Supplier<BlueprintLibrary> library, Sink sink, SchematicUpgrade.Fixer fixer,
+                         SchematicImport.Legacy legacy) {
         this.library = library;
         this.sink = sink;
+        this.fixer = fixer;
+        this.legacy = legacy;
     }
 
     @Override
@@ -103,8 +118,12 @@ public final class BlueprintKind implements ShareKind {
         if (!item.hasBlob()) {
             throw new IllegalArgumentException("Le falta el esquema");
         }
-        SchematicSanitizer.Result schematic = SchematicSanitizer.sanitize(item.blob(), check, Long.MAX_VALUE);
         JsonObject data = item.data();
+        SchematicLimits limits = SchematicLimits.DEFAULT.withNbtBytes(check.limits().maxSchematicBytes());
+        SchematicImport.Prepared prepared = SchematicImport.toSponge(item.blob(), ShareCodec.string(data, "region"),
+                limits, fixer, legacy);
+        SchematicSanitizer.Result schematic = SchematicSanitizer.sanitize(prepared.sponge(), check, Long.MAX_VALUE);
+        prepared.warnings().forEach(check::warn);
         List<String> tags = new ArrayList<>();
         JsonElement tagArray = data.get("tags");
         if (tagArray != null && tagArray.isJsonArray()) {
@@ -132,7 +151,9 @@ public final class BlueprintKind implements ShareKind {
         JsonArray resultTags = new JsonArray();
         tags.forEach(resultTags::add);
         result.add("tags", resultTags);
-        result.addProperty("author", ShareText.display(ShareCodec.string(data, "author"), ShareCodec.MAX_AUTHOR));
+        String author = ShareCodec.string(data, "author");
+        result.addProperty("author", ShareText.display(author.isBlank() ? prepared.info().author() : author,
+                ShareCodec.MAX_AUTHOR));
         return new SharePack.Item(id(), normalizeName(item.name()), version(), result, schematic.data());
     }
 

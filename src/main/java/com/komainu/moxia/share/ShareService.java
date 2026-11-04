@@ -2,6 +2,7 @@ package com.komainu.moxia.share;
 
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.blueprint.BlueprintNetwork;
+import com.komainu.moxia.blueprint.FileChunks;
 import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.feedback.Feedback;
@@ -210,11 +211,82 @@ public final class ShareService {
         prepare(player, () -> ShareCodec.fromCode(code, limits), limits);
     }
 
-    /** {@code /komaedit share import archivo <nombre>}: un archivo de {@code config/komaedit/imports}. */
+    /**
+     * {@code /komaedit share import archivo <nombre>}: un archivo de {@code config/komaedit/imports}, un paquete o un
+     * esquema suelto ({@code .litematic}, {@code .nbt}, {@code .schem}…), que entra como un plano.
+     */
     public static void importFile(ServerPlayerEntity player, String name) {
+        importFile(player, name, "");
+    }
+
+    /**
+     * {@code /komaedit blueprint import <archivo> [región]}: lo mismo, con la región de un {@code .litematic} si se
+     * escribe detrás del nombre.
+     */
+    public static void importSchematic(ServerPlayerEntity player, String input) {
+        String[] parts = files().fileAndRegion(input);
+        importFile(player, parts[0], parts[1]);
+    }
+
+    private static void importFile(ServerPlayerEntity player, String name, String region) {
         ShareLimits limits = ShareConfig.limits();
         ShareFiles files = files();
-        prepare(player, () -> ShareCodec.fromFile(files.readImport(name, limits.maxFileBytes()), limits), limits);
+        prepare(player, () -> {
+            ShareFiles.Read read = files.read(name, limits.maxFileBytes());
+            return pack(read.fileName(), read.data(), region, limits);
+        }, limits);
+    }
+
+    /**
+     * Un esquema que el jugador subió desde su carpeta {@code schematics} (el Studio). La importación ya se contó al
+     * empezar a subirlo ({@link #chargeImport}); su huella se comprueba aquí, en el hilo de los paquetes.
+     */
+    public static void importUploaded(ServerPlayerEntity player, FileChunks.Complete file) {
+        ShareLimits limits = ShareConfig.limits();
+        prepare(player, () -> {
+            file.verify();
+            return pack(file.name(), file.data(), "", limits);
+        }, limits, false);
+    }
+
+    /**
+     * Cuenta una importación para el límite por hora (quien tenga {@code komaedit.limit.share} no cuenta) o lanza si
+     * ya no le quedan: una subida se cuenta al empezar, así que subir sin parar no cuesta nada al servidor.
+     */
+    public static void chargeImport(ServerPlayerEntity player) {
+        KomaPermissions.require(player, SharePermissions.IMPORT);
+        if (!KomaPermissions.can(player, SharePermissions.UNLIMITED)) {
+            QUOTA.takeImport(player.getUuid(), ShareConfig.limits().importsPerHour());
+        }
+    }
+
+    /**
+     * Cuenta una exportación del jugador para el límite por hora de {@code share.json} (quien tenga
+     * {@code komaedit.limit.share} no cuenta): exportar un esquema cuesta como un paquete.
+     */
+    public static void chargeExport(ServerPlayerEntity player) {
+        if (!KomaPermissions.can(player, SharePermissions.UNLIMITED)) {
+            QUOTA.takeExport(player.getUuid(), ShareConfig.limits().exportsPerHour());
+        }
+    }
+
+    /** {@code config/komaedit/exports}, donde se escriben los archivos exportados en el servidor. */
+    public static ShareFiles exportFiles() {
+        return files();
+    }
+
+    /**
+     * Un archivo recibido (de la carpeta de importar o subido desde el cliente): un paquete o un esquema suelto, que
+     * se deduce por el nombre y por los primeros bytes.
+     */
+    static SharePack pack(String fileName, byte[] data, String region, ShareLimits limits) {
+        if (SchematicPacks.isSchematic(fileName, data)) {
+            return SchematicPacks.pack(fileName, data, region);
+        }
+        if (region != null && !region.isBlank()) {
+            throw new IllegalArgumentException("Solo los .litematic tienen regiones");
+        }
+        return ShareCodec.fromFile(data, limits);
     }
 
     /** Los archivos de {@code config/komaedit/imports}. */
@@ -223,9 +295,14 @@ public final class ShareService {
     }
 
     private static void prepare(ServerPlayerEntity player, Callable<SharePack> source, ShareLimits limits) {
+        prepare(player, source, limits, true);
+    }
+
+    private static void prepare(ServerPlayerEntity player, Callable<SharePack> source, ShareLimits limits,
+                                boolean charge) {
         KomaPermissions.require(player, SharePermissions.IMPORT);
         ShareTarget target = target(player);
-        if (!target.can(SharePermissions.UNLIMITED)) {
+        if (charge && !target.can(SharePermissions.UNLIMITED)) {
             QUOTA.takeImport(player.getUuid(), limits.importsPerHour());
         }
         MinecraftServer current = player.getServer();

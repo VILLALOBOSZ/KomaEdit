@@ -1,8 +1,10 @@
 package com.komainu.moxia.client.gui.studio;
 
+import com.komainu.moxia.blueprint.BlueprintPayloads;
 import com.komainu.moxia.blueprint.BlueprintSummary;
 import com.komainu.moxia.client.ButtonCommandClient;
 import com.komainu.moxia.client.blueprint.ClientBlueprintCatalog;
+import com.komainu.moxia.client.blueprint.ClientSchematicFiles;
 import com.komainu.moxia.client.preview.PathHologramRenderer;
 import com.komainu.moxia.client.preview.ProceduralPreviewRenderer;
 import com.komainu.moxia.client.recipe.ClientInstanceCatalog;
@@ -450,6 +452,26 @@ public final class ClientStudioHost implements StudioHost {
         @Override
         public void request(List<String> hashes) {
             ClientBlueprintCatalog.request(hashes);
+        }
+
+        @Override
+        public List<LocalFile> localFiles() {
+            return ClientSchematicFiles.list();
+        }
+
+        @Override
+        public boolean upload(String path) {
+            return ClientSchematicFiles.upload(path);
+        }
+
+        @Override
+        public boolean canUpload() {
+            return ClientPlayNetworking.canSend(BlueprintPayloads.Upload.ID);
+        }
+
+        @Override
+        public void expectDownload(String command) {
+            ClientSchematicFiles.expect(command);
         }
     };
 
