@@ -111,6 +111,10 @@ public final class OwnStamps {
                 entries.add(entry);
             }
         }
+        // Lo de los sellos borrados (también a mano) no se queda en memoria.
+        catalog.prune();
+        metas.keySet().removeIf(path -> !Files.isRegularFile(path));
+        hashes.keySet().removeIf(path -> !Files.isRegularFile(path));
         entries.sort(Comparator.comparingLong((Entry entry) -> entry.meta.created()).reversed()
                 .thenComparing(Entry::name));
         OwnStampIndex.replace(entries.stream().map(Entry::info).toList());

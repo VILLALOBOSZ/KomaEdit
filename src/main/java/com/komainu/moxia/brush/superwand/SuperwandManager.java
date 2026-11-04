@@ -136,7 +136,7 @@ public final class SuperwandManager {
     private static BlockVector3 pointFor(ServerPlayerEntity player, State state) {
         return switch (state.mode) {
             case TRACE -> {
-                HitResult result = player.raycast(REACH, 1.0F, false);
+                HitResult result = com.komainu.moxia.performance.LoadedRay.cast(player, REACH, false);
                 if (!(result instanceof BlockHitResult hit) || result.getType() != HitResult.Type.BLOCK) {
                     throw new IllegalArgumentException("Mira un bloque");
                 }

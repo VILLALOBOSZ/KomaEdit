@@ -293,22 +293,40 @@ public final class BlueprintService {
         }
     }
 
+    /** Lee un esquema del disco. */
+    @FunctionalInterface
+    public interface SchematicReader {
+        Clipboard read() throws IOException;
+    }
+
+    /**
+     * Un esquema cualquiera de la carpeta de WorldEdit (los de {@code Schematic(N:…)}), con la misma caché que los
+     * planos: por archivo, fecha y tamaño, con tope de bloques. Sin ella, cada clic de un pincel de colocación con
+     * {@code Schematic(…)} leía y descomprimía del disco cada archivo que casaba (hasta 32), en el hilo del servidor.
+     * El esquema que devuelve es compartido: solo se lee.
+     */
+    public static Clipboard schematic(java.nio.file.Path file, SchematicReader reader) throws IOException {
+        return cached(key(file), reader).clipboard();
+    }
+
     private static Cached cached(BlueprintLibrary.Entry entry) {
-        String key = key(entry);
+        try {
+            return cached(key(entry.schematic()), () -> read(entry));
+        } catch (IOException exception) {
+            KomaEditMod.LOGGER.warn("KomaEdit could not read blueprint {}", entry.reference(), exception);
+            throw new IllegalArgumentException("No se pudo leer el plano " + entry.reference()
+                    + ": el archivo falta o está dañado (el detalle está en el registro del servidor)");
+        }
+    }
+
+    private static Cached cached(String key, SchematicReader reader) throws IOException {
         synchronized (CACHE) {
             Cached cached = CACHE.get(key);
             if (cached != null) {
                 return cached;
             }
         }
-        Clipboard clipboard;
-        try {
-            clipboard = read(entry);
-        } catch (IOException exception) {
-            KomaEditMod.LOGGER.warn("KomaEdit could not read blueprint {}", entry.reference(), exception);
-            throw new IllegalArgumentException("No se pudo leer el plano " + entry.reference()
-                    + ": el archivo falta o está dañado (el detalle está en el registro del servidor)");
-        }
+        Clipboard clipboard = reader.read();
         long blocks = clipboard.getRegion().getVolume();
         Cached cached = new Cached(clipboard, blocks, new BlueprintTemplate[1]);
         synchronized (CACHE) {
@@ -327,14 +345,18 @@ public final class BlueprintService {
         return cached;
     }
 
-    private static String key(BlueprintLibrary.Entry entry) {
+    /** El archivo con su fecha y su tamaño: si cambia, se lee otra vez. */
+    public static String key(java.nio.file.Path file) {
         long modified;
+        long size;
         try {
-            modified = java.nio.file.Files.getLastModifiedTime(entry.schematic()).toMillis();
+            modified = java.nio.file.Files.getLastModifiedTime(file).toMillis();
+            size = java.nio.file.Files.size(file);
         } catch (IOException exception) {
             modified = 0L;
+            size = -1L;
         }
-        return entry.schematic() + "@" + modified;
+        return file + "@" + modified + ":" + size;
     }
 
     private static void forget(BlueprintLibrary.Entry entry) {

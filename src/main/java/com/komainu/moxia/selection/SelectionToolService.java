@@ -4,6 +4,7 @@ import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.performance.Turns;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.worldedit.BlockSetSelector;
@@ -23,7 +24,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -147,9 +147,8 @@ public final class SelectionToolService {
         if (STATES.isEmpty()) {
             return;
         }
-        Iterator<Map.Entry<UUID, State>> iterator = STATES.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, State> entry = iterator.next();
+        // Por turnos: el lazo enorme de uno no deja sin plazo los de los demás.
+        for (Map.Entry<UUID, State> entry : Turns.from(STATES.entrySet(), server.getTicks())) {
             Job job = entry.getValue().job;
             if (job == null) {
                 continue;

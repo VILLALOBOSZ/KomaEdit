@@ -1,12 +1,12 @@
 package com.komainu.moxia.feedback;
 
 import com.komainu.moxia.brush.ez.AlignmentGuides;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.preview.PreviewPlanPayload;
 import com.komainu.moxia.preview.PreviewPlanSender;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
 /**
  * Engancha en el servidor lo que el cliente con KomaEdit dibuja y suena por su cuenta: el plan de la vista previa,
@@ -26,7 +26,7 @@ public final class WorldFeedback {
         ServerTickEvents.END_SERVER_TICK.register(PreviewPlanSender::tick);
         ServerTickEvents.END_SERVER_TICK.register(WorldOverlaySync::tick);
         ServerTickEvents.END_SERVER_TICK.register(AlignmentGuides::tick);
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+        PlayerLeave.register((handler, server) -> {
             PreviewPlanSender.forget(handler.player.getUuid());
             WorldOverlaySync.forget(handler.player.getUuid());
             AlignmentGuides.forget(handler.player.getUuid());

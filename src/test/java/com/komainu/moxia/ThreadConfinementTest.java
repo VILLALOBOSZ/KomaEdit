@@ -88,4 +88,32 @@ class ThreadConfinementTest {
                 "el que vuelve con server.execute no cuenta");
         assertTrue(findings.getFirst().path().contains("InitReachFixtures.submit"), findings.toString());
     }
+
+    /** Lo que escribe un archivo: si se interrumpe a medias, {@code FileChannel} lanza y deja el archivo a medio hacer. */
+    static final InitReach.Sink WRITES_FILES = (opcode, owner, name, descriptor) -> {
+        String simple = owner.substring(owner.lastIndexOf('/') + 1) + "." + name;
+        if (owner.equals("java/nio/file/Files") && Set.of("write", "writeString", "newOutputStream",
+                "newBufferedWriter", "copy", "move", "newByteChannel").contains(name)) {
+            return simple;
+        }
+        if (owner.equals("java/io/FileOutputStream") && name.equals("<init>")
+                || owner.equals("javax/imageio/ImageIO") && name.equals("write")) {
+            return simple;
+        }
+        return null;
+    };
+
+    /**
+     * Un cálculo de {@code AsyncEngine} (y lo que entrega, en el mismo worker) se interrumpe en cuanto el jugador hace
+     * otro clic, cancela, cambia de dimensión o se va. Guardar ahí un sello capturado lo cortaba a medio escribir
+     * ({@code ClosedByInterruptException}): quedaba el PNG sin su JSON y el sello dejaba de ser de su autor. Lo que se
+     * guarda va a un hilo que no se interrumpe (el de los sellos, el de los planos…).
+     */
+    @Test
+    void nothingThatCanBeInterruptedWritesFiles() {
+        InitReach reach = InitOrderTest.reach();
+        InitReach.Phase threads = reach.threads(reach.asyncEngineSubmissions());
+        assertEquals(List.of(), threads.findings(WRITES_FILES).stream().map(Object::toString).toList(),
+                "esto escribe archivos dentro de un cálculo que se interrumpe: guárdalo en otro hilo al entregarlo");
+    }
 }

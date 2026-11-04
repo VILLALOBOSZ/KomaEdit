@@ -1,5 +1,6 @@
 package com.komainu.moxia.biome;
 
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.edit.PackedBlockPlan;
@@ -12,7 +13,6 @@ import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.biome.BiomeType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Formatting;
@@ -55,8 +55,9 @@ public final class BiomeEditService {
                 return job != null && !ServerWork.paused(owner) && BiomeEditService.step(server, job, deadline);
             }
         });
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> finish(handler.player.getUuid(), true));
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+        PlayerLeave.register((handler, server) -> finish(handler.player.getUuid(), true));
+        // Con el mundo aún abierto: en SERVER_STOPPED ya se guardó y cerrar la sesión lo cambiaría en un mundo cerrado.
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             for (UUID playerId : List.copyOf(JOBS.keySet())) {
                 finish(playerId, true);
             }

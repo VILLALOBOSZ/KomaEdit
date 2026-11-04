@@ -26,10 +26,12 @@ public final class KitbashSocketService {
             return Template.EMPTY;
         }
         try {
-            Clipboard clipboard = WorldEditService.clipboard(player);
-            if (clipboard.getRegion().getVolume() > MAX_TEMPLATE_BLOCKS) {
-                throw new IllegalArgumentException("El módulo kitbash supera 50 000 bloques");
-            }
+            // El tamaño, antes de aplicar el //rotate pendiente (que copia el portapapeles entero).
+            Clipboard clipboard = WorldEditService.clipboard(player, volume -> {
+                if (volume > MAX_TEMPLATE_BLOCKS) {
+                    throw new IllegalArgumentException("El módulo kitbash supera 50 000 bloques");
+                }
+            });
             BlockVector3 origin = clipboard.getOrigin();
             List<Voxel> voxels = new ArrayList<>((int) clipboard.getRegion().getVolume());
             for (BlockVector3 source : clipboard.getRegion()) {

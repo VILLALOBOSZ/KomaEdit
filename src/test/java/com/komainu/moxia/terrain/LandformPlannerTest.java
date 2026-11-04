@@ -3,10 +3,13 @@ package com.komainu.moxia.terrain;
 import com.komainu.moxia.noise.NoiseEngine;
 import org.junit.jupiter.api.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LandformPlannerTest {
@@ -96,5 +99,34 @@ class LandformPlannerTest {
                 plain = field;
             }
         }
+    }
+
+    /**
+     * La versión desenfocada de un sello de detalle se guarda mientras se use el sello. El valor guardaba el sello y el
+     * {@code WeakHashMap} no podía soltarlo nunca: cada sello recapturado o importado que se usaba de detalle en una
+     * cordillera, una costa o un valle se quedaba en memoria con su copia hasta cerrar el juego.
+     */
+    @Test
+    void aDetailStampThatIsNoLongerUsedIsLetGo() {
+        WeakReference<HeightStamp> reference = prepareAndForget();
+        for (int attempt = 0; attempt < 100 && reference.get() != null; attempt++) {
+            System.gc();
+            byte[][] pressure = new byte[16][];
+            for (int index = 0; index < pressure.length; index++) {
+                pressure[index] = new byte[1 << 16];
+            }
+        }
+        assertNull(reference.get(), "el sello sigue en memoria aunque nadie lo use");
+    }
+
+    private static WeakReference<HeightStamp> prepareAndForget() {
+        float[] values = new float[64 * 64];
+        for (int index = 0; index < values.length; index++) {
+            values[index] = (index % 64) / 64.0F;
+        }
+        HeightStamp stamp = new HeightStamp("detalle", 64, 64, values, 0.0);
+        LandformPlanner.Blur blur = LandformPlanner.blur(stamp);
+        assertNotSame(stamp, blur.blurred());
+        return new WeakReference<>(stamp);
     }
 }

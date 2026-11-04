@@ -65,19 +65,32 @@ public final class JobQueue<K> {
      * @return dueños que acaban de entrar
      */
     public List<K> admit(int slots, Predicate<K> paused) {
+        return admit(slots, 0L, paused);
+    }
+
+    /**
+     * Como {@link #admit(int, Predicate)}, pero las de {@code small} bloques o menos no esperan ni ocupan sitio: con
+     * los sitios llenos de ediciones enormes (minutos cada una), la de 10 bloques de otro jugador esperaba a que
+     * acabara una. Colocando, el tiempo de cada tick se lo siguen repartiendo entre todas ({@link FairShare}).
+     */
+    public List<K> admit(int slots, long small, Predicate<K> paused) {
         int running = 0;
         for (Map.Entry<K, Entry> entry : entries.entrySet()) {
-            if (entry.getValue().active && !paused.test(entry.getKey())) {
+            if (entry.getValue().active && !paused.test(entry.getKey()) && entry.getValue().size > small) {
                 running++;
             }
         }
         List<K> admitted = new ArrayList<>();
         for (Map.Entry<K, Entry> entry : entries.entrySet()) {
-            if (running >= slots) {
-                break;
+            Entry value = entry.getValue();
+            if (value.active || paused.test(entry.getKey())) {
+                continue;
             }
-            if (!entry.getValue().active && !paused.test(entry.getKey())) {
-                entry.getValue().active = true;
+            if (value.size <= small) {
+                value.active = true;
+                admitted.add(entry.getKey());
+            } else if (running < slots) {
+                value.active = true;
                 admitted.add(entry.getKey());
                 running++;
             }

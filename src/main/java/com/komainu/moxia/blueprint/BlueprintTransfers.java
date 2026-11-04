@@ -1,12 +1,12 @@
 package com.komainu.moxia.blueprint;
 
 import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.share.ShareConfig;
 import com.komainu.moxia.share.ShareService;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -51,7 +51,7 @@ public final class BlueprintTransfers {
         ServerPlayNetworking.registerGlobalReceiver(BlueprintPayloads.Upload.ID, (payload, context) ->
                 context.server().execute(() -> upload(context.player(), payload.chunk())));
         ServerTickEvents.END_SERVER_TICK.register(BlueprintTransfers::tick);
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+        PlayerLeave.register((handler, server) -> {
             DOWNLOADS.remove(handler.player.getUuid());
             FileChunks.Assembler upload = UPLOADS.remove(handler.player.getUuid());
             if (upload != null) {

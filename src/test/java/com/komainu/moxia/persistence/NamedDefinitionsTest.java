@@ -34,6 +34,30 @@ class NamedDefinitionsTest {
         assertTrue(Files.isRegularFile(file));
     }
 
+    /**
+     * Lo leído de cada archivo se guarda para no volver a leerlo, pero no después de irse su jugador: con cientos de
+     * jugadores, o mundo tras mundo en un solo jugador, se iba acumulando mientras durara el proceso.
+     */
+    @Test
+    void whatWasReadForAPlayerIsForgottenWhenTheyLeave() {
+        Path ana = directory.resolve("players").resolve("ana");
+        Path luis = directory.resolve("players").resolve("luis");
+        NamedDefinitions anas = new NamedDefinitions(ana.resolve("palettes.json"), "paleta");
+        NamedDefinitions luiss = new NamedDefinitions(luis.resolve("noises.json"), "ruido");
+        anas.put("hielo", "blue_ice", false);
+        luiss.put("nubes", "Pe(f:0.02)", false);
+        assertEquals(Optional.of("blue_ice"), anas.get("hielo"));
+        assertEquals(Optional.of("Pe(f:0.02)"), luiss.get("nubes"));
+        assertTrue(NamedDefinitions.remembers(ana.resolve("palettes.json")));
+
+        NamedDefinitions.forgetUnder(ana);
+        assertFalse(NamedDefinitions.remembers(ana.resolve("palettes.json")), "lo de quien se fue sigue en memoria");
+        assertTrue(NamedDefinitions.remembers(luis.resolve("noises.json")), "lo de los demás se queda");
+        assertEquals(Optional.of("blue_ice"), anas.get("hielo"), "al volver se lee otra vez");
+        NamedDefinitions.forgetAll();
+        assertFalse(NamedDefinitions.remembers(luis.resolve("noises.json")));
+    }
+
     @Test
     void refusesToOverwriteWithoutForce() {
         NamedDefinitions store = new NamedDefinitions(directory.resolve("noises.json"), "ruido");

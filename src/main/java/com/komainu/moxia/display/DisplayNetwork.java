@@ -1,11 +1,12 @@
 package com.komainu.moxia.display;
 
+import com.komainu.moxia.performance.PlayerLeave;
+
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 /** Engancha el editor de displays en el servidor: paquetes, guardado del registro y limpieza. */
@@ -24,7 +25,7 @@ public final class DisplayNetwork {
                 context.server().execute(() -> DisplayService.edit(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(DisplayPayloads.Act.ID, (payload, context) ->
                 context.server().execute(() -> DisplayService.act(context.player(), payload)));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+        PlayerLeave.register((handler, server) ->
                 DisplayService.forget(handler.player.getUuid()));
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) ->
                 DisplayService.changedWorld(player));

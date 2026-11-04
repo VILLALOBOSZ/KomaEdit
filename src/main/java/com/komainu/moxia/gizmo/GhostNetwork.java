@@ -1,11 +1,11 @@
 package com.komainu.moxia.gizmo;
 
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.performance.ServerWork;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 /** Engancha el fantasma con gizmo en el servidor: paquetes, tick y limpieza. */
@@ -27,7 +27,7 @@ public final class GhostNetwork {
         ServerPlayNetworking.registerGlobalReceiver(GhostPayloads.Mode.ID, (payload, context) ->
                 context.server().execute(() -> GhostService.mode(context.player(), payload.mode())));
         ServerWork.light(GhostService::tick);
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+        PlayerLeave.register((handler, server) ->
                 GhostService.forget(handler.player.getUuid()));
         // Como la vista previa: solo en su dimensión y para quien lo pidió.
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) ->

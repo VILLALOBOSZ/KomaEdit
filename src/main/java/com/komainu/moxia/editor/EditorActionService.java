@@ -102,7 +102,9 @@ public final class EditorActionService {
                 case EditorActionPayload.CLIPBOARD_PASTE -> {
                     int queued = BatchEditService.submitClipboard(
                             player,
-                            WorldEditService.clipboard(player),
+                            // Su //limit, antes de aplicar el //rotate pendiente (que copia el portapapeles entero).
+                            WorldEditService.clipboard(player,
+                                    volume -> OperationPolicy.validate(player, volume, 0)),
                             payload.position(),
                             "Pegado de portapapeles"
                     );

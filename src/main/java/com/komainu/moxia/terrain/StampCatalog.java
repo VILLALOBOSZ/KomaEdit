@@ -90,6 +90,19 @@ public final class StampCatalog {
     }
 
     /**
+     * Suelta los sellos cuyo archivo ya no está. Cada sello leído se queda en memoria (de 1 a 4 MB): sin esto, capturar
+     * y borrar sellos con nombres distintos la iba llenando hasta cerrar el juego.
+     */
+    public void prune() {
+        cache.keySet().removeIf(path -> !Files.isRegularFile(path));
+    }
+
+    /** Cuántos sellos hay leídos en memoria (las pruebas). */
+    int cached() {
+        return cache.size();
+    }
+
+    /**
      * Crea la carpeta con un {@value #README} que explica cómo poner sellos propios. Los de serie van dentro del mod y
      * ya no se copian aquí. Devuelve cuántos archivos ha escrito (0 si ya estaba).
      */

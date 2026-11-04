@@ -16,6 +16,7 @@ import com.komainu.moxia.preview.PreviewPlanCodec;
 import com.komainu.moxia.preview.PreviewSurface;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.performance.Turns;
 import com.komainu.moxia.studio.live.LivePreviewResultPayload;
 import com.komainu.moxia.studio.live.LiveService;
 import com.sk89q.worldedit.fabric.FabricAdapter;
@@ -77,6 +78,8 @@ public final class GhostService {
     private static final AtomicInteger IDS = new AtomicInteger();
     private static final Map<UUID, GizmoSettings.Mode> MODES = new ConcurrentHashMap<>();
     private static final Map<UUID, Preparing> PREPARING = new LinkedHashMap<>();
+    private static int prepareTurn;
+    private static int checkTurn;
     private static final Map<UUID, Held> HELD = new LinkedHashMap<>();
     private static final Map<UUID, Checking> CHECKING = new LinkedHashMap<>();
     private static final ExecutorService ENCODER = Executors.newSingleThreadExecutor(runnable -> {
@@ -342,7 +345,8 @@ public final class GhostService {
     }
 
     private static void prepare(MinecraftServer server, long deadline) {
-        for (Preparing preparing : List.copyOf(PREPARING.values())) {
+        // Por turnos: si el primero gasta todo el plazo, el de otro jugador no espera a que acabe el suyo.
+        for (Preparing preparing : Turns.from(PREPARING.values(), prepareTurn++)) {
             if (System.nanoTime() >= deadline) {
                 return;
             }
@@ -462,7 +466,7 @@ public final class GhostService {
     }
 
     private static void check(MinecraftServer server, long deadline) {
-        for (Checking checking : List.copyOf(CHECKING.values())) {
+        for (Checking checking : Turns.from(CHECKING.values(), checkTurn++)) {
             UUID id = checking.held.player;
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
             if (player == null) {

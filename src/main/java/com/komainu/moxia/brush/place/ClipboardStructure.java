@@ -62,20 +62,25 @@ public record ClipboardStructure(boolean center, int quarterTurns) implements St
         return "portapapeles";
     }
 
+    private static void tooBig(long volume) {
+        if (volume > MAX_BLOCKS) {
+            throw new IllegalArgumentException("El portapapeles es demasiado grande para el pincel ("
+                    + ProgressLine.group(volume) + " bloques; máximo " + MAX_BLOCKS + ")");
+        }
+    }
+
     @Override
     public PlacementTemplate prepare(ServerPlayerEntity player, long seed) {
         Clipboard clipboard;
         try {
-            clipboard = WorldEditService.clipboard(player);
+            // El tamaño, antes de aplicar el //rotate pendiente (que copia el portapapeles entero): en cada clic.
+            clipboard = WorldEditService.clipboard(player, volume -> tooBig(volume));
         } catch (EmptyClipboardException exception) {
             throw new IllegalArgumentException("El portapapeles está vacío: copia algo con //copy");
         }
         Region region = clipboard.getRegion();
         long volume = region.getVolume();
-        if (volume > MAX_BLOCKS) {
-            throw new IllegalArgumentException("El portapapeles es demasiado grande para el pincel (" + ProgressLine.group(volume)
-                    + " bloques; máximo " + MAX_BLOCKS + ")");
-        }
+        tooBig(volume);
         BlockVector3 origin = center
                 ? BlockBounds.middle(region.getMinimumPoint(), region.getMaximumPoint())
                 : clipboard.getOrigin();

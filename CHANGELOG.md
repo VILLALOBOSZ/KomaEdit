@@ -17,6 +17,33 @@ Repaso del Studio etapa por etapa y tarjeta por tarjeta con las maquetas reales 
 - Maquetas del antes y el después en `docs/renders/auditoria_cliente/` (`KOMAEDIT_CLIENT_AUDIT_RENDER=<carpeta>`). Las del Studio de la documentación siguen iguales píxel a píxel.
 - Nada probado aún dentro de Minecraft.
 
+### Auditoría del servidor: hilos, rendimiento, memoria y ciclo de vida
+
+Repaso entero de lo que corre en otros hilos, lo que cuesta cada tick, lo que se queda en memoria y lo que pasa al arrancar y parar. Cada arreglo lleva su prueba.
+
+- **Lo grave:**
+  - Salir del juego mientras se colocaba tu edición podía **tumbar el servidor**: Fabric avisa de la desconexión desde el hilo de red y KomaEdit cerraba ahí la edición a la vez que el tick la seguía colocando. Todo lo de quien se va corre ahora en el hilo del servidor y, al parar, antes de guardar los mundos.
+  - Cambiar de dimensión mientras se calculaba un tubo, una figura, un generador, un texto o una imagen la colocaba en la dimensión nueva con las coordenadas de la anterior. Ahora se descarta con un aviso, igual que el **[Construir]** pendiente.
+  - Mirar al horizonte con un pincel de colocación en la mano (o pintando) cargaba y generaba los chunks de más allá de la distancia de visión cada pocos ticks. El rayo se para ahora en el primer chunk sin cargar.
+  - Con un `//rotate` pendiente, cada clic del pincel de colocación (y `place`, kitbash, doblar, el pegado del editor) copiaba el portapapeles entero antes de mirar si cabía. El tamaño se mira antes.
+  - `Schematic(N:…)` leía, descomprimía y recorría del disco hasta 32 archivos en cada clic. Ahora se hace una vez por archivo.
+  - La lectura de una selección más grande que la distancia de visión cargaba y soltaba sus chunks una vez por capa, y podía cargar 32 de golpe. Ahora va chunk a chunk.
+  - Los sellos propios borrados (y los usados de detalle en cordilleras, costas y valles) se quedaban en memoria para siempre, de 1 a 4 MB cada uno.
+- **Varios constructores a la vez:**
+  - Lo ligero (fantasma, pinceles, pintura, lazos, vista previa) va por turnos: el fantasma de un objeto enorme dejaba sin tiempo a los pinceles de los demás.
+  - Una edición pequeña (hasta 50 000 bloques) no espera detrás de las enormes.
+  - Con el motor de cálculo ocupado, un pincel arrastrado llenaba su cola de cálculos ya cancelados y todos recibían «ocupado».
+  - Comprobar la zona al confirmar una vista previa sale del presupuesto del tick.
+  - La pintura rápida y el pincel de pintura vacían lo escrito tick a tick: lo pintado aparece mientras se pinta, sin el tirón al soltar.
+- **Datos y paradas:**
+  - Un sello capturado podía quedarse a medio guardar (el PNG sin su JSON, y sin autor) si hacías otro clic mientras se guardaba.
+  - Escalar o girar el portapapeles ya no pisa un `//copy` hecho mientras calculaba.
+  - Al parar, la cola, la pintura y los biomas se cierran antes de guardar el mundo, y lo que acaba de calcularse ya no se coloca desde otro hilo.
+  - Las paletas, ruidos, selecciones y presets leídos se olvidan al irse el jugador y al cerrar el mundo.
+  - La máscara `#near` de un pincel o de `//gmask` ya no guarda hasta un millón de respuestas (unos 70 MB) mientras dura.
+- **Rendimiento:** la foto del terreno de los pinceles cuesta en la parte de KomaEdit 12,4 ns por bloque en vez de 31,2 (miraba el reloj en cada bloque).
+- Nada probado aún dentro de Minecraft.
+
 ### Auditoría de las herramientas: que hagan lo que dicen
 
 Repaso entero de figuras, generadores, terreno, pinceles, colocación, gizmo, planos y capacidades contra lo que dicen la ayuda, las tarjetas y la documentación, con los bordes del mundo, coordenadas negativas, giros y volteos. Cada arreglo lleva su prueba.

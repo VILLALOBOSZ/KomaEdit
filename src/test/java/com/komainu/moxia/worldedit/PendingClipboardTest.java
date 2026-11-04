@@ -1,8 +1,11 @@
 package com.komainu.moxia.worldedit;
 
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.math.transform.Transform;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +20,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -45,6 +49,34 @@ class PendingClipboardTest {
         assertSame(turned, PendingClipboard.of(holder), "con //flip, el portapapeles volteado");
     }
 
+    /**
+     * Girar copia el portapapeles entero en el hilo del servidor, y las herramientas miraban el tamaño después: con un
+     * {@code //copy} de millones de bloques y un {@code //rotate}, cada clic del pincel de colocación (o el kitbash, de
+     * 50 000 como mucho) copiaba los millones antes de decir que no cabían. El tamaño se mira antes, con la caja ya
+     * girada y sin girar nada.
+     */
+    @Test
+    void theSizeIsCheckedBeforeRotatingAnything() {
+        List<Transform> applied = new ArrayList<>();
+        Clipboard clipboard = boxed(applied, BlockVector3.at(0, 0, 0), BlockVector3.at(9, 1, 3));
+        ClipboardHolder holder = new ClipboardHolder(clipboard);
+        holder.setTransform(new AffineTransform().rotateY(90));
+        long[] seen = {-1};
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+                () -> PendingClipboard.of(holder, volume -> {
+                    seen[0] = volume;
+                    throw new IllegalArgumentException("demasiado grande");
+                }));
+        assertEquals("demasiado grande", refused.getMessage());
+        assertTrue(applied.isEmpty(), "se giró (y copió) antes de mirar el tamaño");
+        assertEquals(80, seen[0], "la caja girada, del mismo volumen");
+        Region turned = PendingClipboard.region(holder);
+        assertEquals(BlockVector3.at(4, 2, 10), turned.getMaximumPoint().subtract(turned.getMinimumPoint())
+                .add(1, 1, 1), "girar 90° cambia el largo por el ancho");
+        holder.setTransform(new AffineTransform().rotateY(45));
+        assertTrue(PendingClipboard.region(holder).getVolume() > 80, "girada 45° ocupa más caja");
+    }
+
     /** Nadie lee {@code session.getClipboard().getClipboard()} a pelo: todo pasa por {@link PendingClipboard}. */
     @Test
     void toolsReadTheClipboardWithItsPendingTransform() throws IOException {
@@ -62,6 +94,23 @@ class PendingClipboardTest {
         assertEquals(List.of(), raw, "leen el portapapeles sin su //rotate y //flip: usad WorldEditService.clipboard");
         assertTrue(Files.readString(root.resolve("worldedit/WorldEditService.java"))
                 .contains("PendingClipboard.of(context(player).session().getClipboard())"));
+    }
+
+    private static Clipboard boxed(List<Transform> applied, BlockVector3 minimum, BlockVector3 maximum) {
+        CuboidRegion region = new CuboidRegion(minimum, maximum);
+        return (Clipboard) Proxy.newProxyInstance(Clipboard.class.getClassLoader(), new Class<?>[]{Clipboard.class},
+                (proxy, method, arguments) -> switch (method.getName()) {
+                    case "getRegion" -> region;
+                    case "getOrigin" -> minimum;
+                    case "transform" -> {
+                        applied.add((Transform) arguments[0]);
+                        yield proxy;
+                    }
+                    case "hashCode" -> System.identityHashCode(proxy);
+                    case "equals" -> proxy == arguments[0];
+                    case "toString" -> "portapapeles de prueba";
+                    default -> throw new UnsupportedOperationException(method.getName());
+                });
     }
 
     private static Clipboard fake(List<Transform> applied, Clipboard result) {

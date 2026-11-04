@@ -58,6 +58,11 @@ import java.util.UUID;
  * </ul>
  */
 public final class BatchEditService {
+    /**
+     * Una edición de estos bloques o menos no espera en la cola ni ocupa sitio: con los sitios llenos de ediciones
+     * enormes, un retoque de otro jugador esperaba minutos (el tiempo de cada tick se reparte igual entre todas).
+     */
+    static final long SMALL_JOB_BLOCKS = 50_000L;
     private static final Map<UUID, Job> JOBS = new LinkedHashMap<>();
     private static final JobQueue<UUID> QUEUE = new JobQueue<>();
     private static final RateMeter RATE = new RateMeter();
@@ -74,7 +79,7 @@ public final class BatchEditService {
                     RATE.idle();
                     return;
                 }
-                for (UUID admitted : QUEUE.admit(KomaEditConfig.settings().maxConcurrentJobs(),
+                for (UUID admitted : QUEUE.admit(KomaEditConfig.settings().maxConcurrentJobs(), SMALL_JOB_BLOCKS,
                         ServerWork::paused)) {
                     Job job = JOBS.get(admitted);
                     if (job != null) {
@@ -274,7 +279,8 @@ public final class BatchEditService {
     private static void enqueue(ServerPlayerEntity player, Job job) {
         JOBS.put(job.playerId, job);
         QUEUE.add(job.playerId, job.total);
-        List<UUID> admitted = QUEUE.admit(KomaEditConfig.settings().maxConcurrentJobs(), ServerWork::paused);
+        List<UUID> admitted = QUEUE.admit(KomaEditConfig.settings().maxConcurrentJobs(), SMALL_JOB_BLOCKS,
+                ServerWork::paused);
         for (UUID owner : admitted) {
             Job started = JOBS.get(owner);
             if (started != null) {

@@ -6,10 +6,10 @@ import com.komainu.moxia.blueprint.FileChunks;
 import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.permission.KomaPermissions;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Block;
@@ -88,7 +88,7 @@ public final class ShareService {
             server = null;
             PENDING.clear();
         });
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, ignored) ->
+        PlayerLeave.register((handler, ignored) ->
                 PENDING.remove(handler.getPlayer().getUuid()));
     }
 

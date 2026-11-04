@@ -485,7 +485,7 @@ public final class DisplayService {
             candidates.add(new DisplayPick.Candidate(entity.getId(),
                     DisplayEntities.serverVolume(entity).world(pose, player.getYaw(), player.getPitch())));
         }
-        HitResult blocks = player.raycast(reach, 1.0F, false);
+        HitResult blocks = com.komainu.moxia.performance.LoadedRay.cast(player, reach, false);
         double wall = blocks.getType() == HitResult.Type.MISS ? reach : blocks.getPos().distanceTo(player.getEyePos());
         Optional<DisplayPick.Hit> hit = DisplayPick.pick(ray, candidates, Math.min(reach, wall + 0.01));
         if (hit.isEmpty() || !(player.getServerWorld().getEntityById(hit.get().id()) instanceof DisplayEntity entity)) {
