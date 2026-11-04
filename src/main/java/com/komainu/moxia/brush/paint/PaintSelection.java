@@ -44,8 +44,11 @@ public record PaintSelection(PaintBrush brush, Region selection, PaintPainter.Da
             double centerZ = (lowZ + highZ + 1) / 2.0;
             double halfX = (highX - lowX + 1) / 2.0;
             double halfZ = (highZ - lowZ + 1) / 2.0;
+            // Sin Huella, la misma fuerza en toda la caja: el cuadrado se estira hasta que la columna del borde quede
+            // por encima del 2 % donde empieza a difuminar (con un radio de medio bloque más, una selección de 200 de
+            // ancho pintaba el anillo de fuera a la mitad).
             double radius = byFootprint ? Math.sqrt(halfX * halfX + halfZ * halfZ) / extent
-                    : Math.max(halfX, halfZ) + 0.5;
+                    : Math.max(halfX, halfZ) / 0.98 + 1.0;
             int vertical = highY - lowY + 1 + layers + 4;
             PaintPainter.Dab dab = new PaintPainter.Dab(centerX, (lowY + highY) / 2.0 + 0.5, centerZ,
                     Math.max(0.5, radius), 0.0);
