@@ -1,5 +1,6 @@
 package com.komainu.moxia.client.utility;
 
+import com.komainu.moxia.client.ButtonCommandClient;
 import com.komainu.moxia.views.SavedView;
 import com.komainu.moxia.views.ViewNames;
 import com.komainu.moxia.views.ViewPayloads;
@@ -127,7 +128,7 @@ public final class ViewsScreen extends Screen {
             if (catalog.canManage() || player.getUuid().equals(view.authorId())) {
                 buttons.add(UtilityList.button(Text.translatable("gui.komaedit.views.unshare"),
                         Text.translatable("gui.komaedit.views.unshare.help"), button -> {
-                            player.networkHandler.sendChatCommand("komaedit vista borrar " + view.name());
+                            ButtonCommandClient.send(client, "komaedit vista borrar " + view.name());
                             message = "";
                         }));
             }

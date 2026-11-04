@@ -485,6 +485,7 @@
   "hud.komaedit.path.open": "Trayectoria abierta",
   "hud.komaedit.path.closed": "Trayectoria cerrada",
   "hud.komaedit.path.hint": "K abre el Studio  ·  Ctrl+P termina la captura  ·  /ke path points",
+  "hud.komaedit.chat_wait": "Espera %s s: con este servidor (KomaEdit anterior) más órdenes seguidas te echarían por spam",
   "komaedit.shape.chainlink": "Cadena",
   "komaedit.shape.chainlink.description": "Eslabones 3D alternados y entrelazados",
   "komaedit.shape.scales": "Escamas",

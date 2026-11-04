@@ -1,8 +1,8 @@
 package com.komainu.moxia.studio.tools;
 
 /**
- * Arma una orden de {@code /komaedit} palabra a palabra, sin la barra (como la manda el cliente con
- * {@code sendChatCommand}). Lo vacío o {@code null} no se escribe.
+ * Arma una orden de {@code /komaedit} palabra a palabra, sin la barra (como la manda el cliente por el paquete de los
+ * botones). Lo vacío o {@code null} no se escribe.
  */
 final class CommandLine {
     private final StringBuilder text;

@@ -485,6 +485,7 @@
   "hud.komaedit.path.open": "Open path",
   "hud.komaedit.path.closed": "Closed path",
   "hud.komaedit.path.hint": "K opens the Studio  ·  Ctrl+P ends capture  ·  /ke path points",
+  "hud.komaedit.chat_wait": "Wait %s s: on this server (older KomaEdit) more commands in a row would get you kicked for spam",
   "komaedit.shape.chainlink": "Chain",
   "komaedit.shape.chainlink.description": "Alternating, interlocked 3D links",
   "komaedit.shape.scales": "Scales",

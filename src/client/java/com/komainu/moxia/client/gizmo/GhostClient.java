@@ -1,6 +1,7 @@
 package com.komainu.moxia.client.gizmo;
 
 import com.komainu.moxia.KomaEditMod;
+import com.komainu.moxia.client.ButtonCommandClient;
 import com.komainu.moxia.client.mixin.GameRendererAccessor;
 import com.komainu.moxia.client.world.GhostRenderer;
 import com.komainu.moxia.client.world.GizmoRenderer;
@@ -405,7 +406,7 @@ public final class GhostClient {
             // Solo en un servidor con KomaEdit (si no, la orden no existe).
             if (paste.isPresent() && action == GLFW.GLFW_PRESS && client.player != null
                     && ClientPlayNetworking.canSend(GhostPayloads.Mode.ID)) {
-                client.player.networkHandler.sendChatCommand("komaedit paste");
+                ButtonCommandClient.send(client, "komaedit paste");
                 return true;
             }
             return false;

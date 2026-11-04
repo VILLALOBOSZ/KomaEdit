@@ -51,8 +51,8 @@ import static com.komainu.moxia.studio.ui.StudioTheme.*;
  * Etapa «Herramientas» del Studio. Sin herramienta elegida (o al pulsar su cabecera) se ve la cuadrícula de
  * herramientas con icono, por grupos y con buscador; al elegir una, la cuadrícula se pliega en una cabecera y
  * quedan a la vista sus ajustes: primero lo que se elige viendo (miniaturas), luego los esenciales y, plegado, el
- * resto. Construir (en el pie) manda la orden por el chat, igual que si se escribiera; el servidor la comprueba
- * con sus permisos.
+ * resto. Construir (en el pie) manda la orden que se escribiría (por el paquete de los botones, sin pasar por el
+ * chat); el servidor la comprueba con sus permisos, igual que si se escribiera.
  *
  * <p>No depende de Minecraft: dibuja con {@link StudioUi} y pide lo demás a su {@link Host}, así que la misma clase
  * la pinta el juego, la prueban los tests y la dibujan las maquetas.</p>
@@ -62,7 +62,7 @@ public final class ToolsPanel {
     public interface Host {
         String tr(String key, Object... arguments);
 
-        /** Manda una orden por el chat, sin barra. */
+        /** Manda una orden, sin barra, como si se escribiera (en el juego, por el paquete de los botones). */
         void send(String command);
 
         /** Abre la biblioteca de bloques (con {@code title} arriba) y entrega el elegido. */

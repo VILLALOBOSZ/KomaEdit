@@ -33,8 +33,9 @@ import java.util.UUID;
  * (selección, fuentes, presets, simetría), le cuenta el progreso de lo que tiene en marcha para el pie del Studio y
  * le manda la lista de materiales al terminar un {@code analyze}.
  *
- * <p>Nada de esto ejecuta nada: Construir sigue mandando la orden de chat de siempre, y el servidor la comprueba
- * como cualquier otra. A un cliente sin KomaEdit no se le manda ningún paquete.</p>
+ * <p>Nada de esto ejecuta nada: Construir manda la orden de siempre (por {@link ButtonCommandPayload}, sin pasar por
+ * el chat), y el servidor la comprueba como cualquier otra. A un cliente sin KomaEdit no se le manda ningún
+ * paquete.</p>
  */
 public final class StudioToolsNetwork {
     /** Jugadores a los que se les dijo que había algo en marcha: al terminar reciben un último paquete vacío. */
@@ -53,7 +54,7 @@ public final class StudioToolsNetwork {
         PayloadTypeRegistry.playC2S().register(StudioAimPayload.ID, StudioAimPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ToolStateRequestPayload.ID, (payload, context) ->
                 context.server().execute(() -> sendState(context.player())));
-        // Ya en el hilo del servidor y en el orden en que llegó: la orden de chat que el cliente manda justo detrás
+        // Ya en el hilo del servidor y en el orden en que llegó: la orden que el cliente manda justo detrás
         // tiene que encontrarse el clic apuntado (otro execute lo dejaría para después de ella).
         ServerPlayNetworking.registerGlobalReceiver(StudioAimPayload.ID, (payload, context) ->
                 StudioAim.receive(context.player(), payload));
