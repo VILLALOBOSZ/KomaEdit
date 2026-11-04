@@ -4805,7 +4805,7 @@ Cada colocación pasa por esta cadena, en este orden:
 6. **Desplazamientos** de la estructura (`RO`, `WO`, `OJ`).
 
 - Se trabaja al revés: cada bloque del mundo de la caja orientada pregunta qué bloque de la estructura le toca. Ni con giros libres ni al ampliar quedan agujeros. Con giros de 90° y escala 1, el portapapeles se copia exacto.
-- Las escaleras, troncos, vallas y demás bloques con dirección se giran con la orientación de cada colocación (con giros libres, a la dirección más cercana); las simetrías invierten escaleras, losas y cofres.
+- Los bloques con dirección se giran con la orientación de cada colocación. Con giros de 90° y volteos (también con `-r`, `-f` y las alineaciones a los ejes) es la misma transformación que el [gizmo](#colocar-con-gizmo) y la [simetría](#simetría): escaleras con su esquina, troncos, puertas con su bisagra y su mitad, raíles (rectos, en curva y en rampa), cofres dobles, losas, palancas y campanas de techo, carteles de 16 pasos… Con giros libres, a la dirección más cercana (los raíles y las bisagras se quedan como estaban).
 - El aire de la estructura no se coloca salvo con `-a` (al revés que `//paste -a`). Donde se solapan colocaciones gana la última, pero su aire nunca borra un bloque que otra acaba de poner.
 - Se coloca de abajo arriba, en una sola edición deshacible con `//undo`. El cálculo va en un worker; si hace falta leer el mundo (superficies, normales, `-b`), la lectura se reparte entre ticks y, dentro de lo leído, cada bloque solo se cambia si sigue igual que al leerlo.
 - La semilla (`-i`) fija todo lo aleatorio: con la misma semilla y el mismo mundo sale lo mismo. Sin `-i` se elige una al azar y `scatter` la dice al empezar.
