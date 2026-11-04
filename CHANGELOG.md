@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Planos en .litematic y estructuras .nbt
+
+La biblioteca de planos y Compartir entre servidores solo leían y escribían `.schem` y `.schematic`. Ahora entran y salen también los `.litematic` de Litematica y las estructuras `.nbt` de Minecraft, leídos y escritos por KomaEdit (sin depender de Litematica ni usar su código).
+
+- **Exportar** un plano, el portapapeles o la selección: `/komaedit blueprint export <plano|portapapeles|seleccion> [litematic|nbt|schem] [nombre] [-servidor]`, o **Exportar .litematic** en la tarjeta del plano (la rueda cambia el formato). Si el cliente tiene KomaEdit, el archivo baja a su carpeta `schematics`, la de Litematica, sin pisar otro. Si no, o con `-servidor`, va a `config/komaedit/exports`. El `.litematic` sale en la versión 7 del formato, con nombre, autor, descripción, tamaño, bloques, fechas y miniatura.
+- **Importar** un `.litematic`, `.nbt`, `.schem` o `.schematic`: desde el Studio (**Importar archivo…** lista tu carpeta `schematics` y sube el elegido), con `/komaedit blueprint import <archivo> [región]` desde `config/komaedit/imports` o con `share import archivo`. Antes de guardar enseña lo que trae y lo que choca, como un paquete.
+- **Varias regiones** de un `.litematic` se juntan en un plano, cada una en su sitio; con `<región>` se importa solo una. Las regiones con tamaño negativo se colocan donde tocan.
+- **Versiones anteriores** pasan por el DataFixer de Minecraft antes de revisarse (estados, datos de bloque y entidades). Los bloques de mods que faltan se cambian por el más parecido y se avisa. Los cofres, carteles y entidades conservan sus datos con las reglas de los planos de otros servidores.
+- **Seguridad:** al leer se cortan el tamaño descomprimido, el anidamiento, las regiones, la paleta, los datos de bloque y las entidades antes de reservar memoria. Un archivo roto o hecho a mala idea se rechaza con un mensaje claro. Solo se lee de `config/komaedit/imports` y de lo que sube el jugador, y en el cliente solo se escribe en `schematics`. Los carteles importados pierden además las líneas de antes de 1.20, que el DataFixer deja con sus clics.
+- **WorldEdit** entiende también los `.litematic` y las `.nbt` de su carpeta: `//schem load`, `//schem save … litematic`, `Schematic(N:…)` y `#schemblocks`.
+- La carpeta `config/komaedit/imports` admite nombres con espacios, tildes y paréntesis, y sin extensión prueba las de los esquemas.
+- **Código:** paquete `schematic` (Java puro: `SchematicData`, `LitematicCodec`, `PackedStates`, `StructureCodec`, `SpongeCodec`, `SchematicNbt`, `SchematicLimits`, `SchematicUpgrade`, `SchematicImport`), `share.SchematicPacks`, `blueprint.BlueprintExport`, `FileChunks`, `BlueprintTransfers`, `worldedit.KomaClipboardFormats` y `client.blueprint.ClientSchematicFiles`.
+- **Pruebas:** `PackedStatesTest` (entradas que cruzan longs comparadas con una referencia bit a bit; paletas de 1, 2, 3, 4, 17 y 300), `LitematicCodecTest`, `StructureCodecTest`, `SpongeCodecTest` (ida y vuelta, tamaños negativos, varias regiones, archivos rotos y bombas), `SchematicUpgradeTest` (con el DataFixer de verdad), `SchematicPacksTest` (un `.litematic` de 1.19.4 con bloques de órdenes, carteles con clics y libros), `FileChunksTest`, `BlueprintExportTest` y casos nuevos en `ShareFilesTest` y `StudioShareTest`. Maqueta nueva: `1080p_gui3_planos_importar_es.png`.
+- Nada probado aún dentro de Minecraft ni con Litematica abierto.
+
 ### Cabos sueltos de las auditorías
 
 Se revisaron sobre el código de hoy los 51 hallazgos que dejaron apuntados sin hacer los PR #65, #74, #79, #88 y #94 a #99. Nueve eran fallos o fricciones de uso y se arreglan aquí, cada uno con una prueba que fallaba antes. De los demás, 8 ya estaban arreglados por PR posteriores, 29 se descartan con su motivo y 5 quedan para más adelante. La tabla completa está en el PR.

@@ -96,6 +96,7 @@ public final class ClientSchematicFiles {
         MinecraftClient client = MinecraftClient.getInstance();
         IO.execute(() -> {
             try {
+                complete.verify();
                 Path written = write(folder(), complete.name(), complete.data());
                 String shown = "schematics/" + written.getFileName();
                 client.execute(() -> {

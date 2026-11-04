@@ -23,9 +23,9 @@ import java.util.stream.Stream;
 public final class ShareFiles {
     /**
      * Lo que se puede escribir como nombre de archivo en la orden: letras (también con tilde), números, espacios y
-     * {@code . _ - ( ) + '}, sin barras. Los de Litematica suelen llevar espacios.
+     * {@code . _ - ( ) [ ] + ' & , ! #}, sin barras ni dos puntos. Los de Litematica suelen llevar espacios.
      */
-    private static final Pattern FILE_NAME = Pattern.compile("[\\p{L}\\p{N}_-][\\p{L}\\p{N} ._()+'-]{0,95}");
+    private static final Pattern FILE_NAME = Pattern.compile("[\\p{L}\\p{N}_-][\\p{L}\\p{N} ._()\\[\\]+'&,!#-]{0,95}");
     /** Lo que se prueba detrás de un nombre escrito sin extensión. */
     private static final List<String> EXTENSIONS = List.of(ShareCodec.FILE_EXTENSION, ".litematic", ".nbt", ".schem",
             ".schematic", ".txt");
@@ -131,8 +131,8 @@ public final class ShareFiles {
     }
 
     /**
-     * Separa el archivo de la región en {@code casa grande.litematic tejado}: si el texto entero no es un archivo y
-     * sin la última palabra sí, esa palabra es la región.
+     * Separa el archivo de la región en {@code casa grande.litematic Unnamed 1}: si el texto entero no es un archivo,
+     * el archivo es el trozo más largo del principio que exista y lo que sigue, la región.
      *
      * @return {@code [archivo, región]}; la región, vacía si no hay
      */
@@ -141,9 +141,12 @@ public final class ShareFiles {
         if (exists(value)) {
             return new String[]{value, ""};
         }
-        int space = value.lastIndexOf(' ');
-        if (space > 0 && exists(value.substring(0, space).strip())) {
-            return new String[]{value.substring(0, space).strip(), value.substring(space + 1)};
+        // Las regiones de Litematica también llevan espacios («Unnamed 1»): vale el archivo más largo que exista.
+        for (int space = value.lastIndexOf(' '); space > 0; space = value.lastIndexOf(' ', space - 1)) {
+            String file = value.substring(0, space).strip();
+            if (exists(file)) {
+                return new String[]{file, value.substring(space + 1).strip()};
+            }
         }
         return new String[]{value, ""};
     }

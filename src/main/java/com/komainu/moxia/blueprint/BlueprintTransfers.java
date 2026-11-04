@@ -3,7 +3,6 @@ package com.komainu.moxia.blueprint;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.share.ShareConfig;
-import com.komainu.moxia.share.SharePermissions;
 import com.komainu.moxia.share.ShareService;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -29,8 +28,13 @@ public final class BlueprintTransfers {
     private static final int BYTES_PER_TICK = 32 * 1024;
     /** Una subida a medias que no avanza en este tiempo se olvida. */
     private static final long STALE_MILLIS = 120_000L;
+    /** Trozos de subida por jugador y tick como mucho (el cliente manda dos): más deprisa, la subida se corta. */
+    private static final int UPLOAD_CHUNKS_PER_TICK = 8;
     private static final Map<UUID, FileChunks.Queue> DOWNLOADS = new ConcurrentHashMap<>();
     private static final Map<UUID, FileChunks.Assembler> UPLOADS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> CHUNKS_THIS_TICK = new ConcurrentHashMap<>();
+    /** La subida que se rechazó al empezar (sin permiso, sin cuota): sus trozos se ignoran sin repetir el aviso. */
+    private static final Map<UUID, Integer> REFUSED = new ConcurrentHashMap<>();
     private static final AtomicInteger TRANSFERS = new AtomicInteger();
 
     private BlueprintTransfers() {
@@ -45,6 +49,8 @@ public final class BlueprintTransfers {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             DOWNLOADS.remove(handler.player.getUuid());
             UPLOADS.remove(handler.player.getUuid());
+            CHUNKS_THIS_TICK.remove(handler.player.getUuid());
+            REFUSED.remove(handler.player.getUuid());
         });
     }
 
@@ -64,32 +70,53 @@ public final class BlueprintTransfers {
     }
 
     private static void upload(ServerPlayerEntity player, FileChunks.Chunk chunk) {
-        if (!KomaPermissions.canAccess(player) || !KomaPermissions.can(player, SharePermissions.IMPORT)) {
-            if (chunk.index() == 0) {
-                Feedback.error(player, "Te falta el permiso " + SharePermissions.IMPORT + " para importar archivos");
-            }
+        UUID id = player.getUuid();
+        Integer refused = REFUSED.get(id);
+        if (refused != null && refused == chunk.transfer()) {
+            return;
+        }
+        if (!KomaPermissions.canAccess(player)) {
             return;
         }
         int max = (int) Math.min(FileChunks.MAX_BYTES, ShareConfig.limits().maxFileBytes());
-        FileChunks.Assembler assembler = UPLOADS.computeIfAbsent(player.getUuid(),
-                key -> new FileChunks.Assembler(max));
+        FileChunks.Assembler assembler = UPLOADS.computeIfAbsent(id, key -> new FileChunks.Assembler(max));
+        if (CHUNKS_THIS_TICK.merge(id, 1, Integer::sum) > UPLOAD_CHUNKS_PER_TICK) {
+            assembler.clear();
+            refuse(player, chunk, "llega demasiado deprisa");
+            return;
+        }
+        if (assembler.starts(chunk)) {
+            // Cada subida cuenta como una importación desde el primer trozo: con permiso y cuota, o no se junta nada.
+            try {
+                ShareService.chargeImport(player);
+            } catch (IllegalArgumentException exception) {
+                refuse(player, chunk, exception.getMessage());
+                return;
+            }
+        }
         Optional<FileChunks.Complete> complete;
         try {
             complete = assembler.accept(chunk, System.currentTimeMillis());
         } catch (IllegalArgumentException exception) {
-            Feedback.error(player, "No se pudo subir «" + chunk.name() + "»: " + exception.getMessage());
+            refuse(player, chunk, exception.getMessage());
             return;
         }
         complete.ifPresent(file -> {
             try {
-                ShareService.importUploaded(player, file.name(), file.data());
+                ShareService.importUploaded(player, file);
             } catch (IllegalArgumentException exception) {
                 Feedback.error(player, exception.getMessage());
             }
         });
     }
 
+    private static void refuse(ServerPlayerEntity player, FileChunks.Chunk chunk, String why) {
+        REFUSED.put(player.getUuid(), chunk.transfer());
+        Feedback.error(player, "No se pudo subir «" + chunk.name() + "»: " + why);
+    }
+
     private static void tick(MinecraftServer server) {
+        CHUNKS_THIS_TICK.clear();
         if (!UPLOADS.isEmpty()) {
             long before = System.currentTimeMillis() - STALE_MILLIS;
             UPLOADS.values().removeIf(assembler -> assembler.stale(before) || !assembler.pending());

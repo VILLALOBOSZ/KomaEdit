@@ -46,6 +46,7 @@ class FileChunksTest {
         assertTrue(complete.isPresent());
         assertEquals("Casa grande.litematic", complete.get().name());
         assertArrayEquals(data, complete.get().data());
+        complete.get().verify();
         assertFalse(assembler.pending());
     }
 
@@ -60,7 +61,7 @@ class FileChunksTest {
         assembler.accept(first, 0L);
         assembler.accept(tampered, 0L);
         IllegalArgumentException damaged = assertThrows(IllegalArgumentException.class,
-                () -> assembler.accept(chunks.get(2), 0L));
+                () -> assembler.accept(chunks.get(2), 0L).orElseThrow().verify());
         assertTrue(damaged.getMessage().contains("dañado"), damaged.getMessage());
 
         FileChunks.Assembler small = new FileChunks.Assembler(32 * 1024);
@@ -69,7 +70,9 @@ class FileChunksTest {
         assertTrue(big.getMessage().contains("demasiado grande"), big.getMessage());
 
         FileChunks.Assembler mixed = new FileChunks.Assembler(FileChunks.MAX_BYTES);
+        assertTrue(mixed.starts(chunks.getFirst()));
         mixed.accept(chunks.getFirst(), 0L);
+        assertFalse(mixed.starts(chunks.get(1)), "el segundo trozo sigue el mismo envío");
         FileChunks.Chunk liar = new FileChunks.Chunk(1, "torre.nbt", first.hash(), 1, chunks.size() + 1,
                 new byte[10]);
         assertThrows(IllegalArgumentException.class, () -> mixed.accept(liar, 0L));

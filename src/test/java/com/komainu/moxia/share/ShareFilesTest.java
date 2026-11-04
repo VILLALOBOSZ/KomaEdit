@@ -64,8 +64,13 @@ class ShareFilesTest {
         assertArrayEquals(new String[]{"Casa Pequeña (v2).litematic", ""},
                 files.fileAndRegion(" Casa Pequeña (v2).litematic "));
         assertArrayEquals(new String[]{"igloo", "norte"}, files.fileAndRegion("igloo norte"));
+        assertArrayEquals(new String[]{"Casa Pequeña (v2).litematic", "Unnamed 1"},
+                files.fileAndRegion("Casa Pequeña (v2).litematic Unnamed 1"));
+        Files.write(files.imports().resolve("torre [final] #2.litematic"), new byte[]{4});
+        assertArrayEquals(new byte[]{4}, files.readImport("torre [final] #2", 1024));
         assertArrayEquals(new String[]{"no existe", ""}, files.fileAndRegion("no existe"));
-        assertEquals(List.of("Casa Pequeña (v2).litematic", "igloo.nbt", "torre.schem"), files.importable());
+        assertEquals(List.of("Casa Pequeña (v2).litematic", "igloo.nbt", "torre [final] #2.litematic",
+                "torre.schem"), files.importable());
         for (String evil : List.of("../igloo.nbt", "igloo.nbt/..", "..\\igloo", "a/../../x.litematic")) {
             ShareCodecTest.assertMessage("", () -> files.readImport(evil, 1024));
         }

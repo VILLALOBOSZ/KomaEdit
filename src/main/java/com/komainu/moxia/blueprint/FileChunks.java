@@ -57,8 +57,17 @@ public final class FileChunks {
         }
     }
 
-    /** Un archivo entero, recibido y comprobado. */
-    public record Complete(String name, byte[] data) {
+    /**
+     * Un archivo entero, recibido. La huella se comprueba con {@link #verify()} en el hilo que lo vaya a usar: con
+     * 16 MiB, el SHA-256 no se calcula en el del servidor.
+     */
+    public record Complete(String name, String hash, byte[] data) {
+        /** @throws IllegalArgumentException si la huella no cuadra */
+        public void verify() {
+            if (!BlueprintLibrary.sha256(data).equals(hash)) {
+                throw new IllegalArgumentException("El archivo llegó dañado (la huella no cuadra)");
+            }
+        }
     }
 
     /**
@@ -166,8 +175,8 @@ public final class FileChunks {
 
         /**
          * @param now el reloj de quien recibe, para {@link #stale}
-         * @return el archivo, si este era el último trozo y la huella cuadra
-         * @throws IllegalArgumentException si el archivo es demasiado grande o no cuadra
+         * @return el archivo, si este era el último trozo (falta comprobar su huella, {@link Complete#verify()})
+         * @throws IllegalArgumentException si el archivo es demasiado grande o sus trozos no cuadran
          */
         public synchronized Optional<Complete> accept(Chunk chunk, long now) {
             if (chunk.transfer() != transfer || !chunk.name().equals(name) || !chunk.hash().equals(hash)) {
@@ -208,13 +217,9 @@ public final class FileChunks {
                 System.arraycopy(part, 0, data, offset, part.length);
                 offset += part.length;
             }
-            String expected = hash;
-            String fileName = name;
+            Complete complete = new Complete(name, hash, data);
             clear();
-            if (!BlueprintLibrary.sha256(data).equals(expected)) {
-                throw new IllegalArgumentException("El archivo llegó dañado (la huella no cuadra)");
-            }
-            return Optional.of(new Complete(fileName, data));
+            return Optional.of(complete);
         }
 
         /** ¿Hay un envío a medias empezado antes de {@code before}? */
@@ -224,6 +229,12 @@ public final class FileChunks {
 
         public synchronized boolean pending() {
             return parts != null;
+        }
+
+        /** ¿Este trozo empieza un envío nuevo (otro que el que se está juntando)? */
+        public synchronized boolean starts(Chunk chunk) {
+            return parts == null || chunk.transfer() != transfer || !chunk.name().equals(name)
+                    || !chunk.hash().equals(hash);
         }
 
         public synchronized void clear() {

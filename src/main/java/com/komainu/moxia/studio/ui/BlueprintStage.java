@@ -377,7 +377,10 @@ public final class BlueprintStage {
         for (StudioHost.LocalFile file : files.subList(0, Math.min(MAX_LOCAL_FILES, files.size()))) {
             Rect row = column.next(14);
             String size = host.tr("gui.komaedit.blueprint.import_size", Math.max(1, (file.bytes() + 1023) / 1024));
-            ui.button(row, ui.fit(file.path(), row.width() - ui.width(size) - 16), StudioUi.Tone.SECONDARY)
+            ui.fill(row, ui.hovered(row) ? CARD_HOVER : CARD);
+            ui.label(file.path(), row.x() + 6, row.y() + 3, row.width() - ui.width(size) - 18, TEXT);
+            ui.rightAligned(size, row.right() - 6, row.y() + 3, MUTED);
+            ui.register(row)
                     .tooltip(file.path() + " · " + size + "\n" + host.tr("gui.komaedit.help.blueprint.import_pick"))
                     .onClick(() -> {
                         boolean started = catalog.upload(file.path());
@@ -387,7 +390,6 @@ public final class BlueprintStage {
                             importing = false;
                         }
                     });
-            ui.rightAligned(size, row.right() - 6, row.y() + 3, MUTED);
         }
     }
 

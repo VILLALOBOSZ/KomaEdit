@@ -2,6 +2,7 @@ package com.komainu.moxia.share;
 
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.blueprint.BlueprintNetwork;
+import com.komainu.moxia.blueprint.FileChunks;
 import com.komainu.moxia.blueprint.BlueprintPermissions;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.feedback.Feedback;
@@ -236,10 +237,27 @@ public final class ShareService {
         }, limits);
     }
 
-    /** Un esquema que el jugador subió desde su carpeta {@code schematics} (el Studio). */
-    public static void importUploaded(ServerPlayerEntity player, String fileName, byte[] data) {
+    /**
+     * Un esquema que el jugador subió desde su carpeta {@code schematics} (el Studio). La importación ya se contó al
+     * empezar a subirlo ({@link #chargeImport}); su huella se comprueba aquí, en el hilo de los paquetes.
+     */
+    public static void importUploaded(ServerPlayerEntity player, FileChunks.Complete file) {
         ShareLimits limits = ShareConfig.limits();
-        prepare(player, () -> pack(fileName, data, "", limits), limits);
+        prepare(player, () -> {
+            file.verify();
+            return pack(file.name(), file.data(), "", limits);
+        }, limits, false);
+    }
+
+    /**
+     * Cuenta una importación para el límite por hora (quien tenga {@code komaedit.limit.share} no cuenta) o lanza si
+     * ya no le quedan: una subida se cuenta al empezar, así que subir sin parar no cuesta nada al servidor.
+     */
+    public static void chargeImport(ServerPlayerEntity player) {
+        KomaPermissions.require(player, SharePermissions.IMPORT);
+        if (!KomaPermissions.can(player, SharePermissions.UNLIMITED)) {
+            QUOTA.takeImport(player.getUuid(), ShareConfig.limits().importsPerHour());
+        }
     }
 
     /**
@@ -277,9 +295,14 @@ public final class ShareService {
     }
 
     private static void prepare(ServerPlayerEntity player, Callable<SharePack> source, ShareLimits limits) {
+        prepare(player, source, limits, true);
+    }
+
+    private static void prepare(ServerPlayerEntity player, Callable<SharePack> source, ShareLimits limits,
+                                boolean charge) {
         KomaPermissions.require(player, SharePermissions.IMPORT);
         ShareTarget target = target(player);
-        if (!target.can(SharePermissions.UNLIMITED)) {
+        if (charge && !target.can(SharePermissions.UNLIMITED)) {
             QUOTA.takeImport(player.getUuid(), limits.importsPerHour());
         }
         MinecraftServer current = player.getServer();
