@@ -66,6 +66,22 @@ class ClassicTubeEngineTest {
         }
     }
 
+    /**
+     * {@code build scales stone 3}: el largo de la escama se acotaba entre 5 y el radio × 1,45, y con radios pequeños el
+     * mínimo pasaba del máximo y salía «5.0 > 4.35». Lo mismo en spiked_scales, hexarmor y tiles.
+     */
+    @Test
+    void scaledArmourWorksWithSmallRadii() {
+        SampledPath path = straight(30);
+        for (PathShape shape : List.of(PathShape.SCALES, PathShape.SPIKED_SCALES, PathShape.HEX_ARMOR,
+                PathShape.TILES)) {
+            for (int radius = 1; radius <= 4; radius++) {
+                ShapeParameters parameters = shape.defaults().withRadius(radius);
+                assertFalse(ShapeGenerator.generate(path, parameters).isEmpty(), shape.id() + " radio " + radius);
+            }
+        }
+    }
+
     @Test
     void engineAcceptsSymbolicNames() {
         assertEquals(1.0, ShapeExpression.parse("chainlink(engine:exact)").options().get("engine", -1.0));

@@ -134,4 +134,14 @@ class GlassGradientTest {
         assertThrows(IllegalArgumentException.class, () -> GlassGradientRequest.parse("#ff8800 3 4 5 sideways"));
         assertThrows(IllegalArgumentException.class, () -> GlassGradientRequest.parse("#ff8800 3 -x"));
     }
+
+    /** {@code glassgradient -b}: el coral vivo muere fuera del agua y cambia de color; no puede ser un fondo. */
+    @Test
+    void backgroundsHaveNoLiveCoral() {
+        assertTrue(GlassColors.backgrounds().size() > 100);
+        for (GlassColors.Swatch swatch : GlassColors.backgrounds()) {
+            String id = swatch.blockId();
+            assertTrue(!id.endsWith("_coral_block") || id.startsWith("minecraft:dead_"), id);
+        }
+    }
 }

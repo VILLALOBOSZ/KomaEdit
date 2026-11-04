@@ -188,8 +188,8 @@ public final class EzSpline {
         }
         Map<String, Double> options = new LinkedHashMap<>();
         shape.translate(values, options);
-        if (!rope && !arguments.has("-t") && shape == Shape2D.CIRCLES_CIRCLE) {
-            // La cuerda gira 90° por diámetro; el círculo de círculos de 2d no gira salvo que se pida.
+        if (!rope && !arguments.has("-t") && (shape == Shape2D.CIRCLES_CIRCLE || shape == Shape2D.STRANDS)) {
+            // La cuerda gira 90° por diámetro; el círculo de círculos y los hilos de 2d no giran salvo que se pida.
             options.put("twist", 0.0);
         }
         String material = positional.get(expected - 2);
