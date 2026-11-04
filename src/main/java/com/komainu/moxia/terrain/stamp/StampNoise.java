@@ -6,7 +6,7 @@ package com.komainu.moxia.terrain.stamp;
  * hacen falta para el relieve: fBm, crestas multifractales de Musgrave y «billow». Solo usa sumas, productos y una
  * tabla calculada con {@link StrictMath}: el mismo sello sale igual en cualquier máquina.
  */
-final class StampNoise {
+public final class StampNoise {
     private static final int DIRECTIONS = 64;
     private static final double[] GRADIENT_X = new double[DIRECTIONS];
     private static final double[] GRADIENT_Y = new double[DIRECTIONS];
@@ -25,7 +25,7 @@ final class StampNoise {
     }
 
     /** Ruido de -1 a 1 (casi nunca llega a los extremos). */
-    static double noise(double x, double y, long seed) {
+    public static double noise(double x, double y, long seed) {
         int x0 = floor(x);
         int y0 = floor(y);
         double fx = x - x0;
@@ -42,11 +42,11 @@ final class StampNoise {
     }
 
     /** fBm de -1 a 1: {@code octaves} capas, cada una al doble de frecuencia y la mitad de fuerza. */
-    static double fbm(double x, double y, long seed, int octaves) {
+    public static double fbm(double x, double y, long seed, int octaves) {
         return fbm(x, y, seed, octaves, 0.5);
     }
 
-    static double fbm(double x, double y, long seed, int octaves, double gain) {
+    public static double fbm(double x, double y, long seed, int octaves, double gain) {
         double sum = 0.0;
         double amplitude = 1.0;
         double norm = 0.0;
@@ -69,7 +69,7 @@ final class StampNoise {
      * Crestas multifractales (Musgrave): de 0 a 1, crestas afiladas y valles suaves. Cada octava pesa más donde la
      * anterior ya era cresta, así el detalle se concentra en las cumbres y no ensucia los valles.
      */
-    static double ridged(double x, double y, long seed, int octaves) {
+    public static double ridged(double x, double y, long seed, int octaves) {
         double sum = 0.0;
         double amplitude = 1.0;
         double norm = 0.0;
@@ -91,7 +91,7 @@ final class StampNoise {
     }
 
     /** Ruido «billow» de 0 a 1: lomas redondas separadas por pliegues. */
-    static double billow(double x, double y, long seed, int octaves) {
+    public static double billow(double x, double y, long seed, int octaves) {
         double sum = 0.0;
         double amplitude = 1.0;
         double norm = 0.0;
@@ -106,7 +106,7 @@ final class StampNoise {
     }
 
     /** Un número de 0 a 1 fijo para una semilla y un índice: posiciones de cráteres, rocas… */
-    static double unit(long seed, int index) {
+    public static double unit(long seed, int index) {
         long value = mix(seed * 0x9E3779B97F4A7C15L + index * 0xD1B54A32D192ED03L);
         return (value >>> 11) * 0x1.0p-53;
     }

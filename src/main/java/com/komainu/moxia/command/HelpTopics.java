@@ -239,7 +239,7 @@ public final class HelpTopics {
                             "Ejemplo: vela suave entre tres curvas, de 2 de grosor y con piezas")
             )),
             new Topic("terrain", "Terraformado", List.of("terreno", "terraformar", "rampa", "rio", "canon",
-                    "relieve", "relief", "paint", "sellos", "heightmap"), List.of(
+                    "relieve", "relief", "paint", "sellos", "heightmap", "cordillera", "costa", "valle"), List.of(
                     new Entry("/komaedit pincel heightmap <sello> [radio] [altura] [sumar|restar|maximo|aplanar|"
                             + "suavizar] [paleta|auto] [-i intensidad] [-r mirada|azar|grados] [-x variación] "
                             + "[-s semilla] [-k] [-m máscara] [-c neutro] [-p]",
@@ -264,6 +264,16 @@ public final class HelpTopics {
                     new Entry("/komaedit terreno rio|arroyo|canon|barranco [ancho] [profundidad] [paleta] "
                             + "[-o orilla] [-w laderas] [-t transición] [-f agua|lava|seco] [-n nivel] [-y] [-k] [-e]",
                             "Río o cañón por la trayectoria; el fondo y el agua nunca suben"),
+                    new Entry("/komaedit terreno cordillera [ancho] [altura] [sumar|maximo|aplanar] [paleta] "
+                            + "[-p campana|plano|sube|baja] [-x variación] [-s semilla] [-h sellos] [-r erosión] [-e]",
+                            "Cordillera por la trayectoria: cresta con cumbres, collados y ramales que bajan al pie"),
+                    new Entry("/komaedit terreno costa [ancho] [altura] [paleta] [-l auto|izquierda|derecha] "
+                            + "[-f agua|seco] [-x] [-s] [-h] [-r] [-e]",
+                            "Acantilado a un lado de la trayectoria, con calas, farallones y el mar al otro"),
+                    new Entry("/komaedit terreno valle [ancho] [hondura] [v|u|canon] [paleta] [-f agua|seco] [-x] [-s] "
+                            + "[-h] [-r] [-e]", "Valle en V, glaciar en U o cañón escalonado que sigue la curva"),
+                    new Entry("/komaedit terreno cordillera 120 50 -s 7",
+                            "Ejemplo: una sierra de 120 bloques de ancho con cumbres de 50"),
                     new Entry("/komaedit terreno erosion hidraulica|termica|completa [iteraciones] [fuerza] [paleta] "
                             + "[-a ángulo] [-s semilla] [-m máscara] [-e]", "Erosión física de la selección"),
                     new Entry("/komaedit pintar [paleta] [pendiente|altura|ruido|huella|natural] [fuerza] [banderas]",

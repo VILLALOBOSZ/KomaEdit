@@ -62,6 +62,26 @@ public final class TerrainJobs {
         return new Summary(changed, flow);
     }
 
+    /** Cordillera, costa o valle a lo largo de la trayectoria muestreada. */
+    public static Summary landform(TerrainView view, List<double[]> samples, boolean closed,
+                                   LandformPlanner.Settings settings, SurfacePalette palette,
+                                   TerrainWriter.BlockSink sink, Runnable checkCancelled) {
+        TerrainColumns columns = TerrainColumns.read(view, checkCancelled);
+        HeightField field = columns.heights();
+        LandformPlanner.Result result = LandformPlanner.plan(field, samples, closed, settings, checkCancelled);
+        int changed = TerrainWriter.write(columns, field, result.hasWater() ? result : null, palette, false, sink,
+                checkCancelled);
+        String detail = switch (settings.kind()) {
+            case RANGE -> String.format(Locale.ROOT, "cumbre a Y %.0f, %d ramales", result.highest(),
+                    result.branches());
+            case COAST -> String.format(Locale.ROOT, "acantilado hasta Y %.0f, %d farallones%s", result.highest(),
+                    result.branches(), result.hasWater() ? ", con mar" : "");
+            case VALLEY -> String.format(Locale.ROOT, "fondo a Y %.0f, %d valles laterales%s", result.lowest(),
+                    result.branches(), result.hasWater() ? ", con río" : "");
+        };
+        return new Summary(changed, detail);
+    }
+
     public enum Erosion {
         HYDRAULIC("hydraulic", "hidráulica"),
         THERMAL("thermal", "térmica"),

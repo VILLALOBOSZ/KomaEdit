@@ -5,6 +5,9 @@ import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.path.PathSnapshot;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.shape.SampledPath;
+import com.komainu.moxia.terrain.HeightStamp;
+import com.komainu.moxia.terrain.LandformPlanner;
+import com.komainu.moxia.terrain.LandformRequest;
 import com.komainu.moxia.terrain.RampPlanner;
 import com.komainu.moxia.terrain.RiverPlanner;
 import com.komainu.moxia.terrain.StampLibrary;
@@ -52,14 +55,16 @@ import static net.minecraft.server.command.CommandManager.literal;
  * cálculo en un worker, estimación del motor común y un solo //undo.
  */
 public final class TerrainCommands {
-    private static final List<String> ACTIONS = List.of("rampa", "rio", "arroyo", "canon", "barranco", "erosion",
-            "pintar", "sellos", "paletas");
+    private static final List<String> ACTIONS = List.of("rampa", "rio", "arroyo", "canon", "barranco", "cordillera",
+            "costa", "valle", "erosion", "pintar", "sellos", "paletas");
     private static final Map<String, String> ALIASES = Map.ofEntries(
             Map.entry("ramp", "rampa"), Map.entry("river", "rio"), Map.entry("río", "rio"),
             Map.entry("stream", "arroyo"), Map.entry("canyon", "canon"), Map.entry("cañon", "canon"),
             Map.entry("cañón", "canon"), Map.entry("gully", "barranco"), Map.entry("erode", "erosion"),
             Map.entry("erosión", "erosion"), Map.entry("erosionar", "erosion"), Map.entry("paint", "pintar"),
-            Map.entry("stamps", "sellos"), Map.entry("heightmaps", "sellos"), Map.entry("palettes", "paletas"));
+            Map.entry("stamps", "sellos"), Map.entry("heightmaps", "sellos"), Map.entry("palettes", "paletas"),
+            Map.entry("range", "cordillera"), Map.entry("sierra", "cordillera"), Map.entry("coast", "costa"),
+            Map.entry("acantilado", "costa"), Map.entry("cliff", "costa"), Map.entry("valley", "valle"));
     private static final SuggestionProvider<ServerCommandSource> ACTION_SUGGESTIONS = (context, builder) -> {
         ACTIONS.forEach(builder::suggest);
         return builder.buildFuture();
@@ -73,6 +78,7 @@ public final class TerrainCommands {
             case "rio", "arroyo", "canon", "barranco" -> List.of("5", "3", "-o", "-w", "-t", "-f", "agua", "lava",
                     "seco", "-n", "-z", "-y", "-k", "-m", "-e");
             case "erosion" -> List.of("hidraulica", "termica", "completa", "3", "1", "-a", "-s", "-m", "-e");
+            case "cordillera", "costa", "valle" -> landformSuggestions(action, remaining);
             case "pintar" -> List.of("-m", "-e");
             case "sellos" -> stampSuggestions(remaining);
             default -> List.of();
@@ -132,6 +138,7 @@ public final class TerrainCommands {
             switch (action) {
                 case "rampa" -> ramp(player, options);
                 case "rio", "arroyo", "canon", "barranco" -> river(player, action, options);
+                case "cordillera", "costa", "valle" -> landform(player, LandformPlanner.Kind.byId(action), options);
                 case "erosion" -> erosion(player, options);
                 case "pintar" -> {
                     Renamed.notice(player, "/komaedit terreno pintar", "/komaedit pintar <paleta> natural",
@@ -307,6 +314,94 @@ public final class TerrainCommands {
                 (view, sink, cancel) -> TerrainJobs.river(view, samples, settings, palette, sink, cancel));
     }
 
+    // ---------------------------------------------------------------- cordillera, costa y valle
+
+    /** Lo que se puede escribir tras cada bandera de la cordillera, la costa y el valle. */
+    private static List<String> landformSuggestions(String action, String remaining) {
+        String trimmed = remaining.stripTrailing();
+        String last = trimmed.contains(" ") ? trimmed.substring(trimmed.lastIndexOf(' ') + 1) : trimmed;
+        if (remaining.endsWith(" ")) {
+            switch (last) {
+                case "-p" -> {
+                    return List.of("campana", "plano", "sube", "baja");
+                }
+                case "-l" -> {
+                    return List.of("auto", "izquierda", "derecha");
+                }
+                case "-h" -> {
+                    List<String> families = new ArrayList<>(List.of("auto", "ninguno"));
+                    for (StampCategory category : StampCategory.values()) {
+                        families.add(category.id());
+                    }
+                    return families;
+                }
+                case "-f" -> {
+                    return List.of("agua", "seco");
+                }
+                default -> {
+                }
+            }
+        }
+        List<String> result = new ArrayList<>(List.of("sumar", "maximo", "aplanar", "auto", "-p", "-x", "-s", "-h",
+                "-r", "-m", "-e"));
+        if (action.equals("costa")) {
+            result.addAll(List.of("-l", "-f"));
+        }
+        if (action.equals("valle")) {
+            result.addAll(List.of("v", "u", "canon", "-f"));
+        }
+        return result;
+    }
+
+    /**
+     * Cordillera, costa o valle por la trayectoria (o de los puntos de la selección): lee la caja que lo rodea, con el
+     * alcance de la forma y su altura, y lo calcula en un worker con {@link LandformPlanner}.
+     */
+    private static void landform(ServerPlayerEntity player, LandformPlanner.Kind kind, String text)
+            throws IncompleteRegionException {
+        KomaPermissions.requireBuild(player, switch (kind) {
+            case RANGE -> "terrain.range";
+            case COAST -> "terrain.coast";
+            case VALLEY -> "terrain.valley";
+        });
+        LandformRequest request = LandformRequest.parse(kind, text);
+        long seed = request.seed() != null ? request.seed() : ThreadLocalRandom.current().nextInt(1_000_000);
+        List<HeightStamp> stamps = request.loadStamps(TerrainService.catalog());
+        LandformPlanner.Settings settings = request.settings(stamps, seed);
+        PathSnapshot path = WorldEditService.resolvePath(player);
+        SampledPath sampled = SampledPath.createSmooth(path.points(), path.closed());
+        List<double[]> samples = new ArrayList<>();
+        double minimumX = Double.POSITIVE_INFINITY;
+        double maximumX = Double.NEGATIVE_INFINITY;
+        double minimumY = Double.POSITIVE_INFINITY;
+        double maximumY = Double.NEGATIVE_INFINITY;
+        double minimumZ = Double.POSITIVE_INFINITY;
+        double maximumZ = Double.NEGATIVE_INFINITY;
+        int steps = Math.max(2, (int) Math.ceil(sampled.length() * 2.0));
+        for (int step = 0; step <= steps; step++) {
+            var position = sampled.at(sampled.length() * step / steps).position();
+            samples.add(new double[]{position.x(), position.y(), position.z()});
+            minimumX = Math.min(minimumX, position.x());
+            maximumX = Math.max(maximumX, position.x());
+            minimumY = Math.min(minimumY, position.y());
+            maximumY = Math.max(maximumY, position.y());
+            minimumZ = Math.min(minimumZ, position.z());
+            maximumZ = Math.max(maximumZ, position.z());
+        }
+        int reach = (int) Math.ceil(settings.reach()) + 2;
+        BlockVector3 low = BlockVector3.at((int) Math.floor(minimumX) - reach,
+                (int) Math.floor(minimumY) - settings.below(), (int) Math.floor(minimumZ) - reach);
+        BlockVector3 high = BlockVector3.at((int) Math.floor(maximumX) + reach,
+                (int) Math.floor(maximumY) + settings.above(), (int) Math.floor(maximumZ) + reach);
+        SurfacePalette palette = SurfacePalette.parse(request.paletteName());
+        TerrainBlocks blocks = TerrainBlocks.resolve(palette);
+        String description = request.description() + " (semilla " + seed + ")";
+        boolean closed = path.closed();
+        TerrainService.submit(player, new CuboidRegion(low, high), 0, description, request.mask(), blocks,
+                request.estimate(), (view, sink, cancel) -> TerrainJobs.landform(view, samples, closed, settings,
+                        palette, sink, cancel));
+    }
+
     // ---------------------------------------------------------------- erosión
 
     private static void erosion(ServerPlayerEntity player, String text) throws IncompleteRegionException {
@@ -476,8 +571,9 @@ public final class TerrainCommands {
     }
 
     private static int help(CommandContext<ServerCommandSource> context) {
-        feedback(context, Text.literal("Terreno: rampa, rio, arroyo, canon, barranco, erosion, pintar, sellos,"
-                + " paletas · pincel de relieve: /komaedit pincel heightmap <sello> · /komaedit help terreno")
+        feedback(context, Text.literal("Terreno: rampa, rio, arroyo, canon, barranco, cordillera, costa, valle,"
+                + " erosion, pintar, sellos, paletas · pincel de relieve: /komaedit pincel heightmap <sello>"
+                + " · /komaedit help terreno")
                 .formatted(Formatting.GRAY));
         return 1;
     }

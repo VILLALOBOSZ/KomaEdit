@@ -201,6 +201,12 @@ public final class PermissionNodes {
         add(build + ".terrain.ramp", Pack.INTERMEDIATE, build, null, "/komaedit terreno rampa");
         add(build + ".terrain.river", Pack.INTERMEDIATE, build, null, "/komaedit terreno rio|arroyo");
         add(build + ".terrain.canyon", Pack.INTERMEDIATE, build, null, "/komaedit terreno canon|barranco");
+        add(build + ".terrain.range", Pack.INTERMEDIATE, build, null,
+                "/komaedit terreno cordillera (una sierra a lo largo de la trayectoria)");
+        add(build + ".terrain.coast", Pack.INTERMEDIATE, build, null,
+                "/komaedit terreno costa (acantilado y mar a un lado de la trayectoria)");
+        add(build + ".terrain.valley", Pack.INTERMEDIATE, build, null,
+                "/komaedit terreno valle (valle o cañón que sigue la trayectoria)");
         add(build + ".terrain.paint", Pack.INTERMEDIATE, build, null, "/komaedit terreno pintar");
         add(build + ".roof", Pack.INTERMEDIATE, build, null, "/komaedit roof (tejados)");
         add(build + ".loft", Pack.INTERMEDIATE, build, null, "/komaedit loft (superficies entre curvas)");

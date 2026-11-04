@@ -24,7 +24,7 @@ public final class StudioIcons {
         // Sobre qué trabaja una herramienta.
         LOOK, SELECTION, HAND, MODE,
         // Herramientas.
-        TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
+        TREE, ROCK, ROOF, LOFT, STAMP, RAMP, RIVER, LANDFORM, EROSION, TEXT, ANALYZE, SYMMETRY, CAPABILITIES, PAINT_BRUSH,
         TOUCH_UP, HOTBARS, REBUILD, DISPLAY, RULER, WATER, LASSO, REFERENCE,
         // Los modos de Retocar.
         GRAVITY, SNOW, DRAIN, WATERLOG, LOOSE_FLOWS, BIOME, DEINFEST, LEAVES, WET, WAX,
@@ -510,6 +510,20 @@ public final class StudioIcons {
                 "..##....##..",
                 ".#..#..#..#.",
                 "#....##....#");
+        // Una sierra sobre la línea discontinua de la trayectoria.
+        mask(Icon.LANDFORM,
+                "............",
+                "............",
+                ".....#......",
+                "....###..#..",
+                "...#####.##.",
+                "..##########",
+                ".###########",
+                "############",
+                "............",
+                "##.##.##.##.",
+                "............",
+                "............");
         mask(Icon.EROSION,
                 ".#..........",
                 ".#.....#....",
