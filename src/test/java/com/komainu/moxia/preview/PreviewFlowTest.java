@@ -161,6 +161,50 @@ class PreviewFlowTest {
         assertEquals(List.of("hide alice", "apply alice"), recorder.calls);
     }
 
+    /**
+     * Comprobar la zona al confirmar lee el mundo (y carga el chunk que no lo esté). Iba por número, 60 000 por vista
+     * previa y tick, fuera del presupuesto: diez confirmaciones a la vez eran 600 000 lecturas en un tick. Ahora se
+     * para en el plazo del tick (con 64 como mínimo para que avance) y empieza cada tick por otro jugador.
+     */
+    @Test
+    void zoneChecksStopAtTheDeadlineAndTakeTurns() {
+        World world = new World();
+        PackedBlockPlan.Builder builder = PackedBlockPlan.builder(1_000);
+        for (int index = 0; index < 1_000; index++) {
+            builder.addConditionalPattern(BlockVector3.at(index, 64, 0), 0);
+        }
+        PackedBlockPlan plan = builder.build();
+        PreviewFlow<PackedBlockPlan> flow = new PreviewFlow<>(new Recorder(), 90 * SECOND);
+        flow.hold(ALICE, plan, ZoneCheck.Watch.of(plan), 0L);
+        flow.hold(BOB, plan, ZoneCheck.Watch.of(plan), 0L);
+        flow.confirm(ALICE, 0L);
+        flow.confirm(BOB, 0L);
+        // Sin tiempo: cada una avanza lo mínimo.
+        flow.tick(player -> world, 1, 60_000, () -> true);
+        assertEquals(ZoneCheck.CHECK_EVERY, flow.status(ALICE, 1).orElseThrow().checked());
+        assertEquals(ZoneCheck.CHECK_EVERY, flow.status(BOB, 1).orElseThrow().checked());
+        // Tiempo para unas 200: se las lleva el primero del turno, y el turno cambia en cada tick.
+        int[] reads = {0};
+        int[] before = {flow.status(ALICE, 1).orElseThrow().checked(), flow.status(BOB, 1).orElseThrow().checked()};
+        flow.tick(player -> (x, y, z) -> {
+            reads[0]++;
+            return world.rawId(x, y, z);
+        }, 2, 60_000, () -> reads[0] >= 200);
+        int alice = flow.status(ALICE, 2).orElseThrow().checked() - before[0];
+        int bob = flow.status(BOB, 2).orElseThrow().checked() - before[1];
+        assertTrue(alice + bob <= 200 + 2 * ZoneCheck.CHECK_EVERY, "pasa del plazo: " + alice + " + " + bob);
+        reads[0] = 0;
+        int[] second = {flow.status(ALICE, 2).orElseThrow().checked(), flow.status(BOB, 2).orElseThrow().checked()};
+        flow.tick(player -> (x, y, z) -> {
+            reads[0]++;
+            return world.rawId(x, y, z);
+        }, 3, 60_000, () -> reads[0] >= 200);
+        int aliceAgain = flow.status(ALICE, 3).orElseThrow().checked() - second[0];
+        int bobAgain = flow.status(BOB, 3).orElseThrow().checked() - second[1];
+        assertTrue(alice > bob == aliceAgain < bobAgain, "el primero del turno es siempre el mismo: " + alice + "/"
+                + bob + " y luego " + aliceAgain + "/" + bobAgain);
+    }
+
     @Test
     void previewsExpireAndAreHiddenExactlyOnce() {
         World world = new World();

@@ -323,7 +323,7 @@ public final class PlanPreviews {
             ServerWorld world = player.getServerWorld();
             BlockPos.Mutable position = new BlockPos.Mutable();
             return (x, y, z) -> Block.getRawIdFromState(world.getBlockState(position.set(x, y, z)));
-        }, System.nanoTime(), CHECKS_PER_TICK);
+        }, System.nanoTime(), CHECKS_PER_TICK, () -> System.nanoTime() >= deadline);
         for (Held held : FLOW.plans()) {
             ServerPlayerEntity player = current.getPlayerManager().getPlayer(held.player);
             if (player != null) {

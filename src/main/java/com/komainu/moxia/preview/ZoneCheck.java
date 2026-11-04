@@ -88,6 +88,8 @@ public final class ZoneCheck {
         }
     }
 
+    /** Cada cuántas comprobaciones se mira el plazo. */
+    static final int CHECK_EVERY = 64;
     private final Watch watch;
     private int cursor;
     private boolean changed;
@@ -103,8 +105,18 @@ public final class ZoneCheck {
      * @return {@code true} cuando ha terminado (sin diferencias o con la primera encontrada)
      */
     public boolean step(World world, int budget) {
+        return step(world, budget, () -> false);
+    }
+
+    /**
+     * Como {@link #step(World, int)}, parando también cuando {@code outOfTime} lo diga (se mira cada
+     * {@value #CHECK_EVERY} comprobaciones, y siempre se hacen esas primeras para que avance): leer del mundo cuesta, y
+     * si el chunk no está cargado, lo carga.
+     */
+    public boolean step(World world, int budget, java.util.function.BooleanSupplier outOfTime) {
         int checked = 0;
-        while (cursor < watch.size() && checked < budget && !changed()) {
+        while (cursor < watch.size() && checked < budget && !changed()
+                && (checked == 0 || (checked & (CHECK_EVERY - 1)) != 0 || !outOfTime.getAsBoolean())) {
             int expected = watch.expected(cursor);
             if (expected != PackedBlockPlan.NO_EXPECTED_STATE) {
                 long packed = watch.position(cursor);

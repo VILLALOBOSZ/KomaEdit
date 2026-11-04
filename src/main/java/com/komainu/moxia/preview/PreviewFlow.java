@@ -62,6 +62,7 @@ public final class PreviewFlow<P> {
     }
 
     private final Map<UUID, Entry<P>> entries = new LinkedHashMap<>();
+    private int turn;
     private final Hooks<P> hooks;
     private final long ttlNanos;
 
@@ -152,10 +153,21 @@ public final class PreviewFlow<P> {
      * @param budget comprobaciones como mucho por vista previa en este tick
      */
     public void tick(Function<UUID, ZoneCheck.World> worlds, long now, int budget) {
+        tick(worlds, now, budget, () -> false);
+    }
+
+    /**
+     * Como {@link #tick(Function, long, int)}, con las comprobaciones de todos dentro del plazo del tick
+     * ({@code outOfTime}) y empezando cada vez por otro jugador: diez confirmaciones a la vez eran 600 000 lecturas del
+     * mundo en un tick, fuera del presupuesto.
+     */
+    public void tick(Function<UUID, ZoneCheck.World> worlds, long now, int budget,
+                     java.util.function.BooleanSupplier outOfTime) {
         if (entries.isEmpty()) {
             return;
         }
-        List<Map.Entry<UUID, Entry<P>>> snapshot = new ArrayList<>(entries.entrySet());
+        List<Map.Entry<UUID, Entry<P>>> snapshot = com.komainu.moxia.performance.Turns.from(entries.entrySet(),
+                turn++);
         for (Map.Entry<UUID, Entry<P>> item : snapshot) {
             UUID player = item.getKey();
             Entry<P> entry = item.getValue();
@@ -176,7 +188,7 @@ public final class PreviewFlow<P> {
                 hooks.hide(player, entry.plan);
                 continue;
             }
-            if (!entry.check.step(world, budget)) {
+            if (!entry.check.step(world, budget, outOfTime)) {
                 continue;
             }
             entries.remove(player);
