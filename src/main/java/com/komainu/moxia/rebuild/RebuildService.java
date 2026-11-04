@@ -61,8 +61,6 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -306,6 +304,12 @@ public final class RebuildService {
         return JOBS.containsKey(owner);
     }
 
+    /** El nombre de la reconstrucción del jugador mientras lee, ordena o coloca; {@code null} si no tiene. */
+    public static String placing(UUID owner) {
+        Job job = JOBS.get(owner);
+        return job == null ? null : job.description;
+    }
+
     /** Pone o quita la pausa. */
     public static String pause(UUID owner, boolean pause) {
         Job job = require(owner);
@@ -454,29 +458,15 @@ public final class RebuildService {
         return server.getSavePath(WorldSavePath.ROOT).resolve("komaedit").resolve("rebuilds");
     }
 
-    private static Path restoreMarker(Path file) {
-        String name = file.getFileName().toString();
-        return file.resolveSibling(name.substring(0, name.length() - ".bin".length()) + ".restore");
-    }
-
-    private static void delete(Path file, boolean now) {
-        if (file == null) {
+    /** Borra los archivos de una reconstrucción ({@link RebuildFiles}): ya, o en su hilo y en orden. */
+    private static void delete(RebuildFiles files, boolean now) {
+        if (files == null) {
             return;
         }
-        Runnable delete = () -> {
-            try {
-                Files.deleteIfExists(file);
-                Files.deleteIfExists(AtomicStorage.backup(file));
-                Files.deleteIfExists(AtomicStorage.temporary(file));
-                Files.deleteIfExists(restoreMarker(file));
-            } catch (IOException exception) {
-                KomaEditMod.LOGGER.warn("Could not delete the rebuild file {}: {}", file, exception.getMessage());
-            }
-        };
         if (now) {
-            delete.run();
+            files.delete();
         } else {
-            WORKER.execute(delete);
+            WORKER.execute(files::delete);
         }
     }
 
@@ -512,7 +502,8 @@ public final class RebuildService {
         private EditSession editSession;
         private RebuildRun run;
         private PlacementRun placement;
-        private Path file;
+        private RebuildFiles files;
+        private boolean tookFailed;
         private long runningSince;
         private int effectsLeft;
 
@@ -691,8 +682,8 @@ public final class RebuildService {
             RebuildModel built = model;
             List<BaseBlock> palette = List.copyOf(blocks);
             String dimension = world.getRegistryKey().getValue().toString();
-            Path target = directory().resolve(id + ".bin");
-            file = target;
+            RebuildFiles target = new RebuildFiles(directory().resolve(id + RebuildFiles.SNAPSHOT));
+            files = target;
             long seed = settings.seed() == null ? 0L : settings.seed();
             int[] center = settings.center() != null ? settings.center() : waveCenter(player, built);
             RebuildSequence.Options options = new RebuildSequence.Options(settings.axis(), center, seed);
@@ -704,7 +695,10 @@ public final class RebuildService {
                     for (BaseBlock block : palette) {
                         texts.add(RebuildBlocks.text(block));
                     }
-                    writeSnapshot(target, RebuildRecovery.Snapshot.of(dimension, owner, description, built, texts));
+                    if (!target.write(RebuildRecovery.Snapshot.of(dimension, owner, description, built, texts))) {
+                        // El servidor se paraba mientras se ordenaba: no se tocó nada y no se levanta al arrancar.
+                        return;
+                    }
                     MinecraftServer current = server;
                     if (current != null) {
                         current.execute(() -> ready(sequence, timeline, target));
@@ -736,15 +730,15 @@ public final class RebuildService {
             return null;
         }
 
-        private void ready(RebuildSequence sequence, RebuildTimeline timeline, Path written) {
+        private void ready(RebuildSequence sequence, RebuildTimeline timeline, RebuildFiles written) {
             if (stopping || JOBS.get(owner) != this) {
                 delete(written, false);
                 return;
             }
-            file = written;
+            files = written;
             if (cancelRequested) {
                 JOBS.remove(owner);
-                delete(file, false);
+                delete(files, false);
                 return;
             }
             editSession = WorldEdit.getInstance().newEditSessionBuilder().world(FabricAdapter.adapt(world))
@@ -850,7 +844,11 @@ public final class RebuildService {
         /** Sin presupuesto, al parar el servidor: termina lo que se levantaba y deja como estaba lo que se cancelaba. */
         private void complete() {
             if (state != State.RUNNING) {
-                delete(file, true);
+                // Aún leía u ordenaba: el mundo está como estaba. Si el hilo de la reconstrucción escribe el archivo
+                // después de esto (ordenar una obra enorme pasa de la espera de 30 s), lo borra él.
+                if (files != null) {
+                    files.abandon();
+                }
                 return;
             }
             if (run.phase() != RebuildRun.Phase.RESTORING) {
@@ -877,7 +875,7 @@ public final class RebuildService {
                     session.remember(editSession);
                 }
             }
-            delete(file, now);
+            delete(files, now);
             ServerPlayerEntity player = server == null ? null : server.getPlayerManager().getPlayer(owner);
             if (player == null) {
                 return;
@@ -908,10 +906,11 @@ public final class RebuildService {
                 // ni eso se puede, el archivo se queda y se termina al reiniciar.
                 after = " · se termina sin animación";
                 if (run.phase() == RebuildRun.Phase.RESTORING) {
-                    markRestoreNow();
+                    markRestore();
                 }
+                files.close();
                 try {
-                    Recovery recovery = Recovery.open(server, file);
+                    Recovery recovery = Recovery.open(server, files.snapshot());
                     if (recovery == null) {
                         after = " · se terminará al reiniciar el servidor";
                     } else {
@@ -923,20 +922,11 @@ public final class RebuildService {
                     after = " · se terminará al reiniciar el servidor";
                 }
             } else {
-                delete(file, false);
+                delete(files, false);
             }
             ServerPlayerEntity player = server == null ? null : server.getPlayerManager().getPlayer(owner);
             if (player != null) {
                 Feedback.error(player, description + " falló: " + reason + after);
-            }
-        }
-
-        private void markRestoreNow() {
-            try {
-                Files.writeString(restoreMarker(file), "restore");
-            } catch (IOException exception) {
-                KomaEditMod.LOGGER.warn("Could not write the rebuild restore marker for {}: {}", file,
-                        exception.getMessage());
             }
         }
 
@@ -996,17 +986,18 @@ public final class RebuildService {
             }
         }
 
-        /** Si se cae el servidor deshaciendo, al arrancar se termina de deshacer en vez de acabar la obra. */
+        /**
+         * Si se cae el servidor deshaciendo, al arrancar se termina de deshacer en vez de acabar la obra. En el momento
+         * y en este hilo: antes iba al hilo de la reconstrucción, que podía estar ordenando la obra de otro, y si el
+         * servidor se caía mientras tanto se levantaba la obra que se estaba cancelando.
+         */
         private void markRestore() {
-            Path marker = restoreMarker(file);
-            WORKER.execute(() -> {
-                try {
-                    Files.writeString(marker, "restore");
-                } catch (IOException exception) {
-                    KomaEditMod.LOGGER.warn("Could not write the rebuild restore marker {}: {}", marker,
-                            exception.getMessage());
-                }
-            });
+            try {
+                files.markRestore();
+            } catch (IOException exception) {
+                KomaEditMod.LOGGER.warn("Could not write the rebuild restore marker for {}: {}", files.snapshot(),
+                        exception.getMessage());
+            }
         }
 
         // -------------------------------------------------------------- Estado
@@ -1102,18 +1093,20 @@ public final class RebuildService {
             int y = PackedBlockPlan.unpackY(position);
             int z = PackedBlockPlan.unpackZ(position);
             if (job.world.getBlockState(job.cursor.set(x, y, z)).hasBlockEntity()) {
-                job.blocks.set(palette, FabricAdapter.adapt(job.world).getFullBlock(BlockVector3.at(x, y, z)));
+                BaseBlock full = FabricAdapter.adapt(job.world).getFullBlock(BlockVector3.at(x, y, z));
+                job.blocks.set(palette, full);
+                // Al disco antes de quitarlo: tras una caída vuelve con esto y no con lo leído al empezar.
+                try {
+                    job.files.took(palette, RebuildBlocks.text(full));
+                } catch (IOException | RuntimeException exception) {
+                    if (!job.tookFailed) {
+                        job.tookFailed = true;
+                        KomaEditMod.LOGGER.warn("Could not note a block with data for the rebuild {}: {}",
+                                job.files.snapshot(), exception.getMessage());
+                    }
+                }
             }
         }
-    }
-
-    private static void writeSnapshot(Path target, RebuildRecovery.Snapshot snapshot) throws IOException {
-        Files.createDirectories(target.getParent());
-        Path temporary = AtomicStorage.temporary(target);
-        try (OutputStream output = Files.newOutputStream(temporary)) {
-            RebuildRecovery.write(snapshot, output);
-        }
-        AtomicStorage.replace(temporary, target);
     }
 
     // ------------------------------------------------------------------ Recuperar tras una caída
@@ -1153,7 +1146,7 @@ public final class RebuildService {
     private static final class Recovery {
         private final UUID key = UUID.randomUUID();
         private final UUID owner;
-        private final Path file;
+        private final RebuildFiles files;
         private final ServerWorld world;
         private final BaseBlock[] blocks;
         private final RebuildRecovery.Run run;
@@ -1166,7 +1159,7 @@ public final class RebuildService {
         private Recovery(Path file, ServerWorld world, RebuildRecovery.Snapshot snapshot, BaseBlock[] blocks,
                          int[] raw, boolean restore) {
             this.owner = snapshot.owner();
-            this.file = file;
+            this.files = new RebuildFiles(file);
             this.world = world;
             this.blocks = blocks;
             this.run = new RebuildRecovery.Run(snapshot, raw, restore);
@@ -1211,10 +1204,9 @@ public final class RebuildService {
         }
 
         private static Recovery open(MinecraftServer started, Path file) throws IOException {
-            RebuildRecovery.Snapshot snapshot;
-            try (InputStream input = Files.newInputStream(file)) {
-                snapshot = RebuildRecovery.read(input);
-            }
+            // Con los bloques con datos tal como se quitaron, no como se leyeron al empezar.
+            RebuildFiles.Loaded loaded = RebuildFiles.read(file);
+            RebuildRecovery.Snapshot snapshot = loaded.snapshot();
             ServerWorld world = started.getWorld(RegistryKey.of(RegistryKeys.WORLD,
                     Identifier.of(snapshot.dimension())));
             if (world == null) {
@@ -1229,15 +1221,14 @@ public final class RebuildService {
                 blocks[index] = block;
                 raw[index] = block == null ? -1 : RebuildBlocks.raw(block);
             }
-            boolean restore = Files.exists(restoreMarker(file));
-            return new Recovery(file, world, snapshot, blocks, raw, restore);
+            return new Recovery(file, world, snapshot, blocks, raw, loaded.restore());
         }
 
         private boolean step(long deadline) {
             try {
                 placement.step(deadline, true);
             } catch (MaxChangedBlocksException | RuntimeException exception) {
-                KomaEditMod.LOGGER.error("Could not finish the interrupted rebuild {}", file, exception);
+                KomaEditMod.LOGGER.error("Could not finish the interrupted rebuild {}", files.snapshot(), exception);
                 RECOVERIES.remove(key);
                 editSession.close();
                 return false;
@@ -1255,7 +1246,8 @@ public final class RebuildService {
                     placement.step(Long.MAX_VALUE, true);
                 }
             } catch (MaxChangedBlocksException | RuntimeException exception) {
-                KomaEditMod.LOGGER.error("Could not finish the interrupted rebuild {} while stopping", file, exception);
+                KomaEditMod.LOGGER.error("Could not finish the interrupted rebuild {} while stopping", files.snapshot(),
+                        exception);
                 editSession.close();
                 return;
             }
@@ -1265,9 +1257,10 @@ public final class RebuildService {
         private void done(boolean now) {
             RECOVERIES.remove(key);
             editSession.close();
-            delete(file, now);
+            delete(files, now);
             String what = run.restore() ? "deshecha" : "terminada";
-            KomaEditMod.LOGGER.info("Interrupted rebuild {} {}: {} blocks written, {} kept, {} unknown", file,
+            KomaEditMod.LOGGER.info("Interrupted rebuild {} {}: {} blocks written, {} kept, {} unknown",
+                    files.snapshot(),
                     run.restore() ? "restored" : "finished", run.written(), run.kept(), unknown);
             ServerPlayerEntity player = server == null ? null : server.getPlayerManager().getPlayer(owner);
             if (player != null) {

@@ -78,6 +78,27 @@ class NamedDefinitionsTest {
         assertTrue(second.all().isEmpty(), "sin archivo, vacío");
     }
 
+    /**
+     * Una prerelease guardó las paletas con un formato más nuevo (una con etiquetas, que esta versión no entiende) y
+     * se vuelve a la estable: se usan las que entiende, pero guardar una paleta reescribía el archivo sin la de las
+     * etiquetas y se perdía al volver a actualizar.
+     */
+    @Test
+    void aFileFromANewerVersionIsUsedButNeverRewritten() throws Exception {
+        Path file = directory.resolve("palettes.json");
+        String newer = "{\"version\":2,\"entries\":{\"roca\":\"stone;andesite\","
+                + "\"bosque\":{\"value\":\"moss_block;grass_block\",\"tags\":[\"verde\"]}}}";
+        Files.writeString(file, newer);
+        NamedDefinitions store = new NamedDefinitions(file, "paleta");
+        assertEquals(Optional.of("stone;andesite"), store.get("roca"), "lo que entiende se usa");
+
+        IllegalStateException saving = assertThrows(IllegalStateException.class,
+                () -> store.put("hielo", "blue_ice", false));
+        assertTrue(saving.getMessage().contains("versión más nueva"), saving.getMessage());
+        assertThrows(IllegalStateException.class, () -> store.delete("roca"));
+        assertEquals(newer, Files.readString(file), "el archivo sigue entero");
+    }
+
     @Test
     void reportsUnreadableFiles() throws Exception {
         Path file = directory.resolve("broken.json");

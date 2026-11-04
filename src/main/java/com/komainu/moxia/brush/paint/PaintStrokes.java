@@ -83,6 +83,14 @@ public final class PaintStrokes {
         });
     }
 
+    /** Cierra el trazo del jugador si lo tiene: lo pintado va al historial (antes de {@code //undo}). */
+    public static void close(UUID playerId) {
+        Stroke stroke = STROKES.remove(playerId);
+        if (stroke != null) {
+            stroke.close(null);
+        }
+    }
+
     /**
      * Un clic derecho (o su repetición) con el pincel de pintura en la mano.
      *

@@ -26,6 +26,9 @@ import java.util.regex.Pattern;
  *
  * <p>Lo leído se recuerda por archivo mientras no cambien su fecha ni su tamaño: una paleta guardada ({@code #mia})
  * se usa en cada clic de algunos pinceles y no hace falta leer y analizar el JSON cada vez.</p>
+ *
+ * <p>Un archivo de una versión más nueva (tras volver de una prerelease a la estable, por ejemplo) se lee en lo que se
+ * entiende, pero no se cambia: reescribirlo con esta versión quitaría lo que esta no conoce.</p>
  */
 public final class NamedDefinitions {
     public static final int MAX_ENTRIES = 512;
@@ -58,29 +61,33 @@ public final class NamedDefinitions {
     }
 
     public synchronized Map<String, String> all() {
+        return new TreeMap<>(current().entries());
+    }
+
+    private Read current() {
         Path key = file.toAbsolutePath().normalize();
         if (!Files.isRegularFile(file)) {
             READ.remove(key);
-            return Map.of();
+            return new Read(-1L, -1L, Map.of(), FORMAT_VERSION);
         }
         try {
             BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
             Read read = READ.get(key);
             if (read != null && read.matches(attributes)) {
-                return new TreeMap<>(read.entries());
+                return read;
             }
-            Map<String, String> result = parse(Files.readString(file, StandardCharsets.UTF_8));
-            READ.put(key, new Read(stamp(attributes), attributes.size(), Map.copyOf(result)));
-            return result;
+            JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8))
+                    .getAsJsonObject();
+            read = new Read(stamp(attributes), attributes.size(), Map.copyOf(parse(root)), version(root));
+            READ.put(key, read);
+            return read;
         } catch (IOException | RuntimeException exception) {
             throw new IllegalStateException("No se pudo leer " + file.getFileName() + ": " + exception.getMessage(),
                     exception);
         }
     }
 
-    private static Map<String, String> parse(String json) {
-        JsonElement parsed = JsonParser.parseString(json);
-        JsonObject root = parsed.getAsJsonObject();
+    private static Map<String, String> parse(JsonObject root) {
         JsonObject entries = root.getAsJsonObject("entries");
         Map<String, String> result = new TreeMap<>();
         if (entries != null) {
@@ -93,12 +100,29 @@ public final class NamedDefinitions {
         return result;
     }
 
+    private static int version(JsonObject root) {
+        JsonElement version = root.get("version");
+        return version != null && version.isJsonPrimitive() && version.getAsJsonPrimitive().isNumber()
+                ? version.getAsInt() : FORMAT_VERSION;
+    }
+
+    /** Lo guardado, para cambiarlo: falla si lo escribió una versión más nueva, que esta pisaría. */
+    private Map<String, String> editable() {
+        Read read = current();
+        if (read.version() > FORMAT_VERSION) {
+            throw new IllegalStateException(file.getFileName() + " es de una versión más nueva de KomaEdit (formato "
+                    + read.version() + "): " + kind + " se puede usar, pero no guardar ni borrar hasta que actualices"
+                    + " el mod");
+        }
+        return new TreeMap<>(read.entries());
+    }
+
     private static long stamp(BasicFileAttributes attributes) {
         return attributes.lastModifiedTime().to(TimeUnit.MICROSECONDS);
     }
 
-    /** Lo leído de un archivo y con qué fecha y tamaño estaba. */
-    private record Read(long modified, long size, Map<String, String> entries) {
+    /** Lo leído de un archivo, con qué fecha y tamaño estaba y su formato. */
+    private record Read(long modified, long size, Map<String, String> entries, int version) {
         boolean matches(BasicFileAttributes attributes) {
             return modified == stamp(attributes) && size == attributes.size();
         }
@@ -121,7 +145,7 @@ public final class NamedDefinitions {
         if (value.length() > MAX_VALUE_LENGTH) {
             throw new IllegalArgumentException("El valor supera " + MAX_VALUE_LENGTH + " caracteres");
         }
-        Map<String, String> entries = new TreeMap<>(all());
+        Map<String, String> entries = editable();
         boolean existed = entries.containsKey(key);
         if (existed && !overwrite) {
             throw new IllegalArgumentException("Ya existe " + key + " (" + kind + "); añade -f para sustituirlo");
@@ -136,7 +160,7 @@ public final class NamedDefinitions {
 
     public synchronized boolean delete(String name) {
         String key = normalizeName(name);
-        Map<String, String> entries = new TreeMap<>(all());
+        Map<String, String> entries = editable();
         if (entries.remove(key) == null) {
             return false;
         }
@@ -154,7 +178,7 @@ public final class NamedDefinitions {
             AtomicStorage.writeString(file, GSON.toJson(root));
             BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
             READ.put(file.toAbsolutePath().normalize(), new Read(stamp(attributes), attributes.size(),
-                    Map.copyOf(entries)));
+                    Map.copyOf(entries), FORMAT_VERSION));
         } catch (IOException exception) {
             throw new IllegalStateException("No se pudo guardar " + file.getFileName() + ": " + exception.getMessage(),
                     exception);
