@@ -2229,7 +2229,7 @@ Cúpula, cono y aguja se centran en la caja de la planta; lo que de la planta qu
 | `-ventana <bloque>` | `-window` | Ventana de las buhardillas (`glass_pane` por defecto; los paneles y barrotes se unen a lo largo del muro). |
 | `-lado <n\|s\|e\|o>` | `-bajo` | Lado bajo del tejado a un agua; por defecto, el de la selección más cercano a ti. |
 | `-lados <n>` | `-sides` | Lados de la aguja (3 a 32). |
-| `-h <bloques>` | `-altura` | Altura de cúpula, cono, aguja o pagoda. |
+| `-h <bloques>` | `-altura` | Altura de cúpula, cono, aguja o pagoda: de lo alto de los muros a la cúspide, con o sin alero. |
 | `-pretil <bloques>` | `-parapet` | Altura del pretil del tejado plano (0 a 6, 1 por defecto). |
 | `-q <bloques>` | `-quiebro` | Mansarda: hasta dónde llega el faldón empinado (por defecto 1 o 2 bloques, según el fondo). Holandés: hasta dónde llegan las aguas de los remates antes del hastial pequeño (por defecto, la mitad). |
 | `-d` | `-detectar`, `-muros` | La planta sale de los muros, no de la selección. |

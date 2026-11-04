@@ -273,15 +273,26 @@ public final class RoofGenerator {
         int thickness = settings.thickness();
         RoofType type = settings.type();
         double slope = settings.slope();
-        if (type != RoofType.DOME && !Double.isNaN(settings.height())) {
-            slope = Math.max(0.1, (settings.height() - offset) / radius);
-        }
         double domeHeight = Double.isNaN(settings.height()) ? radius * slope : settings.height();
         double[] normalsX = new double[settings.sides()];
         double[] normalsZ = new double[settings.sides()];
         for (int side = 0; side < settings.sides(); side++) {
             normalsX[side] = snap(Math.cos(2.0 * Math.PI * side / settings.sides()));
             normalsZ[side] = snap(Math.sin(2.0 * Math.PI * side / settings.sides()));
+        }
+        if (type != RoofType.DOME && !Double.isNaN(settings.height())) {
+            // La cúspide es la subcelda más cercana al centro, sin el alero (que cuelga por debajo del muro).
+            double nearest = Double.POSITIVE_INFINITY;
+            for (int k = 0; k < grid.subZ; k++) {
+                for (int i = 0; i < grid.subX; i++) {
+                    double x = grid.subCenterX(i) - centerX;
+                    double z = grid.subCenterZ(k) - centerZ;
+                    nearest = Math.min(nearest, type == RoofType.CONE ? Math.hypot(x, z)
+                            : polygon(x, z, normalsX, normalsZ));
+                }
+            }
+            slope = Math.max(0.1, (settings.height() - offset)
+                    / Math.max(0.5, radius - Math.max(nearest, 0.0) - settings.overhang()));
         }
         for (int cz = 0; cz < grid.cellsZ; cz++) {
             for (int cx = 0; cx < grid.cellsX; cx++) {
@@ -345,16 +356,29 @@ public final class RoofGenerator {
         double offset = offset(slope);
         int thickness = settings.thickness();
         RoofType type = settings.type();
-        if (type != RoofType.DOME && !Double.isNaN(settings.height())) {
-            slope = Math.max(0.1, (settings.height() - offset) / radius);
-            offset = offset(slope);
-        }
         double domeHeight = Double.isNaN(settings.height()) ? radius * settings.slope() : settings.height();
         double[] normalsX = new double[settings.sides()];
         double[] normalsZ = new double[settings.sides()];
         for (int side = 0; side < settings.sides(); side++) {
             normalsX[side] = snap(Math.cos(2.0 * Math.PI * side / settings.sides()));
             normalsZ[side] = snap(Math.sin(2.0 * Math.PI * side / settings.sides()));
+        }
+        if (type != RoofType.DOME && !Double.isNaN(settings.height())) {
+            // La cúspide es el anillo del centro, a la altura de su centro y sin el alero: con -h llega justo ahí.
+            double nearest = Double.POSITIVE_INFINITY;
+            for (int cz = 0; cz < grid.cellsZ; cz++) {
+                for (int cx = 0; cx < grid.cellsX; cx++) {
+                    double bx = grid.worldX(cx) + 0.5 - centerX;
+                    double bz = grid.worldZ(cz) + 0.5 - centerZ;
+                    nearest = Math.min(nearest, type == RoofType.CONE ? Math.hypot(bx, bz)
+                            : polygon(bx, bz, normalsX, normalsZ));
+                }
+            }
+            double peak = Math.floor(Math.max(radius - nearest, 0.0)) + 0.5 - settings.overhang();
+            for (int pass = 0; pass < 2; pass++) {
+                slope = Math.max(0.1, (settings.height() - offset) / Math.max(0.5, peak));
+                offset = offset(slope);
+            }
         }
         Column[] columns = new Column[grid.cellsX * grid.cellsZ];
         int baseLevel = footprint.baseY();
