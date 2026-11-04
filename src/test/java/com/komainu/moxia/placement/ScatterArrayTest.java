@@ -61,6 +61,32 @@ class ScatterArrayTest {
         assertTrue(Math.abs(face.z()) > 0.9, "la cara del muro mira a lo largo de z: " + face);
     }
 
+    /**
+     * Una selección que llega al fondo del mundo ({@code //expand vert}): la foto se recorta en −64 y lo de debajo
+     * contaba como aire, así que cada bloque de −64 era una superficie que miraba abajo y la estructura se colocaba
+     * desde −65 hacia dentro de la bedrock.
+     */
+    @Test
+    void theFloorOfTheWorldIsNotASurface() {
+        // Con el margen de 3 bloques a los lados, como la captura del juego; abajo no hay margen: es el fin del mundo.
+        RegionSnapshot.Builder builder = RegionSnapshot.builder(-3, -64, -3, 26, 10, 26).state(STONE).state(WOOL);
+        for (int x = -3; x < 23; x++) {
+            for (int z = -3; z < 23; z++) {
+                for (int y = -64; y < -54; y++) {
+                    boolean inside = x >= 0 && x < 20 && z >= 0 && z < 20 && y < -57;
+                    builder.set(x, y, z, y <= -61 ? 1 : 0, inside);
+                }
+            }
+        }
+        RegionSnapshot snapshot = builder.build();
+        ScatterPlanner.Result all = ScatterPlanner.plan(snapshot, settings(100, 0, 1), null);
+        assertEquals(20 * 20, all.found(), "solo la cara de arriba");
+        for (ScatterPlanner.Point point : all.points()) {
+            assertEquals(-61, point.y());
+            assertEquals(-60, point.anchorY(), "el origen cae encima, no debajo del mundo");
+        }
+    }
+
     @Test
     void densityCountsRemainingSurfaces() {
         RegionSnapshot snapshot = terrain();
