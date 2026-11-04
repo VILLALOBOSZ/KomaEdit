@@ -252,7 +252,13 @@ public final class PlacementService {
         switch (spec.type()) {
             case CLIPBOARD -> {
                 try {
-                    Clipboard clipboard = WorldEditService.clipboard(player);
+                    // El tamaño, antes de aplicar el //rotate pendiente (que copia el portapapeles entero).
+                    Clipboard clipboard = WorldEditService.clipboard(player, volume -> {
+                        if (volume > MAX_STRUCTURE_VOLUME) {
+                            throw new IllegalArgumentException("Portapapeles supera "
+                                    + ProgressLine.group(MAX_STRUCTURE_VOLUME) + " bloques de caja");
+                        }
+                    });
                     Captured captured = capture(clipboard, spec, "Portapapeles");
                     return new Resolved(List.of(captured.structure()), List.of(captured.palette()), null);
                 } catch (EmptyClipboardException exception) {

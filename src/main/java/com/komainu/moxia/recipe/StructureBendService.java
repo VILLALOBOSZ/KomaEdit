@@ -37,10 +37,13 @@ public final class StructureBendService {
     /** Lee el portapapeles en el hilo del servidor; el resto del trabajo puede ir a un worker. */
     public static Captured capture(ServerPlayerEntity player) {
         try {
-            Clipboard clipboard = WorldEditService.clipboard(player);
-            if (clipboard.getRegion().getVolume() > MAX_TEMPLATE_BLOCKS) {
-                throw new IllegalArgumentException("El portapapeles supera 100 000 bloques; copia un módulo más pequeño");
-            }
+            // El tamaño, antes de aplicar el //rotate pendiente (que copia el portapapeles entero).
+            Clipboard clipboard = WorldEditService.clipboard(player, volume -> {
+                if (volume > MAX_TEMPLATE_BLOCKS) {
+                    throw new IllegalArgumentException("El portapapeles supera 100 000 bloques; copia un módulo más"
+                            + " pequeño");
+                }
+            });
             BlockVector3 origin = clipboard.getOrigin();
             Builder builder = new Builder();
             for (BlockVector3 source : clipboard.getRegion()) {

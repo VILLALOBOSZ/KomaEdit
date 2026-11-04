@@ -202,6 +202,12 @@ public final class WorldEditService {
         return PendingClipboard.of(context(player).session().getClipboard());
     }
 
+    /** Como {@link #clipboard(ServerPlayerEntity)}, mirando antes con {@code check} cuántos bloques de caja ocupará. */
+    public static Clipboard clipboard(ServerPlayerEntity player, java.util.function.LongConsumer check)
+            throws EmptyClipboardException {
+        return PendingClipboard.of(context(player).session().getClipboard(), check);
+    }
+
     public static int applyBlocks(ServerPlayerEntity player, Iterable<BlockVector3> blocks, String patternInput)
             throws InputParseException, MaxChangedBlocksException {
         PlayerContext context = context(player);

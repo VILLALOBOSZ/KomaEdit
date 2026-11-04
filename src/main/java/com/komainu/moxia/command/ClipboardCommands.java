@@ -4,6 +4,7 @@ import com.komainu.moxia.clipboard.ClipboardScaleService;
 import com.komainu.moxia.clipboard.ClipboardTransform;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.progress.ProgressLine;
+import com.komainu.moxia.worldedit.PendingClipboard;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -110,13 +111,14 @@ public final class ClipboardCommands {
 
     private static int status(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         return EzCommandSupport.run(context, player -> {
-            Clipboard clipboard;
+            BlockVector3 size;
             try {
-                clipboard = WorldEditService.clipboard(player);
+                // Solo el tamaño: con un //rotate pendiente, girarlo copiaría el portapapeles entero.
+                var region = PendingClipboard.region(WorldEditService.context(player).session().getClipboard());
+                size = region.getMaximumPoint().subtract(region.getMinimumPoint()).add(1, 1, 1);
             } catch (EmptyClipboardException exception) {
                 throw new IllegalArgumentException("El portapapeles está vacío: copia algo con //copy");
             }
-            BlockVector3 size = clipboard.getDimensions();
             EzCommandSupport.info(player, "Portapapeles de " + size.x() + "×" + size.y() + "×" + size.z()
                     + ". /komaedit clipboard scale <factor> [nearest|scale2x|scale3x|rotsprite] ·"
                     + " rotate <grados> [rotsprite|nearest|scale2x|scale3x] · restore");
