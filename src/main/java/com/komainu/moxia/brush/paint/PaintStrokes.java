@@ -7,18 +7,21 @@ import com.komainu.moxia.brush.ez.EzBrushManager;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.komainu.moxia.studio.net.StudioAim;
 import com.komainu.moxia.worldedit.EditHistory;
 import com.komainu.moxia.worldedit.WorldEditService;
+import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.PlacementRun;
 import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.performance.Turns;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockState;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -69,7 +72,7 @@ public final class PaintStrokes {
 
     public static void register() {
         ServerWork.light(PaintStrokes::tick);
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+        PlayerLeave.register((handler, server) -> {
             Stroke stroke = STROKES.remove(handler.player.getUuid());
             if (stroke != null) {
                 stroke.close(null);
@@ -148,7 +151,8 @@ public final class PaintStrokes {
             return;
         }
         int now = server.getTicks();
-        for (Stroke stroke : List.copyOf(STROKES.values())) {
+        // Por turnos: con varios pintando, la foto y la escritura del primero no se comen siempre el plazo.
+        for (Stroke stroke : Turns.from(STROKES.values(), now)) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(stroke.playerId);
             if (player == null || !stroke.sameWorld(player)) {
                 STROKES.remove(stroke.playerId);
@@ -205,6 +209,8 @@ public final class PaintStrokes {
         private PaintBrush.Planned planned;
         private int applied;
         private EditSession session;
+        /** El vaciado de la tanda escrita (luz, vecinos, envío), repartido entre ticks; {@code null} si no hay. */
+        private PlacementRun.Flush flushing;
         private double heightLow;
         private double heightHigh;
         private long changed;
@@ -370,6 +376,16 @@ public final class PaintStrokes {
             if (session == null) {
                 session = context.session().createEditSession(context.actor());
             }
+            if (flushing != null) {
+                // Con el plazo del tick: vaciar la tanda de golpe (flushSession) eran decenas de miles de bloques con
+                // su luz, vecinos y envío en un solo tick.
+                if (flushing.resume(ServerWork.deadline(APPLY_NANOS_PER_TICK))) {
+                    flushing = null;
+                    planned = null;
+                    stage = Stage.IDLE;
+                }
+                return;
+            }
             try {
                 OperationPolicy.validate(player, changed + planned.size() - applied, 0);
             } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -399,10 +415,14 @@ public final class PaintStrokes {
                 return;
             }
             if (applied >= planned.size()) {
-                // Lo escrito tiene que estar en el mundo antes de la foto de la tanda siguiente.
-                session.flushSession();
-                planned = null;
-                stage = Stage.IDLE;
+                // Lo escrito tiene que estar en el mundo antes de la foto de la tanda siguiente: la tanda siguiente
+                // espera a que se vacíe, repartido entre ticks.
+                flushing = BatchEditService.session(session).flush();
+                if (flushing == null || flushing.resume(deadline)) {
+                    flushing = null;
+                    planned = null;
+                    stage = Stage.IDLE;
+                }
             }
         }
 
@@ -425,6 +445,14 @@ public final class PaintStrokes {
                 return;
             }
             try {
+                if (flushing != null) {
+                    // Lo que quedaba por vaciar de la última tanda, ya sin plazo.
+                    int guard = 0;
+                    while (!flushing.resume(Long.MAX_VALUE) && guard++ < 1_000_000) {
+                        Thread.onSpinWait();
+                    }
+                    flushing = null;
+                }
                 session.close();
             } finally {
                 if (session.size() > 0) {

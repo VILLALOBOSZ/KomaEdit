@@ -86,6 +86,28 @@ class OwnStampsTest {
         assertFalse(Files.exists(folder.resolve("de_ana.json")));
     }
 
+    /**
+     * Cada sello leído (de 1 a 4 MB) se quedaba en memoria aunque se borrara: capturar y borrar con nombres distintos la
+     * llenaba hasta cerrar el juego. Borrar uno (o quitar su PNG a mano) lo suelta.
+     */
+    @Test
+    void aDeletedStampDoesNotStayInMemory(@TempDir Path folder) throws IOException {
+        StampCatalog catalog = new StampCatalog(folder);
+        OwnStamps stamps = new OwnStamps(catalog);
+        for (int round = 0; round < 5; round++) {
+            save(stamps, "prueba_" + round, "Ana", ANA, round);
+            stamps.delete("prueba_" + round, ANA, false);
+        }
+        assertEquals(0, catalog.cached(), "los sellos borrados siguen en memoria");
+        save(stamps, "queda", "Ana", ANA, 10L);
+        save(stamps, "a_mano", "Ana", ANA, 11L);
+        stamps.list();
+        assertEquals(2, catalog.cached());
+        Files.delete(folder.resolve("a_mano.png"));
+        stamps.list();
+        assertEquals(1, catalog.cached(), "el PNG quitado a mano tampoco se queda");
+    }
+
     @Test
     void namesLimitsAndReplacing(@TempDir Path folder) {
         OwnStamps stamps = new OwnStamps(new StampCatalog(folder));

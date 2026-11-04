@@ -4,10 +4,16 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.World;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import java.io.IOException;
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
@@ -18,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * La foto del terreno de un pincel aprovecha todo el presupuesto del tick y no se queda a medias sin motivo. El
- * presupuesto se mide con un reloj falso que avanza lo mismo en cada lectura (lo que cuesta leer un bloque), así que
- * el resultado es el mismo en cualquier máquina, por cargada que esté.
+ * presupuesto se mide con un reloj falso que avanza lo mismo por cada bloque leído (lo que cuesta leerlo), así que el
+ * resultado es el mismo en cualquier máquina, por cargada que esté.
  */
 class SnapshotCaptureServiceTest {
     @AfterEach
@@ -27,10 +33,10 @@ class SnapshotCaptureServiceTest {
         SnapshotCaptureService.clearAll();
     }
 
-    /** Un reloj que avanza {@code nanos} cada vez que se lee: leer un bloque cuesta eso. */
-    private static LongSupplier clock(long nanos) {
-        long[] now = {0L};
-        return () -> now[0] += nanos;
+    /** Un reloj que avanza {@code nanos} por cada bloque leído (y 1 ns cada vez que se mira, para que siempre avance). */
+    private static LongSupplier clock(AtomicInteger reads, long nanos) {
+        long[] looks = {0L};
+        return () -> reads.get() * nanos + ++looks[0];
     }
 
     /** Un mundo de mentira de -64 a 319 que cuenta las lecturas (los bloques salen vacíos: aquí no importan). */
@@ -60,7 +66,7 @@ class SnapshotCaptureServiceTest {
         SnapshotCaptureService.submit(UUID.randomUUID(), capture, done::add, error -> {
             throw new AssertionError(error);
         });
-        SnapshotCaptureService.tick(player -> true, clock(100L));
+        SnapshotCaptureService.tick(player -> true, clock(reads, 100L));
         assertTrue(capture.complete(), "en un tick: " + capture.captured() + " de " + capture.total());
         assertEquals(1, done.size());
         assertEquals(19_683, reads.get(), "cada bloque se lee una vez");
@@ -75,11 +81,12 @@ class SnapshotCaptureServiceTest {
         SnapshotCaptureService.submit(UUID.randomUUID(), capture, done::add, error -> {
             throw new AssertionError(error);
         });
-        LongSupplier clock = clock(1_000L);
+        LongSupplier clock = clock(reads, 1_000L);
         SnapshotCaptureService.tick(player -> true, clock);
         int first = capture.captured();
         long budget = SnapshotCaptureService.MAX_NANOS_PER_TICK / 1_000L;
-        assertTrue(first > budget * 9 / 10 && first <= budget, "en el primer tick: " + first + " de " + budget);
+        assertTrue(first > budget * 9 / 10 && first <= budget + WorldSnapshot.Capture.CHECK_EVERY,
+                "en el primer tick: " + first + " de " + budget);
         assertFalse(capture.complete());
         assertTrue(done.isEmpty(), "aún no hay foto");
         int ticks = 1;
@@ -107,10 +114,53 @@ class SnapshotCaptureServiceTest {
                 snapshot -> done.add(second), error -> { });
         SnapshotCaptureService.submit(gone, WorldSnapshot.begin(world(reads), BlockVector3.at(0, 64, 0), 10, 10),
                 snapshot -> done.add(gone), error -> { });
-        SnapshotCaptureService.tick(player -> !player.equals(gone), clock(100L));
+        SnapshotCaptureService.tick(player -> !player.equals(gone), clock(reads, 100L));
         assertTrue(done.contains(first) && done.contains(second), "las dos fotos salen en el mismo tick");
         assertFalse(done.contains(gone));
         assertFalse(SnapshotCaptureService.isRunning(gone), "el que se fue no sigue esperando");
         assertEquals(2 * 9_261, reads.get(), "del que se fue no se lee nada");
+    }
+
+    /**
+     * Mirar el reloj cuesta casi lo que leer un bloque de un chunk cargado (unas decenas de nanosegundos): la foto lo
+     * mira cada {@value WorldSnapshot.Capture#CHECK_EVERY} bloques, como la lectura de la selección, y no en cada uno.
+     */
+    @Test
+    void theCaptureDoesNotLookAtTheClockForEveryBlock() {
+        AtomicInteger reads = new AtomicInteger();
+        WorldSnapshot.Capture capture = WorldSnapshot.begin(world(reads), BlockVector3.at(0, 64, 0), 13, 13);
+        int[] looks = {0};
+        capture.step(Integer.MAX_VALUE, Long.MAX_VALUE, () -> {
+            looks[0]++;
+            return 0L;
+        });
+        assertTrue(capture.complete());
+        assertTrue(looks[0] <= capture.total() / 32, looks[0] + " miradas al reloj para " + capture.total()
+                + " bloques");
+    }
+
+    /**
+     * Lo que cuesta la foto de un pincel por bloque con el reloj de verdad, sobre un mundo de mentira cuyo
+     * {@code getBlock} cuesta del orden de uno de verdad. Solo con {@code KOMAEDIT_BRUSH_BENCHMARK=<archivo>}.
+     */
+    @Test
+    @EnabledIfEnvironmentVariable(named = "KOMAEDIT_BRUSH_BENCHMARK", matches = ".+")
+    void captureCostPerBlock() throws IOException {
+        AtomicInteger reads = new AtomicInteger();
+        World world = world(reads);
+        double best = Double.MAX_VALUE;
+        for (int run = 0; run < 60; run++) {
+            WorldSnapshot.Capture capture = WorldSnapshot.begin(world, BlockVector3.at(0, 64, 0), 12, 12);
+            long start = System.nanoTime();
+            while (!capture.complete()) {
+                capture.step(SnapshotCaptureService.MAX_BLOCKS_PER_SLICE, Long.MAX_VALUE);
+            }
+            best = Math.min(best, (System.nanoTime() - start) / (double) capture.total());
+        }
+        String line = String.format(Locale.ROOT, "| Foto de 25 × 25 × 25 (15 625 bloques) | %.1f ns/bloque |",
+                best);
+        System.out.println(line);
+        Files.writeString(Path.of(System.getenv("KOMAEDIT_BRUSH_BENCHMARK")), line + System.lineSeparator(),
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 }

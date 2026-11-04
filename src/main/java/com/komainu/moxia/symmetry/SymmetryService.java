@@ -4,6 +4,7 @@ import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.brush.BrushMarkers;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.feedback.WorldOverlaySync;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.symmetry.SymmetryGeometry.Copy;
 import com.komainu.moxia.symmetry.SymmetryGeometry.Point;
@@ -13,7 +14,6 @@ import com.sk89q.worldedit.fabric.FabricAdapter;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
@@ -100,7 +100,7 @@ public final class SymmetryService {
         PlayerBlockBreakEvents.CANCELED.register((world, player, pos, state, blockEntity) ->
                 PENDING_BREAKS.remove(player.getUuid()));
         ServerTickEvents.END_SERVER_TICK.register(SymmetryService::tick);
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, ignored) -> remove(handler.player.getUuid()));
+        PlayerLeave.register((handler, ignored) -> remove(handler.player.getUuid()));
         ServerLifecycleEvents.SERVER_STARTING.register(starting -> {
             server = starting;
             installWorldEditHook();

@@ -5,6 +5,7 @@ import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.hotbar.HotbarPayloads.HotbarActionPayload;
 import com.komainu.moxia.hotbar.HotbarPayloads.HotbarSyncPayload;
 import com.komainu.moxia.hotbar.HotbarPayloads.HotbarTextPayload;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.permission.KomaPermissions;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -78,7 +79,7 @@ public final class HotbarService {
         // Al tick siguiente: el proyecto del jugador se abre en otro oyente de entrada.
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 PENDING_JOINS.add(handler.player.getUuid()));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> forget(handler.player.getUuid()));
+        PlayerLeave.register((handler, server) -> forget(handler.player.getUuid()));
         ServerTickEvents.END_SERVER_TICK.register(HotbarService::tick);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> clearAll());
     }

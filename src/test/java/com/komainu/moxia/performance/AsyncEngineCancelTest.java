@@ -3,12 +3,15 @@ package com.komainu.moxia.performance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,5 +73,88 @@ class AsyncEngineCancelTest {
         AsyncEngine.submit(owner, () -> 2, result -> second.countDown(), failure -> { });
         assertTrue(second.await(30, TimeUnit.SECONDS));
         assertFalse(firstDelivered.get());
+    }
+
+    /**
+     * Con todos los workers ocupados (una figura enorme de otro jugador; en un servidor de dos núcleos hay uno solo),
+     * un pincel arrastrado cancela en cada clic el cálculo anterior, que aún espera en la cola. Lo cancelado no puede
+     * seguir ocupando su sitio: la cola es de 16 y, llena de cálculos que ya nadie quiere, el motor rechazaba los
+     * clics de todos con «ocupado» hasta que acabara la figura.
+     */
+    @Test
+    void cancelledCalculationsDoNotKeepTheirPlaceInTheQueue() throws InterruptedException {
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch busy = new CountDownLatch(AsyncEngine.WORKERS);
+        for (int worker = 0; worker < AsyncEngine.WORKERS; worker++) {
+            AsyncEngine.submit(UUID.randomUUID(), "Figura", () -> {
+                busy.countDown();
+                try {
+                    release.await();
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                }
+                return 0;
+            }, result -> { }, failure -> { });
+        }
+        assertTrue(busy.await(30, TimeUnit.SECONDS));
+        UUID brush = UUID.randomUUID();
+        List<Throwable> refused = new CopyOnWriteArrayList<>();
+        CountDownLatch lastClick = new CountDownLatch(1);
+        for (int click = 1; click <= 100; click++) {
+            int number = click;
+            AsyncEngine.submit(brush, "Pincel", () -> number, result -> {
+                if (result == 100) {
+                    lastClick.countDown();
+                }
+            }, refused::add);
+        }
+        release.countDown();
+        assertEquals(List.of(), refused, "los clics cancelados ocupaban la cola");
+        assertTrue(lastClick.await(30, TimeUnit.SECONDS), "el último clic se calcula");
+    }
+
+    /**
+     * Desde {@code SERVER_STOPPING}, {@code server.execute} corre en el hilo que lo llama: un cálculo que acabara durante
+     * la parada encolaba su edición desde el worker, mientras el servidor guardaba el mundo. Tras {@link
+     * AsyncEngine#close} no se entrega nada (aunque el cálculo no mire la interrupción) ni se lanza nada nuevo hasta el
+     * siguiente arranque.
+     */
+    @Test
+    void afterClosingNothingIsDeliveredUntilTheNextStart() throws InterruptedException {
+        CountDownLatch computing = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        Thread[] worker = {null};
+        AtomicBoolean delivered = new AtomicBoolean();
+        AsyncEngine.submit(UUID.randomUUID(), "Figura", () -> {
+            worker[0] = Thread.currentThread();
+            computing.countDown();
+            boolean waiting = true;
+            while (waiting) {
+                try {
+                    release.await();
+                    waiting = false;
+                } catch (InterruptedException ignored) {
+                    // Un cálculo que no mira la interrupción.
+                }
+            }
+            return 1;
+        }, result -> delivered.set(true), failure -> delivered.set(true));
+        assertTrue(computing.await(30, TimeUnit.SECONDS));
+        try {
+            AsyncEngine.close();
+            release.countDown();
+            worker[0].join(30_000);
+            assertFalse(worker[0].isAlive());
+            assertFalse(delivered.get(), "lo calculado durante la parada no se entrega");
+            List<Throwable> refused = new CopyOnWriteArrayList<>();
+            AsyncEngine.submit(UUID.randomUUID(), "Otro", () -> 2, result -> delivered.set(true), refused::add);
+            assertEquals(1, refused.size(), "con el servidor parándose no se lanza nada");
+            assertFalse(delivered.get());
+        } finally {
+            AsyncEngine.start();
+        }
+        CountDownLatch again = new CountDownLatch(1);
+        AsyncEngine.submit(UUID.randomUUID(), "Otro", () -> 3, result -> again.countDown(), failure -> { });
+        assertTrue(again.await(30, TimeUnit.SECONDS), "al arrancar otra vez el motor funciona");
     }
 }

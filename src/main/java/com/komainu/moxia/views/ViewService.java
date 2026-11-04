@@ -4,6 +4,7 @@ import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.config.UtilitiesConfig;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.feedback.FeedbackEventPayload;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.performance.RequestBudget;
 import com.komainu.moxia.permission.KomaPermissions;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -86,7 +87,7 @@ public final class ViewService {
                     }
                 }));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sendCatalog(handler.player));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+        PlayerLeave.register((handler, server) -> {
             LAST_JUMP.remove(handler.player.getUuid());
             REQUESTS.forget(handler.player.getUuid());
         });

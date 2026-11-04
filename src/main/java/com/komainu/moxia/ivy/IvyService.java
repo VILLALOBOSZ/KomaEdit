@@ -108,7 +108,7 @@ public final class IvyService {
             }
             return new Seeds(points, "de la trayectoria");
         }
-        HitResult result = player.raycast(160.0, 1.0F, false);
+        HitResult result = com.komainu.moxia.performance.LoadedRay.cast(player, 160.0, false);
         if (!(result instanceof BlockHitResult hit) || result.getType() != HitResult.Type.BLOCK) {
             throw new IllegalArgumentException("Mira la cara de un bloque o marca semillas con P");
         }

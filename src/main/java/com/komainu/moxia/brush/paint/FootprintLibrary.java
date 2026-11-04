@@ -102,6 +102,8 @@ public interface FootprintLibrary {
                     names.add(name);
                 }
             }
+            // La huella de un sello que ya no está no se queda en memoria con su sello.
+            prepared.keySet().retainAll(names);
             return names;
         }
 
@@ -118,8 +120,12 @@ public interface FootprintLibrary {
             try {
                 stamp = stamps.load(name);
             } catch (IOException exception) {
+                prepared.remove(name);
                 throw new IllegalArgumentException("No se pudo leer el sello " + name + ": " + exception.getMessage(),
                         exception);
+            } catch (RuntimeException exception) {
+                prepared.remove(name);
+                throw exception;
             }
             Prepared cached = prepared.get(name);
             if (cached != null && cached.stamp == stamp) {

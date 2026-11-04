@@ -328,7 +328,7 @@ public final class ImageService {
         int longest = Math.min(DEFAULT_LONGEST, maxSide);
         Function<ImageDecoder.Header, ImageSize> sizing = header -> ImageSize.of(header.width(), header.height(),
                 request.width(), request.height(), longest, maxSide);
-        HitResult result = player.raycast(REACH, 1.0F, false);
+        HitResult result = com.komainu.moxia.performance.LoadedRay.cast(player, REACH, false);
         int[] target;
         int[] right;
         int[] up;

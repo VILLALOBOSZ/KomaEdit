@@ -120,8 +120,9 @@ public final class RebuildService {
         thread.setDaemon(true);
         return thread;
     });
-    private static MinecraftServer server;
-    private static boolean stopping;
+    private static volatile MinecraftServer server;
+    /** Lo lee también el hilo de la reconstrucción: al parar, server.execute corre en el hilo que lo llama. */
+    private static volatile boolean stopping;
     /** Lo que dejó a medias una caída se lee en el primer tick (ver {@link #started}). */
     private static boolean recoverPending;
 

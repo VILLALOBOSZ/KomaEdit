@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Lo que queda vivo cuando ya no tiene a quién servir. Los servicios guardan lo de cada jugador en mapas estáticos: lo
@@ -114,6 +115,37 @@ class LifecycleCleanupTest {
         assertEquals(List.of(), open, "una EditSession escribe en el mundo donde se abrió: si lo de este jugador"
                 + " sigue con su mundo nuevo, lo cambia en el anterior. Ciérralo en AFTER_PLAYER_CHANGE_WORLD y"
                 + " AFTER_RESPAWN");
+    }
+
+    /**
+     * Lo leído de los archivos de cada jugador (paletas, ruidos, selecciones, presets) se guarda por ruta, no por
+     * jugador, y la prueba de arriba no lo ve: se olvida al irse (al desligar su proyecto) y al pararse el servidor.
+     */
+    @Test
+    void whatWasReadFromAPlayersFilesIsForgotten() {
+        String field = InitReach.OURS + "persistence/NamedDefinitions.READ";
+        assertTrue(cleared.get(DISCONNECT).contains(field), "sigue en memoria al irse el jugador");
+        assertTrue(cleared.get(STOPPED).contains(field), "pasa al siguiente mundo del proceso");
+    }
+
+    /**
+     * Las figuras, el texto, las imágenes, los generadores y lo que espera a Construir llevan las coordenadas del
+     * mundo donde se pidieron, y al acabar se encolan en el mundo donde está el jugador entonces: tras un portal, el
+     * tubo del mundo normal salía en el Nether. Se olvidan al cambiar de mundo (y lo que espera a Construir, que guarda
+     * el jugador de antes, también al reaparecer).
+     */
+    @Test
+    void whatWasWorkedOutForOneWorldIsNotBuiltInTheNext() {
+        List<String> kept = new ArrayList<>();
+        for (String field : List.of("performance/AsyncEngine.TASKS", "sculpt/SnapshotCaptureService.JOBS",
+                "edit/PendingBuilds.PENDING")) {
+            for (String event : List.of(CHANGE_WORLD, RESPAWN)) {
+                if (!cleared.get(event).contains(InitReach.OURS + field)) {
+                    kept.add(field + " en " + event.substring(event.lastIndexOf('$') + 1));
+                }
+            }
+        }
+        assertEquals(List.of(), kept, "se colocaría en el mundo nuevo con las coordenadas del anterior");
     }
 
     private static boolean cleared(Field field, String event) {

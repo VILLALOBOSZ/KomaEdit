@@ -2,6 +2,7 @@ package com.komainu.moxia.capability;
 
 import com.komainu.moxia.KomaEditMod;
 import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.permission.KomaPermissions;
 import com.komainu.moxia.progress.ProgressLine;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -75,7 +76,7 @@ public final class CapabilityService {
         // hilo del servidor se ejecutaría en el acto, antes que él.
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 PENDING_JOINS.add(handler.player.getUuid()));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> remove(handler.player.getUuid()));
+        PlayerLeave.register((handler, server) -> remove(handler.player.getUuid()));
         ServerTickEvents.END_SERVER_TICK.register(CapabilityService::tick);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> clearAll());
     }

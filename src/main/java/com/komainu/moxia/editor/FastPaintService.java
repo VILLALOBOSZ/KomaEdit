@@ -6,6 +6,9 @@ import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.performance.OperationPolicy;
 import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.performance.Turns;
+import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.PlacementRun;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.function.pattern.Pattern;
@@ -89,7 +92,8 @@ public final class FastPaintService {
             return;
         }
         long deadline = ServerWork.deadline(MAX_NANOS_PER_TICK);
-        for (Stroke stroke : java.util.List.copyOf(STROKES.values())) {
+        // Por turnos: el que va primero no se queda con el plazo de todos tick tras tick.
+        for (Stroke stroke : Turns.from(STROKES.values(), server.getTicks())) {
             if (System.nanoTime() >= deadline || !STROKES.containsKey(stroke.playerId)) {
                 break;
             }
@@ -100,7 +104,7 @@ public final class FastPaintService {
                 continue;
             }
             process(stroke, player, deadline);
-            if (stroke.ending && stroke.current == null && stroke.trail.isEmpty()) {
+            if (stroke.ending && stroke.current == null && stroke.trail.isEmpty() && stroke.flushing == null) {
                 STROKES.remove(stroke.playerId);
                 finish(stroke, player, false);
             }
@@ -121,7 +125,37 @@ public final class FastPaintService {
         STROKES.clear();
     }
 
+    /**
+     * Un tick del trazo: termina de vaciar lo escrito antes (luz, vecinos y envío, con el plazo) y, si acabó, escribe
+     * lo siguiente y lo empieza a vaciar. WorldEdit guarda lo escrito en la sesión hasta vaciarla: sin esto, el trazo
+     * entero (decenas de miles de bloques) se aplicaba en el tick de soltar el botón.
+     */
     private static void process(Stroke stroke, ServerPlayerEntity player, long deadline) {
+        try {
+            if (stroke.flushing != null) {
+                if (!stroke.flushing.resume(deadline)) {
+                    return;
+                }
+                stroke.flushing = null;
+            }
+            if (!write(stroke, player, deadline)) {
+                return;
+            }
+            stroke.flushing = stroke.flusher.flush();
+            if (stroke.flushing != null && stroke.flushing.resume(deadline)) {
+                stroke.flushing = null;
+            }
+        } catch (RuntimeException exception) {
+            STROKES.remove(stroke.playerId);
+            stroke.flushing = null;
+            finish(stroke, player, true);
+            KomaEditMod.LOGGER.error("Fast paint stroke failed for {}", stroke.playerId, exception);
+            player.sendMessage(Feedback.line(Feedback.Level.ERROR, "La pintura falló: " + readable(exception)), true);
+        }
+    }
+
+    /** @return {@code false} si el trazo se cerró porque falló */
+    private static boolean write(Stroke stroke, ServerPlayerEntity player, long deadline) {
         ServerWorld world = player.getServerWorld();
         int candidates = 0;
         try {
@@ -129,7 +163,7 @@ public final class FastPaintService {
                 if (stroke.current == null) {
                     BlockPos next = stroke.trail.poll();
                     if (next == null) {
-                        return;
+                        return true;
                     }
                     stroke.current = new Dab(next, stroke.radius);
                 }
@@ -169,11 +203,21 @@ public final class FastPaintService {
             finish(stroke, player, true);
             KomaEditMod.LOGGER.error("Fast paint stroke failed for {}", stroke.playerId, exception);
             player.sendMessage(Feedback.line(Feedback.Level.ERROR, "La pintura falló: " + readable(exception)), true);
+            return false;
         }
+        return true;
     }
 
     private static void finish(Stroke stroke, ServerPlayerEntity player, boolean cancelled) {
         try {
+            if (stroke.flushing != null) {
+                // Lo que quedaba por vaciar, ya sin plazo (es como mucho lo de un tick).
+                int guard = 0;
+                while (!stroke.flushing.resume(Long.MAX_VALUE) && guard++ < 1_000_000) {
+                    Thread.onSpinWait();
+                }
+                stroke.flushing = null;
+            }
             stroke.editSession.close();
         } finally {
             if (stroke.editSession.size() > 0) {
@@ -201,6 +245,9 @@ public final class FastPaintService {
         private final WorldEditService.PlayerContext context;
         private final DabTrail trail;
         private final LongOpenHashSet painted = new LongOpenHashSet();
+        private final PlacementRun.Session flusher;
+        /** Lo escrito que aún se está vaciando (luz, vecinos, envío), o {@code null}. */
+        private PlacementRun.Flush flushing;
         private Dab current;
         private boolean ending;
 
@@ -219,6 +266,7 @@ public final class FastPaintService {
             this.pattern = pattern;
             this.editSession = editSession;
             this.context = context;
+            this.flusher = BatchEditService.session(editSession);
         }
     }
 

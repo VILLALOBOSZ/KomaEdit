@@ -14,6 +14,7 @@ import com.komainu.moxia.studio.live.LivePreviewResultPayload;
 import com.komainu.moxia.studio.live.LiveService;
 import com.komainu.moxia.worldedit.WorldEditService;
 import com.komainu.moxia.performance.ServerWork;
+import com.komainu.moxia.performance.Turns;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.sk89q.worldedit.fabric.FabricAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -73,6 +74,7 @@ public final class PlanPreviews {
     private static final int CLIENT_ENTRIES = 250_000;
     private static final ThreadLocal<Extras> EXTRAS = new ThreadLocal<>();
     private static final Map<UUID, Preparation> PREPARING = new LinkedHashMap<>();
+    private static int prepareTurn;
     private static final ExecutorService SAMPLER = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "KomaEdit-Preview");
         thread.setDaemon(true);
@@ -321,7 +323,7 @@ public final class PlanPreviews {
             ServerWorld world = player.getServerWorld();
             BlockPos.Mutable position = new BlockPos.Mutable();
             return (x, y, z) -> Block.getRawIdFromState(world.getBlockState(position.set(x, y, z)));
-        }, System.nanoTime(), CHECKS_PER_TICK);
+        }, System.nanoTime(), CHECKS_PER_TICK, () -> System.nanoTime() >= deadline);
         for (Held held : FLOW.plans()) {
             ServerPlayerEntity player = current.getPlayerManager().getPlayer(held.player);
             if (player != null) {
@@ -333,7 +335,8 @@ public final class PlanPreviews {
     // ---------------------------------------------------------------- preparación
 
     private static void prepare(MinecraftServer current, long deadline) {
-        for (Preparation preparation : List.copyOf(PREPARING.values())) {
+        // Por turnos: la vista previa enorme de uno no deja esperando la pequeña de otro hasta que acabe.
+        for (Preparation preparation : Turns.from(PREPARING.values(), prepareTurn++)) {
             if (System.nanoTime() >= deadline) {
                 return;
             }
