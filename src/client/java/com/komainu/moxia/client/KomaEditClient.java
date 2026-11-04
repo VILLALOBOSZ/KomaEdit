@@ -69,12 +69,12 @@ public final class KomaEditClient implements ClientModInitializer {
                 (payload, context) -> context.client().execute(() -> ClientBlueprintCatalog.receive(payload.chunk()))
         );
         ClientPlayNetworking.registerGlobalReceiver(
-                com.komainu.moxia.terrain.StampPayloads.Catalog.ID,
+                com.komainu.moxia.terrain.StampPayloads.StampsCatalog.ID,
                 (payload, context) -> context.client().execute(
                         () -> com.komainu.moxia.client.terrain.ClientStampCatalog.update(payload))
         );
         ClientPlayNetworking.registerGlobalReceiver(
-                com.komainu.moxia.terrain.StampPayloads.Preview.ID,
+                com.komainu.moxia.terrain.StampPayloads.StampsPreview.ID,
                 (payload, context) -> context.client().execute(
                         () -> com.komainu.moxia.client.terrain.ClientStampCatalog.receive(payload.preview()))
         );

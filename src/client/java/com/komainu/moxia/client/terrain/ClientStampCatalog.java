@@ -49,8 +49,8 @@ public final class ClientStampCatalog {
         public StudioImage thumbnail(OwnStampSummary stamp) {
             StudioImage image = IMAGES.get(stamp.hash());
             if (image == null && REQUESTED.add(stamp.hash())
-                    && ClientPlayNetworking.canSend(StampPayloads.Request.ID)) {
-                ClientPlayNetworking.send(new StampPayloads.Request(StampPayloads.Request.PREVIEWS,
+                    && ClientPlayNetworking.canSend(StampPayloads.StampsRequest.ID)) {
+                ClientPlayNetworking.send(new StampPayloads.StampsRequest(StampPayloads.StampsRequest.PREVIEWS,
                         List.of(stamp.hash())));
             }
             return image;
@@ -68,8 +68,8 @@ public final class ClientStampCatalog {
                 return;
             }
             refreshedAt = now;
-            if (ClientPlayNetworking.canSend(StampPayloads.Request.ID)) {
-                ClientPlayNetworking.send(new StampPayloads.Request(StampPayloads.Request.CATALOG, List.of()));
+            if (ClientPlayNetworking.canSend(StampPayloads.StampsRequest.ID)) {
+                ClientPlayNetworking.send(new StampPayloads.StampsRequest(StampPayloads.StampsRequest.CATALOG, List.of()));
             }
         }
     };
@@ -77,7 +77,7 @@ public final class ClientStampCatalog {
     private ClientStampCatalog() {
     }
 
-    public static void update(StampPayloads.Catalog catalog) {
+    public static void update(StampPayloads.StampsCatalog catalog) {
         stamps = catalog.stamps();
         canCapture = catalog.canCapture();
         received = true;

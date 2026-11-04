@@ -48,14 +48,14 @@ public final class StampPayloads {
     }
 
     /** Del cliente: pide el catálogo ({@link #CATALOG}) o el relieve en pequeño de unas huellas ({@link #PREVIEWS}). */
-    public record Request(int action, List<String> values) implements CustomPayload {
+    public record StampsRequest(int action, List<String> values) implements CustomPayload {
         public static final int CATALOG = 0;
         public static final int PREVIEWS = 1;
-        public static final Id<Request> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "stamp_request"));
-        public static final PacketCodec<PacketByteBuf, Request> CODEC = PacketCodec.ofStatic(Request::write,
-                Request::read);
+        public static final Id<StampsRequest> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "stamp_request"));
+        public static final PacketCodec<PacketByteBuf, StampsRequest> CODEC = PacketCodec.ofStatic(
+                StampsRequest::write, StampsRequest::read);
 
-        public Request {
+        public StampsRequest {
             values = List.copyOf(values);
             if (values.size() > MAX_REQUESTED) {
                 throw new IllegalArgumentException("Demasiados sellos en una petición");
@@ -67,13 +67,13 @@ public final class StampPayloads {
             return ID;
         }
 
-        private static void write(PacketByteBuf buffer, Request request) {
+        private static void write(PacketByteBuf buffer, StampsRequest request) {
             buffer.writeVarInt(request.action());
             buffer.writeVarInt(request.values().size());
             request.values().forEach(value -> buffer.writeString(value, 64));
         }
 
-        private static Request read(PacketByteBuf buffer) {
+        private static StampsRequest read(PacketByteBuf buffer) {
             int action = buffer.readVarInt();
             int size = buffer.readVarInt();
             if (size < 0 || size > MAX_REQUESTED) {
@@ -83,17 +83,18 @@ public final class StampPayloads {
             for (int index = 0; index < size; index++) {
                 values.add(buffer.readString(64));
             }
-            return new Request(action, values);
+            return new StampsRequest(action, values);
         }
     }
 
     /** Del servidor: los sellos propios y si el jugador puede capturar y gestionar los de otros. */
-    public record Catalog(List<OwnStampSummary> stamps, boolean canCapture, boolean canManage) implements CustomPayload {
-        public static final Id<Catalog> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "stamp_catalog"));
-        public static final PacketCodec<PacketByteBuf, Catalog> CODEC = PacketCodec.ofStatic(Catalog::write,
-                Catalog::read);
+    public record StampsCatalog(List<OwnStampSummary> stamps, boolean canCapture, boolean canManage)
+            implements CustomPayload {
+        public static final Id<StampsCatalog> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "stamp_catalog"));
+        public static final PacketCodec<PacketByteBuf, StampsCatalog> CODEC = PacketCodec.ofStatic(
+                StampsCatalog::write, StampsCatalog::read);
 
-        public Catalog {
+        public StampsCatalog {
             stamps = List.copyOf(stamps.subList(0, Math.min(stamps.size(), MAX_CATALOG)));
         }
 
@@ -102,14 +103,14 @@ public final class StampPayloads {
             return ID;
         }
 
-        private static void write(PacketByteBuf buffer, Catalog catalog) {
+        private static void write(PacketByteBuf buffer, StampsCatalog catalog) {
             buffer.writeVarInt(catalog.stamps().size());
             catalog.stamps().forEach(stamp -> StampPayloads.write(buffer, stamp));
             buffer.writeBoolean(catalog.canCapture());
             buffer.writeBoolean(catalog.canManage());
         }
 
-        private static Catalog read(PacketByteBuf buffer) {
+        private static StampsCatalog read(PacketByteBuf buffer) {
             int size = buffer.readVarInt();
             if (size < 0 || size > MAX_CATALOG) {
                 throw new IllegalArgumentException("Catálogo de sellos no válido");
@@ -118,15 +119,15 @@ public final class StampPayloads {
             for (int index = 0; index < size; index++) {
                 stamps.add(StampPayloads.read(buffer));
             }
-            return new Catalog(stamps, buffer.readBoolean(), buffer.readBoolean());
+            return new StampsCatalog(stamps, buffer.readBoolean(), buffer.readBoolean());
         }
     }
 
     /** Del servidor: el relieve en pequeño de un sello propio, por su huella. */
-    public record Preview(OwnStamps.Preview preview) implements CustomPayload {
-        public static final Id<Preview> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "stamp_preview"));
-        public static final PacketCodec<PacketByteBuf, Preview> CODEC = PacketCodec.ofStatic(Preview::write,
-                Preview::read);
+    public record StampsPreview(OwnStamps.Preview preview) implements CustomPayload {
+        public static final Id<StampsPreview> ID = new Id<>(Identifier.of(KomaEditMod.MOD_ID, "stamp_preview"));
+        public static final PacketCodec<PacketByteBuf, StampsPreview> CODEC = PacketCodec.ofStatic(
+                StampsPreview::write, StampsPreview::read);
         private static final int MAX_SIDE = 128;
 
         @Override
@@ -134,7 +135,7 @@ public final class StampPayloads {
             return ID;
         }
 
-        private static void write(PacketByteBuf buffer, Preview payload) {
+        private static void write(PacketByteBuf buffer, StampsPreview payload) {
             OwnStamps.Preview preview = payload.preview();
             buffer.writeString(preview.hash(), 64);
             buffer.writeVarInt(preview.side());
@@ -144,7 +145,7 @@ public final class StampPayloads {
             }
         }
 
-        private static Preview read(PacketByteBuf buffer) {
+        private static StampsPreview read(PacketByteBuf buffer) {
             String hash = buffer.readString(64);
             int side = buffer.readVarInt();
             if (side < 2 || side > MAX_SIDE) {
@@ -155,7 +156,7 @@ public final class StampPayloads {
             for (int index = 0; index < values.length; index++) {
                 values[index] = buffer.readShort();
             }
-            return new Preview(new OwnStamps.Preview(hash, side, neutral, values));
+            return new StampsPreview(new OwnStamps.Preview(hash, side, neutral, values));
         }
     }
 }

@@ -71,10 +71,10 @@ public final class StampService {
     }
 
     public static void register() {
-        PayloadTypeRegistry.playC2S().register(StampPayloads.Request.ID, StampPayloads.Request.CODEC);
-        PayloadTypeRegistry.playS2C().register(StampPayloads.Catalog.ID, StampPayloads.Catalog.CODEC);
-        PayloadTypeRegistry.playS2C().register(StampPayloads.Preview.ID, StampPayloads.Preview.CODEC);
-        ServerPlayNetworking.registerGlobalReceiver(StampPayloads.Request.ID, (payload, context) ->
+        PayloadTypeRegistry.playC2S().register(StampPayloads.StampsRequest.ID, StampPayloads.StampsRequest.CODEC);
+        PayloadTypeRegistry.playS2C().register(StampPayloads.StampsCatalog.ID, StampPayloads.StampsCatalog.CODEC);
+        PayloadTypeRegistry.playS2C().register(StampPayloads.StampsPreview.ID, StampPayloads.StampsPreview.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(StampPayloads.StampsRequest.ID, (payload, context) ->
                 context.server().execute(() -> handle(context.player(), payload)));
         ServerTickEvents.END_SERVER_TICK.register(StampService::sendPreviews);
         ServerWork.lane(new ServerWork.Lane() {
@@ -314,12 +314,12 @@ public final class StampService {
 
     // ---------------------------------------------------------------- Studio
 
-    private static void handle(ServerPlayerEntity player, StampPayloads.Request request) {
+    private static void handle(ServerPlayerEntity player, StampPayloads.StampsRequest request) {
         if (!KomaPermissions.canAccess(player)) {
             return;
         }
         switch (request.action()) {
-            case StampPayloads.Request.CATALOG -> {
+            case StampPayloads.StampsRequest.CATALOG -> {
                 long now = System.currentTimeMillis();
                 Long last = LAST_CATALOG.get(player.getUuid());
                 if (last != null && now - last < CATALOG_COOLDOWN_MILLIS) {
@@ -328,7 +328,7 @@ public final class StampService {
                 LAST_CATALOG.put(player.getUuid(), now);
                 sendCatalog(player);
             }
-            case StampPayloads.Request.PREVIEWS -> {
+            case StampPayloads.StampsRequest.PREVIEWS -> {
                 UUID viewer = player.getUuid();
                 List<String> hashes = List.copyOf(request.values());
                 OwnStamps stamps = TerrainService.ownStamps();
@@ -353,7 +353,7 @@ public final class StampService {
 
     /** El catálogo de los sellos propios para el Studio. */
     public static void sendCatalog(ServerPlayerEntity player) {
-        if (!ServerPlayNetworking.canSend(player, StampPayloads.Catalog.ID)) {
+        if (!ServerPlayNetworking.canSend(player, StampPayloads.StampsCatalog.ID)) {
             return;
         }
         String viewer = player.getUuid().toString();
@@ -364,7 +364,7 @@ public final class StampService {
                     (float) meta.heightRatio(), (float) entry.neutral(), entry.hash(), meta.sizeX(), meta.sizeZ(),
                     meta.ownedBy(viewer)));
         }
-        ServerPlayNetworking.send(player, new StampPayloads.Catalog(summaries, KomaPermissions.can(player, CAPTURE),
+        ServerPlayNetworking.send(player, new StampPayloads.StampsCatalog(summaries, KomaPermissions.can(player, CAPTURE),
                 KomaPermissions.can(player, MANAGE)));
     }
 
@@ -384,14 +384,14 @@ public final class StampService {
         for (Map.Entry<UUID, Queue<OwnStamps.Preview>> entry : OUTBOX.entrySet()) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
             Queue<OwnStamps.Preview> queue = entry.getValue();
-            if (player == null || !ServerPlayNetworking.canSend(player, StampPayloads.Preview.ID)) {
+            if (player == null || !ServerPlayNetworking.canSend(player, StampPayloads.StampsPreview.ID)) {
                 queue.clear();
                 continue;
             }
             int budget = PREVIEW_BYTES_PER_TICK;
             OwnStamps.Preview preview;
             while (budget > 0 && (preview = queue.poll()) != null) {
-                ServerPlayNetworking.send(player, new StampPayloads.Preview(preview));
+                ServerPlayNetworking.send(player, new StampPayloads.StampsPreview(preview));
                 budget -= preview.values().length * 2;
             }
         }
