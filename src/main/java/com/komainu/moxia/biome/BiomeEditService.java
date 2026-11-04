@@ -67,6 +67,12 @@ public final class BiomeEditService {
         return JOBS.containsKey(playerId);
     }
 
+    /** El nombre del pintado de bioma del jugador mientras se pinta; {@code null} si no tiene. */
+    public static String placing(UUID playerId) {
+        Job job = JOBS.get(playerId);
+        return job == null ? null : job.description;
+    }
+
     /** @return celdas en cola */
     public static int submit(ServerPlayerEntity player, long[] cells, BiomeType biome, String description) {
         if (cells.length == 0) {

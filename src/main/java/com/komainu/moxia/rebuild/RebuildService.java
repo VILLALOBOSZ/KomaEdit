@@ -304,6 +304,12 @@ public final class RebuildService {
         return JOBS.containsKey(owner);
     }
 
+    /** El nombre de la reconstrucción del jugador mientras lee, ordena o coloca; {@code null} si no tiene. */
+    public static String placing(UUID owner) {
+        Job job = JOBS.get(owner);
+        return job == null ? null : job.description;
+    }
+
     /** Pone o quita la pausa. */
     public static String pause(UUID owner, boolean pause) {
         Job job = require(owner);
