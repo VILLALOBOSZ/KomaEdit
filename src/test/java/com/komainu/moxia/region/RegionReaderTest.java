@@ -2,7 +2,9 @@ package com.komainu.moxia.region;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,5 +81,58 @@ class RegionReaderTest {
         assertEquals(2_048, reader.read());
         // Cancelar es dejar de llamar a step: no hay foto ni cálculo.
         assertThrows(IllegalStateException.class, reader::build);
+    }
+
+    /** Mundo de mentira que apunta en qué columna de chunk cae cada lectura y cuándo se mira el reloj. */
+    private static final class Chunks implements RegionReader.BlockSource {
+        private final List<Long> reads = new ArrayList<>();
+        private final List<Integer> looks = new ArrayList<>();
+
+        @Override
+        public int rawId(int x, int y, int z) {
+            reads.add((long) Math.floorDiv(x, 16) << 32 ^ (Math.floorDiv(z, 16) & 0xFFFFFFFFL));
+            return 0;
+        }
+
+        @Override
+        public RegionSnapshot.StateInfo describe(int rawId, int x, int y, int z) {
+            return new RegionSnapshot.StateInfo(rawId, null, "test:" + rawId, true, false, false);
+        }
+
+        long clock() {
+            looks.add(reads.size());
+            return 0L;
+        }
+    }
+
+    /**
+     * Leer un bloque de un chunk sin cargar lo carga en el hilo del servidor. Por capas de la caja entera, cada capa
+     * volvía a cruzar todos los chunks (los sin cargar se cargaban y se soltaban una vez por capa) y entre dos miradas
+     * al reloj podían entrar decenas. Ahora cada chunk se lee entero de una vez, y se mira el reloj al entrar en él.
+     */
+    @Test
+    void eachChunkIsReadWholeAndTheClockIsCheckedBeforeEnteringIt() {
+        Chunks world = new Chunks();
+        // De x = -7 a 56 y de z = 3 a 66: 5 × 5 columnas de chunk, 6 capas.
+        RegionReader reader = new RegionReader(world, (x, y, z) -> true, -7, 60, 3, 64, 6, 64, false);
+        while (!reader.done()) {
+            reader.step(Integer.MAX_VALUE, 1L, world::clock);
+        }
+        assertEquals(64 * 6 * 64, world.reads.size());
+        int changes = 0;
+        for (int index = 1; index < world.reads.size(); index++) {
+            if (!world.reads.get(index).equals(world.reads.get(index - 1))) {
+                changes++;
+            }
+        }
+        assertEquals(25 - 1, changes, "se pasa por cada columna de chunk una sola vez");
+        List<Integer> marks = new ArrayList<>(world.looks);
+        marks.add(world.reads.size());
+        for (int look = 0; look + 1 < marks.size(); look++) {
+            long first = world.reads.get(Math.min(marks.get(look), world.reads.size() - 1));
+            for (int index = marks.get(look); index < marks.get(look + 1); index++) {
+                assertEquals(first, world.reads.get(index), "entre dos miradas al reloj se entra en otro chunk");
+            }
+        }
     }
 }
