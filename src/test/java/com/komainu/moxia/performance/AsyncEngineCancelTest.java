@@ -112,4 +112,49 @@ class AsyncEngineCancelTest {
         assertEquals(List.of(), refused, "los clics cancelados ocupaban la cola");
         assertTrue(lastClick.await(30, TimeUnit.SECONDS), "el último clic se calcula");
     }
+
+    /**
+     * Desde {@code SERVER_STOPPING}, {@code server.execute} corre en el hilo que lo llama: un cálculo que acabara durante
+     * la parada encolaba su edición desde el worker, mientras el servidor guardaba el mundo. Tras {@link
+     * AsyncEngine#close} no se entrega nada (aunque el cálculo no mire la interrupción) ni se lanza nada nuevo hasta el
+     * siguiente arranque.
+     */
+    @Test
+    void afterClosingNothingIsDeliveredUntilTheNextStart() throws InterruptedException {
+        CountDownLatch computing = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        Thread[] worker = {null};
+        AtomicBoolean delivered = new AtomicBoolean();
+        AsyncEngine.submit(UUID.randomUUID(), "Figura", () -> {
+            worker[0] = Thread.currentThread();
+            computing.countDown();
+            boolean waiting = true;
+            while (waiting) {
+                try {
+                    release.await();
+                    waiting = false;
+                } catch (InterruptedException ignored) {
+                    // Un cálculo que no mira la interrupción.
+                }
+            }
+            return 1;
+        }, result -> delivered.set(true), failure -> delivered.set(true));
+        assertTrue(computing.await(30, TimeUnit.SECONDS));
+        try {
+            AsyncEngine.close();
+            release.countDown();
+            worker[0].join(30_000);
+            assertFalse(worker[0].isAlive());
+            assertFalse(delivered.get(), "lo calculado durante la parada no se entrega");
+            List<Throwable> refused = new CopyOnWriteArrayList<>();
+            AsyncEngine.submit(UUID.randomUUID(), "Otro", () -> 2, result -> delivered.set(true), refused::add);
+            assertEquals(1, refused.size(), "con el servidor parándose no se lanza nada");
+            assertFalse(delivered.get());
+        } finally {
+            AsyncEngine.start();
+        }
+        CountDownLatch again = new CountDownLatch(1);
+        AsyncEngine.submit(UUID.randomUUID(), "Otro", () -> 3, result -> again.countDown(), failure -> { });
+        assertTrue(again.await(30, TimeUnit.SECONDS), "al arrancar otra vez el motor funciona");
+    }
 }

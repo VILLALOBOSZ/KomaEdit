@@ -106,7 +106,7 @@ public final class StudioAim {
                 && within(eyes.x, eyes.y, eyes.z, spot.pos().getX(), spot.pos().getY(), spot.pos().getZ(), reach)) {
             return new BlockHitResult(Vec3d.ofCenter(spot.pos()), spot.side(), spot.pos(), false);
         }
-        return player.raycast(reach, 1.0F, false);
+        return com.komainu.moxia.performance.LoadedRay.cast(player, reach, false);
     }
 
     /**

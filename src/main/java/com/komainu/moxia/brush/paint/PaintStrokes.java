@@ -7,6 +7,7 @@ import com.komainu.moxia.brush.ez.EzBrushManager;
 import com.komainu.moxia.feedback.Feedback;
 import com.komainu.moxia.performance.AsyncEngine;
 import com.komainu.moxia.performance.OperationPolicy;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.progress.ProgressLine;
 import com.komainu.moxia.sculpt.WorldSnapshot;
 import com.komainu.moxia.studio.net.StudioAim;
@@ -19,7 +20,6 @@ import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockState;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -70,7 +70,7 @@ public final class PaintStrokes {
 
     public static void register() {
         ServerWork.light(PaintStrokes::tick);
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+        PlayerLeave.register((handler, server) -> {
             Stroke stroke = STROKES.remove(handler.player.getUuid());
             if (stroke != null) {
                 stroke.close(null);

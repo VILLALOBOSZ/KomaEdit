@@ -17,6 +17,7 @@ import com.komainu.moxia.path.PathManager;
 import com.komainu.moxia.path.PathHologramPayload;
 import com.komainu.moxia.path.PathHologramSync;
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.performance.ServerWork;
 import com.komainu.moxia.persistence.ProjectStorage;
 import com.komainu.moxia.persistence.OperationLedger;
@@ -57,6 +58,9 @@ public final class KomaEditMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        // Lo primero: lo de cada jugador al irse corre en el hilo del servidor (Fabric avisa desde Netty) y, al parar,
+        // antes que cualquier otra cosa de la parada.
+        com.komainu.moxia.performance.PlayerLeave.install();
         KomaEditConfig.load();
         ServerPalettes.load(KomaEditConfig.palettesFile());
         PayloadTypeRegistry.playS2C().register(PathHologramPayload.ID, PathHologramPayload.CODEC);
@@ -175,7 +179,7 @@ public final class KomaEditMod implements ModInitializer {
                         "No se pudieron cargar las recetas o instancias guardadas · revisa latest.log"), false);
             }
         });
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+        PlayerLeave.register((handler, server) -> {
             BatchEditService.cancel(handler.player.getUuid(), false);
             com.komainu.moxia.rebuild.RebuildService.disconnected(handler.player.getUuid());
             // Lo que aún se lee o se calcula para él ya no tiene a quién entregarse.
@@ -209,10 +213,16 @@ public final class KomaEditMod implements ModInitializer {
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
             PlanPreviews.discard(player, "al cambiar de dimensión");
             FastPaintService.remove(player.getUuid());
+            leftWorld(player, "al cambiar de dimensión");
         });
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             PlanPreviews.discard(newPlayer, "al reaparecer");
             FastPaintService.remove(newPlayer.getUuid());
+            // Lo que espera a Construir guarda el jugador de antes de reaparecer: se vuelve a pedir.
+            com.komainu.moxia.edit.PendingBuilds.remove(newPlayer.getUuid());
+            if (!oldPlayer.getWorld().getRegistryKey().equals(newPlayer.getWorld().getRegistryKey())) {
+                leftWorld(newPlayer, "al reaparecer en otra dimensión");
+            }
         });
         // Los displays de vista previa solo existen en el cliente; si alguno llegara al mundo, se borra al cargar.
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> PreviewDisplays.onEntityLoad(entity));
@@ -241,9 +251,15 @@ public final class KomaEditMod implements ModInitializer {
             // Las reconstrucciones que una caída dejó a medias se terminan ahora.
             com.komainu.moxia.rebuild.RebuildService.started(server);
         });
-        // Antes de que se guarde el mundo: ninguna reconstrucción se queda a medias en disco.
+        // Antes de que se guarde el mundo: ninguna reconstrucción se queda a medias en disco. Desde aquí
+        // server.execute corre en el hilo que lo llame: lo que acabe de calcularse ya no se entrega.
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            AsyncEngine.close();
             com.komainu.moxia.rebuild.RebuildService.stopping();
+            // Lo que aún coloca (de quien no pasó por PlayerLeave: a los invitados de una partida LAN se les quita sin
+            // desconectarlos) se cierra con el mundo abierto y WorldEdit en pie; en SERVER_STOPPED ya están cerrados.
+            BatchEditService.shutdown();
+            FastPaintService.shutdown();
             com.komainu.moxia.rebuild.PlacementHistory.save(true);
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
@@ -272,5 +288,20 @@ public final class KomaEditMod implements ModInitializer {
             com.komainu.moxia.fluid.LeakMarkers.clearAll();
         });
         LOGGER.info("KomaEdit WorldEdit add-on initialized");
+    }
+
+    /**
+     * Lo que se calcula o se lee para el mundo de antes no se coloca en el nuevo: las figuras, el texto o las
+     * imágenes llevan las coordenadas de aquel y se escribirían en el mundo donde esté ahora el jugador.
+     */
+    private static void leftWorld(ServerPlayerEntity player, String when) {
+        java.util.UUID id = player.getUuid();
+        String computing = AsyncEngine.status(id).map(AsyncEngine.TaskStatus::label).orElse(null);
+        boolean cancelled = AsyncEngine.cancel(id);
+        cancelled |= SnapshotCaptureService.cancel(id);
+        com.komainu.moxia.edit.PendingBuilds.remove(id);
+        if (cancelled) {
+            Feedback.warn(player, (computing == null ? "Lo que se calculaba" : computing) + ": descartado " + when);
+        }
     }
 }

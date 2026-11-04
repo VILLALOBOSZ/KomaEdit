@@ -1,6 +1,7 @@
 package com.komainu.moxia.clipboard;
 
 import com.komainu.moxia.performance.AsyncEngine;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.symmetry.SymmetryStates;
 import com.komainu.moxia.symmetry.SymmetryTransform;
 import com.komainu.moxia.worldedit.WorldEditService;
@@ -16,7 +17,6 @@ import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockState;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 
@@ -157,7 +157,7 @@ public final class ClipboardScaleService {
     /** Olvida el portapapeles anterior al salir el jugador o pararse el servidor (se engancha la primera vez). */
     private static void hook() {
         if (HOOKED.compareAndSet(false, true)) {
-            ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+            PlayerLeave.register((handler, server) ->
                     PREVIOUS.remove(handler.player.getUuid()));
             ServerLifecycleEvents.SERVER_STOPPED.register(server -> PREVIOUS.clear());
         }

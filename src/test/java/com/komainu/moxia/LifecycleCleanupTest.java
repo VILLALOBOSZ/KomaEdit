@@ -116,6 +116,26 @@ class LifecycleCleanupTest {
                 + " AFTER_RESPAWN");
     }
 
+    /**
+     * Las figuras, el texto, las imágenes, los generadores y lo que espera a Construir llevan las coordenadas del
+     * mundo donde se pidieron, y al acabar se encolan en el mundo donde está el jugador entonces: tras un portal, el
+     * tubo del mundo normal salía en el Nether. Se olvidan al cambiar de mundo (y lo que espera a Construir, que guarda
+     * el jugador de antes, también al reaparecer).
+     */
+    @Test
+    void whatWasWorkedOutForOneWorldIsNotBuiltInTheNext() {
+        List<String> kept = new ArrayList<>();
+        for (String field : List.of("performance/AsyncEngine.TASKS", "sculpt/SnapshotCaptureService.JOBS",
+                "edit/PendingBuilds.PENDING")) {
+            for (String event : List.of(CHANGE_WORLD, RESPAWN)) {
+                if (!cleared.get(event).contains(InitReach.OURS + field)) {
+                    kept.add(field + " en " + event.substring(event.lastIndexOf('$') + 1));
+                }
+            }
+        }
+        assertEquals(List.of(), kept, "se colocaría en el mundo nuevo con las coordenadas del anterior");
+    }
+
     private static boolean cleared(Field field, String event) {
         return cleared.get(event).contains(InitReach.OURS + field.name());
     }

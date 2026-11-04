@@ -3,6 +3,7 @@ package com.komainu.moxia.brush;
 import com.komainu.moxia.brush.ez.EzBrushManager;
 import com.komainu.moxia.brush.superwand.SuperwandManager;
 import com.komainu.moxia.feedback.Feedback;
+import com.komainu.moxia.performance.PlayerLeave;
 import com.komainu.moxia.permission.KomaPermissions;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -10,7 +11,6 @@ import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -69,7 +69,7 @@ public final class BrushToolInputs {
             return ActionResult.SUCCESS;
         });
         ServerTickEvents.END_SERVER_TICK.register(SuperwandManager::tick);
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+        PlayerLeave.register((handler, server) -> {
             UUID playerId = handler.player.getUuid();
             EzBrushManager.remove(playerId);
             SuperwandManager.remove(playerId);

@@ -26,6 +26,11 @@ public final class AsyncEngine {
     private static final ThreadLocal<TaskInfo> WORKER = new ThreadLocal<>();
     private static final AtomicInteger THREAD_NUMBER = new AtomicInteger();
     private static volatile ThreadPoolExecutor executor;
+    /**
+     * El servidor se para ({@link #close}): desde {@code SERVER_STOPPING}, {@code server.execute} corre en el hilo que
+     * lo llama, así que lo que acabe de calcularse no se entrega (se colocaría desde un worker) ni se lanza nada nuevo.
+     */
+    private static volatile boolean closed;
 
     private AsyncEngine() {
     }
@@ -45,9 +50,19 @@ public final class AsyncEngine {
         }
     }
 
+    /** Al arrancar el servidor: abre el motor (también después de {@link #close}). */
     public static synchronized void start() {
+        closed = false;
+        pool();
+    }
+
+    /** El motor abierto, o {@code null} si el servidor se para. */
+    private static synchronized ThreadPoolExecutor pool() {
+        if (closed) {
+            return null;
+        }
         if (executor != null && !executor.isShutdown()) {
-            return;
+            return executor;
         }
         ThreadFactory factory = runnable -> {
             Thread thread = new Thread(runnable, "KomaEdit-Worker-" + THREAD_NUMBER.incrementAndGet());
@@ -66,6 +81,7 @@ public final class AsyncEngine {
                 new ThreadPoolExecutor.AbortPolicy()
         );
         executor.allowCoreThreadTimeOut(true);
+        return executor;
     }
 
     public static <T> void submit(
@@ -91,7 +107,11 @@ public final class AsyncEngine {
             Consumer<T> success,
             Consumer<Throwable> failure
     ) {
-        start();
+        ThreadPoolExecutor pool = pool();
+        if (pool == null) {
+            failure.accept(new IllegalStateException("El servidor se está parando"));
+            return;
+        }
         cancel(owner);
         EditRequest request = EditRequests.current();
         TaskInfo info = new TaskInfo(label != null ? label
@@ -101,12 +121,13 @@ public final class AsyncEngine {
             WORKER.set(info);
             try {
                 T result = computation.get();
-                if (!Thread.currentThread().isInterrupted()) {
+                if (!Thread.currentThread().isInterrupted() && !closed) {
                     EditRequests.handOff(owner, request);
                     success.accept(result);
                 }
             } catch (Throwable throwable) {
-                if (!(throwable instanceof InterruptedException) && !Thread.currentThread().isInterrupted()) {
+                if (!(throwable instanceof InterruptedException) && !Thread.currentThread().isInterrupted()
+                        && !closed) {
                     failure.accept(throwable);
                 }
             } finally {
@@ -120,7 +141,7 @@ public final class AsyncEngine {
         TASKS.put(owner, task);
         INFO.put(owner, info);
         try {
-            executor.execute(task);
+            pool.execute(task);
         } catch (RejectedExecutionException exception) {
             TASKS.remove(owner, task);
             INFO.remove(owner, info);
@@ -166,6 +187,15 @@ public final class AsyncEngine {
             current.remove(runnable);
         }
         return cancelled;
+    }
+
+    /**
+     * Al parar el servidor ({@code SERVER_STOPPING}): corta lo que se calcula y no entrega nada más hasta el próximo
+     * {@link #start}. Sin esto, un cálculo que acabara durante la parada colocaba su resultado desde el worker.
+     */
+    public static synchronized void close() {
+        closed = true;
+        shutdown();
     }
 
     public static synchronized void shutdown() {
