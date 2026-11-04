@@ -220,18 +220,23 @@ public final class StampService {
         /** Lee columnas hasta el plazo; {@code true} cuando ha terminado. Un chunk sin cargar se carga y se para. */
         boolean step(long deadline) {
             int total = columns.count();
-            int sizeX = columns.sizeX();
-            while (next < total) {
-                int x = minimumX + next % sizeX;
-                int z = minimumZ + next / sizeX;
-                boolean loaded = world.getChunkManager().isChunkLoaded(x >> 4, z >> 4);
-                read(x, z, next % sizeX, next / sizeX);
-                next++;
-                if (!loaded || (next & 63) == 0 && System.nanoTime() >= deadline) {
-                    return next >= total;
+            next = StampColumnWalk.step(next, total, columns.sizeX(), minimumX, minimumZ, new StampColumnWalk.World() {
+                @Override
+                public boolean loaded(int chunkX, int chunkZ) {
+                    return world.getChunkManager().isChunkLoaded(chunkX, chunkZ);
                 }
-            }
-            return true;
+
+                @Override
+                public void load(int chunkX, int chunkZ) {
+                    world.getChunk(chunkX, chunkZ);
+                }
+
+                @Override
+                public void read(int x, int z, int column, int row) {
+                    Capture.this.read(x, z, column, row);
+                }
+            }, () -> System.nanoTime() >= deadline);
+            return next >= total;
         }
 
         private void read(int x, int z, int column, int row) {
