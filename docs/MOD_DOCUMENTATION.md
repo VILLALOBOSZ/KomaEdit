@@ -1532,7 +1532,7 @@ Curva un módulo copiado con WorldEdit (un tramo de muro, puente, calzada, vía 
 
 ### Comportamiento
 
-- Se usa el portapapeles de WorldEdit (`//copy`). Su origen, el bloque donde estabas al copiar, es el que recorre la trayectoria.
+- Se usa el portapapeles de WorldEdit (`//copy`), con su `//rotate` y `//flip` pendientes ya aplicados. Su origen, el bloque donde estabas al copiar, es el que recorre la trayectoria.
 - **Repetir:** en un recorrido abierto caben tantas copias enteras como permita la longitud, centradas, sin trozos cortados. En uno cerrado, las copias se ajustan un poco para que el lazo empalme sin costura.
 - **Estirar:** una sola copia ocupa todo el recorrido.
 - Igual que las figuras de tubo, se trabaja al revés: cada bloque del mundo cercano al eje pregunta qué bloque del módulo le toca. Por fuera de las curvas el módulo se estira sin abrir huecos; por dentro se comprime y puede perder algún detalle fino.
@@ -4930,7 +4930,7 @@ Lo que se coloca es el primer argumento de `place`, `array` y `scatter`, con la 
 
 | Estructura | Abreviatura | Qué es |
 | --- | --- | --- |
-| `Clipboard(Origin:…,PasteMethod:…,FillBias:…,Rotation:…)` | `Cl` | Tu portapapeles de WorldEdit (`//copy`). |
+| `Clipboard(Origin:…,PasteMethod:…,FillBias:…,Rotation:…)` | `Cl` | Tu portapapeles de WorldEdit (`//copy`), con su `//rotate` y `//flip` pendientes ya aplicados, como `//paste`. |
 | `Schematic(Filename:<regex>,Format:…,Origin:…,PasteMethod:…,Rotation:…)` | `Sc(N:…)` | Schematics de la carpeta de WorldEdit cuyo nombre casa con la expresión regular (`.schem`, `.schematic`, `.litematic` y estructuras `.nbt`). |
 | `Shape(Shape:<forma>,Pattern:<patrón>)` | `Sh(S:…,P:…)` | Una forma pintada con un patrón de WorldEdit. |
 | `Expression(Expression:=<fórmula>,Palette:<paleta>)` | `Ex(E:…,P:…)` | Una fórmula que decide forma y material. |

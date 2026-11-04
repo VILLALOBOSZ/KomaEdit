@@ -190,8 +190,9 @@ public final class WorldEditService {
         return editSession.size();
     }
 
+    /** El portapapeles con su {@code //rotate} y {@code //flip} pendientes aplicados, como lo pegaría //paste. */
     public static Clipboard clipboard(ServerPlayerEntity player) throws EmptyClipboardException {
-        return context(player).session().getClipboard().getClipboard();
+        return PendingClipboard.of(context(player).session().getClipboard());
     }
 
     public static int applyBlocks(ServerPlayerEntity player, Iterable<BlockVector3> blocks, String patternInput)
