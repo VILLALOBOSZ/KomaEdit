@@ -3,6 +3,7 @@ package com.komainu.moxia.placement;
 import com.komainu.moxia.blueprint.BlueprintService;
 import com.komainu.moxia.config.KomaEditConfig;
 import com.komainu.moxia.edit.BatchEditService;
+import com.komainu.moxia.edit.BlockBounds;
 import com.komainu.moxia.edit.PackedBlockPlan;
 import com.komainu.moxia.edit.SmoothBlockStates;
 import com.komainu.moxia.feedback.Feedback;
@@ -483,7 +484,7 @@ public final class PlacementService {
                     if (keep) {
                         region.shift(offset);
                     } else {
-                        BlockVector3 middle = region.getMinimumPoint().add(region.getMaximumPoint()).divide(2);
+                        BlockVector3 middle = BlockBounds.middle(region.getMinimumPoint(), region.getMaximumPoint());
                         region.shift(center.subtract(middle));
                     }
                 } catch (RegionOperationException exception) {
