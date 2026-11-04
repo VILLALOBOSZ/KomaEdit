@@ -52,6 +52,39 @@ class ScreenInitTest {
         assertEquals(List.of(), wrong, "pantallas que mandan algo cada vez que se rehacen");
     }
 
+    /**
+     * Lo de abrir va una vez por cada vez que la pantalla se muestra, no una vez en su vida: al volver a ella desde una
+     * pantalla hija sobre la misma instancia (el Studio desde Referencias), Minecraft llama a {@code removed()} y
+     * después a {@code init()}. Cada bandera de un bloque «una vez» de {@code init()} se pone a {@code false} en
+     * {@code removed()}, que el redimensionado no llama: si no, el Studio volvía con la captura de trayectoria
+     * apagada en el servidor (el {@code path mode off} de {@code removed()} sin su {@code on}).
+     */
+    @Test
+    void aScreenShownAgainOpensAgain() throws IOException {
+        List<String> wrong = new ArrayList<>();
+        int flags = 0;
+        try (Stream<Path> files = Files.walk(CLIENT)) {
+            for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                String source = Files.readString(file, StandardCharsets.UTF_8);
+                int start = source.indexOf("protected void init() {");
+                if (!source.contains("extends Screen") || start < 0) {
+                    continue;
+                }
+                Matcher once = ONCE.matcher(block(source, source.indexOf('{', start)));
+                while (once.find()) {
+                    flags++;
+                    int removed = source.indexOf("public void removed() {");
+                    String body = removed < 0 ? "" : block(source, source.indexOf('{', removed));
+                    if (!body.contains(once.group(1) + " = false;")) {
+                        wrong.add(file.getFileName() + ": " + once.group(1));
+                    }
+                }
+            }
+        }
+        assertTrue(flags >= 2, "se miraron " + flags + " banderas");
+        assertEquals(List.of(), wrong, "pantallas que no vuelven a abrirse al mostrarse otra vez");
+    }
+
     /** El bloque entre la llave de {@code open} y la suya. */
     private static String block(String source, int open) {
         int depth = 0;

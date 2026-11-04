@@ -167,6 +167,8 @@ public final class ViewsScreen extends Screen {
     @Override
     public void removed() {
         ClientViews.onChange(null);
+        // Si vuelve a mostrarse, pide otra vez el catálogo (el redimensionado no pasa por aquí).
+        requested = false;
     }
 
     @Override

@@ -74,7 +74,11 @@ public final class ProceduralStudioScreen extends Screen {
     private StudioUi ui;
     private DrawContextCanvas canvas;
     private ClientStudioHost host;
-    /** Si ya se hizo lo de abrir el Studio ({@link #init()} vuelve a correr al cambiar el tamaño de la ventana). */
+    /**
+     * Si ya se hizo lo de abrir el Studio: {@link #init()} vuelve a correr al cambiar el tamaño de la ventana (sin
+     * {@link #removed()}), pero al volver de una pantalla hija (Referencias) sobre esta misma instancia, tras
+     * {@code removed()}, hay que abrirlo otra vez.
+     */
     private boolean opened;
     private boolean cameraDragging;
     private boolean draggingPoint;
@@ -167,6 +171,8 @@ public final class ProceduralStudioScreen extends Screen {
 
     @Override
     public void removed() {
+        // Lo de cerrar (path mode off) ya va abajo: si vuelve a mostrarse (de Referencias), init() lo abre de nuevo.
+        opened = false;
         releaseMovementKeys();
         EditorOverlayRenderer.clear();
         view.closed(host);
