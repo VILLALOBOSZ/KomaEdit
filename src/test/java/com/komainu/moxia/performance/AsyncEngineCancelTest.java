@@ -3,12 +3,15 @@ package com.komainu.moxia.performance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,5 +73,43 @@ class AsyncEngineCancelTest {
         AsyncEngine.submit(owner, () -> 2, result -> second.countDown(), failure -> { });
         assertTrue(second.await(30, TimeUnit.SECONDS));
         assertFalse(firstDelivered.get());
+    }
+
+    /**
+     * Con todos los workers ocupados (una figura enorme de otro jugador; en un servidor de dos núcleos hay uno solo),
+     * un pincel arrastrado cancela en cada clic el cálculo anterior, que aún espera en la cola. Lo cancelado no puede
+     * seguir ocupando su sitio: la cola es de 16 y, llena de cálculos que ya nadie quiere, el motor rechazaba los
+     * clics de todos con «ocupado» hasta que acabara la figura.
+     */
+    @Test
+    void cancelledCalculationsDoNotKeepTheirPlaceInTheQueue() throws InterruptedException {
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch busy = new CountDownLatch(AsyncEngine.WORKERS);
+        for (int worker = 0; worker < AsyncEngine.WORKERS; worker++) {
+            AsyncEngine.submit(UUID.randomUUID(), "Figura", () -> {
+                busy.countDown();
+                try {
+                    release.await();
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                }
+                return 0;
+            }, result -> { }, failure -> { });
+        }
+        assertTrue(busy.await(30, TimeUnit.SECONDS));
+        UUID brush = UUID.randomUUID();
+        List<Throwable> refused = new CopyOnWriteArrayList<>();
+        CountDownLatch lastClick = new CountDownLatch(1);
+        for (int click = 1; click <= 100; click++) {
+            int number = click;
+            AsyncEngine.submit(brush, "Pincel", () -> number, result -> {
+                if (result == 100) {
+                    lastClick.countDown();
+                }
+            }, refused::add);
+        }
+        release.countDown();
+        assertEquals(List.of(), refused, "los clics cancelados ocupaban la cola");
+        assertTrue(lastClick.await(30, TimeUnit.SECONDS), "el último clic se calcula");
     }
 }

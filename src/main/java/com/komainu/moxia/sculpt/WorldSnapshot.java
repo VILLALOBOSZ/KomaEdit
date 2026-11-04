@@ -106,6 +106,8 @@ public final class WorldSnapshot {
     }
 
     public static final class Capture {
+        /** Cada cuántos bloques se mira el reloj: mirarlo cuesta casi lo que leer un bloque de un chunk cargado. */
+        public static final int CHECK_EVERY = 64;
         private final World world;
         private final int minimumX;
         private final int minimumY;
@@ -144,7 +146,8 @@ public final class WorldSnapshot {
         public int step(int maximumBlocks, long deadlineNanos, LongSupplier clock) {
             int processed = 0;
             int layerSize = sizeX * sizeZ;
-            while (index < blocks.length && processed < maximumBlocks && clock.getAsLong() < deadlineNanos) {
+            while (index < blocks.length && processed < maximumBlocks
+                    && ((processed & (CHECK_EVERY - 1)) != 0 || clock.getAsLong() < deadlineNanos)) {
                 int localY = index / layerSize;
                 int remainder = index - localY * layerSize;
                 int localZ = remainder / sizeX;

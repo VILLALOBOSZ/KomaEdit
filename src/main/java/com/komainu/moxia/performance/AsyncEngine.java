@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public final class AsyncEngine {
-    private static final int WORKERS = Math.clamp(Runtime.getRuntime().availableProcessors() - 1, 1, 4);
+    static final int WORKERS = Math.clamp(Runtime.getRuntime().availableProcessors() - 1, 1, 4);
     private static final Map<UUID, Future<?>> TASKS = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Map<UUID, TaskInfo> INFO = new java.util.concurrent.ConcurrentHashMap<>();
     private static final ThreadLocal<TaskInfo> WORKER = new ThreadLocal<>();
@@ -156,7 +156,16 @@ public final class AsyncEngine {
     public static boolean cancel(UUID owner) {
         INFO.remove(owner);
         Future<?> task = TASKS.remove(owner);
-        return task != null && task.cancel(true);
+        if (task == null) {
+            return false;
+        }
+        boolean cancelled = task.cancel(true);
+        // Un cálculo cancelado que aún esperaba no sigue ocupando la cola (16 sitios para todos los jugadores).
+        ThreadPoolExecutor current = executor;
+        if (current != null && task instanceof Runnable runnable) {
+            current.remove(runnable);
+        }
+        return cancelled;
     }
 
     public static synchronized void shutdown() {
